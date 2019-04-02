@@ -8,6 +8,8 @@ bitmath
 urllib3
 pytest-jira
 python-bugzilla
+pytest-testconfig
+pytest-ordering
 
 # pytest-marker-bugzilla
 git+git://github.com/rhevm-qe-automation/pytest-marker-bugzilla.git#egg=pytest-marker-bugzilla

@@ -10,5 +10,5 @@ oc login -u user -p password
 ```
     sudo dnf install pipenv
     pipenv --three install -rrequirements.txt
-    pipenv run pytest tests
+    pipenv run pytest tests --tc-file=tests/test-config.yaml --tc-format=yaml
 ```

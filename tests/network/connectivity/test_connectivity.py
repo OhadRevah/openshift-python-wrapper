@@ -5,6 +5,7 @@ VM to VM connectivity
 """
 import json
 import logging
+from pytest_testconfig import config as py_config
 
 import bitmath
 import pytest
@@ -101,9 +102,13 @@ class TestGuestPerformance(object):
         iperf_json = json.loads(iperf_data[iperf_data.find('{'):])
         sum_sent = iperf_json.get('end').get('sum')
         bits_per_second = int(sum_sent.get('bits_per_second'))
-        assert float(bitmath.Byte(bits_per_second).GiB) >= 2.5
+        assert (
+            float(bitmath.Byte(bits_per_second).GiB) >=
+            py_config.get('test_guest_performance', {}).get('bandwidth')
+        )
 
 
+@pytest.mark.last
 class TestVethRemovedAfterVmsDeleted(object):
     """
     Check that veth interfaces are removed from host after VM deleted
