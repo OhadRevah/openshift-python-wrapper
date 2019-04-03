@@ -84,7 +84,7 @@ class VirtualMachine(Resource):
         Returns:
             bool: True if resource in desire status, False if timeout reached.
         """
-        resources = self.get_resources(**kwargs)
+        resources = self.list(**kwargs)
         for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
             if rsc.get('raw_object', {}).get('spec', {}).get('running') == status:
                 return True

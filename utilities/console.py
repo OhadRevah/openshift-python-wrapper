@@ -13,47 +13,68 @@ class DistroNotSupported(Exception):
 
 
 class Console(object):
-    def __init__(self, vm, distro, username=None, password=None, namespace=None):
+    def __init__(self):
         """
         Connect to VM console
 
-        Args:
-            vm (str): VM name.
-            distro (str): Distro name (fedora, cirros, alpine)
-            username (str): Username for login.
-            password (str): Password for login.
-            namespace (str): VM namespace
-
         Examples:
-            with console.Console(vm=vm_name, distro='fedora') as vmc:
+            from utilities import console
+            with console.Fedora(vm=vm_name) as vmc:
                 vmc.sendline('some command)
                 vmc.expect('some output')
         """
-        self.vm = vm
-        self.distro = distro
-        self.username = username
-        self.password = password
-        self.namespace = namespace
-        try:
-            eval("self.{distro}".format(distro=self.distro))
-        except AttributeError:
-            raise DistroNotSupported("{distro} is not supported".format(distro=self.distro))
+        self.vm = None
+        self.username = None
+        self.password = None
+        self.namespace = None
 
+    def _connect(self):
+        """
+        Connect to console
+        """
         self.err_msg = "Failed to get console to {vm}. error: {error}"
         cmd = "virtctl console {vm}".format(vm=self.vm)
-        if namespace:
+        if self.namespace:
             cmd += " -n {namespace}".format(namespace=self.namespace)
 
         self.child = pexpect.spawn(cmd, encoding='utf-8')
 
+    def _exit(self):
+        """
+        Logout from shell
+        """
+        self.child.send("exit")
+        self.child.send("\n\n")
+        self.child.expect("login:")
+        self.child.close()
+
+
+class Fedora(Console):
+    def __init__(self, vm, username=None, password=None, namespace=None):
+        """
+        Connect to Fedora VM console
+
+        Args:
+            vm (str): VM name.
+            username (str): Username for login.
+            password (str): Password for login.
+            namespace (str): VM namespace
+        """
+        super(Fedora, self).__init__()
+        self.vm = vm
+        self.username = username or "fedora"
+        self.password = password or "fedora"
+        self.namespace = namespace
+        self._connect()
+
     def __enter__(self):
-        return eval("self.{distro}".format(distro=self.distro))()
+        return self.connect()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._exit()
 
     @generate_logs()
-    def fedora(self):
+    def connect(self):
         """
         Connect to Fedora
 
@@ -62,9 +83,9 @@ class Console(object):
         """
         self.child.send("\n\n")
         self.child.expect("login:")
-        self.child.sendline(self.username or "fedora")
+        self.child.sendline(self.username)
         self.child.expect("Password:")
-        self.child.sendline(self.password or "fedora")
+        self.child.sendline(self.password)
         self.child.expect("$")
         if self.child.after:
             LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
@@ -72,8 +93,33 @@ class Console(object):
 
         return self.child
 
+
+class Cirros(Console):
+    def __init__(self, vm, username=None, password=None, namespace=None):
+        """
+        Connect to Cirros VM console
+
+        Args:
+            vm (str): VM name.
+            username (str): Username for login.
+            password (str): Password for login.
+            namespace (str): VM namespace
+        """
+        super(Cirros, self).__init__()
+        self.vm = vm
+        self.username = username or "cirros"
+        self.password = password or "gocubsgo"
+        self.namespace = namespace
+        self._connect()
+
+    def __enter__(self):
+        return self.connect()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._exit()
+
     @generate_logs()
-    def cirros(self):
+    def connect(self):
         """
         Connect to Cirros
 
@@ -84,9 +130,9 @@ class Console(object):
         self.child.expect("login as 'cirros' user. default password: 'gocubsgo'. use 'sudo' for root.")
         self.child.send("\n")
         self.child.expect("login:")
-        self.child.sendline(self.username or "cirros")
+        self.child.sendline(self.username)
         self.child.expect("Password:")
-        self.child.sendline(self.password or "gocubsgo")
+        self.child.sendline(self.password)
         self.child.expect("\\$")
         if self.child.after:
             LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
@@ -94,8 +140,33 @@ class Console(object):
 
         return self.child
 
+
+class Alpine(Console):
+    def __init__(self, vm, username=None, password=None, namespace=None):
+        """
+        Connect to Alpine VM console
+
+        Args:
+            vm (str): VM name.
+            username (str): Username for login.
+            password (str): Password for login.
+            namespace (str): VM namespace
+        """
+        super(Alpine, self).__init__()
+        self.vm = vm
+        self.username = username or "root"
+        self.password = password
+        self.namespace = namespace
+        self._connect()
+
+    def __enter__(self):
+        return self.connect()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._exit()
+
     @generate_logs()
-    def alpine(self):
+    def connect(self):
         """
         Connect to Alpine
 
@@ -105,18 +176,12 @@ class Console(object):
         self.child.send("\n\n")
         self.child.expect("localhost login:")
         self.child.sendline(self.username or "root")
+        if self.password:
+            self.child.expect("Password:")
+            self.child.sendline(self.password)
         self.child.expect("localhost:~#")
         if self.child.after:
             LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
             return False
 
         return self.child
-
-    def _exit(self):
-        """
-        Exit from Fedora
-        """
-        self.child.send("exit")
-        self.child.send("\n\n")
-        self.child.expect("login:")
-        self.child.close()

@@ -13,11 +13,11 @@ def create_vmi_with_yaml(request):
     vm_name = request.cls.vm_name
     vm_yaml = request.cls.vm_yaml
     vmi = VirtualMachineInstance(name=vm_name, namespace=config.VIRT_NS)
-    
+
     def fin():
         assert vmi.delete(wait=True)
-    
     request.addfinalizer(fin)
+
     assert vmi.create(yaml_file=vm_yaml, wait=True)
-    vmi.wait_for_status(status=types.RUNNING, timeout=60, sleep=10)
-    wait_for_vm_interfaces(vmi, timeout=720)
+    assert vmi.wait_for_status(status=types.RUNNING, timeout=60)
+    assert wait_for_vm_interfaces(vmi, timeout=720)

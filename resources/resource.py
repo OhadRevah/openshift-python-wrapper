@@ -16,7 +16,19 @@ SLEEP = 1
 
 
 class Resource(object):
+    """
+    DynamicClient Resource class
+    """
     def __init__(self, name=None, api_version=None, kind=None, namespace=None):
+        """
+        Create DynamicClient
+
+        Args:
+            name (str): Resource name
+            api_version (str): Resource API version
+            kind (str): Resource kind
+            namespace (str): Resource namespace
+        """
         urllib3.disable_warnings()
         try:
             kubeconfig = os.getenv('KUBECONFIG')
@@ -30,7 +42,8 @@ class Resource(object):
         self.api_version = api_version
         self.name = name
 
-    def get_resources(self, **kwargs):
+    @generate_logs(info=False)
+    def list(self, **kwargs):
         """
         Get resources
 
@@ -50,8 +63,10 @@ class Resource(object):
         Returns:
             Resource: Resource object.
         """
+        LOGGER.info(f"Get all resources of kind {self.kind}")
         return self.client.resources.get(api_version=self.api_version, kind=self.kind, **kwargs)
 
+    @generate_logs(info=False)
     def get(self, **kwargs):
         """
         Get resource
@@ -72,15 +87,16 @@ class Resource(object):
         Returns:
             dict: Resource dict.
         """
+        LOGGER.info(f"Get resource {self.name}")
         kwargs['namespace'] = self.namespace
-        resources = self.list(**kwargs)
+        resources = self.list_names(**kwargs)
         res = [i for i in resources if i.get('metadata', {}).get('name') == self.name]
         return res[0] if res else {}
 
-    @generate_logs()
-    def list(self, **kwargs):
+    @generate_logs(info=False)
+    def list_names(self, **kwargs):
         """
-        Get resources list
+        Get resources names list
 
         Keyword Args:
             get_names (bool): Return objects names only
@@ -99,12 +115,13 @@ class Resource(object):
         Returns:
             list: Resources.
         """
-        list_items = self.get_resources().get(**kwargs).items
+        LOGGER.info(f"Get all resources names of kind {self.kind}")
+        list_items = self.list().get(**kwargs).items
         if kwargs.pop('get_names', None):
             return [i.get('metadata', {}).get('name') for i in list_items]
         return list_items
 
-    @generate_logs()
+    @generate_logs(info=False)
     def wait(self, timeout=TIMEOUT, **kwargs):
         """
         Wait for resource
@@ -121,29 +138,31 @@ class Resource(object):
         Returns:
             bool: True if resource exists, False if timeout reached.
         """
-        resources = self.get_resources(**kwargs)
+        LOGGER.info(f"Wait until {self.name} is created")
+        resources = self.list(**kwargs)
         for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
             if rsc.get('raw_object', {}).get('metadata', {}).get('name') == self.name:
                 if rsc.get('type') == 'ADDED':
                     return True
         return False
 
-    @generate_logs()
+    @generate_logs(info=False)
     def wait_until_gone(self, timeout=TIMEOUT, sleep=SLEEP):
         """
-        Wait until resource is not exists
+        Wait until resource is gone
 
         Args:
             timeout (int): Time to wait for the resource.
             sleep (int): Time to sleep between retries.
 
         Returns:
-            bool: True if resource exists, False if timeout reached.
+            bool: True if resource is gone, False if timeout reached.
         """
+        LOGGER.info(f"Wait until {self.name} is gone")
         sample = utils.TimeoutSampler(timeout=timeout, sleep=sleep, func=lambda: bool(self.get()))
         return sample.wait_for_func_status(result=False)
 
-    @generate_logs()
+    @generate_logs(info=False)
     def wait_for_status(self, status, timeout=TIMEOUT, **kwargs):
         """
         Wait for resource to be in status
@@ -155,13 +174,14 @@ class Resource(object):
         Returns:
             bool: True if resource in desire status, False if timeout reached.
         """
-        resources = self.get_resources(**kwargs)
+        LOGGER.info(f"Wait for {self.name} status to be {status}")
+        resources = self.list(**kwargs)
         for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
             if rsc.get('raw_object', {}).get('status', {}).get('phase') == status:
                 return True
         return False
 
-    @generate_logs()
+    @generate_logs(info=False)
     def create(self, yaml_file=None, resource_dict=None, wait=False):
         """
         Create resource from given yaml file or from dict
@@ -174,6 +194,7 @@ class Resource(object):
         Returns:
             bool: True if create succeeded, False otherwise.
         """
+        LOGGER.info(f"Create {self.name}")
         if yaml_file:
             with open(yaml_file, 'r') as stream:
                 data = yaml.full_load(stream)
@@ -192,13 +213,13 @@ class Resource(object):
                 'metadata': {'name': self.namespace}
             }
 
-        resource_list = self.get_resources()
+        resource_list = self.list()
         res = resource_list.create(body=resource_dict, namespace=self.namespace)
         if wait and res:
             return self.wait()
         return res
 
-    @generate_logs()
+    @generate_logs(info=False)
     def delete(self, yaml_file=None, wait=False):
         """
         Delete resource
@@ -210,6 +231,7 @@ class Resource(object):
         Returns:
             True if delete succeeded, False otherwise.
         """
+        LOGGER.info(f"Delete {self.name}")
         if yaml_file:
             with open(yaml_file, 'r') as stream:
                 data = yaml.full_load(stream)
@@ -220,7 +242,7 @@ class Resource(object):
                 return self.wait_until_gone()
             return res
 
-        resource_list = self.get_resources()
+        resource_list = self.list()
         try:
             res = resource_list.delete(name=self.name, namespace=self.namespace)
             if wait and res:
@@ -229,7 +251,7 @@ class Resource(object):
         except NotFoundError:
             return False
 
-    @generate_logs()
+    @generate_logs(info=False)
     def status(self):
         """
         Get resource status
@@ -239,6 +261,7 @@ class Resource(object):
         Returns:
            str: Status
         """
+        LOGGER.info(f"Get {self.name} status")
         return self.get().status.phase
 
     def _extract_data_from_yaml(self, yaml_data):
@@ -254,7 +277,7 @@ class Resource(object):
         self.api_version = yaml_data.get('apiVersion')
         self.kind = yaml_data.get('kind')
 
-    @generate_logs()
+    @generate_logs(info=False)
     def update(self, resource_dict):
         """
         Update resource with resource dict
@@ -262,5 +285,6 @@ class Resource(object):
         Args:
             resource_dict: Resource dictionary
         """
-        resource_list = self.get_resources()
+        LOGGER.info(f"Update {self.name}")
+        resource_list = self.list()
         resource_list.replace(body=resource_dict, namespace=self.namespace)

@@ -26,8 +26,6 @@ class TestVMWithSidecar(object):
         smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
         And check that package includes manufacturer: "Radical Edward"
         """
-        with console.Console(
-            vm=self.vm_name, distro=config.FEDORA_VM,  namespace=config.VIRT_NS
-        ) as vm_console:
+        with console.Fedora(vm=self.vm_name, namespace=config.VIRT_NS) as vm_console:
             vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
             vm_console.expect("1", timeout=20)

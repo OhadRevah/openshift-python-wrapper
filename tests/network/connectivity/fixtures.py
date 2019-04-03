@@ -18,7 +18,7 @@ def get_ovs_cni_pods(request):
     """
     Get ovs-cni pods names
     """
-    pytest.privileged_pods = [i for i in Pod().list(get_names=True) if i.startswith("ovs-cni")]
+    pytest.privileged_pods = [i for i in Pod().list_names(get_names=True) if i.startswith("ovs-cni")]
     if pytest.privileged_pods:
         pytest.privileged_pod_container = config.OVS_CNI_CONTAINER
         pytest.privileged_pods_ns = config.KUBE_SYSTEM_NS
@@ -76,10 +76,10 @@ def create_privileged_pods(request):
         resource.delete(yaml_file=pods_yaml, wait=True)
     request.addfinalizer(fin)
 
-    compute_nodes = Node().list(get_names=True, label_selector="node-role.kubernetes.io/compute=true")
+    compute_nodes = Node().list_names(get_names=True, label_selector="node-role.kubernetes.io/compute=true")
     assert resource.create(yaml_file=pods_yaml)
     wait_for_pods_to_match_compute_nodes_number(number_of_nodes=len(compute_nodes))
-    privileged_pods = Pod().list(get_names=True, label_selector="app=privileged-test-pod")
+    privileged_pods = Pod().list_names(get_names=True, label_selector="app=privileged-test-pod")
     for idx, pod in enumerate(privileged_pods):
         pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
         assert pod_object.wait_for_status(status=types.RUNNING)
@@ -111,7 +111,7 @@ def get_node_internal_ip(request):
     """
     Get nodes internal IPs
     """
-    compute_nodes = Node().list(get_names=True, label_selector="node-role.kubernetes.io/compute=true")
+    compute_nodes = Node().list_names(get_names=True, label_selector="node-role.kubernetes.io/compute=true")
     for node in compute_nodes:
         node_obj = Node(name=node)
         node_info = node_obj.get()
@@ -424,7 +424,7 @@ def wait_for_pods_to_match_compute_nodes_number(number_of_nodes):
 
     """
     sampler = utils.TimeoutSampler(
-        timeout=30, sleep=1, func=Pod().list, get_names=True, label_selector="app=privileged-test-pod"
+        timeout=30, sleep=1, func=Pod().list_names, get_names=True, label_selector="app=privileged-test-pod"
     )
     for sample in sampler:
         if len(sample) == number_of_nodes:
