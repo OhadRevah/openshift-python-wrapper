@@ -42,8 +42,6 @@ objects:
             interfaces:
             - name: default
               bridge: {}
-            - name: ${MULTUS_NETWORK}
-              bridge: {}
           machine:
             type: ""
           resources:
@@ -52,9 +50,6 @@ objects:
         networks:
         - name: default
           pod: {} # Stock pod network
-        - name: ${MULTUS_NETWORK}
-          multus: # Secondary multus network
-            networkName: ${MULTUS_NETWORK}
         terminationGracePeriodSeconds: 0
         volumes:
         - containerDisk:
@@ -65,10 +60,6 @@ objects:
               #cloud-config
               password: fedora
               chpasswd: { expire: False }
-              bootcmd:
-                - "dnf install -y iperf3 qemu-guest-agent"
-              runcmd:
-                - "systemctl start qemu-guest-agent"
           name: cloudinitdisk
   status: {}
 
@@ -81,5 +72,3 @@ parameters:
 - description: Amount of cores
   name: CPU_CORES
   value: "4"
-- description: Multus network name
-  name: MULTUS_NETWORK

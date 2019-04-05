@@ -17,7 +17,7 @@ class VirtualMachine(Resource):
     Implements actions start / stop / status / wait for VM status / is running
     """
 
-    def __init__(self, name, namespace=None):
+    def __init__(self, name=None, namespace=None):
         super(VirtualMachine, self).__init__()
         self.name = name
         self.namespace = namespace
@@ -84,7 +84,7 @@ class VirtualMachine(Resource):
         Returns:
             bool: True if resource in desire status, False if timeout reached.
         """
-        resources = self.list(**kwargs)
+        resources = self.api(**kwargs)
         for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
             if rsc.get('raw_object', {}).get('spec', {}).get('running') == status:
                 return True

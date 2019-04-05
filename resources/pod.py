@@ -23,7 +23,7 @@ class Pod(Resource):
         """
         return self.get().spec.containers
 
-    def run_command(self, command, container):
+    def exec(self, command, container):
         """
         Run command on pod.
 

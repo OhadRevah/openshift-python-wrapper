@@ -98,7 +98,7 @@ class TimeoutSampler(object):
 @generate_logs()
 def run_command(command):
     """
-    Run command on local machine.
+    Run command locally.
 
     Args:
         command (str): Command to run.
@@ -115,7 +115,6 @@ def run_command(command):
     return True, out.decode("utf-8")
 
 
-@generate_logs()
 def run_command_on_pod(command, pod, container=None):
     """
     Run command on pod.
@@ -228,7 +227,7 @@ def get_test_parametrize_ids(item, params):
             self.test_create_networks.parametrize,
             ["param_1", "param_2"]
         )
-        testflow.step(_id)
+        print(_id)
     """
     _id = ""
     param = [i for i in item if i.name == "parametrize"]

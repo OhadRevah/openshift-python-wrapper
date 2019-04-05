@@ -3,7 +3,7 @@ apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   name: privileged-test-pod
-  namespace: cnv-network-ns
+  namespace: network-tests-namespace
   labels:
     tier: node
     app: privileged-test-pod

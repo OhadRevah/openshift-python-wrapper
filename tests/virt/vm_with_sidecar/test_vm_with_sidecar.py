@@ -5,9 +5,13 @@ VM with sidecar
 """
 import pytest
 
+from tests.fixtures import (
+    create_vms_from_template,
+    wait_for_vms_running,
+    wait_for_vms_interfaces_report,
+)
+from tests.virt.vm_with_sidecar import config
 from utilities import console
-from tests.virt import config
-from tests.virt.fixtures import create_vmi_with_yaml
 
 CHECK_DMIDECODE_PACKAGE = "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward' | wc -l\n"
 
@@ -16,16 +20,21 @@ class TestVMWithSidecar(object):
     """
     Test VM with sidecar
     """
-    vm_name = "vmi-with-sidecar-hook"
-    vm_yaml = "tests/manifests/virt/vm_with_sidecar.yaml"
+    vms = config.VMS
+    namespace = config.VIRT_NS
+    template = config.VM_YAML_TEMPLATE
 
-    @pytest.mark.usefixtures(create_vmi_with_yaml.__name__)
+    @pytest.mark.usefixtures(
+        create_vms_from_template.__name__,
+        wait_for_vms_running.__name__,
+        wait_for_vms_interfaces_report.__name__,
+    )
     def test_vm_with_sidecar_hook(self):
         """
         Test VM with sidecar hook, Install dmidecode with annotation
         smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
         And check that package includes manufacturer: "Radical Edward"
         """
-        with console.Fedora(vm=self.vm_name, namespace=config.VIRT_NS) as vm_console:
+        with console.Fedora(vm=config.VM_NAME, namespace=config.VIRT_NS) as vm_console:
             vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
             vm_console.expect("1", timeout=20)

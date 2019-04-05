@@ -1,0 +1,107 @@
+# -*- coding: utf-8 -*-
+
+"""
+VM to VM connectivity
+"""
+
+import pytest
+from pytest_testconfig import config as py_config
+
+from tests.fixtures import (
+    create_resources_from_yaml,
+    create_vms_from_template,
+    wait_for_vms_running,
+    wait_for_vms_interfaces_report,
+)
+from tests.network.connectivity import utils
+from tests.network.connectivity.fixtures import create_bond
+from tests.network.fixtures import update_vms_pod_ip_info
+from . import config
+from .fixtures import (
+    create_linux_bridge_on_vxlan,
+    create_linux_bridges_real_nics,
+    attach_linux_bridge_to_bond
+)
+
+
+@pytest.mark.usefixtures(
+    create_resources_from_yaml.__name__,
+    create_linux_bridges_real_nics.__name__,
+    create_linux_bridge_on_vxlan.__name__,
+    create_bond.__name__,
+    attach_linux_bridge_to_bond.__name__,
+    create_vms_from_template.__name__,
+    wait_for_vms_running.__name__,
+    wait_for_vms_interfaces_report.__name__,
+    update_vms_pod_ip_info.__name__,
+)
+class TestConnectivity(object):
+    """
+    Test VM to VM connectivity
+    """
+    namespace = config.NETWORK_NS
+    vms = config.VMS
+    template = config.VM_YAML_TEMPLATE
+    bond_name = config.BOND_1
+    bridge_name = config.BRIDGE_BR1
+    vxlan_name = config.VXLAN_10
+    bond_bridge = config.BRIDGE_BR1BOND
+    yamls = [
+        config.LINUX_BRIDGE_YAML,
+        config.LINUX_BRIDGE_BOND_YAML,
+        config.LINUX_BRIDGE_VLAN_100_YAML,
+        config.LINUX_BRIDGE_VLAN_200_YAML,
+        config.LINUX_BRIDGE_VLAN_300_YAML,
+    ]
+    src_vm = list(config.VMS.keys())[0]
+    dst_vm = list(config.VMS.keys())[1]
+
+    @pytest.mark.parametrize(
+        'bridge',
+        [
+            pytest.param('pod'),
+            pytest.param(config.BRIDGE_BR1),
+            pytest.param(config.BRIDGE_BR1VLAN100),
+            pytest.param(config.BRIDGE_BR1BOND),
+            pytest.param(config.BRIDGE_BR1VLAN200)
+        ],
+        ids=[
+            'Connectivity_between_VM_to_VM_over_POD_network',
+            'Connectivity_between_VM_to_VM_over_L2_Linux_bridge_network',
+            'Connectivity_between_VM_to_VM_over_L2_Linux_bridge_VLAN_network',
+            'Connectivity_between_VM_to_VM_over_L2_Linux_bridge_on_BOND_network',
+            'Negative:No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs'
+        ]
+    )
+    def test_connectivity(self, bridge):
+        """
+        Check connectivity
+        """
+        if bridge == config.BRIDGE_BR1BOND:
+            if not pytest.bond_support_env:
+                pytest.skip(msg='No BOND support')
+
+        positive = bridge != config.BRIDGE_BR1VLAN200
+        if not positive:
+            dst_ip = config.NODES_IPS[0]
+        elif bridge == config.BRIDGE_BR1VLAN200:
+            dst_ip = config.VMS.get(self.dst_vm).get("interfaces").get(config.BRIDGE_BR1VLAN300)[0]
+        else:
+            dst_ip = config.VMS.get(self.dst_vm).get("interfaces").get(bridge)[0]
+
+        utils.run_test_connectivity(
+            src_vm=self.src_vm, dst_vm=self.dst_vm, dst_ip=dst_ip, positive=positive
+        )
+
+    def test_guest_performance(self):
+        """
+        In-guest performance bandwidth passthrough over OVS
+        """
+        if not pytest.real_nics_env:
+            pytest.skip(msg='Only run on bare metal env')
+
+        listen_ip = self.src_vm.get("interfaces").get(config.BRIDGE_BR1)[0]
+        bits_per_second = utils.run_test_guest_performance(
+            server_vm=self.src_vm, client_vm=self.src_vm, listen_ip=listen_ip
+        )
+        assert bits_per_second >= py_config.get('test_guest_performance', {}).get('bandwidth')
