@@ -324,9 +324,10 @@ class Resource(object):
         res, out = utils.run_oc_command(command=cmd)
         return res if not res else out
 
+    @generate_logs()
     def search(self, regex):
         """
-        Search for resource using regex
+        Search for resource
 
         Args:
             regex (re.compile): re.compile regex to search
