@@ -20,6 +20,6 @@ def update_vms_pod_ip_info(request):
     for vmi in vms:
         vmi_object = VirtualMachineInstance(name=vmi, namespace=namespace)
         vmi_data = vmi_object.get()
-        ifcs = vmi_data.get('status', {}).get('interfaces', [])
+        ifcs = vmi_data.status.interfaces
         active_ifcs = [i.get('ipAddress') for i in ifcs if i.get('interfaceName') == "eth0"]
-        vms[vmi]["interfaces"]["pod"] = [active_ifcs[0].split("/")[0]]
+        vms[vmi].setdefault('interfaces', {})["pod"] = [active_ifcs[0].split("/")[0]]

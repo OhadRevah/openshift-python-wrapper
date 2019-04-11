@@ -32,9 +32,6 @@ VMS = {
     }
 }
 
-# NODES
-NODES_IPS = ["192.168.0.3", "192.168.0.4"]
-
 # VXLAN
 VXLAN_10 = "vxlan10"
 

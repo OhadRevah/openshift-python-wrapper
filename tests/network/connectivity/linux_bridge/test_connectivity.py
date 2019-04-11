@@ -81,27 +81,38 @@ class TestConnectivity(object):
             if not pytest.bond_support_env:
                 pytest.skip(msg='No BOND support')
 
-        positive = bridge != config.BRIDGE_BR1VLAN200
-        if not positive:
-            dst_ip = config.NODES_IPS[0]
-        elif bridge == config.BRIDGE_BR1VLAN200:
-            dst_ip = config.VMS.get(self.dst_vm).get("interfaces").get(config.BRIDGE_BR1VLAN300)[0]
+        positive = True
+        if bridge == config.BRIDGE_BR1VLAN200:
+            dst_ip = self.vms[self.dst_vm]["interfaces"][config.BRIDGE_BR1VLAN300][0]
+            positive = False
         else:
-            dst_ip = config.VMS.get(self.dst_vm).get("interfaces").get(bridge)[0]
+            dst_ip = self.vms[self.dst_vm]["interfaces"][bridge][0]
 
         utils.run_test_connectivity(
             src_vm=self.src_vm, dst_vm=self.dst_vm, dst_ip=dst_ip, positive=positive
         )
 
-    def test_guest_performance(self):
+    @pytest.mark.parametrize(
+        'interface_id',
+        [
+            pytest.param('pod'),
+            pytest.param(config.BRIDGE_BR1),
+        ],
+        ids=[
+            'test_guest_performance_over_POD_network',
+            'test_guest_performance_over_L2_Linux_bridge_network',
+        ]
+    )
+    def test_guest_performance(self, interface_id):
         """
         In-guest performance bandwidth passthrough over OVS
         """
         if not pytest.real_nics_env:
             pytest.skip(msg='Only run on bare metal env')
 
-        listen_ip = self.src_vm.get("interfaces").get(config.BRIDGE_BR1)[0]
+        expected_res = py_config['test_guest_performance']['bandwidth']
+        listen_ip = self.src_vm["interfaces"][interface_id][0]
         bits_per_second = utils.run_test_guest_performance(
             server_vm=self.src_vm, client_vm=self.src_vm, listen_ip=listen_ip
         )
-        assert bits_per_second >= py_config.get('test_guest_performance', {}).get('bandwidth')
+        assert bits_per_second >= expected_res

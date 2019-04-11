@@ -1,2 +1,5 @@
 test_guest_performance:
   bandwidth: 2.5
+
+test_performance_over_pod_network:
+  bandwidth: 2.5
