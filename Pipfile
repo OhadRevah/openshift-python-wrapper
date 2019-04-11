@@ -1,0 +1,29 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+pytest = "*"
+
+[packages]
+openshift = "*"
+kubernetes = "*"
+pexpect = "*"
+PyYAML = "*"
+ipython = "*"
+ipdb = "*"
+pytest = "*"
+python-autologs = "*"
+bitmath = "*"
+urllib3 = "*"
+pytest-jira = "*"
+pytest-marker-bugzilla = "*"
+python-bugzilla = "*"
+sh = "*"
+pytest-ordering = "*"
+pytest-testconfig = "*"
+
+[requires]
+python_version = "3.7"

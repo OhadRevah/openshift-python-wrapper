@@ -1,14 +1,30 @@
 # cnv-tests
-This repository contains tests. These tests are to verify funstionality for openshift + CNV installation.
+This repository contains tests. These tests are to verify functionality for openshift + CNV installation.
 
 # Getting statrted
-## Login to your openshift instance
+### Login to your openshift instance
 ```
-oc login -u user -p password
+oc login -u user -p password or set KUBECONFIG=<kubeconfig file> 
 ```
-## Running the tests
+### Prepare the enviroment
 ```
     sudo dnf install pipenv
-    pipenv --three install -rrequirements.txt
-    pipenv run pytest tests --tc-file=tests/test-config.yaml --tc-format=yaml
+    pipenv --three install
+```
+### Running the tests
+```
+    pipenv run pytest tests \
+    --tc-file=tests/test-config.yaml \
+    --tc-format=yaml \
+    --junitxml /tmp/xunit_results.xml \
+    --bugzilla \
+    --bugzilla-url=<url> \
+    --bugzilla-user=<username> \
+    --bugzilla-password=<password> \
+    --jira \
+    --jira-url=<url>  \
+    --jira-user=<username> \
+    --jira-password=<password>  \
+    --jira-no-ssl-verify \
+    --jira-disable-docs-search
 ```
