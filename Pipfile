@@ -19,13 +19,14 @@ python-autologs = "*"
 bitmath = "*"
 urllib3 = "*"
 pytest-jira = "*"
-pytest-marker-bugzilla = {editable = true, ref = "py3-fix", git = "https://github.com/myakove/pytest_marker_bugzilla.git"}
-pytest-testconfig = {editable = true, ref = "overriding-values-is-broken", git = "https://github.com/myakove/pytest-testconfig.git"}
+pytest-marker-bugzilla = {editable = true,ref = "py3-fix",git = "https://github.com/myakove/pytest_marker_bugzilla.git"}
+pytest-testconfig = {editable = true,ref = "overriding-values-is-broken",git = "https://github.com/myakove/pytest-testconfig.git"}
 python-bugzilla = "*"
 sh = "*"
 pytest-ordering = "*"
 ansible = {git = "https://github.com/ansible/ansible.git"}
 jinja2 = "*"
+pytest-ansible = {git = "https://github.com/ansible/pytest-ansible.git"}
 
 [requires]
 python_version = "3.7"
