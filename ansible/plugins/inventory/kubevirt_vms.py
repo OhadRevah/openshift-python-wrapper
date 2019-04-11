@@ -8,6 +8,9 @@ to your inventory with the following content:
 ```
 plugin: kubevirt_vms
 ```
+
+This plugin configures the vms to use the virtctl connection plugin
+by default.
 """
 from __future__ import absolute_import
 
@@ -36,6 +39,15 @@ def first_ip(vmi):
                         for s in vmi.status.conditions)))
 
 
+def ssh_vars(vmi):
+    ssh_vars = {}
+    if vmi.status.interfaces:
+        ssh_vars.update({
+            "ansible_ssh_host": first_ip(vmi)
+        })
+    return ssh_vars
+
+
 def vmi_entry(vmi, extra_ssh_args):
     """Converts a VMI instance into a host dict that is better suited
        for the ansible inventory generator."""
@@ -44,13 +56,15 @@ def vmi_entry(vmi, extra_ssh_args):
         "namespace": vmi.metadata.namespace,
         "groups": ["kubevirt-" + vmi.metadata.namespace],
         "vars": dict_merge({
-            "ansible_ssh_host": first_ip(vmi),
+            "virtctl_name": vmi.metadata.name,
+            "virtctl_namespace": vmi.metadata.namespace,
+            "ansible_connection": "virtctl",
             "ansible_ssh_extra_args": extra_ssh_args,
             "ansible_become": False,
             "ansible_user": "root",
             "ansible_become_method": "sudo",
             "ansible_ssh_pass": "unknown"
-        }, ansible_annotation_vars(vmi.metadata.annotations))
+        }, ansible_annotation_vars(vmi.metadata.annotations), ssh_vars(vmi))
     }
 
 
@@ -72,8 +86,7 @@ def get_vms():
     master_node = master_nodes[0]
     extra_ssh_args = master_node.get("vars", {}).get("ssh_via_arguments", "")
 
-    return [vmi_entry(vmi, extra_ssh_args) for vmi in vmi_details
-            if vmi.status.interfaces]
+    return [vmi_entry(vmi, extra_ssh_args) for vmi in vmi_details]
 
 
 class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
