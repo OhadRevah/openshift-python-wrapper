@@ -24,6 +24,7 @@ python-bugzilla = "*"
 sh = "*"
 pytest-ordering = "*"
 pytest-testconfig = "*"
+ansible = {git = "https://github.com/ansible/ansible.git"}
 
 [requires]
 python_version = "3.7"
