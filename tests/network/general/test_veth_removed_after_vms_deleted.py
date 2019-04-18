@@ -47,7 +47,7 @@ class TestVethRemovedAfterVmsDeleted(object):
             vm_interfaces = vm_info.get('status', {}).get('interfaces', [])
             vm_node = vm_object.node()
             for pod in pytest.privileged_pods:
-                pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+                pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
                 pod_container = pytest.privileged_pod_container
                 pod_node = pod_object.node()
                 if pod_node == vm_node:

@@ -23,6 +23,8 @@ from .fixtures import (
     attach_ovs_bridge_to_bond,
 )
 
+pytestmark = pytest.mark.skip("Skip until OVS is supported")
+
 
 @pytest.mark.usefixtures(
     create_resources_from_yaml.__name__,

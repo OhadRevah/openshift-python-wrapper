@@ -3,14 +3,11 @@
 """
 Pytest fixtures file for CNV network tests
 """
-import logging
 
 import pytest
 
 from resources.virtual_machine_instance import VirtualMachineInstance
 from tests import utils as test_utils
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')

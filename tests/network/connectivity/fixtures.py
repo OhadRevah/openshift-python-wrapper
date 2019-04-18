@@ -20,7 +20,7 @@ def create_bond(request):
         Remove created BOND
         """
         for pod in pytest.privileged_pods:
-            pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+            pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
             pod_container = pytest.privileged_pod_container
             pod_object.exec(command=f"ip link del {bond_name}", container=pod_container)
     request.addfinalizer(fin)
@@ -29,7 +29,7 @@ def create_bond(request):
         f"ip link add {bond_name} type bond", f"ip link set {bond_name} type bond miimon 100 mode active-backup"
     ]
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
         pod_name = pod
         pod_container = pytest.privileged_pod_container
         for cmd in bond_commands:

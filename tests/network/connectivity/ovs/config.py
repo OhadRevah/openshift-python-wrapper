@@ -11,8 +11,6 @@ OVS_BOND_YAML = "tests/manifests/network/ovs-net-bond.yml"
 
 # OVS
 OVS_VSCTL = "ovs-vsctl"
-OVS_DB = "--db unix:/host/run/openvswitch/db.sock"
-OVS_CMD = f"{OVS_VSCTL} {OVS_DB}"
-OVS_VSCTL_ADD_BR = f"{OVS_CMD} add-br"
-OVS_VSCTL_ADD_PORT = f"{OVS_CMD} add-port"
-OVS_VSCTL_DEL_BR = f"{OVS_CMD} del-br"
+OVS_VSCTL_ADD_BR = f"{OVS_VSCTL} add-br"
+OVS_VSCTL_ADD_PORT = f"{OVS_VSCTL} add-port"
+OVS_VSCTL_DEL_BR = f"{OVS_VSCTL} del-br"

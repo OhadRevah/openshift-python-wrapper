@@ -10,6 +10,7 @@ NETWORK_NS = "network-tests-namespace"
 OVS_CNI = "ovs-cni"
 OVS_CNI_CONTAINER = "ovs-cni-marker"
 KUBE_SYSTEM_NS = "kube-system"
+OPENSHIFT_SDN_NS = "openshift-sdn"
 
 # LINUX BRIDGE CRDS YAMLS
 LINUX_BRIDGE_VLAN_100_YAML = "tests/manifests/network/bridge-vlan-100-net.yml"

@@ -21,13 +21,13 @@ def create_linux_bridges_real_nics(request):
         Remove created linux bridges
         """
         for pod in pytest.privileged_pods:
-            pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+            pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
             pod_container = pytest.privileged_pod_container
             pod_object.exec(command=f"ip_link_del {bridge_name}", container=pod_container)
     request.addfinalizer(fin)
 
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
         pod_name = pod
         pod_container = pytest.privileged_pod_container
         cmds = [
@@ -56,7 +56,7 @@ def create_linux_bridge_on_vxlan(request):
         Remove created linux bridges
         """
         for pod in pytest.privileged_pods:
-            pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+            pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
             pod_container = pytest.privileged_pod_container
             cmds = [
                 f"ip link del {bridge_name}",
@@ -67,7 +67,7 @@ def create_linux_bridge_on_vxlan(request):
     request.addfinalizer(fin)
 
     for idx, pod in enumerate(pytest.privileged_pods):
-        pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
         pod_container = pytest.privileged_pod_container
         node_name = pod_object.node()
         cmds = [
@@ -99,7 +99,7 @@ def attach_linux_bridge_to_bond(request):
     bond_bridge = test_utils.get_fixture_val(request=request, attr_name="bond_bridge")
 
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
+        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
         pod_container = pytest.privileged_pod_container
         cmds = [
             f"ip link add {bond_bridge} type bridge",

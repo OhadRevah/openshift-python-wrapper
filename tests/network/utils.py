@@ -20,7 +20,7 @@ def get_host_veth_sampler(pod, pod_container, expect_host_veth):
     Returns:
         bool: True if current veth number == expected veth number, False otherwise.
     """
-    out = pod.exec(command=config.IP_LINK_SHOW_BETH_CMD, container=pod_container)[1]
+    out = pod.exec(command=config.IP_LINK_SHOW_VETH_CMD, container=pod_container)[1]
     return int(out.strip()) == expect_host_veth
 
 
