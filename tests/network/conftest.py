@@ -115,7 +115,7 @@ def create_privileged_pods(request):
     assert resource.create(yaml_file=pods_yaml)
     wait_for_pods_to_match_compute_nodes_number(number_of_nodes=len(compute_nodes))
     privileged_pods = Pod().list_names(label_selector="app=privileged-test-pod")
-    for idx, pod in enumerate(privileged_pods):
+    for pod in privileged_pods:
         pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
         assert pod_object.wait_for_status(status=types.RUNNING)
     pytest.privileged_pods = privileged_pods
@@ -142,7 +142,7 @@ def is_bare_metal():
     """
     Check if setup is on bare-metal
     """
-    for idx, pod in enumerate(pytest.privileged_pods):
+    for pod in pytest.privileged_pods:
         pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
         pod_container = pytest.privileged_pod_container
         pytest.active_node_nics[pod] = []

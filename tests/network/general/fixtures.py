@@ -22,7 +22,7 @@ def create_linux_bridge(request):
             pod_object.exec(command=f"ip link del {bridge_name}", container=pod_container)
     request.addfinalizer(fin)
 
-    for idx, pod in enumerate(pytest.privileged_pods):
+    for pod in pytest.privileged_pods:
         pod_object = Pod(name=pod, namespace=pytest.privileged_pods_ns)
         pod_container = pytest.privileged_pod_container
         assert pod_object.exec(
