@@ -13,7 +13,7 @@ from tests.fixtures import (
     wait_for_vms_running,
     wait_for_vms_interfaces_report,
 )
-from tests.network.connectivity import utils
+from tests import utils
 from tests.network.connectivity.fixtures import create_bond
 from tests.network.fixtures import update_vms_pod_ip_info
 from . import config

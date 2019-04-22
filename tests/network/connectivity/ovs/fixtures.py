@@ -1,7 +1,5 @@
-
 import pytest
 
-from resources.pod import Pod
 from . import config
 
 
@@ -20,21 +18,20 @@ def create_ovs_bridges_real_nics(request):
         Remove created OVS bridges
         """
         for pod in pytest.privileged_pods:
-            pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-            pod_container = pytest.privileged_pod_container
-            pod_object.exec(command=f"{config.OVS_VSCTL_DEL_BR} {real_nics_bridge}", container=pod_container)
+            pod_container = pod.containers()[0].name
+            pod.exec(
+                command=["ovs-vsctl", "del-br", real_nics_bridge], container=pod_container
+            )
     request.addfinalizer(fin)
 
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-        pod_name = pod
-        pod_container = pytest.privileged_pod_container
+        pod_container = pod.containers()[0].name
         cmds = [
-            f"{config.OVS_VSCTL_ADD_BR} {real_nics_bridge}",
-            f"{config.OVS_VSCTL_ADD_PORT} {real_nics_bridge} {pytest.active_node_nics[pod_name][0]}",
+            ["ovs-vsctl", "add-br", real_nics_bridge],
+            ["ovs-vsctl", "add-port", real_nics_bridge, pytest.active_node_nics[pod.name][0]],
         ]
         for cmd in cmds:
-            assert pod_object.exec(command=cmd, container=pod_container)[0]
+            pod.exec(command=cmd, container=pod_container)
 
 
 @pytest.fixture(scope='class')
@@ -53,27 +50,29 @@ def create_ovs_bridge_on_vxlan(request):
         Remove created OVS bridges
         """
         for pod in pytest.privileged_pods:
-            pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-            pod_container = pytest.privileged_pod_container
-            pod_object.exec(command=f"{config.OVS_VSCTL_DEL_BR} {bridge_name_vxlan}", container=pod_container)
+            pod_container = pod.containers()[0].name
+            pod.exec(
+                command=["ovs-vsctl", "del-br", bridge_name_vxlan], container=pod_container
+            )
     request.addfinalizer(fin)
 
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-        pod_container = pytest.privileged_pod_container
-        node_name = pod_object.node()
-        cmds = [f"{config.OVS_VSCTL_ADD_BR} {bridge_name_vxlan}"]
+        pod_container = pod.containers()[0].name
+        node_name = pod.node()
+        cmds = ["ovs-vsctl", "add-br", bridge_name_vxlan]
         for name, ip in pytest.nodes_network_info.items():
             if name != node_name:
                 cmd = (
-                    f"{config.OVS_VSCTL_ADD_PORT} {bridge_name_vxlan} {vxlan_name} -- "
-                    f"set Interface {vxlan_name} type=vxlan options:remote_ip={ip}"
+                    [
+                        "ovs-vsctl", "add-port", bridge_name_vxlan, vxlan_name, " -- ",
+                        "set", "Interface", vxlan_name, "type=vxlan", f"options:remote_ip={ip}"
+                    ]
                 )
                 cmds.insert(1, cmd)
                 break
 
         for cmd in cmds:
-            assert pod_object.exec(command=cmd, container=pod_container)[0]
+            pod.exec(command=cmd, container=pod_container)
 
 
 @pytest.fixture(scope='class')
@@ -87,11 +86,10 @@ def attach_ovs_bridge_to_bond():
     bond_name = config.BOND_1
     bond_bridge = config.BRIDGE_BR1BOND
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-        pod_container = pytest.privileged_pod_container
+        pod_container = pod.containers()[0].name
         cmds = [
-            f"{config.OVS_VSCTL_ADD_BR} {bond_bridge}",
-            f"{config.OVS_VSCTL_ADD_PORT} {bond_bridge} {bond_name}"
+            ["ovs-vsctl", "add-br", bond_bridge],
+            ["ovs-vsctl", "add-port", bond_bridge, bond_name]
         ]
         for cmd in cmds:
-            assert pod_object.exec(command=cmd, container=pod_container)[0]
+            pod.exec(command=cmd, container=pod_container)

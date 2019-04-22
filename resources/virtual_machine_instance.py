@@ -3,34 +3,34 @@
 import logging
 import re
 
-from utilities import types
-from .resource import Resource
 from .pod import Pod
+from .resource import NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
 
 
-class VirtualMachineInstance(Resource):
+class VirtualMachineInstance(NamespacedResource):
     """
-    Virtual Machine object, inherited from Resource.
+    Virtual Machine Instance object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
+    api_version = 'kubevirt.io/v1alpha3'
+    kind = 'VirtualMachineInstance'
+
     def __init__(self, name, namespace=None):
-        super(VirtualMachineInstance, self).__init__()
-        self.name = name
-        self.namespace = namespace
-        self.api_version = types.CNV_API_VERSION
-        self.kind = types.VMI
+        super(VirtualMachineInstance, self).__init__(name=name, namespace=namespace)
 
     def virt_launcher_pod(self):
         """
         Get VMi virt-launcher Pod
 
         Returns:
-            str: virt-launcher Pod name
+            Pod: virt-launcher Pod
         """
-        pod = Pod(namespace=self.namespace)
-        return pod.search(regex=re.compile(rf'virt-launcher-{self.name}-\w+'))
+        pod_resource = Pod(namespace=self.namespace)
+        return pod_resource.search(
+            regex=re.compile(rf'virt-launcher-{self.name}-\w+')
+        )
 
     def running(self, logs=True):
         """
@@ -42,18 +42,36 @@ class VirtualMachineInstance(Resource):
         Returns:
             bool: True if VMI is running, False if not.
         """
-        if not self.wait_for_status(status=types.RUNNING):
-            LOGGER.error("VMi {self.name} failed to run")
+        if not self.wait_for_status(status='Running'):
+            LOGGER.error(f"{self.kind} {self.name} failed to run")
             if not logs:
                 return False
 
             virt_pod = self.virt_launcher_pod()
             if virt_pod:
-                virt_pod_obj = Pod(name=virt_pod, namespace=self.namespace)
-                LOGGER.debug(f"{virt_pod} *****LOGS*****")
-                LOGGER.debug(virt_pod_obj.logs(container="compute"))
+                LOGGER.debug(f"{virt_pod.name} *****LOGS*****")
+                LOGGER.debug(virt_pod.logs(container="compute"))
 
             LOGGER.debug(f"{self.name} *****LOGS*****")
             LOGGER.debug(self.logs())
             return False
         return True
+
+    def search(self, regex):
+        """
+        Search for VirtualMachineInstance
+
+        Args:
+            regex (re.compile): re.compile regex to search
+
+        Returns:
+            Resource: VirtualMachineInstance or None
+        """
+        all_ = self.list_names()
+        res = [r for r in all_ if regex.findall(r)]
+        if res:
+            return VirtualMachineInstance(
+                name=res[0],
+                namespace=self.namespace,
+            )
+        return None

@@ -2,91 +2,78 @@
 
 import logging
 
-from autologs.autologs import generate_logs
-
-from utilities import types, utils
-
-from .resource import SLEEP, TIMEOUT, Resource
+from utilities import utils
+from .node import Node
+from .resource import TIMEOUT, NamespacedResource
+from .virtual_machine_instance import VirtualMachineInstance
 
 LOGGER = logging.getLogger(__name__)
 
 
-class VirtualMachine(Resource):
+class VirtualMachine(NamespacedResource):
     """
     Virtual Machine object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
+    api_version = 'kubevirt.io/v1alpha3'
+    kind = 'VirtualMachine'
 
     def __init__(self, name=None, namespace=None):
-        super(VirtualMachine, self).__init__()
-        self.name = name
-        self.namespace = namespace
-        self.api_version = types.CNV_API_VERSION
-        self.kind = types.VM
+        super(VirtualMachine, self).__init__(name=name, namespace=namespace)
 
-    @generate_logs()
-    def start(self, timeout=TIMEOUT, sleep=SLEEP, wait=False):
+    def start(self, timeout=TIMEOUT, wait=False):
         """
         Start VM with virtctl
         Args:
             timeout (int): Time to wait for the resource.
-            sleep (int): Time to sleep between retries.
             wait (bool): If True wait else Not
 
         Returns:
             True if VM started, else False
-
         """
         res = utils.run_virtctl_command(command="start", namespace=self.namespace)[0]
         if wait and res:
-            return self.wait_for_status(sleep=sleep, timeout=timeout, status=True)
+            return self.wait_for_status(timeout=timeout, status=True)
         return res
 
-    @generate_logs()
-    def stop(self, timeout=TIMEOUT, sleep=SLEEP, wait=False):
+    def stop(self, timeout=TIMEOUT, wait=False):
         """
         Stop VM with virtctl
         Args:
             timeout (int): Time to wait for the resource.
-            sleep (int): Time to sleep between retries.
             wait (bool): If True wait else Not
 
         Returns:
             bool: True if VM stopped, else False
-
         """
         res = utils.run_virtctl_command(command="stop", namespace=self.namespace)[0]
         if wait and res:
-            return self.wait_for_status(sleep=sleep, timeout=timeout, status=False)
+            return self.wait_for_status(timeout=timeout, status=False)
         return res
 
-    @generate_logs()
-    def wait_for_status(self, status, timeout=TIMEOUT, **kwargs):
+    def wait_for_status(self, status, timeout=TIMEOUT, label_selector=None, resource_version=None):
         """
         Wait for resource to be in status
 
         Args:
-            status (bool): Expected status(True vm is running, False vm is not running).
+            status (bool): Expected status.
             timeout (int): Time to wait for the resource.
-
-        Keyword Args:
-            pretty
-            _continue
-            include_uninitialized
-            field_selector
-            label_selector
-            limit
-            resource_version
-            timeout_seconds
-            watch
-            async_req
+            label_selector (str): The label selector with which to filter results
+            resource_version (str): The version with which to filter results. Only events with
+                a resource_version greater than this value will be returned
 
         Returns:
             bool: True if resource in desire status, False if timeout reached.
         """
-        resources = self.api(**kwargs)
-        for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
-            if rsc.get('raw_object', {}).get('spec', {}).get('running') == status:
+        LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
+        resources = self.api()
+        for rsc in resources.watch(
+            namespace=self.namespace,
+            timeout=timeout,
+            label_selector=label_selector,
+            resource_version=resource_version
+        ):
+            if rsc['raw_object']['spec']['running'] == status:
                 return True
         return False
 
@@ -95,6 +82,44 @@ class VirtualMachine(Resource):
         Get the node name where the VM is running
 
         Returns:
-            str: Node name
+            Node: Node
         """
-        return self.get().status.nodeName
+        return Node(name=self.get().status.nodeName)
+
+    def vmi(self):
+        """
+        Get VMI
+
+        Returns:
+            VirtualMachineInstance: VMI
+        """
+        return VirtualMachineInstance(name=self.name, namespace=self.namespace)
+
+    def ready(self):
+        """
+        Get VM status
+
+        Returns:
+            str: Running if Running else Stopped
+        """
+        LOGGER.info(f"Check if {self.kind} {self.name} is ready")
+        return self.get().status['ready']
+
+    def search(self, regex):
+        """
+        Search for VirtualMachine
+
+        Args:
+            regex (re.compile): re.compile regex to search
+
+        Returns:
+            Resource: VirtualMachine or None
+        """
+        all_ = self.list_names()
+        res = [r for r in all_ if regex.findall(r)]
+        if res:
+            return VirtualMachine(
+                name=res[0],
+                namespace=self.namespace,
+            )
+        return None

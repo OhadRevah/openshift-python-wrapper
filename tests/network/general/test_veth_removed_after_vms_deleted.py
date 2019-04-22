@@ -3,16 +3,16 @@
 """
 Veth interfaces deleted after VMs are removed
 """
+
 import pytest
 
-from resources.pod import Pod
 from resources.virtual_machine import VirtualMachine
 from tests.fixtures import (
     create_resources_from_yaml,
     create_vms_from_template,
     wait_for_vms_running,
 )
-from tests.network.utils import get_host_veth_sampler
+from tests.utils import get_host_veth_sampler
 from utilities import utils
 from . import config
 from .fixtures import create_linux_bridge
@@ -47,20 +47,16 @@ class TestVethRemovedAfterVmsDeleted(object):
             vm_interfaces = vm_info.get('status', {}).get('interfaces', [])
             vm_node = vm_object.node()
             for pod in pytest.privileged_pods:
-                pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-                pod_container = pytest.privileged_pod_container
-                pod_node = pod_object.node()
-                if pod_node == vm_node:
-                    err, out = pod_object.exec(
-                        command=config.IP_LINK_SHOW_BETH_CMD, container=pod_container
-                    )
-                    assert err
+                pod_container = pod.containers()[0].name
+                pod_node = pod.node()
+                if pod_node.name == vm_node.name:
+                    out = pod.exec(command=config.IP_LINK_SHOW_VETH_CMD, container=pod_container)
                     host_vath_before_delete = int(out.strip())
                     assert vm_object.delete(wait=True)
                     expect_host_veth = host_vath_before_delete - len(vm_interfaces)
 
                     sampler = utils.TimeoutSampler(
                         timeout=30, sleep=1, func=get_host_veth_sampler,
-                        pod=pod_object, pod_container=pod_container, expect_host_veth=expect_host_veth
+                        pod=pod, pod_container=pod_container, expect_host_veth=expect_host_veth
                     )
                     sampler.wait_for_func_status(result=True)

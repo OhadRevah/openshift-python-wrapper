@@ -1,10 +1,13 @@
+import json
 import logging
 import operator
 
+import bitmath
 from _pytest.fixtures import FixtureLookupError
 from autologs.autologs import generate_logs
 
-from utilities import utils
+from utilities import utils, console
+from . import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -88,3 +91,58 @@ def get_fixture_val(request, attr_name, default_value=None):
         return val
     except FixtureLookupError:
         return get_attr_helper(attribute=attr_name, obj=request.cls, default=default_value)
+
+
+@generate_logs()
+def get_host_veth_sampler(pod, pod_container, expect_host_veth):
+    """
+    Wait until host veth are equal to expected veth number
+
+    Args:
+        pod (Pod): Pod object.
+        pod_container (str): Pod container name.
+        expect_host_veth (int): Expected number of veth on the host.
+
+    Returns:
+        bool: True if current veth number == expected veth number, False otherwise.
+    """
+    out = pod.exec(command=config.IP_LINK_SHOW_VETH_CMD, container=pod_container)
+    return int(out.strip()) == expect_host_veth
+
+
+def run_test_connectivity(src_vm, dst_vm, dst_ip, positive):
+    """
+    Check connectivity
+    """
+    expected = '0% packet loss' if positive else '100% packet loss'
+    LOGGER.info(
+        f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm} to {dst_vm}"
+    )
+    with console.Fedora(vm=src_vm, namespace=config.NETWORK_NS) as src_vm_console:
+        src_vm_console.sendline(f'ping -w 3 {dst_ip}')
+        src_vm_console.expect(expected)
+
+
+def run_test_guest_performance(server_vm, client_vm, listen_ip):
+    """
+    In-guest performance bandwidth passthrough
+
+    Args:
+        server_vm (str): VM name that will be IPERF server
+        client_vm (str): VM name that will be IPERF client
+        listen_ip (str): The IP to listen on the server
+    """
+    namespace = config.NETWORK_NS
+    with console.Fedora(vm=server_vm, namespace=namespace) as server_vm_console:
+        server_vm_console.sendline(f'iperf3 -sB {listen_ip}')
+        with console.Fedora(vm=client_vm, namespace=namespace) as client_vm_console:
+            client_vm_console.sendline(f'iperf3 -c {listen_ip} -t 5 -u -J')
+            client_vm_console.expect('}\r\r\n}\r\r\n')
+            iperf_data = client_vm_console.before
+        server_vm_console.sendline(chr(3))  # Send ctrl+c to kill iperf3 server
+
+    iperf_data += '}\r\r\n}\r\r\n'
+    iperf_json = json.loads(iperf_data[iperf_data.find('{'):])
+    sum_sent = iperf_json.get('end').get('sum')
+    bits_per_second = int(sum_sent.get('bits_per_second'))
+    return float(bitmath.Byte(bits_per_second).GiB)

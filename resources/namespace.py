@@ -1,24 +1,26 @@
-from utilities import types, utils
-
-from .resource import Resource
+from .resource import NamespacedResource
 
 
-class NameSpace(Resource):
+class NameSpace(NamespacedResource):
     """
     NameSpace object, inherited from Resource.
     """
-    def __init__(self, name):
-        super(NameSpace, self).__init__()
-        self.name = name
-        self.namespace = self.name
-        self.api_version = types.API_VERSION_V1
-        self.kind = types.NAMESPACE
+    api_version = 'v1'
+    kind = 'Namespace'
 
-    def work_on(self):
+    def __init__(self, name):
+        super(NameSpace, self).__init__(name=name, namespace=name)
+
+    def search(self, regex):
         """
-        Switch to name space
+        Search for NameSpace
+
+        Args:
+            regex (re.compile): re.compile regex to search
 
         Returns:
-            bool: True f switched , False otherwise
+            Resource: NameSpace or None
         """
-        return utils.run_oc_command(command=f"project {self.name}")[0]
+        all_ = self.list_names()
+        res = [r for r in all_ if regex.findall(r)]
+        return NameSpace(name=res[0]) if res else None

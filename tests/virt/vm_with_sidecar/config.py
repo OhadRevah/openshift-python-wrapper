@@ -1,6 +1,6 @@
 # flake8: noqa: F401, F403, F405
 
-from tests.virt.config import *
+from tests.config import *
 
 VM_NAME = "vmi-with-sidecar-hook"
 CLOUD_INIT = {

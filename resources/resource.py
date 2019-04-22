@@ -1,48 +1,41 @@
 import logging
-import os
 
+import kubernetes
 import urllib3
 import yaml
-from autologs.autologs import generate_logs
-from kubernetes import config as kube_config
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
-
-from utilities import utils
+from . import utils
+from utilities import utils as ext_utils
 
 LOGGER = logging.getLogger(__name__)
 TIMEOUT = 120
-SLEEP = 1
 
 
 class Resource(object):
     """
     DynamicClient Resource class
     """
-    def __init__(self, name=None, api_version=None, kind=None, namespace=None):
+    api_version = None
+    kind = None
+
+    def __init__(self, name=None):
         """
         Create DynamicClient
 
         Args:
             name (str): Resource name
-            api_version (str): Resource API version
-            kind (str): Resource kind
-            namespace (str): Resource namespace
         """
-        urllib3.disable_warnings()
         try:
-            kubeconfig = os.getenv('KUBECONFIG')
-            self.client = DynamicClient(kube_config.new_client_from_config(config_file=kubeconfig))
-        except (kube_config.ConfigException, urllib3.exceptions.MaxRetryError):
+            self.client = DynamicClient(kubernetes.config.new_client_from_config())
+        except (kubernetes.config.ConfigException, urllib3.exceptions.MaxRetryError):
             LOGGER.error('You need to be login to cluster or have $KUBECONFIG env configured')
             raise
 
-        self.kind = kind
-        self.namespace = namespace
-        self.api_version = api_version
+        self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
+        self.namespace = None
         self.name = name
 
-    @generate_logs(info=False)
     def api(self, **kwargs):
         """
         Get resource API
@@ -58,14 +51,12 @@ class Resource(object):
             timeout_seconds
             watch
             async_req
-            namespace
 
         Returns:
             Resource: Resource object.
         """
         return self.client.resources.get(api_version=self.api_version, kind=self.kind, **kwargs)
 
-    @generate_logs(info=False)
     def get(self, **kwargs):
         """
         Get resource
@@ -84,15 +75,26 @@ class Resource(object):
             namespace
 
         Returns:
-            dict: Resource dict.
+            ResourceField: ResourceField object.
         """
-        LOGGER.info(f"Get resource {self.name}")
-        kwargs['namespace'] = self.namespace
-        resources = self.list(**kwargs)
-        res = [i for i in resources if i.get('metadata', {}).get('name') == self.name]
-        return res[0] if res else {}
+        LOGGER.info(f"Get {self.kind} {self.name}")
+        for resource_field in self.list(**kwargs):
+            if resource_field.metadata.name == self.name:
+                return resource_field
+        return None
 
-    @generate_logs(info=False)
+    def get_dict(self):
+        """
+        Get resource as dict
+
+        Returns:
+            dict: Resource.
+        """
+        res = self.api().get(
+            namespace=self.namespace, field_selector=f'metadata.name={self.name}'
+        ).to_dict()
+        return res['items'][0] if res['items'] else {}
+
     def list(self, **kwargs):
         """
         Get resources
@@ -108,15 +110,13 @@ class Resource(object):
             timeout_seconds
             watch
             async_req
-            namespace
 
         Returns:
-            list: Resources.
+            list: ResourceField.
         """
-        LOGGER.info(f"Get all resources names of kind {self.kind}")
-        return self.api().get(**kwargs).items
+        for resource_field in self.api().get(namespace=self.namespace, **kwargs).items:
+            yield resource_field
 
-    @generate_logs(info=False)
     def list_names(self, **kwargs):
         """
         Get resources names list
@@ -137,71 +137,96 @@ class Resource(object):
         Returns:
             list: Resources.
         """
-        LOGGER.info(f"Get all resources names of kind {self.kind}")
-        list_items = self.api().get(**kwargs).items
-        return [i.get('metadata', {}).get('name') for i in list_items]
+        LOGGER.info(f"Get all {self.kind} names ")
+        return [i.metadata.name for i in self.list(**kwargs)]
 
-    @generate_logs(info=False)
-    def wait(self, timeout=TIMEOUT, **kwargs):
+    def wait(self, timeout=TIMEOUT, label_selector=None, resource_version=None):
         """
         Wait for resource
 
         Args:
             timeout (int): Time to wait for the resource.
-
-        Keyword Args:
-            name
-            label_selector
-            field_selector
-            resource_version
+            label_selector (str): The label selector with which to filter results
+            resource_version (str): The version with which to filter results. Only events with
+                a resource_version greater than this value will be returned
 
         Returns:
             bool: True if resource exists, False if timeout reached.
         """
-        LOGGER.info(f"Wait until {self.name} is created")
-        resources = self.api(**kwargs)
-        for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
-            if rsc.get('raw_object', {}).get('metadata', {}).get('name') == self.name:
-                if rsc.get('type') == 'ADDED':
-                    return True
+        LOGGER.info(f"Wait until {self.kind} {self.name} is created")
+        for rsc in self.api().watch(
+            namespace=self.namespace,
+            timeout=timeout,
+            resource_version=resource_version,
+            label_selector=label_selector,
+            field_selector=f"metadata.name=={self.name}"
+        ):
+            if rsc['type'] == 'ADDED':
+                return True
         return False
 
-    @generate_logs(info=False)
-    def wait_until_gone(self, timeout=TIMEOUT, sleep=SLEEP):
+    def wait_deleted(self, timeout=TIMEOUT):
         """
-        Wait until resource is gone
+        Wait until resource is deleted
 
         Args:
             timeout (int): Time to wait for the resource.
-            sleep (int): Time to sleep between retries.
 
         Returns:
             bool: True if resource is gone, False if timeout reached.
         """
-        LOGGER.info(f"Wait until {self.name} is gone")
-        sample = utils.TimeoutSampler(timeout=timeout, sleep=sleep, func=lambda: bool(self.get()))
-        return sample.wait_for_func_status(result=False)
+        supported_kind_to_watch = [
+            'Pod', 'NameSpace', 'ConfigMap', 'Node', 'VirtualMachine', 'VirtualMachineInstance'
+        ]
+        LOGGER.info(f"Wait until {self.kind} {self.name} is deleted")
 
-    @generate_logs(info=False)
-    def wait_for_status(self, status, timeout=TIMEOUT, **kwargs):
+        if self.kind not in supported_kind_to_watch:
+            samples = utils.TimeoutSampler(
+                timeout=timeout, sleep=1, func=lambda: bool(self.get())
+            )
+            for sample in samples:
+                if not sample:
+                    return True
+            return False
+
+        watcher = kubernetes.watch.Watch()
+        for event in watcher.stream(
+            func=self.kube_api.list_event_for_all_namespaces, timeout_seconds=timeout,
+        ):
+            if event['object'].reason == 'SuccessfulDelete':
+                event_object = event['object'].involved_object
+                if event_object.name == self.name and event_object.namespace == self.namespace:
+                    watcher.stop()
+                    return True
+        return False
+
+    def wait_for_status(self, status, timeout=TIMEOUT, label_selector=None, resource_version=None):
         """
         Wait for resource to be in status
 
         Args:
             status (str): Expected status.
             timeout (int): Time to wait for the resource.
+            label_selector (str): The label selector with which to filter results
+            resource_version (str): The version with which to filter results. Only events with
+                a resource_version greater than this value will be returned
 
         Returns:
             bool: True if resource in desire status, False if timeout reached.
         """
-        LOGGER.info(f"Wait for {self.name} status to be {status}")
-        resources = self.api(**kwargs)
-        for rsc in resources.watch(namespace=self.namespace, timeout=timeout, **kwargs):
-            if rsc.get('raw_object', {}).get('status', {}).get('phase') == status:
+        LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
+        resources = self.api()
+        for rsc in resources.watch(
+            namespace=self.namespace,
+            timeout=timeout,
+            label_selector=label_selector,
+            resource_version=resource_version,
+            field_selector=f"metadata.name=={self.name}"
+        ):
+            if rsc['raw_object']['status'].get('phase') == status:
                 return True
         return False
 
-    @generate_logs(info=False)
     def create(self, yaml_file=None, resource_dict=None, wait=False):
         """
         Create resource from given yaml file or from dict
@@ -219,25 +244,24 @@ class Resource(object):
                 data = yaml.full_load(stream)
 
             self._extract_data_from_yaml(yaml_data=data)
-            res = utils.run_oc_command(command=f'create -f {yaml_file}', namespace=self.namespace)[0]
 
         else:
             if not resource_dict:
-                resource_dict = {
+                data = {
                     'apiVersion': self.api_version,
                     'kind': self.kind,
                     'metadata': {'name': self.namespace}
                 }
+            else:
+                data = resource_dict
 
-            resource_list = self.api()
-            res = resource_list.create(body=resource_dict, namespace=self.namespace)
+        res = self.api().create(body=data, namespace=self.namespace)
 
         LOGGER.info(f"Create {self.name}")
         if wait and res:
             return self.wait()
         return res
 
-    @generate_logs(info=False)
     def delete(self, yaml_file=None, wait=False):
         """
         Delete resource
@@ -254,21 +278,18 @@ class Resource(object):
                 data = yaml.full_load(stream)
 
             self._extract_data_from_yaml(yaml_data=data)
-            res = utils.run_oc_command(command=f'delete -f {yaml_file}', namespace=self.namespace)[0]
 
-        else:
-            resource_list = self.api()
-            try:
-                res = resource_list.delete(name=self.name, namespace=self.namespace)
-            except NotFoundError:
-                return False
+        resource_list = self.api()
+        try:
+            res = resource_list.delete(name=self.name, namespace=self.namespace)
+        except NotFoundError:
+            return False
 
         LOGGER.info(f"Delete {self.name}")
         if wait and res:
-            return self.wait_until_gone()
+            return self.wait_deleted()
         return res
 
-    @generate_logs(info=False)
     def status(self):
         """
         Get resource status
@@ -278,7 +299,7 @@ class Resource(object):
         Returns:
            str: Status
         """
-        LOGGER.info(f"Get {self.name} status")
+        LOGGER.info(f"Get {self.kind} {self.name} status")
         return self.get().status.phase
 
     def _extract_data_from_yaml(self, yaml_data):
@@ -288,13 +309,11 @@ class Resource(object):
         Args:
             yaml_data (dict): Dict from yaml file
         """
-        namespace = yaml_data.get('metadata').get('namespace')
-        self.namespace = self.namespace or namespace
-        self.name = yaml_data.get('metadata').get('name')
-        self.api_version = yaml_data.get('apiVersion')
-        self.kind = yaml_data.get('kind')
+        self.namespace = self.namespace or yaml_data['metadata'].get('namespace')
+        self.name = yaml_data['metadata']['name']
+        self.api_version = yaml_data['apiVersion']
+        self.kind = yaml_data['kind']
 
-    @generate_logs(info=False)
     def update(self, resource_dict):
         """
         Update resource with resource dict
@@ -302,11 +321,9 @@ class Resource(object):
         Args:
             resource_dict: Resource dictionary
         """
-        LOGGER.info(f"Update {self.name}")
-        resource_list = self.api()
-        resource_list.replace(body=resource_dict, namespace=self.namespace)
+        LOGGER.info(f"Update {self.kind} {self.name}")
+        self.api().replace(body=resource_dict, namespace=self.namespace)
 
-    @generate_logs(info=False)
     def logs(self, container=None):
         """
         Get resource logs
@@ -317,14 +334,13 @@ class Resource(object):
         Returns:
             str: Resource logs
         """
-        LOGGER.info(f"Get {self.name} logs")
+        LOGGER.info(f"Get {self.kind} {self.name} logs")
         cmd = f"logs {self.name}"
         if container:
             cmd += f" -c {container}"
-        res, out = utils.run_oc_command(command=cmd)
+        res, out = ext_utils.run_oc_command(command=cmd)
         return res if not res else out
 
-    @generate_logs()
     def search(self, regex):
         """
         Search for resource
@@ -333,8 +349,27 @@ class Resource(object):
             regex (re.compile): re.compile regex to search
 
         Returns:
-            str: Resource name
+            Resource: Resource or None
         """
-        all_ = self.list_names()
-        res = [r for r in all_ if regex.findall(r)]
-        return res[0] if res else ""
+        raise NotImplementedError
+
+
+class NamespacedResource(Resource):
+    """
+    NameSpaced object, inherited from Resource.
+    """
+    def __init__(self, namespace, name=None):
+        super(NamespacedResource, self).__init__(name=name)
+        self.namespace = namespace
+
+    def search(self, regex):
+        """
+        Search for resource
+
+        Args:
+            regex (re.compile): re.compile regex to search
+
+        Returns:
+            Resource: Resource or None
+        """
+        raise NotImplementedError

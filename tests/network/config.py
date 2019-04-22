@@ -2,11 +2,8 @@
 
 from tests.config import *
 
+
 #  GENERAL
-IP_LINK_SHOW_VETH_CMD = 'bash -c "ip -o link show type veth | wc -l"'
-GET_NICS_CMD = "bash -c 'ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev'"
-CHECK_NIC_DRIVER_CMD = "bash -c 'basename $(readlink -f /sys/class/net/{nic}/device/driver/module/)'"
-NETWORK_NS = "network-tests-namespace"
 OVS_CNI = "ovs-cni"
 OVS_CNI_CONTAINER = "ovs-cni-marker"
 KUBE_SYSTEM_NS = "kube-system"

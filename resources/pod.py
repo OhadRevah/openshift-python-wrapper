@@ -1,18 +1,38 @@
-from utilities import types, utils
+import json
 
-from .resource import Resource
+import kubernetes
+
+from .node import Node
+from .resource import NamespacedResource
 
 
-class Pod(Resource):
+class ExecOnPodError(Exception):
+    def __init__(self, command, rc, out, err):
+        self.cmd = command
+        self.rc = rc
+        self.out = out
+        self.err = err
+
+    def __str__(self):
+        return (
+            f"Command execution failure: "
+            f"{self.cmd}, "
+            f"RC: {self.rc}, "
+            f"OUT: {self.out}, "
+            f"ERR: {self.err}"
+        )
+
+
+class Pod(NamespacedResource):
     """
-    NameSpace object, inherited from Resource.
+    Pod object, inherited from Resource.
     """
+    api_version = 'v1'
+    kind = 'Pod'
+
     def __init__(self, name=None, namespace=None):
-        super(Pod, self).__init__()
-        self.name = name
-        self.namespace = namespace
-        self.api_version = types.API_VERSION_V1
-        self.kind = types.POD
+        super(Pod, self).__init__(name=name, namespace=namespace)
+        self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
 
     def containers(self):
         """
@@ -23,33 +43,69 @@ class Pod(Resource):
         """
         return self.get().spec.containers
 
-    def exec(self, command, container):
+    def exec(self, command, timeout=60, container=None):
         """
-        Run command on pod.
+        Run command on Pod
 
         Args:
-            command (str): Command to run.
-            container (str): Container name if pod has more then one.
+            command (list): Command to run.
+            timeout (int): Time to wait for the command.
+            container (str): Container name where to exec the command.
 
         Returns:
-            tuple: True, out if command succeeded, False, err otherwise.
+            str: Command output.
+
+        Raises:
+            ExecOnPodError: If the command failed.
         """
-        cmd = f"exec -i {self.name}"
-        if self.namespace:
-            cmd += f" -n {self.namespace}"
-
-        if container:
-            cmd += f" -c {container}"
-
-        cmd += f" -- {command}"
-
-        return utils.run_oc_command(command=cmd)
+        resp = kubernetes.stream.stream(
+            func=self.kube_api.connect_get_namespaced_pod_exec,
+            name=self.name,
+            namespace=self.namespace,
+            command=command,
+            container=container or self.containers()[0].name,
+            stderr=True, stdin=False,
+            stdout=True, tty=False,
+            _preload_content=False
+        )
+        resp.run_forever(timeout=timeout)
+        stdout = resp.read_stdout()
+        stderr = resp.read_stderr()
+        error_channel = json.loads(resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL))
+        if error_channel['status'] == 'Success':
+            returncode = 0
+        else:
+            returncode = [
+                int(cause['message']) for cause in error_channel['details']['causes']
+                if cause['reason'] == 'ExitCode'][0]
+        if returncode:
+            raise ExecOnPodError(command=command, rc=returncode, out=stdout, err=stderr)
+        return stdout
 
     def node(self):
         """
         Get the node name where the Pod is running
 
         Returns:
-            str: Node name
+            Node: Node
         """
-        return self.get().spec.nodeName
+        return Node(name=self.get().spec.nodeName)
+
+    def search(self, regex):
+        """
+        Search for Pod
+
+        Args:
+            regex (re.compile): re.compile regex to search
+
+        Returns:
+            Resource: Pod or None
+        """
+        all_ = self.list_names()
+        res = [r for r in all_ if regex.findall(r)]
+        if res:
+            return Pod(
+                name=res[0],
+                namespace=self.namespace,
+            )
+        return None

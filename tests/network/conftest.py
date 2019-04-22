@@ -5,6 +5,7 @@ Pytest conftest file for CNV network tests
 """
 
 import pytest
+from pytest_testconfig import config as py_config
 
 from resources.namespace import NameSpace
 from resources.node import Node
@@ -40,7 +41,6 @@ def create_namespaces(request):
     ns = NameSpace(name=config.NETWORK_NS)
     ns.create(wait=True)
     ns.wait_for_status(status=types.ACTIVE)
-    ns.work_on()
 
 
 @pytest.fixture(scope='session')
@@ -48,16 +48,13 @@ def get_privileged_pods():
     """
     Get ovs-cni pods names
     """
-    privileged_pods = [
-        i for i in Pod().list_names(namespace=config.OPENSHIFT_SDN_NS) if i.startswith("ovs-")
-    ]
+    privileged_pods = Pod().list_names(label_selector=py_config['priviliged_pod_label_selector'])
     for pod in privileged_pods:
         pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
         node = pod_object.node()
-        node_obj = Node(name=node, namespace=config.OPENSHIFT_SDN_NS)
-        node_data = node_obj.get()
+        node_data = node.get()
         if [i for i in node_data.metadata.labels.keys() if 'worker' in i]:
-            pytest.privileged_pods.append(pod)
+            pytest.privileged_pods.append(pod_object)
             pod_containers = pod_object.containers()
             if pod_containers:
                 pytest.privileged_pod_container = pod_containers[0].name
@@ -87,29 +84,34 @@ def is_bare_metal():
     Check if setup is on bare-metal
     """
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-        pod_container = pytest.privileged_pod_container
-        pytest.active_node_nics[pod] = []
-        assert pod_object.wait_for_status(status=types.RUNNING)
-        err, nics = pod_object.exec(command=config.GET_NICS_CMD, container=pod_container)
-        assert err
+        pod_container = pod.containers()[0].name
+        pytest.active_node_nics[pod.name] = []
+        assert pod.wait_for_status(status=types.RUNNING)
+        nics = pod.exec(
+            command=[
+                "bash", "-c",
+                "ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev"
+            ], container=pod_container
+        )
         nics = nics.splitlines()
-        err, default_gw = pod_object.exec(command="ip route show default", container=pod_container)
-        assert err
+        default_gw = pod.exec(
+            command=["ip", "route", "show", "default"], container=pod_container
+        )
         for nic in nics:
-            err, nic_state = pod_object.exec(
-                command=f"cat /sys/class/net/{nic}/operstate", container=pod_container
+            nic_state = pod.exec(
+                command=["cat", f"/sys/class/net/{nic}/operstate"], container=pod_container
             )
-            assert err
             if nic_state.strip() == "up":
                 if nic in [i for i in default_gw.splitlines() if 'default' in i][0]:
                     continue
 
-                pytest.active_node_nics[pod].append(nic)
-                err, driver = pod_object.exec(
-                    command=config.CHECK_NIC_DRIVER_CMD.format(nic=nic), container=pod_container
+                pytest.active_node_nics[pod.name].append(nic)
+                driver = pod.exec(
+                    command=[
+                        "bash", "-c",
+                        f"basename $(readlink -f /sys/class/net/{nic}/device/driver/module/)"
+                    ], container=pod_container
                 )
-                assert err
                 pytest.real_nics_env = driver.strip() != "virtio_net"
 
 
@@ -119,5 +121,5 @@ def is_bond_supported():
     Check if setup support BOND (have more then 2 NICs up)
     """
     pytest.bond_support_env = max(
-        [len(pytest.active_node_nics[i]) for i in pytest.privileged_pods]
+        [len(pytest.active_node_nics[i.name]) for i in pytest.privileged_pods]
     ) > 2

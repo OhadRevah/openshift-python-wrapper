@@ -20,7 +20,6 @@ def pytest_configure():
     pytest.real_nics_env = None
     pytest.bond_support_env = None
     pytest.privileged_pods = []
-    pytest.privileged_pod_container = None
 
 
 def pytest_collection_modifyitems(session, config, items):

@@ -13,7 +13,7 @@ from tests.fixtures import (
     wait_for_vms_running,
     wait_for_vms_interfaces_report,
 )
-from tests.network.connectivity import utils
+from tests import utils
 from tests.network.connectivity.fixtures import create_bond
 from tests.network.fixtures import update_vms_pod_ip_info
 from . import config
@@ -70,7 +70,7 @@ class TestConnectivity(object):
             'Connectivity_between_VM_to_VM_over_L2_Linux_bridge_network',
             'Connectivity_between_VM_to_VM_over_L2_Linux_bridge_VLAN_network',
             'Connectivity_between_VM_to_VM_over_L2_Linux_bridge_on_BOND_network',
-            'Negative:No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs'
+            'Negative_No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs'
         ]
     )
     def test_connectivity(self, bridge):
@@ -105,7 +105,7 @@ class TestConnectivity(object):
     )
     def test_guest_performance(self, interface_id):
         """
-        In-guest performance bandwidth passthrough over OVS
+        In-guest performance bandwidth passthrough over Linux bridge
         """
         if not pytest.real_nics_env:
             pytest.skip(msg='Only run on bare metal env')

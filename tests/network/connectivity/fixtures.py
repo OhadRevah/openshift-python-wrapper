@@ -1,7 +1,5 @@
-
 import pytest
 
-from resources.pod import Pod
 from . import config
 
 
@@ -20,39 +18,29 @@ def create_bond(request):
         Remove created BOND
         """
         for pod in pytest.privileged_pods:
-            pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-            pod_container = pytest.privileged_pod_container
-            pod_object.exec(command=f"ip link del {bond_name}", container=pod_container)
+            pod_container = pod.containers()[0].name
+            pod.exec(command=["ip", "link", "del", bond_name], container=pod_container)
     request.addfinalizer(fin)
 
     bond_commands = [
-        f"ip link add {bond_name} type bond", f"ip link set {bond_name} type bond miimon 100 mode active-backup"
+        ["ip", "link", "add", bond_name, "type", "bond"],
+        ["ip", "link", "set", bond_name, "type", "bond", "miimon", "100", "mode", "active-backup"]
     ]
     for pod in pytest.privileged_pods:
-        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-        pod_name = pod
-        pod_container = pytest.privileged_pod_container
+        pod_container = pod.containers()[0].name
         for cmd in bond_commands:
-            assert pod_object.exec(command=cmd, container=pod_container)[0]
+            pod.exec(command=cmd, container=pod_container)
 
-        for nic in pytest.active_node_nics[pod_name][1:3]:
-            assert pod_object.exec(
-                command=config.IP_LINK_INTERFACE_DOWN.format(interface=nic), container=pod_container
-            )[0]
+        for nic in pytest.active_node_nics[pod.name][1:3]:
+            pod.exec(command=["ip", "link", "set", nic, "down"], container=pod_container)
+            pod.exec(
+                command=["ip", "link", "set", nic, "master", bond_name], container=pod_container
+            )
+            pod.exec(command=["ip", "link", "set", nic, "up"], container=pod_container)
 
-            assert pod_object.exec(
-                command=f"ip link set {nic} master {bond_name}", container=pod_container
-            )[0]
-
-            assert pod_object.exec(
-                command=config.IP_LINK_INTERFACE_UP.format(interface=nic), container=pod_container
-            )[0]
-
-        assert pod_object.exec(
-            command=config.IP_LINK_INTERFACE_UP.format(interface=bond_name), container=pod_container
-        )[0]
-
-        res, out = pod_object.exec(command=f"ip link show {bond_name}", container=pod_container)
-
-        assert res
+        pod.exec(
+            command=["ip", "link", "set", bond_name, "down"],
+            container=pod_container
+        )
+        out = pod.exec(command=["ip", "link", "show", bond_name], container=pod_container)
         assert "state UP" in out

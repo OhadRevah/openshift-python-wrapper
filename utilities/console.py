@@ -1,9 +1,8 @@
 
 import logging
-from autologs.autologs import generate_logs
-
 
 import pexpect
+from autologs.autologs import generate_logs
 
 LOGGER = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ import logging
 
 import pytest
 
-from resources.resource import Resource
+from resources.resource import NamespacedResource
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_instance import VirtualMachineInstance
 from tests import utils as test_utils
@@ -25,14 +25,14 @@ def create_resources_from_yaml(request):
     """
     namespace = test_utils.get_fixture_val(request=request, attr_name="namespace")
     yamls = test_utils.get_fixture_val(request=request, attr_name="yamls")
-    resource = Resource(namespace=namespace)
+    resource = NamespacedResource(namespace=namespace)
 
     def fin():
         """
         Remove resources from yamls
         """
         for yaml_ in yamls:
-            Resource().delete(yaml_file=yaml_, wait=True)
+            resource.delete(yaml_file=yaml_)
     request.addfinalizer(fin)
 
     for yaml_ in yamls:
