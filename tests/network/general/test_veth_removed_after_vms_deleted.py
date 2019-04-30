@@ -12,10 +12,27 @@ from tests.fixtures import (
     create_vms_from_template,
     wait_for_vms_running,
 )
-from tests.utils import get_host_veth_sampler
 from utilities import utils
 from . import config
 from .fixtures import create_linux_bridge
+
+
+def count_veth_devices_on_host(pod, pod_container):
+    """
+    Return how many veth devices exist on the host running pod
+
+    Args:
+        pod (Pod): Pod object.
+        pod_container (str): Pod container name.
+
+    Returns:
+        int: number of veth devices on host
+    """
+    out = pod.exec(
+        command=['bash', '-c', 'ip -o link show type veth | wc -l'],
+        container=pod_container)
+
+    return int(out.strip())
 
 
 @pytest.mark.usefixtures(
@@ -50,13 +67,14 @@ class TestVethRemovedAfterVmsDeleted(object):
                 pod_container = pod.containers()[0].name
                 pod_node = pod.node()
                 if pod_node.name == vm_node.name:
-                    out = pod.exec(command=config.IP_LINK_SHOW_VETH_CMD, container=pod_container)
-                    host_vath_before_delete = int(out.strip())
+                    host_vath_before_delete = count_veth_devices_on_host(pod, pod_container)
                     assert vm_object.delete(wait=True)
                     expect_host_veth = host_vath_before_delete - len(vm_interfaces)
 
                     sampler = utils.TimeoutSampler(
-                        timeout=30, sleep=1, func=get_host_veth_sampler,
+                        timeout=30, sleep=1,
+                        func=lambda pod, pod_container, expect_host_veth:
+                            count_veth_devices_on_host(pod, pod_container) == expect_host_veth,
                         pod=pod, pod_container=pod_container, expect_host_veth=expect_host_veth
                     )
                     sampler.wait_for_func_status(result=True)

@@ -12,6 +12,3 @@ CIRROS_VM = "cirros"
 
 # VMS TEMPLATES
 VM_YAML_TEMPLATE = "tests/manifests/vm-template-fedora.yaml"
-
-# UTILS
-IP_LINK_SHOW_VETH_CMD = ["bash", "-c", "ip -o link show type veth | wc -l"]

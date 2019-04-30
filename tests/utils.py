@@ -93,23 +93,6 @@ def get_fixture_val(request, attr_name, default_value=None):
         return get_attr_helper(attribute=attr_name, obj=request.cls, default=default_value)
 
 
-@generate_logs()
-def get_host_veth_sampler(pod, pod_container, expect_host_veth):
-    """
-    Wait until host veth are equal to expected veth number
-
-    Args:
-        pod (Pod): Pod object.
-        pod_container (str): Pod container name.
-        expect_host_veth (int): Expected number of veth on the host.
-
-    Returns:
-        bool: True if current veth number == expected veth number, False otherwise.
-    """
-    out = pod.exec(command=config.IP_LINK_SHOW_VETH_CMD, container=pod_container)
-    return int(out.strip()) == expect_host_veth
-
-
 def run_test_connectivity(src_vm, dst_vm, dst_ip, positive):
     """
     Check connectivity
