@@ -176,7 +176,7 @@ class Resource(object):
             bool: True if resource is gone, False if timeout reached.
         """
         supported_kind_to_watch = [
-            'Pod', 'NameSpace', 'ConfigMap', 'Node', 'VirtualMachine', 'VirtualMachineInstance'
+            'Pod', 'Namespace', 'ConfigMap', 'Node', 'VirtualMachine', 'VirtualMachineInstance'
         ]
         LOGGER.info(f"Wait until {self.kind} {self.name} is deleted")
 
@@ -356,7 +356,7 @@ class Resource(object):
 
 class NamespacedResource(Resource):
     """
-    NameSpaced object, inherited from Resource.
+    Namespaced object, inherited from Resource.
     """
     def __init__(self, namespace, name=None):
         super(NamespacedResource, self).__init__(name=name)

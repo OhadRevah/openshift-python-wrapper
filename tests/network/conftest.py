@@ -7,7 +7,7 @@ Pytest conftest file for CNV network tests
 import pytest
 from pytest_testconfig import config as py_config
 
-from resources.namespace import NameSpace
+from resources.namespace import Namespace
 from resources.node import Node
 from resources.pod import Pod
 from tests.network import config
@@ -33,13 +33,13 @@ def create_namespaces(request):
         """
         Remove network test namespaces
         """
-        ns = NameSpace(name=config.NETWORK_NS)
+        ns = Namespace(name=config.NETWORK_NS)
         ns.delete(wait=True)
     request.addfinalizer(fin)
 
-    ns = NameSpace(name=config.NETWORK_NS)
+    ns = Namespace(name=config.NETWORK_NS)
     ns.create(wait=True)
-    ns.wait_for_status(status=NameSpace.Status.ACTIVE)
+    ns.wait_for_status(status=Namespace.Status.ACTIVE)
 
 
 @pytest.fixture(scope='session')

@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from resources.namespace import NameSpace
+from resources.namespace import Namespace
 
 from . import config
 
@@ -92,11 +92,11 @@ def init(request):
         Remove test namespaces
         """
         for namespace in namespaces:
-            ns = NameSpace(name=namespace)
+            ns = Namespace(name=namespace)
             ns.delete(wait=True)
     request.addfinalizer(fin)
 
     for namespace in namespaces:
-        ns = NameSpace(name=namespace)
+        ns = Namespace(name=namespace)
         ns.create(wait=True)
         ns.wait_for_status(status=Namespace.Status.ACTIVE)
