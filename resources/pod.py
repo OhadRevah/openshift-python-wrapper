@@ -30,6 +30,9 @@ class Pod(NamespacedResource):
     api_version = 'v1'
     kind = 'Pod'
 
+    class Status:
+        RUNNING = 'Running'
+
     def __init__(self, name=None, namespace=None):
         super(Pod, self).__init__(name=name, namespace=namespace)
         self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)

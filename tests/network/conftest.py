@@ -11,7 +11,6 @@ from resources.namespace import NameSpace
 from resources.node import Node
 from resources.pod import Pod
 from tests.network import config
-from utilities import types
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -40,7 +39,7 @@ def create_namespaces(request):
 
     ns = NameSpace(name=config.NETWORK_NS)
     ns.create(wait=True)
-    ns.wait_for_status(status=types.ACTIVE)
+    ns.wait_for_status(status=NameSpace.Status.ACTIVE)
 
 
 @pytest.fixture(scope='session')
@@ -86,7 +85,7 @@ def is_bare_metal():
     for pod in pytest.privileged_pods:
         pod_container = pod.containers()[0].name
         pytest.active_node_nics[pod.name] = []
-        assert pod.wait_for_status(status=types.RUNNING)
+        assert pod.wait_for_status(status=Pod.Status.RUNNING)
         nics = pod.exec(
             command=[
                 "bash", "-c",

@@ -9,7 +9,6 @@ import os
 import pytest
 
 from resources.namespace import NameSpace
-from utilities import types
 
 from . import config
 
@@ -100,4 +99,4 @@ def init(request):
     for namespace in namespaces:
         ns = NameSpace(name=namespace)
         ns.create(wait=True)
-        ns.wait_for_status(status=types.ACTIVE)
+        ns.wait_for_status(status=Namespace.Status.ACTIVE)

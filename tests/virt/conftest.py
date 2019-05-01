@@ -6,7 +6,6 @@ Pytest conftest file for CNV VIRT tests
 
 import pytest
 from tests import config
-from utilities import types
 from resources.namespace import NameSpace
 
 
@@ -25,4 +24,4 @@ def init(request):
 
     ns = NameSpace(name=config.VIRT_NS)
     ns.create(wait=True)
-    ns.wait_for_status(status=types.ACTIVE)
+    ns.wait_for_status(status=NameSpace.Status.ACTIVE)

@@ -8,6 +8,9 @@ class NameSpace(NamespacedResource):
     api_version = 'v1'
     kind = 'Namespace'
 
+    class Status:
+        ACTIVE = 'Active'
+
     def __init__(self, name):
         super(NameSpace, self).__init__(name=name, namespace=name)
 
