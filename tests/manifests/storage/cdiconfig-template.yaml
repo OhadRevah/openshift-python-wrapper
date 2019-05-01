@@ -1,0 +1,11 @@
+---
+apiVersion: cdi.kubevirt.io/v1alpha1
+kind: CDIConfig
+metadata:
+  name: config
+spec:
+  uploadProxyURLOverride: ${URL}
+
+parameters:
+- description: Upload Proxy URL
+  name: URL
