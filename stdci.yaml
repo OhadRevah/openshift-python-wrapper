@@ -1,0 +1,6 @@
+archs: 
+  - x86_64
+distro: 
+  - rhel7
+stages:
+  - check-patch
