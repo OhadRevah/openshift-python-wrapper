@@ -1,7 +1,7 @@
-from .resource import NamespacedResource
+from .resource import Resource
 
 
-class Namespace(NamespacedResource):
+class Namespace(Resource):
     """
     Namespace object, inherited from Resource.
     """
@@ -12,7 +12,7 @@ class Namespace(NamespacedResource):
         ACTIVE = 'Active'
 
     def __init__(self, name):
-        super(Namespace, self).__init__(name=name, namespace=name)
+        super(Namespace, self).__init__(name=name)
 
     def search(self, regex):
         """
