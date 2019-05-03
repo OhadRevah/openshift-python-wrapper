@@ -250,7 +250,7 @@ class Resource(object):
                 data = {
                     'apiVersion': self.api_version,
                     'kind': self.kind,
-                    'metadata': {'name': self.namespace}
+                    'metadata': {'name': self.name}
                 }
             else:
                 data = resource_dict
