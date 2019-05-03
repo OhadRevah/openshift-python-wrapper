@@ -7,8 +7,9 @@ import pytest
 
 from tests.fixtures import (
     create_vms_from_template,
-    wait_for_vms_running,
-    wait_for_vms_interfaces_report,
+    wait_until_vmis_running,
+    wait_for_vmis_interfaces_report,
+    start_vms,
 )
 from tests.virt.vm_with_sidecar import config
 from utilities import console
@@ -22,12 +23,14 @@ class TestVMWithSidecar(object):
     """
     vms = config.VMS
     namespace = config.VIRT_NS
-    template = config.VM_YAML_TEMPLATE
+    template = config.VM_YAML_FEDORA
+    template_kwargs = config.VM_FEDORA_ATTRS
 
     @pytest.mark.usefixtures(
         create_vms_from_template.__name__,
-        wait_for_vms_running.__name__,
-        wait_for_vms_interfaces_report.__name__,
+        start_vms.__name__,
+        wait_until_vmis_running.__name__,
+        wait_for_vmis_interfaces_report.__name__,
     )
     def test_vm_with_sidecar_hook(self):
         """

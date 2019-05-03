@@ -33,17 +33,18 @@ class VirtualMachineInstance(NamespacedResource):
             label_selector=f'kubevirt.io=virt-launcher,kubevirt.io/created-by={uid}'
         ))[0]
 
-    def running(self, logs=True):
+    def wait_until_running(self, timeout=120, logs=True):
         """
-        Check if VMI is running
+        Wait until VMI is running
 
         Args:
+            timeout (int): Time to wait for VMI.
             logs (bool): True to extract logs from the VMI pod and from the VMI.
 
         Returns:
             bool: True if VMI is running, False if not.
         """
-        if not self.wait_for_status(status='Running'):
+        if not self.wait_for_status(status='Running', timeout=timeout):
             LOGGER.error(f"{self.kind} {self.name} failed to run")
             if not logs:
                 return False
@@ -53,7 +54,5 @@ class VirtualMachineInstance(NamespacedResource):
                 LOGGER.debug(f"{virt_pod.name} *****LOGS*****")
                 LOGGER.debug(virt_pod.log(container="compute"))
 
-            LOGGER.debug(f"{self.name} *****LOGS*****")
-            LOGGER.debug(self.log())
             return False
         return True

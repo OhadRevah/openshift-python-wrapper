@@ -1,0 +1,55 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  creationTimestamp: null
+  labels:
+    kubevirt.io/vm: {{ name }}
+  name: {{ name }}
+spec:
+  running: false
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        kubevirt.io/vm: {{ label }}
+    spec:
+      domain:
+        cpu:
+          cores: {{ cpu_cores }}
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: containerdisk
+          - disk:
+              bus: virtio
+            name: cloudinitdisk
+          interfaces:
+          - bridge: {}
+            name: default
+        machine:
+          type: ""
+        resources:
+          requests:
+            memory: {{ memory }}
+      networks:
+      - name: default
+        pod: {}
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - containerDisk:
+          image: kubevirt/fedora-cloud-container-disk-demo:latest
+        name: containerdisk
+      - cloudInitNoCloud:
+          userData: |-
+            #cloud-config
+            password: fedora
+            chpasswd: { expire: False }
+            bootcmd:
+              - dnf install -y qemu-guest-agent
+            runcmd:
+              - sed -i s/'PasswordAuthentication no'/'PasswordAuthentication yes'/g /etc/ssh/sshd_config
+              - systemctl restart sshd
+              - systemctl start qemu-guest-agent
+        name: cloudinitdisk
+status: {}

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b0f25cb962ee71f33c9b2f97d41ddcc0c7fe9bb91685ad85e982dacfea99744c"
+            "sha256": "85d37570e125e49cd24b105afb11a0e18051944fed1451dc7d09f1df74fa24ab"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -25,7 +25,7 @@
         },
         "ansible": {
             "git": "https://github.com/ansible/ansible.git",
-            "ref": "fd2ea344445e6f70361d01abfc25236fd337a1ca"
+            "ref": "ad2c7ec9d7160ae47137bc47ca6c074e938f363d"
         },
         "asn1crypto": {
             "hashes": [
@@ -202,6 +202,7 @@
                 "sha256:065c4f02ebe7f7cf559e49ee5a95fb800a9e4528727aec6f24402a5374c65013",
                 "sha256:14dd6caf1527abb21f08f86c784eac40853ba93edb79552aa1e4b8aef1b61c7b"
             ],
+            "index": "pypi",
             "version": "==2.10.1"
         },
         "kubernetes": {
@@ -508,11 +509,11 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:4c291ca23bbb55c76518905869ef34bdd5f0e46af7afe6861e8375643ffee1a0",
-                "sha256:9a247273df709c4fedb38c711e44292304f73f39ab01beda9f6b9fc375669ac3"
+                "sha256:2393a695cd12afedd0dcb26fe5d50d0cf248e5a66f75dbd89a3d4eb333a61af4",
+                "sha256:a637e5fae88995b256e3409dc4d52c2e2e0ba32c42a6365fee8bbd2238de3cfb"
             ],
             "index": "pypi",
-            "version": "==1.24.2"
+            "version": "==1.24.3"
         },
         "wcwidth": {
             "hashes": [

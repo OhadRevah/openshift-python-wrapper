@@ -10,7 +10,8 @@ from resources.virtual_machine import VirtualMachine
 from tests.fixtures import (
     create_resources_from_yaml,
     create_vms_from_template,
-    wait_for_vms_running,
+    wait_until_vmis_running,
+    start_vms,
 )
 from utilities import utils
 from . import config
@@ -39,7 +40,8 @@ def count_veth_devices_on_host(pod, pod_container):
     create_resources_from_yaml.__name__,
     create_linux_bridge.__name__,
     create_vms_from_template.__name__,
-    wait_for_vms_running.__name__,
+    start_vms.__name__,
+    wait_until_vmis_running.__name__,
 )
 class TestVethRemovedAfterVmsDeleted(object):
     """
@@ -47,7 +49,8 @@ class TestVethRemovedAfterVmsDeleted(object):
     """
     namespace = config.NETWORK_NS
     vms = config.VETH_REMOVED_VMS
-    template = config.VM_YAML_TEMPLATE
+    template = config.VM_YAML_FEDORA
+    template_kwargs = config.VM_FEDORA_ATTRS
     bridge_name = config.BRIDGE_BR1
     yamls = [
         config.LINUX_BRIDGE_YAML,

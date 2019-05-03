@@ -1,10 +1,12 @@
 import json
 import logging
 import os
-import shlex
+import re
 import subprocess
 import time
 
+import yaml
+import jinja2
 from _pytest.mark import ParameterSet
 from autologs.autologs import generate_logs
 
@@ -18,7 +20,16 @@ class TimeoutExpiredError(Exception):
         self.value = value
 
     def __str__(self):
-        return "%s: %s" % (self.message, repr(self.value))
+        return f"{self.message}: {self.value}"
+
+
+class MissingTemplateVariables(Exception):
+    def __init__(self, var, template):
+        self.var = var
+        self.template = template
+
+    def __str__(self):
+        return f"Missing variables {self.var} for template {self.template}"
 
 
 class TimeoutSampler(object):
@@ -101,12 +112,12 @@ def run_command(command):
     Run command locally.
 
     Args:
-        command (str): Command to run.
+        command (list): Command to run.
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
-    p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
     if err:
         LOGGER.error("Failed to run {cmd}. error: {err}".format(cmd=command, err=err))
@@ -120,21 +131,22 @@ def run_virtctl_command(command, namespace=None):
     Run virtctl command
 
     Args:
-        command (str): Command to run
+        command (list): Command to run
         namespace (str): Namespace to send to virtctl command
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
+    virtctl_cmd = ['virtctl']
     kubeconfig = os.getenv('KUBECONFIG')
-    cmd = f"virtctl {command}"
     if namespace:
-        cmd += f" -n {namespace}"
+        virtctl_cmd = virtctl_cmd + ["-n", namespace]
 
     if kubeconfig:
-        cmd += f" --kubeconfig {kubeconfig}"
+        virtctl_cmd = virtctl_cmd + ["--kubeconfig", kubeconfig]
 
-    return run_command(command=cmd)
+    virtctl_cmd = virtctl_cmd + command
+    return run_command(command=virtctl_cmd)
 
 
 def run_oc_command(command, namespace=None):
@@ -142,32 +154,60 @@ def run_oc_command(command, namespace=None):
     Run oc command
 
     Args:
-        command (str): Command to run
+        command (list): Command to run
         namespace (str): Namespace to send to oc command
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
-    last_ = None
+    oc_cmd = ["oc"]
     kubeconfig = os.getenv('KUBECONFIG')
-    if " -- " in command:
-        split_cmd = command.split(" -- ", 1)
-        first_ = split_cmd[0]
-        last_ = split_cmd[-1]
-    else:
-        first_ = command
-
-    cmd = f"oc {first_}"
     if namespace:
-        cmd += f" -n {namespace}"
+        oc_cmd = oc_cmd + ["-n", namespace]
 
     if kubeconfig:
-        cmd += f" --kubeconfig {kubeconfig}"
+        oc_cmd = oc_cmd + ["--kubeconfig", kubeconfig]
 
-    if last_:
-        cmd += f" -- {last_}"
+    oc_cmd = oc_cmd + command
+    return run_command(command=oc_cmd)
 
-    return run_command(command=cmd)
+
+@generate_logs()
+def generate_yaml_from_template(file_, **kwargs):
+    """
+    Generate JSON from yaml file_
+
+    Args:
+        file_ (str): Yaml file
+
+    Keyword Args:
+        name (str):
+        label (str):
+        cpu_cores (int):
+        memory (str):
+        image (str):
+
+    Returns:
+        dict: Generated from template file
+
+    Raises:
+        MissingTemplateVariables: If not all template variables exists
+
+    Examples:
+        generate_yaml_from_template(file_='path/to/file/name', name='vm-name-1')
+    """
+    with open(file_, 'r') as stream:
+        data = stream.read()
+
+    # Find all template variables
+    template_vars = [i.split()[1] for i in re.findall(r'{{ .* }}', data)]
+    for var in template_vars:
+        if var not in kwargs.keys():
+            raise MissingTemplateVariables(var=var, template=file_)
+
+    template = jinja2.Template(data)
+    out = template.render(**kwargs)
+    return yaml.safe_load(out)
 
 
 @generate_logs()

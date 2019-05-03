@@ -10,8 +10,9 @@ from pytest_testconfig import config as py_config
 from tests.fixtures import (
     create_resources_from_yaml,
     create_vms_from_template,
-    wait_for_vms_running,
-    wait_for_vms_interfaces_report,
+    wait_until_vmis_running,
+    wait_for_vmis_interfaces_report,
+    start_vms,
 )
 from tests import utils
 from tests.network.connectivity.fixtures import create_bond
@@ -31,8 +32,9 @@ from .fixtures import (
     create_bond.__name__,
     attach_linux_bridge_to_bond.__name__,
     create_vms_from_template.__name__,
-    wait_for_vms_running.__name__,
-    wait_for_vms_interfaces_report.__name__,
+    start_vms.__name__,
+    wait_until_vmis_running.__name__,
+    wait_for_vmis_interfaces_report.__name__,
     update_vms_pod_ip_info.__name__,
 )
 class TestConnectivity(object):
@@ -41,7 +43,8 @@ class TestConnectivity(object):
     """
     namespace = config.NETWORK_NS
     vms = config.VMS
-    template = config.VM_YAML_TEMPLATE
+    template = config.VM_YAML_FEDORA
+    template_kwargs = config.VM_FEDORA_ATTRS
     bond_name = config.BOND_1
     bridge_name = config.BRIDGE_BR1
     vxlan_name = config.VXLAN_10

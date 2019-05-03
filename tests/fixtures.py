@@ -52,10 +52,9 @@ def create_vms_from_template(request, default_client):
     Create VMs
 
     template_kwargs are the params that sent to the template.
-    For example to create a CM with name fedora-vm-1 and 512Mi memory set
+    For example to set 512Mi memory send
     template_kwargs = {
-        "NAME": "fedora-vm-1",
-        "MEMORY": "512Mi"
+        "memory": "512Mi"
         }
 
     To create a VM named vm-fedora-1 with cloud-init data and 4 interfaces with IPs send:
@@ -100,9 +99,8 @@ def create_vms_from_template(request, default_client):
         vm_object = VirtualMachine(name=name, namespace=namespace)
         boot_cmd = info.get("cloud_init", {}).get("bootcmd")
         run_cmd = info.get("cloud_init", {}).get("runcmd")
-        json_out = utils.get_json_from_template(
-            file_=template, NAME=name, **template_kwargs
-        )
+        template_kwargs["name"] = name
+        json_out = utils.generate_yaml_from_template(file_=template, **template_kwargs)
         spec = json_out.get('spec').get('template').get('spec')
         vm_metadata = info.get("metadata")
         if vm_metadata:
@@ -177,7 +175,16 @@ def create_vms_from_template(request, default_client):
 
 
 @pytest.fixture(scope='class')
-def wait_for_vms_running(request):
+def start_vms(request):
+    vms = test_utils.get_fixture_val(request=request, attr_name="vms")
+    namespace = test_utils.get_fixture_val(request=request, attr_name="namespace")
+    for vm in vms:
+        vmi_object = VirtualMachine(name=vm, namespace=namespace)
+        assert vmi_object.start()
+
+
+@pytest.fixture(scope='class')
+def wait_until_vmis_running(request):
     """
     Wait until VMs in status Running
     """
@@ -185,11 +192,11 @@ def wait_for_vms_running(request):
     namespace = test_utils.get_fixture_val(request=request, attr_name="namespace")
     for vmi in vms:
         vmi_object = VirtualMachineInstance(name=vmi, namespace=namespace)
-        assert vmi_object.running()
+        assert vmi_object.wait_until_running()
 
 
 @pytest.fixture(scope='class')
-def wait_for_vms_interfaces_report(request):
+def wait_for_vmis_interfaces_report(request):
     """
     Wait until VMs report guest agant data
     """

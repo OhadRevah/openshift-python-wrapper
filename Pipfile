@@ -25,6 +25,7 @@ sh = "*"
 pytest-ordering = "*"
 pytest-testconfig = "*"
 ansible = {git = "https://github.com/ansible/ansible.git"}
+jinja2 = "*"
 
 [requires]
 python_version = "3.7"

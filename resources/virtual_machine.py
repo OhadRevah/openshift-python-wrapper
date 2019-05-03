@@ -31,7 +31,9 @@ class VirtualMachine(NamespacedResource):
         Returns:
             True if VM started, else False
         """
-        res = utils.run_virtctl_command(command="start", namespace=self.namespace)[0]
+        res = utils.run_virtctl_command(
+            command=["start", self.name], namespace=self.namespace
+        )[0]
         if wait and res:
             return self.wait_for_status(timeout=timeout, status=True)
         return res
@@ -46,7 +48,9 @@ class VirtualMachine(NamespacedResource):
         Returns:
             bool: True if VM stopped, else False
         """
-        res = utils.run_virtctl_command(command="stop", namespace=self.namespace)[0]
+        res = utils.run_virtctl_command(
+            command=["stop", self.name], namespace=self.namespace
+        )[0]
         if wait and res:
             return self.wait_for_status(timeout=timeout, status=False)
         return res
@@ -100,7 +104,7 @@ class VirtualMachine(NamespacedResource):
         Get VM status
 
         Returns:
-            str: Running if Running else Stopped
+            bool: True if Running else False
         """
         LOGGER.info(f"Check if {self.kind} {self.name} is ready")
         return self.instance.status['ready']
