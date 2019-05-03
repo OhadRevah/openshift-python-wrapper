@@ -115,25 +115,6 @@ def run_command(command):
     return True, out.decode("utf-8")
 
 
-def run_command_on_pod(command, pod, container=None):
-    """
-    Run command on pod.
-
-    Args:
-        command (str): Command to run.
-        pod (str): Pod name.
-        container (str): Container name if pod has more then one.
-
-    Returns:
-        tuple: True, out if command succeeded, False, err otherwise.
-    """
-    container_name = "-c {container}".format(container=container or "") if container else ""
-    command = "oc exec -i {pod} {container_name} -- {command}".format(
-        pod=pod, container_name=container_name, command=command
-    )
-    return run_command(command=command)
-
-
 def run_virtctl_command(command, namespace=None):
     """
     Run virtctl command
