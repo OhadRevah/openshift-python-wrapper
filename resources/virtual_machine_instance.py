@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import re
 
 from .pod import Pod
 from .resource import NamespacedResource
@@ -27,10 +26,12 @@ class VirtualMachineInstance(NamespacedResource):
         Returns:
             Pod: virt-launcher Pod
         """
-        pod_resource = Pod(namespace=self.namespace)
-        return pod_resource.search(
-            regex=re.compile(rf'virt-launcher-{self.name}-\w+')
-        )
+        uid = self.instance.metadata.uid
+        return list(Pod.get_resources(
+            dyn_client=self.client,
+            namespace=self.namespace,
+            label_selector=f'kubevirt.io=virt-launcher,kubevirt.io/created-by={uid}'
+        ))[0]
 
     def running(self, logs=True):
         """

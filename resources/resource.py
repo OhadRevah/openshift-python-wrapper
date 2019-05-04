@@ -353,24 +353,15 @@ class Resource(object):
         res, out = ext_utils.run_oc_command(command=cmd)
         return res if not res else out
 
-    def search(self, regex):
+    @property
+    def instance(self):
         """
-        Search for Resource
-
-        Args:
-            regex (re.compile): re.compile regex to search
+        Get resource instance
 
         Returns:
-            Resource: Resource or None
-
-        Raises:
-            ResourceNotUniqueError: If multiple matches found
+            openshift.dynamic.client.ResourceInstance
         """
-        all_ = self.list_names()
-        res = [r for r in all_ if regex.findall(r)]
-        if len(res) > 1:
-            raise MultipleResourcesFoundError(f'Multiple matches found for {regex}')
-        return self.__class__(name=res[0]) if res else None
+        return self.api().get(name=self.name)
 
 
 class NamespacedResource(Resource):
@@ -381,27 +372,19 @@ class NamespacedResource(Resource):
         super(NamespacedResource, self).__init__(name=name)
         self.namespace = namespace
 
-    def search(self, regex):
-        """
-        Search for NamespacedResource
-
-        Args:
-            regex (re.compile): re.compile regex to search
-
-        Returns:
-            Resource: NamespacedResource or None
-
-        Raises:
-            ResourceNotUniqueError: If multiple matches found
-        """
-        all_ = self.list_names()
-        res = [r for r in all_ if regex.findall(r)]
-        if len(res) > 1:
-            raise MultipleNamespacedResourcesFoundError(
-                f'Multiple matches found for {regex}'
+    @classmethod
+    def get_resources(cls, dyn_client, *args, **kwargs):
+        for resource_field in dyn_client.resources.get(kind=cls.kind).get(*args, **kwargs).items:
+            yield cls(
+                name=resource_field.metadata.name, namespace=resource_field.metadata.namespace
             )
 
-        if res:
-            res = self.__class__(name=res[0])
-            res.namespace = res.get().metadata.namespace
-            return res
+    @property
+    def instance(self):
+        """
+        Get resource instance
+
+        Returns:
+            openshift.dynamic.client.ResourceInstance
+        """
+        return self.api().get(name=self.name, namespace=self.namespace)
