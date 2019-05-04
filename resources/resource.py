@@ -90,7 +90,7 @@ class Resource(object):
             ResourceField: ResourceField object.
         """
         LOGGER.info(f"Get {self.kind} {self.name}")
-        for resource_field in self.list(**kwargs):
+        for resource_field in self.list_resource(**kwargs):
             if resource_field.metadata.name == self.name:
                 return resource_field
         return None
@@ -107,7 +107,7 @@ class Resource(object):
         ).to_dict()
         return res['items'][0] if res['items'] else {}
 
-    def list(self, **kwargs):
+    def list_resource(self, **kwargs):
         """
         Get resources
 
@@ -150,7 +150,7 @@ class Resource(object):
             list: Resources.
         """
         LOGGER.info(f"Get all {self.kind} names ")
-        return [i.metadata.name for i in self.list(**kwargs)]
+        return [i.metadata.name for i in self.list_resource(**kwargs)]
 
     def wait(self, timeout=TIMEOUT, label_selector=None, resource_version=None):
         """

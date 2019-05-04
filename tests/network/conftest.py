@@ -86,18 +86,18 @@ def is_bare_metal():
         pod_container = pod.containers()[0].name
         pytest.active_node_nics[pod.name] = []
         assert pod.wait_for_status(status=Pod.Status.RUNNING)
-        nics = pod.exec(
+        nics = pod.execute(
             command=[
                 "bash", "-c",
                 "ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev"
             ], container=pod_container
         )
         nics = nics.splitlines()
-        default_gw = pod.exec(
+        default_gw = pod.execute(
             command=["ip", "route", "show", "default"], container=pod_container
         )
         for nic in nics:
-            nic_state = pod.exec(
+            nic_state = pod.execute(
                 command=["cat", f"/sys/class/net/{nic}/operstate"], container=pod_container
             )
             if nic_state.strip() == "up":
@@ -105,7 +105,7 @@ def is_bare_metal():
                     continue
 
                 pytest.active_node_nics[pod.name].append(nic)
-                driver = pod.exec(
+                driver = pod.execute(
                     command=[
                         "bash", "-c",
                         f"basename $(readlink -f /sys/class/net/{nic}/device/driver/module/)"

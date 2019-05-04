@@ -16,11 +16,11 @@ def create_linux_bridge(request):
         """
         for pod in pytest.privileged_pods:
             pod_container = pod.containers()[0].name
-            pod.exec(command=["ip", "link", "del", bridge_name], container=pod_container)
+            pod.execute(command=["ip", "link", "del", bridge_name], container=pod_container)
     request.addfinalizer(fin)
 
     for pod in pytest.privileged_pods:
         pod_container = pod.containers()[0].name
-        pod.exec(
+        pod.execute(
             command=["ip", "link", "add", bridge_name, "type", "bridge"], container=pod_container
         )

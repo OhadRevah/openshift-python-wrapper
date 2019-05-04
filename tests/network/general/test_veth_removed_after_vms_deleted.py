@@ -28,7 +28,7 @@ def count_veth_devices_on_host(pod, pod_container):
     Returns:
         int: number of veth devices on host
     """
-    out = pod.exec(
+    out = pod.execute(
         command=['bash', '-c', 'ip -o link show type veth | wc -l'],
         container=pod_container)
 

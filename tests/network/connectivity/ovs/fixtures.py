@@ -19,7 +19,7 @@ def create_ovs_bridges_real_nics(request):
         """
         for pod in pytest.privileged_pods:
             pod_container = pod.containers()[0].name
-            pod.exec(
+            pod.execute(
                 command=["ovs-vsctl", "del-br", real_nics_bridge], container=pod_container
             )
     request.addfinalizer(fin)
@@ -31,7 +31,7 @@ def create_ovs_bridges_real_nics(request):
             ["ovs-vsctl", "add-port", real_nics_bridge, pytest.active_node_nics[pod.name][0]],
         ]
         for cmd in cmds:
-            pod.exec(command=cmd, container=pod_container)
+            pod.execute(command=cmd, container=pod_container)
 
 
 @pytest.fixture(scope='class')
@@ -51,7 +51,7 @@ def create_ovs_bridge_on_vxlan(request):
         """
         for pod in pytest.privileged_pods:
             pod_container = pod.containers()[0].name
-            pod.exec(
+            pod.execute(
                 command=["ovs-vsctl", "del-br", bridge_name_vxlan], container=pod_container
             )
     request.addfinalizer(fin)
@@ -72,7 +72,7 @@ def create_ovs_bridge_on_vxlan(request):
                 break
 
         for cmd in cmds:
-            pod.exec(command=cmd, container=pod_container)
+            pod.execute(command=cmd, container=pod_container)
 
 
 @pytest.fixture(scope='class')
@@ -92,4 +92,4 @@ def attach_ovs_bridge_to_bond():
             ["ovs-vsctl", "add-port", bond_bridge, bond_name]
         ]
         for cmd in cmds:
-            pod.exec(command=cmd, container=pod_container)
+            pod.execute(command=cmd, container=pod_container)

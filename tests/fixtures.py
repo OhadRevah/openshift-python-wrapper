@@ -136,7 +136,7 @@ def create_vms_from_template(request):
 
         idx = 1
         all_interfaces = []
-        for interface_name, ips in info.get("interfaces", {}).items():
+        for _, ips in info.get("interfaces", {}).items():
             eth_name = f"eth{idx}"
             all_interfaces.append(eth_name)
             cloud_init_user_data += f"  - {nmcli_add_con} {eth_name} ifname {eth_name}\n"
@@ -146,7 +146,7 @@ def create_vms_from_template(request):
             idx += 1
 
         if pytest.bond_support_env:
-            for bond_name, ips in info.get("bonds", {}).items():
+            for _, ips in info.get("bonds", {}).items():
                 eth_name = f"eth{idx}"
                 all_interfaces.append(eth_name)
                 cloud_init_user_data += f"  - {nmcli_add_con} {eth_name} ifname {eth_name}\n"

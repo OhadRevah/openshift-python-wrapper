@@ -46,7 +46,7 @@ class Pod(NamespacedResource):
         """
         return self.get().spec.containers
 
-    def exec(self, command, timeout=60, container=None):
+    def execute(self, command, timeout=60, container=None):
         """
         Run command on Pod
 

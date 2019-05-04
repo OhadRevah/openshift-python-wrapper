@@ -20,7 +20,7 @@ def create_linux_bridges_real_nics(request):
         """
         for pod in pytest.privileged_pods:
             pod_container = pod.containers()[0].name
-            pod.exec(command=["ip", "link", "del", bridge_name], container=pod_container)
+            pod.execute(command=["ip", "link", "del", bridge_name], container=pod_container)
     request.addfinalizer(fin)
 
     for pod in pytest.privileged_pods:
@@ -32,7 +32,7 @@ def create_linux_bridges_real_nics(request):
             ["ip", "link", "set", "dev", pytest.active_node_nics[pod.name][0], "master", bridge_name],
         ]
         for cmd in cmds:
-            pod.exec(command=cmd, container=pod_container)
+            pod.execute(command=cmd, container=pod_container)
 
 
 @pytest.fixture(scope='class')
@@ -57,7 +57,7 @@ def create_linux_bridge_on_vxlan(request):
                 ["ip", "link", "del", vxlan_name],
             ]
             for cmd in cmds:
-                pod.exec(command=cmd, container=pod_container)
+                pod.execute(command=cmd, container=pod_container)
     request.addfinalizer(fin)
 
     for idx, pod in enumerate(pytest.privileged_pods):
@@ -80,7 +80,7 @@ def create_linux_bridge_on_vxlan(request):
                 break
 
         for cmd in cmds:
-            pod.exec(command=cmd, container=pod_container)
+            pod.execute(command=cmd, container=pod_container)
 
 
 @pytest.fixture(scope='class')
@@ -102,4 +102,4 @@ def attach_linux_bridge_to_bond(request):
             ["ip", "link", "set", "dev", bond_name, "master", bond_bridge]
         ]
         for cmd in cmds:
-            pod.exec(command=cmd, container=pod_container)
+            pod.execute(command=cmd, container=pod_container)
