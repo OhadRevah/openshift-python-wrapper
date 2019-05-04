@@ -6,22 +6,9 @@ import yaml
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from . import utils
-from utilities import utils as ext_utils
 
 LOGGER = logging.getLogger(__name__)
 TIMEOUT = 120
-
-
-class MultipleResourcesFoundError(Exception):
-    """
-    Multiple matches found
-    """
-
-
-class MultipleNamespacedResourcesFoundError(Exception):
-    """
-    Multiple matches found
-    """
 
 
 class Resource(object):
@@ -375,23 +362,6 @@ class Resource(object):
         """
         LOGGER.info(f"Update {self.kind} {self.name}")
         self.api().replace(body=resource_dict, namespace=self.namespace)
-
-    def logs(self, container=None):
-        """
-        Get resource logs
-
-        Args:
-            container (str): Container name to get container logs
-
-        Returns:
-            str: Resource logs
-        """
-        LOGGER.info(f"Get {self.kind} {self.name} logs")
-        cmd = f"logs {self.name}"
-        if container:
-            cmd += f" -c {container}"
-        res, out = ext_utils.run_oc_command(command=cmd)
-        return res if not res else out
 
     @property
     def instance(self):

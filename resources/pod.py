@@ -85,6 +85,15 @@ class Pod(NamespacedResource):
             raise ExecOnPodError(command=command, rc=returncode, out=stdout, err=stderr)
         return stdout
 
+    def log(self, **kwargs):
+        """
+        Get Pod logs
+
+        Returns:
+            str: Pod logs.
+        """
+        return self.kube_api.read_namespaced_pod_log(self.name, self.namespace, **kwargs)
+
     def node(self):
         """
         Get the node name where the Pod is running

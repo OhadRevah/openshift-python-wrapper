@@ -51,9 +51,9 @@ class VirtualMachineInstance(NamespacedResource):
             virt_pod = self.virt_launcher_pod()
             if virt_pod:
                 LOGGER.debug(f"{virt_pod.name} *****LOGS*****")
-                LOGGER.debug(virt_pod.logs(container="compute"))
+                LOGGER.debug(virt_pod.log(container="compute"))
 
             LOGGER.debug(f"{self.name} *****LOGS*****")
-            LOGGER.debug(self.logs())
+            LOGGER.debug(self.log())
             return False
         return True
