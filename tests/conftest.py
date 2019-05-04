@@ -6,7 +6,9 @@ Pytest conftest file for CNV tests
 
 import os
 
+import kubernetes
 import pytest
+from openshift.dynamic import DynamicClient
 
 
 def pytest_configure():
@@ -74,3 +76,11 @@ def junitxml_polarion(request):
             my_junit.add_global_property('polarion-project-id', 'CNV')
             my_junit.add_global_property('polarion-response-myproduct', 'cnv-test-run')
             my_junit.add_global_property('polarion-testrun-id', os.getenv('POLARION_TESTRUN_ID'))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def default_client():
+    """
+    Get DynamicClient
+    """
+    return DynamicClient(kubernetes.config.new_client_from_config())

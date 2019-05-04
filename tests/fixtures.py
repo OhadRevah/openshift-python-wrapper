@@ -7,6 +7,7 @@ Pytest fixtures file for CNV tests
 import logging
 
 import pytest
+from openshift.dynamic.exceptions import NotFoundError
 
 from resources.resource import Resource
 from resources.virtual_machine import VirtualMachine
@@ -89,9 +90,10 @@ def create_vms_from_template(request, default_client):
         Remove created VMs if exists (TestVethRemovedAfterVmsDeleted should remove them)
         """
         for vm in vms:
-            vm_object = VirtualMachine(name=vm, namespace=namespace)
-            if vm_object.get():
-                vm_object.delete(wait=True)
+            try:
+                VirtualMachine(name=vm, namespace=namespace).delete(wait=True)
+            except NotFoundError:
+                pass
     request.addfinalizer(fin)
 
     for name, info in vms.items():

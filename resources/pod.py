@@ -44,7 +44,7 @@ class Pod(NamespacedResource):
         Returns:
             list: List of Pod containers
         """
-        return self.get().spec.containers
+        return self.instance.spec.containers
 
     def execute(self, command, timeout=60, container=None):
         """
@@ -101,4 +101,4 @@ class Pod(NamespacedResource):
         Returns:
             Node: Node
         """
-        return Node(name=self.get().spec.nodeName)
+        return Node(name=self.instance.spec.nodeName)

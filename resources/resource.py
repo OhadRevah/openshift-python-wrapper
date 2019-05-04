@@ -56,89 +56,6 @@ class Resource(object):
         """
         return self.client.resources.get(api_version=self.api_version, kind=self.kind, **kwargs)
 
-    def get(self, **kwargs):
-        """
-        Get resource
-
-        Keyword Args:
-            pretty
-            _continue
-            include_uninitialized
-            field_selector
-            label_selector
-            limit
-            resource_version
-            timeout_seconds
-            watch
-            async_req
-            namespace
-
-        Returns:
-            ResourceField: ResourceField object.
-        """
-        LOGGER.info(f"Get {self.kind} {self.name}")
-        for resource_field in self.list_resource(**kwargs):
-            if resource_field.metadata.name == self.name:
-                return resource_field
-        return None
-
-    def get_dict(self):
-        """
-        Get resource as dict
-
-        Returns:
-            dict: Resource.
-        """
-        res = self.api().get(
-            namespace=self.namespace, field_selector=f'metadata.name={self.name}'
-        ).to_dict()
-        return res['items'][0] if res['items'] else {}
-
-    def list_resource(self, **kwargs):
-        """
-        Get resources
-
-        Keyword Args:
-            pretty
-            _continue
-            include_uninitialized
-            field_selector
-            label_selector
-            limit
-            resource_version
-            timeout_seconds
-            watch
-            async_req
-
-        Returns:
-            list: ResourceField.
-        """
-        for resource_field in self.api().get(namespace=self.namespace, **kwargs).items:
-            yield resource_field
-
-    def list_names(self, **kwargs):
-        """
-        Get resources names list
-
-        Keyword Args:
-            pretty
-            _continue
-            include_uninitialized
-            field_selector
-            label_selector
-            limit
-            resource_version
-            timeout_seconds
-            watch
-            async_req
-            namespace
-
-        Returns:
-            list: Resources.
-        """
-        LOGGER.info(f"Get all {self.kind} names ")
-        return [i.metadata.name for i in self.list_resource(**kwargs)]
-
     def wait(self, timeout=TIMEOUT, label_selector=None, resource_version=None):
         """
         Wait for resource
@@ -181,7 +98,7 @@ class Resource(object):
 
         if self.kind not in supported_kind_to_watch:
             samples = utils.TimeoutSampler(
-                timeout=timeout, sleep=1, func=lambda: bool(self.get())
+                timeout=timeout, sleep=1, func=lambda: bool(self.instance)
             )
             for sample in samples:
                 if not sample:
@@ -337,21 +254,7 @@ class Resource(object):
            str: Status
         """
         LOGGER.info(f"Get {self.kind} {self.name} status")
-        return self.get().status.phase
-
-    @classmethod
-    def _extract_data_from_yaml(cls, yaml_data):
-        """
-        Extract data from yaml stream
-
-        Args:
-            yaml_data (dict): Dict from yaml file
-        """
-        name = yaml_data['metadata']['name']
-        namespace = yaml_data['metadata']['namespace']
-        api_version = yaml_data['apiVersion']
-        kind = yaml_data['kind']
-        return name, namespace, api_version, kind
+        return self.instance.status.phase
 
     def update(self, resource_dict):
         """
@@ -362,6 +265,20 @@ class Resource(object):
         """
         LOGGER.info(f"Update {self.kind} {self.name}")
         self.api().replace(body=resource_dict, namespace=self.namespace)
+
+    @classmethod
+    def get_resources(cls, dyn_client, *args, **kwargs):
+        """
+        Get resources
+
+        Args:
+            dyn_client (DynamicClient): Open connection to remote cluster
+
+        Returns:
+            generator: Generator of Resources of cls.kind
+        """
+        for resource_field in dyn_client.resources.get(kind=cls.kind).get(*args, **kwargs).items:
+            yield cls(name=resource_field.metadata.name)
 
     @property
     def instance(self):
@@ -384,6 +301,15 @@ class NamespacedResource(Resource):
 
     @classmethod
     def get_resources(cls, dyn_client, *args, **kwargs):
+        """
+        Get resources
+
+        Args:
+            dyn_client (DynamicClient): Open connection to remote cluster
+
+        Returns:
+            generator: Generator of Resources of cls.kind
+        """
         for resource_field in dyn_client.resources.get(kind=cls.kind).get(*args, **kwargs).items:
             yield cls(
                 name=resource_field.metadata.name, namespace=resource_field.metadata.namespace

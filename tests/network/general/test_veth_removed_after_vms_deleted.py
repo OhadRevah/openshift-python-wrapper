@@ -60,13 +60,11 @@ class TestVethRemovedAfterVmsDeleted(object):
         """
         for vm in self.vms:
             vm_object = VirtualMachine(name=vm, namespace=self.namespace)
-            vm_info = vm_object.get()
-            vm_interfaces = vm_info.get('status', {}).get('interfaces', [])
-            vm_node = vm_object.node()
+            vm_interfaces = vm_object.instance.status.interfaces or []
             for pod in pytest.privileged_pods:
                 pod_container = pod.containers()[0].name
                 pod_node = pod.node()
-                if pod_node.name == vm_node.name:
+                if pod_node.name == vm_object.node().name:
                     host_vath_before_delete = count_veth_devices_on_host(pod, pod_container)
                     assert vm_object.delete(wait=True)
                     expect_host_veth = host_vath_before_delete - len(vm_interfaces)

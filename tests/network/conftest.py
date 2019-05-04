@@ -43,18 +43,15 @@ def create_namespaces(request):
 
 
 @pytest.fixture(scope='session')
-def get_privileged_pods():
+def get_privileged_pods(default_client):
     """
     Get ovs-cni pods names
     """
-    privileged_pods = Pod().list_names(label_selector=py_config['priviliged_pod_label_selector'])
-    for pod in privileged_pods:
-        pod_object = Pod(name=pod, namespace=config.OPENSHIFT_SDN_NS)
-        node = pod_object.node()
-        node_data = node.get()
-        if [i for i in node_data.metadata.labels.keys() if 'worker' in i]:
-            pytest.privileged_pods.append(pod_object)
-            pod_containers = pod_object.containers()
+    for pod in Pod.get_resources(default_client, label_selector=py_config['priviliged_pod_label_selector']):
+        node = pod.node()
+        if [i for i in node.instance.metadata.labels.keys() if 'worker' in i]:
+            pytest.privileged_pods.append(pod)
+            pod_containers = pod.containers()
             if pod_containers:
                 pytest.privileged_pod_container = pod_containers[0].name
 
@@ -62,19 +59,15 @@ def get_privileged_pods():
 
 
 @pytest.fixture(scope='session')
-def get_nodes_internal_ip():
+def get_nodes_internal_ip(default_client):
     """
     Get nodes internal IPs
     """
-    compute_nodes = Node().list_names(label_selector="kubevirt.io/schedulable=true")
-    for node in compute_nodes:
-        node_obj = Node(name=node)
-        node_info = node_obj.get()
-        for addr in node_info.status.addresses:
+    for node in Node.get_resources(default_client, label_selector="kubevirt.io/schedulable=true"):
+        for addr in node.instance.status.addresses:
             if addr.type == "InternalIP":
-                pytest.nodes_network_info[node] = addr.address
+                pytest.nodes_network_info[node.name] = addr.address
                 break
-    assert len(pytest.nodes_network_info.keys()) == len(compute_nodes)
 
 
 @pytest.fixture(scope='session')

@@ -84,7 +84,7 @@ class VirtualMachine(NamespacedResource):
         Returns:
             Node: Node
         """
-        return Node(name=self.get().status.nodeName)
+        return Node(name=self.instance.status.nodeName)
 
     def vmi(self):
         """
@@ -103,4 +103,4 @@ class VirtualMachine(NamespacedResource):
             str: Running if Running else Stopped
         """
         LOGGER.info(f"Check if {self.kind} {self.name} is ready")
-        return self.get().status['ready']
+        return self.instance.status['ready']
