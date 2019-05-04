@@ -56,22 +56,3 @@ class VirtualMachineInstance(NamespacedResource):
             LOGGER.debug(self.logs())
             return False
         return True
-
-    def search(self, regex):
-        """
-        Search for VirtualMachineInstance
-
-        Args:
-            regex (re.compile): re.compile regex to search
-
-        Returns:
-            Resource: VirtualMachineInstance or None
-        """
-        all_ = self.list_names()
-        res = [r for r in all_ if regex.findall(r)]
-        if res:
-            return VirtualMachineInstance(
-                name=res[0],
-                namespace=self.namespace,
-            )
-        return None

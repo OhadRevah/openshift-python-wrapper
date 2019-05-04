@@ -104,22 +104,3 @@ class VirtualMachine(NamespacedResource):
         """
         LOGGER.info(f"Check if {self.kind} {self.name} is ready")
         return self.get().status['ready']
-
-    def search(self, regex):
-        """
-        Search for VirtualMachine
-
-        Args:
-            regex (re.compile): re.compile regex to search
-
-        Returns:
-            Resource: VirtualMachine or None
-        """
-        all_ = self.list_names()
-        res = [r for r in all_ if regex.findall(r)]
-        if res:
-            return VirtualMachine(
-                name=res[0],
-                namespace=self.namespace,
-            )
-        return None

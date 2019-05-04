@@ -12,6 +12,18 @@ LOGGER = logging.getLogger(__name__)
 TIMEOUT = 120
 
 
+class MultipleResourcesFoundError(Exception):
+    """
+    Multiple matches found
+    """
+
+
+class MultipleNamespacedResourcesFoundError(Exception):
+    """
+    Multiple matches found
+    """
+
+
 class Resource(object):
     """
     DynamicClient Resource class
@@ -343,15 +355,22 @@ class Resource(object):
 
     def search(self, regex):
         """
-        Search for resource
+        Search for Resource
 
         Args:
             regex (re.compile): re.compile regex to search
 
         Returns:
             Resource: Resource or None
+
+        Raises:
+            ResourceNotUniqueError: If multiple matches found
         """
-        raise NotImplementedError
+        all_ = self.list_names()
+        res = [r for r in all_ if regex.findall(r)]
+        if len(res) > 1:
+            raise MultipleResourcesFoundError(f'Multiple matches found for {regex}')
+        return self.__class__(name=res[0]) if res else None
 
 
 class NamespacedResource(Resource):
@@ -364,12 +383,25 @@ class NamespacedResource(Resource):
 
     def search(self, regex):
         """
-        Search for resource
+        Search for NamespacedResource
 
         Args:
             regex (re.compile): re.compile regex to search
 
         Returns:
-            Resource: Resource or None
+            Resource: NamespacedResource or None
+
+        Raises:
+            ResourceNotUniqueError: If multiple matches found
         """
-        raise NotImplementedError
+        all_ = self.list_names()
+        res = [r for r in all_ if regex.findall(r)]
+        if len(res) > 1:
+            raise MultipleNamespacedResourcesFoundError(
+                f'Multiple matches found for {regex}'
+            )
+
+        if res:
+            res = self.__class__(name=res[0])
+            res.namespace = res.get().metadata.namespace
+            return res
