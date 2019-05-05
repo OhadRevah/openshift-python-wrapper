@@ -35,7 +35,7 @@ def create_ovs_bridges_real_nics(request):
 
 
 @pytest.fixture(scope='class')
-def create_ovs_bridge_on_vxlan(request):
+def create_ovs_bridge_on_vxlan(request, schedulable_node_ips):
     """
     Create needed OVS bridges when setup is not bare-metal
     """
@@ -60,7 +60,7 @@ def create_ovs_bridge_on_vxlan(request):
         pod_container = pod.containers()[0].name
         node_name = pod.node()
         cmds = ["ovs-vsctl", "add-br", bridge_name_vxlan]
-        for name, ip in pytest.nodes_network_info.items():
+        for name, ip in schedulable_node_ips.items():
             if name != node_name:
                 cmd = (
                     [

@@ -13,7 +13,6 @@ from openshift.dynamic import DynamicClient
 
 def pytest_configure():
     pytest.active_node_nics = {}
-    pytest.nodes_network_info = {}
     pytest.real_nics_env = None
     pytest.privileged_pods = []
 

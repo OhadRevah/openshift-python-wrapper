@@ -16,7 +16,7 @@ from tests.network import config
 @pytest.fixture(scope="session", autouse=True)
 def network_init(
     create_namespaces,
-    get_nodes_internal_ip,
+    schedulable_node_ips,
     get_privileged_pods,
     is_bare_metal,
     bond_supported,
@@ -43,6 +43,21 @@ def create_namespaces(request):
 
 
 @pytest.fixture(scope='session')
+def schedulable_node_ips(default_client):
+    """
+    Store all kubevirt.io/schedulable=true IPs
+    """
+    node_ips = {}
+    for node in Node.get_resources(
+        default_client, label_selector="kubevirt.io/schedulable=true"
+    ):
+        for addr in node.instance.status.addresses:
+            if addr.type == "InternalIP":
+                node_ips[node.name] = addr.address
+    return node_ips
+
+
+@pytest.fixture(scope='session')
 def get_privileged_pods(default_client):
     """
     Get ovs-cni pods names
@@ -56,18 +71,6 @@ def get_privileged_pods(default_client):
                 pytest.privileged_pod_container = pod_containers[0].name
 
     assert pytest.privileged_pods, "No privileged pods found"
-
-
-@pytest.fixture(scope='session')
-def get_nodes_internal_ip(default_client):
-    """
-    Get nodes internal IPs
-    """
-    for node in Node.get_resources(default_client, label_selector="kubevirt.io/schedulable=true"):
-        for addr in node.instance.status.addresses:
-            if addr.type == "InternalIP":
-                pytest.nodes_network_info[node.name] = addr.address
-                break
 
 
 @pytest.fixture(scope='session')

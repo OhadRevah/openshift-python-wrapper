@@ -36,7 +36,7 @@ def create_linux_bridges_real_nics(request):
 
 
 @pytest.fixture(scope='class')
-def create_linux_bridge_on_vxlan(request):
+def create_linux_bridge_on_vxlan(request, schedulable_node_ips):
     """
     Create needed linux bridges when setup is not bare-metal
     """
@@ -70,7 +70,7 @@ def create_linux_bridge_on_vxlan(request):
             ["ip", "link", "set", "up", vxlan_name],
             ["ip", "link", "set", "up", bridge_name],
         ]
-        for name, ip in pytest.nodes_network_info.items():
+        for name, ip in schedulable_node_ips.items():
             if name != node_name:
                 cmd = [
                     "ip", "link", "add", vxlan_name, "type", "vxlan", "id",
