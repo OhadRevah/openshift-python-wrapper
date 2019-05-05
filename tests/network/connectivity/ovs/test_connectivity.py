@@ -75,12 +75,12 @@ class TestConnectivity(object):
             'Negative:No_connectivity_between_VM_to_VM_L2_OVS_different_VLANs'
         ]
     )
-    def test_connectivity(self, bridge):
+    def test_connectivity(self, bridge, bond_supported):
         """
         Check connectivity
         """
         if bridge == config.BRIDGE_BR1BOND:
-            if not pytest.bond_support_env:
+            if not bond_supported:
                 pytest.skip(msg='No BOND support')
 
         positive = True

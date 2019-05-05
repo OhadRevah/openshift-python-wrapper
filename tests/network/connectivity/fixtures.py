@@ -4,13 +4,13 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_bond(request):
+def create_bond(request, bond_supported):
     """
     Create BOND if setup support BOND
     """
     bond_name = config.BOND_1
 
-    if not pytest.bond_support_env:
+    if not bond_supported:
         return
 
     def fin():

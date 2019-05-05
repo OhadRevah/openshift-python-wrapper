@@ -19,7 +19,7 @@ def network_init(
     get_nodes_internal_ip,
     get_privileged_pods,
     is_bare_metal,
-    is_bond_supported,
+    bond_supported,
 ):
     """
     Create network test namespaces
@@ -108,10 +108,10 @@ def is_bare_metal():
 
 
 @pytest.fixture(scope='session')
-def is_bond_supported():
+def bond_supported():
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
-    pytest.bond_support_env = max(
+    return max(
         [len(pytest.active_node_nics[i.name]) for i in pytest.privileged_pods]
     ) > 2

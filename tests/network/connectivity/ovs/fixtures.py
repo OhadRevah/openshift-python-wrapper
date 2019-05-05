@@ -76,11 +76,11 @@ def create_ovs_bridge_on_vxlan(request):
 
 
 @pytest.fixture(scope='class')
-def attach_ovs_bridge_to_bond():
+def attach_ovs_bridge_to_bond(bond_supported):
     """
     Create bridge and attach the BOND to it
     """
-    if not pytest.bond_support_env:
+    if not bond_supported:
         return
 
     bond_name = config.BOND_1

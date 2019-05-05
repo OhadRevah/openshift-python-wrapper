@@ -47,7 +47,7 @@ def create_resources_from_yaml(request, default_client):
 
 
 @pytest.fixture(scope='class')
-def create_vms_from_template(request, default_client):
+def create_vms_from_template(request, default_client, bond_supported):
     """
     Create VMs
 
@@ -115,7 +115,7 @@ def create_vms_from_template(request, default_client):
             interfaces.append({'bridge': {}, 'name': interface})
             networks.append({'multus': {'networkName': interface}, 'name': interface})
 
-        if pytest.bond_support_env:
+        if bond_supported:
             for bond in info.get("bonds", []):
                 interfaces.append({'bridge': {}, 'name': bond})
                 networks.append({'multus': {'networkName': bond}, 'name': bond})
@@ -151,7 +151,7 @@ def create_vms_from_template(request, default_client):
 
             idx += 1
 
-        if pytest.bond_support_env:
+        if bond_supported:
             for _, ips in info.get("bonds", {}).items():
                 eth_name = f"eth{idx}"
                 all_interfaces.append(eth_name)
