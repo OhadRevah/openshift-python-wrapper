@@ -28,3 +28,18 @@ oc login -u user -p password or set KUBECONFIG=<kubeconfig file>
     --jira-no-ssl-verify \
     --jira-disable-docs-search
 ```
+
+### network Utility container
+
+Dockerfile is under `tests/manifests/network/privileged_container`
+
+This image is created as a daemonset when the tests start and contains CLI commands
+necessary to control network components on the tests environment hosts.
+
+To build the image:
+```bash
+cd tests/manifests/network/privileged_container
+docker build -t quay.io/redhat/cnv-tests-net-util-container .
+docker login quay.io # Need to have right to push under the redhat organization
+docker push quay.io/redhat/cnv-tests-net-util-container
+```

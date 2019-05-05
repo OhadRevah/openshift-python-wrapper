@@ -1,0 +1,50 @@
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: net-utility
+  namespace: kube-system
+  labels:
+    tier: node
+    cnv-test: net-utility
+spec:
+  template:
+    metadata:
+      labels:
+        tier: node
+        cnv-test: net-utility
+    spec:
+      terminationGracePeriodSeconds: 0
+      hostNetwork: true
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: utility
+        image: quay.io/redhat/cnv-tests-net-util-container
+        command: ["/bin/bash", "-c", "echo ok > /tmp/healthy && sleep INF"]
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "50Mi"
+          limits:
+            cpu: "100m"
+            memory: "50Mi"
+        readinessProbe:
+          exec:
+            command:
+              - cat
+              - /tmp/healthy
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: ovs-run
+            mountPath: /host/run/openvswitch
+      volumes:
+        - name: ovs-run
+          hostPath:
+            path: /run/openvswitch

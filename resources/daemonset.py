@@ -33,8 +33,10 @@ class DaemonSet(NamespacedResource):
             timeout=timeout,
             field_selector=f"metadata.name=={self.name}"
         ):
-            if (rsc['raw_object']['status'].get('desiredNumberScheduled') ==
-                    rsc['raw_object']['status'].get('numberReady')):
+            status = rsc['raw_object']['status']
+            desired_number_scheduled = status.get('desiredNumberScheduled')
+            number_ready = status.get('numberReady')
+            if desired_number_scheduled > 0 and desired_number_scheduled == number_ready:
                 return True
         return False
 

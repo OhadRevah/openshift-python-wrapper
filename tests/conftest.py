@@ -9,10 +9,8 @@ import os
 import kubernetes
 import pytest
 from openshift.dynamic import DynamicClient
-from pytest_testconfig import config as py_config
 
 from resources.node import Node
-from resources.pod import Pod, ExecOnPodError
 
 
 def pytest_configure():
@@ -99,81 +97,3 @@ def schedulable_node_ips(default_client):
             if addr.type == "InternalIP":
                 node_ips[node.name] = addr.address
     return node_ips
-
-
-@pytest.fixture(scope='session')
-def get_privileged_pods(default_client):
-    """
-    Get ovs-cni pods names
-    """
-    for pod in Pod.get(default_client, label_selector=py_config['priviliged_pod_label_selector']):
-        node = pod.node()
-        if [i for i in node.instance.metadata.labels.keys() if 'worker' in i]:
-            pytest.privileged_pods.append(pod)
-            pod_containers = pod.containers()
-            if pod_containers:
-                pytest.privileged_pod_container = pod_containers[0].name
-
-    assert pytest.privileged_pods, "No privileged pods found"
-
-
-@pytest.fixture(scope='session')
-def nodes_active_nics(get_privileged_pods):
-    """
-    Get nodes active NICs. (Only NICs that are in UP state)
-    excluding the management NIC.
-    """
-    nodes_nics = {}
-    for pod in pytest.privileged_pods:
-        pod_container = pod.containers()[0].name
-        node_name = pod.node().name
-        nodes_nics[node_name] = []
-        nics = pod.execute(
-            command=[
-                "bash", "-c",
-                "ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev"
-            ], container=pod_container
-        )
-        nics = nics.splitlines()
-        default_gw = pod.execute(
-            command=["ip", "route", "show", "default"], container=pod_container
-        )
-        for nic in nics:
-            nic_state = pod.execute(
-                command=["cat", f"/sys/class/net/{nic}/operstate"], container=pod_container
-            )
-            #  Exclude management NIC
-            if nic_state.strip() == "up":
-                if nic in [i for i in default_gw.splitlines() if 'default' in i][0]:
-                    continue
-
-                nodes_nics[pod.name].append(nic)
-    return nodes_nics
-
-
-@pytest.fixture(scope='session')
-def is_bare_metal(get_privileged_pods):
-    """
-    Check if the cluster deployed on bare-metal hosts
-    """
-    for pod in pytest.privileged_pods:
-        try:
-            pod.execute(
-                command=[
-                    "bash", "-c",
-                    "dmesg | grep -c 'Booting paravirtualized kernel on bare hardware'"
-                ], container=pod.containers()[0].name
-            )
-        except ExecOnPodError:
-            return False
-    return True
-
-
-@pytest.fixture(scope='session')
-def bond_supported(is_bare_metal, nodes_active_nics):
-    """
-    Check if setup support BOND (have more then 2 NICs up)
-    """
-    return max(
-        [len(nodes_active_nics[i.node().name]) for i in pytest.privileged_pods]
-    ) > 2

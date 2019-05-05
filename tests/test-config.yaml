@@ -4,7 +4,5 @@ test_guest_performance:
 test_performance_over_pod_network:
   bandwidth: 2.5
 
-priviliged_pod_label_selector: app=sdn
-
 template_defaults:
   bridge_cni_name: cnv-bridge
