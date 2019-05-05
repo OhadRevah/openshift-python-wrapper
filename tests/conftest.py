@@ -8,10 +8,6 @@ import os
 
 import pytest
 
-from resources.namespace import Namespace
-
-from . import config
-
 
 def pytest_configure():
     pytest.active_node_nics = {}
@@ -78,25 +74,3 @@ def junitxml_polarion(request):
             my_junit.add_global_property('polarion-project-id', 'CNV')
             my_junit.add_global_property('polarion-response-myproduct', 'cnv-test-run')
             my_junit.add_global_property('polarion-testrun-id', os.getenv('POLARION_TESTRUN_ID'))
-
-
-@pytest.fixture(scope="session", autouse=True)
-def init(request):
-    """
-    Create test namespaces
-    """
-    namespaces = (config.TEST_NS, config.TEST_NS_ALTERNATIVE)
-
-    def fin():
-        """
-        Remove test namespaces
-        """
-        for namespace in namespaces:
-            ns = Namespace(name=namespace)
-            ns.delete(wait=True)
-    request.addfinalizer(fin)
-
-    for namespace in namespaces:
-        ns = Namespace(name=namespace)
-        ns.create(wait=True)
-        ns.wait_for_status(status=Namespace.Status.ACTIVE)
