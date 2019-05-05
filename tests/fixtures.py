@@ -8,7 +8,7 @@ import logging
 
 import pytest
 
-from resources.resource import NamespacedResource
+from resources.resource import Resource
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_instance import VirtualMachineInstance
 from tests import utils as test_utils
@@ -19,28 +19,34 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
-def create_resources_from_yaml(request):
+def create_resources_from_yaml(request, default_client):
     """
     Create resources from yamls
     """
     namespace = test_utils.get_fixture_val(request=request, attr_name="namespace")
     yamls = test_utils.get_fixture_val(request=request, attr_name="yamls")
-    resource = NamespacedResource(namespace=namespace)
 
     def fin():
         """
         Remove resources from yamls
         """
         for yaml_ in yamls:
-            resource.delete(yaml_file=yaml_)
+            try:
+                Resource.delete_from_yaml(
+                    dyn_client=default_client, yaml_file=yaml_, namespace=namespace
+                )
+            except NotFoundError:
+                pass
     request.addfinalizer(fin)
 
     for yaml_ in yamls:
-        resource.create(yaml_file=yaml_, wait=True)
+        Resource.create_from_yaml(
+            dyn_client=default_client, yaml_file=yaml_, namespace=namespace
+        )
 
 
 @pytest.fixture(scope='class')
-def create_vms_from_template(request):
+def create_vms_from_template(request, default_client):
     """
     Create VMs
 
@@ -163,7 +169,9 @@ def create_vms_from_template(request):
         volumes.append(cloud_init_data)
         spec['volumes'] = volumes
         json_out['spec']['template']['spec'] = spec
-        assert vm_object.create(resource_dict=json_out, wait=True)
+        assert vm_object.create_from_dict(
+            dyn_client=default_client, resource_dict=json_out, namespace=namespace
+        )
 
 
 @pytest.fixture(scope='class')

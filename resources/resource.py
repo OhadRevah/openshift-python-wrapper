@@ -31,7 +31,7 @@ class Resource(object):
     api_version = None
     kind = None
 
-    def __init__(self, name=None):
+    def __init__(self, name):
         """
         Create DynamicClient
 
@@ -239,34 +239,56 @@ class Resource(object):
                 return True
         return False
 
-    def create(self, yaml_file=None, resource_dict=None, wait=False):
+    @classmethod
+    def create_from_yaml(cls, dyn_client, yaml_file, namespace=None):
+        """
+        Create resource from given yaml file.
+
+        Args:
+            dyn_client (DynamicClient): Open connection to remote cluster.
+            yaml_file (str): Path to yaml file.
+            namespace (str): Namespace of the resource unless specified in the supplied yaml.
+        """
+        with open(yaml_file, 'r') as stream:
+            data = yaml.full_load(stream)
+
+        return cls.create_from_dict(
+            dyn_client=dyn_client, resource_dict=data, namespace=namespace
+        )
+
+    @classmethod
+    def create_from_dict(cls, dyn_client, resource_dict, namespace=None):
+        """
+        Create resource from given yaml file.
+
+        Args:
+            dyn_client (DynamicClient): Open connection to remote cluster.
+            resource_dict (dict): Path to yaml file.
+            namespace (str): Namespace of the resource unless specified in the supplied yaml.
+        """
+        client = dyn_client.resources.get(
+            api_version=resource_dict['apiVersion'], kind=resource_dict['kind']
+        )
+        LOGGER.info(f"Create {resource_dict['metadata']['name']}")
+        return client.create(
+            body=resource_dict, namespace=resource_dict['metadata'].get('namespace', namespace)
+        )
+
+    def create(self, wait=False):
         """
         Create resource from given yaml file or from dict
 
         Args:
-            yaml_file (str): Path to yaml file.
-            resource_dict (dict): Dict to create resource from.
             wait (bool) : True to wait for resource status.
 
         Returns:
             bool: True if create succeeded, False otherwise.
         """
-        if yaml_file:
-            with open(yaml_file, 'r') as stream:
-                data = yaml.full_load(stream)
-
-            self._extract_data_from_yaml(yaml_data=data)
-
-        else:
-            if not resource_dict:
-                data = {
-                    'apiVersion': self.api_version,
-                    'kind': self.kind,
-                    'metadata': {'name': self.name}
-                }
-            else:
-                data = resource_dict
-
+        data = {
+            'apiVersion': self.api_version,
+            'kind': self.kind,
+            'metadata': {'name': self.name}
+        }
         res = self.api().create(body=data, namespace=self.namespace)
 
         LOGGER.info(f"Create {self.name}")
@@ -274,23 +296,39 @@ class Resource(object):
             return self.wait()
         return res
 
-    def delete(self, yaml_file=None, wait=False):
+    @classmethod
+    def delete_from_yaml(cls, dyn_client, yaml_file, namespace=None):
+        """
+        Delete resource from yaml file
+
+        Args:
+            dyn_client (DynamicClient): Open connection to remote cluster.
+            yaml_file (str): Path to yaml file to delete from yaml.
+            namespace (str): Namespace of the resource unless specified in the supplied yaml.
+
+        Returns:
+            True if delete succeeded, False otherwise.
+        """
+        with open(yaml_file, 'r') as stream:
+            data = yaml.full_load(stream)
+
+        name = data['metadata']['name']
+        client = dyn_client.resources.get(api_version=data['apiVersion'], kind=data['kind'])
+        LOGGER.info(f"Create {name}")
+        return client.delete(
+            name=name, namespace=data['metadata'].get('namespace', namespace)
+        )
+
+    def delete(self, wait=False):
         """
         Delete resource
 
         Args:
-            yaml_file (str): Path to yaml file to delete from yaml.
             wait (bool): True to wait for pod to be deleted.
 
         Returns:
             True if delete succeeded, False otherwise.
         """
-        if yaml_file:
-            with open(yaml_file, 'r') as stream:
-                data = yaml.full_load(stream)
-
-            self._extract_data_from_yaml(yaml_data=data)
-
         resource_list = self.api()
         try:
             res = resource_list.delete(name=self.name, namespace=self.namespace)
@@ -314,17 +352,19 @@ class Resource(object):
         LOGGER.info(f"Get {self.kind} {self.name} status")
         return self.get().status.phase
 
-    def _extract_data_from_yaml(self, yaml_data):
+    @classmethod
+    def _extract_data_from_yaml(cls, yaml_data):
         """
         Extract data from yaml stream
 
         Args:
             yaml_data (dict): Dict from yaml file
         """
-        self.namespace = self.namespace or yaml_data['metadata'].get('namespace')
-        self.name = yaml_data['metadata']['name']
-        self.api_version = yaml_data['apiVersion']
-        self.kind = yaml_data['kind']
+        name = yaml_data['metadata']['name']
+        namespace = yaml_data['metadata']['namespace']
+        api_version = yaml_data['apiVersion']
+        kind = yaml_data['kind']
+        return name, namespace, api_version, kind
 
     def update(self, resource_dict):
         """
@@ -368,7 +408,7 @@ class NamespacedResource(Resource):
     """
     Namespaced object, inherited from Resource.
     """
-    def __init__(self, namespace, name=None):
+    def __init__(self, name, namespace):
         super(NamespacedResource, self).__init__(name=name)
         self.namespace = namespace
 
