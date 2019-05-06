@@ -47,7 +47,7 @@ def create_resources_from_yaml(request, default_client):
 
 
 @pytest.fixture(scope='class')
-def create_vms_from_template(request, default_client, bond_supported):
+def create_vms_from_template(request, default_client, bond_supported, is_bare_metal):
     """
     Create VMs
 
@@ -161,7 +161,7 @@ def create_vms_from_template(request, default_client, bond_supported):
 
                 idx += 1
 
-        if not pytest.real_nics_env:
+        if not is_bare_metal:
             for eth in all_interfaces:
                 cloud_init_user_data += f"  - ip link set mtu 1450 {eth}\n"
 

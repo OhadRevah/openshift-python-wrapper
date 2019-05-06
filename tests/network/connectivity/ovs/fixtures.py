@@ -4,11 +4,11 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_ovs_bridges_real_nics(request, nodes_active_nics):
+def create_ovs_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
     """
     Create needed OVS bridges when setup is bare-metal
     """
-    if not pytest.real_nics_env:
+    if not is_bare_metal:
         return
 
     real_nics_bridge = config.BRIDGE_BR1
@@ -36,11 +36,11 @@ def create_ovs_bridges_real_nics(request, nodes_active_nics):
 
 
 @pytest.fixture(scope='class')
-def create_ovs_bridge_on_vxlan(request, schedulable_node_ips):
+def create_ovs_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
     """
     Create needed OVS bridges when setup is not bare-metal
     """
-    if pytest.real_nics_env:
+    if is_bare_metal:
         return
 
     bridge_name_vxlan = config.BRIDGE_BR1

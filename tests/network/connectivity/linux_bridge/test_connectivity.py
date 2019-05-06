@@ -106,11 +106,11 @@ class TestConnectivity(object):
             'test_guest_performance_over_L2_Linux_bridge_network',
         ]
     )
-    def test_guest_performance(self, interface_id):
+    def test_guest_performance(self, interface_id, is_bare_metal):
         """
         In-guest performance bandwidth passthrough over Linux bridge
         """
-        if not pytest.real_nics_env:
+        if not is_bare_metal:
             pytest.skip(msg='Only run on bare metal env')
 
         expected_res = py_config['test_guest_performance']['bandwidth']

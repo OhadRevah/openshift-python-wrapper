@@ -5,11 +5,11 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_linux_bridges_real_nics(request, nodes_active_nics):
+def create_linux_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
     """
     Create needed linux bridges when setup is bare-metal
     """
-    if not pytest.real_nics_env:
+    if not is_bare_metal:
         return
 
     bridge_name = test_utils.get_fixture_val(request=request, attr_name="bridge_name")
@@ -37,11 +37,11 @@ def create_linux_bridges_real_nics(request, nodes_active_nics):
 
 
 @pytest.fixture(scope='class')
-def create_linux_bridge_on_vxlan(request, schedulable_node_ips):
+def create_linux_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
     """
     Create needed linux bridges when setup is not bare-metal
     """
-    if pytest.real_nics_env:
+    if is_bare_metal:
         return
 
     bridge_name = test_utils.get_fixture_val(request=request, attr_name="bridge_name")

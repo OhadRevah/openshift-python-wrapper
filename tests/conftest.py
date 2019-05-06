@@ -12,11 +12,10 @@ from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
 
 from resources.node import Node
-from resources.pod import Pod
+from resources.pod import Pod, ExecOnPodError
 
 
 def pytest_configure():
-    pytest.real_nics_env = None
     pytest.privileged_pods = []
 
 
@@ -155,38 +154,19 @@ def nodes_active_nics(get_privileged_pods):
 @pytest.fixture(scope='session')
 def is_bare_metal(get_privileged_pods):
     """
-    Check if setup is on bare-metal
+    Check if the cluster deployed on bare-metal hosts
     """
     for pod in pytest.privileged_pods:
-        pod_container = pod.containers()[0].name
-        pytest.active_node_nics[pod.name] = []
-        assert pod.wait_for_status(status=Pod.Status.RUNNING)
-        nics = pod.execute(
-            command=[
-                "bash", "-c",
-                "ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev"
-            ], container=pod_container
-        )
-        nics = nics.splitlines()
-        default_gw = pod.execute(
-            command=["ip", "route", "show", "default"], container=pod_container
-        )
-        for nic in nics:
-            nic_state = pod.execute(
-                command=["cat", f"/sys/class/net/{nic}/operstate"], container=pod_container
+        try:
+            pod.execute(
+                command=[
+                    "bash", "-c",
+                    "dmesg | grep -c 'Booting paravirtualized kernel on bare hardware'"
+                ], container=pod.containers()[0].name
             )
-            if nic_state.strip() == "up":
-                if nic in [i for i in default_gw.splitlines() if 'default' in i][0]:
-                    continue
-
-                pytest.active_node_nics[pod.name].append(nic)
-                driver = pod.execute(
-                    command=[
-                        "bash", "-c",
-                        f"basename $(readlink -f /sys/class/net/{nic}/device/driver/module/)"
-                    ], container=pod_container
-                )
-                pytest.real_nics_env = driver.strip() != "virtio_net"
+        except ExecOnPodError:
+            return False
+    return True
 
 
 @pytest.fixture(scope='session')
