@@ -218,7 +218,7 @@ class Resource(object):
 
         name = data['metadata']['name']
         client = dyn_client.resources.get(api_version=data['apiVersion'], kind=data['kind'])
-        LOGGER.info(f"Create {name}")
+        LOGGER.info(f"Delete {name}")
         return client.delete(
             name=name, namespace=data['metadata'].get('namespace', namespace)
         )
