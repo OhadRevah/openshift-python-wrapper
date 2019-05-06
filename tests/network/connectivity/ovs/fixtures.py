@@ -4,7 +4,7 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_ovs_bridges_real_nics(request):
+def create_ovs_bridges_real_nics(request, nodes_active_nics):
     """
     Create needed OVS bridges when setup is bare-metal
     """
@@ -26,9 +26,10 @@ def create_ovs_bridges_real_nics(request):
 
     for pod in pytest.privileged_pods:
         pod_container = pod.containers()[0].name
+        node_name = pod.node().name
         cmds = [
             ["ovs-vsctl", "add-br", real_nics_bridge],
-            ["ovs-vsctl", "add-port", real_nics_bridge, pytest.active_node_nics[pod.name][0]],
+            ["ovs-vsctl", "add-port", real_nics_bridge, nodes_active_nics[node_name][0]],
         ]
         for cmd in cmds:
             pod.execute(command=cmd, container=pod_container)

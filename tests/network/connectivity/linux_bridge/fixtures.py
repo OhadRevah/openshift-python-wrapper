@@ -5,7 +5,7 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_linux_bridges_real_nics(request):
+def create_linux_bridges_real_nics(request, nodes_active_nics):
     """
     Create needed linux bridges when setup is bare-metal
     """
@@ -25,11 +25,12 @@ def create_linux_bridges_real_nics(request):
 
     for pod in pytest.privileged_pods:
         pod_container = pod.containers()[0].name
+        node_name = pod.node().name
         cmds = [
             ["ip", "link", "add", bridge_name, "type", "bridge"],
             ["ip", "link", "set", bridge_name, "type", "bridge", "vlan_filtering", "1"],
             ["ip", "link", "set", "dev", bridge_name, "up"],
-            ["ip", "link", "set", "dev", pytest.active_node_nics[pod.name][0], "master", bridge_name],
+            ["ip", "link", "set", "dev", nodes_active_nics[node_name][0], "master", bridge_name],
         ]
         for cmd in cmds:
             pod.execute(command=cmd, container=pod_container)

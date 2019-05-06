@@ -16,7 +16,6 @@ from resources.pod import Pod
 
 
 def pytest_configure():
-    pytest.active_node_nics = {}
     pytest.real_nics_env = None
     pytest.privileged_pods = []
 
@@ -120,6 +119,40 @@ def get_privileged_pods(default_client):
 
 
 @pytest.fixture(scope='session')
+def nodes_active_nics(get_privileged_pods):
+    """
+    Get nodes active NICs. (Only NICs that are in UP state)
+    excluding the management NIC.
+    """
+    nodes_nics = {}
+    for pod in pytest.privileged_pods:
+        pod_container = pod.containers()[0].name
+        node_name = pod.node().name
+        nodes_nics[node_name] = []
+        nics = pod.execute(
+            command=[
+                "bash", "-c",
+                "ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev"
+            ], container=pod_container
+        )
+        nics = nics.splitlines()
+        default_gw = pod.execute(
+            command=["ip", "route", "show", "default"], container=pod_container
+        )
+        for nic in nics:
+            nic_state = pod.execute(
+                command=["cat", f"/sys/class/net/{nic}/operstate"], container=pod_container
+            )
+            #  Exclude management NIC
+            if nic_state.strip() == "up":
+                if nic in [i for i in default_gw.splitlines() if 'default' in i][0]:
+                    continue
+
+                nodes_nics[pod.name].append(nic)
+    return nodes_nics
+
+
+@pytest.fixture(scope='session')
 def is_bare_metal(get_privileged_pods):
     """
     Check if setup is on bare-metal
@@ -157,10 +190,10 @@ def is_bare_metal(get_privileged_pods):
 
 
 @pytest.fixture(scope='session')
-def bond_supported(is_bare_metal):
+def bond_supported(is_bare_metal, nodes_active_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
     return max(
-        [len(pytest.active_node_nics[i.name]) for i in pytest.privileged_pods]
+        [len(nodes_active_nics[i.node().name]) for i in pytest.privileged_pods]
     ) > 2
