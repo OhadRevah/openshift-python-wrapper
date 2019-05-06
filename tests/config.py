@@ -1,5 +1,4 @@
 # NAMESPACES
-NETWORK_NS = "network-tests-namespace"
 VIRT_NS = "cnv-virt-ns"
 
 # VMS TEMPLATES

@@ -2,6 +2,7 @@
 
 from tests.config import *
 
+NETWORK_NS = "network-tests-namespace"
 
 # LINUX BRIDGE CRDS YAMLS
 LINUX_BRIDGE_VLAN_100_YAML = "tests/manifests/network/bridge-vlan-100-net.yml"
