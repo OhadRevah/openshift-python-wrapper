@@ -1,33 +1,17 @@
----
 apiVersion: cdi.kubevirt.io/v1alpha1
 kind: DataVolume
 metadata:
-  name: ${NAME}
+  name: {{ name }}
+  namespace: {{ namespace }}
 spec:
   source:
       http:
-         url: ${URL}
-  contentType: ${CONTENT_TYPE}
+         url: {{ url }}
+  contentType: {{ content_type }}
   pvc:
     accessModes:
-      - ${ACCESS_MODES}
+      - {{ access_modes }}
     resources:
       requests:
-        storage: ${SIZE}
-    storageClassName: ${STORAGE_CLASS}
-
-parameters:
-- description: Name for the new DataVolume
-  name: NAME
-- description: URL to import from
-  name: URL
-- description: content type
-  name: CONTENT_TYPE
-  value: "kubevirt"
-- description: access modes
-  name: ACCESS_MODES
-  value: "ReadWriteOnce"
-- description: PVC size
-  name: SIZE
-- description: storage class
-  name: STORAGE_CLASS
+        storage: {{ size }}
+    storageClassName: {{ storage_class }}
