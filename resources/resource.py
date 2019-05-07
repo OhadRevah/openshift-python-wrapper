@@ -2,7 +2,6 @@ import logging
 
 import kubernetes
 import urllib3
-import yaml
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from . import utils
@@ -182,38 +181,21 @@ class Resource(object):
         return False
 
     @classmethod
-    def create_from_yaml(cls, dyn_client, yaml_file, namespace=None):
+    def create_from_dict(cls, dyn_client, data, namespace=None):
         """
         Create resource from given yaml file.
 
         Args:
             dyn_client (DynamicClient): Open connection to remote cluster.
-            yaml_file (str): Path to yaml file.
-            namespace (str): Namespace of the resource unless specified in the supplied yaml.
-        """
-        with open(yaml_file, 'r') as stream:
-            data = yaml.full_load(stream)
-
-        return cls.create_from_dict(
-            dyn_client=dyn_client, resource_dict=data, namespace=namespace
-        )
-
-    @classmethod
-    def create_from_dict(cls, dyn_client, resource_dict, namespace=None):
-        """
-        Create resource from given yaml file.
-
-        Args:
-            dyn_client (DynamicClient): Open connection to remote cluster.
-            resource_dict (dict): Path to yaml file.
+            data (dict): Dict representing the resource.
             namespace (str): Namespace of the resource unless specified in the supplied yaml.
         """
         client = dyn_client.resources.get(
-            api_version=resource_dict['apiVersion'], kind=resource_dict['kind']
+            api_version=data['apiVersion'], kind=data['kind']
         )
-        LOGGER.info(f"Create {resource_dict['metadata']['name']}")
+        LOGGER.info(f"Create {data['metadata']['name']}")
         return client.create(
-            body=resource_dict, namespace=resource_dict['metadata'].get('namespace', namespace)
+            body=data, namespace=data['metadata'].get('namespace', namespace)
         )
 
     def create(self, body=None, wait=False):
@@ -255,21 +237,18 @@ class Resource(object):
         return res
 
     @classmethod
-    def delete_from_yaml(cls, dyn_client, yaml_file, namespace=None):
+    def delete_from_dict(cls, dyn_client, data, namespace=None):
         """
-        Delete resource from yaml file
+        Delete resource represented by the passed data
 
         Args:
             dyn_client (DynamicClient): Open connection to remote cluster.
-            yaml_file (str): Path to yaml file to delete from yaml.
+            data (dict): Dict representation of resource payload.
             namespace (str): Namespace of the resource unless specified in the supplied yaml.
 
         Returns:
             True if delete succeeded, False otherwise.
         """
-        with open(yaml_file, 'r') as stream:
-            data = yaml.full_load(stream)
-
         name = data['metadata']['name']
         client = dyn_client.resources.get(api_version=data['apiVersion'], kind=data['kind'])
         LOGGER.info(f"Delete {name}")

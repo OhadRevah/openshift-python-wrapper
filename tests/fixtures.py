@@ -7,6 +7,7 @@ Pytest fixtures file for CNV tests
 import logging
 
 import pytest
+from pytest_testconfig import config as py_config
 from openshift.dynamic.exceptions import NotFoundError
 
 from resources.resource import Resource
@@ -27,22 +28,26 @@ def create_resources_from_yaml(request, default_client):
     namespace = test_utils.get_fixture_val(request=request, attr_name="namespace")
     yamls = test_utils.get_fixture_val(request=request, attr_name="yamls")
 
+    template_conf = py_config['template_defaults']
+
     def fin():
         """
         Remove resources from yamls
         """
         for yaml_ in yamls:
             try:
-                Resource.delete_from_yaml(
-                    dyn_client=default_client, yaml_file=yaml_, namespace=namespace
+                data = utils.generate_yaml_from_template(file_=yaml_, **template_conf)
+                Resource.delete_from_dict(
+                    dyn_client=default_client, data=data, namespace=namespace
                 )
             except NotFoundError:
                 pass
     request.addfinalizer(fin)
 
     for yaml_ in yamls:
-        Resource.create_from_yaml(
-            dyn_client=default_client, yaml_file=yaml_, namespace=namespace
+        data = utils.generate_yaml_from_template(file_=yaml_, **template_conf)
+        Resource.create_from_data(
+            dyn_client=default_client, data=data, namespace=namespace
         )
 
 
@@ -170,7 +175,7 @@ def create_vms_from_template(request, default_client, bond_supported, is_bare_me
         spec['volumes'] = volumes
         json_out['spec']['template']['spec'] = spec
         assert vm_object.create_from_dict(
-            dyn_client=default_client, resource_dict=json_out, namespace=namespace
+            dyn_client=default_client, data=json_out, namespace=namespace
         )
 
 
