@@ -268,7 +268,7 @@ class Resource(object):
         self.api().replace(body=resource_dict, namespace=self.namespace)
 
     @classmethod
-    def get_resources(cls, dyn_client, *args, **kwargs):
+    def get(cls, dyn_client, *args, **kwargs):
         """
         Get resources
 
@@ -301,7 +301,7 @@ class NamespacedResource(Resource):
         self.namespace = namespace
 
     @classmethod
-    def get_resources(cls, dyn_client, *args, **kwargs):
+    def get(cls, dyn_client, *args, **kwargs):
         """
         Get resources
 

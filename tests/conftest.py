@@ -94,7 +94,7 @@ def schedulable_node_ips(default_client):
     Store all kubevirt.io/schedulable=true IPs
     """
     node_ips = {}
-    for node in Node.get_resources(
+    for node in Node.get(
         default_client, label_selector="kubevirt.io/schedulable=true"
     ):
         for addr in node.instance.status.addresses:
@@ -108,7 +108,7 @@ def get_privileged_pods(default_client):
     """
     Get ovs-cni pods names
     """
-    for pod in Pod.get_resources(default_client, label_selector=py_config['priviliged_pod_label_selector']):
+    for pod in Pod.get(default_client, label_selector=py_config['priviliged_pod_label_selector']):
         node = pod.node()
         if [i for i in node.instance.metadata.labels.keys() if 'worker' in i]:
             pytest.privileged_pods.append(pod)

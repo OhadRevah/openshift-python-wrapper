@@ -27,7 +27,7 @@ class VirtualMachineInstance(NamespacedResource):
             Pod: virt-launcher Pod
         """
         uid = self.instance.metadata.uid
-        return list(Pod.get_resources(
+        return list(Pod.get(
             dyn_client=self.client,
             namespace=self.namespace,
             label_selector=f'kubevirt.io=virt-launcher,kubevirt.io/created-by={uid}'
