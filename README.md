@@ -29,6 +29,11 @@ oc login -u user -p password or set KUBECONFIG=<kubeconfig file>
     --jira-disable-docs-search
 ```
 
+Note: some older versions of openshift-installer may have a bug where test
+namespaces created by the suite are left stuck in Terminating state forever. In
+this case, you may want to use the `clean-namespace.sh` script located in the
+root directory of this repository.
+
 ### network Utility container
 
 Dockerfile is under `tests/manifests/network/privileged_container`

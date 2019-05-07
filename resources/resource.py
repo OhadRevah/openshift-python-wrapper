@@ -125,6 +125,12 @@ class Resource(object):
                     return True
         return False
 
+    def nudge_delete(self):
+        """
+        Resource specific "nudge delete" action that may help the resource to
+        complete its cleanup. Needed by some resources.
+        """
+
     def _client_wait_deleted(self, timeout):
         """
         client-side Wait until resource is deleted
@@ -149,6 +155,7 @@ class Resource(object):
 
         samples = utils.TimeoutSampler(timeout=timeout, sleep=1, func=_exists)
         for sample in samples:
+            self.nudge_delete()
             if not sample:
                 return True
         return False
