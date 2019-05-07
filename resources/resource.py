@@ -92,7 +92,8 @@ class Resource(object):
             bool: True if resource is gone, False if timeout reached.
         """
         supported_kind_to_watch = [
-            'Pod', 'Namespace', 'ConfigMap', 'Node', 'VirtualMachine', 'VirtualMachineInstance'
+            'Pod', 'Namespace', 'ConfigMap', 'Node', 'VirtualMachine', 'VirtualMachineInstance', 'DataVolume',
+            'PersistentVolumeClaim',
         ]
         LOGGER.info(f"Wait until {self.kind} {self.name} is deleted")
 
