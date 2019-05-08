@@ -308,7 +308,8 @@ class Resource(object):
         Returns:
             generator: Generator of Resources of cls.kind
         """
-        for resource_field in dyn_client.resources.get(kind=cls.kind).get(*args, **kwargs).items:
+        for resource_field in dyn_client.resources.get(
+                kind=cls.kind, api_version=cls.api_version).get(*args, **kwargs).items:
             yield cls(name=resource_field.metadata.name)
 
     @property
@@ -341,7 +342,8 @@ class NamespacedResource(Resource):
         Returns:
             generator: Generator of Resources of cls.kind
         """
-        for resource_field in dyn_client.resources.get(kind=cls.kind).get(*args, **kwargs).items:
+        for resource_field in dyn_client.resources.get(
+                kind=cls.kind, api_version=cls.api_version).get(*args, **kwargs).items:
             yield cls(
                 name=resource_field.metadata.name, namespace=resource_field.metadata.namespace
             )
