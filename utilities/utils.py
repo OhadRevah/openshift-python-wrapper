@@ -107,7 +107,7 @@ class TimeoutSampler(object):
 
 
 @generate_logs()
-def run_command(command):
+def _run_command(command):
     """
     Run command locally.
 
@@ -146,30 +146,7 @@ def run_virtctl_command(command, namespace=None):
         virtctl_cmd = virtctl_cmd + ["--kubeconfig", kubeconfig]
 
     virtctl_cmd = virtctl_cmd + command
-    return run_command(command=virtctl_cmd)
-
-
-def run_oc_command(command, namespace=None):
-    """
-    Run oc command
-
-    Args:
-        command (list): Command to run
-        namespace (str): Namespace to send to oc command
-
-    Returns:
-        tuple: True, out if command succeeded, False, err otherwise.
-    """
-    oc_cmd = ["oc"]
-    kubeconfig = os.getenv('KUBECONFIG')
-    if namespace:
-        oc_cmd = oc_cmd + ["-n", namespace]
-
-    if kubeconfig:
-        oc_cmd = oc_cmd + ["--kubeconfig", kubeconfig]
-
-    oc_cmd = oc_cmd + command
-    return run_command(command=oc_cmd)
+    return _run_command(command=virtctl_cmd)
 
 
 @generate_logs()
@@ -208,28 +185,6 @@ def generate_yaml_from_template(file_, **kwargs):
     template = jinja2.Template(data)
     out = template.render(**kwargs)
     return yaml.safe_load(out)
-
-
-@generate_logs()
-def get_json_from_template(file_, **kwargs):
-    """
-    Generate JSON from template file_
-
-    Args:
-        file_ (str): Template file
-
-    Returns:
-        dict: Generated from template file
-
-    Examples:
-        get_json_from_vm_template(file_='path/to/file/name', NAME='vm-name-1')
-    """
-    command = f"process -f {file_}"
-    for k, v in kwargs.items():
-        command += f" -p {k}={v}"
-
-    res, out = run_oc_command(command=command)
-    return {} if not res else json.loads(out).get('items')[0]
 
 
 def get_test_parametrize_ids(item, params):
