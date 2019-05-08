@@ -4,6 +4,7 @@ import kubernetes
 
 from .node import Node
 from .resource import NamespacedResource
+from . import utils
 
 
 class ExecOnPodError(Exception):
@@ -70,9 +71,10 @@ class Pod(NamespacedResource):
             stdout=True, tty=False,
             _preload_content=False
         )
-        resp.run_forever(timeout=timeout)
-        stdout = resp.read_stdout()
-        stderr = resp.read_stderr()
+        timeout_watch = utils.TimeoutWatch(timeout)
+        resp.run_forever(timeout=timeout_watch.remaining_time())
+        stdout = resp.read_stdout(timeout=timeout_watch.remaining_time())
+        stderr = resp.read_stderr(timeout=timeout_watch.remaining_time())
         error_channel = json.loads(resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL))
         if error_channel['status'] == 'Success':
             returncode = 0

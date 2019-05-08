@@ -48,3 +48,22 @@ class TimeoutSampler(object):
             if self.timeout < (time.time() - self.start_time):
                 raise TimeoutExpiredError(self.timeout)
             time.sleep(self.sleep)
+
+
+class TimeoutWatch:
+    """
+    A time counter allowing to determine the time remaining since the start
+    of a given interval
+    """
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.start_time = time.time()
+
+    def remaining_time(self):
+        """
+        Return the remaining part of timeout since the object was created.
+        """
+        new_timeout = self.start_time + self.timeout - time.time()
+        if new_timeout > 0:
+            return new_timeout
+        raise TimeoutExpiredError(self.timeout)
