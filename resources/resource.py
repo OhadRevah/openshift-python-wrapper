@@ -129,9 +129,19 @@ class Resource(object):
         Returns:
             bool: True if resource is gone, False if timeout reached.
         """
-        samples = utils.TimeoutSampler(
-            timeout=timeout, sleep=1, func=lambda: bool(self.instance)
-        )
+        def _exists():
+            """
+            Whether self exists on the server
+
+            Returns:
+                bool: True if the resource was found, False if not
+            """
+            try:
+                return self.instance
+            except NotFoundError:
+                return None
+
+        samples = utils.TimeoutSampler(timeout=timeout, sleep=1, func=_exists)
         for sample in samples:
             if not sample:
                 return True
