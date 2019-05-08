@@ -7,6 +7,7 @@ class NetworkAttachmentDefinition(NamespacedResource):
     """
     api_version = 'k8s.cni.cncf.io/v1'
     kind = 'NetworkAttachmentDefinition'
+    _client_wait_needed = True
 
     def __init__(self, name, namespace):
         super(NetworkAttachmentDefinition, self).__init__(name=name, namespace=namespace)

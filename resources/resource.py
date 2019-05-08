@@ -17,6 +17,7 @@ class Resource(object):
     """
     api_version = None
     kind = None
+    _client_wait_needed = False
 
     def __init__(self, name):
         """
@@ -91,21 +92,22 @@ class Resource(object):
         Returns:
             bool: True if resource is gone, False if timeout reached.
         """
-        supported_kind_to_watch = [
-            'Pod', 'Namespace', 'ConfigMap', 'Node', 'VirtualMachine', 'VirtualMachineInstance', 'DataVolume',
-            'PersistentVolumeClaim',
-        ]
         LOGGER.info(f"Wait until {self.kind} {self.name} is deleted")
+        if self._client_wait_needed:
+            return self._client_wait_deleted(timeout)
+        else:
+            return self._server_wait_deleted(timeout)
 
-        if self.kind not in supported_kind_to_watch:
-            samples = utils.TimeoutSampler(
-                timeout=timeout, sleep=1, func=lambda: bool(self.instance)
-            )
-            for sample in samples:
-                if not sample:
-                    return True
-            return False
+    def _server_wait_deleted(self, timeout):
+        """
+        server-side Wait until resource is deleted
 
+        Args:
+            timeout (int): Time to wait for the resource.
+
+        Returns:
+            bool: True if resource is gone, False if timeout reached.
+        """
         watcher = kubernetes.watch.Watch()
         for event in watcher.stream(
             func=self.kube_api.list_event_for_all_namespaces, timeout_seconds=timeout,
@@ -115,6 +117,24 @@ class Resource(object):
                 if event_object.name == self.name and event_object.namespace == self.namespace:
                     watcher.stop()
                     return True
+        return False
+
+    def _client_wait_deleted(self, timeout):
+        """
+        client-side Wait until resource is deleted
+
+        Args:
+            timeout (int): Time to wait for the resource.
+
+        Returns:
+            bool: True if resource is gone, False if timeout reached.
+        """
+        samples = utils.TimeoutSampler(
+            timeout=timeout, sleep=1, func=lambda: bool(self.instance)
+        )
+        for sample in samples:
+            if not sample:
+                return True
         return False
 
     def wait_for_status(self, status, timeout=TIMEOUT, label_selector=None, resource_version=None):
