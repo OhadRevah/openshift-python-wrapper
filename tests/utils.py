@@ -1,12 +1,10 @@
-import json
 import logging
 import operator
 
-import bitmath
 from _pytest.fixtures import FixtureLookupError
 from autologs.autologs import generate_logs
 
-from utilities import utils, console
+from utilities import utils
 
 LOGGER = logging.getLogger(__name__)
 
