@@ -8,14 +8,12 @@ import pytest
 
 from resources.virtual_machine import VirtualMachine
 from tests.fixtures import (
-    create_resources_from_yaml,
     create_vms_from_template,
     wait_until_vmis_running,
     start_vms,
 )
 from utilities import utils
 from . import config
-from .fixtures import create_linux_bridge
 
 
 def count_veth_devices_on_host(pod, pod_container):
@@ -37,8 +35,9 @@ def count_veth_devices_on_host(pod, pod_container):
 
 
 @pytest.mark.usefixtures(
-    create_resources_from_yaml.__name__,
-    create_linux_bridge.__name__,
+    'network_cr_linux_bridge_br1',
+    'network_cr_linux_bridge_br1vlan100',
+    'linux_bridge_br1',
     create_vms_from_template.__name__,
     start_vms.__name__,
     wait_until_vmis_running.__name__,
@@ -51,11 +50,6 @@ class TestVethRemovedAfterVmsDeleted(object):
     vms = config.VETH_REMOVED_VMS
     template = config.VM_YAML_FEDORA
     template_kwargs = config.VM_FEDORA_ATTRS
-    bridge_name = config.BRIDGE_BR1
-    yamls = [
-        config.LINUX_BRIDGE_YAML,
-        config.LINUX_BRIDGE_VLAN_100_YAML,
-    ]
 
     def test_veth_removed_from_host_after_vm_deleted(self):
         """
