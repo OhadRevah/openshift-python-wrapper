@@ -31,6 +31,14 @@ class Resource(object):
     """
     api_version = None
 
+    try:
+        client = DynamicClient(kubernetes.config.new_client_from_config())
+    except (kubernetes.config.ConfigException, urllib3.exceptions.MaxRetryError):
+        LOGGER.error('You need to be logged into a cluster or have $KUBECONFIG env configured')
+        raise
+
+    kube_api = kubernetes.client.CoreV1Api(api_client=client.client)
+
     def __init__(self, name):
         """
         Create DynamicClient
@@ -38,13 +46,6 @@ class Resource(object):
         Args:
             name (str): Resource name
         """
-        try:
-            self.client = DynamicClient(kubernetes.config.new_client_from_config())
-        except (kubernetes.config.ConfigException, urllib3.exceptions.MaxRetryError):
-            LOGGER.error('You need to be login to cluster or have $KUBECONFIG env configured')
-            raise
-
-        self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
         self.namespace = None
         self.name = name
 
