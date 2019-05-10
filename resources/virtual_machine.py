@@ -127,6 +127,7 @@ class VirtualMachine(NamespacedResource):
         """
         return Node(name=self.instance.status.nodeName)
 
+    @property
     def vmi(self):
         """
         Get VMI

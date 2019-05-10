@@ -83,7 +83,7 @@ def bridge_attached_vmi(namespace, bridge_network):
             namespace=namespace.name,
             name=_get_name("vm")) as vm:
         vm.start()
-        yield vm.vmi()
+        yield vm.vmi
 
 
 @pytest.fixture()

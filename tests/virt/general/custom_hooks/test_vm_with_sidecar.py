@@ -39,7 +39,7 @@ def sidecar_vm(default_client):
 
 @pytest.fixture()
 def running_sidecar_vm(sidecar_vm):
-    test_utils.wait_for_vm_interfaces(sidecar_vm.vmi(), timeout=720)
+    test_utils.wait_for_vm_interfaces(sidecar_vm.vmi, timeout=720)
     yield sidecar_vm
 
 

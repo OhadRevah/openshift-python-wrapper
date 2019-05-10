@@ -129,13 +129,13 @@ def bridge_attached_vmb(namespace):
 
 @pytest.fixture()
 def running_bridge_attached_vma(bridge_attached_vma):
-    assert bridge_attached_vma.vmi().wait_until_running()
+    assert bridge_attached_vma.vmi.wait_until_running()
     return bridge_attached_vma
 
 
 @pytest.fixture()
 def running_bridge_attached_vmb(bridge_attached_vmb):
-    assert bridge_attached_vmb.vmi().wait_until_running()
+    assert bridge_attached_vmb.vmi.wait_until_running()
     return bridge_attached_vmb
 
 
