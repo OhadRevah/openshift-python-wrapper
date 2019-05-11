@@ -15,6 +15,37 @@ class VirtualMachineInstance(NamespacedResource):
     """
     api_version = 'kubevirt.io/v1alpha3'
 
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "domain": {
+                "devices": {
+                    "disks": [{
+                        "disk": {
+                            "bus": "virtio",
+                        },
+                        "name": "containerdisk",
+                    }],
+                },
+                "machine": {
+                    "type": "",
+                },
+                "resources": {
+                    "requests": {
+                        "memory": "64M",
+                    },
+                },
+            },
+            "terminationGracePeriodSeconds": 0,
+            "volumes": [{
+                "name": "containerdisk",
+                "containerDisk": {
+                    "image": "kubevirt/cirros-container-disk-demo:latest",
+                },
+            }],
+        }
+        return res
+
     @property
     def interfaces(self):
         return self.instance.status.interfaces

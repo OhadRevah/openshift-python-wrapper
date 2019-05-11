@@ -4,6 +4,7 @@ import kubernetes
 import urllib3
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
+
 from . import utils
 
 LOGGER = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class ValueMismatch(Exception):
 
 class Resource(object):
     """
-    DynamicClient Resource class
+    Base class for API resources
     """
     api_version = None
 
@@ -41,7 +42,7 @@ class Resource(object):
 
     def __init__(self, name):
         """
-        Create DynamicClient
+        Create a API resource
 
         Args:
             name (str): Resource name
@@ -57,6 +58,33 @@ class Resource(object):
             list(c for c in cls.mro() if c not in NamespacedResource.mro())
         ):
             return c.__name__
+
+    def _base_body(self):
+        return {
+            "apiVersion": self.api_version,
+            "kind": self.kind,
+            "metadata": {
+                "name": self.name,
+            },
+        }
+
+    def _to_dict(self):
+        """
+        Generate intended dict representation of the resource.
+        """
+        return self._base_body()
+
+    def __enter__(self):
+        data = self._to_dict()
+        LOGGER.info(f"Posting {data}")
+        self.create_from_dict(
+            dyn_client=self.client, data=data, namespace=self.namespace)
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        data = self._to_dict()
+        LOGGER.info(f"Deleting {data}")
+        self.delete(wait=True)
 
     def api(self, **kwargs):
         """
@@ -211,11 +239,7 @@ class Resource(object):
         Raises:
             ValueMismatch: When body value doesn't match class value
         """
-        data = {
-            'apiVersion': self.api_version,
-            'kind': self.kind,
-            'metadata': {'name': self.name}
-        }
+        data = self._base_body()
         if body:
             kind = body['kind']
             name = body.get('name')
