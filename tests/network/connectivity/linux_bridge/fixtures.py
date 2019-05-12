@@ -63,7 +63,7 @@ def create_linux_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
 
     for idx, pod in enumerate(pytest.privileged_pods):
         pod_container = pod.containers()[0].name
-        node_name = pod.node()
+        node_name = pod.node().name
         cmds = [
             ["ip", "link", "add", bridge_name, "type", "bridge"],
             ["ip", "link", "set", bridge_name, "type", "bridge", "vlan_filtering", "1"],
