@@ -15,7 +15,7 @@ def run_test_connectivity(src_vm, dst_vm, dst_ip, positive):
     """
     Check connectivity
     """
-    expected = '0% packet loss' if positive else '100% packet loss'
+    expected = ' 0% packet loss' if positive else '100% packet loss'
     LOGGER.info(
         f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm} to {dst_vm}"
     )
