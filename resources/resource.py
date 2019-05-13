@@ -11,6 +11,13 @@ LOGGER = logging.getLogger(__name__)
 TIMEOUT = 120
 
 
+class ValueMismatch(Exception):
+    """
+    Raises when value doesn't match the class value
+    """
+    pass
+
+
 class Resource(object):
     """
     DynamicClient Resource class
@@ -209,21 +216,37 @@ class Resource(object):
             body=resource_dict, namespace=resource_dict['metadata'].get('namespace', namespace)
         )
 
-    def create(self, wait=False):
+    def create(self, body=None, wait=False):
         """
-        Create resource from given yaml file or from dict
+        Create resource.
 
         Args:
+            body (dict): Resource data to create.
             wait (bool) : True to wait for resource status.
 
         Returns:
             bool: True if create succeeded, False otherwise.
+
+        Raises:
+            ValueMismatch: When body value doesn't match class value
         """
         data = {
             'apiVersion': self.api_version,
             'kind': self.kind,
             'metadata': {'name': self.name}
         }
+        if body:
+            kind = body['kind']
+            name = body.get('name')
+            api_version = body['apiVersion']
+            if kind != self.kind:
+                ValueMismatch(f'{kind} != {self.kind}')
+            if name and name != self.name:
+                ValueMismatch(f'{name} != {self.name}')
+            if api_version != self.api_version:
+                ValueMismatch(f'{api_version} != {self.api_version}')
+
+            data.update(body)
         res = self.api().create(body=data, namespace=self.namespace)
 
         LOGGER.info(f"Create {self.name}")
