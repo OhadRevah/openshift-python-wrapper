@@ -12,7 +12,7 @@ LINUX_BRIDGE_BOND_YAML = "tests/manifests/network/bridge-net-bond.yml"
 LINUX_BRIDGE_YAML = "tests/manifests/network/bridge-net.yml"
 
 # BRIDGE
-BRIDGE_BR1 = "br1"
+BRIDGE_BR1 = "br1test"
 BRIDGE_BR1BOND = "br1bond"
 BRIDGE_BR1VLAN100 = "br1vlan100"
 BRIDGE_BR1VLAN200 = "br1vlan200"

@@ -16,7 +16,7 @@ def network_cr_linux_bridge_br1(request, default_client):
     Create linux bridge network CR named br1
     """
     crd_yaml = 'tests/manifests/network/bridge-net.yml'
-    name = "br1"
+    name = "br1test"
 
     def fin():
         """
@@ -67,7 +67,7 @@ def linux_bridge_br1(request):
     """
     Create linux bridge named br1
     """
-    bridge_name = 'br1'
+    bridge_name = 'br1test'
 
     def fin():
         """
