@@ -330,7 +330,7 @@ class NamespacedResource(Resource):
     Namespaced object, inherited from Resource.
     """
     def __init__(self, name, namespace):
-        super(NamespacedResource, self).__init__(name=name)
+        super().__init__(name=name)
         self.namespace = namespace
 
     @classmethod

@@ -59,7 +59,7 @@ class Fedora(Console):
             password (str): Password for login.
             namespace (str): VM namespace
         """
-        super(Fedora, self).__init__()
+        super().__init__()
         self.vm = vm
         self.username = username or "fedora"
         self.password = password or "fedora"
@@ -104,7 +104,7 @@ class Cirros(Console):
             password (str): Password for login.
             namespace (str): VM namespace
         """
-        super(Cirros, self).__init__()
+        super().__init__()
         self.vm = vm
         self.username = username or "cirros"
         self.password = password or "gocubsgo"
@@ -151,7 +151,7 @@ class Alpine(Console):
             password (str): Password for login.
             namespace (str): VM namespace
         """
-        super(Alpine, self).__init__()
+        super().__init__()
         self.vm = vm
         self.username = username or "root"
         self.password = password

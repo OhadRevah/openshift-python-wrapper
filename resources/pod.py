@@ -34,7 +34,7 @@ class Pod(NamespacedResource):
         RUNNING = 'Running'
 
     def __init__(self, name, namespace):
-        super(Pod, self).__init__(name=name, namespace=namespace)
+        super().__init__(name=name, namespace=namespace)
         self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
 
     def containers(self):
