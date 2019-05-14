@@ -28,7 +28,6 @@ class Pod(NamespacedResource):
     Pod object, inherited from Resource.
     """
     api_version = 'v1'
-    kind = 'Pod'
 
     class Status:
         RUNNING = 'Running'

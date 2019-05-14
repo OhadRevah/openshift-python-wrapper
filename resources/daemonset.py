@@ -14,7 +14,6 @@ class DaemonSet(NamespacedResource):
     DaemonSet object.
     """
     api_version = 'extensions/v1beta1'
-    kind = 'DaemonSet'
 
     def wait_until_deployed(self, timeout=TIMEOUT):
         """

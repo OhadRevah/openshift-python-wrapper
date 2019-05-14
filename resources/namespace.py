@@ -15,7 +15,6 @@ class Namespace(Resource):
     Namespace object, inherited from Resource.
     """
     api_version = 'v1'
-    kind = 'Namespace'
 
     # we have to wait on client side at least until delete needs a curl based nudge
     _client_wait_needed = True

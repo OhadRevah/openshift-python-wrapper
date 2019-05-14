@@ -14,7 +14,6 @@ class PersistentVolumeClaim(NamespacedResource):
     """
 
     api_version = 'v1'
-    kind = 'PersistentVolumeClaim'
 
     def bound(self):
         """

@@ -13,4 +13,3 @@ class DataVolume(NamespacedResource):
     """
 
     api_version = 'cdi.kubevirt.io/v1alpha1'
-    kind = 'DataVolume'

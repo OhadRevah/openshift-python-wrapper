@@ -10,6 +10,14 @@ LOGGER = logging.getLogger(__name__)
 TIMEOUT = 120
 
 
+class classproperty(object):  # noqa: N801
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, owner):
+        return self.func(owner)
+
+
 class ValueMismatch(Exception):
     """
     Raises when value doesn't match the class value
@@ -22,7 +30,6 @@ class Resource(object):
     DynamicClient Resource class
     """
     api_version = None
-    kind = None
     _client_wait_needed = False
 
     def __init__(self, name):
@@ -41,6 +48,13 @@ class Resource(object):
         self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
         self.namespace = None
         self.name = name
+
+    @classproperty
+    def kind(cls):  # noqa: N805
+        if cls in (Resource, NamespacedResource):
+            return None
+        else:
+            return cls.__name__
 
     def api(self, **kwargs):
         """

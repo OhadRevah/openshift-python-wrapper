@@ -14,7 +14,6 @@ class VirtualMachineInstance(NamespacedResource):
     Implements actions start / stop / status / wait for VM status / is running
     """
     api_version = 'kubevirt.io/v1alpha3'
-    kind = 'VirtualMachineInstance'
 
     def virt_launcher_pod(self):
         """
