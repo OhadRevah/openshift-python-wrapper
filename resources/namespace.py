@@ -10,6 +10,3 @@ class Namespace(Resource):
 
     class Status:
         ACTIVE = 'Active'
-
-    def __init__(self, name):
-        super(Namespace, self).__init__(name=name)

@@ -18,9 +18,6 @@ class VirtualMachine(NamespacedResource):
     api_version = 'kubevirt.io/v1alpha3'
     kind = 'VirtualMachine'
 
-    def __init__(self, name, namespace):
-        super(VirtualMachine, self).__init__(name=name, namespace=namespace)
-
     def start(self, timeout=TIMEOUT, wait=False):
         """
         Start VM with virtctl

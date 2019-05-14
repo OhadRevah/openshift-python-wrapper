@@ -16,9 +16,6 @@ class VirtualMachineInstance(NamespacedResource):
     api_version = 'kubevirt.io/v1alpha3'
     kind = 'VirtualMachineInstance'
 
-    def __init__(self, name, namespace):
-        super(VirtualMachineInstance, self).__init__(name=name, namespace=namespace)
-
     def virt_launcher_pod(self):
         """
         Get VMi virt-launcher Pod
