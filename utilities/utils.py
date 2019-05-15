@@ -3,7 +3,6 @@ import os
 import re
 import subprocess
 import time
-
 import yaml
 import jinja2
 from _pytest.mark import ParameterSet
@@ -180,7 +179,6 @@ def generate_yaml_from_template(file_, **kwargs):
     for var in template_vars:
         if var not in kwargs.keys():
             raise MissingTemplateVariables(var=var, template=file_)
-
     template = jinja2.Template(data)
     out = template.render(**kwargs)
     return yaml.safe_load(out)

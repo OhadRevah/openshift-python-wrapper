@@ -31,6 +31,7 @@ class Resource(object):
     Base class for API resources
     """
     api_version = None
+    singular_name = None
 
     try:
         client = DynamicClient(kubernetes.config.new_client_from_config())
@@ -103,7 +104,11 @@ class Resource(object):
         Returns:
             Resource: Resource object.
         """
-        return self.client.resources.get(api_version=self.api_version, kind=self.kind, **kwargs)
+        if self.singular_name:
+            kwargs['singular_name'] = self.singular_name
+        return self.client.resources.get(
+            api_version=self.api_version, kind=self.kind, **kwargs
+        )
 
     def wait(self, timeout=TIMEOUT, label_selector=None, resource_version=None):
         """
