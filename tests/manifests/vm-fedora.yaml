@@ -38,7 +38,7 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
       - containerDisk:
-          image: kubevirt/fedora-cloud-container-disk-demo:latest
+          image: kubevirt/fedora30-cloud-container-disk-demo:latest
         name: containerdisk
       - cloudInitNoCloud:
           userData: |-
