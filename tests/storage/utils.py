@@ -18,7 +18,5 @@ def create_dv_from_template(dyn_client, template, **kwargs):
     assert 'name' in kwargs.keys() and 'namespace' in kwargs.keys()
     dv = DataVolume(name=kwargs['name'], namespace=kwargs['namespace'])
     json_out = utils.generate_yaml_from_template(file_=template, **kwargs)
-    assert dv.create_from_dict(
-        dyn_client=dyn_client, resource_dict=json_out
-    )
+    assert dv.create_from_dict(dyn_client=dyn_client, data=json_out)
     return dv
