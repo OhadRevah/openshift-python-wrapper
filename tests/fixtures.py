@@ -46,7 +46,7 @@ def create_resources_from_yaml(request, default_client):
 
     for yaml_ in yamls:
         data = utils.generate_yaml_from_template(file_=yaml_, **template_conf)
-        Resource.create_from_data(
+        Resource.create_from_dict(
             dyn_client=default_client, data=data, namespace=namespace
         )
 
