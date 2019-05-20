@@ -67,3 +67,17 @@ docker build -t quay.io/redhat/cnv-tests-net-util-container .
 docker login quay.io # Need to have right to push under the redhat organization
 docker push quay.io/redhat/cnv-tests-net-util-container
 ```
+
+### Development
+
+Development is happening using internal Red Hat Gerrit instance
+(code.engineering.redhat.com). To interact with the server, please install
+`git-review` on your system. More details here:
+https://docs.openstack.org/infra/git-review/
+
+At the moment of writing, automated CI is very limited for the repository, so
+it's expected from authors of new patches to verify their changes are not
+breaking the rest of the code, and if so, to mark them as Verified+1.
+(Determining the depth of verification steps for each patch is left for the
+author and their reviewer.) It's required that the procedure used to verify a
+patch is listed in comments to the review request.
