@@ -16,10 +16,6 @@ spec:
     spec:
       terminationGracePeriodSeconds: 0
       hostNetwork: true
-      tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
       containers:
       - name: utility
         image: quay.io/redhat/cnv-tests-net-util-container
