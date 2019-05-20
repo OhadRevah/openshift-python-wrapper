@@ -12,6 +12,25 @@ oc login -u user -p password or set KUBECONFIG=<kubeconfig file>
     pipenv --three install
 ```
 ### Running the tests
+
+The simplest way to run the tests is as follows:
+```
+    pipenv run pytest tests \
+    --tc-file=tests/test-config.yaml \
+    --tc-format=yaml
+```
+
+If you target a cluster that is deployed using upstream manifests for HCO, you
+may want to instead use a different test configuration file (also included with
+the repository):
+```
+    pipenv run pytest tests \
+    --tc-file=tests/test-config-upstream.yaml \
+    --tc-format=yaml
+```
+
+There are other parameters that can be passed to the test suite if needed.
+
 ```
     pipenv run pytest tests \
     --tc-file=tests/test-config.yaml \
