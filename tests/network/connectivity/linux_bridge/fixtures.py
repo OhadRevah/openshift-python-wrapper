@@ -5,7 +5,9 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_linux_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
+def create_linux_bridges_real_nics(
+    request, network_utility_pods, nodes_active_nics, is_bare_metal
+):
     """
     Create needed linux bridges when setup is bare-metal
     """
@@ -18,12 +20,12 @@ def create_linux_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
         """
         Remove created linux bridges
         """
-        for pod in pytest.privileged_pods:
+        for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
             pod.execute(command=["ip", "link", "del", bridge_name], container=pod_container)
     request.addfinalizer(fin)
 
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         node_name = pod.node().name
         cmds = [
@@ -37,7 +39,9 @@ def create_linux_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
 
 
 @pytest.fixture(scope='class')
-def create_linux_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
+def create_linux_bridge_on_vxlan(
+    request, network_utility_pods, schedulable_node_ips, is_bare_metal
+):
     """
     Create needed linux bridges when setup is not bare-metal
     """
@@ -51,7 +55,7 @@ def create_linux_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
         """
         Remove created linux bridges
         """
-        for pod in pytest.privileged_pods:
+        for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
             cmds = [
                 ["ip", "link", "del", bridge_name],
@@ -61,7 +65,7 @@ def create_linux_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
                 pod.execute(command=cmd, container=pod_container)
     request.addfinalizer(fin)
 
-    for idx, pod in enumerate(pytest.privileged_pods):
+    for idx, pod in enumerate(network_utility_pods):
         pod_container = pod.containers()[0].name
         node_name = pod.node().name
         cmds = [
@@ -85,7 +89,7 @@ def create_linux_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
 
 
 @pytest.fixture(scope='class')
-def attach_linux_bridge_to_bond(request, bond_supported):
+def attach_linux_bridge_to_bond(request, network_utility_pods, bond_supported):
     """
     Create bridge and attach the BOND to it
     """
@@ -95,7 +99,7 @@ def attach_linux_bridge_to_bond(request, bond_supported):
     bond_name = test_utils.get_fixture_val(request=request, attr_name="bond_name")
     bond_bridge = test_utils.get_fixture_val(request=request, attr_name="bond_bridge")
 
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         cmds = [
             ["ip", "link", "add", bond_bridge, "type", "bridge"],

@@ -4,7 +4,9 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_ovs_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
+def create_ovs_bridges_real_nics(
+    request, network_utility_pods, nodes_active_nics, is_bare_metal
+):
     """
     Create needed OVS bridges when setup is bare-metal
     """
@@ -17,14 +19,14 @@ def create_ovs_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
         """
         Remove created OVS bridges
         """
-        for pod in pytest.privileged_pods:
+        for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
             pod.execute(
                 command=["ovs-vsctl", "del-br", real_nics_bridge], container=pod_container
             )
     request.addfinalizer(fin)
 
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         node_name = pod.node().name
         cmds = [
@@ -36,7 +38,9 @@ def create_ovs_bridges_real_nics(request, nodes_active_nics, is_bare_metal):
 
 
 @pytest.fixture(scope='class')
-def create_ovs_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
+def create_ovs_bridge_on_vxlan(
+    request, network_utility_pods, schedulable_node_ips, is_bare_metal
+):
     """
     Create needed OVS bridges when setup is not bare-metal
     """
@@ -50,14 +54,14 @@ def create_ovs_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
         """
         Remove created OVS bridges
         """
-        for pod in pytest.privileged_pods:
+        for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
             pod.execute(
                 command=["ovs-vsctl", "del-br", bridge_name_vxlan], container=pod_container
             )
     request.addfinalizer(fin)
 
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         node_name = pod.node()
         cmds = ["ovs-vsctl", "add-br", bridge_name_vxlan]
@@ -77,7 +81,7 @@ def create_ovs_bridge_on_vxlan(request, schedulable_node_ips, is_bare_metal):
 
 
 @pytest.fixture(scope='class')
-def attach_ovs_bridge_to_bond(bond_supported):
+def attach_ovs_bridge_to_bond(network_utility_pods, bond_supported):
     """
     Create bridge and attach the BOND to it
     """
@@ -86,7 +90,7 @@ def attach_ovs_bridge_to_bond(bond_supported):
 
     bond_name = config.BOND_1
     bond_bridge = config.BRIDGE_BR1BOND
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         cmds = [
             ["ovs-vsctl", "add-br", bond_bridge],

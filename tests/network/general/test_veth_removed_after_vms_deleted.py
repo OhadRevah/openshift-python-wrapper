@@ -51,14 +51,14 @@ class TestVethRemovedAfterVmsDeleted(object):
     template = config.VM_YAML_FEDORA
     template_kwargs = config.VM_FEDORA_ATTRS
 
-    def test_veth_removed_from_host_after_vm_deleted(self):
+    def test_veth_removed_from_host_after_vm_deleted(self, network_utility_pods):
         """
         Check that veth interfaces are removed from host after VM deleted
         """
         for vm in self.vms:
             vm_object = VirtualMachine(name=vm, namespace=self.namespace)
             vm_interfaces = vm_object.instance.status.interfaces or []
-            for pod in pytest.privileged_pods:
+            for pod in network_utility_pods:
                 pod_container = pod.containers()[0].name
                 pod_node = pod.node()
                 if pod_node.name == vm_object.node().name:

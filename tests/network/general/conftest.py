@@ -68,7 +68,7 @@ def network_cr_linux_bridge_br1vlan100(request, default_client):
 
 
 @pytest.fixture(scope='class')
-def linux_bridge_br1(request):
+def linux_bridge_br1(request, network_utility_pods):
     """
     Create linux bridge named br1
     """
@@ -78,12 +78,12 @@ def linux_bridge_br1(request):
         """
         Remove created linux bridge
         """
-        for pod in pytest.privileged_pods:
+        for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
             pod.execute(command=["ip", "link", "del", bridge_name], container=pod_container)
     request.addfinalizer(fin)
 
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         pod.execute(
             command=["ip", "link", "add", bridge_name, "type", "bridge"], container=pod_container

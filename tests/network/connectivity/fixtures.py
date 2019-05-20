@@ -4,7 +4,7 @@ from . import config
 
 
 @pytest.fixture(scope='class')
-def create_bond(request, bond_supported, nodes_active_nics):
+def create_bond(request, network_utility_pods, bond_supported, nodes_active_nics):
     """
     Create BOND if setup support BOND
     """
@@ -17,7 +17,7 @@ def create_bond(request, bond_supported, nodes_active_nics):
         """
         Remove created BOND
         """
-        for pod in pytest.privileged_pods:
+        for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
             pod.execute(command=["ip", "link", "del", bond_name], container=pod_container)
     request.addfinalizer(fin)
@@ -26,7 +26,7 @@ def create_bond(request, bond_supported, nodes_active_nics):
         ["ip", "link", "add", bond_name, "type", "bond"],
         ["ip", "link", "set", bond_name, "type", "bond", "miimon", "100", "mode", "active-backup"]
     ]
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         node_name = pod.node().name
         for cmd in bond_commands:

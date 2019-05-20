@@ -13,10 +13,6 @@ from openshift.dynamic import DynamicClient
 from resources.node import Node
 
 
-def pytest_configure():
-    pytest.privileged_pods = []
-
-
 def pytest_collection_modifyitems(session, config, items):
     """
     Add polarion test case it from tests to junit xml

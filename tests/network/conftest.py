@@ -59,15 +59,7 @@ def network_utility_pods(default_client):
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
     These pods have a label of cnv-test=net-utility and they are privileged pods with hostnetwork=true
     """
-    for pod in Pod.get(default_client, label_selector="cnv-test=net-utility"):
-        node = pod.node()
-        if [i for i in node.instance.metadata.labels.keys() if 'worker' in i]:
-            pytest.privileged_pods.append(pod)
-            pod_containers = pod.containers()
-            if pod_containers:
-                pytest.privileged_pod_container = pod_containers[0].name
-
-    assert pytest.privileged_pods, "No privileged pods found"
+    return list(Pod.get(default_client, label_selector="cnv-test=net-utility"))
 
 
 @pytest.fixture(scope='session')
@@ -92,7 +84,7 @@ def nodes_active_nics(network_utility_pods):
     excluding the management NIC.
     """
     nodes_nics = {}
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         node_name = pod.node().name
         nodes_nics[node_name] = []
@@ -124,7 +116,7 @@ def is_bare_metal(network_utility_pods):
     """
     Check if the cluster deployed on bare-metal hosts
     """
-    for pod in pytest.privileged_pods:
+    for pod in network_utility_pods:
         try:
             pod.execute(
                 command=[
@@ -138,10 +130,10 @@ def is_bare_metal(network_utility_pods):
 
 
 @pytest.fixture(scope='session')
-def bond_supported(is_bare_metal, nodes_active_nics):
+def bond_supported(network_utility_pods, is_bare_metal, nodes_active_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
     return max(
-        [len(nodes_active_nics[i.node().name]) for i in pytest.privileged_pods]
+        [len(nodes_active_nics[i.node().name]) for i in network_utility_pods]
     ) > 2
