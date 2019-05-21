@@ -197,7 +197,7 @@ class Resource(object):
             resource_version=resource_version,
             field_selector=f"metadata.name=={self.name}"
         ):
-            if rsc['raw_object']['status'].get('phase') == status:
+            if 'status' in rsc['raw_object'] and rsc['raw_object']['status'].get('phase') == status:
                 return True
         return False
 
