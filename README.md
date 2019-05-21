@@ -29,6 +29,21 @@ the repository):
     --tc-format=yaml
 ```
 
+To see verbose logging of a test run, add the following parameter:
+```
+    pipenv run pytest tests \
+    ... \
+    -o log_cli=true
+```
+
+To run a particular set of tests, you can use name pattern matching. For
+example, to run all network related tests, do:
+```
+    pipenv run pytest tests \
+    ... \
+    -k network
+```
+
 There are other parameters that can be passed to the test suite if needed.
 
 ```
