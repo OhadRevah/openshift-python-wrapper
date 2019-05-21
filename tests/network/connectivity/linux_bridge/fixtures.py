@@ -1,7 +1,6 @@
 import pytest
 
 from tests import utils as test_utils
-from . import config
 
 
 @pytest.fixture(scope='class')
@@ -65,7 +64,7 @@ def create_linux_bridge_on_vxlan(
                 pod.execute(command=cmd, container=pod_container)
     request.addfinalizer(fin)
 
-    for idx, pod in enumerate(network_utility_pods):
+    for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
         node_name = pod.node().name
         cmds = [
@@ -79,7 +78,7 @@ def create_linux_bridge_on_vxlan(
             if name != node_name:
                 cmd = [
                     "ip", "link", "add", vxlan_name, "type", "vxlan", "id",
-                    config.VXLAN_IDS[idx], "remote", ip, "dstport", "4790"
+                    "10", "remote", ip, "dstport", "4790"
                 ]
                 cmds.insert(1, cmd)
                 break

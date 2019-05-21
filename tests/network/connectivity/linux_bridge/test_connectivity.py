@@ -17,7 +17,7 @@ from tests.fixtures import (
 from tests.network.connectivity import utils
 from tests.network.connectivity.fixtures import create_bond
 from tests.network.fixtures import update_vms_pod_ip_info
-from . import config
+from tests.network.connectivity import config
 from .fixtures import (
     create_linux_bridge_on_vxlan,
     create_linux_bridges_real_nics,
