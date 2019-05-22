@@ -71,6 +71,7 @@ def create_linux_bridge_on_vxlan(
             ["ip", "link", "add", bridge_name, "type", "bridge"],
             ["ip", "link", "set", bridge_name, "type", "bridge", "vlan_filtering", "1"],
             ["ip", "link", "set", vxlan_name, "master", bridge_name],
+            ["bridge", "vlan", "add", "dev", vxlan_name, "vid", "1-1000"],
             ["ip", "link", "set", "up", vxlan_name],
             ["ip", "link", "set", "up", bridge_name],
         ]
