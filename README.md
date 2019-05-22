@@ -8,7 +8,7 @@ oc login -u user -p password or set KUBECONFIG=<kubeconfig file>
 ```
 ### Prepare the environment
 ```
-    sudo dnf install pipenv
+    pip3 install pipenv
     pipenv --three install
 ```
 ### Running the tests
