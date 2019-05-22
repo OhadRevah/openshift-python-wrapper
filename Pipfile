@@ -19,7 +19,7 @@ python-autologs = "*"
 bitmath = "*"
 urllib3 = "*"
 pytest-jira = "*"
-pytest-marker-bugzilla = "*"
+pytest-marker-bugzilla = {editable = true, ref = "py3-fix", git = "https://github.com/myakove/pytest_marker_bugzilla.git"}
 python-bugzilla = "*"
 sh = "*"
 pytest-ordering = "*"
