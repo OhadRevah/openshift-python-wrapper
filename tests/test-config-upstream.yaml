@@ -6,3 +6,6 @@ test_performance_over_pod_network:
 
 template_defaults:
   bridge_cni_name: bridge
+
+storage_defaults:
+  storage_class: local
