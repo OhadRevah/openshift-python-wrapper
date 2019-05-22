@@ -34,6 +34,7 @@ def count_veth_devices_on_host(pod, pod_container):
     return int(out.strip())
 
 
+@pytest.mark.polarion("CNV-746")
 @pytest.mark.usefixtures(
     'network_cr_linux_bridge_br1',
     'network_cr_linux_bridge_br1vlan100',

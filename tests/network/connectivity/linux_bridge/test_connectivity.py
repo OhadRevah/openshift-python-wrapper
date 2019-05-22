@@ -62,11 +62,11 @@ class TestConnectivity(object):
     @pytest.mark.parametrize(
         'bridge',
         [
-            pytest.param('pod'),
-            pytest.param(config.BRIDGE_BR1),
-            pytest.param(config.BRIDGE_BR1VLAN100),
-            pytest.param(config.BRIDGE_BR1BOND),
-            pytest.param(config.BRIDGE_BR1VLAN200)
+            pytest.param('pod', marks=(pytest.mark.polarion("CNV-1610"))),
+            pytest.param(config.BRIDGE_BR1, marks=(pytest.mark.polarion("CNV-2080"))),
+            pytest.param(config.BRIDGE_BR1VLAN100, marks=(pytest.mark.polarion("CNV-2072"))),
+            pytest.param(config.BRIDGE_BR1BOND, marks=(pytest.mark.polarion("CNV-2141"))),
+            pytest.param(config.BRIDGE_BR1VLAN200, marks=(pytest.mark.polarion("CNV-2075")))
         ],
         ids=[
             'Connectivity_between_VM_to_VM_over_POD_network',
