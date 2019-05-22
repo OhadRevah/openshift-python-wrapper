@@ -25,7 +25,7 @@
         },
         "ansible": {
             "git": "https://github.com/ansible/ansible.git",
-            "ref": "bab1a3cedadf66ef78bbaadf4aa931bdcf3a66bb"
+            "ref": "a8ebbecd53bbb28016cc21854bca2eb9a5ef1021"
         },
         "asn1crypto": {
             "hashes": [

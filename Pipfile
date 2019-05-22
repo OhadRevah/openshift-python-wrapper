@@ -24,7 +24,7 @@ pytest-testconfig = {editable = true, ref = "overriding-values-is-broken", git =
 python-bugzilla = "*"
 sh = "*"
 pytest-ordering = "*"
-ansible = {git = "https://github.com/ansible/ansible.git"}
+ansible = {editable = true, ref = "devel", git = "https://github.com/ansible/ansible.git"}
 jinja2 = "*"
 
 [requires]

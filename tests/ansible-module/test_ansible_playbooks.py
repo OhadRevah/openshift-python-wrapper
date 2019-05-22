@@ -2,9 +2,10 @@
 Test Ansible Module with running test playbooks
 """
 import logging
-import sh
 import pytest
 import os
+import shutil
+import subprocess
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,39 +16,57 @@ PLAYBOOK_PATH = os.path.join(PLAYBOOK_REPO_PATH, "tests/playbooks/")
 PLAYBOOK_REPO_LOG = os.path.join(PLAYBOOK_REPO_PATH, "ansible.log")
 
 
-pytestmark = pytest.mark.skip("Skip until tests are fixed")
+@pytest.fixture(scope="module")
+def clone_playbook_repo(request):
+
+    # Clone the repo for all the playbooks
+    subprocess.check_output(
+        f"git clone {PLAYBOOK_REPO_URL}", stderr=subprocess.STDOUT, shell=True
+    )
+    yield
+    # Delete the cloned repo ones used
+    shutil.rmtree(PLAYBOOK_REPO_PATH)
 
 
 @pytest.fixture(scope="module")
-def cloned_playbook_repo(request):
-    sh.git.clone(PLAYBOOK_REPO_URL)
+def ansible_config_environ():
     os.environ["ANSIBLE_CONFIG"] = PLAYBOOK_REPO_ANSICFG
-
-    def fin():
-        sh.rm(PLAYBOOK_REPO_PATH, "-r")
-        del os.environ["ANSIBLE_CONFIG"]
-
-    request.addfinalizer(fin)
+    yield
+    del os.environ["ANSIBLE_CONFIG"]
 
 
 @pytest.mark.parametrize(
     "playbook_name",
     [
-        "kubevirt_preset.yml",
-        "kubevirt_pvc.yml",
-        "kubevirt_vmir.yml",
-        "kubevirt_template.yaml",
-        "kubevirt_vm.yml",
-        "e2e.yaml",
+        pytest.param("kubevirt_preset.yml", marks=(pytest.mark.polarion("CNV-2575"))),
+        pytest.param("kubevirt_vmir.yml", marks=(pytest.mark.polarion("CNV-2564"))),
+        pytest.param("kubevirt_vm.yml", marks=(pytest.mark.polarion("CNV-2562"))),
+        pytest.param("kubevirt_dv_vm.yaml", marks=(pytest.mark.polarion("CNV-2576"))),
+        pytest.param(
+            "kubevirt_template.yaml", marks=(pytest.mark.polarion("CNV-2572"))
+        ),
+        pytest.param(
+            "kubevirt_pvc.yml",
+            marks=(pytest.mark.polarion("CNV-2563"), pytest.mark.bugzilla(1716905)),
+        ),
+        pytest.param(
+            "e2e.yaml",
+            marks=(pytest.mark.polarion("CNV-720"), pytest.mark.bugzilla(1716905)),
+        ),
     ],
 )
-def test_ansible_playbook(cloned_playbook_repo, playbook_name):
+def test_ansible_playbook(clone_playbook_repo, ansible_config_environ, playbook_name):
     """
     Test Each parametrized playbook against ansible devel
     """
+
+    path = os.path.join(PLAYBOOK_PATH, playbook_name)
     try:
-        sh.ansible_playbook(os.path.join(PLAYBOOK_PATH, playbook_name), "-vvvv")
-    except sh.ErrorReturnCode as e:
+        subprocess.check_output(
+            f"ansible-playbook {path} -vvvv", stderr=subprocess.STDOUT, shell=True
+        )
+    except subprocess.CalledProcessError as e:
+        LOGGER.error(e.output)
         with open(PLAYBOOK_REPO_LOG, "r") as log:
             LOGGER.debug(log.read())
         pytest.fail(
