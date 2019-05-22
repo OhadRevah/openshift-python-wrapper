@@ -50,10 +50,12 @@ class Resource(object):
 
     @classproperty
     def kind(cls):  # noqa: N805
-        if cls in (Resource, NamespacedResource):
-            return None
-        else:
-            return cls.__name__
+        # return the name of the last class in MRO list that is not one of base
+        # classes; otherwise return None
+        for c in reversed(
+            list(c for c in cls.mro() if c not in NamespacedResource.mro())
+        ):
+            return c.__name__
 
     def api(self, **kwargs):
         """
