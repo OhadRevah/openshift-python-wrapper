@@ -12,7 +12,7 @@ CHECK_DMIDECODE_PACKAGE = "sudo dmidecode -s baseboard-manufacturer | grep 'Radi
 
 
 @pytest.fixture()
-def side_car_vm(default_client):
+def sidecar_vm(default_client):
     name = "vmi-with-sidecar-hook"
     vm_params = {
         "metadata": {
@@ -38,17 +38,18 @@ def side_car_vm(default_client):
 
 
 @pytest.fixture()
-def running_side_car_vm(side_car_vm):
-    test_utils.wait_for_vm_interfaces(side_car_vm.vmi(), timeout=720)
-    yield side_car_vm
+def running_sidecar_vm(sidecar_vm):
+    test_utils.wait_for_vm_interfaces(sidecar_vm.vmi(), timeout=720)
+    yield sidecar_vm
 
 
-def test_vm_with_sidecar_hook(running_side_car_vm):
+@pytest.mark.polarion("CNV-840")
+def test_vm_with_sidecar_hook(running_sidecar_vm):
     """
     Test VM with sidecar hook, Install dmidecode with annotation
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
     And check that package includes manufacturer: "Radical Edward"
     """
-    with console.Fedora(vm=running_side_car_vm.name, namespace=config.VIRT_NS) as vm_console:
+    with console.Fedora(vm=running_sidecar_vm.name, namespace=config.VIRT_NS) as vm_console:
         vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
         vm_console.expect("1", timeout=20)
