@@ -16,9 +16,6 @@ class Namespace(Resource):
     """
     api_version = 'v1'
 
-    # we have to wait on client side at least until delete needs a curl based nudge
-    _client_wait_needed = True
-
     class Status:
         ACTIVE = 'Active'
 

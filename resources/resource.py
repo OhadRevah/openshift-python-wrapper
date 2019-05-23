@@ -30,7 +30,6 @@ class Resource(object):
     DynamicClient Resource class
     """
     api_version = None
-    _client_wait_needed = False
 
     def __init__(self, name):
         """
@@ -113,31 +112,7 @@ class Resource(object):
             bool: True if resource is gone, False if timeout reached.
         """
         LOGGER.info(f"Wait until {self.kind} {self.name} is deleted")
-        if self._client_wait_needed:
-            return self._client_wait_deleted(timeout)
-        else:
-            return self._server_wait_deleted(timeout)
-
-    def _server_wait_deleted(self, timeout):
-        """
-        server-side Wait until resource is deleted
-
-        Args:
-            timeout (int): Time to wait for the resource.
-
-        Returns:
-            bool: True if resource is gone, False if timeout reached.
-        """
-        watcher = kubernetes.watch.Watch()
-        for event in watcher.stream(
-            func=self.kube_api.list_event_for_all_namespaces, timeout_seconds=timeout,
-        ):
-            if event['object'].reason == 'SuccessfulDelete':
-                event_object = event['object'].involved_object
-                if event_object.name == self.name and event_object.namespace == self.namespace:
-                    watcher.stop()
-                    return True
-        return False
+        return self._client_wait_deleted(timeout)
 
     def nudge_delete(self):
         """
