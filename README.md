@@ -4,7 +4,7 @@ This repository contains tests. These tests are to verify functionality for Open
 # Getting started
 ### Login to your OpenShift instance
 ```
-oc login -u user -p password or set KUBECONFIG=<kubeconfig file> 
+oc login -u user -p password or set KUBECONFIG=<kubeconfig file>
 ```
 ### Prepare the environment
 ```
