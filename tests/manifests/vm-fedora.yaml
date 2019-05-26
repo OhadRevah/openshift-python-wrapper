@@ -25,7 +25,7 @@ spec:
               bus: virtio
             name: cloudinitdisk
           interfaces:
-          - bridge: {}
+          - masquerade: {}
             name: default
         machine:
           type: ""
