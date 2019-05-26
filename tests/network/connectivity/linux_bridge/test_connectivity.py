@@ -98,8 +98,8 @@ class TestConnectivity(object):
     @pytest.mark.parametrize(
         'interface_id',
         [
-            pytest.param('pod'),
-            pytest.param(config.BRIDGE_BR1),
+            pytest.param('pod', marks=(pytest.mark.polarion("CNV-2334"))),
+            pytest.param(config.BRIDGE_BR1, marks=(pytest.mark.polarion("CNV-2335"))),
         ],
         ids=[
             'test_guest_performance_over_POD_network',
