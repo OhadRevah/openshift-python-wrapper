@@ -16,3 +16,18 @@ class DataVolume(NamespacedResource):
     class Status:
         SUCCEEDED = 'Succeeded'
         FAILED = 'Failed'
+
+    class AccessMode:
+        """
+        AccessMode object.
+        """
+        RWO = "ReadWriteOnce"
+        ROX = "ReadOnlyMany"
+        RWX = "ReadWriteMany"
+
+    class ContentType:
+        """
+        ContentType object
+        """
+        KUBEVIRT = "kubevirt"
+        ARCHIVE = "archive"
