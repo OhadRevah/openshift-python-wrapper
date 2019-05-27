@@ -56,9 +56,10 @@ def create_linux_bridge_on_vxlan(
         """
         for pod in network_utility_pods:
             pod_container = pod.containers()[0].name
+
             cmds = [
-                ["ip", "link", "del", bridge_name],
                 ["ip", "link", "del", vxlan_name],
+                ["ip", "link", "del", bridge_name]
             ]
             for cmd in cmds:
                 pod.execute(command=cmd, container=pod_container)
@@ -66,23 +67,17 @@ def create_linux_bridge_on_vxlan(
 
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node().name
+        # Create and configure the bridge commands
         cmds = [
             ["ip", "link", "add", bridge_name, "type", "bridge"],
             ["ip", "link", "set", bridge_name, "type", "bridge", "vlan_filtering", "1"],
+            ["ip", "link", "add", vxlan_name, "type", "vxlan", "id", "10",
+             "group", "226.100.100.100", "dev", "eth0", "dstport", "4790"],
             ["ip", "link", "set", vxlan_name, "master", bridge_name],
             ["bridge", "vlan", "add", "dev", vxlan_name, "vid", "1-1000"],
             ["ip", "link", "set", "up", vxlan_name],
-            ["ip", "link", "set", "up", bridge_name],
+            ["ip", "link", "set", "up", bridge_name]
         ]
-        for name, ip in schedulable_node_ips.items():
-            if name != node_name:
-                cmd = [
-                    "ip", "link", "add", vxlan_name, "type", "vxlan", "id",
-                    "10", "remote", ip, "dstport", "4790"
-                ]
-                cmds.insert(1, cmd)
-                break
 
         for cmd in cmds:
             pod.execute(command=cmd, container=pod_container)
