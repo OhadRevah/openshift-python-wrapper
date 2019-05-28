@@ -15,6 +15,10 @@ class VirtualMachineInstance(NamespacedResource):
     """
     api_version = 'kubevirt.io/v1alpha3'
 
+    @property
+    def interfaces(self):
+        return self.instance.status.interfaces
+
     def virt_launcher_pod(self):
         """
         Get VMi virt-launcher Pod
