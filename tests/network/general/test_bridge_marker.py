@@ -5,7 +5,7 @@ from pytest_testconfig import config as py_config
 
 from resources import network_attachment_definition as nad
 from resources.namespace import Namespace
-from resources.virtual_machine_instance import VirtualMachineInstance
+from resources.virtual_machine import VirtualMachine
 
 from tests.network import utils
 
@@ -45,29 +45,31 @@ def bridge_network(namespace):
         yield attachdef
 
 
-class VirtualMachineInstanceAttachedToBridge(VirtualMachineInstance):
+class VirtualMachineAttachedToBridge(VirtualMachine):
     def _to_dict(self):
         res = super()._to_dict()
 
+        spec = res["spec"]["template"]["spec"]
+
         # add a default network if attaching to other networks
-        res["spec"]["networks"] = [{
+        spec["networks"] = [{
             "name": "default",
             "pod": {},
         }]
-        res["spec"]["domain"]["devices"]["interfaces"] = [{
+        spec["domain"]["devices"]["interfaces"] = [{
             "name": "default",
             "bridge": {},
         }]
 
         # also attach to bridge network
         network_name = "net1"
-        res["spec"]["networks"].append({
+        spec["networks"].append({
             "name": network_name,
             "multus": {
                 "networkName": _get_network_attachment_name(),
             },
         })
-        res["spec"]["domain"]["devices"]["interfaces"].append({
+        spec["domain"]["devices"]["interfaces"].append({
             "name": network_name,
             "bridge": {},
         })
@@ -77,10 +79,11 @@ class VirtualMachineInstanceAttachedToBridge(VirtualMachineInstance):
 
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
-    with VirtualMachineInstanceAttachedToBridge(
+    with VirtualMachineAttachedToBridge(
             namespace=namespace.name,
-            name=_get_name("vmi")) as vmi:
-        yield vmi
+            name=_get_name("vm")) as vm:
+        vm.start()
+        yield vm.vmi()
 
 
 @pytest.fixture()

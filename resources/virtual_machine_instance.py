@@ -4,6 +4,7 @@ import logging
 
 from .pod import Pod
 from .resource import NamespacedResource
+from . import virtual_machine
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,33 +18,7 @@ class VirtualMachineInstance(NamespacedResource):
 
     def _to_dict(self):
         res = super()._to_dict()
-        res["spec"] = {
-            "domain": {
-                "devices": {
-                    "disks": [{
-                        "disk": {
-                            "bus": "virtio",
-                        },
-                        "name": "containerdisk",
-                    }],
-                },
-                "machine": {
-                    "type": "",
-                },
-                "resources": {
-                    "requests": {
-                        "memory": "64M",
-                    },
-                },
-            },
-            "terminationGracePeriodSeconds": 0,
-            "volumes": [{
-                "name": "containerdisk",
-                "containerDisk": {
-                    "image": "kubevirt/cirros-container-disk-demo:latest",
-                },
-            }],
-        }
+        res["spec"] = virtual_machine.get_base_vmi_spec()
         return res
 
     @property

@@ -10,12 +10,52 @@ from .virtual_machine_instance import VirtualMachineInstance
 LOGGER = logging.getLogger(__name__)
 
 
+def get_base_vmi_spec():
+    return {
+        "domain": {
+            "devices": {
+                "disks": [{
+                    "disk": {
+                        "bus": "virtio",
+                    },
+                    "name": "containerdisk",
+                }],
+            },
+            "machine": {
+                "type": "",
+            },
+            "resources": {
+                "requests": {
+                    "memory": "64M",
+                },
+            },
+        },
+        "terminationGracePeriodSeconds": 0,
+        "volumes": [{
+            "name": "containerdisk",
+            "containerDisk": {
+                "image": "kubevirt/cirros-container-disk-demo:latest",
+            },
+        }],
+    }
+
+
 class VirtualMachine(NamespacedResource):
     """
     Virtual Machine object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
     api_version = 'kubevirt.io/v1alpha3'
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "template": {
+                "spec": get_base_vmi_spec(),
+            },
+            "running": False,
+        }
+        return res
 
     def start(self, timeout=TIMEOUT, wait=False):
         """
