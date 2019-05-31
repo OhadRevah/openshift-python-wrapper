@@ -35,7 +35,7 @@ class Pod(NamespacedResource):
 
     def __init__(self, name, namespace):
         super().__init__(name=name, namespace=namespace)
-        self.kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
+        self._kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
 
     def containers(self):
         """
@@ -62,7 +62,7 @@ class Pod(NamespacedResource):
             ExecOnPodError: If the command failed.
         """
         resp = kubernetes.stream.stream(
-            func=self.kube_api.connect_get_namespaced_pod_exec,
+            func=self._kube_api.connect_get_namespaced_pod_exec,
             name=self.name,
             namespace=self.namespace,
             command=command,
@@ -93,7 +93,7 @@ class Pod(NamespacedResource):
         Returns:
             str: Pod logs.
         """
-        return self.kube_api.read_namespaced_pod_log(self.name, self.namespace, **kwargs)
+        return self._kube_api.read_namespaced_pod_log(self.name, self.namespace, **kwargs)
 
     @property
     def node(self):

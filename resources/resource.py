@@ -38,8 +38,6 @@ class Resource(object):
         LOGGER.error('You need to be logged into a cluster or have $KUBECONFIG env configured')
         raise
 
-    kube_api = kubernetes.client.CoreV1Api(api_client=client.client)
-
     def __init__(self, name):
         """
         Create a API resource
