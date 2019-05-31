@@ -28,7 +28,7 @@ def create_bond(request, network_utility_pods, bond_supported, nodes_active_nics
     ]
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node().name
+        node_name = pod.node.name
         for cmd in bond_commands:
             pod.execute(command=cmd, container=pod_container)
 

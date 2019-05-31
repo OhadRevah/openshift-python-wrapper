@@ -26,7 +26,7 @@ def create_linux_bridges_real_nics(
 
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node().name
+        node_name = pod.node.name
         cmds = [
             ["ip", "link", "add", bridge_name, "type", "bridge"],
             ["ip", "link", "set", bridge_name, "type", "bridge", "vlan_filtering", "1"],

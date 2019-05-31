@@ -28,7 +28,7 @@ def create_ovs_bridges_real_nics(
 
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node().name
+        node_name = pod.node.name
         cmds = [
             ["ovs-vsctl", "add-br", real_nics_bridge],
             ["ovs-vsctl", "add-port", real_nics_bridge, nodes_active_nics[node_name][0]],
@@ -63,7 +63,7 @@ def create_ovs_bridge_on_vxlan(
 
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node()
+        node_name = pod.node
         cmds = ["ovs-vsctl", "add-br", bridge_name_vxlan]
         for name, ip in schedulable_node_ips.items():
             if name != node_name:

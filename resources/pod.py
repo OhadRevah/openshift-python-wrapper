@@ -95,6 +95,7 @@ class Pod(NamespacedResource):
         """
         return self.kube_api.read_namespaced_pod_log(self.name, self.namespace, **kwargs)
 
+    @property
     def node(self):
         """
         Get the node name where the Pod is running

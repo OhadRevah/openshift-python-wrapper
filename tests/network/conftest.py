@@ -86,7 +86,7 @@ def nodes_active_nics(network_utility_pods):
     nodes_nics = {}
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node().name
+        node_name = pod.node.name
         nodes_nics[node_name] = []
         nics = pod.execute(
             command=[
@@ -135,5 +135,5 @@ def bond_supported(network_utility_pods, is_bare_metal, nodes_active_nics):
     Check if setup support BOND (have more then 2 NICs up)
     """
     return max(
-        [len(nodes_active_nics[i.node().name]) for i in network_utility_pods]
+        [len(nodes_active_nics[i.node.name]) for i in network_utility_pods]
     ) > 2
