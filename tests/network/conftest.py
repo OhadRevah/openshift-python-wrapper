@@ -53,13 +53,13 @@ def net_utility_daemonset(request, default_client):
 
 
 @pytest.fixture(scope='session')
-def network_utility_pods():
+def network_utility_pods(default_client):
     """
     Get network utility pods.
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
     These pods have a label of cnv-test=net-utility and they are privileged pods with hostnetwork=true
     """
-    return list(Pod.get(label_selector="cnv-test=net-utility"))
+    return list(Pod.get(default_client, label_selector="cnv-test=net-utility"))
 
 
 @pytest.fixture(scope='session')

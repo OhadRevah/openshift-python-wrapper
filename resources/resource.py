@@ -321,20 +321,16 @@ class Resource(object):
         self.api().replace(body=resource_dict, namespace=self.namespace)
 
     @classmethod
-    def get(cls, *args, dyn_client=None, **kwargs):
+    def get(cls, dyn_client, *args, **kwargs):
         """
         Get resources
 
         Args:
-            dyn_client (DynamicClient): Open connection to remote cluster;
-                Use the class-default client if None.
+            dyn_client (DynamicClient): Open connection to remote cluster
 
         Returns:
             generator: Generator of Resources of cls.kind
         """
-        if dyn_client is None:
-            dyn_client = cls.client
-
         for resource_field in dyn_client.resources.get(
                 kind=cls.kind, api_version=cls.api_version).get(*args, **kwargs).items:
             yield cls(name=resource_field.metadata.name)
