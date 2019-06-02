@@ -51,10 +51,11 @@ class DataVolume(NamespacedResource):
 class ImportDataVolume(DataVolume):
     def __init__(
             self, name, namespace, source, url, content_type, size, storage_class,
-            access_modes=DataVolume.AccessMode.RWO):
+            access_modes=DataVolume.AccessMode.RWO, cert_configmap=None):
         super().__init__(name=name, namespace=namespace)
         self.source = source
         self.url = url
+        self.cert_configmap = cert_configmap
         self.content_type = content_type
         self.size = size
         self.access_modes = access_modes
@@ -84,6 +85,8 @@ class ImportDataVolume(DataVolume):
         })
         if self.content_type:
             body["spec"]["contentType"] = self.content_type
+        if self.cert_configmap:
+            body["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
         return body
 
 
@@ -94,6 +97,7 @@ class ImportFromHttpDataVolume(ImportDataVolume):
 
 
 class ImportFromRegistryDataVolume(ImportDataVolume):
-    def __init__(self, name, namespace, url, content_type, size, storage_class, access_modes=DataVolume.AccessMode.RWO):
+    def __init__(self, name, namespace, url, content_type, size, storage_class,
+                 access_modes=DataVolume.AccessMode.RWO, cert_configmap=None):
         super().__init__(
-            name, namespace, "registry", url, content_type, size, storage_class, access_modes)
+            name, namespace, "registry", url, content_type, size, storage_class, access_modes, cert_configmap)
