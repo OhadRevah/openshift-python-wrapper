@@ -10,14 +10,9 @@ from tests import config
 @pytest.fixture()
 def fedora_vm(default_client):
     name = "owner-references-vm"
-    vm = test_utils.create_vm_from_template(
-        default_client=default_client, name=name,
-        namespace=config.VIRT_NS, template=config.VM_YAML_FEDORA,
-        template_params=config.VM_FEDORA_ATTRS, vm_params={}
-    )
-    assert vm.start(wait=True)
-    yield vm
-    vm.delete(wait=True)
+    with test_utils.FedoraVirtualMachine(name=name, namespace=config.VIRT_NS) as vm:
+        assert vm.start(wait=True)
+        yield vm
 
 
 @pytest.mark.polarion("CNV-1275")
