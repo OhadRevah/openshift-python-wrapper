@@ -199,3 +199,35 @@ def create_vm_from_template(
         dyn_client=default_client, data=json_out, namespace=namespace
     )
     return vm_object
+
+
+class FedoraVirtualMachine(VirtualMachine):
+    def __init__(self, name, namespace, **vm_attr):
+        super().__init__(name=name, namespace=namespace)
+        self.vm_attrs = vm_attr
+        self.vm_attrs_to_use = self.vm_attrs or {
+                "label": "fedora-vm",
+                "cpu_cores": 1,
+                "memory": "1024Mi",
+            }
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        json_out = utils.generate_yaml_from_template(
+            file_="tests/manifests/vm-fedora.yaml",
+            name=self.name,
+            **self.vm_attrs_to_use)
+
+        res['metadata'] = json_out['metadata']
+        res['spec'] = json_out['spec']
+        return res
+
+    def set_cloud_init(self, res, user_data):
+        volumes = res['spec']['template']['spec']['volumes']
+        cloudinitdisk_data = [i for i in volumes if i['name'] == 'cloudinitdisk'][0]
+        cloudinitdisk_idx = volumes.index(cloudinitdisk_data)
+        volumes.pop(cloudinitdisk_idx)
+        cloudinitdisk_data['cloudInitNoCloud']['userData'] = user_data
+        volumes.append(cloudinitdisk_data)
+        res['spec']['template']['spec']['volumes'] = volumes
+        return res
