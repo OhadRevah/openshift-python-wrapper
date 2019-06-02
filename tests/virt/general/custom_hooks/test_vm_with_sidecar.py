@@ -5,36 +5,42 @@ VM with sidecar
 import pytest
 
 from tests import utils as test_utils
+from tests.utils import FedoraVirtualMachine
 from utilities import console
 from tests import config
 
 CHECK_DMIDECODE_PACKAGE = "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward' | wc -l\n"
 
 
-@pytest.fixture()
-def sidecar_vm(default_client):
-    name = "vmi-with-sidecar-hook"
-    vm_params = {
-        "metadata": {
+class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
+    def _to_dict(self):
+        res = super()._to_dict()
+        res['spec']['template']['metadata'].update({
             "annotations": {
                 "hooks.kubevirt.io/hookSidecars": '[{"image": "kubevirt/example-hook-sidecar:v0.13.3"}]',
                 "smbios.vm.kubevirt.io/baseBoardManufacturer": "Radical Edward",
             },
-            'labels': {'special': name},
-        },
-        "cloud_init": {
-            "bootcmd": ["dnf install -y dmidecode qemu-guest-agent"],
-            "runcmd": ["systemctl start qemu-guest-agent"]
-        }
-    }
-    vm = test_utils.create_vm_from_template(
-        default_client=default_client, name="vmi-with-sidecar-hook",
-        namespace=config.VIRT_NS, template=config.VM_YAML_FEDORA,
-        template_params=config.VM_FEDORA_ATTRS, vm_params=vm_params,
-    )
-    assert vm.start(wait=True)
-    yield vm
-    vm.delete(wait=True)
+            'labels': {'special': self.name},
+        })
+
+        cloud_init_user_data = r'''
+            #cloud-config
+            password: fedora
+            chpasswd: { expire: False }
+            bootcmd:
+              - dnf install -y dmidecode qemu-guest-agent
+            runcmd:
+              - systemctl start qemu-guest-agent'''
+
+        return self.set_cloud_init(res=res, user_data=cloud_init_user_data)
+
+
+@pytest.fixture()
+def sidecar_vm(default_client):
+    name = "vmi-with-sidecar-hook"
+    with FedoraVirtualMachineWithSideCar(name=name, namespace=config.VIRT_NS) as vm:
+        assert vm.start(wait=True)
+        yield vm
 
 
 @pytest.fixture()
