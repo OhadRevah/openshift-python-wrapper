@@ -117,6 +117,7 @@ class VirtualMachine(NamespacedResource):
                 return True
         return False
 
+    @property
     def node(self):
         """
         Get the node name where the VM is running
