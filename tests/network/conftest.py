@@ -7,15 +7,12 @@ Pytest conftest file for CNV network tests
 import pytest
 
 from resources.daemonset import DaemonSet
-from resources.namespace import Namespace
 from resources.pod import Pod, ExecOnPodError
-from tests.network import config
 from utilities import utils
 
 
 @pytest.fixture(scope="session", autouse=True)
 def network_init(
-    create_namespaces,
     net_utility_daemonset,
     schedulable_node_ips,
     network_utility_pods,
@@ -60,21 +57,6 @@ def network_utility_pods(default_client):
     These pods have a label of cnv-test=net-utility and they are privileged pods with hostnetwork=true
     """
     return list(Pod.get(default_client, label_selector="cnv-test=net-utility"))
-
-
-@pytest.fixture(scope='session')
-def create_namespaces(request):
-    def fin():
-        """
-        Remove network test namespaces
-        """
-        ns = Namespace(name=config.NETWORK_NS)
-        ns.delete(wait=True)
-    request.addfinalizer(fin)
-
-    ns = Namespace(name=config.NETWORK_NS)
-    ns.create(wait=True)
-    ns.wait_for_status(status=Namespace.Status.ACTIVE)
 
 
 @pytest.fixture(scope='session')

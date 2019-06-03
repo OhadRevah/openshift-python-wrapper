@@ -7,6 +7,7 @@ VM to VM connectivity
 import pytest
 from pytest_testconfig import config as py_config
 
+from resources.namespace import Namespace
 from tests.fixtures import (
     create_resources_from_yaml,
     create_vms_from_template,
@@ -14,15 +15,22 @@ from tests.fixtures import (
     wait_for_vmis_interfaces_report,
     start_vms,
 )
-from tests.network.connectivity import utils
+from tests.network.connectivity import utils, config
 from tests.network.connectivity.fixtures import create_bond
 from tests.network.fixtures import update_vms_pod_ip_info
-from tests.network.connectivity import config
 from .fixtures import (
     create_linux_bridge_on_vxlan,
     create_linux_bridges_real_nics,
     attach_linux_bridge_to_bond
 )
+
+NS = "linux-bridge-connectivity"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def linux_bridge_namespace():
+    with Namespace(name=NS) as ns:
+        yield ns
 
 
 @pytest.mark.usefixtures(
@@ -41,7 +49,7 @@ class TestConnectivityLinuxBridge(object):
     """
     Test VM to VM connectivity
     """
-    namespace = config.NETWORK_NS
+    namespace = NS
     vms = config.VMS
     template = config.VM_YAML_FEDORA
     template_kwargs = config.VM_FEDORA_ATTRS
@@ -76,7 +84,7 @@ class TestConnectivityLinuxBridge(object):
             'Negative_No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs'
         ]
     )
-    def test_connectivity_over_linux_bridge(self, bridge, bond_supported):
+    def test_connectivity_over_linux_bridge(self, bridge, bond_supported, linux_bridge_namespace):
         """
         Check connectivity
         """
@@ -92,10 +100,11 @@ class TestConnectivityLinuxBridge(object):
             dst_ip = self.vms[self.dst_vm]["interfaces"][bridge][0]
 
         utils.run_test_connectivity(
-            src_vm=self.src_vm, dst_vm=self.dst_vm, dst_ip=dst_ip, positive=positive
+            src_vm=self.src_vm, dst_vm=self.dst_vm, dst_ip=dst_ip, positive=positive,
+            namespace=linux_bridge_namespace.name
         )
 
-    def test_guest_performance_over_linux_bridge(self, is_bare_metal):
+    def test_guest_performance_over_linux_bridge(self, is_bare_metal, linux_bridge_namespace):
         """
         In-guest performance bandwidth passthrough over Linux bridge
         """
@@ -105,6 +114,7 @@ class TestConnectivityLinuxBridge(object):
         expected_res = py_config['test_guest_performance']['bandwidth']
         listen_ip = self.src_vm["interfaces"][config.BRIDGE_BR1][0]
         bits_per_second = utils.run_test_guest_performance(
-            server_vm=self.src_vm, client_vm=self.src_vm, listen_ip=listen_ip
+            server_vm=self.src_vm, client_vm=self.src_vm, listen_ip=listen_ip,
+            namespace=linux_bridge_namespace.name
         )
         assert bits_per_second >= expected_res

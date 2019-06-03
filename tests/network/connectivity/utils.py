@@ -5,13 +5,10 @@ import bitmath
 
 from utilities import console
 
-from .. import config
-
-
 LOGGER = logging.getLogger(__name__)
 
 
-def run_test_connectivity(src_vm, dst_vm, dst_ip, positive):
+def run_test_connectivity(src_vm, dst_vm, dst_ip, positive, namespace):
     """
     Check connectivity
     """
@@ -19,12 +16,12 @@ def run_test_connectivity(src_vm, dst_vm, dst_ip, positive):
     LOGGER.info(
         f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm} to {dst_vm}"
     )
-    with console.Fedora(vm=src_vm, namespace=config.NETWORK_NS) as src_vm_console:
+    with console.Fedora(vm=src_vm, namespace=namespace) as src_vm_console:
         src_vm_console.sendline(f'ping -w 3 {dst_ip}')
         src_vm_console.expect(expected)
 
 
-def run_test_guest_performance(server_vm, client_vm, listen_ip):
+def run_test_guest_performance(server_vm, client_vm, listen_ip, namespace):
     """
     In-guest performance bandwidth passthrough
 
@@ -33,7 +30,6 @@ def run_test_guest_performance(server_vm, client_vm, listen_ip):
         client_vm (str): VM name that will be IPERF client
         listen_ip (str): The IP to listen on the server
     """
-    namespace = config.NETWORK_NS
     with console.Fedora(vm=server_vm, namespace=namespace) as server_vm_console:
         server_vm_console.sendline(f'iperf3 -sB {listen_ip}')
         with console.Fedora(vm=client_vm, namespace=namespace) as client_vm_console:
