@@ -298,6 +298,7 @@ class Resource(object):
             return self.wait_deleted()
         return res
 
+    @property
     def status(self):
         """
         Get resource status

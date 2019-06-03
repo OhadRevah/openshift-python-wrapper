@@ -23,4 +23,4 @@ class PersistentVolumeClaim(NamespacedResource):
             bool: True if bound else False
         """
         LOGGER.info(f"Check if {self.kind} {self.name} is bound")
-        return self.status() == 'Bound'
+        return self.status == 'Bound'
