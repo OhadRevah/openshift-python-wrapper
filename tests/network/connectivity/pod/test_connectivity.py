@@ -1,67 +1,98 @@
 """
 VM to VM connectivity
 """
+from ipaddress import ip_interface
 
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.fixtures import (
-    create_vms_from_template,
-    wait_until_vmis_running,
-    wait_for_vmis_interfaces_report,
-    start_vms,
-)
+from resources.namespace import Namespace
 from tests.network.connectivity import utils
-from tests.network.fixtures import update_vms_pod_ip_info
-from tests.network.connectivity import config
+from tests.utils import wait_for_vm_interfaces, FedoraVirtualMachine
 
 
-@pytest.mark.usefixtures(
-    create_vms_from_template.__name__,
-    start_vms.__name__,
-    wait_until_vmis_running.__name__,
-    wait_for_vmis_interfaces_report.__name__,
-    update_vms_pod_ip_info.__name__,
-)
-class TestConnectivityPodNetwork(object):
+class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
+    def _to_dict(self):
+        res = super()._to_dict()
+
+        cloud_init_user_data = r'''
+            #cloud-config
+            password: fedora
+            chpasswd: { expire: False }
+            bootcmd:
+              - dnf install -y iperf3 qemu-guest-agent
+            runcmd:
+              - systemctl start qemu-guest-agent'''
+
+        return self.set_cloud_init(res=res, user_data=cloud_init_user_data)
+
+
+@pytest.fixture(scope='module', autouse=True)
+def module_namespace():
+    with Namespace(name='pod-connectivity') as ns:
+        yield ns
+
+
+@pytest.fixture()
+def bare_metal(is_bare_metal):
+    if not is_bare_metal:
+        pytest.skip(msg='Only run on bare metal env')
+
+
+@pytest.fixture(scope='module')
+def vma(module_namespace):
+    with VirtualMachineAttachedToBridge(
+            namespace=module_namespace.name, name='vma') as vm:
+        assert vm.start()
+        yield vm
+
+
+@pytest.fixture(scope='module')
+def vmb(module_namespace):
+    with VirtualMachineAttachedToBridge(
+            namespace=module_namespace.name, name='vmb') as vm:
+        assert vm.start()
+        yield vm
+
+
+@pytest.fixture(scope='module')
+def running_vma(vma):
+    assert wait_for_vm_interfaces(vmi=vma.vmi, timeout=720)
+    return vma
+
+
+@pytest.fixture(scope='module')
+def running_vmb(vmb):
+    assert wait_for_vm_interfaces(vmi=vmb.vmi, timeout=720)
+    return vmb
+
+
+@pytest.mark.polarion('CNV-2332')
+def test_connectivity_over_pod_network(vma, vmb, running_vma, running_vmb, module_namespace):
     """
-    Test VM to VM connectivity
+    Check connectivity
     """
-    vms = {
-        "vm-fedora-1": {
-            "cloud_init": config.CLOUD_INIT,
-        },
-        "vm-fedora-2": {
-            "cloud_init": config.CLOUD_INIT,
-        }
-    }
-    namespace = config.NETWORK_NS
-    template = config.VM_YAML_FEDORA
-    template_kwargs = config.VM_FEDORA_ATTRS
-    src_vm = list(vms.keys())[0]
-    dst_vm = list(vms.keys())[1]
+    utils.run_test_connectivity(
+        src_vm=running_vma.name,
+        dst_vm=running_vmb.name,
+        dst_ip=ip_interface(running_vma.vmi.interfaces[0]['ipAddress']).ip,
+        positive=True,
+        namespace=module_namespace.name
+    )
 
-    @pytest.mark.polarion("CNV-2332")
-    def test_connectivity_over_pod_network(self):
-        """
-        Check connectivity
-        """
-        dst_ip = self.vms[self.dst_vm]["interfaces"]["pod"][0]
-        utils.run_test_connectivity(
-            src_vm=self.src_vm, dst_vm=self.dst_vm, dst_ip=dst_ip, positive=True
-        )
 
-    @pytest.mark.polarion("CNV-2334")
-    def test_guest_performance_over_pod_network(self, is_bare_metal):
-        """
-        In-guest performance bandwidth passthrough over Linux bridge
-        """
-        if not is_bare_metal:
-            pytest.skip(msg='Only run on bare metal env')
-
-        expected_res = py_config['test_guest_performance']['bandwidth']
-        listen_ip = self.src_vm["interfaces"]['pod'][0]
-        bits_per_second = utils.run_test_guest_performance(
-            server_vm=self.src_vm, client_vm=self.src_vm, listen_ip=listen_ip
-        )
-        assert bits_per_second >= expected_res
+@pytest.mark.polarion('CNV-2334')
+def test_guest_performance_over_pod_network(
+    bare_metal, vma, vmb, running_vma, running_vmb, module_namespace
+):
+    """
+    In-guest performance bandwidth passthrough over Linux bridge
+    """
+    expected_res = py_config['test_guest_performance']['bandwidth']
+    bits_per_second = utils.run_test_guest_performance(
+        server_vm=running_vma.name,
+        client_vm=running_vmb.name,
+        listen_ip=ip_interface(running_vma.vmi.interfaces[0]['ipAddress']).ip,
+        namespace=module_namespace.name
+    )
+    assert bits_per_second >= expected_res
