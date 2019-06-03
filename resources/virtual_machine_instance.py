@@ -51,7 +51,6 @@ class VirtualMachineInstance(NamespacedResource):
             bool: True if VMI is running, False if not.
         """
         if not self.wait_for_status(status='Running', timeout=timeout):
-            LOGGER.error(f"{self.kind} {self.name} failed to run")
             if not logs:
                 return False
 
