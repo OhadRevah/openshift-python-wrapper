@@ -1,6 +1,9 @@
 import contextlib
 import logging
 
+from pytest_testconfig import config as py_config
+
+from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
 from utilities.utils import generate_yaml_from_template
 
 LOGGER = logging.getLogger(__name__)
@@ -62,3 +65,15 @@ class Bridge:
 
     def __exit__(self, *args):
         pass
+
+
+@contextlib.contextmanager
+def bridge_nad(namespace, name, bridge, vlan=None):
+    cni_type = py_config['template_defaults']['bridge_cni_name']
+    with BridgeNetworkAttachmentDefinition(
+            namespace=namespace.name,
+            name=name,
+            bridge_name=bridge,
+            cni_type=cni_type,
+            vlan=vlan) as nad:
+        yield nad

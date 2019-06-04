@@ -16,7 +16,6 @@ from tests.fixtures import (
     start_vms,
 )
 from tests.network.connectivity import utils
-from tests.network.connectivity.fixtures import create_bond
 from tests.network.fixtures import update_vms_pod_ip_info
 from . import config
 from .fixtures import (
@@ -41,7 +40,7 @@ def ovs_namespace():
     create_resources_from_yaml.__name__,
     create_ovs_bridges_real_nics.__name__,
     create_ovs_bridge_on_vxlan.__name__,
-    create_bond.__name__,
+    "create_bond",
     attach_ovs_bridge_to_bond.__name__,
     create_vms_from_template.__name__,
     start_vms.__name__,

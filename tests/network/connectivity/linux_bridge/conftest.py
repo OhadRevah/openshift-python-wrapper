@@ -1,9 +1,7 @@
 import pytest
 
-from tests import utils as test_utils
 
-
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="module")
 def create_linux_bridges_real_nics(
     request, network_utility_pods, nodes_active_nics, is_bare_metal
 ):
@@ -13,7 +11,7 @@ def create_linux_bridges_real_nics(
     if not is_bare_metal:
         return
 
-    bridge_name = test_utils.get_fixture_val(request=request, attr_name="bridge_name")
+    bridge_name = "br1test"
 
     def fin():
         """
@@ -37,7 +35,7 @@ def create_linux_bridges_real_nics(
             pod.execute(command=cmd, container=pod_container)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="module")
 def create_linux_bridge_on_vxlan(
     request, network_utility_pods, schedulable_node_ips, is_bare_metal
 ):
@@ -47,8 +45,8 @@ def create_linux_bridge_on_vxlan(
     if is_bare_metal:
         return
 
-    bridge_name = test_utils.get_fixture_val(request=request, attr_name="bridge_name")
-    vxlan_name = test_utils.get_fixture_val(request=request, attr_name="vxlan_name")
+    bridge_name = "br1test"
+    vxlan_name = "vxlan10"
 
     def fin():
         """
@@ -83,16 +81,16 @@ def create_linux_bridge_on_vxlan(
             pod.execute(command=cmd, container=pod_container)
 
 
-@pytest.fixture(scope='class')
-def attach_linux_bridge_to_bond(request, network_utility_pods, bond_supported):
+@pytest.fixture(scope="module")
+def attach_linux_bridge_to_bond(network_utility_pods, bond_supported):
     """
     Create bridge and attach the BOND to it
     """
     if not bond_supported:
         return
 
-    bond_name = test_utils.get_fixture_val(request=request, attr_name="bond_name")
-    bond_bridge = test_utils.get_fixture_val(request=request, attr_name="bond_bridge")
+    bond_name = "bond1"
+    bond_bridge = "br1bond"
 
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
