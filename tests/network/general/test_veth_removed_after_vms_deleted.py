@@ -12,8 +12,8 @@ from pytest_testconfig import config as py_config
 
 from resources.namespace import Namespace
 from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
-from resources.virtual_machine import VirtualMachine
-from tests.network import utils as net_utils, config
+from tests.network import utils as net_utils
+from tests.utils import FedoraVirtualMachine
 from utilities import utils
 
 LOGGER = logging.getLogger(__name__)
@@ -39,43 +39,23 @@ def count_veth_devices_on_host(pod, pod_container):
     return int(out.strip())
 
 
-class VirtualMachineAttachedToBridge(VirtualMachine):
-    def _add_bridge_interface(self, res, name):
-        res['spec']['template']["spec"]["domain"]["devices"]["interfaces"].append({
-            "name": name,
-            "bridge": {},
-        })
+class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
+    def __init__(self, name, namespace, interfaces=None, networks=None, **vm_attr):
+        if networks is None:
+            networks = {
+                'net1': BR1TEST,
+                'net2': BR1VLAN100,
+            }
 
-    def _add_multus_network(self, res, name, net_name):
-        res['spec']['template']["spec"]["networks"].append({
-            "name": name,
-            "multus": {
-                "networkName": net_name,
-            },
-        })
+        if interfaces is None:
+            interfaces = sorted(networks.keys())
 
-    def _to_dict(self):
-        res = super()._to_dict()
-        vm_attrs = {
-            "label": "fedora-vm",
-            "cpu_cores": 1,
-            "memory": "1024Mi",
-            "name": self.name
-        }
-        json_out = utils.generate_yaml_from_template(file_=config.VM_YAML_FEDORA, **vm_attrs)
-        res['metadata'] = json_out['metadata']
-        res['spec'] = json_out['spec']
-
-        # Add multus networks and interfaces
-        net1_network = "net1"
-        self._add_multus_network(res=res, name=net1_network, net_name=BR1TEST)
-        self._add_bridge_interface(res=res, name=net1_network)
-
-        net2_network = "net2"
-        self._add_multus_network(res=res, name=net2_network, net_name=BR1VLAN100)
-        self._add_bridge_interface(res=res, name=net2_network)
-
-        return res
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            interfaces=interfaces,
+            networks=networks,
+            **vm_attr)
 
 
 @contextlib.contextmanager
@@ -115,14 +95,14 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture()
 def bridge_attached_vma(namespace):
-    with VirtualMachineAttachedToBridge(namespace=namespace.name, name="vma") as vm:
+    with VirtualMachineAttachedToBridges(namespace=namespace.name, name="vma") as vm:
         assert vm.start()
         yield vm
 
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace):
-    with VirtualMachineAttachedToBridge(namespace=namespace.name, name="vmb") as vm:
+    with VirtualMachineAttachedToBridges(namespace=namespace.name, name="vmb") as vm:
         assert vm.start()
         yield vm
 

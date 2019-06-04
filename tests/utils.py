@@ -202,8 +202,10 @@ def create_vm_from_template(
 
 
 class FedoraVirtualMachine(VirtualMachine):
-    def __init__(self, name, namespace, **vm_attr):
+    def __init__(self, name, namespace, interfaces=None, networks=None, **vm_attr):
         super().__init__(name=name, namespace=namespace)
+        self.interfaces = interfaces or []
+        self.networks = networks or {}
         self.vm_attrs = vm_attr
         self.vm_attrs_to_use = self.vm_attrs or {
                 "label": "fedora-vm",
@@ -220,6 +222,21 @@ class FedoraVirtualMachine(VirtualMachine):
 
         res['metadata'] = json_out['metadata']
         res['spec'] = json_out['spec']
+
+        for iface_name in self.interfaces:
+            res['spec']['template']["spec"]["domain"]["devices"]["interfaces"].append({
+                "name": iface_name,
+                "bridge": {},
+            })
+
+        for iface_name, network in self.networks.items():
+            res['spec']['template']["spec"]["networks"].append({
+                "name": iface_name,
+                "multus": {
+                    "networkName": network,
+                },
+            })
+
         return res
 
     def set_cloud_init(self, res, user_data):
