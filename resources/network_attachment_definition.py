@@ -28,10 +28,11 @@ class NetworkAttachmentDefinition(NamespacedResource):
 
 
 class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
-    def __init__(self, name, namespace, bridge_name, cni_type="cnv-bridge"):
+    def __init__(self, name, namespace, bridge_name, cni_type="cnv-bridge", vlan=None):
         super().__init__(name, namespace)
         self._bridge_name = bridge_name
         self._cni_type = cni_type
+        self._vlan = vlan
 
     @property
     def resource_name(self):
@@ -39,9 +40,13 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
 
     def _to_dict(self):
         res = super()._to_dict()
-        res["spec"]["config"] = json.dumps({
+        spec_config = {
             "cniVersion": "0.3.1",
             "type": self._cni_type,
             "bridge": self._bridge_name,
-        })
+        }
+        if self._vlan:
+            spec_config['vlan'] = self._vlan
+
+        res["spec"]["config"] = json.dumps(spec_config)
         return res
