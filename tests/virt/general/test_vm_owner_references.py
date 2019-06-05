@@ -3,14 +3,14 @@ Check VM, VMI, POD owner references
 """
 
 import pytest
+
 from tests import utils as test_utils
-from tests import config
 
 
 @pytest.fixture()
-def fedora_vm(default_client):
+def fedora_vm(default_client, virt_namespace):
     name = "owner-references-vm"
-    with test_utils.FedoraVirtualMachine(name=name, namespace=config.VIRT_NS) as vm:
+    with test_utils.FedoraVirtualMachine(name=name, namespace=virt_namespace.name) as vm:
         assert vm.start(wait=True)
         yield vm
 

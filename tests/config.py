@@ -1,6 +1,3 @@
-# NAMESPACES
-VIRT_NS = "cnv-virt-ns"
-
 # VMS TEMPLATES
 VM_YAML_FEDORA = "tests/manifests/vm-fedora.yaml"
 VM_FEDORA_ATTRS = {
