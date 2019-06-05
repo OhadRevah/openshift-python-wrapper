@@ -11,8 +11,7 @@ from pytest_testconfig import config as py_config
 from openshift.dynamic.exceptions import NotFoundError
 
 from resources.resource import Resource
-from resources.virtual_machine import VirtualMachine
-from resources.virtual_machine_instance import VirtualMachineInstance
+from resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 from tests import utils as test_utils
 from tests.utils import wait_for_vm_interfaces
 from utilities import utils

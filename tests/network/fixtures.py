@@ -6,7 +6,7 @@ Pytest fixtures file for CNV network tests
 
 import pytest
 
-from resources.virtual_machine_instance import VirtualMachineInstance
+from resources.virtual_machine import VirtualMachineInstance
 from tests import utils as test_utils
 
 
