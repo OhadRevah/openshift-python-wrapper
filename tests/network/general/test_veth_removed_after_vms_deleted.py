@@ -90,7 +90,7 @@ def br1vlan100_nad(namespace):
 @pytest.fixture()
 def bridge_device(network_utility_pods):
     with net_utils.Bridge(name=BR1TEST, worker_pods=network_utility_pods) as dev:
-        yield from dev
+        yield dev
 
 
 @pytest.fixture()

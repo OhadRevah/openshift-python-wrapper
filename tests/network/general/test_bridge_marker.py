@@ -90,7 +90,7 @@ def bridge_attached_vmi(namespace, bridge_network):
 def bridge_device(network_utility_pods):
     with utils.Bridge(
             name=_get_bridge_name(), worker_pods=network_utility_pods) as dev:
-        yield from dev
+        yield dev
 
 
 @pytest.mark.polarion("CNV-2234")
