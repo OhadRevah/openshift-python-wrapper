@@ -10,12 +10,7 @@ from resources.namespace import Namespace
 from tests.network.connectivity import utils
 from tests.utils import wait_for_vm_interfaces, FedoraVirtualMachine
 
-
-class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
-    def _to_dict(self):
-        res = super()._to_dict()
-
-        cloud_init_user_data = r'''
+CLOUD_INIT_USER_DATA = r'''
             #cloud-config
             password: fedora
             chpasswd: { expire: False }
@@ -24,7 +19,19 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             runcmd:
               - systemctl start qemu-guest-agent'''
 
-        return self.set_cloud_init(res=res, user_data=cloud_init_user_data)
+
+class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
+    def __init__(
+        self, name, namespace, interfaces=None, networks=None, cloud_init_user_data=None, **vm_attr
+    ):
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            interfaces=interfaces,
+            networks=networks,
+            cloud_init_user_data=cloud_init_user_data,
+            **vm_attr
+        )
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -42,7 +49,8 @@ def bare_metal(is_bare_metal):
 @pytest.fixture(scope='module')
 def vma(module_namespace):
     with VirtualMachineAttachedToBridge(
-            namespace=module_namespace.name, name='vma') as vm:
+        namespace=module_namespace.name, name='vma', cloud_init_user_data=CLOUD_INIT_USER_DATA
+    ) as vm:
         assert vm.start()
         yield vm
 
@@ -50,7 +58,8 @@ def vma(module_namespace):
 @pytest.fixture(scope='module')
 def vmb(module_namespace):
     with VirtualMachineAttachedToBridge(
-            namespace=module_namespace.name, name='vmb') as vm:
+        namespace=module_namespace.name, name='vmb', cloud_init_user_data=CLOUD_INIT_USER_DATA
+    ) as vm:
         assert vm.start()
         yield vm
 

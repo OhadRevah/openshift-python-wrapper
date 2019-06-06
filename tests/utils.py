@@ -202,10 +202,13 @@ def create_vm_from_template(
 
 
 class FedoraVirtualMachine(VirtualMachine):
-    def __init__(self, name, namespace, interfaces=None, networks=None, **vm_attr):
+    def __init__(
+        self, name, namespace, interfaces=None, networks=None, cloud_init_user_data=None, **vm_attr
+    ):
         super().__init__(name=name, namespace=namespace)
         self.interfaces = interfaces or []
         self.networks = networks or {}
+        self.cloud_init_user_data = cloud_init_user_data
         self.vm_attrs = vm_attr
         self.vm_attrs_to_use = self.vm_attrs or {
                 "label": "fedora-vm",
@@ -237,14 +240,10 @@ class FedoraVirtualMachine(VirtualMachine):
                 },
             })
 
-        return res
+        if self.cloud_init_user_data:
+            for vol in res['spec']['template']['spec']['volumes']:
+                if vol['name'] == 'cloudinitdisk':
+                    vol['cloudInitNoCloud']['userData'] = self.cloud_init_user_data
+                    break
 
-    def set_cloud_init(self, res, user_data):
-        volumes = res['spec']['template']['spec']['volumes']
-        cloudinitdisk_data = [i for i in volumes if i['name'] == 'cloudinitdisk'][0]
-        cloudinitdisk_idx = volumes.index(cloudinitdisk_data)
-        volumes.pop(cloudinitdisk_idx)
-        cloudinitdisk_data['cloudInitNoCloud']['userData'] = user_data
-        volumes.append(cloudinitdisk_data)
-        res['spec']['template']['spec']['volumes'] = volumes
         return res
