@@ -81,3 +81,21 @@ def test_import_http_vm(storage_ns, images_http_server, content_type):
             with console.Cirros(vm=vm.name, namespace=storage_ns.name) as vm_console:
                 vm_console.sendline("lsblk | grep disk | wc -l")
                 vm_console.expect("2", timeout=20)
+
+
+@pytest.mark.parametrize(
+    ('dv_name', 'file_name'),
+    [
+        pytest.param("large-size", "invalid-qcow-large-size.img", marks=(pytest.mark.polarion("CNV-2555"))),
+        pytest.param("large-json", "invalid-qcow-large-json.img", marks=(pytest.mark.polarion("CNV-2554"))),
+        pytest.param("large-memory", "invalid-qcow-large-memory.img", marks=(pytest.mark.polarion("CNV-2253"))),
+        pytest.param("backing-file", "invalid-qcow-backing-file.img", marks=(pytest.mark.polarion("CNV-2139"))),
+    ]
+)
+def test_import_invalid_qcow(storage_ns, images_http_server, dv_name, file_name):
+    with ImportFromHttpDataVolume(
+            name=dv_name, namespace=storage_ns.name,
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            url=get_file_url(images_http_server, file_name), size="5Gi",
+            storage_class=py_config['storage_defaults']['storage_class']) as dv:
+        assert dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=90)
