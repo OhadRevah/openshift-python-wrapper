@@ -9,10 +9,14 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
-
+from tests.storage.utils import VirtualMachineWithDV
+from utilities import console
 
 QCOW_IMG = 'cirros-qcow2.img'
 TAR_IMG = 'cirros-qcow2.tar.gz'
+CLOUD_INIT_USER_DATA = r"""
+            #!/bin/sh
+            echo 'printed from cloud-init userdata'"""
 
 
 def get_file_url(images_http_server, file_name):
@@ -50,3 +54,24 @@ def test_wrong_content_type(storage_ns, images_http_server, file_name, content_t
             name='import-http-dv', namespace=storage_ns.name, content_type=content_type, url=url, size='500Mi',
             storage_class=py_config['storage_defaults']['storage_class']) as dv:
         assert dv.wait_for_status(status='Failed', timeout=300)
+
+
+@pytest.mark.polarion("CNV-1865")
+def test_import_http_vm(storage_ns, images_http_server):
+    with ImportFromHttpDataVolume(
+            name='import-http-dv-cirros',
+            namespace=storage_ns.name,
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            url=get_file_url(images_http_server, QCOW_IMG),
+            size='500Mi',
+            storage_class=py_config['storage_defaults']['storage_class']) as dv:
+        assert dv.wait_for_status(status='Succeeded', timeout=300)
+        assert PersistentVolumeClaim(name=dv.name, namespace=storage_ns.name).bound()
+
+        with VirtualMachineWithDV(name='cirros-vm', namespace=storage_ns.name,
+                                  dv_name=dv.name, cloud_init_data=CLOUD_INIT_USER_DATA) as vm:
+            assert vm.start()
+            assert vm.vmi.wait_until_running()
+            with console.Cirros(vm=vm.name, namespace=storage_ns.name) as vm_console:
+                vm_console.sendline("lsblk | grep disk | wc -l")
+                vm_console.expect("2", timeout=20)
