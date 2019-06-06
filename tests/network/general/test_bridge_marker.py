@@ -20,14 +20,6 @@ def _get_name(suffix):
     return _RESOURCE_NAME_PREFIX + suffix
 
 
-def _get_bridge_name():
-    return _get_name("br")
-
-
-def _get_network_attachment_name():
-    return _get_name("nad")
-
-
 @pytest.fixture()
 def namespace():
     with Namespace(name=_get_name("ns")) as ns:
@@ -39,13 +31,24 @@ def bridge_network(namespace):
     cni_type = py_config['template_defaults']['bridge_cni_name']
     with nad.BridgeNetworkAttachmentDefinition(
             namespace=namespace.name,
-            name=_get_network_attachment_name(),
-            bridge_name=_get_bridge_name(),
+            name="rednad",
+            bridge_name="redbr",
             cni_type=cni_type) as attachdef:
         yield attachdef
 
 
-class VirtualMachineAttachedToBridge(VirtualMachine):
+@pytest.fixture()
+def bridge_networks(namespace):
+    with utils.bridge_nad(namespace, "rednad", "redbr") as rednad:
+        with utils.bridge_nad(namespace, "bluenad", "bluebr") as bluenad:
+            yield (rednad, bluenad)
+
+
+class VirtualMachineAttachedToBridges(VirtualMachine):
+    def __init__(self, name, namespace, networks):
+        super().__init__(name, namespace)
+        self._networks = networks
+
     def _to_dict(self):
         res = super()._to_dict()
 
@@ -61,36 +64,74 @@ class VirtualMachineAttachedToBridge(VirtualMachine):
             "bridge": {},
         }]
 
-        # also attach to bridge network
-        network_name = "net1"
-        spec["networks"].append({
-            "name": network_name,
-            "multus": {
-                "networkName": _get_network_attachment_name(),
-            },
-        })
-        spec["domain"]["devices"]["interfaces"].append({
-            "name": network_name,
-            "bridge": {},
-        })
+        # also attach to bridge networks
+        for idx, network in enumerate(self._networks):
+            network_name = f"net{idx}"
+            spec["networks"].append({
+                "name": network_name,
+                "multus": {
+                    "networkName": network,
+                },
+            })
+            spec["domain"]["devices"]["interfaces"].append({
+                "name": network_name,
+                "bridge": {},
+            })
 
         return res
 
 
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
-    with VirtualMachineAttachedToBridge(
+    with VirtualMachineAttachedToBridges(
             namespace=namespace.name,
-            name=_get_name("vm")) as vm:
+            name=_get_name("vm"),
+            networks={bridge_network.name}) as vm:
         vm.start()
         yield vm.vmi
 
 
 @pytest.fixture()
-def bridge_device(network_utility_pods):
+def multi_bridge_attached_vmi(namespace, bridge_networks):
+    with VirtualMachineAttachedToBridges(
+            namespace=namespace.name,
+            name=_get_name("vm"),
+            networks={b.name for b in bridge_networks}) as vm:
+        vm.start()
+        yield vm.vmi
+
+
+@pytest.fixture()
+def bridge_device_on_all_nodes(network_utility_pods):
     with utils.Bridge(
-            name=_get_bridge_name(), worker_pods=network_utility_pods) as dev:
+            name="redbr",
+            worker_pods=network_utility_pods) as dev:
         yield dev
+
+
+@pytest.fixture()
+def non_homogenous_bridges(multinode, network_utility_pods):
+    with utils.Bridge(name="redbr", worker_pods={network_utility_pods[0]}) as redbr:
+        with utils.Bridge(name="bluebr", worker_pods={network_utility_pods[1]}) as bluebr:
+            yield (redbr, bluebr)
+
+
+# note: this fixture doesn't strictly require network_utility_pods; using it is
+# an implementation detail. Instead it could fetch the list of nodes available
+# for scheduling to determine if the cluster is multinode; the only reason why
+# it uses network_utility_pods is because this fixture is session wide and
+# automatically used for all test runs, so it's immediately available to us.
+@pytest.fixture()
+def multinode(network_utility_pods):
+    if len(network_utility_pods) <= 1:
+        return pytest.skip(msg='Only run on multinode cluster')
+
+
+def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
+    cond = pod.instance.status.conditions[0]
+    missing_resource = nad.get_resource_name(bridge_name)
+    assert cond.reason == "Unschedulable"
+    assert f"Insufficient {missing_resource}" in cond.message
 
 
 @pytest.mark.polarion("CNV-2234")
@@ -100,15 +141,23 @@ def test_bridge_marker_no_device(bridge_attached_vmi):
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod()
-    message = pod.instance.status.conditions[0].message
-    missing_resource = nad.get_resource_name(_get_bridge_name())
-    assert pod.instance.status.conditions[0].reason == "Unschedulable"
-    assert f"Insufficient {missing_resource}" in message
+    _assert_failure_reason_is_bridge_missing(pod, "redbr")
 
 
 # note: the order of fixtures is important because we should first create the
 # device before attaching a VMI to it
 @pytest.mark.polarion("CNV-2235")
-def test_bridge_marker_device_exists(bridge_device, bridge_attached_vmi):
+def test_bridge_marker_device_exists(bridge_device_on_all_nodes, bridge_attached_vmi):
     """Check that VMI successfully starts when bridge device is present."""
     assert bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+
+
+@pytest.mark.polarion("CNV-2309")
+def test_bridge_marker_devices_exist_on_different_nodes(non_homogenous_bridges, multi_bridge_attached_vmi):
+    """Check that VMI fails to start when attached to two bridges located on different nodes."""
+    assert not multi_bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+
+    # validate the exact reason for VMI startup failure is missing bridge
+    pod = multi_bridge_attached_vmi.virt_launcher_pod()
+    for bridge in non_homogenous_bridges:
+        _assert_failure_reason_is_bridge_missing(pod, bridge.name)
