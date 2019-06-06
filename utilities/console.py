@@ -35,7 +35,7 @@ class Console(object):
 
     def _connect(self, login_prompt, username, password, prompt):
         self.child.send("\n\n")
-        self.child.expect(login_prompt)
+        self.child.expect(login_prompt, timeout=300)
         self.child.sendline(username)
         if self.password:
             self.child.expect("Password:")

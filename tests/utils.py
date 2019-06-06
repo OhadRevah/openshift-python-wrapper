@@ -108,6 +108,7 @@ class FedoraVirtualMachine(VirtualMachine):
         self,
         name,
         namespace,
+        eviction=None,
         client=None,
         interfaces=None,
         networks=None,
@@ -119,6 +120,7 @@ class FedoraVirtualMachine(VirtualMachine):
         self.interfaces = interfaces or []
         self.networks = networks or {}
         self.node_selector = node_selector
+        self.eviction = eviction
         self.vm_attrs = vm_attr
         self.vm_attrs_to_use = self.vm_attrs or {
             "label": "fedora-vm",
@@ -165,5 +167,8 @@ class FedoraVirtualMachine(VirtualMachine):
 
         if self.cpu_flags:
             res["spec"]["template"]["spec"]["domain"]["cpu"] = self.cpu_flags
+
+        if self.eviction:
+            res["spec"]["template"]["spec"]["evictionStrategy"] = "LiveMigrate"
 
         return res
