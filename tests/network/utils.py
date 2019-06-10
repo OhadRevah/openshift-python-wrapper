@@ -80,3 +80,59 @@ def bridge_nad(namespace, name, bridge, vlan=None):
             cni_type=cni_type,
             vlan=vlan) as nad:
         yield nad
+
+
+@contextlib.contextmanager
+def _vxlan(pod, name, vxlan_id, interface_name, dst_port, master_bridge):
+    # group 226.100.100.100 is part of RESERVED (225.0.0.0-231.255.255.255) range and applications can not use it
+    # Usage of this group eliminates the risk of overlap
+    create_vxlan_cmd = ["ip", "link", "add", name, "type", "vxlan", "id", vxlan_id,
+                        "group", "226.100.100.100", "dev", interface_name, "dstport", dst_port]
+    # vid(vlan id) 1-4094 allows all vlan range to forward traffic via vxlan tunnel. It makes tunnel generic
+    config_vxlan_cmd = [
+        ["ip", "link", "set", name, "master", master_bridge],
+        ["bridge", "vlan", "add", "dev", name, "vid", "1-4094"],
+        ["ip", "link", "set", "up", name]
+    ]
+
+    LOGGER.info(f"Adding vxlan {name} using {pod.name}")
+    pod.execute(command=create_vxlan_cmd, container=pod.containers()[0].name)
+    try:
+        for cmd in config_vxlan_cmd:
+            pod.execute(command=cmd, container=pod.containers()[0].name)
+        yield
+    finally:
+        LOGGER.info(f"Deleting vxlan {name} using {pod.name}")
+        pod.execute(command=["ip", "link", "del", name], container=pod.containers()[0].name)
+
+
+class VXLANTunnel:
+    # destination port 4790 parameter can be any free port in order to avoid overlap with the existing applications
+    def __init__(self, name, vxlan_id, master_bridge, worker_pods, interface_name='eth0', dst_port="4790"):
+        self.name = name
+        self.vxlan_id = vxlan_id
+        self.master_bridge = master_bridge
+        self.interface_name = interface_name
+        self.dst_port = dst_port
+        self._worker_pods = worker_pods
+        self._stack = None
+
+    def __enter__(self):
+        # use ExitStack to guarantee cleanup even when some nodes fail to
+        # create the vxlan
+        with contextlib.ExitStack() as stack:
+            for pod in self._worker_pods:
+                stack.enter_context(_vxlan(
+                    pod=pod,
+                    name=self.name,
+                    vxlan_id=self.vxlan_id,
+                    interface_name=self.interface_name,
+                    dst_port=self.dst_port,
+                    master_bridge=self.master_bridge)
+                )
+            self._stack = stack.pop_all()
+        return self
+
+    def __exit__(self, *args):
+        if self._stack is not None:
+            self._stack.__exit__(*args)
