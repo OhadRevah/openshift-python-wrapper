@@ -1,14 +1,12 @@
 import pytest
 
-from . import config
-
 
 @pytest.fixture(scope='class')
 def create_bond(request, network_utility_pods, bond_supported, nodes_active_nics):
     """
     Create BOND if setup support BOND
     """
-    bond_name = config.BOND_1
+    bond_name = "bond1"
 
     if not bond_supported:
         return
