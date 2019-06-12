@@ -9,3 +9,15 @@ template_defaults:
 
 storage_defaults:
   storage_class: hdd
+
+region: EMEA
+
+USA:
+  http_server:  http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/
+  https_server: https://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/
+  http_server_auth: http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/mod-auth-basic/
+
+EMEA:
+  http_server:  http://cnv-qe-server.scl.lab.tlv.redhat.com/files/
+  https_server: https://cnv-qe-server.scl.lab.tlv.redhat.com/files/
+  http_server_auth: http://cnv-qe-server.scl.lab.tlv.redhat.com/files/mod-auth-basic/

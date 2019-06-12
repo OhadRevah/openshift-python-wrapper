@@ -1,8 +1,11 @@
 import logging
 import operator
+import urllib.error
+import urllib.request
 
 from _pytest.fixtures import FixtureLookupError
 from autologs.autologs import generate_logs
+from pytest_testconfig import config as py_config
 
 from resources.virtual_machine import VirtualMachine
 from utilities import utils
@@ -89,6 +92,21 @@ def get_fixture_val(request, attr_name, default_value=None):
         return val
     except FixtureLookupError:
         return get_attr_helper(attribute=attr_name, obj=request.cls, default=default_value)
+
+
+def get_images_http_server():
+    """
+    Fetch http_server url from config and return if available.
+    """
+    region = py_config['region']
+    server = py_config[region]['http_server']
+    try:
+        assert urllib.request.urlopen(server).getcode() == 200
+    except urllib.error.URLError:
+        LOGGER.error('URL Error when testing connectivity to HTTP server')
+        raise
+
+    return server
 
 
 class FedoraVirtualMachine(VirtualMachine):
