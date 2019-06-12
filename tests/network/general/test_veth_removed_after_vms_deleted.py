@@ -4,15 +4,12 @@
 Veth interfaces deleted after VMs are removed
 """
 
-import contextlib
 import logging
 
 import pytest
-from pytest_testconfig import config as py_config
 
 from resources.namespace import Namespace
-from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
-from tests.network import utils as net_utils
+import tests.network.utils as net_utils
 from tests.utils import FedoraVirtualMachine
 from utilities import utils
 
@@ -58,17 +55,6 @@ class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
             **vm_attr)
 
 
-@contextlib.contextmanager
-def bridge_nad(namespace, name):
-    cni_type = py_config['template_defaults']['bridge_cni_name']
-    with BridgeNetworkAttachmentDefinition(
-            namespace=namespace.name,
-            name=name,
-            bridge_name=BR1TEST,
-            cni_type=cni_type) as nad:
-        yield nad
-
-
 @pytest.fixture()
 def namespace():
     with Namespace(name=__name__.split(".")[-1].replace("_", "-")) as ns:
@@ -77,13 +63,19 @@ def namespace():
 
 @pytest.fixture()
 def br1test_nad(namespace):
-    with bridge_nad(namespace=namespace, name=BR1TEST) as nad:
+    with net_utils.bridge_nad(
+            namespace=namespace,
+            name=BR1TEST,
+            bridge=BR1TEST) as nad:
         yield nad
 
 
 @pytest.fixture()
 def br1vlan100_nad(namespace):
-    with bridge_nad(namespace=namespace, name=BR1VLAN100) as nad:
+    with net_utils.bridge_nad(
+            namespace=namespace,
+            name=BR1VLAN100,
+            bridge=BR1TEST) as nad:
         yield nad
 
 
