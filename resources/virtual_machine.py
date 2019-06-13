@@ -8,6 +8,7 @@ from .pod import Pod
 from .resource import TIMEOUT, NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
+API_VERSION = 'kubevirt.io/v1alpha3'
 
 
 def get_base_vmi_spec():
@@ -45,7 +46,7 @@ class VirtualMachine(NamespacedResource):
     Virtual Machine object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
-    api_version = 'kubevirt.io/v1alpha3'
+    api_version = API_VERSION
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -153,7 +154,7 @@ class VirtualMachineInstance(NamespacedResource):
     Virtual Machine Instance object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
-    api_version = 'kubevirt.io/v1alpha3'
+    api_version = API_VERSION
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -200,3 +201,18 @@ class VirtualMachineInstance(NamespacedResource):
 
             return False
         return True
+
+
+class VirtualMachineInstanceMigration(NamespacedResource):
+    api_version = API_VERSION
+
+    def __init__(self, name, namespace, vmi):
+        super().__init__(name=name, namespace=namespace)
+        self._vmi = vmi
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "vmiName": self._vmi.name
+        }
+        return res
