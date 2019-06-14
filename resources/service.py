@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
-import logging
 
 from .resource import NamespacedResource
-
-LOGGER = logging.getLogger(__name__)
-TIMEOUT = 120
 
 
 class Service(NamespacedResource):

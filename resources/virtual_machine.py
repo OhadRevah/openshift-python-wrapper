@@ -3,6 +3,7 @@
 import json
 import logging
 
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from urllib3.exceptions import ProtocolError
 
 from resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -204,20 +205,23 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     @property
     def virt_launcher_pod(self):
-        """
-        Get VMi virt-launcher Pod
-
-        Returns:
-            Pod: virt-launcher Pod
-        """
-        uid = self.instance.metadata.uid
-        return list(
+        pods = list(
             Pod.get(
                 dyn_client=self.client,
                 namespace=self.namespace,
-                label_selector=f"kubevirt.io=virt-launcher,kubevirt.io/created-by={uid}",
+                label_selector=f"kubevirt.io=virt-launcher,kubevirt.io/created-by={self.instance.metadata.uid}",
             )
-        )[0]
+        )
+        if len(pods) > 1:
+            #  After VM migration there are two pods, one in Completed status and one in Running status.
+            #  We need to return the Pod that is not in Completed status.
+            for pod in pods:
+                if pod.status != "Completed":
+                    return pod
+        else:
+            return pods[0]
+
+        raise ResourceNotFoundError
 
     def wait_until_running(self, timeout=TIMEOUT, logs=True):
         """
