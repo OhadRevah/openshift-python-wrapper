@@ -1,7 +1,3 @@
-# flake8: noqa: F401, F403, F405
-
-from tests.config import *
-
 NETWORK_NS = "network-tests-namespace"
 
 # LINUX BRIDGE CRDS YAMLS
