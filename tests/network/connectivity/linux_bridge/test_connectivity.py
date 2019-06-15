@@ -227,6 +227,7 @@ def test_connectivity_over_linux_bridge(
     )
 
 
+@pytest.mark.polarion("CNV-2335")
 def test_guest_performance_over_linux_bridge(
     module_namespace,
     is_bare_metal,
