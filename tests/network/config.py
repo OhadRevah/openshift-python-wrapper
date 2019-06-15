@@ -1,12 +1,3 @@
-NETWORK_NS = "network-tests-namespace"
-
-# LINUX BRIDGE CRDS YAMLS
-LINUX_BRIDGE_VLAN_100_YAML = "tests/manifests/network/bridge-vlan-100-net.yml"
-LINUX_BRIDGE_VLAN_200_YAML = "tests/manifests/network/bridge-vlan-200-net.yml"
-LINUX_BRIDGE_VLAN_300_YAML = "tests/manifests/network/bridge-vlan-300-net.yml"
-LINUX_BRIDGE_BOND_YAML = "tests/manifests/network/bridge-net-bond.yml"
-LINUX_BRIDGE_YAML = "tests/manifests/network/bridge-net.yml"
-
 # BRIDGE
 BRIDGE_BR1 = "br1test"
 BRIDGE_BR1BOND = "br1bond"
