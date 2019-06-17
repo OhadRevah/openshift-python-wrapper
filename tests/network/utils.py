@@ -1,10 +1,12 @@
 import contextlib
+import ipaddress
 import logging
 
 from pytest_testconfig import config as py_config
 
 from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
 from utilities.utils import generate_yaml_from_template
+from utilities import console
 
 LOGGER = logging.getLogger(__name__)
 
@@ -136,3 +138,32 @@ class VXLANTunnel:
     def __exit__(self, *args):
         if self._stack is not None:
             self._stack.__exit__(*args)
+
+
+class IpNotFound(Exception):
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return f"IP address not found for interface {self.name}"
+
+
+def get_vmi_ip_by_name(vmi, name):
+    for iface in vmi.interfaces:
+        if iface.name == name:
+            return ipaddress.ip_interface(iface.ipAddress).ip
+
+    raise IpNotFound(name)
+
+
+def run_test_connectivity(src_vm, dst_vm, dst_ip, positive, namespace):
+    """
+    Check connectivity
+    """
+    expected = ' 0% packet loss' if positive else '100% packet loss'
+    LOGGER.info(
+        f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm} to {dst_vm}"
+    )
+    with console.Fedora(vm=src_vm, namespace=namespace) as src_vm_console:
+        src_vm_console.sendline(f'ping -w 3 {dst_ip}')
+        src_vm_console.expect(expected)
