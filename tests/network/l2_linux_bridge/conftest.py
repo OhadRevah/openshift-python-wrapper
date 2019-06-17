@@ -7,7 +7,6 @@ import pytest
 from resources.namespace import Namespace
 from tests import utils
 from tests.network.utils import Bridge, VXLANTunnel, bridge_nad
-from tests.network.config import BRIDGE_BR1
 from tests.utils import FedoraVirtualMachine
 from utilities.console import Fedora
 
@@ -19,6 +18,7 @@ from utilities.console import Fedora
 #       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
 #       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
 
+BRIDGE_BR1 = "br1test"
 VMA_MPLS_LOOPBACK_IP = "192.168.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
 VMB_MPLS_LOOPBACK_IP = "192.168.200.1/32"
