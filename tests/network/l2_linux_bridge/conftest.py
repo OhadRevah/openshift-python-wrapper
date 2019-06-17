@@ -191,11 +191,11 @@ def bridge_device(network_utility_pods):
 
 
 @pytest.fixture(scope='class')
-def vxlan(network_utility_pods, bridge_device, is_bare_metal):
+def vxlan(network_utility_pods, bridge_device, multi_nics_nodes):
 
     # There is no need to build vxlan tunnel on bare metal because
     # it has enough physical interfaces for direct connection
-    if is_bare_metal or len(network_utility_pods) < 2:
+    if multi_nics_nodes:
         return
 
     with VXLANTunnel(
@@ -207,7 +207,7 @@ def vxlan(network_utility_pods, bridge_device, is_bare_metal):
 
 
 @pytest.fixture(scope='class')
-def vm_a(namespace, all_nads, bridge_device, vxlan):
+def vm_a(namespace, all_nads, bridge_device):
     dhcp_server_config = (
         "  - sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
         "\\nauthoritative;\\nsubnet 192.168.3.0 netmask 255.255.255.0 {"
@@ -231,7 +231,7 @@ def vm_a(namespace, all_nads, bridge_device, vxlan):
 
 
 @pytest.fixture(scope='class')
-def vm_b(namespace, all_nads, bridge_device, vxlan):
+def vm_b(namespace, all_nads, bridge_device):
     interface_ip_addresses = ["192.168.0.2", "192.168.2.2", "192.168.3.2", "192.168.4.2", "192.168.1.2"]
     yield from bridge_attached_vm(
         name='vm-fedora-2',

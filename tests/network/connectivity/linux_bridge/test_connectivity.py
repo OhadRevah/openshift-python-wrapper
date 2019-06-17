@@ -10,11 +10,11 @@ from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import bridge_nad, run_test_connectivity, get_vmi_ip_by_name
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 
-BR1TEST = "br1test"
-BR1BOND = "br1bond"
-BR1VLAN100 = "br1vlan100"
-BR1VLAN200 = "br1vlan200"
-BR1VLAN300 = "br1vlan300"
+BR1TEST = 'br1test'
+BR1BOND = 'br1bond'
+BR1VLAN100 = 'br1vlan100'
+BR1VLAN200 = 'br1vlan200'
+BR1VLAN300 = 'br1vlan300'
 
 
 class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
@@ -32,43 +32,43 @@ class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
             **vm_attr)
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def module_namespace():
-    with Namespace(name="linux-bridge-connectivity") as ns:
+    with Namespace(name='linux-bridge-connectivity') as ns:
         yield ns
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def br1test_nad(module_namespace):
     with bridge_nad(namespace=module_namespace, name=BR1TEST, bridge=BR1TEST) as nad:
         yield nad
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def brbond_nad(module_namespace):
     with bridge_nad(namespace=module_namespace, name=BR1BOND, bridge=BR1BOND) as nad:
         yield nad
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def br1vlan100_nad(module_namespace):
     with bridge_nad(namespace=module_namespace, name=BR1VLAN100, bridge=BR1TEST, vlan=100) as nad:
         yield nad
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def br1vlan200_nad(module_namespace):
     with bridge_nad(namespace=module_namespace, name=BR1VLAN200, bridge=BR1TEST, vlan=200) as nad:
         yield nad
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def br1vlan300_nad(module_namespace):
     with bridge_nad(namespace=module_namespace, name=BR1VLAN300, bridge=BR1TEST, vlan=300) as nad:
         yield nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
     networks = {
         BR1TEST: BR1TEST,
@@ -100,7 +100,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
 
     with VirtualMachineAttachedToBridges(
             namespace=module_namespace.name,
-            name="vma",
+            name='vma',
             networks=networks,
             interfaces=sorted(networks.keys()),
             node_selector=network_utility_pods[0].node.name,
@@ -109,7 +109,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
     networks = {
         BR1TEST: BR1TEST,
@@ -141,7 +141,7 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
 
     with VirtualMachineAttachedToBridges(
             namespace=module_namespace.name,
-            name="vmb",
+            name='vmb',
             networks=networks,
             interfaces=sorted(networks.keys()),
             node_selector=network_utility_pods[1].node.name,
@@ -150,7 +150,7 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
     assert vmi.wait_until_running()
@@ -158,7 +158,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
     return vmi
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
     assert vmi.wait_until_running()
@@ -169,11 +169,11 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
 @pytest.mark.parametrize(
     'bridge',
     [
-        pytest.param('default', marks=(pytest.mark.polarion("CNV-2350"))),
-        pytest.param(BR1TEST, marks=(pytest.mark.polarion("CNV-2080"))),
-        pytest.param(BR1VLAN100, marks=(pytest.mark.polarion("CNV-2072"))),
-        pytest.param(BR1BOND, marks=(pytest.mark.polarion("CNV-2141"))),
-        pytest.param(BR1VLAN300, marks=(pytest.mark.polarion("CNV-2075")))
+        pytest.param('default', marks=(pytest.mark.polarion('CNV-2350'))),
+        pytest.param(BR1TEST, marks=(pytest.mark.polarion('CNV-2080'))),
+        pytest.param(BR1VLAN100, marks=(pytest.mark.polarion('CNV-2072'))),
+        pytest.param(BR1BOND, marks=(pytest.mark.polarion('CNV-2141'))),
+        pytest.param(BR1VLAN300, marks=(pytest.mark.polarion('CNV-2075')))
     ],
     ids=[
         'Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists',
@@ -203,6 +203,11 @@ def test_connectivity_over_linux_bridge(
         if not bond_supported:
             pytest.skip(msg='No BOND support')
 
+    if bridge in (BR1VLAN100, BR1VLAN300) and py_config['bare_metal_cluster']:
+        # TODO: Remove when trunk is configured on the switches
+        # https://redhat.service-now.com/surl.do?n=PNT0584216
+        pytest.skip(msg='Running on BM, no trunk on switches yet!!')
+
     positive = bridge != BR1VLAN300
     run_test_connectivity(
         src_vm=running_bridge_attached_vmia.name,
@@ -213,10 +218,11 @@ def test_connectivity_over_linux_bridge(
     )
 
 
-@pytest.mark.polarion("CNV-2335")
+@pytest.mark.skipif(not py_config['bare_metal_cluster'], reason='virtualized cluster')
+@pytest.mark.xfail(reason='Slow performance on BM, need investigation')
+@pytest.mark.polarion('CNV-2335')
 def test_guest_performance_over_linux_bridge(
     module_namespace,
-    is_bare_metal,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -225,9 +231,6 @@ def test_guest_performance_over_linux_bridge(
     """
     In-guest performance bandwidth passthrough over Linux bridge
     """
-    if not is_bare_metal:
-        pytest.skip(msg='Only run on bare metal env')
-
     expected_res = py_config['test_guest_performance']['bandwidth']
     bits_per_second = run_test_guest_performance(
         server_vm=running_bridge_attached_vmia.name,

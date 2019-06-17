@@ -9,7 +9,7 @@ import os.path
 import pytest
 
 from resources.daemonset import DaemonSet
-from resources.pod import Pod, ExecOnPodError
+from resources.pod import Pod
 from utilities import utils
 
 
@@ -18,7 +18,7 @@ def network_init(
     net_utility_daemonset,
     schedulable_node_ips,
     network_utility_pods,
-    is_bare_metal,
+    multi_nics_nodes,
     bond_supported,
 ):
     """
@@ -71,8 +71,7 @@ def nodes_active_nics(network_utility_pods):
     nodes_nics = {}
     for pod in network_utility_pods:
         pod_container = pod.containers()[0].name
-        node_name = pod.node.name
-        nodes_nics[node_name] = []
+        nodes_nics[pod.node.name] = []
         nics = pod.execute(
             command=[
                 "bash", "-c",
@@ -92,30 +91,20 @@ def nodes_active_nics(network_utility_pods):
                 if nic in [i for i in default_gw.splitlines() if 'default' in i][0]:
                     continue
 
-                nodes_nics[pod.name].append(nic)
+                nodes_nics[pod.node.name].append(nic)
     return nodes_nics
 
 
 @pytest.fixture(scope='session')
-def is_bare_metal(network_utility_pods):
+def multi_nics_nodes(nodes_active_nics):
     """
-    Check if the cluster deployed on bare-metal hosts
+    Check if nodes has more then 1 active NIC
     """
-    for pod in network_utility_pods:
-        try:
-            pod.execute(
-                command=[
-                    "bash", "-c",
-                    "dmesg | grep -c 'Booting paravirtualized kernel on bare hardware'"
-                ], container=pod.containers()[0].name
-            )
-        except ExecOnPodError:
-            return False
-    return True
+    return min(len(nics) for nics in nodes_active_nics.values()) > 1
 
 
 @pytest.fixture(scope='session')
-def bond_supported(network_utility_pods, is_bare_metal, nodes_active_nics):
+def bond_supported(network_utility_pods, nodes_active_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """

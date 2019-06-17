@@ -10,6 +10,8 @@ template_defaults:
 storage_defaults:
   storage_class: hdd
 
+bare_metal_cluster: False
+
 region: EMEA
 
 USA:

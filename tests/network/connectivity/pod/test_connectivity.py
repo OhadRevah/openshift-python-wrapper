@@ -41,12 +41,6 @@ def module_namespace():
         yield ns
 
 
-@pytest.fixture()
-def bare_metal(is_bare_metal):
-    if not is_bare_metal:
-        pytest.skip(msg='Only run on bare metal env')
-
-
 @pytest.fixture(scope='module')
 def vma(module_namespace):
     with VirtualMachineAttachedToBridge(
@@ -91,9 +85,15 @@ def test_connectivity_over_pod_network(vma, vmb, running_vma, running_vmb, modul
     )
 
 
+@pytest.mark.skipif(not py_config['bare_metal_cluster'], reason='virtualized cluster')
+@pytest.mark.xfail(reason='Slow performance on BM, need investigation')
 @pytest.mark.polarion('CNV-2334')
 def test_guest_performance_over_pod_network(
-    bare_metal, vma, vmb, running_vma, running_vmb, module_namespace
+    vma,
+    vmb,
+    running_vma,
+    running_vmb,
+    module_namespace
 ):
     """
     In-guest performance bandwidth passthrough over Linux bridge

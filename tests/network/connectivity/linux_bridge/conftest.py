@@ -3,12 +3,12 @@ import pytest
 
 @pytest.fixture(scope="module")
 def create_linux_bridges_real_nics(
-    request, network_utility_pods, nodes_active_nics, is_bare_metal
+    request, network_utility_pods, nodes_active_nics, multi_nics_nodes
 ):
     """
     Create needed linux bridges when setup is bare-metal
     """
-    if not is_bare_metal:
+    if not multi_nics_nodes:
         return
 
     bridge_name = "br1test"
@@ -37,12 +37,12 @@ def create_linux_bridges_real_nics(
 
 @pytest.fixture(scope="module")
 def create_linux_bridge_on_vxlan(
-    request, network_utility_pods, schedulable_node_ips, is_bare_metal
+    request, network_utility_pods, schedulable_node_ips, multi_nics_nodes
 ):
     """
     Create needed linux bridges when setup is not bare-metal
     """
-    if is_bare_metal:
+    if multi_nics_nodes:
         return
 
     bridge_name = "br1test"
