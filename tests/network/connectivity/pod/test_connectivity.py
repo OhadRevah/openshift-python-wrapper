@@ -8,6 +8,7 @@ from pytest_testconfig import config as py_config
 
 from resources.namespace import Namespace
 from tests.network.connectivity import utils
+from tests.network.utils import run_test_connectivity
 from tests.utils import wait_for_vm_interfaces, FedoraVirtualMachine
 
 CLOUD_INIT_USER_DATA = r'''
@@ -81,7 +82,7 @@ def test_connectivity_over_pod_network(vma, vmb, running_vma, running_vmb, modul
     """
     Check connectivity
     """
-    utils.run_test_connectivity(
+    run_test_connectivity(
         src_vm=running_vma.name,
         dst_vm=running_vmb.name,
         dst_ip=ip_interface(running_vma.vmi.interfaces[0]['ipAddress']).ip,

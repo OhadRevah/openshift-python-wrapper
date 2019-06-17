@@ -8,19 +8,6 @@ from utilities import console
 LOGGER = logging.getLogger(__name__)
 
 
-def run_test_connectivity(src_vm, dst_vm, dst_ip, positive, namespace):
-    """
-    Check connectivity
-    """
-    expected = ' 0% packet loss' if positive else '100% packet loss'
-    LOGGER.info(
-        f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm} to {dst_vm}"
-    )
-    with console.Fedora(vm=src_vm, namespace=namespace) as src_vm_console:
-        src_vm_console.sendline(f'ping -w 3 {dst_ip}')
-        src_vm_console.expect(expected)
-
-
 def run_test_guest_performance(server_vm, client_vm, listen_ip, namespace):
     """
     In-guest performance bandwidth passthrough

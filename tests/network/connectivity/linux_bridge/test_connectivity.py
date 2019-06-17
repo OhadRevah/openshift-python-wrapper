@@ -2,14 +2,12 @@
 VM to VM connectivity
 """
 
-import ipaddress
-
 import pytest
 from pytest_testconfig import config as py_config
 
 from resources.namespace import Namespace
-from tests.network.connectivity.utils import run_test_connectivity, run_test_guest_performance
-from tests.network.utils import bridge_nad
+from tests.network.connectivity.utils import run_test_guest_performance
+from tests.network.utils import bridge_nad, run_test_connectivity, get_vmi_ip_by_name
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 
 BR1TEST = "br1test"
@@ -17,22 +15,6 @@ BR1BOND = "br1bond"
 BR1VLAN100 = "br1vlan100"
 BR1VLAN200 = "br1vlan200"
 BR1VLAN300 = "br1vlan300"
-
-
-class IpNotFound(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"Ip not found for interface {self.name}"
-
-
-def _get_vmi_ip_by_name(vmi, name):
-    for iface in vmi.interfaces:
-        if iface.name == name:
-            return ipaddress.ip_interface(iface.ipAddress).ip
-
-    raise IpNotFound
 
 
 class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
@@ -221,7 +203,7 @@ def test_connectivity_over_linux_bridge(
     run_test_connectivity(
         src_vm=running_bridge_attached_vmia.name,
         dst_vm=running_bridge_attached_vmib.name,
-        dst_ip=_get_vmi_ip_by_name(vmi=running_bridge_attached_vmib, name=bridge),
+        dst_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmib, name=bridge),
         positive=positive,
         namespace=module_namespace.name
     )
@@ -246,7 +228,7 @@ def test_guest_performance_over_linux_bridge(
     bits_per_second = run_test_guest_performance(
         server_vm=running_bridge_attached_vmia.name,
         client_vm=running_bridge_attached_vmib.name,
-        listen_ip=_get_vmi_ip_by_name(vmi=running_bridge_attached_vmia, name=BR1TEST),
+        listen_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmia, name=BR1TEST),
         namespace=module_namespace.name
     )
     assert bits_per_second >= expected_res
