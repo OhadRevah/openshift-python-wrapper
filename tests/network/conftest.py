@@ -4,6 +4,8 @@
 Pytest conftest file for CNV network tests
 """
 
+import os.path
+
 import pytest
 
 from resources.daemonset import DaemonSet
@@ -43,7 +45,8 @@ def net_utility_daemonset(request, default_client):
     request.addfinalizer(fin)
 
     data = utils.generate_yaml_from_template(
-        file_='tests/manifests/network/privileged_container/net-utility-daemonset.yaml'
+        file_=os.path.join(
+            os.path.dirname(__file__), 'net-utility-daemonset.yaml')
     )
     assert ds.create_from_dict(dyn_client=default_client, data=data)
     assert ds.wait_until_deployed()
