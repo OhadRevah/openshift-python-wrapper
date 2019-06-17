@@ -55,14 +55,14 @@ def running_sidecar_vm(sidecar_vm):
 
 
 @pytest.mark.polarion("CNV-840")
-def test_vm_with_sidecar_hook(running_sidecar_vm, virt_namespace):
+def test_vm_with_sidecar_hook(running_sidecar_vm):
     """
     Test VM with sidecar hook, Install dmidecode with annotation
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
     And check that package includes manufacturer: "Radical Edward"
     """
     with console.Fedora(
-        vm=running_sidecar_vm.name, namespace=virt_namespace.name
+        vm=running_sidecar_vm.name, namespace=running_sidecar_vm.namespace
     ) as vm_console:
         vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
         vm_console.expect("1", timeout=20)

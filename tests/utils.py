@@ -112,6 +112,7 @@ class FedoraVirtualMachine(VirtualMachine):
         interfaces=None,
         networks=None,
         node_selector=None,
+        cpu_flags=None,
         **vm_attr,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
@@ -124,6 +125,7 @@ class FedoraVirtualMachine(VirtualMachine):
             "cpu_cores": 1,
             "memory": "1024Mi",
         }
+        self.cpu_flags = cpu_flags
 
     def _cloud_init_user_data(self):
         return {"password": "fedora", "chpasswd": "{ expire: False }"}
@@ -160,5 +162,8 @@ class FedoraVirtualMachine(VirtualMachine):
             res["spec"]["template"]["spec"]["nodeSelector"] = {
                 "kubernetes.io/hostname": self.node_selector
             }
+
+        if self.cpu_flags:
+            res["spec"]["template"]["spec"]["domain"]["cpu"] = self.cpu_flags
 
         return res
