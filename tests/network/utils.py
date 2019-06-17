@@ -232,3 +232,9 @@ def nmcli_add_con_cmds(iface, ip):
         f"nmcli con mod {iface} ipv4.addresses {ip}/24 ipv4.method manual connection.autoconnect-priority 1",
         f"nmcli con up {iface}",
     ]
+
+
+def running_vmi(vm):
+    vm.start(wait=True)
+    vm.vmi.wait_until_running()
+    return vm.vmi
