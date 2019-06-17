@@ -8,7 +8,7 @@ template_defaults:
   bridge_cni_name: cnv-bridge
 
 storage_defaults:
-  storage_class: hdd
+  storage_class: local-sc
 
 bare_metal_cluster: False
 
