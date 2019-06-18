@@ -2,7 +2,8 @@
 
 import logging
 
-from .resource import NamespacedResource
+from .resource import NamespacedResource, TIMEOUT
+from .persistent_volume_claim import PersistentVolumeClaim
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,3 +32,67 @@ class DataVolume(NamespacedResource):
         """
         KUBEVIRT = "kubevirt"
         ARCHIVE = "archive"
+
+    def wait_deleted(self, timeout=TIMEOUT):
+        """
+       Wait until DataVolume and the PVC created by it are deleted
+
+        Args:
+        timeout (int):  Time to wait for the DataVolume and PVC to be deleted.
+
+        Returns:
+        bool: True if DataVolume and its PVC are gone, False if timeout reached.
+        """
+        pvc = PersistentVolumeClaim(name=self.name, namespace=self.namespace)
+        super().wait_deleted(timeout=timeout)
+        return pvc.wait_deleted(timeout=timeout)
+
+
+class ImportDataVolume(DataVolume):
+    def __init__(
+            self, name, namespace, source, url, content_type, size, storage_class,
+            access_modes=DataVolume.AccessMode.RWO):
+        super().__init__(name=name, namespace=namespace)
+        self.source = source
+        self.url = url
+        self.content_type = content_type
+        self.size = size
+        self.access_modes = access_modes
+        self.storage_class = storage_class
+
+    def _base_body(self):
+        body = super()._base_body()
+        body.update({
+            "spec": {
+                "source": {
+                    self.source: {
+                        "url": self.url,
+                    }
+                },
+                "pvc": {
+                    "accessModes": [
+                        self.access_modes
+                    ],
+                    "resources": {
+                        "requests": {
+                            "storage": self.size,
+                        }
+                    },
+                    "storageClassName": self.storage_class,
+                },
+                "contentType": self.content_type,
+            }
+        })
+        return body
+
+
+class ImportFromHttpDataVolume(ImportDataVolume):
+    def __init__(self, name, namespace, url, content_type, size, storage_class, access_modes=DataVolume.AccessMode.RWO):
+        super().__init__(
+            name, namespace, "http", url, content_type, size, storage_class, access_modes)
+
+
+class ImportFromRegistryDataVolume(ImportDataVolume):
+    def __init__(self, name, namespace, url, content_type, size, storage_class, access_modes=DataVolume.AccessMode.RWO):
+        super().__init__(
+            name, namespace, "registry", url, content_type, size, storage_class, access_modes)
