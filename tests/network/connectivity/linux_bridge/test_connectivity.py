@@ -7,7 +7,13 @@ from pytest_testconfig import config as py_config
 
 from resources.namespace import Namespace
 from tests.network.connectivity.utils import run_test_guest_performance
-from tests.network.utils import bridge_nad, run_test_connectivity, get_vmi_ip_by_name
+from tests.network.utils import (
+    bridge_nad,
+    run_test_connectivity,
+    get_vmi_ip_by_name,
+    VXLANTunnel,
+    Bridge
+)
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 
 BR1TEST = 'br1test'
@@ -68,7 +74,29 @@ def br1vlan300_nad(module_namespace):
         yield nad
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='module', autouse=True)
+def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_nodes):
+
+    master_index = 0 if multi_nics_nodes else None
+
+    with Bridge(
+            name=BR1TEST,
+            worker_pods=network_utility_pods,
+            master_index=master_index,
+            vlan_filtering=True,
+            nodes_nics=nodes_active_nics) as br:
+        if not multi_nics_nodes:
+            with VXLANTunnel(
+                    name="vxlan_lb_99",
+                    worker_pods=network_utility_pods,
+                    vxlan_id=99,
+                    master_bridge=br.name):
+                yield br
+        else:
+            yield br
+
+
+@pytest.fixture(scope="module")
 def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
     networks = {
         BR1TEST: BR1TEST,
@@ -186,8 +214,6 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
 def test_connectivity_over_linux_bridge(
     bridge,
     module_namespace,
-    create_linux_bridges_real_nics,
-    create_linux_bridge_on_vxlan,
     create_bond,
     attach_linux_bridge_to_bond,
     bond_supported,

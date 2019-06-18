@@ -9,33 +9,53 @@ from utilities import console
 
 LOGGER = logging.getLogger(__name__)
 @contextlib.contextmanager
-def _bridge(pod, name):
+def _bridge(pod, name, vlan_filtering, nic):
     LOGGER.info(f"Adding bridge {name} using {pod.name}")
-    pod.execute(
-        command=["ip", "link", "add", name, "type", "bridge"],
-        container=pod.containers()[0].name
-    )
+    pod.execute(command=["ip", "link", "add", name, "type", "bridge"])
     try:
+        if vlan_filtering:
+            pod.execute(
+                command=["ip", "link", "set", name, "type", "bridge", "vlan_filtering", "1"])
+        pod.execute(command=["ip", "link", "set", "dev", name, "up"])
+        if nic is not None:
+            pod.execute(
+                command=["ip", "link", "set", "dev", nic, "master", name])
         yield
     finally:
         LOGGER.info(f"Deleting bridge {name} using {pod.name}")
-        pod.execute(
-            command=["ip", "link", "del", name],
-            container=pod.containers()[0].name
-        )
+        pod.execute(command=["ip", "link", "del", name])
 
 
 class Bridge:
-    def __init__(self, name, worker_pods):
+    def __init__(
+        self, name, worker_pods, vlan_filtering=False, nodes_nics=None, master_index=None
+    ):
+        """
+        Create bridge on all nodes (Using privileged pods)
+
+        Args:
+            name (str): Bridge name.
+            worker_pods (list): List of Pods instances.
+            vlan_filtering (bool): True to set vlan_filtering 1 on the bridge.
+            nodes_nics (dict): Dict of {nodes: [NICs]}. get it from 'nodes_active_nics' fixture.
+            master_index (int): The index on the NIC to use
+        """
         self.name = name
         self._worker_pods = worker_pods
+        self.master_index = master_index
+        self.vlan_filtering = vlan_filtering
+        self.nodes_nics = nodes_nics
         self._stack = None
 
     def __enter__(self):
         # use ExitStack to guarantee cleanup even when some workers fail
         with contextlib.ExitStack() as stack:
             for pod in self._worker_pods:
-                stack.enter_context(_bridge(pod, self.name))
+                nic = (
+                    self.nodes_nics[pod.node.name][self.master_index]
+                    if self.master_index else None)
+                stack.enter_context(
+                    _bridge(pod, self.name, self.vlan_filtering, nic))
             self._stack = stack.pop_all()
         return self
 
@@ -70,14 +90,14 @@ def _vxlan(pod, name, vxlan_id, interface_name, dst_port, master_bridge):
     ]
 
     LOGGER.info(f"Adding vxlan {name} using {pod.name}")
-    pod.execute(command=create_vxlan_cmd, container=pod.containers()[0].name)
+    pod.execute(command=create_vxlan_cmd)
     try:
         for cmd in config_vxlan_cmd:
-            pod.execute(command=cmd, container=pod.containers()[0].name)
+            pod.execute(command=cmd)
         yield
     finally:
         LOGGER.info(f"Deleting vxlan {name} using {pod.name}")
-        pod.execute(command=["ip", "link", "del", name], container=pod.containers()[0].name)
+        pod.execute(command=["ip", "link", "del", name])
 
 
 class VXLANTunnel:
