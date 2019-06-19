@@ -82,3 +82,8 @@ class Cirros(Console):
 class Alpine(Console):
     _USERNAME = 'root'
     _PASSWORD = None
+
+
+class RHEL(Console):
+    _USERNAME = 'cloud-user'
+    _PASSWORD = 'redhat'
