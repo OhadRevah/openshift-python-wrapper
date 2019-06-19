@@ -21,20 +21,6 @@ CLOUD_INIT_USER_DATA = r'''
               - systemctl start qemu-guest-agent'''
 
 
-class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
-    def __init__(
-        self, name, namespace, interfaces=None, networks=None, cloud_init_user_data=None, **vm_attr
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            interfaces=interfaces,
-            networks=networks,
-            cloud_init_user_data=cloud_init_user_data,
-            **vm_attr
-        )
-
-
 @pytest.fixture(scope='module', autouse=True)
 def module_namespace():
     with Namespace(name='pod-connectivity') as ns:
@@ -43,7 +29,7 @@ def module_namespace():
 
 @pytest.fixture(scope='module')
 def vma(module_namespace):
-    with VirtualMachineAttachedToBridge(
+    with FedoraVirtualMachine(
         namespace=module_namespace.name, name='vma', cloud_init_user_data=CLOUD_INIT_USER_DATA
     ) as vm:
         assert vm.start()
@@ -52,7 +38,7 @@ def vma(module_namespace):
 
 @pytest.fixture(scope='module')
 def vmb(module_namespace):
-    with VirtualMachineAttachedToBridge(
+    with FedoraVirtualMachine(
         namespace=module_namespace.name, name='vmb', cloud_init_user_data=CLOUD_INIT_USER_DATA
     ) as vm:
         assert vm.start()

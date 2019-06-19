@@ -23,22 +23,7 @@ BR1VLAN200 = 'br1vlan200'
 BR1VLAN300 = 'br1vlan300'
 
 
-class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
-    def __init__(
-        self, name, namespace, networks=None, interfaces=None,
-        cloud_init_user_data=None, node_selector=None, **vm_attr
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            interfaces=interfaces,
-            networks=networks,
-            node_selector=node_selector,
-            cloud_init_user_data=cloud_init_user_data,
-            **vm_attr)
-
-
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def module_namespace():
     with Namespace(name='linux-bridge-connectivity') as ns:
         yield ns
@@ -126,7 +111,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
           - nmcli con add type ethernet con-name eth4 ifname eth4
           - nmcli con mod eth4 ipv4.addresses 192.168.3.1/24 ipv4.method manual'''
 
-    with VirtualMachineAttachedToBridges(
+    with FedoraVirtualMachine(
             namespace=module_namespace.name,
             name='vma',
             networks=networks,
@@ -167,7 +152,7 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
           - nmcli con add type ethernet con-name eth4 ifname eth4
           - nmcli con mod eth4 ipv4.addresses 192.168.3.2/24 ipv4.method manual'''
 
-    with VirtualMachineAttachedToBridges(
+    with FedoraVirtualMachine(
             namespace=module_namespace.name,
             name='vmb',
             networks=networks,

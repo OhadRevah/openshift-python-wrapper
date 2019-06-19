@@ -16,6 +16,10 @@ from utilities import utils
 LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"
 BR1VLAN100 = "br1vlan100"
+NETWORKS = {
+    'net1': BR1TEST,
+    'net2': BR1VLAN100,
+}
 
 
 def count_veth_devices_on_host(pod, pod_container):
@@ -34,25 +38,6 @@ def count_veth_devices_on_host(pod, pod_container):
         container=pod_container)
 
     return int(out.strip())
-
-
-class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
-    def __init__(self, name, namespace, interfaces=None, networks=None, **vm_attr):
-        if networks is None:
-            networks = {
-                'net1': BR1TEST,
-                'net2': BR1VLAN100,
-            }
-
-        if interfaces is None:
-            interfaces = sorted(networks.keys())
-
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            interfaces=interfaces,
-            networks=networks,
-            **vm_attr)
 
 
 @pytest.fixture()
@@ -87,14 +72,22 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture()
 def bridge_attached_vma(namespace):
-    with VirtualMachineAttachedToBridges(namespace=namespace.name, name="vma") as vm:
+    with FedoraVirtualMachine(
+            namespace=namespace.name,
+            name="vma",
+            networks=NETWORKS,
+            interfaces=sorted(NETWORKS.keys())) as vm:
         assert vm.start()
         yield vm
 
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace):
-    with VirtualMachineAttachedToBridges(namespace=namespace.name, name="vmb") as vm:
+    with FedoraVirtualMachine(
+            namespace=namespace.name,
+            name="vmb",
+            networks=NETWORKS,
+            interfaces=sorted(NETWORKS.keys())) as vm:
         assert vm.start()
         yield vm
 
