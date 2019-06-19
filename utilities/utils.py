@@ -123,6 +123,12 @@ def _run_command(command):
         LOGGER.error("Failed to run {cmd}. error: {err}".format(cmd=command, err=err))
         return False, err
 
+    if p.returncode != 0:
+        LOGGER.error(
+            "Failed to run {cmd}. rc: {rc}".format(cmd=command, rc=p.returncode)
+        )
+        return False, out.decode("utf-8")
+
     return True, out.decode("utf-8")
 
 

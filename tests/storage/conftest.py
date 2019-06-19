@@ -7,6 +7,7 @@ Pytest conftest file for CNV CDI tests
 import pytest
 import tests.utils
 
+from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.route import Route
 from resources.storage_class import StorageClass
@@ -49,3 +50,25 @@ def skip_no_default_sc(default_client):
         ):
             return
     pytest.skip("Skipping test, no default storage class configured")
+
+
+@pytest.fixture()
+def uploadproxy_route_deleted():
+    """
+    Delete uploadproxy route from kubevirt-hyperconverged namespace.
+
+    This scales down cdi-operator replicas to 0 so that the route is not auto-created by the cdi-operator pod.
+    Once the cdi-operator is terminated, route is deleted to perform the test.
+    """
+    deployment = Deployment(name="cdi-operator", namespace="kubevirt-hyperconverged")
+    deployment.scale_replicas(replica_count=0)
+    deployment.wait_until_no_replicas()
+    assert Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").delete(
+        wait=True
+    )
+    yield
+    deployment.scale_replicas(replica_count=1)
+    deployment.wait_until_avail_replicas()
+    assert Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait(
+        resource_version=""
+    )
