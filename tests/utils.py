@@ -111,12 +111,14 @@ def get_images_http_server():
 
 class FedoraVirtualMachine(VirtualMachine):
     def __init__(
-        self, name, namespace, interfaces=None, networks=None, cloud_init_user_data=None, **vm_attr
+        self, name, namespace, interfaces=None, networks=None,
+        cloud_init_user_data=None, node_selector=None, **vm_attr
     ):
         super().__init__(name=name, namespace=namespace)
         self.interfaces = interfaces or []
         self.networks = networks or {}
         self.cloud_init_user_data = cloud_init_user_data
+        self.node_selector = node_selector
         self.vm_attrs = vm_attr
         self.vm_attrs_to_use = self.vm_attrs or {
                 "label": "fedora-vm",
@@ -153,5 +155,10 @@ class FedoraVirtualMachine(VirtualMachine):
                 if vol['name'] == 'cloudinitdisk':
                     vol['cloudInitNoCloud']['userData'] = self.cloud_init_user_data
                     break
+
+        if self.node_selector:
+            res['spec']['template']['spec']['nodeSelector'] = {
+                'kubernetes.io/hostname': self.node_selector
+            }
 
         return res

@@ -19,13 +19,15 @@ BR1VLAN300 = "br1vlan300"
 
 class VirtualMachineAttachedToBridges(FedoraVirtualMachine):
     def __init__(
-        self, name, namespace, networks=None, interfaces=None, cloud_init_user_data=None, **vm_attr
+        self, name, namespace, networks=None, interfaces=None,
+        cloud_init_user_data=None, node_selector=None, **vm_attr
     ):
         super().__init__(
             name=name,
             namespace=namespace,
             interfaces=interfaces,
             networks=networks,
+            node_selector=node_selector,
             cloud_init_user_data=cloud_init_user_data,
             **vm_attr)
 
@@ -67,7 +69,7 @@ def br1vlan300_nad(module_namespace):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(bond_supported, module_namespace):
+def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
     networks = {
         BR1TEST: BR1TEST,
         BR1VLAN100: BR1VLAN100,
@@ -101,13 +103,14 @@ def bridge_attached_vma(bond_supported, module_namespace):
             name="vma",
             networks=networks,
             interfaces=sorted(networks.keys()),
+            node_selector=network_utility_pods[0].node.name,
             cloud_init_user_data=cloud_init_user_data) as vm:
         assert vm.start()
         yield vm
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(bond_supported, module_namespace):
+def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
     networks = {
         BR1TEST: BR1TEST,
         BR1VLAN100: BR1VLAN100,
@@ -141,6 +144,7 @@ def bridge_attached_vmb(bond_supported, module_namespace):
             name="vmb",
             networks=networks,
             interfaces=sorted(networks.keys()),
+            node_selector=network_utility_pods[1].node.name,
             cloud_init_user_data=cloud_init_user_data) as vm:
         assert vm.start()
         yield vm
