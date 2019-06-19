@@ -1,5 +1,0 @@
-plugin: kubevirt_vms
-host_format: "{namespace}-{name}"
-keyed_groups:
-  - vms
-
