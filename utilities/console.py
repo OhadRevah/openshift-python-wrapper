@@ -2,17 +2,14 @@
 import logging
 
 import pexpect
-from autologs.autologs import generate_logs
 
 LOGGER = logging.getLogger(__name__)
 
 
-class DistroNotSupported(Exception):
-    pass
-
-
 class Console(object):
-    def __init__(self):
+    _USERNAME = _PASSWORD = None
+
+    def __init__(self, vm, namespace, username=None, password=None):
         """
         Connect to VM console
 
@@ -22,23 +19,47 @@ class Console(object):
                 vmc.sendline('some command)
                 vmc.expect('some output')
         """
-        self.vm = None
-        self.username = None
-        self.password = None
-        self.namespace = None
+        self.vm = vm
+        self.username = username or self._USERNAME
+        self.password = password or self._PASSWORD
+        self.namespace = namespace
+        self.child = None
 
-    def _connect(self):
+    def connect(self):
+        return self._connect(
+            login_prompt='login:',
+            username=self.username,
+            password=self.password,
+            prompt='#' if self.username == 'root' else '$')
+
+    def _connect(self, login_prompt, username, password, prompt):
+        self.child.send("\n\n")
+        self.child.expect(login_prompt)
+        self.child.sendline(username)
+        if self.password:
+            self.child.expect("Password:")
+            self.child.sendline(password)
+        self.child.expect(prompt)
+        if self.child.after:
+            LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
+            return False
+
+        return self.child
+
+    def __enter__(self):
         """
         Connect to console
         """
+        LOGGER.info(f"Connect to {self.vm} console")
         self.err_msg = "Failed to get console to {vm}. error: {error}"
         cmd = "virtctl console {vm}".format(vm=self.vm)
         if self.namespace:
             cmd += " -n {namespace}".format(namespace=self.namespace)
 
         self.child = pexpect.spawn(cmd, encoding='utf-8')
+        return self.connect()
 
-    def _exit(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Logout from shell
         """
@@ -49,138 +70,15 @@ class Console(object):
 
 
 class Fedora(Console):
-    def __init__(self, vm, username=None, password=None, namespace=None):
-        """
-        Connect to Fedora VM console
-
-        Args:
-            vm (str): VM name.
-            username (str): Username for login.
-            password (str): Password for login.
-            namespace (str): VM namespace
-        """
-        super().__init__()
-        self.vm = vm
-        self.username = username or "fedora"
-        self.password = password or "fedora"
-        self.namespace = namespace
-        self._connect()
-
-    def __enter__(self):
-        return self.connect()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._exit()
-
-    @generate_logs()
-    def connect(self):
-        """
-        Connect to Fedora
-
-        Returns:
-            spawn: Spawn object
-        """
-        self.child.send("\n\n")
-        self.child.expect("login:")
-        self.child.sendline(self.username)
-        self.child.expect("Password:")
-        self.child.sendline(self.password)
-        self.child.expect("$")
-        if self.child.after:
-            LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
-            return False
-
-        return self.child
+    _USERNAME = 'fedora'
+    _PASSWORD = 'fedora'
 
 
 class Cirros(Console):
-    def __init__(self, vm, username=None, password=None, namespace=None):
-        """
-        Connect to Cirros VM console
-
-        Args:
-            vm (str): VM name.
-            username (str): Username for login.
-            password (str): Password for login.
-            namespace (str): VM namespace
-        """
-        super().__init__()
-        self.vm = vm
-        self.username = username or "cirros"
-        self.password = password or "gocubsgo"
-        self.namespace = namespace
-        self._connect()
-
-    def __enter__(self):
-        return self.connect()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._exit()
-
-    @generate_logs()
-    def connect(self):
-        """
-        Connect to Cirros
-
-        Returns:
-            spawn: Spawn object
-        """
-        self.child.send("\n\n")
-        self.child.expect("login as 'cirros' user. default password: 'gocubsgo'. use 'sudo' for root.")
-        self.child.send("\n")
-        self.child.expect("login:")
-        self.child.sendline(self.username)
-        self.child.expect("Password:")
-        self.child.sendline(self.password)
-        self.child.expect("$")
-        if self.child.after:
-            LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
-            return False
-
-        return self.child
+    _USERNAME = 'cirros'
+    _PASSWORD = 'gocubsgo'
 
 
 class Alpine(Console):
-    def __init__(self, vm, username=None, password=None, namespace=None):
-        """
-        Connect to Alpine VM console
-
-        Args:
-            vm (str): VM name.
-            username (str): Username for login.
-            password (str): Password for login.
-            namespace (str): VM namespace
-        """
-        super().__init__()
-        self.vm = vm
-        self.username = username or "root"
-        self.password = password
-        self.namespace = namespace
-        self._connect()
-
-    def __enter__(self):
-        return self.connect()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._exit()
-
-    @generate_logs()
-    def connect(self):
-        """
-        Connect to Alpine
-
-        Returns:
-            spawn: Spawn object
-        """
-        self.child.send("\n\n")
-        self.child.expect("localhost login:")
-        self.child.sendline(self.username or "root")
-        if self.password:
-            self.child.expect("Password:")
-            self.child.sendline(self.password)
-        self.child.expect("localhost:~#")
-        if self.child.after:
-            LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
-            return False
-
-        return self.child
+    _USERNAME = 'root'
+    _PASSWORD = None
