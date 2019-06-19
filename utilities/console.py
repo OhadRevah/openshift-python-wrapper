@@ -132,7 +132,7 @@ class Cirros(Console):
         self.child.sendline(self.username)
         self.child.expect("Password:")
         self.child.sendline(self.password)
-        self.child.expect("\\$")
+        self.child.expect("$")
         if self.child.after:
             LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
             return False
