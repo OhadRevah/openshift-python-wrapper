@@ -56,12 +56,18 @@ def test_wrong_content_type(storage_ns, images_http_server, file_name, content_t
         assert dv.wait_for_status(status='Failed', timeout=300)
 
 
-@pytest.mark.polarion("CNV-1865")
-def test_import_http_vm(storage_ns, images_http_server):
+@pytest.mark.parametrize(
+    'content_type',
+    [
+        pytest.param(ImportFromHttpDataVolume.ContentType.KUBEVIRT, marks=(pytest.mark.polarion("CNV-1865"))),
+        pytest.param(None, marks=(pytest.mark.polarion("CNV-1868"))),
+    ]
+)
+def test_import_http_vm(storage_ns, images_http_server, content_type):
     with ImportFromHttpDataVolume(
             name='import-http-dv-cirros',
             namespace=storage_ns.name,
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            content_type=content_type,
             url=get_file_url(images_http_server, QCOW_IMG),
             size='500Mi',
             storage_class=py_config['storage_defaults']['storage_class']) as dv:

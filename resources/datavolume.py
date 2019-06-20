@@ -80,9 +80,10 @@ class ImportDataVolume(DataVolume):
                     },
                     "storageClassName": self.storage_class,
                 },
-                "contentType": self.content_type,
             }
         })
+        if self.content_type:
+            body["spec"]["contentType"] = self.content_type
         return body
 
 
