@@ -9,8 +9,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
-from tests.storage.utils import VirtualMachineWithDV
-from utilities import console
+from tests.storage import utils
 
 QCOW_IMG = 'cirros-qcow2.img'
 TAR_IMG = 'cirros-qcow2.tar.gz'
@@ -56,6 +55,19 @@ def test_wrong_content_type(storage_ns, images_http_server, file_name, content_t
         assert dv.wait_for_status(status='Failed', timeout=300)
 
 
+def create_vm_with_dv(ns_name, content_type, images_http_server, sc):
+    with ImportFromHttpDataVolume(
+            name='import-http-dv-cirros',
+            namespace=ns_name,
+            content_type=content_type,
+            url=get_file_url(images_http_server, QCOW_IMG),
+            size='500Mi',
+            storage_class=sc) as dv:
+        assert dv.wait_for_status(status='Succeeded', timeout=300)
+        assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+        utils.create_vm_with_dv(dv)
+
+
 @pytest.mark.parametrize(
     'content_type',
     [
@@ -64,23 +76,12 @@ def test_wrong_content_type(storage_ns, images_http_server, file_name, content_t
     ]
 )
 def test_import_http_vm(storage_ns, images_http_server, content_type):
-    with ImportFromHttpDataVolume(
-            name='import-http-dv-cirros',
-            namespace=storage_ns.name,
-            content_type=content_type,
-            url=get_file_url(images_http_server, QCOW_IMG),
-            size='500Mi',
-            storage_class=py_config['storage_defaults']['storage_class']) as dv:
-        assert dv.wait_for_status(status='Succeeded', timeout=300)
-        assert PersistentVolumeClaim(name=dv.name, namespace=storage_ns.name).bound()
+    create_vm_with_dv(storage_ns.name, content_type, images_http_server, py_config['storage_defaults']['storage_class'])
 
-        with VirtualMachineWithDV(name='cirros-vm', namespace=storage_ns.name,
-                                  dv_name=dv.name, cloud_init_data=CLOUD_INIT_USER_DATA) as vm:
-            assert vm.start()
-            assert vm.vmi.wait_until_running()
-            with console.Cirros(vm=vm.name, namespace=storage_ns.name) as vm_console:
-                vm_console.sendline("lsblk | grep disk | wc -l")
-                vm_console.expect("2", timeout=20)
+
+@pytest.mark.polarion('CNV-1909')
+def test_default_storage_class(storage_ns, images_http_server, skip_no_default_sc):
+    create_vm_with_dv(storage_ns.name, None, images_http_server, None)
 
 
 @pytest.mark.parametrize(

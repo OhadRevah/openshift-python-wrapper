@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from resources.virtual_machine import VirtualMachine
+from utilities import console
+
+
+CLOUD_INIT_USER_DATA = r"""
+            #!/bin/sh
+            echo 'printed from cloud-init userdata'"""
 
 
 class VirtualMachineWithDV(VirtualMachine):
@@ -37,3 +43,13 @@ class VirtualMachineWithDV(VirtualMachine):
             },
         }]
         return res
+
+
+def create_vm_with_dv(dv):
+    with VirtualMachineWithDV(name='cirros-vm', namespace=dv.namespace, dv_name=dv.name,
+                              cloud_init_data=CLOUD_INIT_USER_DATA) as vm:
+        assert vm.start()
+        assert vm.vmi.wait_until_running()
+        with console.Cirros(vm=vm.name, namespace=dv.namespace) as vm_console:
+            vm_console.sendline("lsblk | grep disk | wc -l")
+            vm_console.expect("2", timeout=60)

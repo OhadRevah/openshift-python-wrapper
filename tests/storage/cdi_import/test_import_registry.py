@@ -3,10 +3,9 @@
 import pytest
 
 from pytest_testconfig import config as py_config
-from tests.storage.utils import VirtualMachineWithDV
-from utilities import console
 from resources.datavolume import ImportFromRegistryDataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
+from tests.storage import utils
 
 
 CLOUD_INIT_USER_DATA = r"""
@@ -27,15 +26,8 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
             storage_class=py_config['storage_defaults']['storage_class'],
             cert_configmap=cert_configmap) as dv:
         assert dv.wait_for_status(status='Succeeded', timeout=300)
-        assert PersistentVolumeClaim(name=dv_name, namespace=namespace).bound()
-
-        with VirtualMachineWithDV(name='cirros-vm', namespace=namespace, dv_name=dv_name,
-                                  cloud_init_data=CLOUD_INIT_USER_DATA) as vm:
-            assert vm.start()
-            assert vm.vmi.wait_until_running()
-            with console.Cirros(vm=vm.name, namespace=namespace) as vm_console:
-                vm_console.sendline("lsblk | grep disk | wc -l")
-                vm_console.expect("2", timeout=60)
+        assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+        utils.create_vm_with_dv(dv)
 
 
 @pytest.mark.parametrize(

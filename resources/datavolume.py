@@ -79,7 +79,6 @@ class ImportDataVolume(DataVolume):
                             "storage": self.size,
                         }
                     },
-                    "storageClassName": self.storage_class,
                 },
             }
         })
@@ -87,6 +86,8 @@ class ImportDataVolume(DataVolume):
             body["spec"]["contentType"] = self.content_type
         if self.cert_configmap:
             body["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
+        if self.storage_class:
+            body["spec"]["pvc"]["storageClassName"] = self.storage_class
         return body
 
 
