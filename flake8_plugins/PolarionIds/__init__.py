@@ -7,7 +7,7 @@ flake8 extension check that every test has Polarion ID attach to it.
 import ast
 import re
 
-PID001 = "PID001: [{f_name}], Polarion ID is missing"
+PID001 = "PID001: [{f_name} ({params})], Polarion ID is missing"
 PID002 = "PID002: [{f_name} {pid}], Polarion ID is wrong"
 
 
@@ -41,18 +41,18 @@ class PolarionIds(object):
     def __init__(self, tree):
         self.tree = tree
 
-    def _non_decorated(self, f):
+    def _non_decorated(self, f, params=''):
         yield (
             f.lineno,
             f.col_offset,
-            PID001.format(f_name=f.name),
+            PID001.format(f_name=f.name, params=params),
             self.name)
 
-    def _non_decorated_elt(self, f, elt):
+    def _non_decorated_elt(self, f, elt, params=''):
         yield (
             elt.lineno,
             elt.col_offset,
-            PID001.format(f_name=f.name),
+            PID001.format(f_name=f.name, params=params),
             self.name)
 
     def _if_non_cnv(self, f, deco):
@@ -88,15 +88,27 @@ class PolarionIds(object):
 
                                 for elt in arg.elts:
                                     if not isinstance(elt, ast.Call):
+                                        yield from self._non_decorated_elt(f, elt, elt.s)
                                         continue
 
                                     if not elt.keywords:
-                                        yield from self._non_decorated_elt(f, elt)
+                                        elt_s = elt.args[0].s if isinstance(elt, ast.Call) else elt.s
+                                        yield from self._non_decorated_elt(f, elt, elt_s)
 
                                     for pk in elt.keywords:
-                                        if pk.arg == 'marks' and pk.value.func.attr == 'polarion':
-                                            yield from self._if_non_cnv(f, pk.value)
+                                        # In case of multiple marks on test param
+                                        if isinstance(pk.value, ast.Tuple):
+                                            for elt_val in pk.value.elts:
+                                                if elt_val.func.attr == 'polarion':
+                                                    yield from self._if_non_cnv(f, elt_val)
+
+                                        # In case one mark on test param
+                                        elif pk.arg == 'marks' and pk.value.func.attr == 'polarion':
+                                            if pk.value:
+                                                yield from self._if_non_cnv(f, pk.value)
+                                                continue
                                         else:
-                                            yield from self._non_decorated(f)
+                                            # In case no mark on test param
+                                            yield from self._non_decorated(f, elt.args[0].s)
                 else:
                     yield from self._non_decorated(f)
