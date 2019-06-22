@@ -145,6 +145,8 @@ class PolarionIds(object):
                     if deco.func.attr == 'polarion':
                         if deco.args:
                             yield from self._if_non_cnv(f, deco.args[0].s)
+                        else:
+                            yield from self._non_decorated(f)
 
                     elif deco.func.attr == 'parametrize':
                         if deco.args:
