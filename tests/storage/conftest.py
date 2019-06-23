@@ -30,7 +30,7 @@ def upload_proxy_route(default_client):
     routes = Route.get(default_client)
     upload_route = None
     for route in routes:
-        if route.service == "cdi-uploadproxy":
+        if route.exposed_service == "cdi-uploadproxy":
             upload_route = route
     assert upload_route is not None
     yield upload_route

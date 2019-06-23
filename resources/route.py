@@ -13,8 +13,18 @@ class Route(NamespacedResource):
 
     api_version = "route.openshift.io/v1"
 
+    def __init__(self, name, namespace, service=None):
+        super().__init__(name=name, namespace=namespace)
+        self.service = service
+
+    def _to_dict(self):
+        body = super()._base_body()
+        if self.service:
+            body.update({"spec": {"to": {"kind": "Service", "name": self.service}}})
+        return body
+
     @property
-    def service(self):
+    def exposed_service(self):
         """
         returns the service the route is exposing
         """
