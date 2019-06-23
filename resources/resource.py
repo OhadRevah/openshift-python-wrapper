@@ -218,7 +218,7 @@ class Resource(object):
         client = dyn_client.resources.get(
             api_version=data['apiVersion'], kind=data['kind']
         )
-        LOGGER.info(f"Create {data['metadata']['name']}")
+        LOGGER.info(f"Create {data['kind']} {data['metadata']['name']}")
         return client.create(
             body=data, namespace=data['metadata'].get('namespace', namespace)
         )
@@ -252,7 +252,7 @@ class Resource(object):
             data.update(body)
         res = self.api().create(body=data, namespace=self.namespace)
 
-        LOGGER.info(f"Create {self.name}")
+        LOGGER.info(f"Create {kind} {self.name}")
         if wait and res:
             return self.wait()
         return res
@@ -272,7 +272,7 @@ class Resource(object):
         """
         name = data['metadata']['name']
         client = dyn_client.resources.get(api_version=data['apiVersion'], kind=data['kind'])
-        LOGGER.info(f"Delete {name}")
+        LOGGER.info(f"Delete {data['kind']} {name}")
         return client.delete(
             name=name, namespace=data['metadata'].get('namespace', namespace)
         )
@@ -293,7 +293,7 @@ class Resource(object):
         except NotFoundError:
             return False
 
-        LOGGER.info(f"Delete {self.name}")
+        LOGGER.info(f"Delete {self.kind} {self.name}")
         if wait and res:
             return self.wait_deleted()
         return res
