@@ -161,6 +161,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
                      ImportFromRegistryDataVolume.ContentType.KUBEVIRT, "5Gi")
 
 
+@pytest.mark.bugzilla(1725372, skip_when=lambda bug: bug.status != "VERIFIED")
 @pytest.mark.polarion('CNV-2150')
 def test_public_registry_data_volume_dockerhub_archive(storage_ns):
     with ImportFromRegistryDataVolume(
