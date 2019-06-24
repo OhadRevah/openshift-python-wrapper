@@ -15,4 +15,4 @@ class CDIConfig(Resource):
 
     @property
     def upload_proxy_url(self):
-        return self.instance.status.uploadproxyurl
+        return self.instance.status.uploadProxyURL
