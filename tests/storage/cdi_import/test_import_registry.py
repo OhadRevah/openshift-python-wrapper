@@ -87,7 +87,7 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
             name="import-registry-archive",
             namespace=storage_ns.name,
             url=DOCKERHUB_IMAGE,
-            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            content_type=ImportFromRegistryDataVolume.ContentType.ARCHIVE,
             size='5Gi',
             storage_class=py_config['storage_defaults']['storage_class'],
             cert_configmap=None) as dv:
