@@ -190,7 +190,7 @@ def bridge_device(network_utility_pods):
         yield dev
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='class', autouse=True)
 def vxlan(network_utility_pods, bridge_device, multi_nics_nodes):
 
     # There is no need to build vxlan tunnel on bare metal because
