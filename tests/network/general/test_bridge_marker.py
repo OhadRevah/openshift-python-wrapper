@@ -45,8 +45,8 @@ def bridge_networks(namespace):
 
 
 class VirtualMachineAttachedToBridges(VirtualMachine):
-    def __init__(self, name, namespace, networks):
-        super().__init__(name, namespace)
+    def __init__(self, name, namespace, networks, client=None):
+        super().__init__(name, namespace, client=client)
         self._networks = networks
 
     def _to_dict(self):

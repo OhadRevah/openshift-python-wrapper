@@ -28,8 +28,8 @@ class NetworkAttachmentDefinition(NamespacedResource):
 
 
 class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
-    def __init__(self, name, namespace, bridge_name, cni_type="cnv-bridge", vlan=None):
-        super().__init__(name, namespace)
+    def __init__(self, name, namespace, bridge_name, cni_type="cnv-bridge", vlan=None, client=None):
+        super().__init__(name=name, namespace=namespace, client=client)
         self._bridge_name = bridge_name
         self._cni_type = cni_type
         self._vlan = vlan

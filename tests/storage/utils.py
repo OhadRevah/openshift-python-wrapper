@@ -10,8 +10,8 @@ CLOUD_INIT_USER_DATA = r"""
 
 
 class VirtualMachineWithDV(VirtualMachine):
-    def __init__(self, name, namespace, dv_name, cloud_init_data):
-        super().__init__(name, namespace)
+    def __init__(self, name, namespace, dv_name, cloud_init_data, client=None):
+        super().__init__(name=name, namespace=namespace, client=client)
         self._dv_name = dv_name
         self._cloud_init_data = cloud_init_data
 

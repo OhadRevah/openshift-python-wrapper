@@ -51,8 +51,8 @@ class DataVolume(NamespacedResource):
 class ImportDataVolume(DataVolume):
     def __init__(
             self, name, namespace, source, url, content_type, size, storage_class,
-            access_modes=DataVolume.AccessMode.RWO, cert_configmap=None):
-        super().__init__(name=name, namespace=namespace)
+            access_modes=DataVolume.AccessMode.RWO, cert_configmap=None, client=None):
+        super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
         self.url = url
         self.cert_configmap = cert_configmap

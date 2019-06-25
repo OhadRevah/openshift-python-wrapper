@@ -206,8 +206,8 @@ class VirtualMachineInstance(NamespacedResource):
 class VirtualMachineInstanceMigration(NamespacedResource):
     api_version = API_VERSION
 
-    def __init__(self, name, namespace, vmi):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, vmi, client=None):
+        super().__init__(name=name, namespace=namespace, client=client)
         self._vmi = vmi
 
     def _to_dict(self):

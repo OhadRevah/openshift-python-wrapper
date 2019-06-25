@@ -33,13 +33,7 @@ class Resource(object):
     api_version = None
     singular_name = None
 
-    try:
-        client = DynamicClient(kubernetes.config.new_client_from_config())
-    except (kubernetes.config.ConfigException, urllib3.exceptions.MaxRetryError):
-        LOGGER.error('You need to be logged into a cluster or have $KUBECONFIG env configured')
-        raise
-
-    def __init__(self, name):
+    def __init__(self, name, client=None):
         """
         Create a API resource
 
@@ -48,6 +42,13 @@ class Resource(object):
         """
         self.namespace = None
         self.name = name
+        self.client = client
+        if not self.client:
+            try:
+                self.client = DynamicClient(kubernetes.config.new_client_from_config())
+            except (kubernetes.config.ConfigException, urllib3.exceptions.MaxRetryError):
+                LOGGER.error('You need to be logged into a cluster or have $KUBECONFIG env configured')
+                raise
 
     @classproperty
     def kind(cls):  # noqa: N805
@@ -356,8 +357,8 @@ class NamespacedResource(Resource):
     """
     Namespaced object, inherited from Resource.
     """
-    def __init__(self, name, namespace):
-        super().__init__(name=name)
+    def __init__(self, name, namespace, client=None):
+        super().__init__(name=name, client=client)
         self.namespace = namespace
 
     @classmethod

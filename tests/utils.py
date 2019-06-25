@@ -69,10 +69,10 @@ def get_images_http_server():
 
 class FedoraVirtualMachine(VirtualMachine):
     def __init__(
-        self, name, namespace, interfaces=None, networks=None,
+        self, name, namespace, client=None, interfaces=None, networks=None,
         cloud_init_user_data=None, node_selector=None, **vm_attr
     ):
-        super().__init__(name=name, namespace=namespace)
+        super().__init__(name=name, namespace=namespace, client=client)
         self.interfaces = interfaces or []
         self.networks = networks or {}
         self.cloud_init_user_data = cloud_init_user_data
