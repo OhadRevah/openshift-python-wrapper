@@ -1,19 +1,107 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+import os
 
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromRegistryDataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.configmap import ConfigMap
 from tests.storage import utils
 
 
-CLOUD_INIT_USER_DATA = r"""
-            #!/bin/sh
-            echo 'printed from cloud-init userdata'"""
-
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
+PRIVATE_REGISTRY_HOST = "docker://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
+PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
+PRIVATE_REGISTRY_URL = f'{PRIVATE_REGISTRY_HOST}:8443/{PRIVATE_REGISTRY_IMAGE}'
+PRIVATE_INSECURED_REGISTRY_URL = f'{PRIVATE_REGISTRY_HOST}:5000/{PRIVATE_REGISTRY_IMAGE}'
+
+
+@pytest.mark.polarion('CNV-2183')
+def test_private_registry_insecured_configmap(storage_ns):
+    c = ConfigMap(
+        namespace="kubevirt-hyperconverged",
+        name="cdi-insecure-registries",
+        data=None)
+
+    c.update(
+        resource_dict={
+            'data':
+                {
+                    'mykey': "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com:5000"
+                },
+            'metadata':
+                {
+                    'name': "cdi-insecure-registries"
+                }
+        }
+    )
+    create_dv_and_vm("import-private-insecured-registry", storage_ns.name, PRIVATE_INSECURED_REGISTRY_URL,
+                     None, ImportFromRegistryDataVolume.ContentType.KUBEVIRT, "5Gi")
+
+
+@pytest.mark.polarion('CNV-2182')
+def test_private_registry_recover_after_missing_configmap(storage_ns):
+    # creating DV before configmap with certificate is created
+    with ImportFromRegistryDataVolume(
+            name="import-private-registry-with-no-configmap",
+            namespace=storage_ns.name,
+            url=PRIVATE_REGISTRY_URL,
+            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            size="5Gi",
+            storage_class=py_config['storage_defaults']['storage_class'],
+            cert_configmap="registry-cert-configmap") as dv:
+        assert dv.wait_for_status('ImportScheduled', timeout=300)
+        # create the configmap with the untrusted certificate
+        with ConfigMap(
+                name="registry-cert-configmap",
+                namespace=storage_ns.name,
+                data=get_cert()) as configmap:
+            assert configmap is not None
+            assert dv.wait_for_status(status='Succeeded', timeout=300)
+            assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+            utils.create_vm_with_dv(dv)
+
+
+@pytest.mark.polarion('CNV-2344')
+def test_private_registry_with_untrusted_certificate(storage_ns):
+    with ConfigMap(
+            name="registry-cert-configmap",
+            namespace=storage_ns.name,
+            data=get_cert()) as configmap:
+        assert configmap is not None
+        create_dv_and_vm("import-private-registry-with-untrusted-certificate", storage_ns.name, PRIVATE_REGISTRY_URL,
+                         configmap.name, ImportFromRegistryDataVolume.ContentType.KUBEVIRT, "5Gi")
+        # negative flow - remove certificate from configmap
+        configmap.update(
+            resource_dict={
+                'data':
+                {
+                    'tlsregistry.crt': ""
+                },
+                'metadata':
+                {
+                    'name': "registry-cert-configmap"
+                }
+            }
+        )
+        with ImportFromRegistryDataVolume(
+                name="import-private-registry-no-certificate",
+                namespace=storage_ns.name,
+                url=PRIVATE_REGISTRY_URL,
+                content_type="",
+                size="5Gi",
+                storage_class=py_config['storage_defaults']['storage_class'],
+                cert_configmap=configmap.name) as dv:
+            assert dv.wait_for_status(status='Failed', timeout=300)
+
+
+def get_cert():
+    path = os.path.join("tests/storage/cdi_import", "tlsregistry.crt")
+    with open(path, 'r') as cert_content:
+        data = cert_content.read()
+    return data
 
 
 def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size):
