@@ -396,6 +396,16 @@ class Resource(object):
         """
         return self.api().get(name=self.name)
 
+    @property
+    def labels(self):
+        """
+        Method to get dict of labels for this resource
+
+        Returns:
+           labels(dict): dict labels
+        """
+        return self.instance["metadata"]["labels"]
+
 
 class NamespacedResource(Resource):
     """
