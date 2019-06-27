@@ -37,3 +37,12 @@ def test_route_for_different_service(upload_proxy_route):
     ) as cdi_api_route:
         assert cdi_config.upload_proxy_url != cdi_api_route.host
         assert cdi_config.upload_proxy_url == upload_proxy_route.host
+
+
+@pytest.mark.polarion("CNV-2216")
+def test_upload_proxy_url_overridden(storage_ns, cdi_config_upload_proxy_overridden):
+    cdi_config = CDIConfig(CONFIG_NAME)
+    with Route(
+        namespace=storage_ns.name, name="my-route", service="cdi-uploadproxy"
+    ) as new_route:
+        assert cdi_config.upload_proxy_url != new_route.host

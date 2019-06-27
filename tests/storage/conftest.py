@@ -7,6 +7,7 @@ Pytest conftest file for CNV CDI tests
 import pytest
 import tests.utils
 
+from resources.cdi_config import CDIConfig
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.route import Route
@@ -74,3 +75,26 @@ def uploadproxy_route_deleted():
         Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait(
             resource_version=""
         )
+
+
+@pytest.fixture()
+def cdi_config_upload_proxy_overridden(upload_proxy_route):
+    cdi_config = CDIConfig("config")
+    assert cdi_config.instance is not None
+    upload_proxy_override = cdi_config.instance.spec["uploadProxyURLOverride"]
+    new_upload_proxy_url = "newuploadroute-cdi.apps.working.oc4"
+    cdi_config.update(
+        resource_dict={
+            "metadata": {"name": "config"},
+            "spec": {"uploadProxyURLOverride": new_upload_proxy_url},
+        }
+    )
+    assert cdi_config.wait_until_upload_url_changed(new_upload_proxy_url)
+    yield
+    cdi_config.update(
+        resource_dict={
+            "metadata": {"name": "config"},
+            "spec": {"uploadProxyURLOverride": upload_proxy_override},
+        }
+    )
+    assert cdi_config.wait_until_upload_url_changed(upload_proxy_route.host)
