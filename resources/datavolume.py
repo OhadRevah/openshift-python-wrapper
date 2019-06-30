@@ -61,9 +61,9 @@ class ImportDataVolume(DataVolume):
         self.access_modes = access_modes
         self.storage_class = storage_class
 
-    def _base_body(self):
-        body = super()._base_body()
-        body.update({
+    def _to_dict(self):
+        res = super()._base_body()
+        res.update({
             "spec": {
                 "source": {
                     self.source: {
@@ -83,16 +83,18 @@ class ImportDataVolume(DataVolume):
             }
         })
         if self.content_type:
-            body["spec"]["contentType"] = self.content_type
+            res["spec"]["contentType"] = self.content_type
         if self.cert_configmap:
-            body["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
+            res["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
         if self.storage_class:
-            body["spec"]["pvc"]["storageClassName"] = self.storage_class
-        return body
+            res["spec"]["pvc"]["storageClassName"] = self.storage_class
+        return res
 
 
 class ImportFromHttpDataVolume(ImportDataVolume):
-    def __init__(self, name, namespace, url, content_type, size, storage_class, access_modes=DataVolume.AccessMode.RWO):
+    def __init__(
+        self, name, namespace, url, content_type, size, storage_class, access_modes=DataVolume.AccessMode.RWO
+    ):
         super().__init__(
             name, namespace, "http", url, content_type, size, storage_class, access_modes)
 

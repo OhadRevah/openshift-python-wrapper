@@ -12,11 +12,11 @@ class ConfigMap(NamespacedResource):
         super().__init__(name=name, namespace=namespace)
         self.data = data
 
-    def _base_body(self):
-        body = super()._base_body()
-        body.update({
+    def _to_dict(self):
+        res = super()._base_body()
+        res.update({
             "data": {
                 "tlsregistry.crt": self.data,
             }
         })
-        return body
+        return res
