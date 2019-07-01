@@ -21,13 +21,13 @@ CLOUD_INIT_USER_DATA = r"""
             echo 'printed from cloud-init userdata'"""
 
 
-def get_file_url(images_http_server, file_name):
-    return f"{images_http_server}cdi-test-images/{file_name}"
+def get_file_url(url, file_name):
+    return f"{url}{file_name}"
 
 
 @pytest.mark.polarion("CNV-2145")
-def test_successful_import_archive(storage_ns, images_http_server):
-    url = get_file_url(images_http_server, TAR_IMG)
+def test_successful_import_archive(storage_ns, images_internal_http_server):
+    url = get_file_url(images_internal_http_server["http"], TAR_IMG)
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
@@ -47,8 +47,8 @@ def test_successful_import_archive(storage_ns, images_http_server):
 
 
 @pytest.mark.polarion("CNV-2143")
-def test_successful_import_image(storage_ns, images_http_server):
-    url = get_file_url(images_http_server, QCOW_IMG)
+def test_successful_import_image(storage_ns, images_internal_http_server):
+    url = get_file_url(images_internal_http_server["http"], QCOW_IMG)
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
@@ -89,25 +89,26 @@ def test_successful_import_image(storage_ns, images_http_server):
     ],
     ids=["qcow_image_archive_content_type", "tar_image_kubevirt_content_type"],
 )
-def test_wrong_content_type(storage_ns, images_http_server, file_name, content_type):
-    url = get_file_url(images_http_server, file_name)
+def test_wrong_content_type(
+    storage_ns, images_internal_http_server, file_name, content_type
+):
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
         content_type=content_type,
-        url=url,
+        url=get_file_url(images_internal_http_server["http"], file_name),
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait_for_status(status="Failed", timeout=300)
 
 
-def create_vm_with_dv(ns_name, content_type, images_http_server, sc):
+def create_vm_with_dv(ns_name, content_type, images_internal_http_server, sc):
     with ImportFromHttpDataVolume(
         name="import-http-dv-cirros",
         namespace=ns_name,
         content_type=content_type,
-        url=get_file_url(images_http_server, QCOW_IMG),
+        url=get_file_url(images_internal_http_server["http"], QCOW_IMG),
         size="500Mi",
         storage_class=sc,
     ) as dv:
@@ -126,18 +127,20 @@ def create_vm_with_dv(ns_name, content_type, images_http_server, sc):
         pytest.param(None, marks=(pytest.mark.polarion("CNV-1868"))),
     ],
 )
-def test_import_http_vm(storage_ns, images_http_server, content_type):
+def test_import_http_vm(storage_ns, images_internal_http_server, content_type):
     create_vm_with_dv(
         storage_ns.name,
         content_type,
-        images_http_server,
+        images_internal_http_server,
         py_config["storage_defaults"]["storage_class"],
     )
 
 
 @pytest.mark.polarion("CNV-1909")
-def test_default_storage_class(storage_ns, images_http_server, skip_no_default_sc):
-    create_vm_with_dv(storage_ns.name, None, images_http_server, None)
+def test_default_storage_class(
+    skip_no_default_sc, storage_ns, images_internal_http_server
+):
+    create_vm_with_dv(storage_ns.name, None, images_internal_http_server, None)
 
 
 @pytest.mark.parametrize(
@@ -146,7 +149,7 @@ def test_default_storage_class(storage_ns, images_http_server, skip_no_default_s
         pytest.param(
             "large-size",
             "invalid-qcow-large-size.img",
-            marks=(pytest.mark.polarion("CNV-2555")),
+            marks=(pytest.mark.polarion("CNV-2553")),
         ),
         pytest.param(
             "large-json",
@@ -156,7 +159,7 @@ def test_default_storage_class(storage_ns, images_http_server, skip_no_default_s
         pytest.param(
             "large-memory",
             "invalid-qcow-large-memory.img",
-            marks=(pytest.mark.polarion("CNV-2253")),
+            marks=(pytest.mark.polarion("CNV-2255")),
         ),
         pytest.param(
             "backing-file",
@@ -165,13 +168,15 @@ def test_default_storage_class(storage_ns, images_http_server, skip_no_default_s
         ),
     ],
 )
-def test_import_invalid_qcow(storage_ns, images_http_server, dv_name, file_name):
+def test_import_invalid_qcow(
+    storage_ns, images_internal_http_server, dv_name, file_name
+):
     with ImportFromHttpDataVolume(
         name=dv_name,
         namespace=storage_ns.name,
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-        url=get_file_url(images_http_server, file_name),
-        size="5Gi",
+        url=get_file_url(images_internal_http_server["http"], file_name),
+        size="1Gi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=90)
@@ -194,13 +199,14 @@ def test_import_invalid_qcow(storage_ns, images_http_server, dv_name, file_name)
     ids=["compressed_xz_archive_content_type", "compressed_gz_archive_content_type"],
 )
 # TODO: It's now a negative test but once https://jira.coreos.com/browse/CNV-1553 implement, here needs to be changed.
-def test_unpack_compressed(storage_ns, images_http_server, file_name, content_type):
-    url = get_file_url(images_http_server, file_name)
+def test_unpack_compressed(
+    storage_ns, images_internal_http_server, file_name, content_type
+):
     with ImportFromHttpDataVolume(
         name="unpack-compressed-dv",
         namespace=storage_ns.name,
         content_type=content_type,
-        url=url,
+        url=get_file_url(images_internal_http_server["http"], file_name),
         size="200Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:

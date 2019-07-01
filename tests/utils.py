@@ -57,12 +57,11 @@ def wait_for_vm_interfaces(vmi, timeout=240):
         raise
 
 
-def get_images_http_server():
+def get_images_external_http_server():
     """
     Fetch http_server url from config and return if available.
     """
-    region = py_config["region"]
-    server = py_config[region]["http_server"]
+    server = py_config[py_config["region"]]
     try:
         assert urllib.request.urlopen(server).getcode() == 200
     except urllib.error.URLError:

@@ -9,6 +9,8 @@ import tests.utils
 
 from resources.cdi_config import CDIConfig
 from resources.deployment import Deployment
+from resources.deployment import HttpDeployment
+from resources.service import HttpService
 from resources.namespace import Namespace
 from resources.route import Route
 from resources.storage_class import StorageClass
@@ -22,8 +24,34 @@ def storage_ns():
 
 
 @pytest.fixture()
-def images_http_server():
-    return tests.utils.get_images_http_server()
+def images_external_http_server():
+    return tests.utils.get_images_external_http_server()
+
+
+@pytest.fixture(scope="session")
+def internal_http_deployment():
+    """
+    Deploy internal HTTP server Deployment into the kube-system namespace.
+    This Deployment deploys a pod that runs an HTTP server
+    """
+    with HttpDeployment(name="internal-http", namespace="kube-system") as dep:
+        dep.wait_until_avail_replicas()
+        yield dep
+
+
+@pytest.fixture(scope="session")
+def internal_http_service():
+    with HttpService(name="internal-http", namespace="kube-system") as svc:
+        yield svc
+
+
+@pytest.fixture(scope="session")
+def images_internal_http_server(internal_http_deployment, internal_http_service):
+    server_address = "internal-http.kube-system"
+    return {
+        "http": f"http://{server_address}/",
+        "http_auth": f"http://{server_address}:81/",
+    }
 
 
 @pytest.fixture()
