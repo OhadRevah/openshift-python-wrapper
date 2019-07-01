@@ -8,36 +8,27 @@ from .pod import Pod
 from .resource import TIMEOUT, NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
-API_VERSION = 'kubevirt.io/v1alpha3'
+API_VERSION = "kubevirt.io/v1alpha3"
 
 
 def get_base_vmi_spec():
     return {
         "domain": {
             "devices": {
-                "disks": [{
-                    "disk": {
-                        "bus": "virtio",
-                    },
-                    "name": "containerdisk",
-                }],
+                "disks": [{"disk": {"bus": "virtio"}, "name": "containerdisk"}]
             },
-            "machine": {
-                "type": "",
-            },
-            "resources": {
-                "requests": {
-                    "memory": "64M",
-                },
-            },
+            "machine": {"type": ""},
+            "resources": {"requests": {"memory": "64M"}},
         },
         "terminationGracePeriodSeconds": 0,
-        "volumes": [{
-            "name": "containerdisk",
-            "containerDisk": {
-                "image": "kubevirt/cirros-container-disk-demo:latest",
-            },
-        }],
+        "volumes": [
+            {
+                "name": "containerdisk",
+                "containerDisk": {
+                    "image": "kubevirt/cirros-container-disk-demo:latest"
+                },
+            }
+        ],
     }
 
 
@@ -46,16 +37,12 @@ class VirtualMachine(NamespacedResource):
     Virtual Machine object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
+
     api_version = API_VERSION
 
     def _to_dict(self):
         res = super()._to_dict()
-        res["spec"] = {
-            "template": {
-                "spec": get_base_vmi_spec(),
-            },
-            "running": False,
-        }
+        res["spec"] = {"template": {"spec": get_base_vmi_spec()}, "running": False}
         return res
 
     def start(self, timeout=TIMEOUT, wait=False):
@@ -92,7 +79,9 @@ class VirtualMachine(NamespacedResource):
             return self.wait_for_status(timeout=timeout, status=False)
         return res
 
-    def wait_for_status(self, status, timeout=TIMEOUT, label_selector=None, resource_version=None):
+    def wait_for_status(
+        self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
+    ):
         """
         Wait for resource to be in status
 
@@ -112,9 +101,9 @@ class VirtualMachine(NamespacedResource):
             namespace=self.namespace,
             timeout=timeout,
             label_selector=label_selector,
-            resource_version=resource_version
+            resource_version=resource_version,
         ):
-            if rsc['raw_object']['spec']['running'] == status:
+            if rsc["raw_object"]["spec"]["running"] == status:
                 return True
         return False
 
@@ -146,7 +135,7 @@ class VirtualMachine(NamespacedResource):
             bool: True if Running else False
         """
         LOGGER.info(f"Check if {self.kind} {self.name} is ready")
-        return self.instance.status['ready']
+        return self.instance.status["ready"]
 
 
 class VirtualMachineInstance(NamespacedResource):
@@ -154,6 +143,7 @@ class VirtualMachineInstance(NamespacedResource):
     Virtual Machine Instance object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
     """
+
     api_version = API_VERSION
 
     def _to_dict(self):
@@ -173,11 +163,13 @@ class VirtualMachineInstance(NamespacedResource):
             Pod: virt-launcher Pod
         """
         uid = self.instance.metadata.uid
-        return list(Pod.get(
-            dyn_client=self.client,
-            namespace=self.namespace,
-            label_selector=f'kubevirt.io=virt-launcher,kubevirt.io/created-by={uid}'
-        ))[0]
+        return list(
+            Pod.get(
+                dyn_client=self.client,
+                namespace=self.namespace,
+                label_selector=f"kubevirt.io=virt-launcher,kubevirt.io/created-by={uid}",
+            )
+        )[0]
 
     def wait_until_running(self, timeout=120, logs=True):
         """
@@ -190,7 +182,7 @@ class VirtualMachineInstance(NamespacedResource):
         Returns:
             bool: True if VMI is running, False if not.
         """
-        if not self.wait_for_status(status='Running', timeout=timeout):
+        if not self.wait_for_status(status="Running", timeout=timeout):
             if not logs:
                 return False
 
@@ -212,7 +204,5 @@ class VirtualMachineInstanceMigration(NamespacedResource):
 
     def _to_dict(self):
         res = super()._to_dict()
-        res["spec"] = {
-            "vmiName": self._vmi.name
-        }
+        res["spec"] = {"vmiName": self._vmi.name}
         return res

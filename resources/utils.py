@@ -55,6 +55,7 @@ class TimeoutWatch:
     A time counter allowing to determine the time remaining since the start
     of a given interval
     """
+
     def __init__(self, timeout):
         self.timeout = timeout
         self.start_time = time.time()

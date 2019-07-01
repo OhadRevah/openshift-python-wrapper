@@ -14,10 +14,11 @@ class Namespace(Resource):
     """
     Namespace object, inherited from Resource.
     """
-    api_version = 'v1'
+
+    api_version = "v1"
 
     class Status:
-        ACTIVE = 'Active'
+        ACTIVE = "Active"
 
     # TODO: remove the nudge when the underlying issue with namespaces stuck in
     # Terminating state is fixed.

@@ -18,17 +18,17 @@ def pytest_collection_modifyitems(session, config, items):
     Add polarion test case it from tests to junit xml
     """
     for item in items:
-        for marker in item.iter_markers(name='polarion'):
+        for marker in item.iter_markers(name="polarion"):
             test_id = marker.args[0]
-            item.user_properties.append(('polarion-testcase-id', test_id))
+            item.user_properties.append(("polarion-testcase-id", test_id))
 
-        for marker in item.iter_markers(name='bugzilla'):
+        for marker in item.iter_markers(name="bugzilla"):
             test_id = marker.args[0]
-            item.user_properties.append(('bugzilla', test_id))
+            item.user_properties.append(("bugzilla", test_id))
 
-        for marker in item.iter_markers(name='jira'):
+        for marker in item.iter_markers(name="jira"):
             test_id = marker.args[0]
-            item.user_properties.append(('jira', test_id))
+            item.user_properties.append(("jira", test_id))
 
 
 def pytest_runtest_makereport(item, call):
@@ -60,16 +60,20 @@ def junitxml_polarion(request):
         POLARION_CUSTOM_PLANNEDIN
         POLARION_TESTRUN_ID
     """
-    if request.config.pluginmanager.hasplugin('junitxml'):
+    if request.config.pluginmanager.hasplugin("junitxml"):
         my_junit = getattr(request.config, "_xml", None)
         if my_junit:
-            my_junit.add_global_property('polarion-custom-isautomated', 'True')
-            my_junit.add_global_property('polarion-testrun-status-id', 'inprogress')
-            my_junit.add_global_property('polarion-custom-plannedin', os.getenv('POLARION_CUSTOM_PLANNEDIN'))
-            my_junit.add_global_property('polarion-user-id', 'cnvqe')
-            my_junit.add_global_property('polarion-project-id', 'CNV')
-            my_junit.add_global_property('polarion-response-myproduct', 'cnv-test-run')
-            my_junit.add_global_property('polarion-testrun-id', os.getenv('POLARION_TESTRUN_ID'))
+            my_junit.add_global_property("polarion-custom-isautomated", "True")
+            my_junit.add_global_property("polarion-testrun-status-id", "inprogress")
+            my_junit.add_global_property(
+                "polarion-custom-plannedin", os.getenv("POLARION_CUSTOM_PLANNEDIN")
+            )
+            my_junit.add_global_property("polarion-user-id", "cnvqe")
+            my_junit.add_global_property("polarion-project-id", "CNV")
+            my_junit.add_global_property("polarion-response-myproduct", "cnv-test-run")
+            my_junit.add_global_property(
+                "polarion-testrun-id", os.getenv("POLARION_TESTRUN_ID")
+            )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -80,15 +84,13 @@ def default_client():
     return DynamicClient(kubernetes.config.new_client_from_config())
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def schedulable_node_ips(default_client):
     """
     Store all kubevirt.io/schedulable=true IPs
     """
     node_ips = {}
-    for node in Node.get(
-        default_client, label_selector="kubevirt.io/schedulable=true"
-    ):
+    for node in Node.get(default_client, label_selector="kubevirt.io/schedulable=true"):
         for addr in node.instance.status.addresses:
             if addr.type == "InternalIP":
                 node_ips[node.name] = addr.address

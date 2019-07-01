@@ -28,12 +28,10 @@ def namespace():
 
 @pytest.fixture()
 def bridge_network(namespace):
-    cni_type = py_config['template_defaults']['bridge_cni_name']
+    cni_type = py_config["template_defaults"]["bridge_cni_name"]
     with nad.BridgeNetworkAttachmentDefinition(
-            namespace=namespace.name,
-            name="rednad",
-            bridge_name="redbr",
-            cni_type=cni_type) as attachdef:
+        namespace=namespace.name, name="rednad", bridge_name="redbr", cni_type=cni_type
+    ) as attachdef:
         yield attachdef
 
 
@@ -55,28 +53,18 @@ class VirtualMachineAttachedToBridges(VirtualMachine):
         spec = res["spec"]["template"]["spec"]
 
         # add a default network if attaching to other networks
-        spec["networks"] = [{
-            "name": "default",
-            "pod": {},
-        }]
-        spec["domain"]["devices"]["interfaces"] = [{
-            "name": "default",
-            "bridge": {},
-        }]
+        spec["networks"] = [{"name": "default", "pod": {}}]
+        spec["domain"]["devices"]["interfaces"] = [{"name": "default", "bridge": {}}]
 
         # also attach to bridge networks
         for idx, network in enumerate(self._networks):
             network_name = f"net{idx}"
-            spec["networks"].append({
-                "name": network_name,
-                "multus": {
-                    "networkName": network,
-                },
-            })
-            spec["domain"]["devices"]["interfaces"].append({
-                "name": network_name,
-                "bridge": {},
-            })
+            spec["networks"].append(
+                {"name": network_name, "multus": {"networkName": network}}
+            )
+            spec["domain"]["devices"]["interfaces"].append(
+                {"name": network_name, "bridge": {}}
+            )
 
         return res
 
@@ -84,9 +72,8 @@ class VirtualMachineAttachedToBridges(VirtualMachine):
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
     with VirtualMachineAttachedToBridges(
-            namespace=namespace.name,
-            name=_get_name("vm"),
-            networks={bridge_network.name}) as vm:
+        namespace=namespace.name, name=_get_name("vm"), networks={bridge_network.name}
+    ) as vm:
         vm.start()
         yield vm.vmi
 
@@ -94,25 +81,26 @@ def bridge_attached_vmi(namespace, bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks):
     with VirtualMachineAttachedToBridges(
-            namespace=namespace.name,
-            name=_get_name("vm"),
-            networks={b.name for b in bridge_networks}) as vm:
+        namespace=namespace.name,
+        name=_get_name("vm"),
+        networks={b.name for b in bridge_networks},
+    ) as vm:
         vm.start()
         yield vm.vmi
 
 
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods):
-    with utils.Bridge(
-            name="redbr",
-            worker_pods=network_utility_pods) as dev:
+    with utils.Bridge(name="redbr", worker_pods=network_utility_pods) as dev:
         yield dev
 
 
 @pytest.fixture()
 def non_homogenous_bridges(multinode, network_utility_pods):
     with utils.Bridge(name="redbr", worker_pods={network_utility_pods[0]}) as redbr:
-        with utils.Bridge(name="bluebr", worker_pods={network_utility_pods[1]}) as bluebr:
+        with utils.Bridge(
+            name="bluebr", worker_pods={network_utility_pods[1]}
+        ) as bluebr:
             yield (redbr, bluebr)
 
 
@@ -124,7 +112,7 @@ def non_homogenous_bridges(multinode, network_utility_pods):
 @pytest.fixture()
 def multinode(network_utility_pods):
     if len(network_utility_pods) <= 1:
-        return pytest.skip(msg='Only run on multinode cluster')
+        return pytest.skip(msg="Only run on multinode cluster")
 
 
 def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
@@ -153,7 +141,9 @@ def test_bridge_marker_device_exists(bridge_device_on_all_nodes, bridge_attached
 
 
 @pytest.mark.polarion("CNV-2309")
-def test_bridge_marker_devices_exist_on_different_nodes(non_homogenous_bridges, multi_bridge_attached_vmi):
+def test_bridge_marker_devices_exist_on_different_nodes(
+    non_homogenous_bridges, multi_bridge_attached_vmi
+):
     """Check that VMI fails to start when attached to two bridges located on different nodes."""
     assert not multi_bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
 

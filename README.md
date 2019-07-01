@@ -96,3 +96,8 @@ breaking the rest of the code, and if so, to mark them as Verified+1.
 (Determining the depth of verification steps for each patch is left for the
 author and their reviewer.) It's required that the procedure used to verify a
 patch is listed in comments to the review request.
+
+
+Code style must pass flake8-black.
+The plugin: https://github.com/peterjc/flake8-black
+How to install and use black tool: https://github.com/python/black

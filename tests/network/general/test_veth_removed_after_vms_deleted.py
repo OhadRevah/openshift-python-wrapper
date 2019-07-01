@@ -16,10 +16,7 @@ from utilities import utils
 LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"
 BR1VLAN100 = "br1vlan100"
-NETWORKS = {
-    'net1': BR1TEST,
-    'net2': BR1VLAN100,
-}
+NETWORKS = {"net1": BR1TEST, "net2": BR1VLAN100}
 
 
 def count_veth_devices_on_host(pod, pod_container):
@@ -34,8 +31,9 @@ def count_veth_devices_on_host(pod, pod_container):
         int: number of veth devices on host
     """
     out = pod.execute(
-        command=['bash', '-c', 'ip -o link show type veth | wc -l'],
-        container=pod_container)
+        command=["bash", "-c", "ip -o link show type veth | wc -l"],
+        container=pod_container,
+    )
 
     return int(out.strip())
 
@@ -48,19 +46,15 @@ def namespace():
 
 @pytest.fixture()
 def br1test_nad(namespace):
-    with net_utils.bridge_nad(
-            namespace=namespace,
-            name=BR1TEST,
-            bridge=BR1TEST) as nad:
+    with net_utils.bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
         yield nad
 
 
 @pytest.fixture()
 def br1vlan100_nad(namespace):
     with net_utils.bridge_nad(
-            namespace=namespace,
-            name=BR1VLAN100,
-            bridge=BR1TEST) as nad:
+        namespace=namespace, name=BR1VLAN100, bridge=BR1TEST
+    ) as nad:
         yield nad
 
 
@@ -73,10 +67,11 @@ def bridge_device(network_utility_pods):
 @pytest.fixture()
 def bridge_attached_vma(namespace):
     with FedoraVirtualMachine(
-            namespace=namespace.name,
-            name="vma",
-            networks=NETWORKS,
-            interfaces=sorted(NETWORKS.keys())) as vm:
+        namespace=namespace.name,
+        name="vma",
+        networks=NETWORKS,
+        interfaces=sorted(NETWORKS.keys()),
+    ) as vm:
         assert vm.start()
         yield vm
 
@@ -84,10 +79,11 @@ def bridge_attached_vma(namespace):
 @pytest.fixture()
 def bridge_attached_vmb(namespace):
     with FedoraVirtualMachine(
-            namespace=namespace.name,
-            name="vmb",
-            networks=NETWORKS,
-            interfaces=sorted(NETWORKS.keys())) as vm:
+        namespace=namespace.name,
+        name="vmb",
+        networks=NETWORKS,
+        interfaces=sorted(NETWORKS.keys()),
+    ) as vm:
         assert vm.start()
         yield vm
 
@@ -113,7 +109,7 @@ def test_veth_removed_from_host_after_vm_deleted(
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vma,
-    running_bridge_attached_vmb
+    running_bridge_attached_vmb,
 ):
     """
     Check that veth interfaces are removed from host after VM deleted
@@ -128,9 +124,14 @@ def test_veth_removed_from_host_after_vm_deleted(
                 expect_host_veth = host_veth_before_delete - len(vm_interfaces)
 
                 sampler = utils.TimeoutSampler(
-                    timeout=30, sleep=1,
-                    func=lambda pod, pod_container, expect_host_veth:
-                        count_veth_devices_on_host(pod, pod_container) == expect_host_veth,
-                    pod=pod, pod_container=pod_container, expect_host_veth=expect_host_veth
+                    timeout=30,
+                    sleep=1,
+                    func=lambda pod, pod_container, expect_host_veth: count_veth_devices_on_host(
+                        pod, pod_container
+                    )
+                    == expect_host_veth,
+                    pod=pod,
+                    pod_container=pod_container,
+                    expect_host_veth=expect_host_veth,
                 )
                 sampler.wait_for_func_status(result=True)

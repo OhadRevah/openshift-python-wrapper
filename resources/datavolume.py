@@ -12,16 +12,18 @@ class DataVolume(NamespacedResource):
     """
     DataVolume object.
     """
-    api_version = 'cdi.kubevirt.io/v1alpha1'
+
+    api_version = "cdi.kubevirt.io/v1alpha1"
 
     class Status:
-        SUCCEEDED = 'Succeeded'
-        FAILED = 'Failed'
+        SUCCEEDED = "Succeeded"
+        FAILED = "Failed"
 
     class AccessMode:
         """
         AccessMode object.
         """
+
         RWO = "ReadWriteOnce"
         ROX = "ReadOnlyMany"
         RWX = "ReadWriteMany"
@@ -30,6 +32,7 @@ class DataVolume(NamespacedResource):
         """
         ContentType object
         """
+
         KUBEVIRT = "kubevirt"
         ARCHIVE = "archive"
 
@@ -50,8 +53,18 @@ class DataVolume(NamespacedResource):
 
 class ImportDataVolume(DataVolume):
     def __init__(
-            self, name, namespace, source, url, content_type, size, storage_class,
-            access_modes=DataVolume.AccessMode.RWO, cert_configmap=None, client=None):
+        self,
+        name,
+        namespace,
+        source,
+        url,
+        content_type,
+        size,
+        storage_class,
+        access_modes=DataVolume.AccessMode.RWO,
+        cert_configmap=None,
+        client=None,
+    ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
         self.url = url
@@ -63,25 +76,17 @@ class ImportDataVolume(DataVolume):
 
     def _to_dict(self):
         res = super()._base_body()
-        res.update({
-            "spec": {
-                "source": {
-                    self.source: {
-                        "url": self.url,
-                    }
-                },
-                "pvc": {
-                    "accessModes": [
-                        self.access_modes
-                    ],
-                    "resources": {
-                        "requests": {
-                            "storage": self.size,
-                        }
+        res.update(
+            {
+                "spec": {
+                    "source": {self.source: {"url": self.url}},
+                    "pvc": {
+                        "accessModes": [self.access_modes],
+                        "resources": {"requests": {"storage": self.size}},
                     },
-                },
+                }
             }
-        })
+        )
         if self.content_type:
             res["spec"]["contentType"] = self.content_type
         if self.cert_configmap:
@@ -93,14 +98,47 @@ class ImportDataVolume(DataVolume):
 
 class ImportFromHttpDataVolume(ImportDataVolume):
     def __init__(
-        self, name, namespace, url, content_type, size, storage_class, access_modes=DataVolume.AccessMode.RWO
+        self,
+        name,
+        namespace,
+        url,
+        content_type,
+        size,
+        storage_class,
+        access_modes=DataVolume.AccessMode.RWO,
     ):
         super().__init__(
-            name, namespace, "http", url, content_type, size, storage_class, access_modes)
+            name,
+            namespace,
+            "http",
+            url,
+            content_type,
+            size,
+            storage_class,
+            access_modes,
+        )
 
 
 class ImportFromRegistryDataVolume(ImportDataVolume):
-    def __init__(self, name, namespace, url, content_type, size, storage_class,
-                 access_modes=DataVolume.AccessMode.RWO, cert_configmap=None):
+    def __init__(
+        self,
+        name,
+        namespace,
+        url,
+        content_type,
+        size,
+        storage_class,
+        access_modes=DataVolume.AccessMode.RWO,
+        cert_configmap=None,
+    ):
         super().__init__(
-            name, namespace, "registry", url, content_type, size, storage_class, access_modes, cert_configmap)
+            name,
+            namespace,
+            "registry",
+            url,
+            content_type,
+            size,
+            storage_class,
+            access_modes,
+            cert_configmap,
+        )

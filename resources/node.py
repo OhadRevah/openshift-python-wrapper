@@ -5,4 +5,5 @@ class Node(Resource):
     """
     Node object, inherited from Resource.
     """
-    api_version = 'v1'
+
+    api_version = "v1"

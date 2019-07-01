@@ -1,4 +1,3 @@
-
 import logging
 
 import pexpect
@@ -27,10 +26,11 @@ class Console(object):
 
     def connect(self):
         return self._connect(
-            login_prompt='login:',
+            login_prompt="login:",
             username=self.username,
             password=self.password,
-            prompt='#' if self.username == 'root' else '$')
+            prompt="#" if self.username == "root" else "$",
+        )
 
     def _connect(self, login_prompt, username, password, prompt):
         self.child.send("\n\n")
@@ -56,7 +56,7 @@ class Console(object):
         if self.namespace:
             cmd += " -n {namespace}".format(namespace=self.namespace)
 
-        self.child = pexpect.spawn(cmd, encoding='utf-8')
+        self.child = pexpect.spawn(cmd, encoding="utf-8")
         return self.connect()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -70,20 +70,20 @@ class Console(object):
 
 
 class Fedora(Console):
-    _USERNAME = 'fedora'
-    _PASSWORD = 'fedora'
+    _USERNAME = "fedora"
+    _PASSWORD = "fedora"
 
 
 class Cirros(Console):
-    _USERNAME = 'cirros'
-    _PASSWORD = 'gocubsgo'
+    _USERNAME = "cirros"
+    _PASSWORD = "gocubsgo"
 
 
 class Alpine(Console):
-    _USERNAME = 'root'
+    _USERNAME = "root"
     _PASSWORD = None
 
 
 class RHEL(Console):
-    _USERNAME = 'cloud-user'
-    _PASSWORD = 'redhat'
+    _USERNAME = "cloud-user"
+    _PASSWORD = "redhat"

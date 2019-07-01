@@ -1,4 +1,5 @@
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import base64
@@ -14,6 +15,7 @@ try:
     from __main__ import display
 except ImportError:
     from ansible.utils.display import Display
+
     display = Display()
 
 
@@ -132,12 +134,14 @@ class Connection(ConnectionBase):
         super(Connection, self).put_file(in_path, out_path)
         display.vvv(u"PUT {0} TO {1}".format(in_path, out_path), host=self.host)
         if not os.path.exists(in_path):
-            raise AnsibleFileNotFound("file does not exist: {0}".format(to_native(in_path)))
+            raise AnsibleFileNotFound(
+                "file does not exist: {0}".format(to_native(in_path))
+            )
 
         mark = self._mark()
 
         self._process.write("base64 -d > " + out_path)
-        self._process.write(" && printf \"" + mark + "\n\"")
+        self._process.write(' && printf "' + mark + '\n"')
         self._process.write("\n")
         with open(in_path, "rb") as fd:
             while True:
@@ -162,7 +166,7 @@ class Connection(ConnectionBase):
         mark = self._mark()
 
         self._process.write("base64 " + in_path)
-        self._process.write(" && printf \"" + mark + "\n\"")
+        self._process.write(' && printf "' + mark + '\n"')
         self._process.write("\n")
         with open(out_path, "wb") as fd:
             while True:
@@ -174,8 +178,11 @@ class Connection(ConnectionBase):
         self._eat_prompt(self._process)
 
     def _connect(self):
-        display.vvv(u"ESTABLISH VIRT CONSOLE CONNECTION FOR USER: {0}".format(self.user,
-                    host=self.host))
+        display.vvv(
+            u"ESTABLISH VIRT CONSOLE CONNECTION FOR USER: {0}".format(
+                self.user, host=self.host
+            )
+        )
         cmd = "{exe} console {host}".format(exe=self.virtctl, host=self.host)
         if self.namespace:
             cmd += " -n {namespace}".format(namespace=self.namespace)
@@ -206,7 +213,9 @@ class Connection(ConnectionBase):
 
     def close(self):
         super(Connection, self).close()
-        display.vvv(u"VIRT CONSOLE CONNECTION FOR USER {0} IS TERMINATING".format(self.user))
+        display.vvv(
+            u"VIRT CONSOLE CONNECTION FOR USER {0} IS TERMINATING".format(self.user)
+        )
         self._process.send("\n\n")
         self._process.sendcontrol("d")
         self._process.expect(self.login_prompt)

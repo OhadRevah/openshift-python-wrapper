@@ -19,35 +19,28 @@ class VirtualMachineWithDV(VirtualMachine):
         res = super()._to_dict()
 
         spec = res["spec"]["template"]["spec"]
-        spec["domain"]["devices"]["disks"] = [{
-            "disk": {
-                "bus": "virtio",
-            },
-            "name": "dv-disk",
-        }, {
-            "disk": {
-                "bus": "virtio",
-            },
-            "name": "cloudinitdisk",
-        }]
+        spec["domain"]["devices"]["disks"] = [
+            {"disk": {"bus": "virtio"}, "name": "dv-disk"},
+            {"disk": {"bus": "virtio"}, "name": "cloudinitdisk"},
+        ]
 
-        spec["volumes"] = [{
-            "name": "cloudinitdisk",
-            "cloudInitNoCloud": {
-                "userData": self._cloud_init_data,
+        spec["volumes"] = [
+            {
+                "name": "cloudinitdisk",
+                "cloudInitNoCloud": {"userData": self._cloud_init_data},
             },
-        }, {
-            "name": "dv-disk",
-            "dataVolume": {
-                "name": self._dv_name,
-            },
-        }]
+            {"name": "dv-disk", "dataVolume": {"name": self._dv_name}},
+        ]
         return res
 
 
 def create_vm_with_dv(dv):
-    with VirtualMachineWithDV(name='cirros-vm', namespace=dv.namespace, dv_name=dv.name,
-                              cloud_init_data=CLOUD_INIT_USER_DATA) as vm:
+    with VirtualMachineWithDV(
+        name="cirros-vm",
+        namespace=dv.namespace,
+        dv_name=dv.name,
+        cloud_init_data=CLOUD_INIT_USER_DATA,
+    ) as vm:
         assert vm.start()
         assert vm.vmi.wait_until_running()
         with console.Cirros(vm=vm.name, namespace=dv.namespace) as vm_console:

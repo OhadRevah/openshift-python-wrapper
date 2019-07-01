@@ -13,7 +13,8 @@ class DaemonSet(NamespacedResource):
     """
     DaemonSet object.
     """
-    api_version = 'extensions/v1beta1'
+
+    api_version = "extensions/v1beta1"
 
     def wait_until_deployed(self, timeout=TIMEOUT):
         """
@@ -30,12 +31,15 @@ class DaemonSet(NamespacedResource):
         for rsc in resources.watch(
             namespace=self.namespace,
             timeout=timeout,
-            field_selector=f"metadata.name=={self.name}"
+            field_selector=f"metadata.name=={self.name}",
         ):
-            status = rsc['raw_object']['status']
-            desired_number_scheduled = status.get('desiredNumberScheduled')
-            number_ready = status.get('numberReady')
-            if desired_number_scheduled > 0 and desired_number_scheduled == number_ready:
+            status = rsc["raw_object"]["status"]
+            desired_number_scheduled = status.get("desiredNumberScheduled")
+            number_ready = status.get("numberReady")
+            if (
+                desired_number_scheduled > 0
+                and desired_number_scheduled == number_ready
+            ):
                 return True
         return False
 
@@ -53,7 +57,8 @@ class DaemonSet(NamespacedResource):
             res = self.api().delete(
                 name=self.name,
                 namespace=self.namespace,
-                body=kubernetes.client.V1DeleteOptions(propagation_policy='Foreground'))
+                body=kubernetes.client.V1DeleteOptions(propagation_policy="Foreground"),
+            )
         except NotFoundError:
             return False
 

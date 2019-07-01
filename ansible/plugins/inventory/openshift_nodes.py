@@ -47,55 +47,65 @@ def get_nodes():
     k8s_client = config.new_client_from_config()
     dyn_client = DynamicClient(k8s_client)
 
-    v1_nodes = dyn_client.resources.get(api_version='v1', kind='Node')
+    v1_nodes = dyn_client.resources.get(api_version="v1", kind="Node")
     v1_node_list = v1_nodes.get()
     node_details = [node for node in v1_node_list.items]
 
     def first_ip(node):
-        return next(addr.address
-                    for addr in node.status.addresses
-                    if (addr.address != "localhost" and
-                        addr.address != "127.0.0.1"))
+        return next(
+            addr.address
+            for addr in node.status.addresses
+            if (addr.address != "localhost" and addr.address != "127.0.0.1")
+        )
 
-    nodes = [{
-        "name": node.metadata.name if node.metadata.name != "localhost" else "node",
-        "groups": ["cnv"] + compute_groups(node.metadata.labels or {}),
-        "vars": dict_merge({
-            "ansible_ssh_host": first_ip(node),
-            "ansible_become": True,
-            "ansible_become_method": "sudo",
-
-            # Enable for minishift
-            # "ansible_user": "docker",
-            # "ansible_ssh_private_key_file": "~/.minishift/machines/minishift/id_rsa",
-            # "ssh_via_arguments": """
-            #      -o UserKnownHostsFile=/dev/null
-            #      -o StrictHostKeyChecking=no
-            #      -o 'ProxyCommand ssh -o UserKnownHostsFile=/dev/null
-            #                           -o StrictHostKeyChecking=no
-            #                           -W %h:%p
-            #                           -i ~/.minishift/machines/minishift/id_rsa
-            #                           docker@""" + first_ip(node) + "'"
-
-        }, ansible_annotation_vars(node.metadata.annotations))
-    } for node in node_details]
+    nodes = [
+        {
+            "name": node.metadata.name if node.metadata.name != "localhost" else "node",
+            "groups": ["cnv"] + compute_groups(node.metadata.labels or {}),
+            "vars": dict_merge(
+                {
+                    "ansible_ssh_host": first_ip(node),
+                    "ansible_become": True,
+                    "ansible_become_method": "sudo",
+                    # Enable for minishift
+                    # "ansible_user": "docker",
+                    # "ansible_ssh_private_key_file": "~/.minishift/machines/minishift/id_rsa",
+                    # "ssh_via_arguments": """
+                    #      -o UserKnownHostsFile=/dev/null
+                    #      -o StrictHostKeyChecking=no
+                    #      -o 'ProxyCommand ssh -o UserKnownHostsFile=/dev/null
+                    #                           -o StrictHostKeyChecking=no
+                    #                           -W %h:%p
+                    #                           -i ~/.minishift/machines/minishift/id_rsa
+                    #                           docker@""" + first_ip(node) + "'"
+                },
+                ansible_annotation_vars(node.metadata.annotations),
+            ),
+        }
+        for node in node_details
+    ]
 
     return nodes
 
 
 class InventoryModule(BaseInventoryPlugin):
-    NAME = 'openshift_nodes'  # used internally by Ansible, it should match the file name but not required
+    NAME = (
+        "openshift_nodes"
+    )  # used internally by Ansible, it should match the file name but not required
 
     def verify_file(self, path):
-        ''' return true/false if this is possibly a valid file for this plugin to consume '''
+        """ return true/false if this is possibly a valid file for this plugin to consume """
         # base class verifies that file exists and is readable by current user
-        return super(InventoryModule, self).verify_file(path) and \
-            path.endswith(('openshift.yaml',
-                           'openshift.yml',
-                           'minishift.yaml',
-                           'minishift.yml',
-                           'oc.yaml',
-                           'oc.yml'))
+        return super(InventoryModule, self).verify_file(path) and path.endswith(
+            (
+                "openshift.yaml",
+                "openshift.yml",
+                "minishift.yaml",
+                "minishift.yml",
+                "oc.yaml",
+                "oc.yml",
+            )
+        )
 
     def parse(self, inventory, loader, path, cache=True):
         # call base method to ensure properties are available for use with other helper methods

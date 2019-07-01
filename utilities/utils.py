@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TimeoutExpiredError(Exception):
-    message = 'Timed Out'
+    message = "Timed Out"
 
     def __init__(self, *value):
         self.value = value
@@ -45,26 +45,26 @@ class TimeoutSampler(object):
 
     def __init__(self, timeout, sleep, func, *func_args, **func_kwargs):
         self.timeout = timeout
-        ''' Timeout in seconds. '''
+        """ Timeout in seconds. """
         self.sleep = sleep
-        ''' Sleep interval seconds. '''
+        """ Sleep interval seconds. """
 
         self.func = func
-        ''' A function to sample. '''
+        """ A function to sample. """
         self.func_args = func_args
-        ''' Args for func. '''
+        """ Args for func. """
         self.func_kwargs = func_kwargs
-        ''' Kwargs for func. '''
+        """ Kwargs for func. """
 
         self.start_time = None
-        ''' Time of starting the sampling. '''
+        """ Time of starting the sampling. """
         self.last_sample_time = None
-        ''' Time of last sample. '''
+        """ Time of last sample. """
 
         self.timeout_exc_cls = TimeoutExpiredError
-        ''' Class of exception to be raised.  '''
+        """ Class of exception to be raised.  """
         self.timeout_exc_args = (self.timeout,)
-        ''' An args for __init__ of the timeout exception. '''
+        """ An args for __init__ of the timeout exception. """
 
     def __iter__(self):
         if self.start_time is None:
@@ -100,7 +100,9 @@ class TimeoutSampler(object):
                     return True
 
         except self.timeout_exc_cls:
-            LOGGER.error("(%s) return incorrect status after timeout", self.func.__name__)
+            LOGGER.error(
+                "(%s) return incorrect status after timeout", self.func.__name__
+            )
             return False
 
 
@@ -135,8 +137,8 @@ def run_virtctl_command(command, namespace=None):
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
-    virtctl_cmd = ['virtctl']
-    kubeconfig = os.getenv('KUBECONFIG')
+    virtctl_cmd = ["virtctl"]
+    kubeconfig = os.getenv("KUBECONFIG")
     if namespace:
         virtctl_cmd = virtctl_cmd + ["-n", namespace]
 
@@ -171,11 +173,11 @@ def generate_yaml_from_template(file_, **kwargs):
     Examples:
         generate_yaml_from_template(file_='path/to/file/name', name='vm-name-1')
     """
-    with open(file_, 'r') as stream:
+    with open(file_, "r") as stream:
         data = stream.read()
 
     # Find all template variables
-    template_vars = [i.split()[1] for i in re.findall(r'{{ .* }}', data)]
+    template_vars = [i.split()[1] for i in re.findall(r"{{ .* }}", data)]
     for var in template_vars:
         if var not in kwargs.keys():
             raise MissingTemplateVariables(var=var, template=file_)

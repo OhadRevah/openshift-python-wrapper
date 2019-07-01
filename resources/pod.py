@@ -28,10 +28,11 @@ class Pod(NamespacedResource):
     """
     Pod object, inherited from Resource.
     """
-    api_version = 'v1'
+
+    api_version = "v1"
 
     class Status:
-        RUNNING = 'Running'
+        RUNNING = "Running"
 
     def __init__(self, name, namespace, client=None):
         super().__init__(name=name, namespace=namespace, client=client)
@@ -67,21 +68,27 @@ class Pod(NamespacedResource):
             namespace=self.namespace,
             command=command,
             container=container or self.containers()[0].name,
-            stderr=True, stdin=False,
-            stdout=True, tty=False,
-            _preload_content=False
+            stderr=True,
+            stdin=False,
+            stdout=True,
+            tty=False,
+            _preload_content=False,
         )
         timeout_watch = utils.TimeoutWatch(timeout)
         resp.run_forever(timeout=timeout_watch.remaining_time())
         stdout = resp.read_stdout(timeout=timeout_watch.remaining_time())
         stderr = resp.read_stderr(timeout=timeout_watch.remaining_time())
-        error_channel = json.loads(resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL))
-        if error_channel['status'] == 'Success':
+        error_channel = json.loads(
+            resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL)
+        )
+        if error_channel["status"] == "Success":
             returncode = 0
         else:
             returncode = [
-                int(cause['message']) for cause in error_channel['details']['causes']
-                if cause['reason'] == 'ExitCode'][0]
+                int(cause["message"])
+                for cause in error_channel["details"]["causes"]
+                if cause["reason"] == "ExitCode"
+            ][0]
         if returncode:
             raise ExecOnPodError(command=command, rc=returncode, out=stdout, err=stderr)
         return stdout
@@ -93,7 +100,9 @@ class Pod(NamespacedResource):
         Returns:
             str: Pod logs.
         """
-        return self._kube_api.read_namespaced_pod_log(self.name, self.namespace, **kwargs)
+        return self._kube_api.read_namespaced_pod_log(
+            self.name, self.namespace, **kwargs
+        )
 
     @property
     def node(self):

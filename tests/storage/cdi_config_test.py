@@ -6,7 +6,7 @@ import pytest
 from resources.cdi_config import CDIConfig
 
 
-CONFIG_NAME = 'config'
+CONFIG_NAME = "config"
 
 
 @pytest.mark.polarion("CNV-2208")

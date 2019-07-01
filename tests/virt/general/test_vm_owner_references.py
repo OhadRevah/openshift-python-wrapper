@@ -10,7 +10,9 @@ from tests import utils as test_utils
 @pytest.fixture()
 def fedora_vm(default_client, virt_namespace):
     name = "owner-references-vm"
-    with test_utils.FedoraVirtualMachine(name=name, namespace=virt_namespace.name) as vm:
+    with test_utils.FedoraVirtualMachine(
+        name=name, namespace=virt_namespace.name
+    ) as vm:
         assert vm.start(wait=True)
         yield vm
 
@@ -36,11 +38,19 @@ def test_owner_references_on_vm(fedora_vm):
     owner_references_vmi = vmi.instance.metadata.ownerReferences[0]
     # check pod owner references block
     # kind
-    assert owner_references_pod.kind == "VirtualMachineInstance", "Pod owner references kind should be VMI"
-    assert owner_references_vmi.kind == "VirtualMachine", "VMI owner references kind should be VM"
+    assert (
+        owner_references_pod.kind == "VirtualMachineInstance"
+    ), "Pod owner references kind should be VMI"
+    assert (
+        owner_references_vmi.kind == "VirtualMachine"
+    ), "VMI owner references kind should be VM"
     # name (all relate to vm name)
-    assert owner_references_vmi.name == fedora_vm.name, "VMI owner references is not VM name"
-    assert owner_references_pod.name == owner_references_vmi.name, "Pod and VMI name are not equals"
+    assert (
+        owner_references_vmi.name == fedora_vm.name
+    ), "VMI owner references is not VM name"
+    assert (
+        owner_references_pod.name == owner_references_vmi.name
+    ), "Pod and VMI name are not equals"
     # controller
     assert owner_references_pod.controller is True, "Pod controller is not set to True"
     assert owner_references_vmi.controller is True, "VMI controller is not set to True"

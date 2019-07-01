@@ -11,7 +11,8 @@ class CDIConfig(Resource):
     """
     CDIConfig object.
     """
-    api_version = 'cdi.kubevirt.io/v1alpha1'
+
+    api_version = "cdi.kubevirt.io/v1alpha1"
 
     @property
     def upload_proxy_url(self):

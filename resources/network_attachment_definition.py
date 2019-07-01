@@ -11,24 +11,35 @@ class NetworkAttachmentDefinition(NamespacedResource):
     """
     NetworkAttachmentDefinition object.
     """
-    api_version = 'k8s.cni.cncf.io/v1'
+
+    api_version = "k8s.cni.cncf.io/v1"
     resource_name = None
 
-    def wait_for_status(self, status, timeout=None, label_selector=None, resource_version=None):
+    def wait_for_status(
+        self, status, timeout=None, label_selector=None, resource_version=None
+    ):
         raise NotImplementedError(f"{self.kind} does not have status")
 
     def _to_dict(self):
         res = super()._to_dict()
         if self.resource_name is not None:
             res["metadata"]["annotations"] = {
-                "k8s.v1.cni.cncf.io/resourceName": self.resource_name,
+                "k8s.v1.cni.cncf.io/resourceName": self.resource_name
             }
         res["spec"] = {}
         return res
 
 
 class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
-    def __init__(self, name, namespace, bridge_name, cni_type="cnv-bridge", vlan=None, client=None):
+    def __init__(
+        self,
+        name,
+        namespace,
+        bridge_name,
+        cni_type="cnv-bridge",
+        vlan=None,
+        client=None,
+    ):
         super().__init__(name=name, namespace=namespace, client=client)
         self._bridge_name = bridge_name
         self._cni_type = cni_type
@@ -46,7 +57,7 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
             "bridge": self._bridge_name,
         }
         if self._vlan:
-            spec_config['vlan'] = self._vlan
+            spec_config["vlan"] = self._vlan
 
         res["spec"]["config"] = json.dumps(spec_config)
         return res

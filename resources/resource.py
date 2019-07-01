@@ -23,6 +23,7 @@ class ValueMismatch(Exception):
     """
     Raises when value doesn't match the class value
     """
+
     pass
 
 
@@ -30,6 +31,7 @@ class Resource(object):
     """
     Base class for API resources
     """
+
     api_version = None
     singular_name = None
 
@@ -46,8 +48,13 @@ class Resource(object):
         if not self.client:
             try:
                 self.client = DynamicClient(kubernetes.config.new_client_from_config())
-            except (kubernetes.config.ConfigException, urllib3.exceptions.MaxRetryError):
-                LOGGER.error('You need to be logged into a cluster or have $KUBECONFIG env configured')
+            except (
+                kubernetes.config.ConfigException,
+                urllib3.exceptions.MaxRetryError,
+            ):
+                LOGGER.error(
+                    "You need to be logged into a cluster or have $KUBECONFIG env configured"
+                )
                 raise
 
     @classproperty
@@ -63,9 +70,7 @@ class Resource(object):
         return {
             "apiVersion": self.api_version,
             "kind": self.kind,
-            "metadata": {
-                "name": self.name,
-            },
+            "metadata": {"name": self.name},
         }
 
     def _to_dict(self):
@@ -78,7 +83,8 @@ class Resource(object):
         data = self._to_dict()
         LOGGER.info(f"Posting {data}")
         self.create_from_dict(
-            dyn_client=self.client, data=data, namespace=self.namespace)
+            dyn_client=self.client, data=data, namespace=self.namespace
+        )
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
@@ -106,7 +112,7 @@ class Resource(object):
             Resource: Resource object.
         """
         if self.singular_name:
-            kwargs['singular_name'] = self.singular_name
+            kwargs["singular_name"] = self.singular_name
         return self.client.resources.get(
             api_version=self.api_version, kind=self.kind, **kwargs
         )
@@ -130,9 +136,9 @@ class Resource(object):
             timeout=timeout,
             resource_version=resource_version,
             label_selector=label_selector,
-            field_selector=f"metadata.name=={self.name}"
+            field_selector=f"metadata.name=={self.name}",
         ):
-            if rsc['type'] == 'ADDED':
+            if rsc["type"] == "ADDED":
                 return True
         return False
 
@@ -165,6 +171,7 @@ class Resource(object):
         Returns:
             bool: True if resource is gone, False if timeout reached.
         """
+
         def _exists():
             """
             Whether self exists on the server
@@ -184,7 +191,9 @@ class Resource(object):
                 return True
         return False
 
-    def wait_for_status(self, status, timeout=TIMEOUT, label_selector=None, resource_version=None):
+    def wait_for_status(
+        self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
+    ):
         """
         Wait for resource to be in status
 
@@ -205,9 +214,12 @@ class Resource(object):
             timeout=timeout,
             label_selector=label_selector,
             resource_version=resource_version,
-            field_selector=f"metadata.name=={self.name}"
+            field_selector=f"metadata.name=={self.name}",
         ):
-            if 'status' in rsc['raw_object'] and rsc['raw_object']['status'].get('phase') == status:
+            if (
+                "status" in rsc["raw_object"]
+                and rsc["raw_object"]["status"].get("phase") == status
+            ):
                 return True
         return False
 
@@ -222,11 +234,11 @@ class Resource(object):
             namespace (str): Namespace of the resource unless specified in the supplied yaml.
         """
         client = dyn_client.resources.get(
-            api_version=data['apiVersion'], kind=data['kind']
+            api_version=data["apiVersion"], kind=data["kind"]
         )
         LOGGER.info(f"Create {data['kind']} {data['metadata']['name']}")
         return client.create(
-            body=data, namespace=data['metadata'].get('namespace', namespace)
+            body=data, namespace=data["metadata"].get("namespace", namespace)
         )
 
     def create(self, body=None, wait=False):
@@ -245,15 +257,15 @@ class Resource(object):
         """
         data = self._base_body()
         if body:
-            kind = body['kind']
-            name = body.get('name')
-            api_version = body['apiVersion']
+            kind = body["kind"]
+            name = body.get("name")
+            api_version = body["apiVersion"]
             if kind != self.kind:
-                ValueMismatch(f'{kind} != {self.kind}')
+                ValueMismatch(f"{kind} != {self.kind}")
             if name and name != self.name:
-                ValueMismatch(f'{name} != {self.name}')
+                ValueMismatch(f"{name} != {self.name}")
             if api_version != self.api_version:
-                ValueMismatch(f'{api_version} != {self.api_version}')
+                ValueMismatch(f"{api_version} != {self.api_version}")
 
             data.update(body)
         res = self.api().create(body=data, namespace=self.namespace)
@@ -276,11 +288,13 @@ class Resource(object):
         Returns:
             True if delete succeeded, False otherwise.
         """
-        name = data['metadata']['name']
-        client = dyn_client.resources.get(api_version=data['apiVersion'], kind=data['kind'])
+        name = data["metadata"]["name"]
+        client = dyn_client.resources.get(
+            api_version=data["apiVersion"], kind=data["kind"]
+        )
         LOGGER.info(f"Delete {data['kind']} {name}")
         return client.delete(
-            name=name, namespace=data['metadata'].get('namespace', namespace)
+            name=name, namespace=data["metadata"].get("namespace", namespace)
         )
 
     def delete(self, wait=False):
@@ -338,8 +352,11 @@ class Resource(object):
         Returns:
             generator: Generator of Resources of cls.kind
         """
-        for resource_field in dyn_client.resources.get(
-                kind=cls.kind, api_version=cls.api_version).get(*args, **kwargs).items:
+        for resource_field in (
+            dyn_client.resources.get(kind=cls.kind, api_version=cls.api_version)
+            .get(*args, **kwargs)
+            .items
+        ):
             yield cls(name=resource_field.metadata.name)
 
     @property
@@ -357,6 +374,7 @@ class NamespacedResource(Resource):
     """
     Namespaced object, inherited from Resource.
     """
+
     def __init__(self, name, namespace, client=None):
         super().__init__(name=name, client=client)
         self.namespace = namespace
@@ -372,10 +390,14 @@ class NamespacedResource(Resource):
         Returns:
             generator: Generator of Resources of cls.kind
         """
-        for resource_field in dyn_client.resources.get(
-                kind=cls.kind, api_version=cls.api_version).get(*args, **kwargs).items:
+        for resource_field in (
+            dyn_client.resources.get(kind=cls.kind, api_version=cls.api_version)
+            .get(*args, **kwargs)
+            .items
+        ):
             yield cls(
-                name=resource_field.metadata.name, namespace=resource_field.metadata.namespace
+                name=resource_field.metadata.name,
+                namespace=resource_field.metadata.namespace,
             )
 
     @property

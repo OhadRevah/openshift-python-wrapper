@@ -17,7 +17,7 @@ def attach_linux_bridge_to_bond(network_utility_pods, bond_supported):
         cmds = [
             ["ip", "link", "add", bond_bridge, "type", "bridge"],
             ["ip", "link", "set", "dev", bond_bridge, "up"],
-            ["ip", "link", "set", "dev", bond_name, "master", bond_bridge]
+            ["ip", "link", "set", "dev", bond_name, "master", bond_bridge],
         ]
         for cmd in cmds:
             pod.execute(command=cmd, container=pod_container)

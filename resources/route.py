@@ -10,7 +10,8 @@ class Route(NamespacedResource):
     """
     OpenShift Route object.
     """
-    api_version = 'route.openshift.io/v1'
+
+    api_version = "route.openshift.io/v1"
 
     @property
     def service(self):
