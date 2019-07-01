@@ -12,6 +12,8 @@ spec:
       creationTimestamp: null
       labels:
         kubevirt.io/vm: {{ label }}
+      annotations:
+        ansible: '{"ansible_user": "fedora", "ansible_ssh_pass": "fedora", "ansible_become": true, "ansible_become_method": "sudo"}'
     spec:
       domain:
         cpu:

@@ -25,15 +25,17 @@ class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
 
     def _to_dict(self):
         res = super()._to_dict()
-        res["spec"]["template"]["metadata"].update(
+
+        res["spec"]["template"]["metadata"].setdefault("annotations", {})
+        res["spec"]["template"]["metadata"]["annotations"].update(
             {
-                "annotations": {
-                    "hooks.kubevirt.io/hookSidecars": '[{"image": "kubevirt/example-hook-sidecar:v0.13.3"}]',
-                    "smbios.vm.kubevirt.io/baseBoardManufacturer": "Radical Edward",
-                },
-                "labels": {"special": self.name},
+                "hooks.kubevirt.io/hookSidecars": '[{"image": "kubevirt/example-hook-sidecar:v0.13.3"}]',
+                "smbios.vm.kubevirt.io/baseBoardManufacturer": "Radical Edward",
             }
         )
+
+        res["spec"]["template"]["metadata"].setdefault("labels", {})
+        res["spec"]["template"]["metadata"]["labels"].update({"special": self.name})
 
         return res
 
@@ -61,6 +63,6 @@ def test_vm_with_sidecar_hook(running_sidecar_vm):
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
     And check that package includes manufacturer: "Radical Edward"
     """
-    with console.Fedora(vm=running_sidecar_vm) as vm_console:
+    with console.Console(vm=running_sidecar_vm) as vm_console:
         vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
         vm_console.expect("1", timeout=20)

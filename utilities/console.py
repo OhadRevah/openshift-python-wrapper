@@ -1,3 +1,4 @@
+import json
 import logging
 
 import pexpect
@@ -30,6 +31,20 @@ class Console(object):
         self.child = None
 
     def connect(self):
+        # No login credentials provided, attempt autodetection
+        # and fill in the missing details
+        if not all((self.username, self.password)):
+            LOGGER.debug(f"Login autodetection for {self.vm.name}")
+            raw = self.vm.vmi.instance["metadata"]["annotations"]["ansible"]
+            data = json.loads(raw)
+            if not self.username and "ansible_user" in data:
+                self.username = data["ansible_user"]
+            if not self.password and "ansible_ssh_pass" in data:
+                self.password = data["ansible_ssh_pass"]
+            LOGGER.info(
+                f"Login autodetection for {self.vm.name} - {self.username}:{self.password}"
+            )
+
         return self._connect(
             login_prompt="login:",
             username=self.username,

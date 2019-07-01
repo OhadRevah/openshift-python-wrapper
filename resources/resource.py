@@ -90,7 +90,11 @@ class Resource(object):
         # return the name of the last class in MRO list that is not one of base
         # classes; otherwise return None
         for c in reversed(
-            list(c for c in cls.mro() if c not in NamespacedResource.mro())
+            list(
+                c
+                for c in cls.mro()
+                if c not in NamespacedResource.mro() and issubclass(c, Resource)
+            )
         ):
             return c.__name__
 

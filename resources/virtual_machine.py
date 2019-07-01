@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 import logging
 
 from .node import Node
@@ -31,7 +32,46 @@ def get_base_vmi_spec():
     }
 
 
-class VirtualMachine(NamespacedResource):
+class AnsibleLoginAnnotationsMixin(object):
+    """A mixin class that enhances the object.metadata.annotations
+       with login credentials stored in Ansible variables.
+
+       This allows seamless console connection in tests as both
+       Console and Ansible inventory/connection plugins know how
+       to extract this information.
+    """
+
+    def _store_login_information(self, username, password):
+        self._username = username
+        self._password = password
+
+    def _add_login_annotation(self, vmi):
+        """Enhance VMI object with the proper metadata. Call this method
+           from to_dict with vmi set to the dict that represents VMI.
+           The provided vmi is modified in place!
+
+           This method does nothing when no credentials were provided.
+        """
+
+        login_annotation = {}
+
+        if self._username:
+            login_annotation["ansible_user"] = self._username
+
+        if self._password:
+            login_annotation["ansible_ssh_pass"] = self._password
+
+        if login_annotation:
+            # cloud images defaults
+            login_annotation["ansible_become"] = True
+            login_annotation["ansible_become_method"] = "sudo"
+
+            vmi.setdefault("metadata", {})
+            vmi["metadata"].setdefault("annotations", {})
+            vmi["metadata"]["annotations"]["ansible"] = json.dumps(login_annotation)
+
+
+class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
     """
     Virtual Machine object, inherited from Resource.
     Implements actions start / stop / status / wait for VM status / is running
@@ -39,9 +79,15 @@ class VirtualMachine(NamespacedResource):
 
     api_version = API_VERSION
 
+    def __init__(self, name, namespace, client=None, username=None, password=None):
+        super().__init__(name=name, namespace=namespace, client=client)
+        self._store_login_information(username, password)
+
     def _to_dict(self):
         res = super()._to_dict()
         res["spec"] = {"template": {"spec": get_base_vmi_spec()}, "running": False}
+        self._add_login_annotation(vmi=res["spec"]["template"])
+
         return res
 
     def start(self, timeout=TIMEOUT, wait=False):
@@ -116,7 +162,12 @@ class VirtualMachine(NamespacedResource):
         Returns:
             VirtualMachineInstance: VMI
         """
-        return VirtualMachineInstance(name=self.name, namespace=self.namespace)
+        return VirtualMachineInstance(
+            name=self.name,
+            namespace=self.namespace,
+            username=self._username,
+            password=self._password,
+        )
 
     def ready(self):
         """
@@ -129,16 +180,23 @@ class VirtualMachine(NamespacedResource):
         return self.instance.status["ready"]
 
 
-class VirtualMachineInstance(NamespacedResource):
+class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
     """
     Virtual Machine Instance object, inherited from Resource.
     """
 
     api_version = API_VERSION
 
+    def __init__(self, name, namespace, client=None, username=None, password=None):
+        super().__init__(name=name, namespace=namespace, client=client)
+        self._store_login_information(username, password)
+
     def _to_dict(self):
         res = super()._to_dict()
         res["spec"] = get_base_vmi_spec()
+
+        self._add_login_annotation(vmi=res)
+
         return res
 
     @property
