@@ -38,7 +38,7 @@ class DataVolume(NamespacedResource):
 
     def wait_deleted(self, timeout=TIMEOUT):
         """
-       Wait until DataVolume and the PVC created by it are deleted
+        Wait until DataVolume and the PVC created by it are deleted
 
         Args:
         timeout (int):  Time to wait for the DataVolume and PVC to be deleted.
@@ -55,16 +55,16 @@ class DataVolume(NamespacedResource):
         assert PersistentVolumeClaim(name=self.name, namespace=self.namespace).bound()
 
 
-class ImportDataVolume(DataVolume):
+class DataVolumeTemplate(DataVolume):
     def __init__(
         self,
         name,
         namespace,
         source,
-        url,
-        content_type,
         size,
         storage_class,
+        url=None,
+        content_type=None,
         access_modes=DataVolume.AccessMode.RWO,
         cert_configmap=None,
         secret=None,
@@ -101,18 +101,22 @@ class ImportDataVolume(DataVolume):
             res["spec"]["pvc"]["storageClassName"] = self.storage_class
         if self.secret:
             res["spec"]["source"][self.source]["secretRef"] = self.secret
+        if self.source == "http" or "registry":
+            res["spec"]["source"] = {self.source: {"url": self.url}}
+        elif self.source == "upload":
+            res["spec"]["source"] = {"upload": {}}
         return res
 
 
-class ImportFromHttpDataVolume(ImportDataVolume):
+class ImportFromHttpDataVolume(DataVolumeTemplate):
     def __init__(
         self,
         name,
         namespace,
-        url,
-        content_type,
         size,
         storage_class,
+        url,
+        content_type,
         access_modes=DataVolume.AccessMode.RWO,
         cert_configmap=None,
         secret=None,
@@ -121,25 +125,25 @@ class ImportFromHttpDataVolume(ImportDataVolume):
             name,
             namespace,
             "http",
-            url,
-            content_type,
             size,
             storage_class,
+            url,
+            content_type,
             access_modes,
             cert_configmap,
             secret,
         )
 
 
-class ImportFromRegistryDataVolume(ImportDataVolume):
+class ImportFromRegistryDataVolume(DataVolumeTemplate):
     def __init__(
         self,
         name,
         namespace,
-        url,
-        content_type,
         size,
         storage_class,
+        url,
+        content_type,
         access_modes=DataVolume.AccessMode.RWO,
         cert_configmap=None,
     ):
@@ -147,10 +151,15 @@ class ImportFromRegistryDataVolume(ImportDataVolume):
             name,
             namespace,
             "registry",
-            url,
-            content_type,
             size,
             storage_class,
+            url,
+            content_type,
             access_modes,
             cert_configmap,
         )
+
+
+class UploadDataVolume(DataVolumeTemplate):
+    def __init__(self, name, namespace, size, storage_class):
+        super().__init__(name, namespace, "upload", size, storage_class)
