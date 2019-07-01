@@ -160,8 +160,7 @@ class PolarionIds(object):
                                         continue
 
                                     if not elt.keywords:
-                                        elt_s = elt.args[0].s if isinstance(elt, ast.Call) else elt.s
-                                        yield from self._non_decorated_elt(f, elt, elt_s)
+                                        yield from self._non_decorated_elt(f, elt)
 
                                     for pk in elt.keywords:
                                         # In case of multiple marks on test param
