@@ -135,18 +135,12 @@ def _vxlan(pod, name, vxlan_id, interface_name, dst_port, master_bridge):
 class VXLANTunnel:
     # destination port 4790 parameter can be any free port in order to avoid overlap with the existing applications
     def __init__(
-        self,
-        name,
-        vxlan_id,
-        master_bridge,
-        worker_pods,
-        interface_name="eth0",
-        dst_port="4790",
+        self, name, vxlan_id, master_bridge, worker_pods, nodes_nics, dst_port="4790"
     ):
         self.name = name
         self.vxlan_id = vxlan_id
         self.master_bridge = master_bridge
-        self.interface_name = interface_name
+        self.nodes_nics = nodes_nics
         self.dst_port = dst_port
         self._worker_pods = worker_pods
         self._stack = None
@@ -161,7 +155,7 @@ class VXLANTunnel:
                         pod=pod,
                         name=self.name,
                         vxlan_id=self.vxlan_id,
-                        interface_name=self.interface_name,
+                        interface_name=self.nodes_nics[pod.node.name][0],
                         dst_port=self.dst_port,
                         master_bridge=self.master_bridge,
                     )

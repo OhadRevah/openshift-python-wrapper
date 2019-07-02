@@ -68,7 +68,7 @@ def br1vlan300_nad(module_namespace):
 @pytest.fixture(scope="module", autouse=True)
 def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_nodes):
 
-    master_index = 0 if multi_nics_nodes else None
+    master_index = 1 if multi_nics_nodes else None
 
     with Bridge(
         name=BR1TEST,
@@ -83,6 +83,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
                 worker_pods=network_utility_pods,
                 vxlan_id=99,
                 master_bridge=br.name,
+                nodes_nics=nodes_active_nics,
             ):
                 yield br
         else:

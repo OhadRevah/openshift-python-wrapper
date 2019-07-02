@@ -66,7 +66,7 @@ def network_utility_pods(default_client):
 def nodes_active_nics(network_utility_pods):
     """
     Get nodes active NICs. (Only NICs that are in UP state)
-    excluding the management NIC.
+    First NIC is management NIC
     """
     nodes_nics = {}
     for pod in network_utility_pods:
@@ -89,10 +89,9 @@ def nodes_active_nics(network_utility_pods):
                 command=["cat", f"/sys/class/net/{nic}/operstate"],
                 container=pod_container,
             )
-            #  Exclude management NIC
             if nic_state.strip() == "up":
                 if nic in [i for i in default_gw.splitlines() if "default" in i][0]:
-                    continue
+                    nodes_nics[pod.node.name].insert(0, nic)
 
                 nodes_nics[pod.node.name].append(nic)
     return nodes_nics
@@ -103,7 +102,7 @@ def multi_nics_nodes(nodes_active_nics):
     """
     Check if nodes has more then 1 active NIC
     """
-    return min(len(nics) for nics in nodes_active_nics.values()) > 1
+    return min(len(nics) for nics in nodes_active_nics.values()) > 2
 
 
 @pytest.fixture(scope="session")
@@ -111,4 +110,4 @@ def bond_supported(network_utility_pods, nodes_active_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
-    return max([len(nodes_active_nics[i.node.name]) for i in network_utility_pods]) > 2
+    return max([len(nodes_active_nics[i.node.name]) for i in network_utility_pods]) > 3

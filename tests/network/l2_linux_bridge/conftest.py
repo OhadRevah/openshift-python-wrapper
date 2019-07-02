@@ -215,7 +215,7 @@ def bridge_device(network_utility_pods):
 
 
 @pytest.fixture(scope="class", autouse=True)
-def vxlan(network_utility_pods, bridge_device, multi_nics_nodes):
+def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_nics):
 
     # There is no need to build vxlan tunnel on bare metal because
     # it has enough physical interfaces for direct connection
@@ -227,6 +227,7 @@ def vxlan(network_utility_pods, bridge_device, multi_nics_nodes):
         worker_pods=network_utility_pods,
         vxlan_id=10,
         master_bridge=bridge_device.name,
+        nodes_nics=nodes_active_nics,
     ) as vxlan:
         yield vxlan
 

@@ -44,7 +44,7 @@ def create_bond(request, network_utility_pods, bond_supported, nodes_active_nics
         for cmd in bond_commands:
             pod.execute(command=cmd, container=pod_container)
 
-        for nic in nodes_active_nics[node_name][1:3]:
+        for nic in nodes_active_nics[node_name][2:4]:
             pod.execute(
                 command=["ip", "link", "set", nic, "down"], container=pod_container
             )
