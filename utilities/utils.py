@@ -3,9 +3,9 @@ import os
 import re
 import subprocess
 import time
-import yaml
+
 import jinja2
-from _pytest.mark import ParameterSet
+import yaml
 from autologs.autologs import generate_logs
 
 LOGGER = logging.getLogger(__name__)
@@ -182,45 +182,3 @@ def generate_yaml_from_template(file_, **kwargs):
     template = jinja2.Template(data)
     out = template.render(**kwargs)
     return yaml.safe_load(out)
-
-
-def get_test_parametrize_ids(item, params):
-    """
-    Get test parametrize IDs from the current parametrize run
-
-    Args:
-        item (instance): pytest mark object (<func_name>.parametrize)
-        params (list): Test parametrize params
-
-    Returns:
-        str: Test Id
-
-    Examples:
-        _id = get_test_parametrize_ids(
-            self.test_create_networks.parametrize,
-            ["param_1", "param_2"]
-        )
-        print(_id)
-    """
-    _id = ""
-    param = [i for i in item if i.name == "parametrize"]
-    param = param[0] if param else None
-    if not param:
-        return _id
-
-    param_args = param.args
-    if not param_args or len(param_args) < 2:
-        return _id
-
-    param_args_values = param_args[1]
-    param_ids = param.kwargs.get("ids")
-    for i in param_args_values:
-        if isinstance(i, list) or isinstance(i, tuple):
-            for x in i:
-                if not isinstance(x, ParameterSet):
-                    continue
-
-                x_values = x.values
-                if tuple(params) == x_values:
-                    return param_ids[param_args_values.index(x)]
-    return _id
