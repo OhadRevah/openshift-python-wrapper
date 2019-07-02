@@ -9,3 +9,5 @@ template_defaults:
 
 storage_defaults:
   storage_class: local
+
+bare_metal_cluster: False
