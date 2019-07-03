@@ -68,7 +68,7 @@ def bridge_attached_vma(namespace):
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
     ) as vm:
-        assert vm.start()
+        vm.start()
         yield vm
 
 
@@ -80,19 +80,19 @@ def bridge_attached_vmb(namespace):
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
     ) as vm:
-        assert vm.start()
+        vm.start()
         yield vm
 
 
 @pytest.fixture()
 def running_bridge_attached_vma(bridge_attached_vma):
-    assert bridge_attached_vma.vmi.wait_until_running()
+    bridge_attached_vma.vmi.wait_until_running()
     return bridge_attached_vma
 
 
 @pytest.fixture()
 def running_bridge_attached_vmb(bridge_attached_vmb):
-    assert bridge_attached_vmb.vmi.wait_until_running()
+    bridge_attached_vmb.vmi.wait_until_running()
     return bridge_attached_vmb
 
 

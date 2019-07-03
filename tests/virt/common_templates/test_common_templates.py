@@ -80,7 +80,7 @@ def data_volume(request, http_server, namespace):
         os_release=request.param[1],
         template_name=template_name,
     ) as dv:
-        assert dv.wait_for_status(
+        dv.wait_for_status(
             status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=300
         )
         assert PersistentVolumeClaim(name=dv.name, namespace=namespace.name).bound()
@@ -103,8 +103,8 @@ def test_common_templates_with_rhel(data_volume, namespace):
             with VirtualMachineFromTemplate(
                 name=VM_NAME, namespace=namespace.name, body=resource
             ) as vm:
-                assert vm.start()
-                assert vm.vmi.wait_until_running()
+                vm.start()
+                vm.vmi.wait_until_running()
                 with console.Fedora(
                     vm=VM_NAME,
                     username="cloud-user",
@@ -116,7 +116,7 @@ def test_common_templates_with_rhel(data_volume, namespace):
                         f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"
                     )
                     vm_console.expect("1", timeout=60)
-                assert vm.stop(wait=True)
+                vm.stop(wait=True)
 
 
 @pytest.fixture()

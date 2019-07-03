@@ -160,14 +160,14 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
         node_selector=network_utility_pods[1].node.name,
         bootcmds=bootcmds,
     ) as vm:
-        assert vm.start()
+        vm.start()
         yield vm
 
 
 @pytest.fixture(scope="module")
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
-    assert vmi.wait_until_running()
+    vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi, timeout=800)
     return vmi
 
@@ -175,7 +175,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
 @pytest.fixture(scope="module")
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
-    assert vmi.wait_until_running()
+    vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi, timeout=800)
     return vmi
 

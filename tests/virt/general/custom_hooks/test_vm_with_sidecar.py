@@ -44,7 +44,7 @@ def sidecar_vm(default_client, virt_namespace):
     with FedoraVirtualMachineWithSideCar(
         name=name, namespace=virt_namespace.name
     ) as vm:
-        assert vm.start(wait=True)
+        vm.start(wait=True)
         yield vm
 
 

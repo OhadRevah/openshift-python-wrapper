@@ -41,14 +41,14 @@ def module_namespace():
 @pytest.fixture(scope="module")
 def vma(module_namespace):
     with FedoraVirtualMachineTest(namespace=module_namespace.name, name="vma") as vm:
-        assert vm.start()
+        vm.start()
         yield vm
 
 
 @pytest.fixture(scope="module")
 def vmb(module_namespace):
     with FedoraVirtualMachineTest(namespace=module_namespace.name, name="vmb") as vm:
-        assert vm.start()
+        vm.start()
         yield vm
 
 

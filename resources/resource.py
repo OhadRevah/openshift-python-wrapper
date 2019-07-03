@@ -27,6 +27,34 @@ class ValueMismatch(Exception):
     pass
 
 
+class WaitToBeCreatedTimedOut(Exception):
+    """
+    Raises when wait for resource to be created is timed out
+    """
+
+    pass
+
+
+class WaitToBeDeletedTimedOut(Exception):
+    """
+    Raises when wait for resource to be deleted is timed out
+    """
+
+    pass
+
+
+class WaitForStatusTimedOut(Exception):
+    """
+    Raises when wait for resource to be in status is timed out
+    """
+
+    def __init__(self, status):
+        self.status = status
+
+    def __str__(self):
+        return f"Wait for status {self.status} was timed out"
+
+
 class Resource(object):
     """
     Base class for API resources
@@ -140,7 +168,7 @@ class Resource(object):
         ):
             if rsc["type"] == "ADDED":
                 return True
-        return False
+        assert WaitToBeCreatedTimedOut
 
     def wait_deleted(self, timeout=TIMEOUT):
         """
@@ -189,7 +217,7 @@ class Resource(object):
             self.nudge_delete()
             if not sample:
                 return True
-        return False
+        raise WaitToBeDeletedTimedOut
 
     def wait_for_status(
         self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
@@ -220,8 +248,8 @@ class Resource(object):
                 "status" in rsc["raw_object"]
                 and rsc["raw_object"]["status"].get("phase") == status
             ):
-                return True
-        return False
+                return
+        raise WaitForStatusTimedOut(status)
 
     @classmethod
     def create_from_dict(cls, dyn_client, data, namespace=None):
@@ -298,15 +326,6 @@ class Resource(object):
         )
 
     def delete(self, wait=False):
-        """
-        Delete resource
-
-        Args:
-            wait (bool): True to wait for pod to be deleted.
-
-        Returns:
-            True if delete succeeded, False otherwise.
-        """
         resource_list = self.api()
         try:
             res = resource_list.delete(name=self.name, namespace=self.namespace)

@@ -25,4 +25,4 @@ def test_linux_bridge_functionality(bridge_attached_vm):
     Start a VM and verify it starts successfully, as an indication of successful
     deployment of linux-bridge.
     """
-    assert bridge_attached_vm.vmi.wait_until_running()
+    bridge_attached_vm.vmi.wait_until_running()

@@ -54,13 +54,13 @@ def test_private_registry_recover_after_missing_configmap(storage_ns):
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap="registry-cert-configmap",
     ) as dv:
-        assert dv.wait_for_status("ImportScheduled", timeout=300)
+        dv.wait_for_status("ImportScheduled", timeout=300)
         # create the configmap with the untrusted certificate
         with ConfigMap(
             name="registry-cert-configmap", namespace=storage_ns.name, data=get_cert()
         ) as configmap:
             assert configmap is not None
-            assert dv.wait_for_status(status="Succeeded", timeout=300)
+            dv.wait_for_status(status="Succeeded", timeout=300)
             assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
             utils.create_vm_with_dv(dv)
 
@@ -95,7 +95,7 @@ def test_private_registry_with_untrusted_certificate(storage_ns):
             storage_class=py_config["storage_defaults"]["storage_class"],
             cert_configmap=configmap.name,
         ) as dv:
-            assert dv.wait_for_status(status="Failed", timeout=300)
+            dv.wait_for_status(status="Failed", timeout=300)
 
 
 def get_cert():
@@ -115,7 +115,7 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=cert_configmap,
     ) as dv:
-        assert dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait_for_status(status="Succeeded", timeout=300)
         assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
         utils.create_vm_with_dv(dv)
 
@@ -183,7 +183,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=None,
     ) as dv:
-        assert dv.wait_for_status(status="Failed", timeout=300)
+        dv.wait_for_status(status="Failed", timeout=300)
 
     # positive flow
     create_dv_and_vm(

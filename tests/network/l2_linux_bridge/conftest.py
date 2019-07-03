@@ -104,7 +104,7 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
 
 def running_vmi(vm):
     assert vm.start(wait=True)
-    assert vm.vmi.wait_until_running()
+    vm.vmi.wait_until_running()
     return vm.vmi
 
 

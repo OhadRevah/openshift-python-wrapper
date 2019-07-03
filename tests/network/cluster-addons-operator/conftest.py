@@ -51,5 +51,5 @@ def bridge_attached_vm(module_namespace):
         networks={LINUX_BRIDGE_NAME: LINUX_BRIDGE_NAME},
         name="oper-test-vm",
     ) as vm:
-        assert vm.start()
+        vm.start()
         yield vm

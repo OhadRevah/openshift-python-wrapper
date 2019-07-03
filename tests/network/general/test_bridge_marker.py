@@ -5,6 +5,7 @@ from pytest_testconfig import config as py_config
 
 from resources import network_attachment_definition as nad
 from resources.namespace import Namespace
+from resources.resource import WaitForStatusTimedOut
 from resources.virtual_machine import VirtualMachine
 
 from tests.network import utils
@@ -114,7 +115,8 @@ def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
 @pytest.mark.polarion("CNV-2234")
 def test_bridge_marker_no_device(bridge_attached_vmi):
     """Check that VMI fails to start when bridge device is missing."""
-    assert not bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+    with pytest.raises(WaitForStatusTimedOut):
+        bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod()
@@ -126,7 +128,7 @@ def test_bridge_marker_no_device(bridge_attached_vmi):
 @pytest.mark.polarion("CNV-2235")
 def test_bridge_marker_device_exists(bridge_device_on_all_nodes, bridge_attached_vmi):
     """Check that VMI successfully starts when bridge device is present."""
-    assert bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+    bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
 
 
 @pytest.mark.polarion("CNV-2309")
@@ -134,7 +136,8 @@ def test_bridge_marker_devices_exist_on_different_nodes(
     non_homogenous_bridges, multi_bridge_attached_vmi
 ):
     """Check that VMI fails to start when attached to two bridges located on different nodes."""
-    assert not multi_bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+    with pytest.raises(WaitForStatusTimedOut):
+        multi_bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = multi_bridge_attached_vmi.virt_launcher_pod()

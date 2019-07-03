@@ -50,8 +50,8 @@ def create_vm_with_dv(dv):
         dv_name=dv.name,
         cloud_init_data=CLOUD_INIT_USER_DATA,
     ) as vm:
-        assert vm.start()
-        assert vm.vmi.wait_until_running()
+        vm.start()
+        vm.vmi.wait_until_running()
         with console.Cirros(vm=vm.name, namespace=dv.namespace) as vm_console:
             vm_console.sendline("lsblk | grep disk | wc -l")
             vm_console.expect("2", timeout=60)

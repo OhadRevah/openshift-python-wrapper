@@ -13,7 +13,7 @@ def fedora_vm(default_client, virt_namespace):
     with test_utils.FedoraVirtualMachine(
         name=name, namespace=virt_namespace.name
     ) as vm:
-        assert vm.start(wait=True)
+        vm.start(wait=True)
         yield vm
 
 

@@ -5,10 +5,26 @@ import logging
 from utilities import utils
 from .node import Node
 from .pod import Pod
-from .resource import TIMEOUT, NamespacedResource
+from .resource import TIMEOUT, NamespacedResource, WaitForStatusTimedOut
 
 LOGGER = logging.getLogger(__name__)
 API_VERSION = "kubevirt.io/v1alpha3"
+
+
+class WaitToBeStartedTimedOut(Exception):
+    """
+    Raises when wait for VM to start is timed out
+    """
+
+    pass
+
+
+class WaitToBeStoppedTimedOut(Exception):
+    """
+    Raises when wait for VM to start is timed out
+    """
+
+    pass
 
 
 def get_base_vmi_spec():
@@ -48,36 +64,42 @@ class VirtualMachine(NamespacedResource):
     def start(self, timeout=TIMEOUT, wait=False):
         """
         Start VM with virtctl
+
         Args:
             timeout (int): Time to wait for the resource.
             wait (bool): If True wait else Not
 
-        Returns:
-            True if VM started, else False
+        Raises:
+            WaitToBeStartedTimedOut: if VM failed to start.
         """
         res = utils.run_virtctl_command(
             command=["start", self.name], namespace=self.namespace
         )[0]
-        if wait and res:
-            return self.wait_for_status(timeout=timeout, status=True)
-        return res
+        if res:
+            if wait:
+                return self.wait_for_status(timeout=timeout, status=True)
+            return
+        raise WaitToBeStartedTimedOut
 
     def stop(self, timeout=TIMEOUT, wait=False):
         """
         Stop VM with virtctl
+
         Args:
             timeout (int): Time to wait for the resource.
             wait (bool): If True wait else Not
 
-        Returns:
-            bool: True if VM stopped, else False
+        Raises:
+            WaitToBeStoppedTimedOut: if VM failed to stop.
         """
         res = utils.run_virtctl_command(
             command=["stop", self.name], namespace=self.namespace
         )[0]
-        if wait and res:
-            return self.wait_for_status(timeout=timeout, status=False)
-        return res
+        if res:
+            if wait:
+                return self.wait_for_status(timeout=timeout, status=False)
+            return
+        raise WaitToBeStoppedTimedOut
 
     def wait_for_status(
         self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
@@ -104,8 +126,8 @@ class VirtualMachine(NamespacedResource):
             resource_version=resource_version,
         ):
             if rsc["raw_object"]["spec"]["running"] == status:
-                return True
-        return False
+                return
+        raise WaitForStatusTimedOut(status)
 
     @property
     def vmi(self):
@@ -168,20 +190,21 @@ class VirtualMachineInstance(NamespacedResource):
             timeout (int): Time to wait for VMI.
             logs (bool): True to extract logs from the VMI pod and from the VMI.
 
-        Returns:
-            bool: True if VMI is running, False if not.
+        Raises:
+            WaitForStatusTimedOut: If VMI failed to run.
         """
-        if not self.wait_for_status(status="Running", timeout=timeout):
+        try:
+            self.wait_for_status(status="Running", timeout=timeout)
+        except WaitForStatusTimedOut:
             if not logs:
-                return False
+                raise
 
             virt_pod = self.virt_launcher_pod()
             if virt_pod:
                 LOGGER.debug(f"{virt_pod.name} *****LOGS*****")
                 LOGGER.debug(virt_pod.log(container="compute"))
 
-            return False
-        return True
+            raise
 
     @property
     def node(self):

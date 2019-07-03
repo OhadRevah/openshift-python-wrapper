@@ -51,7 +51,7 @@ def test_successful_import(storage_ns, images_http_server, file_name, content_ty
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        assert dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait_for_status(status="Succeeded", timeout=300)
         assert PersistentVolumeClaim(
             name="import-http-dv", namespace=storage_ns.name
         ).bound()
@@ -89,7 +89,7 @@ def test_wrong_content_type(storage_ns, images_http_server, file_name, content_t
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        assert dv.wait_for_status(status="Failed", timeout=300)
+        dv.wait_for_status(status="Failed", timeout=300)
 
 
 def create_vm_with_dv(ns_name, content_type, images_http_server, sc):
@@ -101,7 +101,7 @@ def create_vm_with_dv(ns_name, content_type, images_http_server, sc):
         size="500Mi",
         storage_class=sc,
     ) as dv:
-        assert dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait_for_status(status="Succeeded", timeout=300)
         assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
         utils.create_vm_with_dv(dv)
 
@@ -164,9 +164,7 @@ def test_import_invalid_qcow(storage_ns, images_http_server, dv_name, file_name)
         size="5Gi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        assert dv.wait_for_status(
-            status=ImportFromHttpDataVolume.Status.FAILED, timeout=90
-        )
+        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=90)
 
 
 @pytest.mark.parametrize(
@@ -196,4 +194,4 @@ def test_unpack_compressed(storage_ns, images_http_server, file_name, content_ty
         size="200Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        assert dv.wait_for_status(status="Failed", timeout=300)
+        dv.wait_for_status(status="Failed", timeout=300)
