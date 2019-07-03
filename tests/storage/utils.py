@@ -4,11 +4,13 @@ import os
 import requests
 import logging
 import urllib.request
-import tests.utils
 
-from utilities import utils
+from resources.pod import Pod
 from resources.virtual_machine import VirtualMachine
+import tests.utils
 from utilities import console
+from utilities import utils
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +42,43 @@ class VirtualMachineWithDV(VirtualMachine):
             },
             {"name": "dv-disk", "dataVolume": {"name": self._dv_name}},
         ]
+        return res
+
+
+class PodWithPVC(Pod):
+    def __init__(self, name, namespace, pvc_name):
+        super().__init__(name=name, namespace=namespace)
+        self._pvc_name = pvc_name
+
+    def _to_dict(self):
+        res = super()._to_dict()
+
+        res.update(
+            {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "runner",
+                            "image": "quay.io/redhat/cnv-tests-net-util-container",
+                            "command": [
+                                "/bin/bash",
+                                "-c",
+                                "echo ok > /tmp/healthy && sleep INF",
+                            ],
+                            "volumeMounts": [
+                                {"mountPath": "/pvc", "name": self._pvc_name}
+                            ],
+                        }
+                    ],
+                    "volumes": [
+                        {
+                            "name": self._pvc_name,
+                            "persistentVolumeClaim": {"claimName": self._pvc_name},
+                        }
+                    ],
+                }
+            }
+        )
         return res
 
 

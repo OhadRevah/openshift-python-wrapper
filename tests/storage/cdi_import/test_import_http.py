@@ -52,9 +52,13 @@ def test_successful_import(storage_ns, images_http_server, file_name, content_ty
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait_for_status(status="Succeeded", timeout=300)
-        assert PersistentVolumeClaim(
-            name="import-http-dv", namespace=storage_ns.name
-        ).bound()
+        pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
+        assert pvc.bound()
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+            assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
 @pytest.mark.parametrize(
