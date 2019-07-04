@@ -1,0 +1,94 @@
+import time
+import logging
+
+from .resource import Resource
+
+from openshift.dynamic.exceptions import ConflictError
+
+from resources.utils import TimeoutSampler
+
+LOGGER = logging.getLogger(__name__)
+
+SLEEP = 1
+TIMEOUT = 120
+
+
+class NodeNetworkState(Resource):
+
+    api_version = "nmstate.io/v1alpha1"
+
+    def __init__(self, name):
+        super().__init__(name=name)
+        spec = self.instance.to_dict()["spec"]
+        if "desiredState" in spec:
+            self.desired_state = spec["desiredState"]
+        else:
+            self.desired_state = {"interfaces": []}
+
+    def set_interface(self, interface):
+
+        # First drop the interface is's already in the list
+        interfaces = [
+            i
+            for i in self.desired_state["interfaces"]
+            if not (i["name"] == interface["name"])
+        ]
+
+        # Add the interface
+        interfaces.append(interface)
+        self.desired_state["interfaces"] = interfaces
+
+    def _to_dict(self):
+        res = super()._base_body()
+        res.update(
+            {
+                "spec": {
+                    "nodeName": self.name,
+                    "managed": True,
+                    "desiredState": self.desired_state,
+                }
+            }
+        )
+        return res
+
+    def apply(self):
+        resource = self._to_dict()
+        retries_on_conflict = 3
+        while True:
+            try:
+                resource["metadata"] = self.instance.to_dict()["metadata"]
+                self.update(resource)
+                break
+            except ConflictError as e:
+                retries_on_conflict -= 1
+                if retries_on_conflict == 0:
+                    raise e
+                time.sleep(1)
+
+    def wait_until_up(self, name):
+        def _find_up_interface():
+            for interface in self.instance.status.currentState.interfaces:
+                if interface["name"] == name and interface["state"] == "up":
+                    return interface
+            return None
+
+        LOGGER.info(f"Checking if interface {name} is up")
+        samples = TimeoutSampler(timeout=TIMEOUT, sleep=SLEEP, func=_find_up_interface)
+        for sample in samples:
+            if sample:
+                break
+
+    def wait_until_deleted(self, name):
+        def _find_deleted_interface():
+            for interface in self.instance.status.currentState.interfaces:
+                if interface["name"] == name:
+                    return interface
+            return None
+
+        LOGGER.info(f"Checking if interface {name} is deleted")
+        samples = TimeoutSampler(
+            timeout=TIMEOUT, sleep=SLEEP, func=_find_deleted_interface
+        )
+        for sample in samples:
+            if not sample:
+                break

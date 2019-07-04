@@ -8,6 +8,11 @@ import os.path
 
 import pytest
 
+import requests
+import yaml
+
+from pytest_testconfig import config as py_config
+
 from resources.daemonset import DaemonSet
 from resources.pod import Pod
 from utilities import utils
@@ -28,6 +33,7 @@ class NetUtilityDaemonSet(DaemonSet):
 
 @pytest.fixture(scope="session", autouse=True)
 def network_init(
+    nmstate,
     net_utility_daemonset,
     schedulable_node_ips,
     network_utility_pods,
@@ -38,6 +44,50 @@ def network_init(
     Create network test namespaces
     """
     pass
+
+
+@pytest.fixture(scope="session")
+def nmstate(default_client):
+    """
+    Deploy kubernetes-nmstate into the nmstate namespace.
+
+    This session fixture deploys kubernetes-nmstate [1] into the system. this is
+    used to configure node networking like creating linux bridge, bonding interfaces, etc.
+
+    [1] https://github.com/nmstate/kubernetes-nmstate
+    """
+
+    ds = DaemonSet(name="nmstate-handler", namespace="nmstate")
+
+    release_url = "https://github.com/nmstate/kubernetes-nmstate/releases/download/{}/".format(
+        py_config["nmstate_version"]
+    )
+    resource_files = [
+        "namespace.yaml",
+        "service_account.yaml",
+        "role.yaml",
+        "role_binding.yaml",
+        "scc.yaml",
+        "nmstate_v1alpha1_nodenetworkstate_crd.yaml",
+        "nmstate_v1alpha1_nodenetworkconfigurationpolicy_crd.yaml",
+        "operator.yaml",
+    ]
+
+    resource_dicts = []
+    for resource_file in resource_files:
+        r = requests.get(release_url + resource_file)
+        for resource_dict in yaml.safe_load_all(r.content):
+            resource_dicts.append(resource_dict)
+
+    for resource_dict in resource_dicts:
+        assert ds.create_from_dict(dyn_client=default_client, data=resource_dict)
+
+    ds.wait_until_deployed()
+    yield ds
+    for resource_dict in resource_dicts:
+        ds.delete_from_dict(dyn_client=default_client, data=resource_dict)
+
+    ds.delete(wait=True)
 
 
 @pytest.fixture(scope="session")

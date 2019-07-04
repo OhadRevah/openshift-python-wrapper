@@ -6,6 +6,9 @@ import pexpect
 from pytest_testconfig import config as py_config
 
 from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
+
+from tests.network.nmstate import linux_bridge
+
 from utilities import console
 
 LOGGER = logging.getLogger(__name__)
@@ -20,45 +23,49 @@ class CommandExecFailed(Exception):
 
 
 @contextlib.contextmanager
-def _bridge(pod, name, vlan_filtering, nic, mtu):
+def _bridge(pod, name, nic, mtu, disable_vlan_filtering):
     def _set_mtu(iface, mtu):
         return ["ip", "link", "set", iface, "mtu", mtu]
 
     iface_mtu = None
-    LOGGER.info(f"Adding bridge {name} using {pod.name}")
-    pod.execute(command=["ip", "link", "add", name, "type", "bridge"])
     try:
-        if vlan_filtering:
+        LOGGER.info(f"Adding bridge {name} to {pod.node.name} using nmstate")
+        linux_bridge.create(pod.node.name, name, nic)
+
+        # This is a temporal measure there are some tests where we need
+        # trunk but that will be fixed at future versions of CNI linux-bridge [1]
+        # [1] https://jira.coreos.com/browse/CNV-1804
+        if disable_vlan_filtering:
             pod.execute(
-                command=[
+                [
                     "ip",
                     "link",
                     "set",
+                    "dev",
                     name,
                     "type",
                     "bridge",
                     "vlan_filtering",
-                    "1",
+                    "0",
                 ]
             )
+
         if mtu:
             iface_mtu = pod.execute(
                 command=["cat", f"/sys/class/net/{nic}/mtu"]
             ).strip()
             pod.execute(command=_set_mtu(name, mtu))
 
-        pod.execute(command=["ip", "link", "set", "dev", name, "up"])
         if nic is not None:
             if mtu:
                 pod.execute(command=_set_mtu(nic, mtu))
-            pod.execute(command=["ip", "link", "set", "dev", nic, "master", name])
         yield
     finally:
         if nic is not None and mtu and iface_mtu:
             pod.execute(command=_set_mtu(nic, iface_mtu))
 
-        LOGGER.info(f"Deleting bridge {name} using {pod.name}")
-        pod.execute(command=["ip", "link", "del", name])
+        LOGGER.info(f"Deleting bridge {name} at {pod.node.name} using nmstate")
+        linux_bridge.delete(pod.node.name, name)
 
 
 class Bridge:
@@ -66,11 +73,11 @@ class Bridge:
         self,
         name,
         worker_pods,
-        vlan_filtering=False,
         nic=None,
         nodes_nics=None,
         master_index=None,
         mtu=None,
+        disable_vlan_filtering=False,
     ):
         """
         Create bridge on all nodes (Using privileged pods)
@@ -78,19 +85,19 @@ class Bridge:
         Args:
             name (str): Bridge name.
             worker_pods (list): List of Pods instances.
-            vlan_filtering (bool): True to set vlan_filtering 1 on the bridge.
             nic (str): The bridge's slave nic, exclusive with nodes_nics and master_index.
             nodes_nics (dict): Dict of {nodes: [NICs]}. get it from 'nodes_active_nics' fixture, exclusive with nic.
             master_index (int): The index on the NIC to use, exclusive with nic.
             mtu (int): MTU size
+            disable_vlan_filtering: no vlan_filtering configured at node bridges
         """
         self.name = name
         self._worker_pods = worker_pods
         self.nic = nic
         self.master_index = master_index
-        self.vlan_filtering = vlan_filtering
         self.nodes_nics = nodes_nics
         self.mtu = mtu
+        self.disable_vlan_filtering = disable_vlan_filtering
         self._stack = None
 
     def __enter__(self):
@@ -104,7 +111,11 @@ class Bridge:
                     nic_to_bridge = self.nodes_nics[pod.node.name][self.master_index]
                 stack.enter_context(
                     _bridge(
-                        pod, self.name, self.vlan_filtering, nic_to_bridge, self.mtu
+                        pod,
+                        self.name,
+                        nic_to_bridge,
+                        self.mtu,
+                        self.disable_vlan_filtering,
                     )
                 )
             self._stack = stack.pop_all()

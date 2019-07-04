@@ -16,6 +16,8 @@ bare_metal_cluster: False
 distribution: downstream
 
 region: USA
+nmstate_version: v0.6.0
+
 
 USA:
   http_server:  http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/

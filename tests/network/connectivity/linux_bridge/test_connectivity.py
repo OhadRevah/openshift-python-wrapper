@@ -102,7 +102,6 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
         name=BR1TEST,
         worker_pods=network_utility_pods,
         master_index=master_index,
-        vlan_filtering=True,
         nodes_nics=nodes_active_nics,
     ) as br:
         if not multi_nics_nodes:

@@ -188,6 +188,7 @@ def bridge_device(network_utility_pods, multi_nics_nodes, nodes_active_nics):
         worker_pods=network_utility_pods,
         master_index=master_index,
         nodes_nics=nodes_active_nics,
+        disable_vlan_filtering=True,
     ) as br:
         if not multi_nics_nodes:
             with VXLANTunnel(
