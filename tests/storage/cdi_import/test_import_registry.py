@@ -129,7 +129,7 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
             None,
             ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2149")),
+            marks=(pytest.mark.polarion("CNV-2041")),
         ),
         pytest.param(
             "import-registry-dockerhub-no-content-type-dv",
@@ -137,7 +137,7 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
             None,
             None,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2197")),
+            marks=(pytest.mark.polarion("CNV-2195")),
         ),
         pytest.param(
             "import-registry-dockerhub-empty-content-type-dv",
@@ -145,7 +145,7 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
             None,
             "",
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2195")),
+            marks=(pytest.mark.polarion("CNV-2197")),
         ),
         pytest.param(
             "import-registry-quay-dv",
