@@ -104,7 +104,10 @@ class PolarionIds(object):
     def _non_decorated_fixture(self, f, polarion_id):
         param = ""
         if isinstance(polarion_id, ast.Call):
-            param = polarion_id.args[0].elts[0].s
+            if isinstance(polarion_id.args[0], ast.Str):
+                param = polarion_id.args[0].s
+            else:
+                param = polarion_id.args[0].elts[0].s
 
         yield (
             polarion_id.lineno,
