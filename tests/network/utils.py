@@ -11,7 +11,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 @contextlib.contextmanager
-def _bridge(pod, name, vlan_filtering, nic):
+def _bridge(pod, name, vlan_filtering, nic, mtu):
+    def _set_mtu(iface, mtu):
+        return ["ip", "link", "set", iface, "mtu", mtu]
+
+    iface_mtu = None
     LOGGER.info(f"Adding bridge {name} using {pod.name}")
     pod.execute(command=["ip", "link", "add", name, "type", "bridge"])
     try:
@@ -28,11 +32,22 @@ def _bridge(pod, name, vlan_filtering, nic):
                     "1",
                 ]
             )
+        if mtu:
+            iface_mtu = pod.execute(
+                command=["cat", f"/sys/class/net/{nic}/mtu"]
+            ).strip()
+            pod.execute(command=_set_mtu(name, mtu))
+
         pod.execute(command=["ip", "link", "set", "dev", name, "up"])
         if nic is not None:
+            if mtu:
+                pod.execute(command=_set_mtu(nic, mtu))
             pod.execute(command=["ip", "link", "set", "dev", nic, "master", name])
         yield
     finally:
+        if nic is not None and mtu and iface_mtu:
+            pod.execute(command=_set_mtu(nic, iface_mtu))
+
         LOGGER.info(f"Deleting bridge {name} using {pod.name}")
         pod.execute(command=["ip", "link", "del", name])
 
@@ -45,6 +60,7 @@ class Bridge:
         vlan_filtering=False,
         nodes_nics=None,
         master_index=None,
+        mtu=None,
     ):
         """
         Create bridge on all nodes (Using privileged pods)
@@ -55,12 +71,14 @@ class Bridge:
             vlan_filtering (bool): True to set vlan_filtering 1 on the bridge.
             nodes_nics (dict): Dict of {nodes: [NICs]}. get it from 'nodes_active_nics' fixture.
             master_index (int): The index on the NIC to use
+            mtu (int): MTU size
         """
         self.name = name
         self._worker_pods = worker_pods
         self.master_index = master_index
         self.vlan_filtering = vlan_filtering
         self.nodes_nics = nodes_nics
+        self.mtu = mtu
         self._stack = None
 
     def __enter__(self):
@@ -72,7 +90,9 @@ class Bridge:
                     if self.master_index
                     else None
                 )
-                stack.enter_context(_bridge(pod, self.name, self.vlan_filtering, nic))
+                stack.enter_context(
+                    _bridge(pod, self.name, self.vlan_filtering, nic, self.mtu)
+                )
             self._stack = stack.pop_all()
         return self
 
@@ -189,7 +209,7 @@ def get_vmi_ip_by_name(vmi, name):
     raise IpNotFound(name)
 
 
-def run_test_connectivity(src_vm, dst_ip, positive):
+def run_test_connectivity(src_vm, dst_ip, positive, mtu=None):
     """
     Check connectivity
     """
@@ -197,8 +217,12 @@ def run_test_connectivity(src_vm, dst_ip, positive):
     LOGGER.info(
         f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm.name}"
     )
+    ping_cmd = f"ping -w 3 {dst_ip}"
+    if mtu:
+        ping_cmd += f" -s {mtu} -M do"
+
     with console.Fedora(vm=src_vm.name, namespace=src_vm.namespace) as src_vm_console:
-        src_vm_console.sendline(f"ping -w 3 {dst_ip}")
+        src_vm_console.sendline(ping_cmd)
         src_vm_console.expect(expected)
 
 
