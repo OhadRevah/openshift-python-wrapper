@@ -342,18 +342,21 @@ class Resource(object):
         self.api().patch(body=resource_dict, namespace=self.namespace)
 
     @classmethod
-    def get(cls, dyn_client, *args, **kwargs):
+    def get(cls, dyn_client, singular_name=None, *args, **kwargs):
         """
         Get resources
 
         Args:
             dyn_client (DynamicClient): Open connection to remote cluster
+            singular_name (str): Resource kind (in lowercase), in use where we have multiple matches for resource
 
         Returns:
             generator: Generator of Resources of cls.kind
         """
         for resource_field in (
-            dyn_client.resources.get(kind=cls.kind, api_version=cls.api_version)
+            dyn_client.resources.get(
+                kind=cls.kind, api_version=cls.api_version, singular_name=singular_name
+            )
             .get(*args, **kwargs)
             .items
         ):
@@ -380,18 +383,22 @@ class NamespacedResource(Resource):
         self.namespace = namespace
 
     @classmethod
-    def get(cls, dyn_client, *args, **kwargs):
+    def get(cls, dyn_client, singular_name=None, *args, **kwargs):
         """
         Get resources
 
         Args:
             dyn_client (DynamicClient): Open connection to remote cluster
+            singular_name (str): Resource kind (in lowercase), in use where we have multiple matches for resource
+
 
         Returns:
             generator: Generator of Resources of cls.kind
         """
         for resource_field in (
-            dyn_client.resources.get(kind=cls.kind, api_version=cls.api_version)
+            dyn_client.resources.get(
+                kind=cls.kind, api_version=cls.api_version, singular_name=singular_name
+            )
             .get(*args, **kwargs)
             .items
         ):
