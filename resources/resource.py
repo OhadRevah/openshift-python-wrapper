@@ -396,7 +396,7 @@ class NamespacedResource(Resource):
         Returns:
             generator: Generator of Resources of cls.kind
         """
-        get_kwargs = {"singular_name": "singular_name"} if singular_name else {}
+        get_kwargs = {"singular_name": singular_name} if singular_name else {}
         for resource_field in (
             dyn_client.resources.get(
                 kind=cls.kind, api_version=cls.api_version, **get_kwargs
