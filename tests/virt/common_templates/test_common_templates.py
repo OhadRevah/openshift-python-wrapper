@@ -64,6 +64,10 @@ def namespace():
             ["rhel-images/rhel-8/rhel-8.qcow2", "8.0", "rhel8-server-tiny"],
             marks=(pytest.mark.polarion("CNV-2210")),
         ),
+        pytest.param(
+            ["rhel-images/rhel-610/rhel-610.qcow2", "6", "rhel6-server-tiny"],
+            marks=(pytest.mark.polarion("CNV-2211")),
+        ),
     ]
 )
 def data_volume(request, http_server, namespace):
@@ -100,12 +104,12 @@ def test_common_templates_with_rhel(data_volume, namespace):
             ) as vm:
                 assert vm.start()
                 assert vm.vmi.wait_until_running()
-                assert test_utils.wait_for_vm_interfaces(vmi=vm.vmi)
                 with console.Fedora(
                     vm=VM_NAME,
                     username="cloud-user",
                     password="redhat",
                     namespace=namespace.name,
+                    timeout=1100,
                 ) as vm_console:
                     vm_console.sendline(
                         f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"

@@ -8,7 +8,7 @@ LOGGER = logging.getLogger(__name__)
 class Console(object):
     _USERNAME = _PASSWORD = None
 
-    def __init__(self, vm, namespace, username=None, password=None):
+    def __init__(self, vm, namespace, username=None, password=None, timeout=30):
         """
         Connect to VM console
 
@@ -21,6 +21,7 @@ class Console(object):
         self.vm = vm
         self.username = username or self._USERNAME
         self.password = password or self._PASSWORD
+        self.timeout = timeout
         self.namespace = namespace
         self.child = None
 
@@ -56,7 +57,7 @@ class Console(object):
         if self.namespace:
             cmd += " -n {namespace}".format(namespace=self.namespace)
 
-        self.child = pexpect.spawn(cmd, encoding="utf-8")
+        self.child = pexpect.spawn(cmd, timeout=self.timeout)
         return self.connect()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
