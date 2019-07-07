@@ -12,7 +12,7 @@ from resources.persistent_volume_claim import PersistentVolumeClaim
 from tests.storage import utils
 
 QCOW_IMG = "cirros-qcow2.img"
-TAR_IMG = "cirros-qcow2.tar.gz"
+TAR_IMG = "archive.tar"
 CLOUD_INIT_USER_DATA = r"""
             #!/bin/sh
             echo 'printed from cloud-init userdata'"""
