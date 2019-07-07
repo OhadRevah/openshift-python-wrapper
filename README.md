@@ -101,3 +101,8 @@ patch is listed in comments to the review request.
 Code style must pass flake8-black.
 The plugin: https://github.com/peterjc/flake8-black
 How to install and use black tool: https://github.com/python/black
+
+To check for PEP 8 issues locally run:
+```
+tox
+```
