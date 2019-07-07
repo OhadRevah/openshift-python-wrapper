@@ -39,11 +39,15 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         cni_type="cnv-bridge",
         vlan=None,
         client=None,
+        tuning_type=None,
+        mtu=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self._bridge_name = bridge_name
         self._cni_type = cni_type
         self._vlan = vlan
+        self._tuning_type = tuning_type
+        self._mtu = mtu
 
     @property
     def resource_name(self):
@@ -51,11 +55,16 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
 
     def _to_dict(self):
         res = super()._to_dict()
-        spec_config = {
-            "cniVersion": "0.3.1",
-            "type": self._cni_type,
-            "bridge": self._bridge_name,
-        }
+        spec_config = {"cniVersion": "0.3.1"}
+        bridge_dict = {"type": self._cni_type, "bridge": self._bridge_name}
+        if self._tuning_type:
+            spec_config.update({"plugins": [bridge_dict]})
+            tuning_dict = {"type": self._tuning_type}
+            if self._mtu:
+                tuning_dict.update({"mtu": self._mtu})
+            spec_config["plugins"].append(tuning_dict)
+        else:
+            spec_config.update(bridge_dict)
         if self._vlan:
             spec_config["vlan"] = self._vlan
 

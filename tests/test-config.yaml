@@ -6,6 +6,7 @@ test_performance_over_pod_network:
 
 template_defaults:
   bridge_cni_name: cnv-bridge
+  bridge_tuning_name: cnv-tuning
 
 storage_defaults:
   storage_class: local-sc
