@@ -14,7 +14,7 @@ from utilities.console import Fedora
 #       .........                                                                                      ..........
 #       |       |---eth1:192.168.0.1:                                              192.168.0.2:---eth1:|        |
 #       |       |---eth1.10:192.168.1.1 :dot1q test :                            192.168.1.2:eth1.10---|        |
-#       | VM-A  |---eth2:192.168.2.1    : multicast(LLDP), custom eth type test:    192.168.2.2:eth2---|  VM-B  |
+#       | VM-A  |---eth2:192.168.2.1    : multicast(ICMP), custom eth type test:    192.168.2.2:eth2---|  VM-B  |
 #       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
 #       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
 
@@ -52,7 +52,7 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             "password: fedora\n"
             "chpasswd: {expire: False}\n"
             "bootcmd:\n"
-            "  - dnf install -y lldpad qemu-guest-agent kernel-modules-$(uname -r) nmap dhcp tcpdump\n"
+            "  - dnf install -y qemu-guest-agent kernel-modules-$(uname -r) nmap dhcp tcpdump\n"
             "  - systemctl start qemu-guest-agent\n"
             "  - nmcli con add type ethernet con-name eth1 ifname eth1\n"
             f"  - nmcli con mod eth1 ipv4.addresses {self.ip_addresses[0]}/24 ipv4.method manual\n"
@@ -70,7 +70,6 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             "  - modprobe mpls_router\n"  # In order to test mpls we need to load driver
             "  - sysctl -w net.mpls.platform_labels=1000\n"  # Activate mpls labeling feature
             "  - sysctl -w net.mpls.conf.eth4.input=1\n"  # Allow incoming mpls traffic
-            "  - systemctl start lldpad\n"  # In order to test multicast traffic LLDP daemon is used
             "  - sysctl -w net.ipv4.conf.all.arp_ignore=1\n"  # 2 kernel flags are used to disable wrong arp behavior
             "  - sysctl -w net.ipv4.conf.all.arp_announce=2\n"  # Send arp reply only if ip belongs to the interface
             f"  - ip addr add {self.mpls_local_ip} dev lo\n"
@@ -78,13 +77,7 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             "  - nmcli connection up eth4\n"  # In order to add mpls route we need to make sure that connection is UP
             f"  - ip route add {mpls_dest_ip} encap mpls {mpls_dest_tag} via inet {mpls_route_next_hop}\n"
             "  - nmcli connection up eth2\n"
-            "  - lldptool set-lldp -i eth2 adminStatus=rxtx\n"  # Allow to LLDP daemon to Receive/Transmit frames
-            # To enable the broadcasting of some more LLDP key/value pairs:
-            "  - lldptool -T -i eth2 -V sysName enableTx=yes\n"  # System Name TLV
-            "  - lldptool -T -i eth2 -V portDesc enableTx=yes\n"  # Port Description TLV
-            "  - lldptool -T -i eth2 -V sysDesc enableTx=yes\n"  # System Description TLV
-            "  - lldptool -T -i eth2 -V sysCap enableTx=yes\n"  # System Capacity TLV
-            "  - lldptool -T -i eth2 -V mngAddr enableTx=yes\n"  # Management Address
+            "  - ip route add 224.0.0.0/4 dev eth2\n"
         ) + cloud_init_cmd
 
         networks = {}
@@ -192,9 +185,9 @@ def dhcp_nad(namespace):
 @pytest.fixture(scope="class")
 def custom_eth_type_llpd_nad(namespace):
     with bridge_nad(
-        namespace=namespace, name="custom-eth-type-lldp", bridge=BRIDGE_BR1
-    ) as custom_eth_type_lldp:
-        yield custom_eth_type_lldp
+        namespace=namespace, name="custom-eth-type-icmp", bridge=BRIDGE_BR1
+    ) as custom_eth_type_icmp:
+        yield custom_eth_type_icmp
 
 
 @pytest.fixture(scope="class")
@@ -234,13 +227,14 @@ def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_ni
 
 @pytest.fixture(scope="class")
 def vm_a(namespace, all_nads, bridge_device):
-    dhcp_server_config = (
+    cloud_init_script = (
         "  - sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
         "\\nauthoritative;\\nsubnet 192.168.3.0 netmask 255.255.255.0 {"
         "\\noption subnet-mask 255.255.255.0;\\nrange  "
         f"{VMB_DHCP_ADDRESS} {VMB_DHCP_ADDRESS};"
-        "\\n}' > /etc/dhcp/dhcpd.conf\""
-    )  # Inject dhcp configuration to dhcpd.conf
+        "\\n}' > /etc/dhcp/dhcpd.conf\"\n"  # Inject dhcp configuration to dhcpd.conf
+        "  - sysctl net.ipv4.icmp_echo_ignore_broadcasts=0\n"  # Enable multicast support
+    )
 
     interface_ip_addresses = [
         "192.168.0.1",
@@ -254,7 +248,7 @@ def vm_a(namespace, all_nads, bridge_device):
         namespace=namespace.name,
         interfaces=all_nads,
         ip_addresses=interface_ip_addresses,
-        cloud_init_script=dhcp_server_config,
+        cloud_init_script=cloud_init_script,
         mpls_local_tag=VMA_MPLS_ROUTE_TAG,
         mpls_local_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_ip=VMB_MPLS_LOOPBACK_IP,

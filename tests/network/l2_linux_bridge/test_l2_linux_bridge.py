@@ -89,13 +89,15 @@ class TestL2LinuxBridge:
                 )  #: Expected output. This is OK signal from nping
             vmb_console.expect(CUSTOM_ETH_PROTOCOL)
 
-    @pytest.mark.polarion("CNV-2283")
-    @pytest.mark.xfail(reason="https://github.com/kubevirt/kubevirt/issues/2292")
-    def test_lldp_multicast(self, configured_vm_a, configured_vm_b):
+    @pytest.mark.polarion("CNV-2674")
+    def test_icmp_multicast(self, namespace, configured_vm_a, configured_vm_b):
         """
-        Test multicast traffic via L2 linux bridge. LLDP protocol is used for the test. LLDP server installed in both
-        VMs
+        Test multicast traffic(ICMP) via linux bridge
         """
-        with _open_console(configured_vm_a) as vma_console:
-            vma_console.sendline("sudo lldptool -t -n -i eth2")
-            vma_console.expect(f"Linux {configured_vm_b.name}")
+        run_test_connectivity(
+            src_vm=configured_vm_b.name,
+            dst_vm=configured_vm_a.name,
+            dst_ip="224.0.0.1",
+            positive=True,
+            namespace=namespace.name,
+        )
