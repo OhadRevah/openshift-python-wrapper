@@ -92,6 +92,7 @@ def nodes_active_nics(network_utility_pods):
             if nic_state.strip() == "up":
                 if nic in [i for i in default_gw.splitlines() if "default" in i][0]:
                     nodes_nics[pod.node.name].insert(0, nic)
+                    continue
 
                 nodes_nics[pod.node.name].append(nic)
     return nodes_nics
