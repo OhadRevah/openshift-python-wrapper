@@ -108,16 +108,6 @@ class VirtualMachine(NamespacedResource):
         return False
 
     @property
-    def node(self):
-        """
-        Get the node name where the VM is running
-
-        Returns:
-            Node: Node
-        """
-        return Node(name=self.instance.status.nodeName)
-
-    @property
     def vmi(self):
         """
         Get VMI
@@ -193,6 +183,16 @@ class VirtualMachineInstance(NamespacedResource):
 
             return False
         return True
+
+    @property
+    def node(self):
+        """
+        Get the node name where the VM is running
+
+        Returns:
+            Node: Node
+        """
+        return Node(name=self.instance.status.nodeName)
 
 
 class VirtualMachineInstanceMigration(NamespacedResource):

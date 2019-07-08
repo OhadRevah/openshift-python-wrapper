@@ -19,21 +19,17 @@ BR1VLAN100 = "br1vlan100"
 NETWORKS = {"net1": BR1TEST, "net2": BR1VLAN100}
 
 
-def count_veth_devices_on_host(pod, pod_container):
+def count_veth_devices_on_host(pod):
     """
     Return how many veth devices exist on the host running pod
 
     Args:
         pod (Pod): Pod object.
-        pod_container (str): Pod container name.
 
     Returns:
         int: number of veth devices on host
     """
-    out = pod.execute(
-        command=["bash", "-c", "ip -o link show type veth | wc -l"],
-        container=pod_container,
-    )
+    out = pod.execute(command=["bash", "-c", "ip -o link show type veth | wc -l"])
 
     return int(out.strip())
 
@@ -115,23 +111,16 @@ def test_veth_removed_from_host_after_vm_deleted(
     Check that veth interfaces are removed from host after VM deleted
     """
     for vm in (bridge_attached_vma, bridge_attached_vmb):
-        vm_interfaces = vm.instance.status.interfaces or []
+        vmi_interfaces = vm.vmi.instance.status.interfaces or []
         for pod in network_utility_pods:
-            pod_container = pod.containers()[0].name
-            if pod.node.name == vm.node.name:
-                host_veth_before_delete = count_veth_devices_on_host(pod, pod_container)
+            if pod.node.name == vm.vmi.node.name:
+                host_veth_before_delete = count_veth_devices_on_host(pod)
+                expect_host_veth = host_veth_before_delete - len(vmi_interfaces)
                 assert vm.delete(wait=True)
-                expect_host_veth = host_veth_before_delete - len(vm_interfaces)
 
                 sampler = utils.TimeoutSampler(
-                    timeout=30,
-                    sleep=1,
-                    func=lambda pod, pod_container, expect_host_veth: count_veth_devices_on_host(
-                        pod, pod_container
-                    )
-                    == expect_host_veth,
-                    pod=pod,
-                    pod_container=pod_container,
-                    expect_host_veth=expect_host_veth,
+                    timeout=30, sleep=1, func=count_veth_devices_on_host, pod=pod
                 )
-                sampler.wait_for_func_status(result=True)
+                for sample in sampler:
+                    if sample == expect_host_veth:
+                        return True
