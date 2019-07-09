@@ -131,7 +131,6 @@ class VirtualMachine(NamespacedResource):
 class VirtualMachineInstance(NamespacedResource):
     """
     Virtual Machine Instance object, inherited from Resource.
-    Implements actions start / stop / status / wait for VM status / is running
     """
 
     api_version = API_VERSION
@@ -193,6 +192,18 @@ class VirtualMachineInstance(NamespacedResource):
             Node: Node
         """
         return Node(name=self.instance.status.nodeName)
+
+    def get_xml(self):
+        """
+        Get virtual machine instance XML
+        Returns:
+            xml_output(string): VMI XML in the multi-line string
+        """
+        pod = Pod(self.virt_launcher_pod().name, self.namespace, client=self.client)
+        xml_get_cmd = ["virsh", "dumpxml", f"{self.namespace}_{self.name}"]
+        command_txt = " ".join(xml_get_cmd)
+        LOGGER.info(f"running command {command_txt} in the pod {pod.name}")
+        return pod.execute(command=xml_get_cmd, container="compute")
 
 
 class VirtualMachineInstanceMigration(NamespacedResource):
