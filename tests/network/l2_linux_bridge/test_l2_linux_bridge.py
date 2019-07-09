@@ -1,9 +1,11 @@
 import contextlib
-import pytest
 
+import pytest
+from pytest_testconfig import config as py_config
+
+from resources.utils import TimeoutSampler
 from tests.network.utils import get_vmi_ip_by_name, run_test_connectivity
 from utilities.console import Fedora
-from resources.utils import TimeoutSampler
 
 CUSTOM_ETH_PROTOCOL = (
     "0x88B6"
@@ -27,7 +29,14 @@ class TestL2LinuxBridge:
         "dst_ip",
         [
             pytest.param(
-                "configured_vm_b.dot1q_ip", marks=(pytest.mark.polarion("CNV-2277"))
+                "configured_vm_b.dot1q_ip",
+                marks=(
+                    pytest.mark.polarion("CNV-2277"),
+                    pytest.mark.skipif(
+                        py_config["bare_metal_cluster"],
+                        reason="Missing VLAN config on the switch [Ticket PNT0584216]",
+                    ),
+                ),
             ),
             pytest.param(
                 "configured_vm_b.mpls_local_ip",

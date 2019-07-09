@@ -1,6 +1,7 @@
 import logging
 import urllib.error
 import urllib.request
+import yaml
 
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
@@ -78,14 +79,12 @@ class FedoraVirtualMachine(VirtualMachine):
         client=None,
         interfaces=None,
         networks=None,
-        cloud_init_user_data=None,
         node_selector=None,
-        **vm_attr
+        **vm_attr,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.interfaces = interfaces or []
         self.networks = networks or {}
-        self.cloud_init_user_data = cloud_init_user_data
         self.node_selector = node_selector
         self.vm_attrs = vm_attr
         self.vm_attrs_to_use = self.vm_attrs or {
@@ -94,12 +93,24 @@ class FedoraVirtualMachine(VirtualMachine):
             "memory": "1024Mi",
         }
 
+    def _cloud_init_user_data(self):
+        return {
+            "password": "fedora",
+            "chpasswd": "{ expire: False }",
+            "runcmd": [
+                "systemctl start qemu-guest-agent",
+                "sed -i s/'PasswordAuthentication no'/'PasswordAuthentication yes'/g /etc/ssh/sshd_config",
+                "systemctl restart sshd",
+            ],
+            "bootcmd": ["dnf install -y qemu-guest-agent"],
+        }
+
     def _to_dict(self):
         res = super()._to_dict()
         json_out = utils.generate_yaml_from_template(
             file_="tests/manifests/vm-fedora.yaml",
             name=self.name,
-            **self.vm_attrs_to_use
+            **self.vm_attrs_to_use,
         )
 
         res["metadata"] = json_out["metadata"]
@@ -115,11 +126,12 @@ class FedoraVirtualMachine(VirtualMachine):
                 {"name": iface_name, "multus": {"networkName": network}}
             )
 
-        if self.cloud_init_user_data:
-            for vol in res["spec"]["template"]["spec"]["volumes"]:
-                if vol["name"] == "cloudinitdisk":
-                    vol["cloudInitNoCloud"]["userData"] = self.cloud_init_user_data
-                    break
+        for vol in res["spec"]["template"]["spec"]["volumes"]:
+            if vol["name"] == "cloudinitdisk":
+                vol["cloudInitNoCloud"]["userData"] = yaml.dump(
+                    self._cloud_init_user_data()
+                )
+                break
 
         if self.node_selector:
             res["spec"]["template"]["spec"]["nodeSelector"] = {

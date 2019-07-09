@@ -12,34 +12,21 @@ CHECK_DMIDECODE_PACKAGE = (
     "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward' | wc -l\n"
 )
 
-CLOUD_INIT_USER_DATA = r"""
-    #cloud-config
-    password: fedora
-    chpasswd: { expire: False }
-    bootcmd:
-      - dnf install -y dmidecode qemu-guest-agent
-    runcmd:
-      - systemctl start qemu-guest-agent"""
-
 
 class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
-    def __init__(
-        self,
-        name,
-        namespace,
-        interfaces=None,
-        networks=None,
-        cloud_init_user_data=None,
-        **vm_attr
-    ):
+    def __init__(self, name, namespace, interfaces=None, networks=None, **vm_attr):
         super().__init__(
             name=name,
             namespace=namespace,
             interfaces=interfaces,
             networks=networks,
-            cloud_init_user_data=cloud_init_user_data,
             **vm_attr
         )
+
+    def _cloud_init_user_data(self):
+        data = super()._cloud_init_user_data()
+        data["bootcmd"].append("dnf install -y dmidecode")
+        return data
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -60,9 +47,7 @@ class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
 def sidecar_vm(default_client, virt_namespace):
     name = "vmi-with-sidecar-hook"
     with FedoraVirtualMachineWithSideCar(
-        name=name,
-        namespace=virt_namespace.name,
-        cloud_init_user_data=CLOUD_INIT_USER_DATA,
+        name=name, namespace=virt_namespace.name
     ) as vm:
         assert vm.start(wait=True)
         yield vm

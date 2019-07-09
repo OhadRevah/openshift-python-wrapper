@@ -11,14 +11,30 @@ from tests.network.connectivity import utils
 from tests.network.utils import run_test_connectivity
 from tests.utils import wait_for_vm_interfaces, FedoraVirtualMachine
 
-CLOUD_INIT_USER_DATA = r"""
-            #cloud-config
-            password: fedora
-            chpasswd: { expire: False }
-            bootcmd:
-              - dnf install -y iperf3 qemu-guest-agent
-            runcmd:
-              - systemctl start qemu-guest-agent"""
+
+class FedoraVirtualMachineTest(FedoraVirtualMachine):
+    def __init__(
+        self,
+        name,
+        namespace,
+        client=None,
+        interfaces=None,
+        networks=None,
+        node_selector=None,
+    ):
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            client=client,
+            interfaces=interfaces,
+            networks=networks,
+            node_selector=node_selector,
+        )
+
+    def _cloud_init_user_data(self):
+        data = super()._cloud_init_user_data()
+        data["bootcmd"].append("dnf install -y iperf3")
+        return data
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -29,22 +45,14 @@ def module_namespace():
 
 @pytest.fixture(scope="module")
 def vma(module_namespace):
-    with FedoraVirtualMachine(
-        namespace=module_namespace.name,
-        name="vma",
-        cloud_init_user_data=CLOUD_INIT_USER_DATA,
-    ) as vm:
+    with FedoraVirtualMachineTest(namespace=module_namespace.name, name="vma") as vm:
         assert vm.start()
         yield vm
 
 
 @pytest.fixture(scope="module")
 def vmb(module_namespace):
-    with FedoraVirtualMachine(
-        namespace=module_namespace.name,
-        name="vmb",
-        cloud_init_user_data=CLOUD_INIT_USER_DATA,
-    ) as vm:
+    with FedoraVirtualMachineTest(namespace=module_namespace.name, name="vmb") as vm:
         assert vm.start()
         yield vm
 

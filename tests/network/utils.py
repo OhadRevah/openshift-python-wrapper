@@ -200,3 +200,11 @@ def run_test_connectivity(src_vm, dst_vm, dst_ip, positive, namespace):
     with console.Fedora(vm=src_vm, namespace=namespace) as src_vm_console:
         src_vm_console.sendline(f"ping -w 3 {dst_ip}")
         src_vm_console.expect(expected)
+
+
+def nmcli_add_con_cmds(iface, ip):
+    return [
+        f"nmcli con add type ethernet con-name {iface} ifname {iface}",
+        f"nmcli con mod {iface} ipv4.addresses {ip}/24 ipv4.method manual connection.autoconnect-priority 1",
+        f"nmcli con up {iface}",
+    ]

@@ -13,6 +13,7 @@ from tests.network.utils import (
     get_vmi_ip_by_name,
     VXLANTunnel,
     Bridge,
+    nmcli_add_con_cmds,
 )
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 
@@ -21,6 +22,33 @@ BR1BOND = "br1bond"
 BR1VLAN100 = "br1vlan100"
 BR1VLAN200 = "br1vlan200"
 BR1VLAN300 = "br1vlan300"
+
+
+class BridgedFedoraVirtualMachine(FedoraVirtualMachine):
+    def __init__(
+        self,
+        name,
+        namespace,
+        client=None,
+        interfaces=None,
+        networks=None,
+        node_selector=None,
+        bootcmds=None,
+    ):
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            client=client,
+            interfaces=interfaces,
+            networks=networks,
+            node_selector=node_selector,
+        )
+        self.bootcmds = bootcmds
+
+    def _cloud_init_user_data(self):
+        data = super()._cloud_init_user_data()
+        data["bootcmd"] = data["bootcmd"] + self.bootcmds
+        return data
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -93,36 +121,21 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 @pytest.fixture(scope="module")
 def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN200: BR1VLAN200}
+    bootcmds = ["dnf install -y iperf3"]
+    bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
+    bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.1"))
+    bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.1"))
     if bond_supported:
+        bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.1"))
         networks[BR1BOND] = BR1BOND
 
-    cloud_init_user_data = r"""
-        #cloud-config
-        password: fedora
-        chpasswd: { expire: False }
-        runcmd:
-          - systemctl start qemu-guest-agent
-        bootcmd:
-          - dnf install -y iperf3 qemu-guest-agent
-          - nmcli con add type ethernet con-name eth1 ifname eth1
-          - nmcli con mod eth1 ipv4.addresses 192.168.0.1/24 ipv4.method manual
-          - nmcli con add type ethernet con-name eth2 ifname eth2
-          - nmcli con mod eth2 ipv4.addresses 192.168.1.1/24 ipv4.method manual
-          - nmcli con add type ethernet con-name eth3 ifname eth3
-          - nmcli con mod eth3 ipv4.addresses 192.168.2.1/24 ipv4.method manual"""
-
-    if bond_supported:
-        cloud_init_user_data += """
-          - nmcli con add type ethernet con-name eth4 ifname eth4
-          - nmcli con mod eth4 ipv4.addresses 192.168.3.1/24 ipv4.method manual"""
-
-    with FedoraVirtualMachine(
+    with BridgedFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=network_utility_pods[0].node.name,
-        cloud_init_user_data=cloud_init_user_data,
+        bootcmds=bootcmds,
     ) as vm:
         assert vm.start()
         yield vm
@@ -131,36 +144,21 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
 @pytest.fixture(scope="module")
 def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN300: BR1VLAN300}
+    bootcmds = ["dnf install -y iperf3"]
+    bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
+    bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.2"))
+    bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.2"))
     if bond_supported:
+        bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.2"))
         networks[BR1BOND] = BR1BOND
 
-    cloud_init_user_data = r"""
-        #cloud-config
-        password: fedora
-        chpasswd: { expire: False }
-        runcmd:
-          - systemctl start qemu-guest-agent
-        bootcmd:
-          - dnf install -y iperf3 qemu-guest-agent
-          - nmcli con add type ethernet con-name eth1 ifname eth1
-          - nmcli con mod eth1 ipv4.addresses 192.168.0.2/24 ipv4.method manual
-          - nmcli con add type ethernet con-name eth2 ifname eth2
-          - nmcli con mod eth2 ipv4.addresses 192.168.1.2/24 ipv4.method manual
-          - nmcli con add type ethernet con-name eth3 ifname eth3
-          - nmcli con mod eth3 ipv4.addresses 192.168.2.2/24 ipv4.method manual"""
-
-    if bond_supported:
-        cloud_init_user_data += """
-          - nmcli con add type ethernet con-name eth4 ifname eth4
-          - nmcli con mod eth4 ipv4.addresses 192.168.3.2/24 ipv4.method manual"""
-
-    with FedoraVirtualMachine(
+    with BridgedFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=network_utility_pods[1].node.name,
-        cloud_init_user_data=cloud_init_user_data,
+        bootcmds=bootcmds,
     ) as vm:
         assert vm.start()
         yield vm
@@ -170,7 +168,7 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
     assert vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=720)
+    wait_for_vm_interfaces(vmi=vmi, timeout=800)
     return vmi
 
 
@@ -178,7 +176,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
     assert vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=720)
+    wait_for_vm_interfaces(vmi=vmi, timeout=800)
     return vmi
 
 
@@ -187,7 +185,16 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     [
         pytest.param("default", marks=(pytest.mark.polarion("CNV-2350"))),
         pytest.param(BR1TEST, marks=(pytest.mark.polarion("CNV-2080"))),
-        pytest.param(BR1VLAN100, marks=(pytest.mark.polarion("CNV-2072"))),
+        pytest.param(
+            BR1VLAN100,
+            marks=(
+                pytest.mark.polarion("CNV-2072"),
+                pytest.mark.skipif(
+                    py_config["bare_metal_cluster"],
+                    reason="Missing VLAN config on the switch [Ticket PNT0584216]",
+                ),
+            ),
+        ),
         pytest.param(BR1BOND, marks=(pytest.mark.polarion("CNV-2141"))),
         pytest.param(BR1VLAN300, marks=(pytest.mark.polarion("CNV-2075"))),
     ],

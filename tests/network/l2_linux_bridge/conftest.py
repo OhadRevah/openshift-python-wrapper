@@ -6,7 +6,7 @@ import pytest
 
 from resources.namespace import Namespace
 from tests import utils
-from tests.network.utils import Bridge, VXLANTunnel, bridge_nad
+from tests.network.utils import Bridge, VXLANTunnel, bridge_nad, nmcli_add_con_cmds
 from tests.utils import FedoraVirtualMachine
 from utilities.console import Fedora
 
@@ -18,6 +18,7 @@ from utilities.console import Fedora
 #       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
 #       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
 
+WAIT_FOR_VM_INTERFACES_TIMEOUT = 1500
 BRIDGE_BR1 = "br1test"
 VMA_MPLS_LOOPBACK_IP = "192.168.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
@@ -34,63 +35,65 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
         namespace,
         interfaces,
         ip_addresses,
-        cloud_init_cmd,
         mpls_local_tag,
         mpls_local_ip,
         mpls_dest_ip,
         mpls_dest_tag,
         mpls_route_next_hop,
         dhcp_pool_address,
+        cloud_init_extra_user_data=None,
     ):
 
         self.mpls_local_tag = mpls_local_tag
         self.ip_addresses = ip_addresses
         self.mpls_local_ip = ip_interface(mpls_local_ip).ip
         self.dhcp_pool_address = dhcp_pool_address
-        cloud_init_script = (
-            "\n#cloud-config\n"
-            "password: fedora\n"
-            "chpasswd: {expire: False}\n"
-            "bootcmd:\n"
-            "  - dnf install -y qemu-guest-agent kernel-modules-$(uname -r) nmap dhcp tcpdump\n"
-            "  - systemctl start qemu-guest-agent\n"
-            "  - nmcli con add type ethernet con-name eth1 ifname eth1\n"
-            f"  - nmcli con mod eth1 ipv4.addresses {self.ip_addresses[0]}/24 ipv4.method manual\n"
-            "  - nmcli con add type ethernet con-name eth2 ifname eth2\n"
-            f"  - nmcli con mod eth2 ipv4.addresses {self.ip_addresses[1]}/24 ipv4.method manual\n"
-            "  - nmcli con add type ethernet con-name eth3 ifname eth3\n"
-            f"  - nmcli con mod eth3 ipv4.addresses {self.ip_addresses[2]}/24 ipv4.method manual\n"
-            "  - nmcli con add type ethernet con-name eth4 ifname eth4\n"
-            f"  - nmcli con mod eth4 ipv4.addresses {self.ip_addresses[3]}/24 ipv4.method manual\n"
-            "  - nmcli conn add con-name VLAN_10 type vlan ifname eth1.10 ipv4.method manual ipv4.addresses "
-            f"{self.ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true\n"
-            "runcmd:\n"
-            "  - sed -i s/'PasswordAuthentication no'/'PasswordAuthentication yes'/g /etc/ssh/sshd_config\n"
-            "  - systemctl restart sshd\n"
-            "  - modprobe mpls_router\n"  # In order to test mpls we need to load driver
-            "  - sysctl -w net.mpls.platform_labels=1000\n"  # Activate mpls labeling feature
-            "  - sysctl -w net.mpls.conf.eth4.input=1\n"  # Allow incoming mpls traffic
-            "  - sysctl -w net.ipv4.conf.all.arp_ignore=1\n"  # 2 kernel flags are used to disable wrong arp behavior
-            "  - sysctl -w net.ipv4.conf.all.arp_announce=2\n"  # Send arp reply only if ip belongs to the interface
-            f"  - ip addr add {self.mpls_local_ip} dev lo\n"
-            f"  - ip -f mpls route add {self.mpls_local_tag} dev lo\n"
-            "  - nmcli connection up eth4\n"  # In order to add mpls route we need to make sure that connection is UP
-            f"  - ip route add {mpls_dest_ip} encap mpls {mpls_dest_tag} via inet {mpls_route_next_hop}\n"
-            "  - nmcli connection up eth2\n"
-            "  - ip route add 224.0.0.0/4 dev eth2\n"
-        ) + cloud_init_cmd
+        self.mpls_dest_ip = mpls_dest_ip
+        self.mpls_dest_tag = mpls_dest_tag
+        self.mpls_route_next_hop = mpls_route_next_hop
+        self.cloud_init_extra_user_data = cloud_init_extra_user_data
 
         networks = {}
         for network in interfaces:
             networks.update({network: network})
 
         super().__init__(
-            name=name,
-            namespace=namespace,
-            interfaces=interfaces,
-            networks=networks,
-            cloud_init_user_data=cloud_init_script,
+            name=name, namespace=namespace, interfaces=interfaces, networks=networks
         )
+
+    def _cloud_init_user_data(self):
+        data = super()._cloud_init_user_data()
+
+        bootcmds = ["dnf install -y kernel-modules-$(uname -r) nmap dhcp tcpdump"]
+        bootcmds.extend(nmcli_add_con_cmds("eth1", self.ip_addresses[0]))
+        bootcmds.extend(nmcli_add_con_cmds("eth2", self.ip_addresses[1]))
+        bootcmds.extend(nmcli_add_con_cmds("eth3", self.ip_addresses[2]))
+        bootcmds.extend(nmcli_add_con_cmds("eth4", self.ip_addresses[3]))
+        bootcmds.append(
+            "nmcli conn add con-name VLAN_10 type vlan ifname eth1.10 ipv4.method manual ipv4.addresses "
+            f"{self.ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true"
+        )
+        data["bootcmd"] = data["bootcmd"] + bootcmds
+
+        for cmd in [
+            "modprobe mpls_router",  # In order to test mpls we need to load driver
+            "sysctl -w net.mpls.platform_labels=1000",  # Activate mpls labeling feature
+            "sysctl -w net.mpls.conf.eth4.input=1",  # Allow incoming mpls traffic
+            "sysctl -w net.ipv4.conf.all.arp_ignore=1",  # 2 kernel flags are used to disable wrong arp behavior
+            "sysctl -w net.ipv4.conf.all.arp_announce=2",  # Send arp reply only if ip belongs to the interface
+            f"ip addr add {self.mpls_local_ip} dev lo",
+            f"ip -f mpls route add {self.mpls_local_tag} dev lo",
+            "nmcli connection up eth4",  # In order to add mpls route we need to make sure that connection is UP
+            f"ip route add {self.mpls_dest_ip} encap mpls {self.mpls_dest_tag} via inet {self.mpls_route_next_hop}",
+            "nmcli connection up eth2",
+            "ip route add 224.0.0.0/4 dev eth2",
+        ]:
+            data["runcmd"].append(cmd)
+
+        if self.cloud_init_extra_user_data:
+            for k, v in self.cloud_init_extra_user_data.items():
+                data[k] = data[k] + v
+        return data
 
     @property
     def dot1q_ip(self):
@@ -143,21 +146,21 @@ def bridge_attached_vm(
     mpls_dest_tag,
     mpls_route_next_hop,
     mpls_local_ip,
-    cloud_init_script="",
     dhcp_pool_address="",
+    cloud_init_extra_user_data=None,
 ):
     with VirtualMachineAttachedToBridge(
         namespace=namespace,
         name=name,
         interfaces=interfaces,
         ip_addresses=ip_addresses,
-        cloud_init_cmd=cloud_init_script,
         mpls_local_tag=mpls_local_tag,
         mpls_local_ip=mpls_local_ip,
         dhcp_pool_address=dhcp_pool_address,
         mpls_dest_ip=mpls_dest_ip,
         mpls_dest_tag=mpls_dest_tag,
         mpls_route_next_hop=mpls_route_next_hop,
+        cloud_init_extra_user_data=cloud_init_extra_user_data,
     ) as vm:
         yield vm
 
@@ -202,39 +205,40 @@ def all_nads(namespace, dot1q_nad, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad)
 
 
 @pytest.fixture(scope="class")
-def bridge_device(network_utility_pods):
-    with Bridge(name=BRIDGE_BR1, worker_pods=network_utility_pods) as dev:
-        yield dev
+def bridge_device(network_utility_pods, multi_nics_nodes, nodes_active_nics):
+    master_index = 1 if multi_nics_nodes else None
 
-
-@pytest.fixture(scope="class", autouse=True)
-def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_nics):
-
-    # There is no need to build vxlan tunnel on bare metal because
-    # it has enough physical interfaces for direct connection
-    if multi_nics_nodes:
-        return
-
-    with VXLANTunnel(
-        name="vxlan100",
+    with Bridge(
+        name=BRIDGE_BR1,
         worker_pods=network_utility_pods,
-        vxlan_id=10,
-        master_bridge=bridge_device.name,
+        master_index=master_index,
         nodes_nics=nodes_active_nics,
-    ) as vxlan:
-        yield vxlan
+    ) as br:
+        if not multi_nics_nodes:
+            with VXLANTunnel(
+                name="vxlan100",
+                worker_pods=network_utility_pods,
+                vxlan_id=10,
+                master_bridge=br.name,
+                nodes_nics=nodes_active_nics,
+            ):
+                yield br
+        else:
+            yield br
 
 
 @pytest.fixture(scope="class")
 def vm_a(namespace, all_nads, bridge_device):
-    cloud_init_script = (
-        "  - sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
-        "\\nauthoritative;\\nsubnet 192.168.3.0 netmask 255.255.255.0 {"
-        "\\noption subnet-mask 255.255.255.0;\\nrange  "
-        f"{VMB_DHCP_ADDRESS} {VMB_DHCP_ADDRESS};"
-        "\\n}' > /etc/dhcp/dhcpd.conf\"\n"  # Inject dhcp configuration to dhcpd.conf
-        "  - sysctl net.ipv4.icmp_echo_ignore_broadcasts=0\n"  # Enable multicast support
-    )
+    cloud_init_extra_user_data = {
+        "runcmd": [
+            "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
+            "\\nauthoritative;\\nsubnet 192.168.3.0 netmask 255.255.255.0 {"
+            "\\noption subnet-mask 255.255.255.0;\\nrange  "
+            f"{VMB_DHCP_ADDRESS} {VMB_DHCP_ADDRESS};"
+            "\\n}' > /etc/dhcp/dhcpd.conf\"",  # Inject dhcp configuration to dhcpd.conf
+            "sysctl net.ipv4.icmp_echo_ignore_broadcasts=0",  # Enable multicast support
+        ]
+    }
 
     interface_ip_addresses = [
         "192.168.0.1",
@@ -248,7 +252,7 @@ def vm_a(namespace, all_nads, bridge_device):
         namespace=namespace.name,
         interfaces=all_nads,
         ip_addresses=interface_ip_addresses,
-        cloud_init_script=cloud_init_script,
+        cloud_init_extra_user_data=cloud_init_extra_user_data,
         mpls_local_tag=VMA_MPLS_ROUTE_TAG,
         mpls_local_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_ip=VMB_MPLS_LOOPBACK_IP,
@@ -297,10 +301,12 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     runs dhcpd server. To avoid incorrect dhcpd IP address allocation
     this commands are critical to run ONLY after vm_b is UP and configured
     """
-    assert utils.wait_for_vm_interfaces(vmi=started_vmi_a, timeout=920)
+    assert utils.wait_for_vm_interfaces(
+        vmi=started_vmi_a, timeout=WAIT_FOR_VM_INTERFACES_TIMEOUT
+    )
 
     assert utils.wait_for_vm_interfaces(
-        vmi=started_vmi_b, timeout=920
+        vmi=started_vmi_b, timeout=WAIT_FOR_VM_INTERFACES_TIMEOUT
     )  # This is mandatory step to avoid ip allocation to the incorrect interface
     post_install_command = ["sudo systemctl start dhcpd"]
     run_commands(vm_a.vmi, post_install_command)
