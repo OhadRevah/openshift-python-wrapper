@@ -20,14 +20,16 @@ bitmath = "*"
 urllib3 = "*"
 netaddr = "*"
 pytest-jira = "*"
-pytest-marker-bugzilla = {editable = true,ref = "py3-fix",git = "https://github.com/myakove/pytest_marker_bugzilla.git"}
+pytest-marker-bugzilla = {editable = true,git = "https://github.com/myakove/pytest_marker_bugzilla.git",ref = "py3-fix"}
 pytest-testconfig = "*"
 python-bugzilla = "*"
 sh = "*"
 pytest-ordering = "*"
-ansible = {editable = true, ref = "devel", git = "https://github.com/ansible/ansible.git"}
+ansible = {editable = true,git = "https://github.com/ansible/ansible.git",ref = "devel"}
 jinja2 = "*"
 pytest-ansible = {git = "https://github.com/ansible/pytest-ansible.git"}
+requests = "*"
+xmltodict = "*"
 
 [requires]
 python_version = "3.7"
