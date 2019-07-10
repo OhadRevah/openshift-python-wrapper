@@ -65,7 +65,13 @@ def test_successful_import(storage_ns, images_http_server, file_name, content_ty
         pytest.param(
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             TAR_IMG,
-            marks=(pytest.mark.polarion("CNV-2147")),
+            marks=(
+                pytest.mark.polarion("CNV-2147"),
+                pytest.mark.bugzilla(
+                    1725718,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
         ),
     ],
     ids=["qcow_image_archive_content_type", "tar_image_kubevirt_content_type"],
