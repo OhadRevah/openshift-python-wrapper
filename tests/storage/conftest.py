@@ -5,8 +5,10 @@ Pytest conftest file for CNV CDI tests
 """
 
 import pytest
+import os
 
 from resources.cdi_config import CDIConfig
+from resources.configmap import ConfigMap
 from resources.deployment import Deployment
 from resources.deployment import HttpDeployment
 from resources.service import HttpService
@@ -20,6 +22,18 @@ def storage_ns():
     with Namespace(name="cnv-cdi-ns") as ns:
         ns.wait_for_status(status=Namespace.Status.ACTIVE)
         yield ns
+
+
+@pytest.fixture(scope="session")
+def internal_http_configmap(storage_ns):
+    path = os.path.join("tests/storage/internal_http/certs", "tls.crt")
+    with open(path, "r") as cert_content:
+        with ConfigMap(
+            name="internal-https-configmap",
+            namespace=storage_ns.name,
+            data=cert_content.read(),
+        ) as configmap:
+            yield configmap
 
 
 @pytest.fixture(scope="session")
@@ -44,6 +58,7 @@ def images_internal_http_server(internal_http_deployment, internal_http_service)
     server_address = "internal-http.kube-system"
     return {
         "http": f"http://{server_address}/",
+        "https": f"https://{server_address}/",
         "http_auth": f"http://{server_address}:81/",
     }
 

@@ -67,6 +67,54 @@ def test_successful_import_image(storage_ns, images_internal_http_server):
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
+@pytest.mark.polarion("CNV-2338")
+def test_successful_import_secure_archive(
+    storage_ns, images_internal_http_server, internal_http_configmap
+):
+    url = get_file_url(images_internal_http_server["https"], TAR_IMG)
+    with ImportFromHttpDataVolume(
+        name="import-https-dv",
+        namespace=storage_ns.name,
+        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
+        url=url,
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        cert_configmap=internal_http_configmap.name,
+    ) as dv:
+        dv.wait_for_status(status="Succeeded", timeout=300)
+        pvc = PersistentVolumeClaim(name="import-https-dv", namespace=storage_ns.name)
+        assert pvc.bound()
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+            assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
+
+
+@pytest.mark.polarion("CNV-2719")
+def test_successful_import_secure_image(
+    storage_ns, images_internal_http_server, internal_http_configmap
+):
+    url = get_file_url(images_internal_http_server["https"], QCOW_IMG)
+    with ImportFromHttpDataVolume(
+        name="import-https-dv",
+        namespace=storage_ns.name,
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        url=url,
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        cert_configmap=internal_http_configmap.name,
+    ) as dv:
+        dv.wait_for_status(status="Succeeded", timeout=300)
+        pvc = PersistentVolumeClaim(name="import-https-dv", namespace=storage_ns.name)
+        assert pvc.bound()
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+            assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
+
+
 @pytest.mark.parametrize(
     ("content_type", "file_name"),
     [
