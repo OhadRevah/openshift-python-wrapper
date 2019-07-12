@@ -13,6 +13,9 @@ from tests.storage import utils
 
 QCOW_IMG = "cirros-qcow2.img"
 TAR_IMG = "archive.tar"
+COMPRESSED_XZ_FILE = "cirros-0.4.0-x86_64-disk.raw.xz"
+COMPRESSED_GZ_FILE = "cirros-0.4.0-x86_64-disk.raw.gz"
+
 CLOUD_INIT_USER_DATA = r"""
             #!/bin/sh
             echo 'printed from cloud-init userdata'"""
@@ -164,3 +167,33 @@ def test_import_invalid_qcow(storage_ns, images_http_server, dv_name, file_name)
         assert dv.wait_for_status(
             status=ImportFromHttpDataVolume.Status.FAILED, timeout=90
         )
+
+
+@pytest.mark.parametrize(
+    ("content_type", "file_name"),
+    [
+        pytest.param(
+            ImportFromHttpDataVolume.ContentType.ARCHIVE,
+            COMPRESSED_XZ_FILE,
+            marks=(pytest.mark.polarion("CNV-2220")),
+        ),
+        pytest.param(
+            ImportFromHttpDataVolume.ContentType.ARCHIVE,
+            COMPRESSED_GZ_FILE,
+            marks=(pytest.mark.polarion("CNV-2701")),
+        ),
+    ],
+    ids=["compressed_xz_archive_content_type", "compressed_gz_archive_content_type"],
+)
+# TODO: It's now a negative test but once https://jira.coreos.com/browse/CNV-1553 implement, here needs to be changed.
+def test_unpack_compressed(storage_ns, images_http_server, file_name, content_type):
+    url = get_file_url(images_http_server, file_name)
+    with ImportFromHttpDataVolume(
+        name="unpack-compressed-dv",
+        namespace=storage_ns.name,
+        content_type=content_type,
+        url=url,
+        size="200Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        assert dv.wait_for_status(status="Failed", timeout=300)
