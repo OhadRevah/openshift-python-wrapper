@@ -200,6 +200,7 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     ],
 )
 def test_connectivity_over_linux_bridge(
+    skip_if_no_multinode_cluster,
     bridge,
     module_namespace,
     create_bond,
@@ -236,6 +237,7 @@ def test_connectivity_over_linux_bridge(
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2335")
 def test_guest_performance_over_linux_bridge(
+    skip_if_no_multinode_cluster,
     module_namespace,
     bridge_attached_vma,
     bridge_attached_vmb,
