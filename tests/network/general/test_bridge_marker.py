@@ -20,7 +20,7 @@ def _get_name(suffix):
     return _RESOURCE_NAME_PREFIX + suffix
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def namespace():
     with Namespace(name=_get_name("ns")) as ns:
         yield ns
