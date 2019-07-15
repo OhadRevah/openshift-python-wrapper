@@ -13,7 +13,9 @@ storage_defaults:
 
 bare_metal_cluster: False
 
-region: EMEA
+distribution: downstream
+
+region: USA
 
 USA:
   http_server:  http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/

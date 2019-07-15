@@ -1,6 +1,7 @@
 import logging
 import urllib.error
 import urllib.request
+import ssl
 
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
@@ -82,6 +83,24 @@ def _generate_cloud_init_user_data(user_data):
             data += f"{k}: {v}\n"
 
     return data
+
+
+def get_images_https_server():
+    """
+    Fetch https_server url from config and return if available.
+    """
+    region = py_config["region"]
+    server = py_config[region]["https_server"]
+
+    myssl = ssl.create_default_context()
+    myssl.check_hostname = False
+    myssl.verify_mode = ssl.CERT_NONE
+    try:
+        assert urllib.request.urlopen(server, context=myssl).getcode() == 200
+    except urllib.error.URLError:
+        LOGGER.error("URL Error when testing connectivity to HTTPS server")
+        raise
+    return server
 
 
 class FedoraVirtualMachine(VirtualMachine):

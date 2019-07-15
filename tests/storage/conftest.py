@@ -27,6 +27,11 @@ def images_http_server():
 
 
 @pytest.fixture()
+def images_https_server():
+    return tests.utils.get_images_https_server()
+
+
+@pytest.fixture()
 def upload_proxy_route(default_client):
     routes = Route.get(default_client)
     upload_route = None

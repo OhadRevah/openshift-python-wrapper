@@ -50,6 +50,10 @@ class DataVolume(NamespacedResource):
         super().wait_deleted(timeout=timeout)
         return pvc.wait_deleted(timeout=timeout)
 
+    def wait(self):
+        self.wait_for_status(status="Succeeded", timeout=300)
+        assert PersistentVolumeClaim(name=self.name, namespace=self.namespace).bound()
+
 
 class ImportDataVolume(DataVolume):
     def __init__(
@@ -63,12 +67,14 @@ class ImportDataVolume(DataVolume):
         storage_class,
         access_modes=DataVolume.AccessMode.RWO,
         cert_configmap=None,
+        secret=None,
         client=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
         self.url = url
         self.cert_configmap = cert_configmap
+        self.secret = secret
         self.content_type = content_type
         self.size = size
         self.access_modes = access_modes
@@ -93,6 +99,8 @@ class ImportDataVolume(DataVolume):
             res["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
         if self.storage_class:
             res["spec"]["pvc"]["storageClassName"] = self.storage_class
+        if self.secret:
+            res["spec"]["source"][self.source]["secretRef"] = self.secret
         return res
 
 
@@ -106,6 +114,8 @@ class ImportFromHttpDataVolume(ImportDataVolume):
         size,
         storage_class,
         access_modes=DataVolume.AccessMode.RWO,
+        cert_configmap=None,
+        secret=None,
     ):
         super().__init__(
             name,
@@ -116,6 +126,8 @@ class ImportFromHttpDataVolume(ImportDataVolume):
             size,
             storage_class,
             access_modes,
+            cert_configmap,
+            secret,
         )
 
 
