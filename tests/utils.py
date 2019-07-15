@@ -1,7 +1,6 @@
 import logging
 import urllib.error
 import urllib.request
-import yaml
 
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
