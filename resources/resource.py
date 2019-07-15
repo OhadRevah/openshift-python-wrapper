@@ -4,6 +4,7 @@ import kubernetes
 import urllib3
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
+from urllib3.exceptions import ProtocolError
 
 from . import utils
 
@@ -25,34 +26,6 @@ class ValueMismatch(Exception):
     """
 
     pass
-
-
-class WaitToBeCreatedTimedOut(Exception):
-    """
-    Raises when wait for resource to be created is timed out
-    """
-
-    pass
-
-
-class WaitToBeDeletedTimedOut(Exception):
-    """
-    Raises when wait for resource to be deleted is timed out
-    """
-
-    pass
-
-
-class WaitForStatusTimedOut(Exception):
-    """
-    Raises when wait for resource to be in status is timed out
-    """
-
-    def __init__(self, status):
-        self.status = status
-
-    def __str__(self):
-        return f"Wait for status {self.status} was timed out"
 
 
 class Resource(object):
@@ -149,30 +122,30 @@ class Resource(object):
             api_version=self.api_version, kind=self.kind, **kwargs
         )
 
-    def wait(self, timeout=TIMEOUT, label_selector=None, resource_version=None):
+    def wait(self, timeout=TIMEOUT):
         """
         Wait for resource
 
         Args:
             timeout (int): Time to wait for the resource.
-            label_selector (str): The label selector with which to filter results
-            resource_version (str): The version with which to filter results. Only events with
-                a resource_version greater than this value will be returned
 
-        Returns:
-            bool: True if resource exists, False if timeout reached.
+        Raises:
+            TimeoutExpiredError: If resource not exists.
         """
+
+        def _exists():
+            return self.instance
+
         LOGGER.info(f"Wait until {self.kind} {self.name} is created")
-        for rsc in self.api().watch(
-            namespace=self.namespace,
+        samples = utils.TimeoutSampler(
             timeout=timeout,
-            resource_version=resource_version,
-            label_selector=label_selector,
-            field_selector=f"metadata.name=={self.name}",
-        ):
-            if rsc["type"] == "ADDED":
-                return True
-        assert WaitToBeCreatedTimedOut
+            sleep=1,
+            exceptions=(ProtocolError, NotFoundError),
+            func=_exists,
+        )
+        for sample in samples:
+            if sample:
+                return
 
     def wait_deleted(self, timeout=TIMEOUT):
         """
@@ -200,16 +173,13 @@ class Resource(object):
         Args:
             timeout (int): Time to wait for the resource.
 
-        Returns:
-            bool: True if resource is gone, False if timeout reached.
+        Raises:
+            TimeoutExpiredError: If resource still exists.
         """
 
         def _exists():
             """
             Whether self exists on the server
-
-            Returns:
-                bool: True if the resource was found, False if not
             """
             try:
                 return self.instance
@@ -220,40 +190,33 @@ class Resource(object):
         for sample in samples:
             self.nudge_delete()
             if not sample:
-                return True
-        raise WaitToBeDeletedTimedOut
+                return
 
-    def wait_for_status(
-        self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
-    ):
+    def wait_for_status(self, status, timeout=TIMEOUT):
         """
         Wait for resource to be in status
 
         Args:
             status (str): Expected status.
             timeout (int): Time to wait for the resource.
-            label_selector (str): The label selector with which to filter results
-            resource_version (str): The version with which to filter results. Only events with
-                a resource_version greater than this value will be returned
 
-        Returns:
-            bool: True if resource in desire status, False if timeout reached.
+        Raises:
+            TimeoutExpiredError: If resource in not in desire status.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
-        resources = self.api()
-        for rsc in resources.watch(
-            namespace=self.namespace,
+        samples = utils.TimeoutSampler(
             timeout=timeout,
-            label_selector=label_selector,
-            resource_version=resource_version,
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
             field_selector=f"metadata.name=={self.name}",
-        ):
-            if (
-                "status" in rsc["raw_object"]
-                and rsc["raw_object"]["status"].get("phase") == status
-            ):
-                return
-        raise WaitForStatusTimedOut(status)
+        )
+        for sample in samples:
+            if sample.items:
+                sample_status = sample.items[0].status
+                if sample_status:
+                    if sample_status.phase == status:
+                        return
 
     @classmethod
     def create_from_dict(cls, dyn_client, data, namespace=None):

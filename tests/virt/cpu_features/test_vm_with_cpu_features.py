@@ -2,9 +2,10 @@
 VM with CPU features
 """
 import pytest
+
+from resources.utils import TimeoutExpiredError
 from tests import utils as test_utils
 from utilities import console
-from resources.resource import WaitForStatusTimedOut
 
 
 @pytest.fixture(
@@ -74,5 +75,5 @@ def test_vm_with_cpu_feature_negative(cpu_features_vm_negative):
     Test VM with wrong/unsupported cpu feature policy,
     VM should not run in this case.
     """
-    with pytest.raises(WaitForStatusTimedOut):
+    with pytest.raises(TimeoutExpiredError):
         cpu_features_vm_negative.vmi.wait_until_running(timeout=60)

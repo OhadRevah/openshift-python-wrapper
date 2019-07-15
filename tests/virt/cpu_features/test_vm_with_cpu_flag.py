@@ -3,9 +3,9 @@ VM with CPU flag
 """
 import pytest
 from resources.node import Node
+from resources.utils import TimeoutExpiredError
 from tests import utils as test_utils
 from utilities import console
-from resources.resource import WaitForStatusTimedOut
 
 
 @pytest.fixture()
@@ -82,5 +82,5 @@ def test_vm_with_cpu_flag_negative(cpu_flag_vm_negative):
     Test VM with wrong cpu model,
     VM should not run in this case since cpu model not exists on host
     """
-    with pytest.raises(WaitForStatusTimedOut):
+    with pytest.raises(TimeoutExpiredError):
         cpu_flag_vm_negative.vmi.wait_until_running(timeout=60)

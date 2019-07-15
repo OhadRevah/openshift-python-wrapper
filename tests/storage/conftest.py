@@ -77,9 +77,7 @@ def uploadproxy_route_deleted():
     finally:
         deployment.scale_replicas(replica_count=1)
         deployment.wait_until_avail_replicas()
-        Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait(
-            resource_version=""
-        )
+        Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait()
 
 
 @pytest.fixture()

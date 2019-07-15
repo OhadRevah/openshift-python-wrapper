@@ -49,7 +49,7 @@ def net_utility_daemonset(request, default_client):
         file_=os.path.join(os.path.dirname(__file__), "net-utility-daemonset.yaml")
     )
     assert ds.create_from_dict(dyn_client=default_client, data=data)
-    assert ds.wait_until_deployed()
+    ds.wait_until_deployed()
 
 
 @pytest.fixture(scope="session")

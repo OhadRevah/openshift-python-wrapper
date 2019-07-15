@@ -2,18 +2,12 @@
 
 import logging
 
+from urllib3.exceptions import ProtocolError
+
+from utilities import utils
 from .resource import Resource
 
 LOGGER = logging.getLogger(__name__)
-
-
-class UploadProxyURLError(Exception):
-    def __init__(self, current_url, desired_url):
-        self.current_url = current_url
-        self.desired_url = desired_url
-
-    def __str__(self):
-        return f"Upload Proxy URL {self.current_url} does not match {self.desired_url}"
 
 
 class CDIConfig(Resource):
@@ -40,12 +34,16 @@ class CDIConfig(Resource):
         LOGGER.info(
             f"Wait for {self.kind} {self.name} to ensure current URL == uploadProxyURL"
         )
-        resources = self.api()
-        for rsc in resources.watch(
-            timeout=timeout, field_selector=f"metadata.name=={self.name}"
-        ):
-            status = rsc["raw_object"]["status"]
-            current_url = status.get("uploadProxyURL")
-            if current_url == uploadproxy_url:
-                return True
-        raise UploadProxyURLError(current_url=current_url, desired_url=uploadproxy_url)
+        samples = utils.TimeoutSampler(
+            timeout=timeout,
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
+            field_selector=f"metadata.name=={self.name}",
+        )
+        for sample in samples:
+            if sample.items:
+                status = sample.items[0].status
+                current_url = status.uploadProxyURL
+                if current_url == uploadproxy_url:
+                    return

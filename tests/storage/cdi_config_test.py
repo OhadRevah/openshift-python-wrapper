@@ -26,7 +26,7 @@ def test_different_route_for_upload_proxy(storage_ns, uploadproxy_route_deleted)
     with Route(
         namespace=storage_ns.name, name="my-route", service="cdi-uploadproxy"
     ) as new_route:
-        assert cdi_config.wait_until_upload_url_changed(new_route.host)
+        cdi_config.wait_until_upload_url_changed(new_route.host)
 
 
 @pytest.mark.polarion("CNV-2215")

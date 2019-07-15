@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
 import logging
 
+from urllib3.exceptions import ProtocolError
+
+from utilities import utils
 from .resource import NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
 TIMEOUT = 120
-
-
-class ReplicasExists(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"Replicas exists even after replicas in {self.name} spec has been updated to 0"
 
 
 class Deployment(NamespacedResource):
@@ -49,17 +44,19 @@ class Deployment(NamespacedResource):
             bool: True if availableReplicas is not found.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} to update replicas")
-        resources = self.api()
-        for rsc in resources.watch(
-            namespace=self.namespace,
+        samples = utils.TimeoutSampler(
             timeout=timeout,
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
             field_selector=f"metadata.name=={self.name}",
-        ):
-            status = rsc["raw_object"]["status"]
-            available_replicas = status.get("availableReplicas")
-            if not available_replicas:
-                return True
-        raise ReplicasExists(name=self.name)
+        )
+        for sample in samples:
+            if sample.items:
+                status = sample.items[0].status
+                available_replicas = status.availableReplicas
+                if not available_replicas:
+                    return
 
     def wait_until_avail_replicas(self, timeout=TIMEOUT):
         """
@@ -68,21 +65,23 @@ class Deployment(NamespacedResource):
         Args:
             timeout (int): Time to wait for the deployment.
 
-        Returns:
-            bool: True if availableReplicas is equal to replicas.
+        Raises:
+            TimeoutExpiredError: If not availableReplicas is equal to replicas.
         """
         LOGGER.info(
             f"Wait for {self.kind} {self.name} to ensure availableReplicas == replicas"
         )
-        resources = self.api()
-        for rsc in resources.watch(
-            namespace=self.namespace,
+        samples = utils.TimeoutSampler(
             timeout=timeout,
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
             field_selector=f"metadata.name=={self.name}",
-        ):
-            status = rsc["raw_object"]["status"]
-            available_replicas = status.get("availableReplicas")
-            replicas = status.get("replicas")
-            if replicas == available_replicas:
-                return True
-        raise ValueError
+        )
+        for sample in samples:
+            if sample.items:
+                status = sample.items[0].status
+                available_replicas = status.availableReplicas
+                replicas = status.replicas
+                if replicas == available_replicas:
+                    return

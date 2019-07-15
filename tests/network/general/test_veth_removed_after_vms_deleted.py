@@ -116,7 +116,7 @@ def test_veth_removed_from_host_after_vm_deleted(
             if pod.node.name == vm.vmi.node.name:
                 host_veth_before_delete = count_veth_devices_on_host(pod)
                 expect_host_veth = host_veth_before_delete - len(vmi_interfaces)
-                assert vm.delete(wait=True)
+                vm.delete(wait=True)
 
                 sampler = utils.TimeoutSampler(
                     timeout=30, sleep=1, func=count_veth_devices_on_host, pod=pod

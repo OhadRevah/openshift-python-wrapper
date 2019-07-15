@@ -2,7 +2,9 @@ import logging
 
 import kubernetes
 from openshift.dynamic.exceptions import NotFoundError
+from urllib3.exceptions import ProtocolError
 
+from utilities import utils
 from .resource import NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
@@ -23,25 +25,27 @@ class DaemonSet(NamespacedResource):
         Args:
             timeout (int): Time to wait for the Daemonset.
 
-        Returns:
-            bool: True if all the pods are deployed, False if timeout reached.
+        Raises:
+            TimeoutExpiredError: If not all the pods are deployed.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} to deploy all desired pods")
-        resources = self.api()
-        for rsc in resources.watch(
-            namespace=self.namespace,
+        samples = utils.TimeoutSampler(
             timeout=timeout,
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
             field_selector=f"metadata.name=={self.name}",
-        ):
-            status = rsc["raw_object"]["status"]
-            desired_number_scheduled = status.get("desiredNumberScheduled")
-            number_ready = status.get("numberReady")
-            if (
-                desired_number_scheduled > 0
-                and desired_number_scheduled == number_ready
-            ):
-                return True
-        return False
+        )
+        for sample in samples:
+            if sample.items:
+                status = sample.items[0].status
+                desired_number_scheduled = status.desiredNumberScheduled
+                number_ready = status.numberReady
+                if (
+                    desired_number_scheduled > 0
+                    and desired_number_scheduled == number_ready
+                ):
+                    return
 
     def delete(self, wait=False):
         """

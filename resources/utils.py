@@ -26,7 +26,9 @@ class TimeoutSampler(object):
     Feel free to set the instance variables.
     """
 
-    def __init__(self, timeout, sleep, func, *func_args, **func_kwargs):
+    def __init__(
+        self, timeout, sleep, func, exceptions=None, *func_args, **func_kwargs
+    ):
         self.timeout = timeout
         self.sleep = sleep
         self.func = func
@@ -34,19 +36,26 @@ class TimeoutSampler(object):
         self.func_kwargs = func_kwargs
         self.start_time = None
         self.last_sample_time = None
+        self.exception = exceptions if exceptions else Exception
 
     def __iter__(self):
+        caught_exception = None
         if self.start_time is None:
             self.start_time = time.time()
         while True:
             self.last_sample_time = time.time()
             try:
                 yield self.func(*self.func_args, **self.func_kwargs)
-            except Exception:
+            except self.exception as e:
+                caught_exception = e
                 pass
 
             if self.timeout < (time.time() - self.start_time):
-                raise TimeoutExpiredError(self.timeout)
+                raise TimeoutExpiredError(
+                    f"{self.timeout} {caught_exception}"
+                    if caught_exception
+                    else self.timeout
+                )
             time.sleep(self.sleep)
 
 

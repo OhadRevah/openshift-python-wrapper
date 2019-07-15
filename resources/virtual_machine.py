@@ -3,9 +3,12 @@
 import json
 import logging
 
+from urllib3.exceptions import ProtocolError
+
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from .node import Node
 from .pod import Pod
-from .resource import TIMEOUT, NamespacedResource, WaitForStatusTimedOut
+from .resource import TIMEOUT, NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
 API_VERSION = "kubevirt.io/v1alpha3"
@@ -126,33 +129,29 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         if wait:
             return self.wait_for_status(timeout=timeout, status=False)
 
-    def wait_for_status(
-        self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
-    ):
+    def wait_for_status(self, status, timeout=TIMEOUT):
         """
         Wait for resource to be in status
 
         Args:
             status (bool): Expected status.
             timeout (int): Time to wait for the resource.
-            label_selector (str): The label selector with which to filter results
-            resource_version (str): The version with which to filter results. Only events with
-                a resource_version greater than this value will be returned
 
         Returns:
             bool: True if resource in desire status, False if timeout reached.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
-        resources = self.api()
-        for rsc in resources.watch(
-            namespace=self.namespace,
+        samples = TimeoutSampler(
             timeout=timeout,
-            label_selector=label_selector,
-            resource_version=resource_version,
-        ):
-            if rsc["raw_object"]["spec"]["running"] == status:
-                return
-        raise WaitForStatusTimedOut(status)
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
+            field_selector=f"metadata.name=={self.name}",
+        )
+        for sample in samples:
+            if sample.items:
+                if sample.items[0].spec.running == status:
+                    return
 
     @property
     def vmi(self):
@@ -229,11 +228,11 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             logs (bool): True to extract logs from the VMI pod and from the VMI.
 
         Raises:
-            WaitForStatusTimedOut: If VMI failed to run.
+            TimeoutExpiredError: If VMI failed to run.
         """
         try:
             self.wait_for_status(status="Running", timeout=timeout)
-        except WaitForStatusTimedOut:
+        except TimeoutExpiredError:
             if not logs:
                 raise
 
