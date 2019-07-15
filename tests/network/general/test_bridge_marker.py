@@ -104,17 +104,6 @@ def non_homogenous_bridges(skip_if_no_multinode_cluster, network_utility_pods):
             yield (redbr, bluebr)
 
 
-# note: this fixture doesn't strictly require network_utility_pods; using it is
-# an implementation detail. Instead it could fetch the list of nodes available
-# for scheduling to determine if the cluster is multinode; the only reason why
-# it uses network_utility_pods is because this fixture is session wide and
-# automatically used for all test runs, so it's immediately available to us.
-@pytest.fixture()
-def multinode(network_utility_pods):
-    if len(network_utility_pods) <= 1:
-        return pytest.skip(msg="Only run on multinode cluster")
-
-
 def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
     cond = pod.instance.status.conditions[0]
     missing_resource = nad.get_resource_name(bridge_name)
