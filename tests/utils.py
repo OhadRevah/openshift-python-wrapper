@@ -71,6 +71,20 @@ def get_images_http_server():
     return server
 
 
+def _generate_cloud_init_user_data(user_data):
+    data = "#cloud-config\n"
+    for k, v in user_data.items():
+        if isinstance(v, list):
+            list_len = len(v) - 1
+            data += f"{k}:\n    "
+            for i, item in enumerate(v):
+                data += f"- {item}\n{'' if i == list_len else '    '}"
+        else:
+            data += f"{k}: {v}\n"
+
+    return data
+
+
 class FedoraVirtualMachine(VirtualMachine):
     def __init__(
         self,
@@ -128,7 +142,7 @@ class FedoraVirtualMachine(VirtualMachine):
 
         for vol in res["spec"]["template"]["spec"]["volumes"]:
             if vol["name"] == "cloudinitdisk":
-                vol["cloudInitNoCloud"]["userData"] = yaml.dump(
+                vol["cloudInitNoCloud"]["userData"] = _generate_cloud_init_user_data(
                     self._cloud_init_user_data()
                 )
                 break
