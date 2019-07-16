@@ -38,18 +38,9 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
       - containerDisk:
-          image: kubevirt/fedora30-cloud-container-disk-demo:latest
+          image: quay.io/redhat/cnv-tests-fedora:30
         name: containerdisk
       - cloudInitNoCloud:
-          userData: |-
-            #cloud-config
-            password: fedora
-            chpasswd: { expire: False }
-            bootcmd:
-              - dnf install -y qemu-guest-agent
-            runcmd:
-              - sed -i s/'PasswordAuthentication no'/'PasswordAuthentication yes'/g /etc/ssh/sshd_config
-              - systemctl restart sshd
-              - systemctl start qemu-guest-agent
+          userData:
         name: cloudinitdisk
 status: {}

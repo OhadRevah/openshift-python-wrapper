@@ -64,7 +64,7 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
     def _cloud_init_user_data(self):
         data = super()._cloud_init_user_data()
 
-        bootcmds = ["dnf install -y kernel-modules-$(uname -r) nmap dhcp tcpdump"]
+        bootcmds = []
         bootcmds.extend(nmcli_add_con_cmds("eth1", self.ip_addresses[0]))
         bootcmds.extend(nmcli_add_con_cmds("eth2", self.ip_addresses[1]))
         bootcmds.extend(nmcli_add_con_cmds("eth3", self.ip_addresses[2]))
@@ -73,9 +73,10 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             "nmcli conn add con-name VLAN_10 type vlan ifname eth1.10 ipv4.method manual ipv4.addresses "
             f"{self.ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true"
         )
-        data["bootcmd"] = data["bootcmd"] + bootcmds
 
-        for cmd in [
+        data["bootcmd"] = bootcmds
+
+        runcmd = [
             "modprobe mpls_router",  # In order to test mpls we need to load driver
             "sysctl -w net.mpls.platform_labels=1000",  # Activate mpls labeling feature
             "sysctl -w net.mpls.conf.eth4.input=1",  # Allow incoming mpls traffic
@@ -87,12 +88,13 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             f"ip route add {self.mpls_dest_ip} encap mpls {self.mpls_dest_tag} via inet {self.mpls_route_next_hop}",
             "nmcli connection up eth2",
             "ip route add 224.0.0.0/4 dev eth2",
-        ]:
-            data["runcmd"].append(cmd)
+        ]
+        data["runcmd"] = runcmd
 
         if self.cloud_init_extra_user_data:
             for k, v in self.cloud_init_extra_user_data.items():
                 data[k] = data[k] + v
+
         return data
 
     @property
@@ -308,8 +310,8 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     assert utils.wait_for_vm_interfaces(
         vmi=started_vmi_b, timeout=WAIT_FOR_VM_INTERFACES_TIMEOUT
     )  # This is mandatory step to avoid ip allocation to the incorrect interface
-    post_install_command = ["sudo systemctl start dhcpd"]
-    run_commands(vm_a.vmi, post_install_command)
+
+    run_commands(vm_a.vmi, ["sudo systemctl start dhcpd"])
     return vm_a
 
 

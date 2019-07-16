@@ -31,11 +31,6 @@ class FedoraVirtualMachineTest(FedoraVirtualMachine):
             node_selector=node_selector,
         )
 
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-        data["bootcmd"].append("dnf install -y iperf3")
-        return data
-
 
 @pytest.fixture(scope="module", autouse=True)
 def module_namespace():

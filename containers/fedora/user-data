@@ -1,0 +1,8 @@
+#cloud-config
+password: fedora
+chpasswd: { expire: False }
+ssh_pwauth: True
+bootcmd:
+  - dnf install -y tcpdump qemu-guest-agent iperf3 dmidecode nginx lldpad kernel-modules nmap dhcp
+runcmd:
+  - systemctl start qemu-guest-agent

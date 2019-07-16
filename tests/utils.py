@@ -107,16 +107,7 @@ class FedoraVirtualMachine(VirtualMachine):
         }
 
     def _cloud_init_user_data(self):
-        return {
-            "password": "fedora",
-            "chpasswd": "{ expire: False }",
-            "runcmd": [
-                "systemctl start qemu-guest-agent",
-                "sed -i s/'PasswordAuthentication no'/'PasswordAuthentication yes'/g /etc/ssh/sshd_config",
-                "systemctl restart sshd",
-            ],
-            "bootcmd": ["dnf install -y qemu-guest-agent"],
-        }
+        return {"password": "fedora", "chpasswd": "{ expire: False }"}
 
     def _to_dict(self):
         res = super()._to_dict()

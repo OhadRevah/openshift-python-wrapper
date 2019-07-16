@@ -47,7 +47,7 @@ class BridgedFedoraVirtualMachine(FedoraVirtualMachine):
 
     def _cloud_init_user_data(self):
         data = super()._cloud_init_user_data()
-        data["bootcmd"] = data["bootcmd"] + self.bootcmds
+        data["bootcmd"] = self.bootcmds
         return data
 
 
@@ -121,7 +121,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 @pytest.fixture(scope="module")
 def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN200: BR1VLAN200}
-    bootcmds = ["dnf install -y iperf3"]
+    bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.1"))
@@ -144,7 +144,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
 @pytest.fixture(scope="module")
 def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN300: BR1VLAN300}
-    bootcmds = ["dnf install -y iperf3"]
+    bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.2"))

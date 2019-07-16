@@ -23,11 +23,6 @@ class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
             **vm_attr
         )
 
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-        data["bootcmd"].append("dnf install -y dmidecode")
-        return data
-
     def _to_dict(self):
         res = super()._to_dict()
         res["spec"]["template"]["metadata"].update(
