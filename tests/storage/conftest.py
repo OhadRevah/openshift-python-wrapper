@@ -12,6 +12,7 @@ from resources.configmap import ConfigMap
 from resources.deployment import Deployment
 from resources.deployment import HttpDeployment
 from resources.service import HttpService
+from resources.secret import Secret
 from resources.namespace import Namespace
 from resources.route import Route
 from resources.storage_class import StorageClass
@@ -34,6 +35,17 @@ def internal_http_configmap(storage_ns):
             data=cert_content.read(),
         ) as configmap:
             yield configmap
+
+
+@pytest.fixture(scope="session")
+def internal_http_secret(storage_ns):
+    with Secret(
+        name="internal-http-secret",
+        namespace=storage_ns.name,
+        accesskeyid="YWRtaW4=",
+        secretkey="cGFzc3dvcmQ=",
+    ) as secret:
+        yield secret
 
 
 @pytest.fixture(scope="session")

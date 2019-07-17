@@ -115,6 +115,27 @@ def test_successful_import_secure_image(
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
+@pytest.mark.polarion("CNV-2339")
+def test_successful_import_basic_auth(
+    storage_ns, images_internal_http_server, internal_http_secret
+):
+    with ImportFromHttpDataVolume(
+        name="import-http-dv",
+        namespace=storage_ns.name,
+        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
+        url=get_file_url(images_internal_http_server["http_auth"], TAR_IMG),
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        secret=internal_http_secret.name,
+    ) as dv:
+        dv.wait()
+        pvc = PersistentVolumeClaim(name=dv.name, namespace=storage_ns.name)
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+
+
 @pytest.mark.parametrize(
     ("content_type", "file_name"),
     [
