@@ -232,11 +232,15 @@ class VirtualMachineInstance(NamespacedResource):
 class VirtualMachineInstanceMigration(NamespacedResource):
     api_version = API_VERSION
 
-    def __init__(self, name, namespace, vmi, client=None):
+    def __init__(self, name, namespace, vmi=None, client=None):
         super().__init__(name=name, namespace=namespace, client=client)
         self._vmi = vmi
 
     def _to_dict(self):
+        # When creating VirtualMachineInstanceMigration vmi is mandatory but when calling get()
+        # we cannot pass vmi.
+        assert self._vmi, "vmi is mandatory for create"
+
         res = super()._to_dict()
         res["spec"] = {"vmiName": self._vmi.name}
         return res
