@@ -232,11 +232,9 @@ def test_connectivity_over_linux_bridge(
 
     positive = bridge != BR1VLAN300
     run_test_connectivity(
-        src_vm=running_bridge_attached_vmia.name,
-        dst_vm=running_bridge_attached_vmib.name,
+        src_vm=running_bridge_attached_vmia,
         dst_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmib, name=bridge),
         positive=positive,
-        namespace=module_namespace.name,
     )
 
 

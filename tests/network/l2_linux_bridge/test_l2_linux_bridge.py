@@ -52,11 +52,7 @@ class TestL2LinuxBridge:
         Test VM to VM connectivity via dot1q/mpls
         """
         run_test_connectivity(
-            src_vm=configured_vm_a.name,
-            dst_vm=configured_vm_b.name,
-            dst_ip=eval(dst_ip),
-            positive=True,
-            namespace=namespace.name,
+            src_vm=configured_vm_a, dst_ip=eval(dst_ip), positive=True
         )
 
     @pytest.mark.polarion("CNV-2282")
@@ -103,10 +99,4 @@ class TestL2LinuxBridge:
         """
         Test multicast traffic(ICMP) via linux bridge
         """
-        run_test_connectivity(
-            src_vm=configured_vm_b.name,
-            dst_vm=configured_vm_a.name,
-            dst_ip="224.0.0.1",
-            positive=True,
-            namespace=namespace.name,
-        )
+        run_test_connectivity(src_vm=configured_vm_b, dst_ip="224.0.0.1", positive=True)

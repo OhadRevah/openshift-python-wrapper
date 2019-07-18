@@ -189,15 +189,15 @@ def get_vmi_ip_by_name(vmi, name):
     raise IpNotFound(name)
 
 
-def run_test_connectivity(src_vm, dst_vm, dst_ip, positive, namespace):
+def run_test_connectivity(src_vm, dst_ip, positive):
     """
     Check connectivity
     """
     expected = " 0% packet loss" if positive else "100% packet loss"
     LOGGER.info(
-        f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm} to {dst_vm}"
+        f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm.name}"
     )
-    with console.Fedora(vm=src_vm, namespace=namespace) as src_vm_console:
+    with console.Fedora(vm=src_vm.name, namespace=src_vm.namespace) as src_vm_console:
         src_vm_console.sendline(f"ping -w 3 {dst_ip}")
         src_vm_console.expect(expected)
 

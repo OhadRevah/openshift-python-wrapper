@@ -72,11 +72,9 @@ def test_connectivity_over_pod_network(
     Check connectivity
     """
     run_test_connectivity(
-        src_vm=running_vma.name,
-        dst_vm=running_vmb.name,
+        src_vm=running_vma,
         dst_ip=ip_interface(running_vma.vmi.interfaces[0]["ipAddress"]).ip,
         positive=True,
-        namespace=module_namespace.name,
     )
 
 
