@@ -41,7 +41,16 @@ def ansible_config_environ():
         pytest.param("kubevirt_preset.yml", marks=(pytest.mark.polarion("CNV-2575"))),
         pytest.param("kubevirt_vmir.yml", marks=(pytest.mark.polarion("CNV-2564"))),
         pytest.param("kubevirt_vm.yml", marks=(pytest.mark.polarion("CNV-2562"))),
-        pytest.param("kubevirt_dv_vm.yaml", marks=(pytest.mark.polarion("CNV-2576"))),
+        pytest.param(
+            "kubevirt_dv_vm.yaml",
+            marks=(
+                pytest.mark.polarion("CNV-2576"),
+                pytest.mark.bugzilla(
+                    1730706,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
+        ),
         pytest.param(
             "kubevirt_template.yaml", marks=(pytest.mark.polarion("CNV-2572"))
         ),
