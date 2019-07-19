@@ -137,7 +137,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
         node_selector=network_utility_pods[0].node.name,
         bootcmds=bootcmds,
     ) as vm:
-        assert vm.start()
+        vm.start()
         yield vm
 
 
