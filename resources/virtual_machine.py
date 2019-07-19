@@ -57,6 +57,7 @@ class VirtualMachine(NamespacedResource):
         """
         body = self.instance.to_dict()
         body["spec"]["running"] = True
+        LOGGER.info(f"Start VM {self.name}")
         self.update(body)
         if wait:
             return self.wait_for_status(timeout=timeout, status=True)
@@ -74,6 +75,7 @@ class VirtualMachine(NamespacedResource):
         """
         body = self.instance.to_dict()
         body["spec"]["running"] = False
+        LOGGER.info(f"Stop VM {self.name}")
         self.update(body)
         if wait:
             return self.wait_for_status(timeout=timeout, status=False)
