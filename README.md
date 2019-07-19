@@ -40,22 +40,12 @@ KUBECONFIG=${GOPATH}/github.com/kubevirt/hyperconverged-cluster-operator/cluster
 
 ## Running the tests
 
-The simplest way to run the tests is as follows:
+The simplest way to run the tests is as follows for downstream or upstream
+HCO deployment respectively:
 
 ```bash
-pipenv run pytest tests \
-  --tc-file=tests/test-config.yaml \
-  --tc-format=yaml
-```
-
-If you target a cluster that is deployed using upstream manifests for HCO, you
-may want to instead use a different test configuration file (also included with
-the repository):
-
-```bash
-pipenv run pytest tests \
-  --tc-file=tests/test-config-upstream.yaml \
-  --tc-format=yaml
+make tests
+make tests UPSTREAM=1
 ```
 
 ## Other parameters
@@ -65,9 +55,7 @@ pipenv run pytest tests \
 To see verbose logging of a test run, add the following parameter:
 
 ```bash
-pipenv run pytest tests \
-  ... \
-  -o log_cli=true
+make tests PYTEST_ARGS="-o log_cli=true"
 ```
 
 ### Selecting tests
@@ -76,9 +64,7 @@ To run a particular set of tests, you can use name pattern matching. For
 example, to run all network related tests, do:
 
 ```bash
-pipenv run pytest tests \
-  ... \
-  -k network
+make tests PYTEST_EXTRA_ARGS="-k network"
 ```
 
 ### Other parameters
@@ -86,20 +72,19 @@ pipenv run pytest tests \
 There are other parameters that can be passed to the test suite if needed.
 
 ```bash
-pipenv run pytest tests \
-  --tc-file=tests/test-config.yaml \
-  --tc-format=yaml \
-  --junitxml /tmp/xunit_results.xml \
-  --bugzilla \
-  --bugzilla-url=<url> \
-  --bugzilla-user=<username> \
-  --bugzilla-password=<password> \
-  --jira \
-  --jira-url=<url>  \
-  --jira-user=<username> \
-  --jira-password=<password>  \
-  --jira-no-ssl-verify \
-  --jira-disable-docs-search
+--tc-file=tests/test-config.yaml
+--tc-format=yaml
+--junitxml /tmp/xunit_results.xml
+--bugzilla
+--bugzilla-url=<url>
+--bugzilla-user=<username>
+--bugzilla-password=<password>
+--jira
+--jira-url=<url>
+--jira-user=<username>
+--jira-password=<password>
+--jira-no-ssl-verify
+--jira-disable-docs-search
 ```
 
 Note: some older versions of openshift-installer may have a bug where test
@@ -117,8 +102,7 @@ commands necessary to control network components on the tests environment hosts.
 To build the image:
 
 ```bash
-cd tests/manifests/network/privileged_container
-docker build -t quay.io/redhat/cnv-tests-net-util-container .
+docker build -t quay.io/redhat/cnv-tests-net-util-container -f ./tests/network/Dockerfile.net-utility ./tests/network
 docker login quay.io # Need to have right to push under the redhat organization
 docker push quay.io/redhat/cnv-tests-net-util-container
 ```
@@ -144,7 +128,7 @@ How to install and use black tool: https://github.com/python/black
 To check for PEP 8 issues locally run:
 
 ```bash
-tox
+make check
 ```
 
 ## How-to verify your patch
