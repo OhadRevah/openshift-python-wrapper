@@ -34,7 +34,7 @@ def test_owner_references_on_vm(fedora_vm):
                       allows to delete it freely.
     """
     vmi = fedora_vm.vmi
-    owner_references_pod = vmi.virt_launcher_pod().instance.metadata.ownerReferences[0]
+    owner_references_pod = vmi.virt_launcher_pod.instance.metadata.ownerReferences[0]
     owner_references_vmi = vmi.instance.metadata.ownerReferences[0]
     # check pod owner references block
     # kind

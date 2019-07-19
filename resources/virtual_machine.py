@@ -145,6 +145,7 @@ class VirtualMachineInstance(NamespacedResource):
     def interfaces(self):
         return self.instance.status.interfaces
 
+    @property
     def virt_launcher_pod(self):
         """
         Get VMi virt-launcher Pod
@@ -178,7 +179,7 @@ class VirtualMachineInstance(NamespacedResource):
             if not logs:
                 raise
 
-            virt_pod = self.virt_launcher_pod()
+            virt_pod = self.virt_launcher_pod
             if virt_pod:
                 LOGGER.debug(f"{virt_pod.name} *****LOGS*****")
                 LOGGER.debug(virt_pod.log(container="compute"))
@@ -201,7 +202,7 @@ class VirtualMachineInstance(NamespacedResource):
         Returns:
             xml_output(string): VMI XML in the multi-line string
         """
-        pod = Pod(self.virt_launcher_pod().name, self.namespace, client=self.client)
+        pod = Pod(self.virt_launcher_pod.name, self.namespace, client=self.client)
         xml_get_cmd = ["virsh", "dumpxml", f"{self.namespace}_{self.name}"]
         command_txt = " ".join(xml_get_cmd)
         LOGGER.info(f"running command {command_txt} in the pod {pod.name}")

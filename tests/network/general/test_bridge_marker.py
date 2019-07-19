@@ -119,7 +119,7 @@ def test_bridge_marker_no_device(bridge_attached_vmi):
         bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
 
     # validate the exact reason for VMI startup failure is missing bridge
-    pod = bridge_attached_vmi.virt_launcher_pod()
+    pod = bridge_attached_vmi.virt_launcher_pod
     _assert_failure_reason_is_bridge_missing(pod, "redbr")
 
 
@@ -140,6 +140,6 @@ def test_bridge_marker_devices_exist_on_different_nodes(
         multi_bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
 
     # validate the exact reason for VMI startup failure is missing bridge
-    pod = multi_bridge_attached_vmi.virt_launcher_pod()
+    pod = multi_bridge_attached_vmi.virt_launcher_pod
     for bridge in non_homogenous_bridges:
         _assert_failure_reason_is_bridge_missing(pod, bridge.name)
