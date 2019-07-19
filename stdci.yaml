@@ -1,6 +1,11 @@
-archs: 
-  - x86_64
-distro: 
-  - rhel7
-stages:
-  - check-patch
+---
+distro: fc30
+sub-stages:
+  - check
+  - hco-master
+
+runtime_requirements:
+  support_nesting_level: 2
+
+reporting:
+  style: stdci

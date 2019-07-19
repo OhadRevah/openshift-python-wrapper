@@ -1,0 +1,8 @@
+docker
+gcc
+git
+make
+python3-setuptools
+wget
+python3-devel
+python3-pip

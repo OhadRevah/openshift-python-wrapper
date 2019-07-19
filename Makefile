@@ -42,7 +42,7 @@ check:
 	tox
 
 tests:
-	pipenv run pytest tests $(pytest_args)
+	python3 -m pipenv run pytest tests $(pytest_args)
 
 $(CLUSTER_DIR)/%: $(install_kubevirtci)
 	$(install_kubevirtci)
@@ -60,7 +60,7 @@ ifndef UPSTREAM
 endif
 	$(install_hco)
 
-cluster-tests: $(CLUSTER_UP) ../tests
+cluster-tests: $(CLUSTER_UP) tests
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
