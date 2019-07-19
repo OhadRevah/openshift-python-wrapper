@@ -61,14 +61,16 @@ def uploadproxy_route_deleted():
     Once the cdi-operator is terminated, route is deleted to perform the test.
     """
     deployment = Deployment(name="cdi-operator", namespace="kubevirt-hyperconverged")
-    deployment.scale_replicas(replica_count=0)
-    deployment.wait_until_no_replicas()
-    assert Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").delete(
-        wait=True
-    )
-    yield
-    deployment.scale_replicas(replica_count=1)
-    deployment.wait_until_avail_replicas()
-    assert Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait(
-        resource_version=""
-    )
+    try:
+        deployment.scale_replicas(replica_count=0)
+        deployment.wait_until_no_replicas()
+        Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").delete(
+            wait=True
+        )
+        yield
+    finally:
+        deployment.scale_replicas(replica_count=1)
+        deployment.wait_until_avail_replicas()
+        Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait(
+            resource_version=""
+        )
