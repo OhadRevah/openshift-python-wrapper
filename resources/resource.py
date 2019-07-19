@@ -358,7 +358,11 @@ class Resource(object):
             resource_dict: Resource dictionary
         """
         LOGGER.info(f"Update {self.kind} {self.name}")
-        self.api().patch(body=resource_dict, namespace=self.namespace)
+        self.api().patch(
+            body=resource_dict,
+            namespace=self.namespace,
+            content_type="application/merge-patch+json",
+        )
 
     @classmethod
     def get(cls, dyn_client, singular_name=None, *args, **kwargs):

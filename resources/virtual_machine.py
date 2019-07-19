@@ -2,29 +2,12 @@
 
 import logging
 
-from utilities import utils
 from .node import Node
 from .pod import Pod
 from .resource import TIMEOUT, NamespacedResource, WaitForStatusTimedOut
 
 LOGGER = logging.getLogger(__name__)
 API_VERSION = "kubevirt.io/v1alpha3"
-
-
-class WaitToBeStartedTimedOut(Exception):
-    """
-    Raises when wait for VM to start is timed out
-    """
-
-    pass
-
-
-class WaitToBeStoppedTimedOut(Exception):
-    """
-    Raises when wait for VM to start is timed out
-    """
-
-    pass
 
 
 def get_base_vmi_spec():
@@ -72,14 +55,11 @@ class VirtualMachine(NamespacedResource):
         Raises:
             WaitToBeStartedTimedOut: if VM failed to start.
         """
-        res = utils.run_virtctl_command(
-            command=["start", self.name], namespace=self.namespace
-        )[0]
-        if res:
-            if wait:
-                return self.wait_for_status(timeout=timeout, status=True)
-            return
-        raise WaitToBeStartedTimedOut
+        body = self.instance.to_dict()
+        body["spec"]["running"] = True
+        self.update(body)
+        if wait:
+            return self.wait_for_status(timeout=timeout, status=True)
 
     def stop(self, timeout=TIMEOUT, wait=False):
         """
@@ -92,14 +72,11 @@ class VirtualMachine(NamespacedResource):
         Raises:
             WaitToBeStoppedTimedOut: if VM failed to stop.
         """
-        res = utils.run_virtctl_command(
-            command=["stop", self.name], namespace=self.namespace
-        )[0]
-        if res:
-            if wait:
-                return self.wait_for_status(timeout=timeout, status=False)
-            return
-        raise WaitToBeStoppedTimedOut
+        body = self.instance.to_dict()
+        body["spec"]["running"] = False
+        self.update(body)
+        if wait:
+            return self.wait_for_status(timeout=timeout, status=False)
 
     def wait_for_status(
         self, status, timeout=TIMEOUT, label_selector=None, resource_version=None
