@@ -46,7 +46,7 @@ class VirtualMachine(NamespacedResource):
 
     def start(self, timeout=TIMEOUT, wait=False):
         """
-        Start VM with virtctl
+        Start VM
 
         Args:
             timeout (int): Time to wait for the resource.
@@ -64,7 +64,7 @@ class VirtualMachine(NamespacedResource):
 
     def stop(self, timeout=TIMEOUT, wait=False):
         """
-        Stop VM with virtctl
+        Stop VM
 
         Args:
             timeout (int): Time to wait for the resource.
