@@ -25,28 +25,34 @@ def get_file_url(images_http_server, file_name):
     return f"{images_http_server}cdi-test-images/{file_name}"
 
 
-@pytest.mark.parametrize(
-    ("content_type", "file_name"),
-    [
-        pytest.param(
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            QCOW_IMG,
-            marks=(pytest.mark.polarion("CNV-2143")),
-        ),
-        pytest.param(
-            ImportFromHttpDataVolume.ContentType.ARCHIVE,
-            TAR_IMG,
-            marks=(pytest.mark.polarion("CNV-2145")),
-        ),
-    ],
-    ids=["import_kubevirt_image", "import_archive_image"],
-)
-def test_successful_import(storage_ns, images_http_server, file_name, content_type):
-    url = get_file_url(images_http_server, file_name)
+@pytest.mark.polarion("CNV-2145")
+def test_successful_import_archive(storage_ns, images_http_server):
+    url = get_file_url(images_http_server, TAR_IMG)
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
-        content_type=content_type,
+        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
+        url=url,
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        dv.wait_for_status(status="Succeeded", timeout=300)
+        pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
+        assert pvc.bound()
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+            assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
+
+
+@pytest.mark.polarion("CNV-2143")
+def test_successful_import_image(storage_ns, images_http_server):
+    url = get_file_url(images_http_server, QCOW_IMG)
+    with ImportFromHttpDataVolume(
+        name="import-http-dv",
+        namespace=storage_ns.name,
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         url=url,
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
