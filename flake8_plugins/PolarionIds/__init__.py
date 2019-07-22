@@ -6,14 +6,9 @@ flake8 extension check that every test has Polarion ID attach to it.
 
 import ast
 import re
-import threading
 
 PID001 = "PID001: [{f_name} ({params})], Polarion ID is missing"
 PID002 = "PID002: [{f_name} {pid}], Polarion ID is wrong"
-PID003 = "PID003: [{f_name} {pid}], Polarion ID reused by another test: {other_test}"
-
-_polarion_cases = {}
-_polarion_cases_lock = threading.Lock()
 
 
 def iter_test_functions(tree):
@@ -98,22 +93,7 @@ class PolarionIds(object):
         )
 
     def _if_bad_pid(self, f, polarion_id):
-        if re.match(r"CNV-\d+", polarion_id):
-            with _polarion_cases_lock:
-                if polarion_id in _polarion_cases:
-                    yield (
-                        f.lineno,
-                        f.col_offset,
-                        PID003.format(
-                            f_name=f.name,
-                            pid=polarion_id,
-                            other_test=_polarion_cases[polarion_id],
-                        ),
-                        self.name,
-                    )
-                else:
-                    _polarion_cases[polarion_id] = f.name
-        else:
+        if not re.match(r"CNV-\d+", polarion_id):
             yield (
                 f.lineno,
                 f.col_offset,
@@ -137,22 +117,7 @@ class PolarionIds(object):
         )
 
     def _if_bad_pid_fixture(self, f, polarion_id):
-        if re.match(r"CNV-\d+", polarion_id.s):
-            with _polarion_cases_lock:
-                if polarion_id.s in _polarion_cases:
-                    yield (
-                        f.lineno,
-                        f.col_offset,
-                        PID003.format(
-                            f_name=f.name,
-                            pid=polarion_id.s,
-                            other_test=_polarion_cases[polarion_id.s],
-                        ),
-                        self.name,
-                    )
-                else:
-                    _polarion_cases[polarion_id.s] = f.name
-        else:
+        if not re.match(r"CNV-\d+", polarion_id.s):
             yield (
                 polarion_id.lineno,
                 polarion_id.col_offset,
