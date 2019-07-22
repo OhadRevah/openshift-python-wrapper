@@ -6,11 +6,78 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from urllib3.exceptions import ProtocolError
 
+from distutils.version import Version
+import re
+
 from resources.utils import TimeoutExpiredError
 from . import utils
 
 LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240
+MAX_SUPPORTED_API_VERSION = "v1"
+
+
+class KubeAPIVersion(Version):
+    """
+    Implement the Kubernetes API versioning scheme from
+    https://kubernetes.io/docs/concepts/overview/kubernetes-api/#api-versioning
+    """
+
+    component_re = re.compile(r"(\d+ | [a-z]+)", re.VERBOSE)
+
+    def __init__(self, vstring=None):
+        self.vstring = vstring
+        self.version = None
+        super().__init__(vstring)
+
+    def parse(self, vstring):
+        components = [x for x in self.component_re.split(vstring) if x]
+        for i, obj in enumerate(components):
+            try:
+                components[i] = int(obj)
+            except ValueError:
+                pass
+
+        errmsg = "version '{0}' does not conform to kubernetes api versioning guidelines".format(
+            vstring
+        )
+
+        if (
+            len(components) not in (2, 4)
+            or components[0] != "v"
+            or not isinstance(components[1], int)
+        ):
+            raise ValueError(errmsg)
+        if len(components) == 4 and (
+            components[2] not in ("alpha", "beta") or not isinstance(components[3], int)
+        ):
+            raise ValueError(errmsg)
+
+        self.version = components
+
+    def __str__(self):
+        return self.vstring
+
+    def __repr__(self):
+        return "KubeAPIVersion ('{0}')".format(str(self))
+
+    def _cmp(self, other):
+        if isinstance(other, str):
+            other = KubeAPIVersion(other)
+
+        myver = self.version
+        otherver = other.version
+
+        for ver in myver, otherver:
+            if len(ver) == 2:
+                ver.extend(["zeta", 9999])
+
+        if myver == otherver:
+            return 0
+        if myver < otherver:
+            return -1
+        if myver > otherver:
+            return 1
 
 
 class classproperty(object):  # noqa: N801
@@ -34,6 +101,7 @@ class Resource(object):
     Base class for API resources
     """
 
+    api_group = None
     api_version = None
     singular_name = None
 
@@ -44,6 +112,10 @@ class Resource(object):
         Args:
             name (str): Resource name
         """
+        if not self.api_group and not self.api_version:
+            raise NotImplementedError(
+                "Subclasses of Resource require self.api_group or self.api_version to be defined"
+            )
         self.namespace = None
         self.name = name
         self.client = client
@@ -58,6 +130,27 @@ class Resource(object):
                     "You need to be logged into a cluster or have $KUBECONFIG env configured"
                 )
                 raise
+        if not self.api_version:
+            res = self.find_supported_resource()
+            if not res:
+                LOGGER.error(
+                    "Couldn't find {0} in {1} api group".format(
+                        self.kind, self.api_group
+                    )
+                )
+                raise
+            self.api_version = res.group_version
+
+    def find_supported_resource(self):
+        results = self.client.resources.search(group=self.api_group, kind=self.kind)
+        sorted_results = sorted(
+            results, key=lambda result: KubeAPIVersion(result.api_version), reverse=True
+        )
+        for result in sorted_results:
+            if KubeAPIVersion(result.api_version) <= KubeAPIVersion(
+                MAX_SUPPORTED_API_VERSION
+            ):
+                return result
 
     @classproperty
     def kind(cls):  # noqa: N805

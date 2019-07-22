@@ -12,7 +12,7 @@ from .pod import Pod
 from .resource import TIMEOUT, NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
-API_VERSION = "kubevirt.io/v1alpha3"
+API_GROUP = "kubevirt.io"
 
 
 def get_base_vmi_spec():
@@ -81,7 +81,7 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
     Implements actions start / stop / status / wait for VM status / is running
     """
 
-    api_version = API_VERSION
+    api_group = API_GROUP
 
     def __init__(self, name, namespace, client=None, username=None, password=None):
         super().__init__(name=name, namespace=namespace, client=client)
@@ -185,7 +185,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
     Virtual Machine Instance object, inherited from Resource.
     """
 
-    api_version = API_VERSION
+    api_group = API_GROUP
 
     def __init__(self, name, namespace, client=None, username=None, password=None):
         super().__init__(name=name, namespace=namespace, client=client)
@@ -271,7 +271,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
 
 class VirtualMachineInstanceMigration(NamespacedResource):
-    api_version = API_VERSION
+    api_group = API_GROUP
 
     def __init__(self, name, namespace, vmi=None, client=None):
         super().__init__(name=name, namespace=namespace, client=client)
@@ -292,4 +292,4 @@ class VirtualMachineInstancePreset(NamespacedResource):
     VirtualMachineInstancePreset object.
     """
 
-    api_version = API_VERSION
+    api_group = API_GROUP
