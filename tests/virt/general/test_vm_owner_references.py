@@ -4,7 +4,15 @@ Check VM, VMI, POD owner references
 
 import pytest
 
+from resources.utils import TimeoutSampler
 from tests import utils as test_utils
+
+
+def _wait_for_virt_launcher_pod(vmi):
+    samples = TimeoutSampler(timeout=30, sleep=1, func=lambda: vmi.virt_launcher_pod)
+    for sample in samples:
+        if sample:
+            return
 
 
 @pytest.fixture()
@@ -14,6 +22,7 @@ def fedora_vm(default_client, virt_namespace):
         name=name, namespace=virt_namespace.name
     ) as vm:
         vm.start(wait=True)
+        _wait_for_virt_launcher_pod(vm.vmi)
         yield vm
 
 
@@ -35,6 +44,7 @@ def test_owner_references_on_vm(fedora_vm):
     """
     vmi = fedora_vm.vmi
     owner_references_pod = vmi.virt_launcher_pod.instance.metadata.ownerReferences[0]
+
     owner_references_vmi = vmi.instance.metadata.ownerReferences[0]
     # check pod owner references block
     # kind
