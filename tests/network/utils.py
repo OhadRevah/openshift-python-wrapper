@@ -1,6 +1,7 @@
 import contextlib
 import ipaddress
 import logging
+import re
 
 import pexpect
 from pytest_testconfig import config as py_config
@@ -237,21 +238,26 @@ def get_vmi_ip_v4_by_name(vmi, name):
     raise IpNotFound(name)
 
 
-def run_test_connectivity(src_vm, dst_ip, positive, mtu=None):
-    """
-    Check connectivity
-    """
-    expected = " 0% packet loss" if positive else "100% packet loss"
-    LOGGER.info(
-        f"{'Positive' if positive else 'Negative'}: Ping {dst_ip} from {src_vm.name}"
-    )
+def _console_ping(src_vm, dst_ip, mtu=None):
     ping_cmd = f"ping -w 3 {dst_ip}"
     if mtu:
         ping_cmd += f" -s {mtu} -M do"
-
     with console.Fedora(vm=src_vm) as src_vm_console:
         src_vm_console.sendline(ping_cmd)
-        src_vm_console.expect(expected)
+        while True:
+            line = src_vm_console.readline()
+            m = re.search(b"([0-9]+)% packet loss, ", line)
+            if m is not None:
+                LOGGER.info(f"ping returned {m.string.strip()}")
+                return m.groups()
+
+
+def assert_ping_successful(src_vm, dst_ip, mtu=None):
+    assert _console_ping(src_vm, dst_ip, mtu)[0] == b"0"
+
+
+def assert_no_ping(src_vm, dst_ip, mtu=None):
+    assert _console_ping(src_vm, dst_ip, mtu)[0] == b"100"
 
 
 def nmcli_add_con_cmds(iface, ip):

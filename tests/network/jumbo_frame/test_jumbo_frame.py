@@ -8,7 +8,7 @@ import pytest
 from resources.namespace import Namespace
 from tests.network.utils import (
     bridge_nad,
-    run_test_connectivity,
+    assert_ping_successful,
     get_vmi_ip_v4_by_name,
     Bridge,
     nmcli_add_con_cmds,
@@ -156,9 +156,8 @@ def test_connectivity_over_linux_bridge_large_mtu(
     """
     icmp_header = 8
     ip_header = 20
-    run_test_connectivity(
+    assert_ping_successful(
         src_vm=bridge_attached_vma,
         dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1TEST),
-        positive=True,
         mtu=MTU_SIZE - ip_header - icmp_header,
     )

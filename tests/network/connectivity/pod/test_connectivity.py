@@ -8,7 +8,7 @@ from pytest_testconfig import config as py_config
 
 from resources.namespace import Namespace
 from tests.network.connectivity import utils
-from tests.network.utils import run_test_connectivity
+from tests.network.utils import assert_ping_successful
 from tests.utils import wait_for_vm_interfaces, FedoraVirtualMachine
 
 
@@ -75,10 +75,9 @@ def test_connectivity_over_pod_network(
     """
     Check connectivity
     """
-    run_test_connectivity(
+    assert_ping_successful(
         src_vm=running_vma,
         dst_ip=ip_interface(running_vma.vmi.interfaces[0]["ipAddress"]).ip,
-        positive=True,
     )
 
 

@@ -1,7 +1,7 @@
 import pytest
 import netaddr
 
-from tests.network.utils import run_test_connectivity
+from tests.network.utils import assert_ping_successful
 
 
 def ifaces_config_same(vm, vmi):
@@ -51,7 +51,7 @@ def assert_mac_not_in_range_vms_connectivity_via_network(
         )
         assert ifaces_config_same(vm=vm, vmi=vm.vmi)
     dst_ip_address = getattr(vm_b, nad_name).ip_address
-    run_test_connectivity(src_vm=vm_a, dst_ip=dst_ip_address, positive=True)
+    assert_ping_successful(src_vm=vm_a, dst_ip=dst_ip_address)
 
 
 def assert_mac_static_vms_connectivity_via_network(vm_a, vm_b, nad_name):
@@ -62,7 +62,7 @@ def assert_mac_static_vms_connectivity_via_network(vm_a, vm_b, nad_name):
             vmi=vm.vmi, iface_name=vm_nad_name, expected_mac=vm_mac_address
         )
     dst_ip_address = getattr(vm_b, nad_name).ip_address
-    run_test_connectivity(src_vm=vm_a, dst_ip=dst_ip_address, positive=True)
+    assert_ping_successful(src_vm=vm_a, dst_ip=dst_ip_address)
 
 
 def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, kubemacpool):
@@ -74,7 +74,7 @@ def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, kubem
             ),
         )
     dst_ip_address = getattr(vm_b, nad_name).ip_address
-    run_test_connectivity(src_vm=vm_a, dst_ip=dst_ip_address, positive=True)
+    assert_ping_successful(src_vm=vm_a, dst_ip=dst_ip_address)
 
 
 # TODO Remove skip once this card is ready.
@@ -244,8 +244,6 @@ class TestMacFromNewKubemacpoolRange:
                 assert mac_is_within_range(
                     kubemacpool_range=kubemacpool_second_scope, mac=iface["mac"]
                 )
-        run_test_connectivity(
-            src_vm=booted_vm_c,
-            dst_ip=booted_vm_d.auto_mac_iface_config.ip_address,
-            positive=True,
+        assert_ping_successful(
+            src_vm=booted_vm_c, dst_ip=booted_vm_d.auto_mac_iface_config.ip_address
         )

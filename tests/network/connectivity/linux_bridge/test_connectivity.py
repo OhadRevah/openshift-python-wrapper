@@ -9,7 +9,8 @@ from resources.namespace import Namespace
 from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import (
     bridge_nad,
-    run_test_connectivity,
+    assert_no_ping,
+    assert_ping_successful,
     get_vmi_ip_v4_by_name,
     VXLANTunnel,
     Bridge,
@@ -249,8 +250,10 @@ def test_connectivity_over_linux_bridge(
     else:
         vmb_ip = get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=bridge)
 
-    positive = bridge != BR1VLAN300
-    run_test_connectivity(src_vm=bridge_attached_vma, dst_ip=vmb_ip, positive=positive)
+    if bridge != BR1VLAN300:
+        assert_ping_successful(src_vm=running_bridge_attached_vmia, dst_ip=vmb_ip)
+    else:
+        assert_no_ping(src_vm=running_bridge_attached_vmia, dst_ip=vmb_ip)
 
 
 @pytest.mark.skipif(not py_config["bare_metal_cluster"], reason="virtualized cluster")

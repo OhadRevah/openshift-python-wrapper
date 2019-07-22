@@ -4,7 +4,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from resources.utils import TimeoutSampler
-from tests.network.utils import get_vmi_ip_v4_by_name, run_test_connectivity
+from tests.network.utils import get_vmi_ip_v4_by_name, assert_ping_successful
 from utilities.console import Fedora
 
 CUSTOM_ETH_PROTOCOL = (
@@ -51,9 +51,7 @@ class TestL2LinuxBridge:
         """
         Test VM to VM connectivity via dot1q/mpls
         """
-        run_test_connectivity(
-            src_vm=configured_vm_a, dst_ip=eval(dst_ip), positive=True
-        )
+        assert_ping_successful(src_vm=configured_vm_a, dst_ip=eval(dst_ip))
 
     @pytest.mark.polarion("CNV-2282")
     def test_dhcp_broadcast(self, configured_vm_a, configured_vm_b, dhcp_nad):
@@ -99,4 +97,4 @@ class TestL2LinuxBridge:
         """
         Test multicast traffic(ICMP) via linux bridge
         """
-        run_test_connectivity(src_vm=configured_vm_b, dst_ip="224.0.0.1", positive=True)
+        assert_ping_successful(src_vm=configured_vm_b, dst_ip="224.0.0.1")
