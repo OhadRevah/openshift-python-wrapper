@@ -39,15 +39,23 @@ def module_namespace():
 
 
 @pytest.fixture(scope="module")
-def vma(module_namespace):
-    with FedoraVirtualMachineTest(namespace=module_namespace.name, name="vma") as vm:
+def vma(module_namespace, network_utility_pods):
+    with FedoraVirtualMachineTest(
+        namespace=module_namespace.name,
+        name="vma",
+        node_selector=network_utility_pods[0].node.name,
+    ) as vm:
         vm.start()
         yield vm
 
 
 @pytest.fixture(scope="module")
-def vmb(module_namespace):
-    with FedoraVirtualMachineTest(namespace=module_namespace.name, name="vmb") as vm:
+def vmb(module_namespace, network_utility_pods):
+    with FedoraVirtualMachineTest(
+        namespace=module_namespace.name,
+        name="vmb",
+        node_selector=network_utility_pods[1].node.name,
+    ) as vm:
         vm.start()
         yield vm
 
@@ -66,7 +74,7 @@ def running_vmb(vmb):
 
 @pytest.mark.polarion("CNV-2332")
 def test_connectivity_over_pod_network(
-    vma, vmb, running_vma, running_vmb, module_namespace
+    skip_if_no_multinode_cluster, vma, vmb, running_vma, running_vmb, module_namespace
 ):
     """
     Check connectivity
@@ -82,7 +90,7 @@ def test_connectivity_over_pod_network(
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2334")
 def test_guest_performance_over_pod_network(
-    vma, vmb, running_vma, running_vmb, module_namespace
+    skip_if_no_multinode_cluster, vma, vmb, running_vma, running_vmb, module_namespace
 ):
     """
     In-guest performance bandwidth passthrough over Linux bridge
