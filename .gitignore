@@ -105,3 +105,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Fedora container build folder
+fedora_build

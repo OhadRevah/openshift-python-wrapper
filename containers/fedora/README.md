@@ -37,7 +37,7 @@ The tar container will be located under "fedora_build" folder.
 ### push container
 From "fedora_build" folder:
  1. docker load -i fedora.tar
- 2. docker tag fedora:30 quay.io/redhat/cnv-tests-fedora/fedora:30
- 3. docker push quay.io/redhat/cnv-tests-fedora/fedora:30
+ 2. docker tag fedora:30 quay.io/redhat/cnv-tests-fedora
+ 3. docker push quay.io/redhat/cnv-tests-fedora
 
 30 tag should changed based on the Fedora version.

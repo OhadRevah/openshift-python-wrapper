@@ -33,7 +33,8 @@ echo "Convert image"
 qemu-img convert -c -O qcow2 $FEDORA_IMAGE $BUILD_DIR/$FEDORA_IMAGE
 
 echo "Create Dockerfile"
-echo "FROM kubevirt/container-disk-v1alpha/nADD $FEDORA_IMAGE /disk" >> $BUILD_DIR/Dockerfile
+echo "FROM kubevirt/container-disk-v1alpha" >> $BUILD_DIR/Dockerfile
+echo "ADD $FEDORA_IMAGE /disk" >> $BUILD_DIR/Dockerfile
 
 pushd $BUILD_DIR
 echo "Build docker image"
