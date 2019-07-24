@@ -49,7 +49,7 @@ def test_node_maintenance(
     skip_when_other_vmi_present, skip_when_one_node, vm0, default_client
 ):
 
-    source_pod = vm0.virt_launcher_pod
+    source_pod = vm0.vmi.virt_launcher_pod
     source_node = source_pod.node
 
     with running_sleep_in_guest(vm0):

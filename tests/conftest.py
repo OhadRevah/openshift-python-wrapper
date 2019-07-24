@@ -11,6 +11,7 @@ import pytest
 from openshift.dynamic import DynamicClient
 
 from resources.node import Node
+from tests import utils as test_utils
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -106,3 +107,13 @@ def skip_when_one_node(nodes):
 @pytest.fixture(scope="session")
 def nodes(default_client):
     yield list(Node.get(default_client, label_selector="kubevirt.io/schedulable=true"))
+
+
+@pytest.fixture()
+def images_external_http_server():
+    return test_utils.get_images_external_http_server()
+
+
+@pytest.fixture()
+def images_https_server():
+    return test_utils.get_images_https_server()

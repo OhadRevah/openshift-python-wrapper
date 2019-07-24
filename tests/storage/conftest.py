@@ -5,7 +5,6 @@ Pytest conftest file for CNV CDI tests
 """
 
 import pytest
-import tests.utils
 
 from resources.cdi_config import CDIConfig
 from resources.deployment import Deployment
@@ -21,11 +20,6 @@ def storage_ns():
     with Namespace(name="cnv-cdi-ns") as ns:
         ns.wait_for_status(status=Namespace.Status.ACTIVE)
         yield ns
-
-
-@pytest.fixture()
-def images_external_http_server():
-    return tests.utils.get_images_external_http_server()
 
 
 @pytest.fixture(scope="session")
@@ -52,11 +46,6 @@ def images_internal_http_server(internal_http_deployment, internal_http_service)
         "http": f"http://{server_address}/",
         "http_auth": f"http://{server_address}:81/",
     }
-
-
-@pytest.fixture()
-def images_https_server():
-    return tests.utils.get_images_https_server()
 
 
 @pytest.fixture()
