@@ -92,8 +92,8 @@ def test_no_scratch_space_import_http_basic_auth(
     with Secret(
         name="https-secret",
         namespace=storage_ns.name,
-        accessKeyId="cmVkaGF0",
-        secretKey="MTIz",
+        accesskeyid="cmVkaGF0",
+        secretkey="MTIz",
     ) as secret:
         create_dv_and_vm_no_scratch_space(
             dv_name, storage_ns.name, url, None, secret.name, content_type, size
