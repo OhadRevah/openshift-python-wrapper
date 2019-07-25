@@ -1,4 +1,4 @@
-from utilities import utils
+from resources.utils import TimeoutSampler
 
 KUBEVIRT_TAINT = "kubevirt.io/drain"
 K8S_TAINT = "node.kubernetes.io/unschedulable"
@@ -16,7 +16,7 @@ class NodeMaintenanceException(Exception):
 
 
 def wait_for_node_unschedulable_status(node, status, timeout=30):
-    sampler = utils.TimeoutSampler(
+    sampler = TimeoutSampler(
         timeout=timeout,
         sleep=1,
         func=node.api().get,

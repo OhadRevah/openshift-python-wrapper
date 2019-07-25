@@ -4,7 +4,7 @@ import logging
 
 from urllib3.exceptions import ProtocolError
 
-from utilities import utils
+from resources.utils import TimeoutSampler
 from .resource import Resource
 
 LOGGER = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class CDIConfig(Resource):
         LOGGER.info(
             f"Wait for {self.kind} {self.name} to ensure current URL == uploadProxyURL"
         )
-        samples = utils.TimeoutSampler(
+        samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=ProtocolError,

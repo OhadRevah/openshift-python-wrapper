@@ -3,7 +3,7 @@ import logging
 
 from urllib3.exceptions import ProtocolError
 
-from utilities import utils
+from resources.utils import TimeoutSampler
 from .resource import NamespacedResource
 
 LOGGER = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class Deployment(NamespacedResource):
             bool: True if availableReplicas is not found.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} to update replicas")
-        samples = utils.TimeoutSampler(
+        samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=ProtocolError,
@@ -71,7 +71,7 @@ class Deployment(NamespacedResource):
         LOGGER.info(
             f"Wait for {self.kind} {self.name} to ensure availableReplicas == replicas"
         )
-        samples = utils.TimeoutSampler(
+        samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=ProtocolError,

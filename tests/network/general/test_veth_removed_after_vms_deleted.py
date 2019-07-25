@@ -8,10 +8,10 @@ import logging
 
 import pytest
 
-from resources.namespace import Namespace
 import tests.network.utils as net_utils
+from resources.namespace import Namespace
+from resources.utils import TimeoutSampler
 from tests.utils import FedoraVirtualMachine
-from utilities import utils
 
 LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"
@@ -118,7 +118,7 @@ def test_veth_removed_from_host_after_vm_deleted(
                 expect_host_veth = host_veth_before_delete - len(vmi_interfaces)
                 vm.delete(wait=True)
 
-                sampler = utils.TimeoutSampler(
+                sampler = TimeoutSampler(
                     timeout=30, sleep=1, func=count_veth_devices_on_host, pod=pod
                 )
                 for sample in sampler:

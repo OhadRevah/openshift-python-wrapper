@@ -1,11 +1,12 @@
 import logging
+import ssl
 import urllib.error
 import urllib.request
-import ssl
 
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 
+from resources.utils import TimeoutSampler, TimeoutExpiredError
 from resources.virtual_machine import VirtualMachine
 from utilities import utils
 
@@ -27,7 +28,7 @@ def wait_for_vm_interfaces(vmi, timeout=240):
     Raises:
         TimeoutExpiredError: After timeout reached.
     """
-    sampler = utils.TimeoutSampler(timeout=timeout, sleep=1, func=lambda: vmi.instance)
+    sampler = TimeoutSampler(timeout=timeout, sleep=1, func=lambda: vmi.instance)
     LOGGER.info("Wait until guest agent is active")
     try:
         for sample in sampler:
@@ -51,7 +52,7 @@ def wait_for_vm_interfaces(vmi, timeout=240):
                     "VMI did not report network interfaces status in given time"
                 )
 
-    except utils.TimeoutExpiredError:
+    except TimeoutExpiredError:
         LOGGER.error("Guest agent is not installed or not active")
         raise
 
