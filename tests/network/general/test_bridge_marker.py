@@ -97,7 +97,7 @@ def bridge_device_on_all_nodes(network_utility_pods):
 
 
 @pytest.fixture()
-def non_homogenous_bridges(skip_if_no_multinode_cluster, network_utility_pods):
+def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
     with utils.Bridge(name="redbr", worker_pods={network_utility_pods[0]}) as redbr:
         with utils.Bridge(
             name="bluebr", worker_pods={network_utility_pods[1]}

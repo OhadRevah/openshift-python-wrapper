@@ -2,15 +2,18 @@
  Draining node by Node Maintenance Operator
 """
 
-import pytest
 from contextlib import contextmanager
+
+import pytest
+
+from resources.node_maintenance import NodeMaintenance
+from resources.virtual_machine import (
+    VirtualMachineInstanceMigration,
+    VirtualMachineInstance,
+)
 from tests import utils as test_utils
 from tests.virt import utils as virt_utils
 from utilities import console
-from resources.node_maintenance import NodeMaintenance
-from resources.virtual_machine import VirtualMachineInstanceMigration
-from resources.virtual_machine import VirtualMachineInstance
-from resources.node import Node
 
 
 @contextmanager
@@ -29,21 +32,6 @@ def running_sleep_in_guest(vmi):
 def skip_when_other_vmi_present(default_client):
     if list(VirtualMachineInstance.get(default_client)):
         pytest.skip(msg="Can't work when other VMI present")
-
-
-@pytest.fixture(scope="module")
-def skip_when_one_node(default_client):
-    if (
-        len(
-            list(
-                Node.get(
-                    default_client, label_selector="node-role.kubernetes.io/worker="
-                )
-            )
-        )
-        < 2
-    ):
-        pytest.skip(msg="Node Maintenance requires at least 2 nodes")
 
 
 @pytest.fixture()

@@ -95,3 +95,16 @@ def schedulable_node_ips(default_client):
             if addr.type == "InternalIP":
                 node_ips[node.name] = addr.address
     return node_ips
+
+
+@pytest.fixture(scope="session")
+def skip_when_one_node(default_client):
+    if (
+        len(
+            list(
+                Node.get(default_client, label_selector="kubevirt.io/schedulable=true")
+            )
+        )
+        < 2
+    ):
+        pytest.skip(msg="Test requires at least 2 nodes")

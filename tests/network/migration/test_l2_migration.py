@@ -157,7 +157,7 @@ def assert_low_packet_loss(ssh_vm, namespace):
 
 @pytest.mark.polarion("CNV-2060")
 def test_ping_vm_migration(
-    skip_if_no_multinode_cluster, namespace, vma, vmb, running_vmia, running_vmib
+    skip_when_one_node, namespace, vma, vmb, running_vmia, running_vmib
 ):
 
     ping_in_backgroud(

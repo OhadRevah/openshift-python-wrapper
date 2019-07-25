@@ -114,17 +114,6 @@ def bond_supported(network_utility_pods, nodes_active_nics):
     return max([len(nodes_active_nics[i.node.name]) for i in network_utility_pods]) > 3
 
 
-# note: this fixture doesn't strictly require network_utility_pods; using it is
-# an implementation detail. Instead it could fetch the list of nodes available
-# for scheduling to determine if the cluster is multinode; the only reason why
-# it uses network_utility_pods is because this fixture is session wide and
-# automatically used for all test runs, so it's immediately available to us.
-@pytest.fixture(scope="session")
-def skip_if_no_multinode_cluster(network_utility_pods):
-    if len(network_utility_pods) <= 1:
-        return pytest.skip(msg="Only run on multinode cluster")
-
-
 @pytest.fixture(scope="session")
 def skip_if_no_multinic_nodes(multi_nics_nodes):
     if not multi_nics_nodes:

@@ -74,7 +74,7 @@ def running_vmb(vmb):
 
 @pytest.mark.polarion("CNV-2332")
 def test_connectivity_over_pod_network(
-    skip_if_no_multinode_cluster, vma, vmb, running_vma, running_vmb, module_namespace
+    skip_when_one_node, vma, vmb, running_vma, running_vmb, module_namespace
 ):
     """
     Check connectivity
@@ -90,7 +90,7 @@ def test_connectivity_over_pod_network(
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2334")
 def test_guest_performance_over_pod_network(
-    skip_if_no_multinode_cluster, vma, vmb, running_vma, running_vmb, module_namespace
+    skip_when_one_node, vma, vmb, running_vma, running_vmb, module_namespace
 ):
     """
     In-guest performance bandwidth passthrough over Linux bridge

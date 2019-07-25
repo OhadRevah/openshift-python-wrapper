@@ -143,7 +143,7 @@ def fixed_veth_mtu_on_host(
 @pytest.mark.polarion("CNV-2685")
 def test_connectivity_over_linux_bridge_large_mtu(
     skip_if_no_multinic_nodes,
-    skip_if_no_multinode_cluster,
+    skip_when_one_node,
     module_namespace,
     bridge_attached_vma,
     bridge_attached_vmb,
