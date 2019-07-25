@@ -88,18 +88,20 @@ def cdi_config_upload_proxy_overridden(upload_proxy_route):
     assert cdi_config.instance is not None
     upload_proxy_override = cdi_config.instance.spec["uploadProxyURLOverride"]
     new_upload_proxy_url = "newuploadroute-cdi.apps.working.oc4"
-    cdi_config.update(
-        resource_dict={
-            "metadata": {"name": "config"},
-            "spec": {"uploadProxyURLOverride": new_upload_proxy_url},
-        }
-    )
-    assert cdi_config.wait_until_upload_url_changed(new_upload_proxy_url)
-    yield
-    cdi_config.update(
-        resource_dict={
-            "metadata": {"name": "config"},
-            "spec": {"uploadProxyURLOverride": upload_proxy_override},
-        }
-    )
-    assert cdi_config.wait_until_upload_url_changed(upload_proxy_route.host)
+    try:
+        cdi_config.update(
+            resource_dict={
+                "metadata": {"name": "config"},
+                "spec": {"uploadProxyURLOverride": new_upload_proxy_url},
+            }
+        )
+        cdi_config.wait_until_upload_url_changed(new_upload_proxy_url)
+        yield
+    finally:
+        cdi_config.update(
+            resource_dict={
+                "metadata": {"name": "config"},
+                "spec": {"uploadProxyURLOverride": upload_proxy_override},
+            }
+        )
+        cdi_config.wait_until_upload_url_changed(upload_proxy_route.host)
