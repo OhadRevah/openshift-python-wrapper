@@ -70,7 +70,7 @@ def nodes_active_nics(network_utility_pods):
     """
     nodes_nics = {}
     for pod in network_utility_pods:
-        pod_container = pod.containers()[0].name
+        pod_container = pod.containers[0].name
         nodes_nics[pod.node.name] = []
         nics = pod.execute(
             command=[

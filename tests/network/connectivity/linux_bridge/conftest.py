@@ -13,7 +13,7 @@ def attach_linux_bridge_to_bond(network_utility_pods, bond_supported):
     bond_bridge = "br1bond"
 
     for pod in network_utility_pods:
-        pod_container = pod.containers()[0].name
+        pod_container = pod.containers[0].name
         cmds = [
             ["ip", "link", "add", bond_bridge, "type", "bridge"],
             ["ip", "link", "set", "dev", bond_bridge, "up"],

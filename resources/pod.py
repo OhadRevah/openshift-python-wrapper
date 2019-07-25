@@ -38,6 +38,7 @@ class Pod(NamespacedResource):
         super().__init__(name=name, namespace=namespace, client=client)
         self._kube_api = kubernetes.client.CoreV1Api(api_client=self.client.client)
 
+    @property
     def containers(self):
         """
         Get Pod containers
@@ -67,7 +68,7 @@ class Pod(NamespacedResource):
             name=self.name,
             namespace=self.namespace,
             command=command,
-            container=container or self.containers()[0].name,
+            container=container or self.containers[0].name,
             stderr=True,
             stdin=False,
             stdout=True,
