@@ -132,21 +132,21 @@ def running_vmib(vmb):
     return vmi
 
 
-def ping_in_backgroud(src_vm, dst_vm, dst_ip, namespace):
+def ping_in_backgroud(src_vm, dst_vm, dst_ip):
     """
     Start ping connectivity to the vm
     """
 
-    LOGGER.info(f"Ping {dst_ip} from {src_vm} to {dst_vm}")
-    with console.Fedora(vm=src_vm, namespace=namespace) as src_vm_console:
+    LOGGER.info(f"Ping {dst_ip} from {src_vm.name} to {dst_vm.name}")
+    with console.Fedora(vm=src_vm) as src_vm_console:
         src_vm_console.sendline(f"sudo ping -i 0.1 -c 2000 {dst_ip} > /tmp/ping.log &")
         src_vm_console.expect(
             "[1]", timeout=60
         )  # Verify the above cmd exectute successfully
 
 
-def assert_low_packet_loss(ssh_vm, namespace):
-    with console.Fedora(vm=ssh_vm, namespace=namespace) as ssh_vm_console:
+def assert_low_packet_loss(ssh_vm):
+    with console.Fedora(vm=ssh_vm) as ssh_vm_console:
         ssh_vm_console.sendline(f"sudo tail -f /tmp/ping.log | grep 'transmitted'")
         ssh_vm_console.expect("packet loss", timeout=300)
         ssh_vm_console.sendline(chr(3))  # Send ctrl+c to end tail cmd
@@ -160,10 +160,7 @@ def test_ping_vm_migration(
     skip_when_one_node, namespace, vma, vmb, running_vmia, running_vmib
 ):
 
-    ping_in_backgroud(
-        running_vmia.name, running_vmib.name, dst_ip=VMBIP, namespace=namespace.name
-    )
-
+    ping_in_backgroud(vma, vmb, dst_ip=VMBIP)
     src_node = running_vmib.instance.status.nodeName
     with VirtualMachineInstanceMigration(
         name="l2-migration", namespace=namespace.name, vmi=running_vmib
@@ -172,4 +169,4 @@ def test_ping_vm_migration(
         mig.wait_for_status(status="Succeeded", timeout=720)
         assert running_vmib.instance.status.nodeName != src_node
 
-    assert_low_packet_loss(running_vmia.name, namespace=namespace.name)
+    assert_low_packet_loss(vma)

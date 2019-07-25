@@ -115,16 +115,16 @@ class CommandExecFailed(Exception):
         return f"Command: {self.name} - exec failed."
 
 
-def run_commands(vmi, commands):
+def run_commands(vm, commands):
     """
     Run a list of commands inside VM and check all commands return 0.
     If return code other than 0 then it will break execution and raise exception.
 
     Args:
-        vmi (obj): VirtualMachine instance
+        vm (obj): VirtualMachine
         commands (list): List of commands
     """
-    with Fedora(vm=vmi.name, namespace=vmi.namespace) as vm_console:
+    with Fedora(vm=vm) as vm_console:
 
         for command in commands:
             vm_console.sendline(command)
@@ -307,7 +307,7 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     # This is mandatory step to avoid ip allocation to the incorrect interface
     assert utils.wait_for_vm_interfaces(vmi=started_vmi_b)
 
-    run_commands(vm_a.vmi, ["sudo systemctl start dhcpd"])
+    run_commands(vm_a, ["sudo systemctl start dhcpd"])
     return vm_a
 
 
@@ -320,5 +320,5 @@ def configured_vm_b(vm_a, vm_b, started_vmi_b, configured_vm_a):
         "sudo nmcli connection modify eth3 ipv4.method auto",
         "sudo nmcli con up eth3",
     ]
-    run_commands(vm_b.vmi, post_install_command)
+    run_commands(vm_b, post_install_command)
     return vm_b

@@ -8,13 +8,18 @@ LOGGER = logging.getLogger(__name__)
 class Console(object):
     _USERNAME = _PASSWORD = None
 
-    def __init__(self, vm, namespace, username=None, password=None, timeout=30):
+    def __init__(self, vm, username=None, password=None, timeout=30):
         """
         Connect to VM console
 
+        Args:
+            vm (VirtualMachine): VM resource
+            username (str): VM username
+            password (str): VM password
+
         Examples:
             from utilities import console
-            with console.Fedora(vm=vm_name) as vmc:
+            with console.Fedora(vm=vm) as vmc:
                 vmc.sendline('some command)
                 vmc.expect('some output')
         """
@@ -22,7 +27,6 @@ class Console(object):
         self.username = username or self._USERNAME
         self.password = password or self._PASSWORD
         self.timeout = timeout
-        self.namespace = namespace
         self.child = None
 
     def connect(self):
@@ -42,7 +46,7 @@ class Console(object):
             self.child.sendline(password)
         self.child.expect(prompt)
         if self.child.after:
-            LOGGER.error(self.err_msg.format(vm=self.vm, error=self.child.after))
+            LOGGER.error(self.err_msg.format(vm=self.vm.name, error=self.child.after))
             return False
 
         return self.child
@@ -51,11 +55,11 @@ class Console(object):
         """
         Connect to console
         """
-        LOGGER.info(f"Connect to {self.vm} console")
+        LOGGER.info(f"Connect to {self.vm.name} console")
         self.err_msg = "Failed to get console to {vm}. error: {error}"
-        cmd = "virtctl console {vm}".format(vm=self.vm)
-        if self.namespace:
-            cmd += " -n {namespace}".format(namespace=self.namespace)
+        cmd = "virtctl console {vm}".format(vm=self.vm.name)
+        if self.vm.namespace:
+            cmd += " -n {namespace}".format(namespace=self.vm.namespace)
 
         self.child = pexpect.spawn(cmd, timeout=self.timeout)
         return self.connect()

@@ -221,7 +221,7 @@ def run_test_connectivity(src_vm, dst_ip, positive, mtu=None):
     if mtu:
         ping_cmd += f" -s {mtu} -M do"
 
-    with console.Fedora(vm=src_vm.name, namespace=src_vm.namespace) as src_vm_console:
+    with console.Fedora(vm=src_vm) as src_vm_console:
         src_vm_console.sendline(ping_cmd)
         src_vm_console.expect(expected)
 

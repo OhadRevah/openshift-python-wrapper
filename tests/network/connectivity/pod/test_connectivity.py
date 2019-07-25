@@ -97,9 +97,8 @@ def test_guest_performance_over_pod_network(
     """
     expected_res = py_config["test_guest_performance"]["bandwidth"]
     bits_per_second = utils.run_test_guest_performance(
-        server_vm=running_vma.name,
-        client_vm=running_vmb.name,
+        server_vm=running_vma,
+        client_vm=running_vmb,
         listen_ip=ip_interface(running_vma.vmi.interfaces[0]["ipAddress"]).ip,
-        namespace=module_namespace.name,
     )
     assert bits_per_second >= expected_res

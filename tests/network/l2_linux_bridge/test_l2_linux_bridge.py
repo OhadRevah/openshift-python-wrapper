@@ -14,7 +14,7 @@ CUSTOM_ETH_PROTOCOL = (
 
 @contextlib.contextmanager
 def _open_console(vm):
-    with Fedora(vm=vm.name, namespace=vm.namespace) as vm_console:
+    with Fedora(vm=vm) as vm_console:
         yield vm_console
 
 

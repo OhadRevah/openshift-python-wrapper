@@ -91,7 +91,7 @@ def create_vm_with_dv(dv):
     ) as vm:
         vm.start()
         vm.vmi.wait_until_running()
-        with console.Cirros(vm=vm.name, namespace=dv.namespace) as vm_console:
+        with console.Cirros(vm=vm) as vm_console:
             vm_console.sendline("lsblk | grep disk | wc -l")
             vm_console.expect("2", timeout=60)
 

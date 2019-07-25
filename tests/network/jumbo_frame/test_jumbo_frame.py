@@ -157,7 +157,7 @@ def test_connectivity_over_linux_bridge_large_mtu(
     icmp_header = 8
     ip_header = 20
     run_test_connectivity(
-        src_vm=running_bridge_attached_vmia,
+        src_vm=bridge_attached_vma,
         dst_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmib, name=BR1TEST),
         positive=True,
         mtu=MTU_SIZE - ip_header - icmp_header,

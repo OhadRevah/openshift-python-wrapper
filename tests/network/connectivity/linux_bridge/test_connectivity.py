@@ -232,7 +232,7 @@ def test_connectivity_over_linux_bridge(
 
     positive = bridge != BR1VLAN300
     run_test_connectivity(
-        src_vm=running_bridge_attached_vmia,
+        src_vm=bridge_attached_vma,
         dst_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmib, name=bridge),
         positive=positive,
     )
@@ -254,9 +254,8 @@ def test_guest_performance_over_linux_bridge(
     """
     expected_res = py_config["test_guest_performance"]["bandwidth"]
     bits_per_second = run_test_guest_performance(
-        server_vm=running_bridge_attached_vmia.name,
-        client_vm=running_bridge_attached_vmib.name,
+        server_vm=bridge_attached_vma,
+        client_vm=bridge_attached_vmb,
         listen_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmia, name=BR1TEST),
-        namespace=module_namespace.name,
     )
     assert bits_per_second >= expected_res

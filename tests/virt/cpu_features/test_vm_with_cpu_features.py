@@ -63,9 +63,7 @@ def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
             "features"
         ][0]["name"]
     )
-    with console.Fedora(
-        vm=cpu_features_vm_positive.name, namespace=cpu_features_vm_positive.namespace
-    ) as vm_console:
+    with console.Fedora(vm=cpu_features_vm_positive) as vm_console:
         vm_console.sendline("cat /etc/redhat-release | wc -l\n")
         vm_console.expect("1", timeout=20)
 

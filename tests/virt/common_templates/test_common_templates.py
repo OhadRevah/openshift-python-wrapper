@@ -106,11 +106,7 @@ def test_common_templates_with_rhel(data_volume, namespace):
                 vm.start()
                 vm.vmi.wait_until_running()
                 with console.Fedora(
-                    vm=VM_NAME,
-                    username="cloud-user",
-                    password="redhat",
-                    namespace=namespace.name,
-                    timeout=1100,
+                    vm=vm, username="cloud-user", password="redhat", timeout=1100
                 ) as vm_console:
                     vm_console.sendline(
                         f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"

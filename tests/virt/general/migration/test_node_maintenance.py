@@ -17,13 +17,13 @@ from utilities import console
 
 
 @contextmanager
-def running_sleep_in_guest(vmi):
+def running_sleep_in_guest(vm):
     process = "sleep 1000"
-    with console.Fedora(vmi.name, namespace=vmi.namespace) as vm_console:
+    with console.Fedora(vm) as vm_console:
         vm_console.sendline(f"nohup {process} &")
         vm_console.expect("nohup: ")
     yield
-    with console.Fedora(vmi.name, namespace=vmi.namespace) as vm_console:
+    with console.Fedora(vm) as vm_console:
         vm_console.sendline(f'ps aux | grep "{process}" | grep -v grep | wc -l')
         vm_console.expect("1")
 
@@ -41,7 +41,7 @@ def vm0(virt_namespace):
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
-        yield vm.vmi
+        yield vm
 
 
 @pytest.mark.polarion("CNV-2286")
@@ -61,7 +61,7 @@ def test_node_maintenance(
                     migration_job.wait_for_status(status="Succeeded", timeout=600)
 
             source_pod.wait_deleted()
-            target_node = vm0.virt_launcher_pod.node
+            target_node = vm0.vmi.virt_launcher_pod.node
             assert (
                 target_node != source_node
             ), "Source Node and Target Node should be different"

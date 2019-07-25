@@ -71,9 +71,7 @@ def test_vm_with_cpu_flag_positive_case(cpu_flag_vm_positive):
             "model"
         ]
     )
-    with console.Fedora(
-        vm=cpu_flag_vm_positive.name, namespace=cpu_flag_vm_positive.namespace
-    ) as vm_console:
+    with console.Fedora(vm=cpu_flag_vm_positive) as vm_console:
         vm_console.sendline("cat /etc/redhat-release | wc -l\n")
         vm_console.expect("1", timeout=20)
 
