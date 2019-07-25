@@ -132,6 +132,9 @@ def test_no_scratch_space_import_http(
     )
 
 
+@pytest.mark.bugzilla(
+    1732944, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 @pytest.mark.polarion("CNV-2315")
 def test_scratch_space_upload_data_volume(storage_ns, tmpdir):
     local_name = f"{tmpdir}/{QCOW2_IMG}"
@@ -142,18 +145,24 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir):
     virtctl_upload = storage_utils.virtctl_upload(
         namespace=storage_ns.name,
         pvc_name=pvc_name,
-        pvc_size="1Gi",
+        pvc_size="5Gi",
         image_path=local_name,
     )
     with PersistentVolumeClaim(
-        name=f"{pvc_name}-scratch", namespace=storage_ns.name
+        name=f"{pvc_name}-scratch",
+        namespace=storage_ns.name,
+        accessmodes=ImportFromHttpDataVolume.AccessMode.RWO,
+        size="5Gi",
     ) as pvc:
-        assert pvc.wait_for_status(status="Bound", timeout=300)
+        pvc.wait_for_status(status="Bound", timeout=300)
         assert virtctl_upload
         LOGGER.info(f"{virtctl_upload}")
         assert PersistentVolumeClaim(name=pvc_name, namespace=storage_ns.name).bound()
 
 
+@pytest.mark.bugzilla(
+    1732944, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 @pytest.mark.polarion("CNV-2323")
 def test_scratch_space_import_https_data_volume(storage_ns, images_https_server):
     url = get_file_url_https_server(images_https_server, QCOW2_IMG)
@@ -171,6 +180,9 @@ def test_scratch_space_import_https_data_volume(storage_ns, images_https_server)
         )
 
 
+@pytest.mark.bugzilla(
+    1732944, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 @pytest.mark.polarion("CNV-2319")
 def test_scratch_space_import_registry_data_volume(storage_ns):
     with ConfigMap(
@@ -228,7 +240,12 @@ def create_dv_and_vm_no_scratch_space(
         thread = threading.Thread(target=dv.wait())
         thread.daemon = True
         thread.start()
-        pvc = PersistentVolumeClaim(name=f"{dv_name}-scratch", namespace=namespace)
+        pvc = PersistentVolumeClaim(
+            name=f"{dv_name}-scratch",
+            namespace=namespace,
+            accessmodes=ImportFromHttpDataVolume.AccessMode.RWO,
+            size="5Gi",
+        )
         try:
             assert pvc.instance()
         except NotFoundError:
@@ -265,9 +282,12 @@ def create_dv_and_vm(
 
 def verify_completeness(dv):
     with PersistentVolumeClaim(
-        name=f"{dv.name}-scratch", namespace=dv.namespace
+        name=f"{dv.name}-scratch",
+        namespace=dv.namespace,
+        accessmodes=ImportFromHttpDataVolume.AccessMode.RWO,
+        size="5Gi",
     ) as pvc:
-        assert pvc.wait_for_status(status="Bound", timeout=300)
-        assert dv.wait_for_status(status="Succeeded", timeout=300)
+        pvc.wait_for_status(status="Bound", timeout=300)
+        dv.wait_for_status(status="Succeeded", timeout=300)
         assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
         storage_utils.create_vm_with_dv(dv)

@@ -15,6 +15,23 @@ class PersistentVolumeClaim(NamespacedResource):
 
     api_version = "v1"
 
+    def __init__(self, name, namespace, accessmodes=None, size=None):
+        super().__init__(name=name, namespace=namespace)
+        self.accessmodes = accessmodes
+        self.size = size
+
+    def _to_dict(self):
+        res = super()._base_body()
+        res.update(
+            {
+                "spec": {
+                    "accessModes": [self.accessmodes],
+                    "resources": {"requests": {"storage": self.size}},
+                }
+            }
+        )
+        return res
+
     def bound(self):
         """
         Check if PVC is bound
