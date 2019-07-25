@@ -3,6 +3,7 @@
 To create a Fedora VM container execute build.sh.
 
 To execute the build script the following packages needed:
+
     cloud-utils
     docker (https://docs.docker.com/install/linux/docker-ce/fedora)
     virt-install
@@ -14,6 +15,7 @@ build.sh get Fedora image as parameter, for example:
 ```
 
 This will install:
+
     tcpdump
     qemu-guest-agent
     iperf3
@@ -24,11 +26,11 @@ This will install:
     nmap
     dhcp
 
-and enable qemu-guest-agent service in the VM.
+and enable qemu-guest-agent service in the VM.  
 If extra packages needed add them in user-data file.
 
-Once executed you should have a login prompt to the VM.
-If extra steps needed login with username fedora and password fedora, execute whats needed.
+Once executed you should have a login prompt to the VM.  
+If extra steps needed login with username fedora and password fedora, execute whats needed.  
 When done exit the console (ctrl+]).
 
 The tar container will be located under "fedora_build" folder.
@@ -37,7 +39,14 @@ The tar container will be located under "fedora_build" folder.
 ### push container
 From "fedora_build" folder:
  1. docker load -i fedora.tar
- 2. docker tag fedora:30 quay.io/redhat/cnv-tests-fedora
- 3. docker push quay.io/redhat/cnv-tests-fedora
+ 2. docker tag fedora:30 quay.io/redhat/cnv-tests-fedora-staging
+ 3. docker push quay.io/redhat/cnv-tests-fedora-staging
 
 30 tag should changed based on the Fedora version.
+
+### Verify
+Change tests/manifests/vm-fedora.yaml to use cnv-tests-fedora-staging image
+
+`image: quay.io/redhat/cnv-tests-fedora-staging:30`
+
+Run the tests (cnv-tests).
