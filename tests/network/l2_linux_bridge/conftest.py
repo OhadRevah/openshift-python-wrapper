@@ -18,7 +18,6 @@ from utilities.console import Fedora
 #       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
 #       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
 
-WAIT_FOR_VM_INTERFACES_TIMEOUT = 1500
 BRIDGE_BR1 = "br1test"
 VMA_MPLS_LOOPBACK_IP = "192.168.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
@@ -303,13 +302,10 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     runs dhcpd server. To avoid incorrect dhcpd IP address allocation
     this commands are critical to run ONLY after vm_b is UP and configured
     """
-    assert utils.wait_for_vm_interfaces(
-        vmi=started_vmi_a, timeout=WAIT_FOR_VM_INTERFACES_TIMEOUT
-    )
+    assert utils.wait_for_vm_interfaces(vmi=started_vmi_a)
 
-    assert utils.wait_for_vm_interfaces(
-        vmi=started_vmi_b, timeout=WAIT_FOR_VM_INTERFACES_TIMEOUT
-    )  # This is mandatory step to avoid ip allocation to the incorrect interface
+    # This is mandatory step to avoid ip allocation to the incorrect interface
+    assert utils.wait_for_vm_interfaces(vmi=started_vmi_b)
 
     run_commands(vm_a.vmi, ["sudo systemctl start dhcpd"])
     return vm_a

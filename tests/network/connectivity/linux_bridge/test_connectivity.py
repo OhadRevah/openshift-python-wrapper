@@ -168,7 +168,7 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
     vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=800)
+    wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
@@ -176,7 +176,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
     vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=800)
+    wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 

@@ -15,7 +15,6 @@ from tests.network.utils import (
 )
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 
-WAIT_FOR_VM_TIMEOUT = 720
 MTU_SIZE = 9000
 BR1TEST = "br1test"
 
@@ -111,7 +110,7 @@ def bridge_attached_vmb(module_namespace, network_utility_pods):
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
     vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=WAIT_FOR_VM_TIMEOUT)
+    wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
@@ -119,7 +118,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
     vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=WAIT_FOR_VM_TIMEOUT)
+    wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 

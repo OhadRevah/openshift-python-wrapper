@@ -62,13 +62,13 @@ def vmb(module_namespace, network_utility_pods):
 
 @pytest.fixture(scope="module")
 def running_vma(vma):
-    assert wait_for_vm_interfaces(vmi=vma.vmi, timeout=720)
+    assert wait_for_vm_interfaces(vmi=vma.vmi)
     return vma
 
 
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
-    assert wait_for_vm_interfaces(vmi=vmb.vmi, timeout=720)
+    assert wait_for_vm_interfaces(vmi=vmb.vmi)
     return vmb
 
 

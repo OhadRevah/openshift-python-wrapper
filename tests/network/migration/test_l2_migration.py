@@ -120,7 +120,7 @@ def vmb(namespace, network_utility_pods):
 def running_vmia(vma):
     vmi = vma.vmi
     vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=720)
+    wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
@@ -128,7 +128,7 @@ def running_vmia(vma):
 def running_vmib(vmb):
     vmi = vmb.vmi
     vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi, timeout=720)
+    wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
