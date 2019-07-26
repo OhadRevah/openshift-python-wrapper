@@ -7,6 +7,14 @@ import os
 import shutil
 import subprocess
 
+from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.template import Template
+from resources.virtual_machine import (
+    VirtualMachineInstance,
+    VirtualMachine,
+    VirtualMachineInstancePreset,
+)
+
 LOGGER = logging.getLogger(__name__)
 
 PLAYBOOK_REPO_URL = "https://github.com/kubevirt/ansible-kubevirt-modules"
@@ -33,6 +41,40 @@ def ansible_config_environ():
     os.environ["ANSIBLE_CONFIG"] = PLAYBOOK_REPO_ANSICFG
     yield
     del os.environ["ANSIBLE_CONFIG"]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup(default_client):
+    default_ns = "default"
+    vms = list(VirtualMachine.get(default_client, namespace=default_ns))
+    vmis = list(VirtualMachineInstance.get(default_client, namespace=default_ns))
+    vmips = list(VirtualMachineInstancePreset.get(default_client, namespace=default_ns))
+    pvcs = list(PersistentVolumeClaim.get(default_client, namespace=default_ns))
+    templates = list(
+        Template.get(default_client, singular_name="template", namespace=default_ns)
+    )
+    yield
+    for vm in VirtualMachine.get(default_client, namespace=default_ns):
+        if vm not in vms:
+            vm.delete(wait=True)
+
+    for vmi in VirtualMachineInstance.get(default_client, namespace=default_ns):
+        if vmi not in vmis:
+            vmi.delete(wait=True)
+
+    for vmip in VirtualMachineInstancePreset.get(default_client, namespace=default_ns):
+        if vmip not in vmips:
+            vmip.delete(wait=True)
+
+    for pvc in PersistentVolumeClaim.get(default_client, namespace=default_ns):
+        if pvc not in pvcs:
+            pvc.delete(wait=True)
+
+    for template in Template.get(
+        default_client, singular_name="template", namespace=default_ns
+    ):
+        if template not in templates:
+            template.delete(wait=True)
 
 
 @pytest.mark.parametrize(

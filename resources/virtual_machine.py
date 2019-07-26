@@ -281,3 +281,11 @@ class VirtualMachineInstanceMigration(NamespacedResource):
         res = super()._to_dict()
         res["spec"] = {"vmiName": self._vmi.name}
         return res
+
+
+class VirtualMachineInstancePreset(NamespacedResource):
+    """
+    VirtualMachineInstancePreset object.
+    """
+
+    api_version = API_VERSION
