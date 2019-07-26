@@ -14,6 +14,21 @@ pipenv --three install
 
 ## Prepare CNV cluster
 
+This project runs tests against a cluster with running CNV instance. You can
+use your own cluster or deploy a local one using attached scripts.
+
+### Local cluster
+
+Deploy Kubernetes cluster using kubevirtci and install upstream HCO on top of
+it. This can be used during development, but the results should not be used
+for patch verification.
+
+```bash
+UPSTREAM=1 make cluster-up cluster-install-hco
+```
+
+### Arbitrary cluster
+
 These tests can be executed against arbitrary OpenShift cluster with CNV
 installed.
 
@@ -27,15 +42,6 @@ Or by setting `KUBECONFIG` variable:
 
 ```bash
 KUBECONFIG=<kubeconfig file>
-```
-
-If you don't have a running CNV cluster, you can use
-[HCO](https://github.com/kubevirt/hyperconverged-cluster-operator). Follow the
-[Launching the HCO on a local cluster](https://github.com/kubevirt/hyperconverged-cluster-operator#launching-the-hco-on-a-local-cluster)
-guide and then set `KUBECONFIG`:
-
-```bash
-KUBECONFIG=${GOPATH}/github.com/kubevirt/hyperconverged-cluster-operator/cluster/.kubeconfig
 ```
 
 ## Running the tests
@@ -121,6 +127,10 @@ breaking the rest of the code, and if so, to mark them as Verified+1.
 author and their reviewer.) It's required that the procedure used to verify a
 patch is listed in comments to the review request.
 
+## How-to verify your patch
+
+### Check the code
+
 Code style must pass flake8-black.
 The plugin: https://github.com/peterjc/flake8-black
 How to install and use black tool: https://github.com/python/black
@@ -131,7 +141,25 @@ To check for PEP 8 issues locally run:
 make check
 ```
 
-## How-to verify your patch
+### Run functional tests locally
+
+It is possible to run functional tests on local 2-node Kubernetes environment.
+This is not a targeted setup for users, but these tests may help you during the
+development before proper verification described in the following section.
+
+Run tests locally:
+
+```bash
+UPSTREAM=1 make cluster-up cluster-install-hco cluster-tests
+```
+
+Remove the cluster:
+
+```bash
+make cluster-down
+```
+
+### Run functional tests via an OCP Jenkins job
 
 Run the Jenkins job for cnv-tests: https://cnv-qe-jenkins.rhev-ci-vms.eng.rdu2.redhat.com/job/test-pytest-ocp-4.1-cnv-2.0-cluster
 
