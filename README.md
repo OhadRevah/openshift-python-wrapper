@@ -106,3 +106,13 @@ To check for PEP 8 issues locally run:
 ```
 tox
 ```
+
+### How-to verify your patch
+Run the Jenkins job for cnv-tests
+'''
+https://cnv-qe-jenkins.rhev-ci-vms.eng.rdu2.redhat.com/job/test-pytest-ocp-4.1-cnv-2.0-cluster
+'''
+Click on Build with Parameters.
+Under SLAVE_LABEL choose 'cnv-executor-cnv-tests'
+Under REFS add you patch refs in format  refs/changes/<link>/<commit >/<patch set> ,like: refs/changes/71/176971/4
+Add the link of the passed job to the patch in Gerrit when verifying it.
