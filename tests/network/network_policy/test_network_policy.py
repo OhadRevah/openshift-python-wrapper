@@ -1,0 +1,151 @@
+"""
+Network policy tests
+"""
+
+import pytest
+
+from resources.namespace import Namespace
+from resources.network_policy import NetworkPolicy
+from tests.network.utils import vm_run_commands, CommandExecFailed
+from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
+
+
+class VirtualMachineMasquerade(FedoraVirtualMachine):
+    def __init__(self, name, namespace, node_selector):
+        super().__init__(name=name, namespace=namespace, node_selector=node_selector)
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
+            "interfaces"
+        ]
+        for iface in vm_interfaces:
+            if "masquerade" in iface.keys():
+                iface["ports"] = [
+                    {"name": "http80", "port": 80, "protocol": "TCP"},
+                    {"name": "http81", "port": 81, "protocol": "TCP"},
+                ]
+        return res
+
+
+class ApplyNetworkPolicy(NetworkPolicy):
+    def __init__(self, name, namespace, ports=None):
+        super().__init__(name, namespace)
+        self.ports = ports
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        _ports = []
+        if self.ports:
+            for port in self.ports:
+                _ports.append({"protocol": "TCP", "port": port})
+
+        res["spec"] = {"podSelector": {}}
+        if _ports:
+            res["spec"]["ingress"] = [{"ports": _ports}]
+        return res
+
+
+@pytest.fixture(scope="module")
+def namespace_1():
+    with Namespace(name="network-policy-test-1") as ns:
+        yield ns
+
+
+@pytest.fixture(scope="module")
+def namespace_2():
+    with Namespace(name="network-policy-test-2") as ns:
+        yield ns
+
+
+@pytest.fixture()
+def deny_all_http_ports(namespace_1):
+    with ApplyNetworkPolicy(
+        name="deny-all-http-ports", namespace=namespace_1.name
+    ) as np:
+        yield np
+
+
+@pytest.fixture()
+def allow_all_http_ports(namespace_1):
+    with ApplyNetworkPolicy(
+        name="allow-all-http-ports", namespace=namespace_1.name, ports=[80, 81]
+    ) as np:
+        yield np
+
+
+@pytest.fixture()
+def allow_http80_port(namespace_1):
+    with ApplyNetworkPolicy(
+        name="allow-http80-port", namespace=namespace_1.name, ports=[80]
+    ) as np:
+        yield np
+
+
+@pytest.fixture(scope="module")
+def vma(namespace_1, nodes):
+    with VirtualMachineMasquerade(
+        namespace=namespace_1.name, name="vma", node_selector=nodes[0].name
+    ) as vm:
+        vm.start()
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def vmb(namespace_2, nodes):
+    with FedoraVirtualMachine(
+        namespace=namespace_2.name, name="vmb", node_selector=nodes[0].name
+    ) as vm:
+        vm.start()
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def running_vma(vma):
+    vma.vmi.wait_until_running()
+    wait_for_vm_interfaces(vma.vmi)
+    yield vma
+
+
+@pytest.fixture(scope="module")
+def running_vmb(vmb):
+    vmb.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmb.vmi)
+    yield vmb
+
+
+@pytest.mark.polarion("CNV-369")
+def test_network_policy_deny_all_http(
+    deny_all_http_ports, vma, vmb, running_vma, running_vmb
+):
+    dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
+    with pytest.raises(CommandExecFailed):
+        vm_run_commands(
+            vmb,
+            [f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]],
+            timeout=10,
+        )
+
+
+@pytest.mark.polarion("CNV-369")
+def test_network_policy_allow_all_http(
+    allow_all_http_ports, vma, vmb, running_vma, running_vmb
+):
+    dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
+    vm_run_commands(
+        vmb,
+        [f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]],
+        timeout=10,
+    )
+
+
+@pytest.mark.polarion("CNV-369")
+def test_network_policy_allow_http80(
+    allow_http80_port, vma, vmb, running_vma, running_vmb
+):
+    dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
+    vm_run_commands(vmb, [f"curl --head {dst_ip}:80 --connect-timeout 5"], timeout=10)
+    with pytest.raises(CommandExecFailed):
+        vm_run_commands(
+            vmb, [f"curl --head {dst_ip}:81 --connect-timeout 5"], timeout=10
+        )

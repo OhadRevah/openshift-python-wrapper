@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 from ipaddress import ip_interface
-from pexpect.exceptions import TIMEOUT
 
 import pytest
 
 from resources.namespace import Namespace
 from tests import utils
-from tests.network.utils import Bridge, VXLANTunnel, bridge_nad, nmcli_add_con_cmds
+from tests.network.utils import (
+    Bridge,
+    VXLANTunnel,
+    bridge_nad,
+    nmcli_add_con_cmds,
+    vm_run_commands,
+)
 from tests.utils import FedoraVirtualMachine
-from utilities.console import Fedora
 
 #: Test setup
 #       .........                                                                                      ..........
@@ -105,36 +109,6 @@ def running_vmi(vm):
     vm.start(wait=True)
     vm.vmi.wait_until_running()
     return vm.vmi
-
-
-class CommandExecFailed(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"Command: {self.name} - exec failed."
-
-
-def run_commands(vm, commands):
-    """
-    Run a list of commands inside VM and check all commands return 0.
-    If return code other than 0 then it will break execution and raise exception.
-
-    Args:
-        vm (obj): VirtualMachine
-        commands (list): List of commands
-    """
-    with Fedora(vm=vm) as vm_console:
-
-        for command in commands:
-            vm_console.sendline(command)
-            vm_console.sendline(
-                "echo rc==$?=="
-            )  # This construction rc==$?== is unique. Return code validation
-            try:
-                vm_console.expect(r"rc==0==", timeout=60)  # Expected return code is 0
-            except TIMEOUT:
-                raise CommandExecFailed(command)
 
 
 def bridge_attached_vm(
@@ -307,7 +281,7 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     # This is mandatory step to avoid ip allocation to the incorrect interface
     assert utils.wait_for_vm_interfaces(vmi=started_vmi_b)
 
-    run_commands(vm_a, ["sudo systemctl start dhcpd"])
+    vm_run_commands(vm_a, ["sudo systemctl start dhcpd"])
     return vm_a
 
 
@@ -320,5 +294,5 @@ def configured_vm_b(vm_a, vm_b, started_vmi_b, configured_vm_a):
         "sudo nmcli connection modify eth3 ipv4.method auto",
         "sudo nmcli con up eth3",
     ]
-    run_commands(vm_b, post_install_command)
+    vm_run_commands(vm_b, post_install_command)
     return vm_b

@@ -40,7 +40,7 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
       - containerDisk:
-          image: quay.io/redhat/cnv-tests-fedora:30
+          image: quay.io/redhat/cnv-tests-fedora-staging
         name: containerdisk
       - cloudInitNoCloud:
           userData:

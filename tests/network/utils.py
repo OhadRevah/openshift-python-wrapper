@@ -2,12 +2,21 @@ import contextlib
 import ipaddress
 import logging
 
+import pexpect
 from pytest_testconfig import config as py_config
 
 from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
 from utilities import console
 
 LOGGER = logging.getLogger(__name__)
+
+
+class CommandExecFailed(Exception):
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return f"Command: {self.name} - exec failed."
 
 
 @contextlib.contextmanager
@@ -238,3 +247,25 @@ def running_vmi(vm):
     vm.start(wait=True)
     vm.vmi.wait_until_running()
     return vm.vmi
+
+
+def vm_run_commands(vm, commands, timeout=60):
+    """
+    Run a list of commands inside VM and check all commands return 0.
+    If return code other than 0 then it will break execution and raise exception.
+
+    Args:
+        vm (obj): VirtualMachine
+        commands (list): List of commands
+        timeout (int): Time to wait for the command output
+    """
+    with console.Fedora(vm=vm) as vmc:
+        for command in commands:
+            vmc.sendline(command)
+            vmc.sendline(
+                "echo rc==$?=="
+            )  # This construction rc==$?== is unique. Return code validation
+            try:
+                vmc.expect("rc==0==", timeout=timeout)  # Expected return code is 0
+            except pexpect.exceptions.TIMEOUT:
+                raise CommandExecFailed(command)
