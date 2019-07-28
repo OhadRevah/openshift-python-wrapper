@@ -25,12 +25,13 @@ This will install:
     kernel-modules
     nmap
     dhcp
+    stress
 
-and enable qemu-guest-agent service in the VM.  
+and enable qemu-guest-agent service in the VM.
 If extra packages needed add them in user-data file.
 
-Once executed you should have a login prompt to the VM.  
-If extra steps needed login with username fedora and password fedora, execute whats needed.  
+Once executed you should have a login prompt to the VM.
+If extra steps needed login with username fedora and password fedora, execute whats needed.
 When done exit the console (ctrl+]).
 
 The tar container will be located under "fedora_build" folder.
@@ -46,7 +47,11 @@ From "fedora_build" folder:
 
 ### Verify
 Change tests/manifests/vm-fedora.yaml to use cnv-tests-fedora-staging image
-
-`image: quay.io/redhat/cnv-tests-fedora-staging:30`
-
+`image: quay.io/redhat/cnv-tests-fedora-staging`
 Run the tests (cnv-tests).
+
+Once verified push the image to quay.io/redhat/cnv-tests-fedora
+```
+docker tag fedora:30 quay.io/redhat/cnv-tests-fedora:30
+docker push quay.io/redhat/cnv-tests-fedora:30
+```
