@@ -115,10 +115,12 @@ class FedoraVirtualMachine(VirtualMachine):
         networks=None,
         node_selector=None,
         cpu_flags=None,
+        service_accounts=None,
         **vm_attr,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.interfaces = interfaces or []
+        self.service_accounts = service_accounts or []
         self.networks = networks or {}
         self.node_selector = node_selector
         self.eviction = eviction
@@ -160,6 +162,14 @@ class FedoraVirtualMachine(VirtualMachine):
                     self._cloud_init_user_data()
                 )
                 break
+
+        for sa in self.service_accounts:
+            res["spec"]["template"]["spec"]["domain"]["devices"]["disks"].append(
+                {"disk": {}, "name": sa}
+            )
+            res["spec"]["template"]["spec"]["volumes"].append(
+                {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
+            )
 
         if self.node_selector:
             res["spec"]["template"]["spec"]["nodeSelector"] = {
