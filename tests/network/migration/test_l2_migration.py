@@ -134,7 +134,7 @@ def running_vmib(vmb):
     yield vmi
 
 
-def ping_in_backgroud(vm, dst_vm):
+def ping_in_background(vm, dst_vm):
     dst_ip = get_vmi_ip_v4_by_name(dst_vm.vmi, BR1TEST)
     LOGGER.info(f"Ping {dst_ip} from {vm.name} to {dst_vm.name}")
     with console.Fedora(vm=vm) as vmc:
@@ -153,9 +153,33 @@ def assert_low_packet_loss(vm):
         assert packet_loss < 3.0
 
 
+def ssh_in_background(vm, dst_vm):
+    """
+    Start ssh connection to the vm
+    """
+    dst_ip = get_vmi_ip_v4_by_name(dst_vm.vmi, BR1TEST)
+    LOGGER.info(f"Start ssh connection to {dst_vm.name} from {vm.name}")
+    with console.Fedora(vm=vm) as vm_console:
+        vm_console.sendline(
+            f"sshpass -p fedora ssh -o 'StrictHostKeyChecking no' fedora@{dst_ip} 'sleep 99999'&"
+        )
+        vm_console.expect(r"\[\d+\].*\d+", timeout=10)
+        vm_console.sendline(f"ps aux | grep 'sleep'")
+        vm_console.expect("sshpass -p zzzzzz", timeout=10)
+
+
+def assert_ssh_alive(ssh_vm):
+    """
+    Check the ssh process is alive
+    """
+    with console.Fedora(vm=ssh_vm) as tcp_vm_console:
+        tcp_vm_console.sendline(f"ps aux | grep 'sleep'")
+        tcp_vm_console.expect("sshpass -p zzzzzz", timeout=10)
+
+
 @pytest.mark.polarion("CNV-2060")
 def test_ping_vm_migration(skip_when_one_node, vma, vmb, running_vmia, running_vmib):
-    ping_in_backgroud(vma, vmb)
+    ping_in_background(vma, vmb)
     src_node = running_vmib.instance.status.nodeName
     with VirtualMachineInstanceMigration(
         name="l2-migration", namespace=running_vmib.namespace, vmi=running_vmib
@@ -164,3 +188,18 @@ def test_ping_vm_migration(skip_when_one_node, vma, vmb, running_vmia, running_v
         assert running_vmib.instance.status.nodeName != src_node
 
     assert_low_packet_loss(vma)
+
+
+@pytest.mark.polarion("CNV-2063")
+def test_ssh_vm_migration(
+    skip_when_one_node, namespace, vma, vmb, running_vmia, running_vmib
+):
+    ssh_in_background(vma, vmb)
+    src_node = running_vmib.instance.status.nodeName
+    with VirtualMachineInstanceMigration(
+        name="tcp-migration", namespace=namespace.name, vmi=running_vmib
+    ) as mig:
+        mig.wait_for_status(status="Succeeded", timeout=720)
+        assert running_vmib.instance.status.nodeName != src_node
+
+    assert_ssh_alive(vma)
