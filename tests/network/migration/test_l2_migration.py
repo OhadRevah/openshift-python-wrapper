@@ -83,7 +83,7 @@ def br1test_nad(namespace):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace, network_utility_pods):
+def vma(namespace):
     networks = {BR1TEST: BR1TEST}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", VMAIP))
@@ -100,7 +100,7 @@ def vma(namespace, network_utility_pods):
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace, network_utility_pods):
+def vmb(namespace):
     networks = {BR1TEST: BR1TEST}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", VMBIP))

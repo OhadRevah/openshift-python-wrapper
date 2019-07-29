@@ -77,14 +77,14 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(module_namespace, network_utility_pods):
+def bridge_attached_vma(nodes, module_namespace):
     networks = {BR1TEST: BR1TEST}
     with BridgedMtuFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=network_utility_pods[0].node.name,
+        node_selector=nodes[0].name,
         iface_ip="192.168.0.1",
     ) as vm:
         vm.start()
@@ -92,14 +92,14 @@ def bridge_attached_vma(module_namespace, network_utility_pods):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(module_namespace, network_utility_pods):
+def bridge_attached_vmb(nodes, module_namespace):
     networks = {BR1TEST: BR1TEST}
     with BridgedMtuFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=network_utility_pods[1].node.name,
+        node_selector=nodes[1].name,
         iface_ip="192.168.0.2",
     ) as vm:
         vm.start()

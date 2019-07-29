@@ -39,22 +39,18 @@ def module_namespace():
 
 
 @pytest.fixture(scope="module")
-def vma(module_namespace, network_utility_pods):
+def vma(nodes, module_namespace):
     with FedoraVirtualMachineTest(
-        namespace=module_namespace.name,
-        name="vma",
-        node_selector=network_utility_pods[0].node.name,
+        namespace=module_namespace.name, name="vma", node_selector=nodes[0].name
     ) as vm:
         vm.start()
         yield vm
 
 
 @pytest.fixture(scope="module")
-def vmb(module_namespace, network_utility_pods):
+def vmb(nodes, module_namespace):
     with FedoraVirtualMachineTest(
-        namespace=module_namespace.name,
-        name="vmb",
-        node_selector=network_utility_pods[1].node.name,
+        namespace=module_namespace.name, name="vmb", node_selector=nodes[1].name
     ) as vm:
         vm.start()
         yield vm

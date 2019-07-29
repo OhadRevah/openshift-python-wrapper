@@ -119,7 +119,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
+def bridge_attached_vma(nodes, bond_supported, module_namespace):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN200: BR1VLAN200}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
@@ -134,7 +134,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=network_utility_pods[0].node.name,
+        node_selector=nodes[0].name,
         bootcmds=bootcmds,
     ) as vm:
         vm.start()
@@ -142,7 +142,7 @@ def bridge_attached_vma(bond_supported, module_namespace, network_utility_pods):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
+def bridge_attached_vmb(nodes, bond_supported, module_namespace):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN300: BR1VLAN300}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
@@ -157,7 +157,7 @@ def bridge_attached_vmb(bond_supported, module_namespace, network_utility_pods):
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=network_utility_pods[1].node.name,
+        node_selector=nodes[1].name,
         bootcmds=bootcmds,
     ) as vm:
         vm.start()

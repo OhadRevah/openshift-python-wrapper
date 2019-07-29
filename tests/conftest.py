@@ -108,3 +108,8 @@ def skip_when_one_node(default_client):
         < 2
     ):
         pytest.skip(msg="Test requires at least 2 nodes")
+
+
+@pytest.fixture(scope="session")
+def nodes(default_client):
+    yield list(Node.get(default_client, label_selector="kubevirt.io/schedulable=true"))
