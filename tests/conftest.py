@@ -85,12 +85,12 @@ def default_client():
 
 
 @pytest.fixture(scope="session")
-def schedulable_node_ips(default_client):
+def schedulable_node_ips(nodes):
     """
     Store all kubevirt.io/schedulable=true IPs
     """
     node_ips = {}
-    for node in Node.get(default_client, label_selector="kubevirt.io/schedulable=true"):
+    for node in nodes:
         for addr in node.instance.status.addresses:
             if addr.type == "InternalIP":
                 node_ips[node.name] = addr.address
@@ -98,15 +98,8 @@ def schedulable_node_ips(default_client):
 
 
 @pytest.fixture(scope="session")
-def skip_when_one_node(default_client):
-    if (
-        len(
-            list(
-                Node.get(default_client, label_selector="kubevirt.io/schedulable=true")
-            )
-        )
-        < 2
-    ):
+def skip_when_one_node(nodes):
+    if len(nodes) < 2:
         pytest.skip(msg="Test requires at least 2 nodes")
 
 
