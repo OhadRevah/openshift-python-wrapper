@@ -13,6 +13,19 @@ from resources.pod import Pod
 from utilities import utils
 
 
+class NetUtilityDaemonSet(DaemonSet):
+    def _to_dict(self):
+        res = super()._to_dict()
+        res.update(
+            utils.generate_yaml_from_template(
+                file_=os.path.join(
+                    os.path.dirname(__file__), "net-utility-daemonset.yaml"
+                )
+            )
+        )
+        return res
+
+
 @pytest.fixture(scope="session", autouse=True)
 def network_init(
     net_utility_daemonset,
@@ -28,28 +41,16 @@ def network_init(
 
 
 @pytest.fixture(scope="session")
-def net_utility_daemonset(request, default_client):
+def net_utility_daemonset(default_client):
     """
     Deploy network utility daemonset into the kube-system namespace.
 
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     For example to create linux bridge and other components related to the host configuration.
     """
-    ds = DaemonSet(name="net-utility", namespace="kube-system")
-
-    def fin():
-        """
-        Remove utility daemonset
-        """
-        ds.delete(wait=True)
-
-    request.addfinalizer(fin)
-
-    data = utils.generate_yaml_from_template(
-        file_=os.path.join(os.path.dirname(__file__), "net-utility-daemonset.yaml")
-    )
-    assert ds.create_from_dict(dyn_client=default_client, data=data)
-    ds.wait_until_deployed()
+    with NetUtilityDaemonSet(name="net-utility", namespace="kube-system") as ds:
+        ds.wait_until_deployed()
+        yield ds
 
 
 @pytest.fixture(scope="session")
