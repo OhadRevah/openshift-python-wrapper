@@ -24,7 +24,7 @@ virt-install \
   --import
 
 echo "Remove Fedora VM"
-virsh destroy Fedora
+virsh destroy Fedora || :
 virsh undefine Fedora
 
 rm -rf $CLOUD_INIT_ISO

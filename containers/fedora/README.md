@@ -32,16 +32,21 @@ If extra packages needed add them in user-data file.
 
 Once executed you should have a login prompt to the VM.
 If extra steps needed login with username fedora and password fedora, execute whats needed.
-When done exit the console (ctrl+]).
+When done shutdown the VM:  
+```
+sudo shutdown -h now
+```
 
 The tar container will be located under "fedora_build" folder.
 
 
 ### push container
 From "fedora_build" folder:
- 1. docker load -i fedora.tar
- 2. docker tag fedora:30 quay.io/redhat/cnv-tests-fedora-staging
- 3. docker push quay.io/redhat/cnv-tests-fedora-staging
+```
+docker load -i fedora.tar
+docker tag fedora:30 quay.io/redhat/cnv-tests-fedora-staging
+docker push quay.io/redhat/cnv-tests-fedora-staging
+```
 
 30 tag should changed based on the Fedora version.
 

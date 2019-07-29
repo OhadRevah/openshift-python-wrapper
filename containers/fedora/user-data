@@ -5,4 +5,6 @@ ssh_pwauth: True
 bootcmd:
   - dnf install -y tcpdump qemu-guest-agent iperf3 dmidecode nginx lldpad kernel-modules nmap dhcp stress
 runcmd:
-  - systemctl start qemu-guest-agent
+  - sudo systemctl start qemu-guest-agent
+  - sudo sed -i 's/listen       80 default_server;/listen       80 default_server;\n\tlisten       81 default_server;/g' /etc/nginx/nginx.conf
+  - sudo systemctl restart nginx
