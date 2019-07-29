@@ -219,7 +219,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             )
         )[0]
 
-    def wait_until_running(self, timeout=120, logs=True):
+    def wait_until_running(self, timeout=TIMEOUT, logs=True):
         """
         Wait until VMI is running
 

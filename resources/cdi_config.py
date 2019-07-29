@@ -5,7 +5,7 @@ import logging
 from urllib3.exceptions import ProtocolError
 
 from resources.utils import TimeoutSampler
-from .resource import Resource
+from .resource import Resource, TIMEOUT
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class CDIConfig(Resource):
     def upload_proxy_url(self):
         return self.instance.status.uploadProxyURL
 
-    def wait_until_upload_url_changed(self, uploadproxy_url, timeout=120):
+    def wait_until_upload_url_changed(self, uploadproxy_url, timeout=TIMEOUT):
         """
         Wait until upload proxy url is changed
 

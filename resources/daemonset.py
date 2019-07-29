@@ -5,10 +5,9 @@ from openshift.dynamic.exceptions import NotFoundError
 from urllib3.exceptions import ProtocolError
 
 from resources.utils import TimeoutSampler
-from .resource import NamespacedResource
+from .resource import NamespacedResource, TIMEOUT
 
 LOGGER = logging.getLogger(__name__)
-TIMEOUT = 120
 
 
 class DaemonSet(NamespacedResource):

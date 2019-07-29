@@ -1,14 +1,21 @@
 import pytest
 
+import logging
 
-@pytest.fixture(scope="class")
+LOGGER = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="module")
 def create_bond(request, network_utility_pods, bond_supported, nodes_active_nics):
     """
     Create BOND if setup support BOND
     """
     bond_name = "bond1"
 
+    LOGGER.info(f"Creating bond {bond_name}")
+
     if not bond_supported:
+        LOGGER.warning("bonding not supported")
         return
 
     def fin():
@@ -16,10 +23,17 @@ def create_bond(request, network_utility_pods, bond_supported, nodes_active_nics
         Remove created BOND
         """
         for pod in network_utility_pods:
+            node_name = pod.node.name
             pod_container = pod.containers[0].name
+            LOGGER.info(f"Deleting {bond_name} at {bond_name}")
             pod.execute(
                 command=["ip", "link", "del", bond_name], container=pod_container
             )
+            for nic in nodes_active_nics[node_name][2:4]:
+                LOGGER.info(f"Seting up {nic} at {node_name}")
+                pod.execute(
+                    command=["ip", "link", "set", nic, "up"], container=pod_container
+                )
 
     request.addfinalizer(fin)
 

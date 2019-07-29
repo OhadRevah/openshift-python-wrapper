@@ -210,7 +210,6 @@ def test_connectivity_over_linux_bridge(
     skip_when_one_node,
     bridge,
     module_namespace,
-    create_bond,
     attach_linux_bridge_to_bond,
     bond_supported,
     bridge_attached_vma,

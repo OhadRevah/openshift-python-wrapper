@@ -67,6 +67,7 @@ class Bridge:
         name,
         worker_pods,
         vlan_filtering=False,
+        nic=None,
         nodes_nics=None,
         master_index=None,
         mtu=None,
@@ -78,12 +79,14 @@ class Bridge:
             name (str): Bridge name.
             worker_pods (list): List of Pods instances.
             vlan_filtering (bool): True to set vlan_filtering 1 on the bridge.
-            nodes_nics (dict): Dict of {nodes: [NICs]}. get it from 'nodes_active_nics' fixture.
-            master_index (int): The index on the NIC to use
+            nic (str): The bridge's slave nic, exclusive with nodes_nics and master_index.
+            nodes_nics (dict): Dict of {nodes: [NICs]}. get it from 'nodes_active_nics' fixture, exclusive with nic.
+            master_index (int): The index on the NIC to use, exclusive with nic.
             mtu (int): MTU size
         """
         self.name = name
         self._worker_pods = worker_pods
+        self.nic = nic
         self.master_index = master_index
         self.vlan_filtering = vlan_filtering
         self.nodes_nics = nodes_nics
@@ -94,13 +97,15 @@ class Bridge:
         # use ExitStack to guarantee cleanup even when some workers fail
         with contextlib.ExitStack() as stack:
             for pod in self._worker_pods:
-                nic = (
-                    self.nodes_nics[pod.node.name][self.master_index]
-                    if self.master_index
-                    else None
-                )
+                nic_to_bridge = None
+                if self.nic:
+                    nic_to_bridge = self.nic
+                elif self.nodes_nics and self.master_index is not None:
+                    nic_to_bridge = self.nodes_nics[pod.node.name][self.master_index]
                 stack.enter_context(
-                    _bridge(pod, self.name, self.vlan_filtering, nic, self.mtu)
+                    _bridge(
+                        pod, self.name, self.vlan_filtering, nic_to_bridge, self.mtu
+                    )
                 )
             self._stack = stack.pop_all()
         return self

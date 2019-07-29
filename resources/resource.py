@@ -9,7 +9,7 @@ from urllib3.exceptions import ProtocolError
 from . import utils
 
 LOGGER = logging.getLogger(__name__)
-TIMEOUT = 120
+TIMEOUT = 240
 
 
 class classproperty(object):  # noqa: N801
