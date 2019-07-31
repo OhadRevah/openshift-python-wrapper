@@ -229,12 +229,17 @@ def test_connectivity_over_linux_bridge(
         # https://redhat.service-now.com/surl.do?n=PNT0584216
         pytest.skip(msg="Running on BM, no trunk on switches yet!!")
 
-    positive = bridge != BR1VLAN300
-    run_test_connectivity(
-        src_vm=bridge_attached_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=bridge),
-        positive=positive,
+    # Using masquerade we can just ping vmb pods ip
+    vmib_bridge_inteface = next(
+        i for i in running_bridge_attached_vmib.interfaces if i["name"] == bridge
     )
+    if bridge == "default" and "masquerade" in vmib_bridge_inteface:
+        vmb_ip = running_bridge_attached_vmib.virt_launcher_pod.instance.status.podIP
+    else:
+        vmb_ip = get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=bridge)
+
+    positive = bridge != BR1VLAN300
+    run_test_connectivity(src_vm=bridge_attached_vma, dst_ip=vmb_ip, positive=positive)
 
 
 @pytest.mark.skipif(not py_config["bare_metal_cluster"], reason="virtualized cluster")
