@@ -15,7 +15,7 @@ from string_utils import shuffle
 from time import sleep
 from pytest_testconfig import config as py_config
 import tests.storage.utils as storage_utils
-from utilities.utils import TimeoutSampler
+from resources.utils import TimeoutSampler
 from resources.datavolume import UploadDataVolume
 from resources.upload_token_request import UploadTokenRequest
 from resources.route import Route
