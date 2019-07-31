@@ -246,7 +246,8 @@ def run_test_connectivity(src_vm, dst_ip, positive, mtu=None):
 def nmcli_add_con_cmds(iface, ip):
     return [
         f"nmcli con add type ethernet con-name {iface} ifname {iface}",
-        f"nmcli con mod {iface} ipv4.addresses {ip}/24 ipv4.method manual connection.autoconnect-priority 1",
+        f"nmcli con mod {iface} ipv4.addresses {ip}/24 "
+        f"ipv4.method manual connection.autoconnect-priority 1 ipv6.method ignore",
         f"nmcli con up {iface}",
     ]
 
