@@ -61,8 +61,7 @@ def get_images_external_http_server():
     """
     Fetch http_server url from config and return if available.
     """
-    region = py_config[py_config["region"]]
-    server = region["http_server"]
+    server = py_config[py_config["region"]]["http_server"]
     try:
         assert urllib.request.urlopen(server).getcode() == 200
     except urllib.error.URLError:

@@ -113,7 +113,7 @@ def downloaded_image(remote_name, local_name):
     """
     Download image to local tmpdir path
     """
-    url = f"{tests.utils.get_images_http_server()}{remote_name}"
+    url = f"{tests.utils.get_images_external_http_server()}{remote_name}"
     assert requests.head(url).status_code == requests.codes.ok
     LOGGER.info(f"Download {url} to {local_name}")
     urllib.request.urlretrieve(url, local_name)

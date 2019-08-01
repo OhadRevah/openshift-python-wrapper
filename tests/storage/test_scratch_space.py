@@ -86,9 +86,11 @@ def test_no_scratch_space_import_https(
     ],
 )
 def test_no_scratch_space_import_http_basic_auth(
-    storage_ns, images_http_server, dv_name, file_name, content_type, size
+    storage_ns, get_images_external_http_server, dv_name, file_name, content_type, size
 ):
-    url = get_file_url_http_server_basic_auth(images_http_server, file_name)
+    url = get_file_url_http_server_basic_auth(
+        get_images_external_http_server, file_name
+    )
     with Secret(
         name="https-secret",
         namespace=storage_ns.name,
@@ -124,9 +126,9 @@ def test_no_scratch_space_import_http_basic_auth(
     ],
 )
 def test_no_scratch_space_import_http(
-    storage_ns, images_http_server, dv_name, file_name, content_type, size
+    storage_ns, get_images_external_http_server, dv_name, file_name, content_type, size
 ):
-    url = get_file_url_http_server(images_http_server, file_name)
+    url = get_file_url_http_server(get_images_external_http_server, file_name)
     create_dv_and_vm_no_scratch_space(
         dv_name, storage_ns.name, url, None, None, content_type, size
     )
@@ -212,12 +214,12 @@ def get_cert(server_type):
     return data
 
 
-def get_file_url_http_server(images_http_server, file_name):
-    return f"{images_http_server}cdi-test-images/cirros_images/{file_name}"
+def get_file_url_http_server(get_images_external_http_server, file_name):
+    return f"{get_images_external_http_server}cdi-test-images/cirros_images/{file_name}"
 
 
-def get_file_url_http_server_basic_auth(images_http_server, file_name):
-    return f"{images_http_server}mod-auth-basic/cirros_images/{file_name}"
+def get_file_url_http_server_basic_auth(get_images_external_http_server, file_name):
+    return f"{get_images_external_http_server}mod-auth-basic/cirros_images/{file_name}"
 
 
 def get_file_url_https_server(images_https_server, file_name):
