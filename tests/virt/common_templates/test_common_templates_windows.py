@@ -59,34 +59,52 @@ def winrmcli_pod(namespace, sa_ready):
 @pytest.fixture(
     params=[
         pytest.param(
-            [
-                "windows-images/window_qcow2_images/win_10.qcow2",
-                "Microsoft Windows 10 Enterprise",
-                "win2k12r2-desktop-medium",
-                "30Gi",
-            ],
+            {
+                "os_image": "windows-images/window_qcow2_images/win_10.qcow2",
+                "os_release": "Microsoft Windows 10 Enterprise",
+                "template_name": "win2k12r2-desktop-medium",
+                "dv_size": "30Gi",
+            },
             marks=(pytest.mark.polarion("CNV-2196")),
         ),
         pytest.param(
-            [
-                "windows-images/window_qcow2_images/win_12.qcow2",
-                "Microsoft Windows Server 2012 R2 Datacenter",
-                "win2k12r2-desktop-medium",
-                "30Gi",
-            ],
+            {
+                "os_image": "windows-images/window_qcow2_images/win_12.qcow2",
+                "os_release": "Microsoft Windows Server 2012 R2 Datacenter",
+                "template_name": "win2k12r2-desktop-medium",
+                "dv_size": "25Gi",
+            },
             marks=(pytest.mark.polarion("CNV-2228")),
+        ),
+        pytest.param(
+            {
+                "os_image": "windows-images/window_qcow2_images/win_16.qcow2",
+                "os_release": "Microsoft Windows Server 2016 Datacenter",
+                "template_name": "win2k12r2-desktop-medium",
+                "dv_size": "30Gi",
+            },
+            marks=(pytest.mark.polarion("CNV-2175")),
+        ),
+        pytest.param(
+            {
+                "os_image": "windows-images/window_qcow2_images/win_19.qcow2",
+                "os_release": "Microsoft Windows Server 2019 Standard",
+                "template_name": "win2k12r2-desktop-medium",
+                "dv_size": "25Gi",
+            },
+            marks=(pytest.mark.polarion("CNV-2816")),
         ),
     ]
 )
 def data_volume(request, images_external_http_server, namespace):
-    template_name = request.param[2]
+    template_name = request.param["template_name"]
     with ct_utils.DataVolumeTestResource(
         name=f"dv-{template_name}",
         namespace=namespace.name,
-        url=f"{images_external_http_server}{request.param[0]}",
-        os_release=request.param[1],
+        url=f"{images_external_http_server}{request.param['os_image']}",
+        os_release=request.param["os_release"],
         template_name=template_name,
-        size=request.param[3],
+        size=request.param["dv_size"],
     ) as dv:
         dv.wait()
         yield dv
