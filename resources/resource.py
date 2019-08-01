@@ -6,6 +6,7 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from urllib3.exceptions import ProtocolError
 
+from resources.utils import TimeoutExpiredError
 from . import utils
 
 LOGGER = logging.getLogger(__name__)
@@ -211,12 +212,19 @@ class Resource(object):
             func=self.api().get,
             field_selector=f"metadata.name=={self.name}",
         )
-        for sample in samples:
-            if sample.items:
-                sample_status = sample.items[0].status
-                if sample_status:
-                    if sample_status.phase == status:
-                        return
+        final_status = None
+        try:
+            for sample in samples:
+                if sample.items:
+                    sample_status = sample.items[0].status
+                    if sample_status:
+                        final_status = sample_status.phase
+                        if sample_status.phase == status:
+                            return
+        except TimeoutExpiredError:
+            if final_status:
+                LOGGER.error(f"Status of {self.kind} {self.name} is {final_status}")
+            raise
 
     @classmethod
     def create_from_dict(cls, dyn_client, data, namespace=None):
