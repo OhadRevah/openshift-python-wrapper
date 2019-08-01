@@ -4,7 +4,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from resources.utils import TimeoutSampler
-from tests.network.utils import get_vmi_ip_by_name, run_test_connectivity
+from tests.network.utils import get_vmi_ip_v4_by_name, run_test_connectivity
 from utilities.console import Fedora
 
 CUSTOM_ETH_PROTOCOL = (
@@ -64,7 +64,7 @@ class TestL2LinuxBridge:
         current_ip = TimeoutSampler(
             timeout=60,
             sleep=2,
-            func=get_vmi_ip_by_name,
+            func=get_vmi_ip_v4_by_name,
             vmi=configured_vm_b.vmi,
             name=dhcp_nad.name,
         )
@@ -87,7 +87,7 @@ class TestL2LinuxBridge:
             with _open_console(configured_vm_a) as vma_console:
                 vma_console.sendline(
                     f"sudo nping -e eth2 --ether-type {CUSTOM_ETH_PROTOCOL} "
-                    f"{get_vmi_ip_by_name(configured_vm_b.vmi, custom_eth_type_llpd_nad.name)} -c 10"
+                    f"{get_vmi_ip_v4_by_name(configured_vm_b.vmi, custom_eth_type_llpd_nad.name)} -c 10"
                 )
                 vma_console.expect(
                     "[1]"

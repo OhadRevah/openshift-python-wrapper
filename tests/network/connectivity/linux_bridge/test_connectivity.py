@@ -10,7 +10,7 @@ from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import (
     bridge_nad,
     run_test_connectivity,
-    get_vmi_ip_by_name,
+    get_vmi_ip_v4_by_name,
     VXLANTunnel,
     Bridge,
     nmcli_add_con_cmds,
@@ -232,7 +232,7 @@ def test_connectivity_over_linux_bridge(
     positive = bridge != BR1VLAN300
     run_test_connectivity(
         src_vm=bridge_attached_vma,
-        dst_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmib, name=bridge),
+        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=bridge),
         positive=positive,
     )
 
@@ -255,6 +255,6 @@ def test_guest_performance_over_linux_bridge(
     bits_per_second = run_test_guest_performance(
         server_vm=bridge_attached_vma,
         client_vm=bridge_attached_vmb,
-        listen_ip=get_vmi_ip_by_name(vmi=running_bridge_attached_vmia, name=BR1TEST),
+        listen_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmia, name=BR1TEST),
     )
     assert bits_per_second >= expected_res

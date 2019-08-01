@@ -215,10 +215,13 @@ class IpNotFound(Exception):
         return f"IP address not found for interface {self.name}"
 
 
-def get_vmi_ip_by_name(vmi, name):
+def get_vmi_ip_v4_by_name(vmi, name):
     for iface in vmi.interfaces:
         if iface.name == name:
-            return ipaddress.ip_interface(iface.ipAddress).ip
+            for ipaddr in iface.ipAddresses:
+                ip = ipaddress.ip_interface(ipaddr)
+                if ip.version == 4:
+                    return ip.ip
 
     raise IpNotFound(name)
 
