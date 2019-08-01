@@ -7,7 +7,7 @@ Base templates test
 import pytest
 
 from resources.template import Template
-from tests.virt import config as virt_config
+from tests.compute.virt import config as virt_config
 
 
 @pytest.fixture()

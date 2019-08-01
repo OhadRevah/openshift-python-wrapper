@@ -13,7 +13,7 @@ from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
-from tests.virt.common_templates import utils as ct_utils
+from tests.compute.virt.common_templates import utils as ct_utils
 
 LOGGER = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ from resources.virtual_machine import (
     VirtualMachineInstance,
 )
 from tests import utils as test_utils
-from tests.virt import utils as virt_utils
+from tests.compute.virt import utils as virt_utils
 from utilities import console
 
 
