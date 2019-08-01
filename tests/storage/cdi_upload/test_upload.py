@@ -139,7 +139,7 @@ def test_successful_upload_with_supported_formats(
         size="3Gi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="UploadReady", timeout=90)
+        dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
@@ -151,7 +151,7 @@ def test_successful_upload_with_supported_formats(
             for sample in sampler:
                 if sample == 200:
                     return True
-            dv.wait_for_status(status=UploadDataVolume.Status.SUCCEEDED, timeout=90)
+            dv.wait()
             storage_utils.create_vm_with_dv(dv)
 
 
@@ -168,7 +168,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
         size="3Gi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="UploadReady", timeout=90)
+        dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
@@ -209,7 +209,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
-        dv.wait_for_status(status="UploadReady", timeout=120)
+        dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=120)
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
@@ -236,13 +236,13 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
-        dv.wait_for_status(status="UploadReady", timeout=120)
+        dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=300)
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
             token = utr.create(body=utr._to_dict()).status.token
             sleep(5)
-            dv.wait_for_status(status=UploadDataVolume.Status.SUCCEEDED, timeout=90)
+            dv.wait()
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
                 timeout=60, sleep=5, func=upload_image, token=token, data=local_name

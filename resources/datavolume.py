@@ -18,6 +18,8 @@ class DataVolume(NamespacedResource):
     class Status:
         SUCCEEDED = "Succeeded"
         FAILED = "Failed"
+        IMPORT_SCHEDULED = "ImportScheduled"
+        UPLOAD_READY = "UploadReady"
 
     class AccessMode:
         """
@@ -50,8 +52,8 @@ class DataVolume(NamespacedResource):
         super().wait_deleted(timeout=timeout)
         return pvc.wait_deleted(timeout=timeout)
 
-    def wait(self):
-        self.wait_for_status(status="Succeeded", timeout=300)
+    def wait(self, timeout=600):
+        self.wait_for_status(status=self.Status.SUCCEEDED, timeout=timeout)
         assert PersistentVolumeClaim(name=self.name, namespace=self.namespace).bound()
 
 

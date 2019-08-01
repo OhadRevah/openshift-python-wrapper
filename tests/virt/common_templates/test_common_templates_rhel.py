@@ -6,8 +6,6 @@ Common templates test RHEL
 
 import pytest
 
-from resources.datavolume import ImportFromHttpDataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.template import Template
 from resources.virtual_machine import VirtualMachine
 from tests.virt.common_templates import utils as ct_utils
@@ -41,10 +39,7 @@ def data_volume(request, images_external_http_server, namespace):
         os_release=request.param[1],
         template_name=template_name,
     ) as dv:
-        dv.wait_for_status(
-            status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=300
-        )
-        assert PersistentVolumeClaim(name=dv.name, namespace=namespace.name).bound()
+        dv.wait()
         yield dv
 
 

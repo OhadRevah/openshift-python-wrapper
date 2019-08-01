@@ -8,8 +8,6 @@ import logging
 
 import pytest
 
-from resources.datavolume import ImportFromHttpDataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from resources.template import Template
@@ -90,10 +88,7 @@ def data_volume(request, images_external_http_server, namespace):
         template_name=template_name,
         size=request.param[3],
     ) as dv:
-        dv.wait_for_status(
-            status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=300
-        )
-        assert PersistentVolumeClaim(name=dv.name, namespace=namespace.name).bound()
+        dv.wait()
         yield dv
 
 

@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import pytest
 import os
 
+import pytest
 from pytest_testconfig import config as py_config
-from resources.datavolume import ImportFromRegistryDataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.configmap import ConfigMap
-from tests.storage import utils
 
+from resources.configmap import ConfigMap
+from resources.datavolume import ImportFromRegistryDataVolume
+from tests.storage import utils
 
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
@@ -54,14 +53,15 @@ def test_private_registry_recover_after_missing_configmap(storage_ns):
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap="registry-cert-configmap",
     ) as dv:
-        dv.wait_for_status("ImportScheduled", timeout=300)
+        dv.wait_for_status(
+            ImportFromRegistryDataVolume.Status.IMPORT_SCHEDULED, timeout=300
+        )
         # create the configmap with the untrusted certificate
         with ConfigMap(
             name="registry-cert-configmap", namespace=storage_ns.name, data=get_cert()
         ) as configmap:
             assert configmap is not None
-            dv.wait_for_status(status="Succeeded", timeout=300)
-            assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+            dv.wait()
             utils.create_vm_with_dv(dv)
 
 
@@ -95,7 +95,9 @@ def test_private_registry_with_untrusted_certificate(storage_ns):
             storage_class=py_config["storage_defaults"]["storage_class"],
             cert_configmap=configmap.name,
         ) as dv:
-            dv.wait_for_status(status="Failed", timeout=300)
+            dv.wait_for_status(
+                status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
+            )
 
 
 def get_cert():
@@ -115,8 +117,7 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=cert_configmap,
     ) as dv:
-        dv.wait_for_status(status="Succeeded", timeout=300)
-        assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+        dv.wait()
         utils.create_vm_with_dv(dv)
 
 
@@ -183,7 +184,9 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=None,
     ) as dv:
-        dv.wait_for_status(status="Failed", timeout=300)
+        dv.wait_for_status(
+            status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
+        )
 
     # positive flow
     create_dv_and_vm(

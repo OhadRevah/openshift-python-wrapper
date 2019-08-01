@@ -288,6 +288,5 @@ def verify_completeness(dv):
         size="5Gi",
     ) as pvc:
         pvc.wait_for_status(status="Bound", timeout=300)
-        dv.wait_for_status(status="Succeeded", timeout=300)
-        assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+        dv.wait()
         storage_utils.create_vm_with_dv(dv)

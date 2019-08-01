@@ -36,7 +36,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait()
         pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
         assert pvc.bound()
         with utils.PodWithPVC(
@@ -57,7 +57,7 @@ def test_successful_import_image(storage_ns, images_internal_http_server):
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait()
         pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
         assert pvc.bound()
         with utils.PodWithPVC(
@@ -100,7 +100,7 @@ def test_wrong_content_type(
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="Failed", timeout=300)
+        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
 
 
 def create_vm_with_dv(ns_name, content_type, images_internal_http_server, sc):
@@ -112,8 +112,7 @@ def create_vm_with_dv(ns_name, content_type, images_internal_http_server, sc):
         size="500Mi",
         storage_class=sc,
     ) as dv:
-        dv.wait_for_status(status="Succeeded", timeout=300)
-        assert PersistentVolumeClaim(name=dv.name, namespace=dv.namespace).bound()
+        dv.wait()
         utils.create_vm_with_dv(dv)
 
 
@@ -210,4 +209,4 @@ def test_unpack_compressed(
         size="200Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="Failed", timeout=300)
+        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
