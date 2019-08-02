@@ -5,28 +5,56 @@ Common templates test Windows
 """
 
 import logging
+
 import pytest
 
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.pod import Pod
+from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from tests.virt.common_templates import utils as ct_utils
 
-
 LOGGER = logging.getLogger(__name__)
 
 
+class WinRMcliPod(Pod):
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "containers": [
+                {
+                    "name": "winrmcli-con",
+                    "image": "kubevirt/winrmcli:latest",
+                    "command": ["bash", "-c", "/usr/bin/sleep 6000"],
+                }
+            ]
+        }
+        return res
+
+
 @pytest.fixture(scope="module")
-def winrmcli_pod(namespace, default_client):
+def sa_ready(namespace):
+    #  Wait for 'default' service account secrets to be exists.
+    #  The Pod creating will fail if we try to create it before.
+    default_sa = ServiceAccount(name="default", namespace=namespace.name)
+    sampler = TimeoutSampler(
+        timeout=10, sleep=1, func=lambda: default_sa.instance.secrets
+    )
+    for sample in sampler:
+        if sample:
+            return
+
+
+@pytest.fixture(scope="module")
+def winrmcli_pod(namespace, sa_ready):
     """
     Deploy winrm-cli Pod into the same namespace.
     """
-    with ct_utils.WinRMcliPod(
-        name="winrmcli-pod", namespace=namespace.name, client=default_client
-    ) as pod:
-        pod.wait_for_status(status="Running", timeout=60)
+    with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name) as pod:
+        pod.wait_for_status(status=pod.Status.RUNNING, timeout=60)
         yield pod
 
 

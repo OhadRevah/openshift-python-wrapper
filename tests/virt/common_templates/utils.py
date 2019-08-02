@@ -2,7 +2,7 @@
 
 
 from pytest_testconfig import config as py_config
-from resources.pod import Pod
+
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.virtual_machine import VirtualMachine
 
@@ -31,18 +31,3 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
         super().__init__(name, namespace, size, storage_class, url, content_type)
         self.os_release = os_release
         self.template_name = template_name
-
-
-class WinRMcliPod(Pod):
-    def _to_dict(self):
-        res = super()._to_dict()
-        res["spec"] = {
-            "containers": [
-                {
-                    "name": "winrmcli-con",
-                    "image": "kubevirt/winrmcli:latest",
-                    "command": ["bash", "-c", "/usr/bin/sleep 6000"],
-                }
-            ]
-        }
-        return res
