@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @generate_logs()
-def wait_for_vm_interfaces(vmi, timeout=300):
+def wait_for_vm_interfaces(vmi, timeout=720):
     """
     Wait until guest agent report VMI network interfaces.
 
