@@ -7,4 +7,4 @@ bootcmd:
 runcmd:
   - sudo systemctl start qemu-guest-agent
   - sudo sed -i 's/listen       80 default_server;/listen       80 default_server;\n\tlisten       81 default_server;/g' /etc/nginx/nginx.conf
-  - sudo systemctl restart nginx
+  - sudo systemctl enable nginx --now
