@@ -104,9 +104,9 @@ class DataVolumeTemplate(DataVolume):
         if self.secret:
             res["spec"]["source"][self.source]["secretRef"] = self.secret
         if self.source == "http" or "registry":
-            res["spec"]["source"] = {self.source: {"url": self.url}}
+            res["spec"]["source"][self.source]["url"] = self.url
         elif self.source == "upload":
-            res["spec"]["source"] = {"upload": {}}
+            res["spec"]["source"]["upload"] = {}
         return res
 
 
