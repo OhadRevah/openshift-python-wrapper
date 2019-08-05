@@ -286,13 +286,14 @@ class Resource(object):
             if not sample:
                 return
 
-    def wait_for_status(self, status, timeout=TIMEOUT):
+    def wait_for_status(self, status, timeout=TIMEOUT, stop_status="Failed"):
         """
         Wait for resource to be in status
 
         Args:
             status (str): Expected status.
             timeout (int): Time to wait for the resource.
+            stop_status (str): Status which should stop the wait and failed.
 
         Raises:
             TimeoutExpiredError: If resource in not in desire status.
@@ -314,6 +315,10 @@ class Resource(object):
                         final_status = sample_status.phase
                         if sample_status.phase == status:
                             return
+
+                        if sample_status.phase == stop_status:
+                            break
+
         except TimeoutExpiredError:
             if final_status:
                 LOGGER.error(f"Status of {self.kind} {self.name} is {final_status}")

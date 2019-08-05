@@ -212,11 +212,12 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
                 label_selector=f"kubevirt.io=virt-launcher,kubevirt.io/created-by={self.instance.metadata.uid}",
             )
         )
-        if len(pods) > 1:
+        migration_state = self.instance.status.migrationState
+        if migration_state:
             #  After VM migration there are two pods, one in Completed status and one in Running status.
             #  We need to return the Pod that is not in Completed status.
             for pod in pods:
-                if pod.status != "Completed":
+                if migration_state.targetPod == pod.name:
                     return pod
         else:
             return pods[0]

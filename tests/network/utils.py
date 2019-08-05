@@ -270,6 +270,7 @@ def vm_run_commands(vm, commands, timeout=60):
     """
     with console.Fedora(vm=vm) as vmc:
         for command in commands:
+            LOGGER.info(f"Execute {command} on {vm.name}")
             vmc.sendline(command)
             vmc.sendline(
                 "echo rc==$?=="
