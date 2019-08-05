@@ -19,6 +19,7 @@ python-autologs = "*"
 bitmath = "*"
 urllib3 = "*"
 netaddr = "*"
+py-bcrypt = "*"
 pytest-jira = "*"
 pytest-marker-bugzilla = {editable = true,git = "https://github.com/myakove/pytest_marker_bugzilla.git",ref = "py3-fix"}
 pytest-testconfig = "*"

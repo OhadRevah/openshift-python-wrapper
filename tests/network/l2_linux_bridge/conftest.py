@@ -4,6 +4,7 @@ from ipaddress import ip_interface
 import pytest
 
 from resources.namespace import Namespace
+from resources.project import ProjectRequest
 from tests import utils
 from tests.network.utils import (
     Bridge,
@@ -45,6 +46,7 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
         mpls_route_next_hop,
         dhcp_pool_address,
         cloud_init_extra_user_data=None,
+        client=None,
     ):
 
         self.mpls_local_tag = mpls_local_tag
@@ -61,7 +63,11 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
             networks.update({network: network})
 
         super().__init__(
-            name=name, namespace=namespace, interfaces=interfaces, networks=networks
+            name=name,
+            namespace=namespace,
+            interfaces=interfaces,
+            networks=networks,
+            client=client,
         )
 
     def _cloud_init_user_data(self):
@@ -106,7 +112,7 @@ class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
 
 
 def running_vmi(vm):
-    vm.start(wait=True)
+    vm.start()
     vm.vmi.wait_until_running()
     return vm.vmi
 
@@ -123,6 +129,7 @@ def bridge_attached_vm(
     mpls_local_ip,
     dhcp_pool_address="",
     cloud_init_extra_user_data=None,
+    client=None,
 ):
     with VirtualMachineAttachedToBridge(
         namespace=namespace,
@@ -136,14 +143,19 @@ def bridge_attached_vm(
         mpls_dest_tag=mpls_dest_tag,
         mpls_route_next_hop=mpls_route_next_hop,
         cloud_init_extra_user_data=cloud_init_extra_user_data,
+        client=client,
     ) as vm:
         yield vm
 
 
 @pytest.fixture(scope="class")
-def namespace():
-    with Namespace(name="l2-bridge-ns") as ns:
-        yield ns
+def namespace(default_client, unprivileged_client):
+    if not unprivileged_client:
+        with Namespace(name="l2-bridge-ns") as ns:
+            yield ns
+    else:
+        with ProjectRequest(name="l2-bridge-ns", client=unprivileged_client) as project:
+            yield project
 
 
 @pytest.fixture(scope="class")
@@ -204,7 +216,7 @@ def bridge_device(network_utility_pods, multi_nics_nodes, nodes_active_nics):
 
 
 @pytest.fixture(scope="class")
-def vm_a(namespace, all_nads, bridge_device):
+def vm_a(namespace, all_nads, bridge_device, unprivileged_client):
     cloud_init_extra_user_data = {
         "runcmd": [
             "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
@@ -234,11 +246,12 @@ def vm_a(namespace, all_nads, bridge_device):
         mpls_dest_ip=VMB_MPLS_LOOPBACK_IP,
         mpls_dest_tag=VMB_MPLS_ROUTE_TAG,
         mpls_route_next_hop="192.168.4.2",
+        client=unprivileged_client,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_b(namespace, all_nads, bridge_device):
+def vm_b(namespace, all_nads, bridge_device, unprivileged_client):
     interface_ip_addresses = [
         "192.168.0.2",
         "192.168.2.2",
@@ -257,6 +270,7 @@ def vm_b(namespace, all_nads, bridge_device):
         mpls_dest_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_tag=VMA_MPLS_ROUTE_TAG,
         mpls_route_next_hop="192.168.4.1",
+        client=unprivileged_client,
     )
 
 

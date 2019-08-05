@@ -3,19 +3,25 @@ from .resource import NamespacedResource
 
 class Secret(NamespacedResource):
     """
-    Secret object
+    Secret object.
     """
 
     api_version = "v1"
 
-    def __init__(self, name, namespace, accesskeyid, secretkey):
+    def __init__(
+        self, name, namespace, accesskeyid=None, secretkey=None, htpasswd=None
+    ):
         super().__init__(name=name, namespace=namespace)
-        self.accessKeyId = accesskeyid
-        self.secretKey = secretkey
+        self.accesskeyid = accesskeyid
+        self.secretkey = secretkey
+        self.htpasswd = htpasswd
 
     def _to_dict(self):
         res = super()._base_body()
-        res.update(
-            {"data": {"accessKeyId": self.accessKeyId, "secretKey": self.secretKey}}
-        )
+        if self.accesskeyid:
+            res.update(
+                {"data": {"accessKeyId": self.accesskeyid, "secretKey": self.secretkey}}
+            )
+        if self.htpasswd:
+            res.update({"data": {"htpasswd": self.htpasswd}})
         return res

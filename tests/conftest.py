@@ -3,15 +3,28 @@
 """
 Pytest conftest file for CNV tests
 """
-
+import base64
+import bcrypt
 import os
+from subprocess import check_output, CalledProcessError
 
 import kubernetes
 import pytest
 from openshift.dynamic import DynamicClient
-
+from openshift.dynamic.exceptions import NotFoundError
 from resources.node import Node
+from resources.secret import Secret
+from resources.namespace import Namespace
+from resources.oauth import OAuth
 from tests import utils as test_utils
+
+
+UNPRIVILEGED_USER = "unprivileged-user"
+UNPRIVILEGED_PASSWORD = "unprivileged-password"
+
+
+class LoginError(Exception):
+    pass
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -52,6 +65,21 @@ def pytest_runtest_setup(item):
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
 
+def login_to_account(api_address, user, password=None):
+    """
+    Helper function for login. Raise exception if login failed
+    """
+    login_command = f"oc login {api_address} -u {user}"
+    if password:
+        login_command += f" -p {password}"
+    try:
+        check_output(login_command, shell=True)
+    except CalledProcessError as exc:
+        raise LoginError(
+            f"Error to login to {user} account due to the following error:\n {exc.output}"
+        )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def junitxml_polarion(request):
     """
@@ -85,6 +113,73 @@ def default_client():
     return DynamicClient(kubernetes.config.new_client_from_config())
 
 
+@pytest.fixture(scope="session", autouse=True)
+def openshift_platform():
+    try:
+        Namespace(name="openshift").instance
+        return True
+    except NotFoundError:
+        return False
+
+
+@pytest.fixture(scope="session")
+def unprivileged_secret(default_client):
+    password = UNPRIVILEGED_PASSWORD.encode()
+    enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5))
+    crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
+    with Secret(
+        name="htpass-secret",
+        namespace="openshift-config",
+        htpasswd=base64.b64encode(crypto_credentials).decode(),
+    ):
+        yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def unprivileged_client(unprivileged_secret, default_client, openshift_platform):
+    """
+    Provides none privilege API client
+    """
+    if not openshift_platform:
+        return None
+    # Update identity provider
+    identity_provider_config = OAuth(name="cluster")
+    identity_provider_config.update(
+        resource_dict={
+            "metadata": {"name": identity_provider_config.name},
+            "spec": {
+                "identityProviders": [
+                    {
+                        "name": "htpasswd_provider",
+                        "mappingMethod": "claim",
+                        "type": "HTPasswd",
+                        "htpasswd": {"fileData": {"name": "htpass-secret"}},
+                    }
+                ]
+            },
+        }
+    )
+    login_to_account(
+        api_address=default_client.configuration.host,
+        user=UNPRIVILEGED_USER,
+        password=UNPRIVILEGED_PASSWORD,
+    )  # Login to unprivileged account
+    token = check_output("oc whoami -t", shell=True).decode().strip("\n")  # Get token
+    login_to_account(
+        api_address=default_client.configuration.host, user="system:admin"
+    )  # Get back to admin account
+    token_auth = {
+        "api_key": {"authorization": f"Bearer {token}"},
+        "host": default_client.configuration.host,
+        "verify_ssl": False,
+    }
+    configuration = kubernetes.client.Configuration()
+    for k, v in token_auth.items():
+        setattr(configuration, k, v)
+    k8s_client = kubernetes.client.ApiClient(configuration)
+    return DynamicClient(k8s_client)
+
+
 @pytest.fixture(scope="session")
 def schedulable_node_ips(nodes):
     """
@@ -106,7 +201,11 @@ def skip_when_one_node(nodes):
 
 @pytest.fixture(scope="session")
 def nodes(default_client):
-    yield list(Node.get(default_client, label_selector="kubevirt.io/schedulable=true"))
+    yield list(
+        Node.get(
+            dyn_client=default_client, label_selector="kubevirt.io/schedulable=true"
+        )
+    )
 
 
 @pytest.fixture()
