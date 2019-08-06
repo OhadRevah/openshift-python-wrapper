@@ -42,13 +42,15 @@ def namespace():
 
 @pytest.fixture()
 def br1test_nad(namespace):
-    with net_utils.bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
+    with net_utils.linux_bridge_nad(
+        namespace=namespace, name=BR1TEST, bridge=BR1TEST
+    ) as nad:
         yield nad
 
 
 @pytest.fixture()
 def br1vlan100_nad(namespace):
-    with net_utils.bridge_nad(
+    with net_utils.linux_bridge_nad(
         namespace=namespace, name=BR1VLAN100, bridge=BR1TEST
     ) as nad:
         yield nad

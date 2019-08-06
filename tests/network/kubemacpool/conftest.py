@@ -9,7 +9,7 @@ import pytest
 from resources.namespace import Namespace
 from resources.config_map import ConfigMap
 from resources.pod import Pod
-from tests.network.utils import Bridge, VXLANTunnel, bridge_nad
+from tests.network.utils import Bridge, VXLANTunnel, linux_bridge_nad
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 from tests.network.utils import running_vmi, nmcli_add_con_cmds
 
@@ -177,7 +177,7 @@ def namespace():
 
 @pytest.fixture(scope="module")
 def manual_mac_nad(namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=namespace, name="manual-mac-nad", bridge=BRIDGE_BR1
     ) as manual_mac_nad:
         yield manual_mac_nad
@@ -185,7 +185,7 @@ def manual_mac_nad(namespace):
 
 @pytest.fixture(scope="module")
 def automatic_mac_nad(namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=namespace, name="automatic-mac-nad", bridge=BRIDGE_BR1
     ) as automatic_mac_nad:
         yield automatic_mac_nad
@@ -193,7 +193,7 @@ def automatic_mac_nad(namespace):
 
 @pytest.fixture(scope="module")
 def manual_mac_out_of_pool_nad(namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=namespace, name="manual-out-pool-mac-nad", bridge=BRIDGE_BR1
     ) as manual_mac_out_pool_nad:
         yield manual_mac_out_pool_nad
@@ -201,7 +201,7 @@ def manual_mac_out_of_pool_nad(namespace):
 
 @pytest.fixture(scope="module")
 def automatic_mac_tuning_net_nad(namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=namespace,
         name="automatic-mac-tun-net-nad",
         bridge=BRIDGE_BR1,

@@ -24,7 +24,7 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture(scope="module", autouse="True")
 def br1test_nad(module_namespace):
-    with net_utils.bridge_nad(
+    with net_utils.linux_bridge_nad(
         namespace=module_namespace, name=LINUX_BRIDGE_NAME, bridge=LINUX_BRIDGE_NAME
     ) as nad:
         yield nad

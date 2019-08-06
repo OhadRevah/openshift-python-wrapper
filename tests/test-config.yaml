@@ -5,7 +5,7 @@ test_performance_over_pod_network:
   bandwidth: 2.5
 
 template_defaults:
-  bridge_cni_name: cnv-bridge
+  linux_bridge_cni_name: cnv-bridge
   bridge_tuning_name: cnv-tuning
 
 storage_defaults:

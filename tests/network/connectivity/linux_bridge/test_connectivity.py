@@ -8,7 +8,7 @@ from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import (
-    bridge_nad,
+    linux_bridge_nad,
     assert_no_ping,
     assert_ping_successful,
     get_vmi_ip_v4_by_name,
@@ -73,19 +73,23 @@ def module_namespace():
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(module_namespace):
-    with bridge_nad(namespace=module_namespace, name=BR1TEST, bridge=BR1TEST) as nad:
+    with linux_bridge_nad(
+        namespace=module_namespace, name=BR1TEST, bridge=BR1TEST
+    ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module", autouse=True)
 def brbond_nad(module_namespace):
-    with bridge_nad(namespace=module_namespace, name=BR1BOND, bridge=BR1BOND) as nad:
+    with linux_bridge_nad(
+        namespace=module_namespace, name=BR1BOND, bridge=BR1BOND
+    ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module", autouse=True)
 def br1vlan100_nad(module_namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=module_namespace, name=BR1VLAN100, bridge=BR1TEST, vlan=100
     ) as nad:
         yield nad
@@ -93,7 +97,7 @@ def br1vlan100_nad(module_namespace):
 
 @pytest.fixture(scope="module", autouse=True)
 def br1vlan200_nad(module_namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=module_namespace, name=BR1VLAN200, bridge=BR1TEST, vlan=200
     ) as nad:
         yield nad
@@ -101,7 +105,7 @@ def br1vlan200_nad(module_namespace):
 
 @pytest.fixture(scope="module", autouse=True)
 def br1vlan300_nad(module_namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=module_namespace, name=BR1VLAN300, bridge=BR1TEST, vlan=300
     ) as nad:
         yield nad

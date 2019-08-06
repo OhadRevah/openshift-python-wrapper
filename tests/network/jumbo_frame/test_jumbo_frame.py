@@ -7,7 +7,7 @@ import pytest
 
 from resources.namespace import Namespace
 from tests.network.utils import (
-    bridge_nad,
+    linux_bridge_nad,
     assert_ping_successful,
     get_vmi_ip_v4_by_name,
     Bridge,
@@ -54,7 +54,7 @@ def module_namespace():
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(module_namespace):
-    with bridge_nad(
+    with linux_bridge_nad(
         namespace=module_namespace,
         name=BR1TEST,
         bridge=BR1TEST,

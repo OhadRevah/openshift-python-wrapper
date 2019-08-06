@@ -30,7 +30,7 @@ class NetworkAttachmentDefinition(NamespacedResource):
         return res
 
 
-class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
+class LinuxBridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
     def __init__(
         self,
         name,

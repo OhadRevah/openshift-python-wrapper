@@ -28,8 +28,8 @@ def namespace():
 
 @pytest.fixture()
 def bridge_network(namespace):
-    cni_type = py_config["template_defaults"]["bridge_cni_name"]
-    with nad.BridgeNetworkAttachmentDefinition(
+    cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
+    with nad.LinuxBridgeNetworkAttachmentDefinition(
         namespace=namespace.name, name="redbr", bridge_name="redbr", cni_type=cni_type
     ) as attachdef:
         yield attachdef
@@ -37,8 +37,8 @@ def bridge_network(namespace):
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with utils.bridge_nad(namespace, "redbr", "redbr") as rednad:
-        with utils.bridge_nad(namespace, "bluebr", "bluebr") as bluenad:
+    with utils.linux_bridge_nad(namespace, "redbr", "redbr") as rednad:
+        with utils.linux_bridge_nad(namespace, "bluebr", "bluebr") as bluenad:
             yield (rednad, bluenad)
 
 

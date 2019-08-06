@@ -11,7 +11,7 @@ from resources.namespace import Namespace
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import (
-    bridge_nad,
+    linux_bridge_nad,
     Bridge,
     VXLANTunnel,
     nmcli_add_con_cmds,
@@ -162,7 +162,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
-    with bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
+    with linux_bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
         yield nad
 
 

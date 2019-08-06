@@ -6,7 +6,9 @@ import re
 import pexpect
 from pytest_testconfig import config as py_config
 
-from resources.network_attachment_definition import BridgeNetworkAttachmentDefinition
+from resources.network_attachment_definition import (
+    LinuxBridgeNetworkAttachmentDefinition,
+)
 
 from tests.network.nmstate import linux_bridge
 
@@ -128,12 +130,12 @@ class Bridge:
 
 
 @contextlib.contextmanager
-def bridge_nad(namespace, name, bridge, vlan=None, tuning=None, mtu=None):
-    cni_type = py_config["template_defaults"]["bridge_cni_name"]
+def linux_bridge_nad(namespace, name, bridge, vlan=None, tuning=None, mtu=None):
+    cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
     tuning_type = (
         py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
     )
-    with BridgeNetworkAttachmentDefinition(
+    with LinuxBridgeNetworkAttachmentDefinition(
         namespace=namespace.name,
         name=name,
         bridge_name=bridge,
