@@ -11,7 +11,7 @@ class Route(NamespacedResource):
     OpenShift Route object.
     """
 
-    api_version = "route.openshift.io/v1"
+    api_group = "route.openshift.io"
 
     def __init__(self, name, namespace, service=None):
         super().__init__(name=name, namespace=namespace)

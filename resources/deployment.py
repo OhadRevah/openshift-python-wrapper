@@ -14,7 +14,7 @@ class Deployment(NamespacedResource):
     OpenShift Deployment object.
     """
 
-    api_version = "extensions/v1beta1"
+    api_group = "extensions"
 
     def scale_replicas(self, replica_count=int):
         """

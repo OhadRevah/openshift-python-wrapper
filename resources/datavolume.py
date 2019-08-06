@@ -13,7 +13,7 @@ class DataVolume(NamespacedResource):
     DataVolume object.
     """
 
-    api_version = "cdi.kubevirt.io/v1alpha1"
+    api_group = "cdi.kubevirt.io"
 
     class Status:
         SUCCEEDED = "Succeeded"

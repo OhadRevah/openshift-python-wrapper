@@ -3,7 +3,7 @@ from .resource import NamespacedResource
 
 
 class Template(NamespacedResource):
-    api_version = "template.openshift.io/v1"
+    api_group = "template.openshift.io"
     singular_name = "template"
 
     def process(self, **kwargs):

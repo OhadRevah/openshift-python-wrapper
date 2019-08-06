@@ -6,7 +6,7 @@ class NodeMaintenance(Resource):
     Node Maintenance object, inherited from Resource.
     """
 
-    api_version = "kubevirt.io/v1alpha1"
+    api_group = "kubevirt.io"
 
     def __init__(self, name, node=None, reason="TEST Reason"):
         super().__init__(name)

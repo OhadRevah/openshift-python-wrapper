@@ -6,4 +6,4 @@ class StorageClass(Resource):
     StorageClass object.
     """
 
-    api_version = "storage.k8s.io/v1"
+    api_group = "storage.k8s.io"

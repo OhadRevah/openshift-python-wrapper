@@ -6,4 +6,4 @@ class NetworkAddonsConfig(Resource):
     NetworkAddonsConfig (a Custom Resource) object, inherited from Resource.
     """
 
-    api_version = "networkaddonsoperator.network.kubevirt.io/v1alpha1"
+    api_group = "networkaddonsoperator.network.kubevirt.io"

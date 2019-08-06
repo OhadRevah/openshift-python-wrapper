@@ -10,7 +10,7 @@ class UploadTokenRequest(NamespacedResource):
     OpenShift UploadTokenRequest object.
     """
 
-    api_version = "upload.cdi.kubevirt.io/v1alpha1"
+    api_group = "upload.cdi.kubevirt.io"
 
     def _to_dict(self):
         res = super()._base_body()
