@@ -113,8 +113,13 @@ class FedoraVirtualMachine(VirtualMachine):
         interfaces=None,
         networks=None,
         node_selector=None,
-        cpu_flags=None,
         service_accounts=None,
+        cpu_flags=None,
+        cpu_limits=None,
+        cpu_requests=None,
+        cpu_sockets=None,
+        cpu_cores=None,
+        cpu_threads=None,
         **vm_attr,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
@@ -130,6 +135,11 @@ class FedoraVirtualMachine(VirtualMachine):
             "memory": "1024Mi",
         }
         self.cpu_flags = cpu_flags
+        self.cpu_limits = cpu_limits
+        self.cpu_requests = cpu_requests
+        self.cpu_sockets = cpu_sockets
+        self.cpu_cores = cpu_cores
+        self.cpu_threads = cpu_threads
 
     def _cloud_init_user_data(self):
         return {"password": "fedora", "chpasswd": "{ expire: False }"}
@@ -145,17 +155,18 @@ class FedoraVirtualMachine(VirtualMachine):
         res["metadata"] = json_out["metadata"]
         res["spec"] = json_out["spec"]
 
+        spec = res["spec"]["template"]["spec"]
         for iface_name in self.interfaces:
-            res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"].append(
+            spec["domain"]["devices"]["interfaces"].append(
                 {"name": iface_name, "bridge": {}}
             )
 
         for iface_name, network in self.networks.items():
-            res["spec"]["template"]["spec"]["networks"].append(
+            spec["networks"].append(
                 {"name": iface_name, "multus": {"networkName": network}}
             )
 
-        for vol in res["spec"]["template"]["spec"]["volumes"]:
+        for vol in spec["volumes"]:
             if vol["name"] == "cloudinitdisk":
                 vol["cloudInitNoCloud"]["userData"] = _generate_cloud_init_user_data(
                     self._cloud_init_user_data()
@@ -163,22 +174,36 @@ class FedoraVirtualMachine(VirtualMachine):
                 break
 
         for sa in self.service_accounts:
-            res["spec"]["template"]["spec"]["domain"]["devices"]["disks"].append(
-                {"disk": {}, "name": sa}
-            )
-            res["spec"]["template"]["spec"]["volumes"].append(
+            spec["domain"]["devices"]["disks"].append({"disk": {}, "name": sa})
+            spec["volumes"].append(
                 {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
             )
 
         if self.node_selector:
-            res["spec"]["template"]["spec"]["nodeSelector"] = {
-                "kubernetes.io/hostname": self.node_selector
-            }
-
-        if self.cpu_flags:
-            res["spec"]["template"]["spec"]["domain"]["cpu"] = self.cpu_flags
+            spec["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
 
         if self.eviction:
-            res["spec"]["template"]["spec"]["evictionStrategy"] = "LiveMigrate"
+            spec["evictionStrategy"] = "LiveMigrate"
+
+        # cpu settings
+        if self.cpu_flags:
+            spec["domain"]["cpu"] = self.cpu_flags
+
+        if self.cpu_limits:
+            spec["domain"]["resources"].setdefault("limits", {})
+            spec["domain"]["resources"]["limits"].update({"cpu": self.cpu_limits})
+
+        if self.cpu_requests:
+            spec["domain"]["resources"].setdefault("requests", {})
+            spec["domain"]["resources"]["requests"].update({"cpu": self.cpu_requests})
+
+        if self.cpu_cores:
+            spec["domain"]["cpu"]["cores"] = self.cpu_cores
+
+        if self.cpu_threads:
+            spec["domain"]["cpu"]["threads"] = self.cpu_threads
+
+        if self.cpu_sockets:
+            spec["domain"]["cpu"]["sockets"] = self.cpu_sockets
 
         return res
