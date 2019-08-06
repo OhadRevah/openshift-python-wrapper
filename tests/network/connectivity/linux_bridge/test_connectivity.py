@@ -230,10 +230,12 @@ def test_connectivity_over_linux_bridge(
         pytest.skip(msg="Running on BM, no trunk on switches yet!!")
 
     # Using masquerade we can just ping vmb pods ip
-    vmib_bridge_inteface = next(
-        i for i in running_bridge_attached_vmib.interfaces if i["name"] == bridge
-    )
-    if bridge == "default" and "masquerade" in vmib_bridge_inteface:
+    masquerade_interface = [
+        i
+        for i in running_bridge_attached_vmib.instance.spec.domain.devices.interfaces
+        if i["name"] == bridge and "masquerade" in i.keys()
+    ]
+    if masquerade_interface:
         vmb_ip = running_bridge_attached_vmib.virt_launcher_pod.instance.status.podIP
     else:
         vmb_ip = get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=bridge)
