@@ -371,7 +371,7 @@ class Resource(object):
             data.update(body)
         res = self.api().create(body=data, namespace=self.namespace)
 
-        LOGGER.info(f"Create {kind} {self.name}")
+        LOGGER.info(f"Create {self.kind} {self.name}")
         if wait and res:
             return self.wait()
         return res
