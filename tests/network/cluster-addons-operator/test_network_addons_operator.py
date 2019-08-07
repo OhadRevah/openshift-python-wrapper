@@ -1,8 +1,56 @@
-import logging
-
 import pytest
 
-LOGGER = logging.getLogger(__name__)
+import tests.network.utils as net_utils
+from resources.namespace import Namespace
+from resources.network_addons_config import NetworkAddonsConfig
+from tests.utils import FedoraVirtualMachine
+
+LINUX_BRIDGE_NAME = "br1test"
+
+
+@pytest.fixture(scope="module", autouse="True")
+def module_namespace():
+    with Namespace(name="test-network-operator") as ns:
+        yield ns
+
+
+@pytest.fixture(scope="module", autouse="True")
+def bridge_device(network_utility_pods):
+    with net_utils.Bridge(
+        name=LINUX_BRIDGE_NAME, worker_pods=network_utility_pods
+    ) as br_dev:
+        yield br_dev
+
+
+@pytest.fixture(scope="module", autouse="True")
+def br1test_nad(module_namespace):
+    with net_utils.bridge_nad(
+        namespace=module_namespace, name=LINUX_BRIDGE_NAME, bridge=LINUX_BRIDGE_NAME
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def network_addons_config_cr(default_client):
+    nac = NetworkAddonsConfig.get(
+        default_client, label_selector="app=hyperconverged-cluster"
+    )
+    nac_list = list(nac)
+    assert nac_list, "There should be one NetworkAddonsConfig CR."
+    yield nac_list[0]
+
+
+@pytest.fixture(scope="module", autouse="True")
+def bridge_attached_vm(module_namespace):
+
+    with FedoraVirtualMachine(
+        namespace=module_namespace.name,
+        interfaces=[LINUX_BRIDGE_NAME],
+        networks={LINUX_BRIDGE_NAME: LINUX_BRIDGE_NAME},
+        name="oper-test-vm",
+    ) as vm:
+        vm.start()
+        yield vm
 
 
 @pytest.mark.polarion("CNV-2520")
