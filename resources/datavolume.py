@@ -109,8 +109,6 @@ class DataVolumeTemplate(DataVolume):
         )
         if self.content_type:
             res["spec"]["contentType"] = self.content_type
-        if self.cert_configmap:
-            res["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
         if self.storage_class:
             res["spec"]["pvc"]["storageClassName"] = self.storage_class
         if self.secret:
@@ -119,6 +117,8 @@ class DataVolumeTemplate(DataVolume):
             res["spec"]["pvc"]["volumeMode"] = self.volume_mode
         if self.source == "http" or "registry":
             res["spec"]["source"][self.source]["url"] = self.url
+        if self.cert_configmap:
+            res["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
         elif self.source == "upload":
             res["spec"]["source"][self.source] = {}
         return res

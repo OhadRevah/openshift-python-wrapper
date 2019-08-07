@@ -4,13 +4,21 @@
 Import from HTTP server
 """
 
+import logging
+import os
+
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
+from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromHttpDataVolume
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 
 
+LOGGER = logging.getLogger(__name__)
+
+TEST_IMG_LOCATION = "cdi-test-images"
 QCOW_IMG = "cirros-qcow2.img"
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
@@ -320,3 +328,119 @@ def test_unpack_compressed(
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
+
+
+def get_cert():
+    with open(
+        os.path.join("tests/storage/cdi_import", "https.crt"), "r"
+    ) as cert_content:
+        return cert_content.read()
+
+
+@pytest.mark.polarion("CNV-2811")
+def test_certconfigmap(storage_ns, images_https_server):
+    with ConfigMap(
+        name="https-cert",
+        namespace=storage_ns.name,
+        cert_name="ca.pem",
+        data=get_cert(),
+    ) as configmap:
+        with ImportFromHttpDataVolume(
+            name="cnv-2811",
+            namespace=storage_ns.name,
+            size="1Gi",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+            url=get_file_url(
+                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+            ),
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            cert_configmap=configmap.name,
+        ) as dv:
+            dv.wait()
+            pvc = dv.pvc
+            with utils.PodWithPVC(
+                namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            ) as pod:
+                pod.wait_for_status(status="Running")
+                assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 1
+
+
+@pytest.mark.parametrize(
+    ("name", "data"),
+    [
+        pytest.param(
+            "cnv-2812",
+            "-----BEGIN CERTIFICATE-----",
+            marks=(pytest.mark.polarion("CNV-2812")),
+        ),
+        pytest.param("cnv-2813", None, marks=(pytest.mark.polarion("CNV-2813"))),
+    ],
+)
+def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, data):
+    with ConfigMap(
+        name="https-cert", namespace=storage_ns.name, cert_name="ca.pem", data=data
+    ) as configmap:
+        with ImportFromHttpDataVolume(
+            name=name,
+            namespace=storage_ns.name,
+            size="1Gi",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+            url=get_file_url(
+                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+            ),
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            cert_configmap=configmap.name,
+        ) as dv:
+            dv.wait_for_status(
+                status=ImportFromHttpDataVolume.Status.FAILED, timeout=300
+            )
+
+
+@pytest.mark.parametrize(
+    ("dv_name", "cert_cm_name"),
+    [
+        pytest.param(
+            "cnv-2814",
+            None,
+            marks=(
+                pytest.mark.polarion("CNV-2814"),
+                pytest.mark.bugzilla(
+                    1740073,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
+        ),
+        pytest.param(
+            "cnv-2815", "wrong_name", marks=(pytest.mark.polarion("CNV-2815"))
+        ),
+    ],
+)
+def test_certconfigmap_missing_or_wrong_cm(
+    storage_ns, images_https_server, dv_name, cert_cm_name
+):
+    with ImportFromHttpDataVolume(
+        name=dv_name,
+        namespace=storage_ns.name,
+        size="1Gi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        url=get_file_url(
+            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+        ),
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        cert_configmap=cert_cm_name,
+    ) as dv:
+        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED)
+        with pytest.raises(TimeoutExpiredError):
+            samples = TimeoutSampler(
+                timeout=30,
+                sleep=30,
+                func=lambda: dv.status
+                != ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED,
+            )
+            for sample in samples:
+                if sample:
+                    LOGGER.error(
+                        f"DV status is not as expected. \
+                        Expected: {ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED}. Found: {dv.status}"
+                    )
+                    raise AssertionError()
