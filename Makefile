@@ -15,7 +15,7 @@ CLI := $(CLUSTER_DIR)/cli.sh
 SSH := $(CLUSTER_DIR)/ssh.sh
 export KUBECTL := $(CLUSTER_DIR)/kubectl.sh
 export VIRTCTL := $(CLUSTER_DIR)/virtctl.sh
-export KUBEVIRT_PROVIDER ?= k8s-1.13.3
+export KUBEVIRT_PROVIDER ?= os-3.11.0
 export KUBEVIRT_NUM_NODES ?= 2
 export KUBEVIRT_NUM_SECONDARY_NICS ?= 4
 

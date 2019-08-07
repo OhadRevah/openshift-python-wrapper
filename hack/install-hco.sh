@@ -19,6 +19,9 @@ operator.yaml
 hco.cr.yaml
 '
 
+# cnv-tests has issues with https so we use http instead
+sed -i "s#https://127.0.0.1:8443#http://127.0.0.1:8080#" ${KUBECONFIG}
+
 # Create the namespaces for the HCO
 ${KUBECTL} create ns kubevirt-hyperconverged
 
