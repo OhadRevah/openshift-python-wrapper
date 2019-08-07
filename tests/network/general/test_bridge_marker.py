@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import time
+
 import pytest
 from pytest_testconfig import config as py_config
 
 from resources import network_attachment_definition as nad
 from resources.namespace import Namespace
 from resources.utils import TimeoutExpiredError
-from resources.virtual_machine import VirtualMachine
 from tests.network import utils
-
-_RESOURCE_NAME_PREFIX = "brm-"
+from tests.utils import FedoraVirtualMachine
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)
@@ -17,7 +17,7 @@ _VM_RUNNING_TIMEOUT = 60  # seems to be enough
 
 
 def _get_name(suffix):
-    return _RESOURCE_NAME_PREFIX + suffix
+    return f"brm-{suffix}"
 
 
 @pytest.fixture(scope="module")
@@ -30,49 +30,26 @@ def namespace():
 def bridge_network(namespace):
     cni_type = py_config["template_defaults"]["bridge_cni_name"]
     with nad.BridgeNetworkAttachmentDefinition(
-        namespace=namespace.name, name="rednad", bridge_name="redbr", cni_type=cni_type
+        namespace=namespace.name, name="redbr", bridge_name="redbr", cni_type=cni_type
     ) as attachdef:
         yield attachdef
 
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with utils.bridge_nad(namespace, "rednad", "redbr") as rednad:
-        with utils.bridge_nad(namespace, "bluenad", "bluebr") as bluenad:
+    with utils.bridge_nad(namespace, "redbr", "redbr") as rednad:
+        with utils.bridge_nad(namespace, "bluebr", "bluebr") as bluenad:
             yield (rednad, bluenad)
-
-
-class VirtualMachineAttachedToBridges(VirtualMachine):
-    def __init__(self, name, namespace, networks, client=None):
-        super().__init__(name, namespace, client=client)
-        self._networks = networks
-
-    def _to_dict(self):
-        res = super()._to_dict()
-
-        spec = res["spec"]["template"]["spec"]
-
-        # add a default network if attaching to other networks
-        spec["networks"] = [{"name": "default", "pod": {}}]
-        spec["domain"]["devices"]["interfaces"] = [{"name": "default", "bridge": {}}]
-
-        # also attach to bridge networks
-        for idx, network in enumerate(self._networks):
-            network_name = f"net{idx}"
-            spec["networks"].append(
-                {"name": network_name, "multus": {"networkName": network}}
-            )
-            spec["domain"]["devices"]["interfaces"].append(
-                {"name": network_name, "bridge": {}}
-            )
-
-        return res
 
 
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
-    with VirtualMachineAttachedToBridges(
-        namespace=namespace.name, name=_get_name("vm"), networks={bridge_network.name}
+    networks = {bridge_network.name: bridge_network.name}
+    with FedoraVirtualMachine(
+        namespace=namespace.name,
+        name=_get_name(f"bridge-vm-{time.time()}"),
+        networks=networks,
+        interfaces=sorted(networks.keys()),
     ) as vm:
         vm.start()
         yield vm.vmi
@@ -80,10 +57,12 @@ def bridge_attached_vmi(namespace, bridge_network):
 
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks):
-    with VirtualMachineAttachedToBridges(
+    networks = {b.name: b.name for b in bridge_networks}
+    with FedoraVirtualMachine(
         namespace=namespace.name,
-        name=_get_name("vm"),
-        networks={b.name for b in bridge_networks},
+        name=_get_name(f"multi-bridge-vm-{time.time()}"),
+        networks=networks,
+        interfaces=sorted(networks.keys()),
     ) as vm:
         vm.start()
         yield vm.vmi
@@ -97,9 +76,9 @@ def bridge_device_on_all_nodes(network_utility_pods):
 
 @pytest.fixture()
 def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
-    with utils.Bridge(name="redbr", worker_pods={network_utility_pods[0]}) as redbr:
+    with utils.Bridge(name="redbr", worker_pods=[network_utility_pods[0]]) as redbr:
         with utils.Bridge(
-            name="bluebr", worker_pods={network_utility_pods[1]}
+            name="bluebr", worker_pods=[network_utility_pods[1]]
         ) as bluebr:
             yield (redbr, bluebr)
 
@@ -115,7 +94,7 @@ def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
 def test_bridge_marker_no_device(bridge_attached_vmi):
     """Check that VMI fails to start when bridge device is missing."""
     with pytest.raises(TimeoutExpiredError):
-        bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+        bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT, logs=False)
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod
@@ -136,7 +115,9 @@ def test_bridge_marker_devices_exist_on_different_nodes(
 ):
     """Check that VMI fails to start when attached to two bridges located on different nodes."""
     with pytest.raises(TimeoutExpiredError):
-        multi_bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT)
+        multi_bridge_attached_vmi.wait_until_running(
+            timeout=_VM_RUNNING_TIMEOUT, logs=False
+        )
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = multi_bridge_attached_vmi.virt_launcher_pod
