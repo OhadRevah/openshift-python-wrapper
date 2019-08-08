@@ -17,29 +17,41 @@ VM_NAME = "virt-common-templates-test"
 @pytest.fixture(
     params=[
         pytest.param(
-            ["rhel-images/rhel-76/rhel-76.qcow2", "7.6", "rhel7-server-tiny"],
+            {
+                "image": "rhel-images/rhel-76/rhel-76.qcow2",
+                "os_release": "7.6",
+                "template_name": "rhel7-server-tiny",
+            },
             marks=(pytest.mark.polarion("CNV-2174")),
         ),
         pytest.param(
-            ["rhel-images/rhel-8/rhel-8.qcow2", "8.0", "rhel8-server-tiny"],
+            {
+                "image": "rhel-images/rhel-8/rhel-8.qcow2",
+                "os_release": "8.0",
+                "template_name": "rhel8-server-tiny",
+            },
             marks=(pytest.mark.polarion("CNV-2210")),
         ),
         pytest.param(
-            ["rhel-images/rhel-610/rhel-610.qcow2", "6", "rhel6-server-tiny"],
+            {
+                "image": "rhel-images/rhel-610/rhel-610.qcow2",
+                "os_release": "6",
+                "template_name": "rhel6-server-tiny",
+            },
             marks=(pytest.mark.polarion("CNV-2211")),
         ),
     ]
 )
 def data_volume(request, images_external_http_server, namespace):
-    template_name = request.param[2]
+    template_name = request.param["template_name"]
     with ct_utils.DataVolumeTestResource(
         name=f"dv-{template_name}",
         namespace=namespace.name,
-        url=f"{images_external_http_server}{request.param[0]}",
-        os_release=request.param[1],
+        url=f"{images_external_http_server}{request.param['image']}",
+        os_release=request.param["os_release"],
         template_name=template_name,
     ) as dv:
-        dv.wait()
+        dv.wait(timeout=900)
         yield dv
 
 
