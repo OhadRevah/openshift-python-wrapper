@@ -182,8 +182,16 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
 @pytest.mark.parametrize(
     "bridge",
     [
-        pytest.param("default", marks=(pytest.mark.polarion("CNV-2350"))),
-        pytest.param(BR1TEST, marks=(pytest.mark.polarion("CNV-2080"))),
+        pytest.param(
+            "default",
+            marks=(pytest.mark.polarion("CNV-2350")),
+            id="Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists",
+        ),
+        pytest.param(
+            BR1TEST,
+            marks=(pytest.mark.polarion("CNV-2080")),
+            id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_network",
+        ),
         pytest.param(
             BR1VLAN100,
             marks=(
@@ -193,16 +201,18 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
                     reason="Missing VLAN config on the switch [Ticket PNT0584216]",
                 ),
             ),
+            id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_VLAN_network",
         ),
-        pytest.param(BR1BOND, marks=(pytest.mark.polarion("CNV-2141"))),
-        pytest.param(BR1VLAN300, marks=(pytest.mark.polarion("CNV-2075"))),
-    ],
-    ids=[
-        "Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists",
-        "Connectivity_between_VM_to_VM_over_L2_Linux_bridge_network",
-        "Connectivity_between_VM_to_VM_over_L2_Linux_bridge_VLAN_network",
-        "Connectivity_between_VM_to_VM_over_L2_Linux_bridge_on_BOND_network",
-        "Negative_No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs",
+        pytest.param(
+            BR1BOND,
+            marks=(pytest.mark.polarion("CNV-2141")),
+            id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_on_BOND_network",
+        ),
+        pytest.param(
+            BR1VLAN300,
+            marks=(pytest.mark.polarion("CNV-2075")),
+            id="Negative_No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs",
+        ),
     ],
 )
 def test_connectivity_over_linux_bridge(
