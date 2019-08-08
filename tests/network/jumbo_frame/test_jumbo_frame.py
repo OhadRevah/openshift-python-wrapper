@@ -18,35 +18,36 @@ from utilities.virt import (
 )
 
 
-MTU_SIZE = 9000
-BR1TEST = "br1test"
-
-
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
     with linux_bridge_nad(
-        namespace=namespace, name=BR1TEST, bridge=BR1TEST, tuning=True, mtu=MTU_SIZE
+        namespace=namespace,
+        name="br1test-nad",
+        bridge="br1test",
+        tuning=True,
+        mtu=9000,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module", autouse=True)
-def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
+def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, br1test_nad):
     ports = [nodes_active_nics[network_utility_pods[0].node.name][1]]
+
     with LinuxBridgeNodeNetworkConfigurationPolicy(
         name="jumbo-frame",
-        bridge_name=BR1TEST,
+        bridge_name=br1test_nad.bridge_name,
         worker_pods=network_utility_pods,
         ports=ports,
-        mtu=MTU_SIZE,
+        mtu=br1test_nad.mtu,
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(nodes, namespace, unprivileged_client):
+def bridge_attached_vma(nodes, namespace, unprivileged_client, br1test_nad):
     name = "vma"
-    networks = {BR1TEST: BR1TEST}
+    networks = {br1test_nad.name: br1test_nad.name}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.1")
 
@@ -65,9 +66,9 @@ def bridge_attached_vma(nodes, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(nodes, namespace, unprivileged_client):
+def bridge_attached_vmb(nodes, namespace, unprivileged_client, br1test_nad):
     name = "vmb"
-    networks = {BR1TEST: BR1TEST}
+    networks = {br1test_nad.name: br1test_nad.name}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.2")
 
@@ -106,6 +107,7 @@ def test_connectivity_over_linux_bridge_large_mtu(
     skip_if_no_multinic_nodes,
     skip_when_one_node,
     namespace,
+    br1test_nad,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -118,6 +120,8 @@ def test_connectivity_over_linux_bridge_large_mtu(
     ip_header = 20
     assert_ping_successful(
         src_vm=bridge_attached_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1TEST),
-        packetsize=MTU_SIZE - ip_header - icmp_header,
+        dst_ip=get_vmi_ip_v4_by_name(
+            vmi=running_bridge_attached_vmib, name=br1test_nad.name
+        ),
+        packetsize=br1test_nad.mtu - ip_header - icmp_header,
     )
