@@ -180,6 +180,10 @@ class PolarionIds(object):
                                         yield from self._non_decorated_elt(f, elt)
 
                                     for pk in elt.keywords:
+                                        # In case parametrize have id=
+                                        if pk.arg == "id":
+                                            continue
+
                                         # In case of multiple marks on test param
                                         if isinstance(pk.value, ast.Tuple):
                                             for elt_val in pk.value.elts:
