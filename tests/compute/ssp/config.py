@@ -1,5 +1,5 @@
 """
-Virt config
+SSP config
 """
 
 CNV_TEMPLATES_NAME = [
