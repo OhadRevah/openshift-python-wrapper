@@ -50,10 +50,10 @@ def get_vmi_ip_v4_by_name(vmi, name):
     raise IpNotFound(name)
 
 
-def _console_ping(src_vm, dst_ip, mtu=None):
+def _console_ping(src_vm, dst_ip, packetsize=None):
     ping_cmd = f"ping -w 3 {dst_ip}"
-    if mtu:
-        ping_cmd += f" -s {mtu} -M do"
+    if packetsize:
+        ping_cmd += f" -s {packetsize} -M do"
     with console.Fedora(vm=src_vm) as src_vm_console:
         src_vm_console.sendline(ping_cmd)
         while True:
@@ -64,12 +64,12 @@ def _console_ping(src_vm, dst_ip, mtu=None):
                 return m.groups()
 
 
-def assert_ping_successful(src_vm, dst_ip, mtu=None):
-    assert _console_ping(src_vm, dst_ip, mtu)[0] == b"0"
+def assert_ping_successful(src_vm, dst_ip, packetsize=None):
+    assert _console_ping(src_vm, dst_ip, packetsize)[0] == b"0"
 
 
-def assert_no_ping(src_vm, dst_ip, mtu=None):
-    assert _console_ping(src_vm, dst_ip, mtu)[0] == b"100"
+def assert_no_ping(src_vm, dst_ip, packetsize=None):
+    assert _console_ping(src_vm, dst_ip, packetsize)[0] == b"100"
 
 
 def nmcli_add_con_cmds(iface, ip):

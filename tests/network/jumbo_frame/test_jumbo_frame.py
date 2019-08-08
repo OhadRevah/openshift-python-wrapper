@@ -166,5 +166,5 @@ def test_connectivity_over_linux_bridge_large_mtu(
     assert_ping_successful(
         src_vm=bridge_attached_vma,
         dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1TEST),
-        mtu=MTU_SIZE - ip_header - icmp_header,
+        packetsize=MTU_SIZE - ip_header - icmp_header,
     )
