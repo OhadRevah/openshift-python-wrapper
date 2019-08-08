@@ -217,7 +217,13 @@ def test_default_storage_class(
         pytest.param(
             "large-size",
             "invalid-qcow-large-size.img",
-            marks=(pytest.mark.polarion("CNV-2553")),
+            marks=(
+                pytest.mark.polarion("CNV-2553"),
+                pytest.mark.bugzilla(
+                    1739149,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
         ),
         pytest.param(
             "large-json",
