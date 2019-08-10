@@ -8,7 +8,7 @@ ifndef UPSTREAM
 endif
 
 # Local cluster preparations
-CLUSTER_DIR := kubevirtci/cluster-up
+CLUSTER_DIR := local-cluster/kubevirtci/cluster-up
 CLUSTER_UP := $(CLUSTER_DIR)/up.sh
 CLUSTER_DOWN := $(CLUSTER_DIR)/down.sh
 CLI := $(CLUSTER_DIR)/cli.sh
@@ -20,16 +20,17 @@ export KUBEVIRT_NUM_NODES ?= 2
 export KUBEVIRT_NUM_SECONDARY_NICS ?= 4
 
 # Helper scripts
-install_kubevirtci := hack/install-kubevirtci.sh
-install_hco := hack/install-hco.sh
-install_virtctl := hack/install-virtctl.sh
+HACK_DIR := local-cluster/hack
+install_kubevirtci := $(HACK_DIR)/install-kubevirtci.sh
+install_hco := $(HACK_DIR)/install-hco.sh
+install_virtctl := $(HACK_DIR)/install-virtctl.sh
 
 # virtctl binary
-BIN_DIR := _out/bin
+BIN_DIR := local-cluster/_out/bin
 VIRTCTL := $(BIN_DIR)/virtctl
 
 # If not specified otherwise, local cluster's KUBECONFIG will be used
-export KUBECONFIG ?= kubevirtci/_ci-configs/$(KUBEVIRT_PROVIDER)/.kubeconfig
+export KUBECONFIG ?= local-cluster/kubevirtci/_ci-configs/$(KUBEVIRT_PROVIDER)/.kubeconfig
 
 # Expose local binaries to tests
 export PATH := $(BIN_DIR):$(PATH)
@@ -58,7 +59,7 @@ ifndef UPSTREAM
 endif
 	$(install_hco)
 
-cluster-tests: $(CLUSTER_UP) $(VIRTCTL) tests
+cluster-tests: $(CLUSTER_UP) $(VIRTCTL) ../tests
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
