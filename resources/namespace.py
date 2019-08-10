@@ -38,7 +38,7 @@ class Namespace(Resource):
         try:
             # kube client is deficient so we have to use curl to kill stuck
             # finalizers
-            subprocess.check_output(["./clean-namespace.sh", self.name])
+            subprocess.check_output(["./scripts/clean-namespace.sh", self.name])
             self._last_nudge = time.time()
         except subprocess.CalledProcessError as e:
             # deliberately ignore all errors since an intermittent nudge
