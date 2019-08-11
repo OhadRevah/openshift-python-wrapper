@@ -12,6 +12,7 @@ crds/common-template-bundles.crd.yaml
 crds/node-labeller-bundles.crd.yaml
 crds/template-validator.crd.yaml
 crds/nodemaintenance.crd.yaml
+crds/metrics-aggregation.crd.yaml
 cluster_role.yaml
 service_account.yaml
 cluster_role_binding.yaml
