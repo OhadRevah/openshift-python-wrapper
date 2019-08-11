@@ -25,6 +25,19 @@ BR1VLAN200 = "br1vlan200"
 BR1VLAN300 = "br1vlan300"
 
 
+def _masquerade_vmib_ip(vmib, bridge):
+    # Using masquerade we can just ping vmb pods ip
+    masquerade_interface = [
+        i
+        for i in vmib.instance.spec.domain.devices.interfaces
+        if i["name"] == bridge and "masquerade" in i.keys()
+    ]
+    if masquerade_interface:
+        return vmib.virt_launcher_pod.instance.status.podIP
+
+    return get_vmi_ip_v4_by_name(vmi=vmib, name=bridge)
+
+
 class BridgedFedoraVirtualMachine(FedoraVirtualMachine):
     def __init__(
         self,
@@ -193,32 +206,26 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
             marks=(pytest.mark.polarion("CNV-2080")),
             id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_network",
         ),
-        pytest.param(
-            BR1VLAN100,
-            marks=(
-                pytest.mark.polarion("CNV-2072"),
-                pytest.mark.skipif(
-                    py_config["bare_metal_cluster"],
-                    reason="Missing VLAN config on the switch [Ticket PNT0584216]",
-                ),
-            ),
-            id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_VLAN_network",
-        ),
-        pytest.param(
-            BR1BOND,
-            marks=(pytest.mark.polarion("CNV-2141")),
-            id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_on_BOND_network",
-        ),
-        pytest.param(
-            BR1VLAN300,
-            marks=(pytest.mark.polarion("CNV-2075")),
-            id="Negative_No_connectivity_between_VM_to_VM_L2_Linux_bridge_different_VLANs",
-        ),
     ],
 )
 def test_connectivity_over_linux_bridge(
-    skip_when_one_node,
     bridge,
+    skip_when_one_node,
+    module_namespace,
+    bridge_attached_vma,
+    bridge_attached_vmb,
+    running_bridge_attached_vmia,
+    running_bridge_attached_vmib,
+):
+    assert_ping_successful(
+        src_vm=running_bridge_attached_vmia,
+        dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
+    )
+
+
+@pytest.mark.polarion("CNV-2141")
+def test_connectivity_bond_over_linux_bridge(
+    skip_when_one_node,
     module_namespace,
     attach_linux_bridge_to_bond,
     bond_supported,
@@ -227,33 +234,49 @@ def test_connectivity_over_linux_bridge(
     running_bridge_attached_vmia,
     running_bridge_attached_vmib,
 ):
-    """
-    Check connectivity
-    """
-    if bridge == BR1BOND:
-        if not bond_supported:
-            pytest.skip(msg="No BOND support")
+    if not bond_supported:
+        pytest.skip(msg="No BOND support")
 
-    if bridge in (BR1VLAN100, BR1VLAN300) and py_config["bare_metal_cluster"]:
-        # TODO: Remove when trunk is configured on the switches
-        # https://redhat.service-now.com/surl.do?n=PNT0584216
-        pytest.skip(msg="Running on BM, no trunk on switches yet!!")
+    assert_ping_successful(
+        src_vm=running_bridge_attached_vmia,
+        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1BOND),
+    )
 
-    # Using masquerade we can just ping vmb pods ip
-    masquerade_interface = [
-        i
-        for i in running_bridge_attached_vmib.instance.spec.domain.devices.interfaces
-        if i["name"] == bridge and "masquerade" in i.keys()
-    ]
-    if masquerade_interface:
-        vmb_ip = running_bridge_attached_vmib.virt_launcher_pod.instance.status.podIP
-    else:
-        vmb_ip = get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=bridge)
 
-    if bridge != BR1VLAN300:
-        assert_ping_successful(src_vm=running_bridge_attached_vmia, dst_ip=vmb_ip)
-    else:
-        assert_no_ping(src_vm=running_bridge_attached_vmia, dst_ip=vmb_ip)
+@pytest.mark.skipif(
+    py_config["bare_metal_cluster"], reason="Running on BM, no trunk on switches yet!!"
+)
+@pytest.mark.polarion("CNV-2072")
+def test_connectivity_positive_vlan_over_linux_bridge(
+    skip_when_one_node,
+    module_namespace,
+    bridge_attached_vma,
+    bridge_attached_vmb,
+    running_bridge_attached_vmia,
+    running_bridge_attached_vmib,
+):
+    assert_ping_successful(
+        src_vm=running_bridge_attached_vmia,
+        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1VLAN100),
+    )
+
+
+@pytest.mark.skipif(
+    py_config["bare_metal_cluster"], reason="Running on BM, no trunk on switches yet!!"
+)
+@pytest.mark.polarion("CNV-2075")
+def test_connectivity_negative_vlan_over_linux_bridge(
+    skip_when_one_node,
+    module_namespace,
+    bridge_attached_vma,
+    bridge_attached_vmb,
+    running_bridge_attached_vmia,
+    running_bridge_attached_vmib,
+):
+    assert_no_ping(
+        src_vm=running_bridge_attached_vmia,
+        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1VLAN300),
+    )
 
 
 @pytest.mark.skipif(not py_config["bare_metal_cluster"], reason="virtualized cluster")
