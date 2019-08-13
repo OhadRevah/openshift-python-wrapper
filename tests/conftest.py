@@ -116,30 +116,27 @@ def default_client():
 @pytest.fixture(scope="session", autouse=True)
 def openshift_platform():
     try:
-        Namespace(name="openshift-config").instance
+        Namespace(name="openshift").instance
         return True
     except NotFoundError:
         return False
 
 
 @pytest.fixture(scope="session")
-def unprivileged_secret(default_client, openshift_platform):
-    if not openshift_platform:
-        yield None
-    else:
-        password = UNPRIVILEGED_PASSWORD.encode()
-        enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5))
-        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
-        with Secret(
-            name="htpass-secret",
-            namespace="openshift-config",
-            htpasswd=base64.b64encode(crypto_credentials).decode(),
-        ):
-            yield
+def unprivileged_secret(default_client):
+    password = UNPRIVILEGED_PASSWORD.encode()
+    enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5))
+    crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
+    with Secret(
+        name="htpass-secret",
+        namespace="openshift-config",
+        htpasswd=base64.b64encode(crypto_credentials).decode(),
+    ):
+        yield
 
 
 @pytest.fixture(scope="session", autouse=True)
-def unprivileged_client(default_client, openshift_platform, unprivileged_secret):
+def unprivileged_client(unprivileged_secret, default_client, openshift_platform):
     """
     Provides none privilege API client
     """
@@ -174,8 +171,7 @@ def unprivileged_client(default_client, openshift_platform, unprivileged_secret)
     token_auth = {
         "api_key": {"authorization": f"Bearer {token}"},
         "host": default_client.configuration.host,
-        "verify_ssl": True,
-        "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
+        "verify_ssl": False,
     }
     configuration = kubernetes.client.Configuration()
     for k, v in token_auth.items():
