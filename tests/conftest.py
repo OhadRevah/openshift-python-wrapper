@@ -6,7 +6,7 @@ Pytest conftest file for CNV tests
 import base64
 import bcrypt
 import os
-from subprocess import check_output, CalledProcessError
+from subprocess import Popen, check_output, CalledProcessError, PIPE
 
 import kubernetes
 import pytest
@@ -16,15 +16,12 @@ from resources.node import Node
 from resources.secret import Secret
 from resources.namespace import Namespace
 from resources.oauth import OAuth
+from resources.utils import TimeoutSampler
 from tests import utils as test_utils
 
 
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
-
-
-class LoginError(Exception):
-    pass
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -72,12 +69,20 @@ def login_to_account(api_address, user, password=None):
     login_command = f"oc login {api_address} -u {user}"
     if password:
         login_command += f" -p {password}"
-    try:
-        check_output(login_command, shell=True)
-    except CalledProcessError as exc:
-        raise LoginError(
-            f"Error to login to {user} account due to the following error:\n {exc.output}"
-        )
+    samples = TimeoutSampler(
+        timeout=120,
+        sleep=3,
+        exceptions=CalledProcessError,
+        func=Popen,
+        args=login_command,
+        shell=True,
+        stdout=PIPE,
+        stderr=PIPE,
+    )
+    for sample in samples:
+        sample.communicate()
+        if sample.returncode == 0:
+            return
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -116,27 +121,30 @@ def default_client():
 @pytest.fixture(scope="session", autouse=True)
 def openshift_platform():
     try:
-        Namespace(name="openshift").instance
+        Namespace(name="openshift-config").instance
         return True
     except NotFoundError:
         return False
 
 
 @pytest.fixture(scope="session")
-def unprivileged_secret(default_client):
-    password = UNPRIVILEGED_PASSWORD.encode()
-    enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5))
-    crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
-    with Secret(
-        name="htpass-secret",
-        namespace="openshift-config",
-        htpasswd=base64.b64encode(crypto_credentials).decode(),
-    ):
-        yield
+def unprivileged_secret(default_client, openshift_platform):
+    if not openshift_platform:
+        yield None
+    else:
+        password = UNPRIVILEGED_PASSWORD.encode()
+        enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5))
+        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
+        with Secret(
+            name="htpass-secret",
+            namespace="openshift-config",
+            htpasswd=base64.b64encode(crypto_credentials).decode(),
+        ):
+            yield
 
 
 @pytest.fixture(scope="session", autouse=True)
-def unprivileged_client(unprivileged_secret, default_client, openshift_platform):
+def unprivileged_client(default_client, openshift_platform, unprivileged_secret):
     """
     Provides none privilege API client
     """
@@ -171,7 +179,8 @@ def unprivileged_client(unprivileged_secret, default_client, openshift_platform)
     token_auth = {
         "api_key": {"authorization": f"Bearer {token}"},
         "host": default_client.configuration.host,
-        "verify_ssl": False,
+        "verify_ssl": True,
+        "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
     }
     configuration = kubernetes.client.Configuration()
     for k, v in token_auth.items():
