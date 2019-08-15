@@ -294,3 +294,11 @@ class VirtualMachineInstancePreset(NamespacedResource):
     """
 
     api_group = API_GROUP
+
+
+class VirtualMachineInstanceReplicaSet(NamespacedResource):
+    """
+    VirtualMachineInstancePreset object.
+    """
+
+    api_group = API_GROUP

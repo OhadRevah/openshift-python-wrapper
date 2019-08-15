@@ -13,6 +13,7 @@ from resources.virtual_machine import (
     VirtualMachineInstance,
     VirtualMachine,
     VirtualMachineInstancePreset,
+    VirtualMachineInstanceReplicaSet,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -47,6 +48,9 @@ def ansible_config_environ():
 def cleanup(default_client):
     default_ns = "default"
     vms = list(VirtualMachine.get(default_client, namespace=default_ns))
+    vmirs = list(
+        VirtualMachineInstanceReplicaSet.get(default_client, namespace=default_ns)
+    )
     vmis = list(VirtualMachineInstance.get(default_client, namespace=default_ns))
     vmips = list(VirtualMachineInstancePreset.get(default_client, namespace=default_ns))
     pvcs = list(PersistentVolumeClaim.get(default_client, namespace=default_ns))
@@ -57,6 +61,12 @@ def cleanup(default_client):
     for vm in VirtualMachine.get(default_client, namespace=default_ns):
         if vm not in vms:
             vm.delete(wait=True)
+
+    for vmir in VirtualMachineInstanceReplicaSet.get(
+        default_client, namespace=default_ns
+    ):
+        if vmir not in vmirs:
+            vmir.delete(wait=True)
 
     for vmi in VirtualMachineInstance.get(default_client, namespace=default_ns):
         if vmi not in vmis:
