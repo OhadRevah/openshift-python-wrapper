@@ -14,13 +14,9 @@ CHECK_DMIDECODE_PACKAGE = (
 
 
 class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
-    def __init__(self, name, namespace, interfaces=None, networks=None, **vm_attr):
+    def __init__(self, name, namespace, interfaces=None, networks=None):
         super().__init__(
-            name=name,
-            namespace=namespace,
-            interfaces=interfaces,
-            networks=networks,
-            **vm_attr
+            name=name, namespace=namespace, interfaces=interfaces, networks=networks
         )
 
     def _to_dict(self):

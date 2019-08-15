@@ -120,7 +120,8 @@ class FedoraVirtualMachine(VirtualMachine):
         cpu_sockets=None,
         cpu_cores=None,
         cpu_threads=None,
-        **vm_attr,
+        memory=None,
+        label=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.interfaces = interfaces or []
@@ -128,18 +129,14 @@ class FedoraVirtualMachine(VirtualMachine):
         self.networks = networks or {}
         self.node_selector = node_selector
         self.eviction = eviction
-        self.vm_attrs = vm_attr
-        self.vm_attrs_to_use = self.vm_attrs or {
-            "label": "fedora-vm",
-            "cpu_cores": 1,
-            "memory": "1024Mi",
-        }
         self.cpu_flags = cpu_flags
         self.cpu_limits = cpu_limits
         self.cpu_requests = cpu_requests
         self.cpu_sockets = cpu_sockets
         self.cpu_cores = cpu_cores
         self.cpu_threads = cpu_threads
+        self.memory = memory
+        self.label = label
 
     def _cloud_init_user_data(self):
         return {"password": "fedora", "chpasswd": "{ expire: False }"}
@@ -147,9 +144,7 @@ class FedoraVirtualMachine(VirtualMachine):
     def _to_dict(self):
         res = super()._to_dict()
         json_out = utils.generate_yaml_from_template(
-            file_="tests/manifests/vm-fedora.yaml",
-            name=self.name,
-            **self.vm_attrs_to_use,
+            file_="tests/manifests/vm-fedora.yaml", name=self.name
         )
 
         res["metadata"] = json_out["metadata"]
@@ -205,5 +200,11 @@ class FedoraVirtualMachine(VirtualMachine):
 
         if self.cpu_sockets:
             spec["domain"]["cpu"]["sockets"] = self.cpu_sockets
+
+        if self.memory:
+            spec["domain"]["resources"]["requests"]["memory"] = self.memory
+
+        if self.label:
+            res["spec"]["template"]["metadata"]["labels"]["kubevirt.io/vm"] = self.label
 
         return res

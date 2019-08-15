@@ -78,9 +78,6 @@ def generate_yaml_from_template(file_, **kwargs):
 
     Keyword Args:
         name (str):
-        label (str):
-        cpu_cores (int):
-        memory (str):
         image (str):
 
     Returns:

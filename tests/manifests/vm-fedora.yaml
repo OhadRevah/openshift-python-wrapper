@@ -11,13 +11,13 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        kubevirt.io/vm: {{ label }}
+        kubevirt.io/vm: fedora-vm
       annotations:
         ansible: '{"ansible_user": "fedora", "ansible_ssh_pass": "fedora", "ansible_become": true, "ansible_become_method": "sudo"}'
     spec:
       domain:
         cpu:
-          cores: {{ cpu_cores }}
+          cores: 1
         devices:
           disks:
           - disk:
@@ -33,7 +33,7 @@ spec:
           type: ""
         resources:
           requests:
-            memory: {{ memory }}
+            memory: 1024Mi
       networks:
       - name: default
         pod: {}
