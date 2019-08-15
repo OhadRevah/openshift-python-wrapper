@@ -140,7 +140,7 @@ def test_common_templates_with_windows(winrmcli_pod, data_volume, namespace):
                     'wmic os get Caption /value'",
                 ]
                 pod_output_samples = TimeoutSampler(
-                    timeout=300, sleep=15, func=winrmcli_pod.execute, command=command
+                    timeout=600, sleep=15, func=winrmcli_pod.execute, command=command
                 )
                 LOGGER.info(
                     f"Windows VM {vm.vmi.name} booting up, will attempt to access it upto 5 mins."
