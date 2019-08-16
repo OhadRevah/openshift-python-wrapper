@@ -377,7 +377,7 @@ class Resource(object):
         return res
 
     @classmethod
-    def delete_from_dict(cls, dyn_client, data, namespace=None):
+    def delete_from_dict(cls, dyn_client, data, namespace=None, wait=False):
         """
         Delete resource represented by the passed data
 
@@ -385,18 +385,36 @@ class Resource(object):
             dyn_client (DynamicClient): Open connection to remote cluster.
             data (dict): Dict representation of resource payload.
             namespace (str): Namespace of the resource unless specified in the supplied yaml.
+            wait (bool) : True to wait for resource till deleted.
 
         Returns:
             True if delete succeeded, False otherwise.
         """
+
+        def _exists(name, namespace):
+            try:
+                return client.get(name=name, namespace=namespace)
+            except NotFoundError:
+                return
+
+        def _sampler(name, namespace):
+            samples = utils.TimeoutSampler(
+                timeout=TIMEOUT, sleep=1, func=_exists, name=name, namespace=namespace
+            )
+            for sample in samples:
+                if not sample:
+                    return
+
         name = data["metadata"]["name"]
+        namespace = data["metadata"].get("namespace", namespace)
         client = dyn_client.resources.get(
             api_version=data["apiVersion"], kind=data["kind"]
         )
         LOGGER.info(f"Delete {data['kind']} {name}")
-        return client.delete(
-            name=name, namespace=data["metadata"].get("namespace", namespace)
-        )
+        res = client.delete(name=name, namespace=namespace)
+        if wait and res:
+            return _sampler(name, namespace)
+        return res
 
     def delete(self, wait=False):
         resource_list = self.api()

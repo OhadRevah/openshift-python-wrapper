@@ -7,10 +7,8 @@ Pytest conftest file for CNV network tests
 import os.path
 
 import pytest
-
 import requests
 import yaml
-
 from pytest_testconfig import config as py_config
 
 from resources.daemonset import DaemonSet
@@ -84,8 +82,8 @@ def nmstate(default_client):
 
     ds.wait_until_deployed()
     yield ds
-    for resource_dict in resource_dicts:
-        ds.delete_from_dict(dyn_client=default_client, data=resource_dict)
+    for resource_dict in reversed(resource_dicts):
+        ds.delete_from_dict(dyn_client=default_client, data=resource_dict, wait=True)
 
     ds.delete(wait=True)
 
