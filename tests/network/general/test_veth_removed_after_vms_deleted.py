@@ -121,7 +121,7 @@ def test_veth_removed_from_host_after_vm_deleted(
                 vm.delete(wait=True)
 
                 sampler = TimeoutSampler(
-                    timeout=30, sleep=1, func=count_veth_devices_on_host, pod=pod
+                    timeout=120, sleep=1, func=count_veth_devices_on_host, pod=pod
                 )
                 for sample in sampler:
                     if sample == expect_host_veth:

@@ -77,8 +77,8 @@ class Pod(NamespacedResource):
         )
         timeout_watch = utils.TimeoutWatch(timeout)
         resp.run_forever(timeout=timeout_watch.remaining_time())
-        stdout = resp.read_stdout(timeout=timeout_watch.remaining_time())
-        stderr = resp.read_stderr(timeout=timeout_watch.remaining_time())
+        stdout = resp.read_stdout(timeout=5)
+        stderr = resp.read_stderr(timeout=5)
         error_channel = json.loads(
             resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL)
         )
