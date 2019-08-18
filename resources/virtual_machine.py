@@ -3,7 +3,8 @@
 import json
 import logging
 
-from openshift.dynamic.exceptions import ResourceNotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError, ConflictError
+
 from urllib3.exceptions import ProtocolError
 
 from resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -108,7 +109,13 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         body = self.instance.to_dict()
         body["spec"]["running"] = True
         LOGGER.info(f"Start VM {self.name}")
-        self.update(body)
+        try:
+            self.update(body)
+        except ConflictError:
+            body = self.instance.to_dict()
+            body["spec"]["running"] = True
+            LOGGER.info(f"Start VM {self.name} Retry")
+            self.update(body)
         if wait:
             return self.wait_for_status(timeout=timeout, status=True)
 
