@@ -121,6 +121,10 @@ class DataVolumeTemplate(DataVolume):
             res["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
         elif self.source == "upload":
             res["spec"]["source"][self.source] = {}
+        if self.source == "upload":
+            res["spec"]["source"]["upload"] = {}
+        elif self.source == "blank":
+            res["spec"]["source"][self.source] = {}
         return res
 
 
@@ -183,3 +187,8 @@ class ImportFromRegistryDataVolume(DataVolumeTemplate):
 class UploadDataVolume(DataVolumeTemplate):
     def __init__(self, name, namespace, size, storage_class):
         super().__init__(name, namespace, "upload", size, storage_class)
+
+
+class BlankDataVolume(DataVolumeTemplate):
+    def __init__(self, name, namespace, size, storage_class):
+        super().__init__(name, namespace, "blank", size, storage_class)

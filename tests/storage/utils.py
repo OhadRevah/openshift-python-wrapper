@@ -3,6 +3,7 @@
 import logging
 import os
 import urllib.request
+from contextlib import contextmanager
 
 import requests
 from pytest_testconfig import config as py_config
@@ -56,6 +57,14 @@ class PodWithPVC(Pod):
         return res
 
 
+def check_disk_count_in_vm_with_dv(vm):
+    with console.Cirros(vm=vm) as vm_console:
+        LOGGER.info(f"Check disk count.")
+        vm_console.sendline("lsblk | grep disk | wc -l")
+        vm_console.expect("2", timeout=60)
+
+
+@contextmanager
 def create_vm_with_dv(dv):
     with VirtualMachineForTests(
         name="cirros-vm",
@@ -64,10 +73,8 @@ def create_vm_with_dv(dv):
         cloud_init_data=CLOUD_INIT_USER_DATA,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        with console.Cirros(vm=vm) as vm_console:
-            vm_console.sendline("lsblk | grep disk | wc -l")
-            vm_console.expect("2", timeout=60)
+        vm.vmi.wait_until_running(timeout=300)
+        yield vm
 
 
 def virtctl_upload(namespace, pvc_name, pvc_size, image_path):

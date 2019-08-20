@@ -5,12 +5,13 @@ Import from HTTP server
 """
 
 import logging
+import multiprocessing
 
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
-from resources.datavolume import ImportFromHttpDataVolume
+from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities.infra import get_cert
@@ -19,6 +20,8 @@ from utilities.infra import get_cert
 LOGGER = logging.getLogger(__name__)
 
 TEST_IMG_LOCATION = "cdi-test-images"
+FEDORA_IMG_LOCATION = "fedora-images"
+FEDORA_QCOW_IMG = "Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
 QCOW_IMG = "cirros-qcow2.img"
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
@@ -437,3 +440,41 @@ def test_certconfigmap_missing_or_wrong_cm(
                         Expected: {ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED}. Found: {dv.status}"
                     )
                     raise AssertionError()
+
+
+def blank_disk_import(storage_ns, dv_name):
+    with BlankDataVolume(
+        name=dv_name,
+        namespace=storage_ns.name,
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        dv.wait(timeout=180)
+        utils.create_vm_with_dv(dv)
+
+
+@pytest.mark.polarion("CNV-1025")
+def test_successful_blank_disk_import(storage_ns, images_https_server):
+    with BlankDataVolume(
+        name="cnv-1025",
+        namespace=storage_ns.name,
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        dv.wait()
+        with utils.create_vm_with_dv(dv) as vm_dv:
+            utils.check_disk_count_in_vm_with_dv(vm_dv)
+
+
+@pytest.mark.polarion("CNV-2001")
+def test_successful_concurrent_blank_disk_import(storage_ns):
+    import_process = [
+        multiprocessing.Process(target=blank_disk_import, args=(storage_ns, f"dv-{x}"))
+        for x in range(4)
+    ]
+    # Run processes in parallel
+    for imp in import_process:
+        imp.start()
+    # Exit the completed processes
+    for imp in import_process:
+        imp.join()
