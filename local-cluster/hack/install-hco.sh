@@ -18,6 +18,7 @@ service_account.yaml
 cluster_role_binding.yaml
 operator.yaml
 hco.cr.yaml
+crds/mro.crd.yaml
 '
 
 # Create the namespaces for the HCO
