@@ -9,7 +9,7 @@ from urllib3.exceptions import ProtocolError
 from distutils.version import Version
 import re
 
-from resources.utils import TimeoutExpiredError
+from resources.utils import TimeoutExpiredError, nudge_delete
 from . import utils
 
 LOGGER = logging.getLogger(__name__)
@@ -397,23 +397,24 @@ class Resource(object):
             except NotFoundError:
                 return
 
-        def _sampler(name, namespace):
+        def _sampler(name, namespace, force=False):
             samples = utils.TimeoutSampler(
                 timeout=TIMEOUT, sleep=1, func=_exists, name=name, namespace=namespace
             )
             for sample in samples:
+                if force:
+                    nudge_delete(name)
                 if not sample:
                     return
 
+        kind = data["kind"]
         name = data["metadata"]["name"]
         namespace = data["metadata"].get("namespace", namespace)
-        client = dyn_client.resources.get(
-            api_version=data["apiVersion"], kind=data["kind"]
-        )
+        client = dyn_client.resources.get(api_version=data["apiVersion"], kind=kind)
         LOGGER.info(f"Delete {data['kind']} {name}")
         res = client.delete(name=name, namespace=namespace)
         if wait and res:
-            return _sampler(name, namespace)
+            return _sampler(name, namespace, force=kind == "Namespace")
         return res
 
     def delete(self, wait=False):
