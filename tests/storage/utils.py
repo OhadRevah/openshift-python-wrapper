@@ -65,12 +65,13 @@ def check_disk_count_in_vm_with_dv(vm):
 
 
 @contextmanager
-def create_vm_with_dv(dv, image=None):
+def create_vm_with_dv(dv, image=None, start=True):
     with VirtualMachineForTests(
         name="cirros-vm", namespace=dv.namespace, dv=dv.name, image=image
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running(timeout=300)
+        if start:
+            vm.start(wait=True)
+            vm.vmi.wait_until_running(timeout=300)
         yield vm
 
 

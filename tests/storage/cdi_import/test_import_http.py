@@ -498,3 +498,47 @@ def test_successful_concurrent_blank_disk_import(storage_ns):
     # Exit the completed processes
     for imp in import_process:
         imp.join()
+
+
+@pytest.mark.parametrize(
+    ("size", "unit", "expected_size"),
+    [
+        pytest.param("64", "Mi", "50", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param("1", "Gi", "950", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param("13", "Gi", "13", marks=(pytest.mark.polarion("CNV-1404"))),
+    ],
+)
+def test_vmi_image_size(storage_ns, images_https_server, size, unit, expected_size):
+    with ConfigMap(
+        name="https-cert",
+        namespace=storage_ns.name,
+        cert_name="ca.pem",
+        data=get_cert("https_cert"),
+    ) as configmap:
+        with ImportFromHttpDataVolume(
+            name="cnv-1404",
+            namespace=storage_ns.name,
+            size=f"{size}{unit}",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+            url=get_file_url(
+                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+            ),
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            cert_configmap=configmap.name,
+        ) as dv:
+            dv.wait_for_status(
+                status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
+            )
+            with utils.create_vm_with_dv(dv, start=False):
+                with utils.PodWithPVC(
+                    namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
+                ) as pod:
+                    pod.wait_for_status(status=pod.Status.RUNNING)
+                    assert f"{expected_size}" <= pod.execute(
+                        command=[
+                            "bash",
+                            "-c",
+                            "qemu-img info /pvc/disk.img|grep 'disk size'|awk '{print $3}'|\
+                            awk '{$0=substr($0,1,length($0)-1); print $0}'|tr -d '\n'",
+                        ]
+                    )
