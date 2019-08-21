@@ -70,7 +70,7 @@ To run a particular set of tests, you can use name pattern matching. For
 example, to run all network related tests, do:
 
 ```bash
-make tests PYTEST_EXTRA_ARGS="-k network"
+make tests PYTEST_ARGS="-k network"
 ```
 
 ### Other parameters
