@@ -75,24 +75,39 @@ class Pod(NamespacedResource):
             tty=False,
             _preload_content=False,
         )
+
         timeout_watch = utils.TimeoutWatch(timeout)
-        resp.run_forever(timeout=timeout_watch.remaining_time())
+        while resp.is_open():
+            resp.run_forever(timeout=2)
+            try:
+                error_channel = json.loads(
+                    resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL)
+                )
+                break
+            except json.decoder.JSONDecodeError:
+                # Check remaining time, in order to throw exception
+                # if reamining time reached zero
+                _ = timeout_watch.remaining_time()
+
+        rcstring = error_channel.get("status")
+        if rcstring is None:
+            raise ExecOnPodError(
+                command=command, rc=-1, out="", err="stream resp is closed"
+            )
+
         stdout = resp.read_stdout(timeout=5)
         stderr = resp.read_stderr(timeout=5)
-        error_channel = json.loads(
-            resp.read_channel(kubernetes.stream.ws_client.ERROR_CHANNEL)
-        )
-        if error_channel["status"] == "Success":
-            returncode = 0
-        else:
-            returncode = [
-                int(cause["message"])
-                for cause in error_channel["details"]["causes"]
-                if cause["reason"] == "ExitCode"
-            ][0]
-        if returncode:
-            raise ExecOnPodError(command=command, rc=returncode, out=stdout, err=stderr)
-        return stdout
+
+        if rcstring == "Success":
+            return stdout
+
+        returncode = [
+            int(cause["message"])
+            for cause in error_channel["details"]["causes"]
+            if cause["reason"] == "ExitCode"
+        ][0]
+
+        raise ExecOnPodError(command=command, rc=returncode, out=stdout, err=stderr)
 
     def log(self, **kwargs):
         """
