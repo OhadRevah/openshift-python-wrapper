@@ -54,38 +54,42 @@ def nmstate(default_client):
 
     [1] https://github.com/nmstate/kubernetes-nmstate
     """
+    if py_config["distribution"] == "upstream":
+        yield
 
-    ds = DaemonSet(name="nmstate-handler", namespace="nmstate")
+    else:
+        ds = DaemonSet(name="nmstate-handler", namespace="nmstate")
+        release_url = "https://github.com/nmstate/kubernetes-nmstate/releases/download/{}/".format(
+            py_config["nmstate_version"]
+        )
+        resource_files = [
+            "namespace.yaml",
+            "service_account.yaml",
+            "role.yaml",
+            "role_binding.yaml",
+            "scc.yaml",
+            "nmstate_v1alpha1_nodenetworkstate_crd.yaml",
+            "nmstate_v1alpha1_nodenetworkconfigurationpolicy_crd.yaml",
+            "operator.yaml",
+        ]
 
-    release_url = "https://github.com/nmstate/kubernetes-nmstate/releases/download/{}/".format(
-        py_config["nmstate_version"]
-    )
-    resource_files = [
-        "namespace.yaml",
-        "service_account.yaml",
-        "role.yaml",
-        "role_binding.yaml",
-        "scc.yaml",
-        "nmstate_v1alpha1_nodenetworkstate_crd.yaml",
-        "nmstate_v1alpha1_nodenetworkconfigurationpolicy_crd.yaml",
-        "operator.yaml",
-    ]
+        resource_dicts = []
+        for resource_file in resource_files:
+            r = requests.get(release_url + resource_file)
+            for resource_dict in yaml.safe_load_all(r.content):
+                resource_dicts.append(resource_dict)
 
-    resource_dicts = []
-    for resource_file in resource_files:
-        r = requests.get(release_url + resource_file)
-        for resource_dict in yaml.safe_load_all(r.content):
-            resource_dicts.append(resource_dict)
+        for resource_dict in resource_dicts:
+            assert ds.create_from_dict(dyn_client=default_client, data=resource_dict)
 
-    for resource_dict in resource_dicts:
-        assert ds.create_from_dict(dyn_client=default_client, data=resource_dict)
+        ds.wait_until_deployed()
+        yield ds
+        for resource_dict in reversed(resource_dicts):
+            ds.delete_from_dict(
+                dyn_client=default_client, data=resource_dict, wait=True
+            )
 
-    ds.wait_until_deployed()
-    yield ds
-    for resource_dict in reversed(resource_dicts):
-        ds.delete_from_dict(dyn_client=default_client, data=resource_dict, wait=True)
-
-    ds.delete(wait=True)
+        ds.delete(wait=True)
 
 
 @pytest.fixture(scope="session")

@@ -14,5 +14,3 @@ storage_defaults:
 bare_metal_cluster: False
 
 distribution: upstream
-
-nmstate_version: v0.6.0
