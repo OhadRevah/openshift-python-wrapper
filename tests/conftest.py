@@ -4,21 +4,20 @@
 Pytest conftest file for CNV tests
 """
 import base64
-import bcrypt
 import os
 from subprocess import Popen, check_output, CalledProcessError, PIPE
 
+import bcrypt
 import kubernetes
 import pytest
 from openshift.dynamic import DynamicClient
-from openshift.dynamic.exceptions import NotFoundError
+from pytest_testconfig import config as py_config
+
 from resources.node import Node
-from resources.secret import Secret
-from resources.namespace import Namespace
 from resources.oauth import OAuth
+from resources.secret import Secret
 from resources.utils import TimeoutSampler
 from tests import utils as test_utils
-
 
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
@@ -118,19 +117,11 @@ def default_client():
     return DynamicClient(kubernetes.config.new_client_from_config())
 
 
-@pytest.fixture(scope="session", autouse=True)
-def openshift_platform():
-    try:
-        Namespace(name="openshift-config").instance
-        return True
-    except NotFoundError:
-        return False
-
-
 @pytest.fixture(scope="session")
-def unprivileged_secret(default_client, openshift_platform):
-    if not openshift_platform:
-        yield None
+def unprivileged_secret(default_client):
+    if py_config["distribution"] == "upstream":
+        yield
+
     else:
         password = UNPRIVILEGED_PASSWORD.encode()
         enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5))
@@ -144,12 +135,13 @@ def unprivileged_secret(default_client, openshift_platform):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def unprivileged_client(default_client, openshift_platform, unprivileged_secret):
+def unprivileged_client(default_client, unprivileged_secret):
     """
     Provides none privilege API client
     """
-    if not openshift_platform:
-        return None
+    if py_config["distribution"] == "upstream":
+        return
+
     # Update identity provider
     identity_provider_config = OAuth(name="cluster")
     identity_provider_config.update(
