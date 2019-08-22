@@ -13,7 +13,7 @@ from tests.network.utils import (
     nmcli_add_con_cmds,
 )
 from tests.utils import (
-    Bridge,
+    LinuxBridgeNodeNetworkConfigurationPolicy,
     VirtualMachineForTests,
     VXLANTunnel,
     create_ns,
@@ -115,21 +115,24 @@ def br1vlan300_nad(module_namespace):
 
 @pytest.fixture(scope="module", autouse=True)
 def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_nodes):
+    ports = (
+        [nodes_active_nics[network_utility_pods[0].node.name][1]]
+        if multi_nics_nodes
+        else []
+    )
 
-    master_index = 1 if multi_nics_nodes else None
-
-    with Bridge(
-        name=BR1TEST,
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="linux-bridge-test-connectivity",
+        bridge_name=BR1TEST,
         worker_pods=network_utility_pods,
-        master_index=master_index,
-        nodes_nics=nodes_active_nics,
+        ports=ports,
     ) as br:
         if not multi_nics_nodes:
             with VXLANTunnel(
                 name="vxlan_lb_99",
                 worker_pods=network_utility_pods,
                 vxlan_id=99,
-                master_bridge=br.name,
+                master_bridge=br.bridge_name,
                 nodes_nics=nodes_active_nics,
             ):
                 yield br

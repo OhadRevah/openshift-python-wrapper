@@ -12,7 +12,7 @@ from resources.namespace import Namespace
 from resources.pod import Pod
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds, running_vmi
 from tests.utils import (
-    Bridge,
+    LinuxBridgeNodeNetworkConfigurationPolicy,
     VirtualMachineForTests,
     VXLANTunnel,
     create_ns,
@@ -224,7 +224,9 @@ def automatic_mac_tuning_net_nad(namespace):
 
 @pytest.fixture(scope="module")
 def bridge_device(network_utility_pods):
-    with Bridge(name=BRIDGE_BR1, worker_pods=network_utility_pods) as dev:
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="kubemacpool", bridge_name=BRIDGE_BR1, worker_pods=network_utility_pods
+    ) as dev:
         yield dev
 
 
@@ -255,7 +257,7 @@ def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_ni
             name="kubemactest",
             worker_pods=network_utility_pods,
             vxlan_id=100,
-            master_bridge=bridge_device.name,
+            master_bridge=bridge_device.bridge_name,
             nodes_nics=nodes_active_nics,
         ) as vxlan:
             yield vxlan

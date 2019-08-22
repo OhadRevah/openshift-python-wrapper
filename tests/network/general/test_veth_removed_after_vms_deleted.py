@@ -58,7 +58,9 @@ def br1vlan100_nad(namespace):
 
 @pytest.fixture()
 def bridge_device(network_utility_pods):
-    with utils.Bridge(name=BR1TEST, worker_pods=network_utility_pods) as dev:
+    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="veth-removed", bridge_name=BR1TEST, worker_pods=network_utility_pods
+    ) as dev:
         yield dev
 
 

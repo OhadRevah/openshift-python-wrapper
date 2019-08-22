@@ -70,15 +70,25 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods):
-    with utils.Bridge(name="redbr", worker_pods=network_utility_pods) as dev:
+    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="bridge-marker1", bridge_name="redbr", worker_pods=network_utility_pods
+    ) as dev:
         yield dev
 
 
 @pytest.fixture()
 def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
-    with utils.Bridge(name="redbr", worker_pods=[network_utility_pods[0]]) as redbr:
-        with utils.Bridge(
-            name="bluebr", worker_pods=[network_utility_pods[1]]
+    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="bridge-marker2",
+        bridge_name="redbr",
+        worker_pods=[network_utility_pods[0]],
+        node_selector={"kubernetes.io/hostname": network_utility_pods[0].node.name},
+    ) as redbr:
+        with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+            name="bridge-marker3",
+            bridge_name="bluebr",
+            worker_pods=[network_utility_pods[1]],
+            node_selector={"kubernetes.io/hostname": network_utility_pods[1].node.name},
         ) as bluebr:
             yield (redbr, bluebr)
 
@@ -122,4 +132,4 @@ def test_bridge_marker_devices_exist_on_different_nodes(
     # validate the exact reason for VMI startup failure is missing bridge
     pod = multi_bridge_attached_vmi.virt_launcher_pod
     for bridge in non_homogenous_bridges:
-        _assert_failure_reason_is_bridge_missing(pod, bridge.name)
+        _assert_failure_reason_is_bridge_missing(pod, bridge.bridge_name)

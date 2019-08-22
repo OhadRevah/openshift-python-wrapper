@@ -15,7 +15,7 @@ TIMEOUT = 120
 
 class NodeNetworkState(Resource):
 
-    api_version = "nmstate.io/v1alpha1"
+    api_group = "nmstate.io"
 
     def __init__(self, name):
         super().__init__(name=name)

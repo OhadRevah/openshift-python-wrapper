@@ -284,6 +284,7 @@ def nodes_active_nics(network_utility_pods):
                     continue
 
                 nodes_nics[pod.node.name].append(nic)
+
     return nodes_nics
 
 

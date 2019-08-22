@@ -10,11 +10,12 @@ from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.namespace import Namespace
+from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
+from resources.node_network_state import NodeNetworkState
 from resources.project import Project, ProjectRequest
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
-from tests.network.nmstate import linux_bridge
 from utilities import utils
 
 
@@ -274,109 +275,6 @@ class CommandExecFailed(Exception):
 
 
 @contextlib.contextmanager
-def _bridge(pod, name, nic, mtu, disable_vlan_filtering):
-    def _set_mtu(iface, mtu):
-        return ["ip", "link", "set", iface, "mtu", mtu]
-
-    iface_mtu = None
-    try:
-        LOGGER.info(f"Adding bridge {name} to {pod.node.name} using nmstate")
-        linux_bridge.create(pod.node.name, name, nic)
-
-        # This is a temporal measure there are some tests where we need
-        # trunk but that will be fixed at future versions of CNI linux-bridge [1]
-        # [1] https://jira.coreos.com/browse/CNV-1804
-        if disable_vlan_filtering:
-            pod.execute(
-                [
-                    "ip",
-                    "link",
-                    "set",
-                    "dev",
-                    name,
-                    "type",
-                    "bridge",
-                    "vlan_filtering",
-                    "0",
-                ]
-            )
-
-        if mtu:
-            if nic is not None:
-                iface_mtu = pod.execute(
-                    command=["cat", f"/sys/class/net/{nic}/mtu"]
-                ).strip()
-                pod.execute(command=_set_mtu(nic, mtu))
-
-            pod.execute(command=_set_mtu(name, mtu))
-        yield
-    finally:
-        if nic is not None and mtu and iface_mtu:
-            pod.execute(command=_set_mtu(nic, iface_mtu))
-
-        LOGGER.info(f"Deleting bridge {name} at {pod.node.name} using nmstate")
-        linux_bridge.delete(pod.node.name, name)
-
-
-class Bridge:
-    def __init__(
-        self,
-        name,
-        worker_pods,
-        nic=None,
-        nodes_nics=None,
-        master_index=None,
-        mtu=None,
-        disable_vlan_filtering=False,
-    ):
-        """
-        Create bridge on all nodes (Using privileged pods)
-
-        Args:
-            name (str): Bridge name.
-            worker_pods (list): List of Pods instances.
-            nic (str): The bridge's slave nic, exclusive with nodes_nics and master_index.
-            nodes_nics (dict): Dict of {nodes: [NICs]}. get it from 'nodes_active_nics' fixture, exclusive with nic.
-            master_index (int): The index on the NIC to use, exclusive with nic.
-            mtu (int): MTU size
-            disable_vlan_filtering: no vlan_filtering configured at node bridges
-        """
-        self.name = name
-        self._worker_pods = worker_pods
-        self.nic = nic
-        self.master_index = master_index
-        self.nodes_nics = nodes_nics
-        self.mtu = mtu
-        self.disable_vlan_filtering = disable_vlan_filtering
-        self._stack = None
-
-    def __enter__(self):
-        # use ExitStack to guarantee cleanup even when some workers fail
-        with contextlib.ExitStack() as stack:
-            for pod in self._worker_pods:
-                nic_to_bridge = None
-                if self.nic:
-                    nic_to_bridge = self.nic
-                elif self.nodes_nics and self.master_index is not None:
-                    nic_to_bridge = self.nodes_nics[pod.node.name][self.master_index]
-                stack.enter_context(
-                    _bridge(
-                        pod,
-                        self.name,
-                        nic_to_bridge,
-                        self.mtu,
-                        self.disable_vlan_filtering,
-                    )
-                )
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(self, *args):
-        if self._stack is not None:
-            self._stack.__exit__(*args)
-
-
-@contextlib.contextmanager
 def _vxlan(pod, name, vxlan_id, interface_name, dst_port, master_bridge):
     # group 226.100.100.100 is part of RESERVED (225.0.0.0-231.255.255.255) range and applications can not use it
     # Usage of this group eliminates the risk of overlap
@@ -484,3 +382,141 @@ def create_ns(client, name):
             project = Project(name=name, client=client)
             project.wait_for_status(Project.Status.ACTIVE, timeout=120)
             yield project
+
+
+def _disable_vlan_filtering(pod, bridge_name):
+    # This is a temporal measure there are some tests where we need
+    # trunk but that will be fixed at future versions of CNI linux-bridge [1]
+    # [1] https://jira.coreos.com/browse/CNV-1804
+    # [2] https://jira.coreos.com/browse/CNV-2455
+    pod.execute(
+        [
+            "ip",
+            "link",
+            "set",
+            "dev",
+            bridge_name,
+            "type",
+            "bridge",
+            "vlan_filtering",
+            "0",
+        ]
+    )
+
+
+def _set_iface_mtu(pod, port, mtu):
+    pod.execute(command=["ip", "link", "set", port, "mtu", mtu])
+
+
+class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        worker_pods,
+        bridge_name,
+        ports=None,
+        mtu=None,
+        vlan_filtering=True,
+        node_selector=None,
+    ):
+        """
+        Create bridge on nodes (according node_selector, all if no selector presents)
+
+        Args:
+            name (str): Policy name.
+            worker_pods (list): List of Pods instances.
+            bridge_name (str): Bridge name.
+            ports (list): The bridge's slave port(s).
+            mtu (int): MTU size
+            vlan_filtering: determines if vlan_filtering configured at node bridges
+        """
+        super().__init__(name=name)
+        self._worker_pods = worker_pods
+        self.bridge_name = bridge_name
+        self.ports = ports or []
+        self.mtu = mtu
+        self.vlan_filtering = vlan_filtering
+        self.bridge = None
+        self.node_selector = node_selector
+        self.mtu_dict = {}
+
+    def _to_dict(self):
+        bridge_ports = []
+        for port in self.ports:
+            bridge_ports.append({"name": port})
+
+        # At the first time, it creates the dict.
+        # When calling update, the caller updates the dict and this function
+        # will not init it anymore
+        if not self.bridge:
+            self.bridge = {
+                "name": self.bridge_name,
+                "type": "linux-bridge",
+                "state": "up",
+                "bridge": {
+                    "options": {"stp": {"enabled": False}},
+                    "port": bridge_ports,
+                },
+            }
+
+        self.set_interface(self.bridge)
+        res = super()._to_dict()
+
+        return res
+
+    def __enter__(self):
+        if self.mtu:
+            for pod in self._worker_pods:
+                for port in self.ports:
+                    self.mtu_dict[pod.node.name + port] = pod.execute(
+                        command=["cat", f"/sys/class/net/{port}/mtu"]
+                    ).strip()
+
+        super().__enter__()
+
+        try:
+            self.validate_create()
+            for pod in self._worker_pods:
+                if not self.vlan_filtering:
+                    _disable_vlan_filtering(pod, self.bridge_name)
+                if self.mtu:
+                    for port in self.ports:
+                        _set_iface_mtu(pod, port, self.mtu)
+                    _set_iface_mtu(pod, self.bridge_name, self.mtu)
+            return self
+        except TimeoutExpiredError:
+            self.clean_up()
+            raise
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.clean_up()
+
+    def clean_up(self):
+        if self.mtu:
+            for pod in self._worker_pods:
+                # Restore MTU
+                for port in self.ports:
+                    _set_iface_mtu(pod, port, self.mtu_dict[pod.node.name + port])
+
+        self._absent_interface()
+        self.wait_for_bridge_deleted()
+        self.delete()
+
+    def wait_for_bridge_deleted(self):
+        for pod in self._worker_pods:
+            LOGGER.info(
+                f"validating bridge delete {self.bridge_name} - {pod.node.name}"
+            )
+            node_network_state = NodeNetworkState(name=pod.node.name)
+            node_network_state.wait_until_deleted(self.bridge_name)
+
+    def validate_create(self):
+        for pod in self._worker_pods:
+            LOGGER.info(f"validating bridge is up {self.bridge_name} - {pod.node.name}")
+            node_network_state = NodeNetworkState(name=pod.node.name)
+            node_network_state.wait_until_up(self.bridge_name)
+
+    def _absent_interface(self):
+        self.bridge["state"] = "absent"
+        self.set_interface(self.bridge)
+        self.apply()

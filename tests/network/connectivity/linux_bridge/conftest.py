@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from tests.utils import Bridge
+from tests.utils import LinuxBridgeNodeNetworkConfigurationPolicy
 
 
 LOGGER = logging.getLogger(__name__)
@@ -14,8 +14,11 @@ def attach_linux_bridge_to_bond(bond1, network_utility_pods):
     """
     if bond1:
         bond_bridge = "br1bond"
-        with Bridge(
-            name=bond_bridge, worker_pods=network_utility_pods, nic=bond1
+        with LinuxBridgeNodeNetworkConfigurationPolicy(
+            name="bridge-to-bond",
+            bridge_name=bond_bridge,
+            worker_pods=network_utility_pods,
+            ports=[bond1],
         ) as br:
             yield br
     else:

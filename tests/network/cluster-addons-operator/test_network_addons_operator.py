@@ -11,14 +11,20 @@ def module_namespace(unprivileged_client):
 
 @pytest.fixture(scope="module", autouse="True")
 def bridge_device(network_utility_pods):
-    with utils.Bridge(name="br1test", worker_pods=network_utility_pods) as br_dev:
+    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="test-network-operator",
+        bridge_name="br1test",
+        worker_pods=network_utility_pods,
+    ) as br_dev:
         yield br_dev
 
 
 @pytest.fixture(scope="module", autouse="True")
 def br1test_nad(module_namespace, bridge_device):
     with network_utils.linux_bridge_nad(
-        namespace=module_namespace, name=bridge_device.name, bridge=bridge_device.name
+        namespace=module_namespace,
+        name=bridge_device.bridge_name,
+        bridge=bridge_device.bridge_name,
     ) as nad:
         yield nad
 

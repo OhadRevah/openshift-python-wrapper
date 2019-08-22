@@ -11,7 +11,7 @@ from tests.network.utils import (
     nmcli_add_con_cmds,
 )
 from tests.utils import (
-    Bridge,
+    LinuxBridgeNodeNetworkConfigurationPolicy,
     VirtualMachineForTests,
     create_ns,
     wait_for_vm_interfaces,
@@ -68,11 +68,12 @@ def br1test_nad(module_namespace):
 
 @pytest.fixture(scope="module", autouse=True)
 def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
-    with Bridge(
-        name=BR1TEST,
+    ports = [nodes_active_nics[network_utility_pods[0].node.name][1]]
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="jumbo-frame",
+        bridge_name=BR1TEST,
         worker_pods=network_utility_pods,
-        master_index=1,
-        nodes_nics=nodes_active_nics,
+        ports=ports,
         mtu=MTU_SIZE,
     ) as br:
         yield br
