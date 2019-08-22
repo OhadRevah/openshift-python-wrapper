@@ -122,7 +122,7 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     return vmi
 
 
-# TODO: this should be handled by network CNI, This fixture should be removed once it's fixed
+# TODO: this should be handled by bridge CNI, This fixture should be removed once it's fixed
 # https://github.com/containernetworking/plugins/issues/352
 @pytest.fixture(scope="module")
 def fixed_veth_mtu_on_host(
