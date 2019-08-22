@@ -2,6 +2,7 @@
 
 set -x
 
+HCO_NS='kubevirt-hyperconverged'
 HCO_VERSION='master'
 HCO_SOURCES="https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/${HCO_VERSION}"
 HCO_RESOURCES='crds/hco.crd.yaml
@@ -22,14 +23,24 @@ crds/mro.crd.yaml
 '
 
 # Create the namespaces for the HCO
-${KUBECTL} create ns kubevirt-hyperconverged
+if [[ $(${KUBECTL} get ns ${HCO_NS}) == '' ]]; then
+    ${KUBECTL} create ns ${HCO_NS}
+fi
+
+# Create additional namespaces needed for HCO components
+namespaces=('openshift' 'openshift-machine-api')
+for namespace in ${namespaces[@]}; do
+    if [[ $(${KUBECTL} get ns ${namespace}) == '' ]]; then
+        ${KUBECTL} create ns ${namespace}
+    fi
+done
 
 # Switch to the HCO namespace.
 ${KUBECTL} config set-context $(${KUBECTL} config current-context) --namespace=kubevirt-hyperconverged
 
 # Create all resources of HCO and its operators
 for resource in ${HCO_RESOURCES}; do
-    ${KUBECTL} create -f ${HCO_SOURCES}/deploy/${resource}
+    ${KUBECTL} apply -f ${HCO_SOURCES}/deploy/${resource}
 done
 
 # Wait for all components to become ready

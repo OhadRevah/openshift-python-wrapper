@@ -15,9 +15,10 @@ CLI := $(CLUSTER_DIR)/cli.sh
 SSH := $(CLUSTER_DIR)/ssh.sh
 export KUBECTL := $(CLUSTER_DIR)/kubectl.sh
 export VIRTCTL := $(CLUSTER_DIR)/virtctl.sh
-export KUBEVIRT_PROVIDER ?= os-3.11.0
+export KUBEVIRT_PROVIDER ?= okd-4.1
 export KUBEVIRT_NUM_NODES ?= 2
 export KUBEVIRT_NUM_SECONDARY_NICS ?= 4
+export VIRTCTL_VERSION ?= v0.20.1
 
 # Helper scripts
 HACK_DIR := local-cluster/hack
@@ -46,7 +47,7 @@ tests:
 $(CLUSTER_DIR)/%: $(install_kubevirtci)
 	$(install_kubevirtci)
 
-cluster-up: $(CLUSTER_UP)
+cluster-up: $(CLUSTER_UP) $(VIRTCTL)
 	$(CLUSTER_UP)
 
 cluster-down: $(CLUSTER_DOWN)
@@ -59,7 +60,7 @@ ifndef UPSTREAM
 endif
 	$(install_hco)
 
-cluster-tests: $(CLUSTER_UP) $(VIRTCTL) ../tests
+cluster-tests: $(CLUSTER_UP) ../tests
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)

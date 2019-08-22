@@ -23,8 +23,14 @@ Deploy Kubernetes cluster using kubevirtci and install upstream HCO on top of
 it. This can be used during development, but the results should not be used
 for patch verification.
 
+NOTE: Local cluster runs OKD4 by default and due to that, it has high memory requirements. 
+      You may need 20 GB of memory or more to run the cluster.
+
+
 ```bash
-UPSTREAM=1 make cluster-up cluster-install-hco
+UPSTREAM=1 make cluster-up cluster-install-hco # deploy okd 4.1 as default
+UPSTREAM=1 KUBEVIRT_PROVIDER=k8s-1.13.3 make cluster-up cluster-install-hco # deploy on ks8 1.13.3
+UPSTREAM=1 KUBEVIRT_PROVIDER=okd-4.1 make cluster-up cluster-install-hco # deploy on okd 4.1
 ```
 
 ### Arbitrary cluster
