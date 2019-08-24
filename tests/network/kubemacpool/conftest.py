@@ -7,7 +7,7 @@ from time import sleep, time
 
 import pytest
 from resources.namespace import Namespace
-from resources.config_map import ConfigMap
+from resources.configmap import ConfigMap
 from resources.pod import Pod
 from tests.network.utils import Bridge, VXLANTunnel, linux_bridge_nad
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
