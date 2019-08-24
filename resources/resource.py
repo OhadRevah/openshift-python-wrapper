@@ -17,6 +17,18 @@ TIMEOUT = 240
 MAX_SUPPORTED_API_VERSION = "v1"
 
 
+def _find_supported_resource(dyn_client, api_group, kind):
+    results = dyn_client.resources.search(group=api_group, kind=kind)
+    sorted_results = sorted(
+        results, key=lambda result: KubeAPIVersion(result.api_version), reverse=True
+    )
+    for result in sorted_results:
+        if KubeAPIVersion(result.api_version) <= KubeAPIVersion(
+            MAX_SUPPORTED_API_VERSION
+        ):
+            return result
+
+
 class KubeAPIVersion(Version):
     """
     Implement the Kubernetes API versioning scheme from
@@ -131,26 +143,11 @@ class Resource(object):
                 )
                 raise
         if not self.api_version:
-            res = self.find_supported_resource()
+            res = _find_supported_resource(self.client, self.api_group, self.kind)
             if not res:
-                LOGGER.error(
-                    "Couldn't find {0} in {1} api group".format(
-                        self.kind, self.api_group
-                    )
-                )
+                LOGGER.error(f"Couldn't find {self.kind} in {self.api_group} api group")
                 raise
             self.api_version = res.group_version
-
-    def find_supported_resource(self):
-        results = self.client.resources.search(group=self.api_group, kind=self.kind)
-        sorted_results = sorted(
-            results, key=lambda result: KubeAPIVersion(result.api_version), reverse=True
-        )
-        for result in sorted_results:
-            if KubeAPIVersion(result.api_version) <= KubeAPIVersion(
-                MAX_SUPPORTED_API_VERSION
-            ):
-                return result
 
     @classproperty
     def kind(cls):  # noqa: N805
@@ -468,6 +465,13 @@ class Resource(object):
         Returns:
             generator: Generator of Resources of cls.kind
         """
+        if not cls.api_version:
+            res = _find_supported_resource(dyn_client, cls.api_group, cls.kind)
+            if not res:
+                LOGGER.error(f"Couldn't find {cls.kind} in {cls.api_group} api group")
+                raise
+            cls.api_version = res.group_version
+
         get_kwargs = {"singular_name": "singular_name"} if singular_name else {}
         for resource_field in (
             dyn_client.resources.get(
