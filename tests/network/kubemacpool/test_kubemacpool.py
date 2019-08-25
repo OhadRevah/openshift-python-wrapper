@@ -136,7 +136,7 @@ class TestConnectivity:
             kubemacpool=kubemacpool_first_scope,
         )
 
-    @pytest.mark.polarion("CNV-2142")
+    @pytest.mark.polarion("CNV-2242")
     def test_automatic_mac_from_pool_tuning(
         self, kubemacpool_first_scope, configured_vm_a, configured_vm_b
     ):
