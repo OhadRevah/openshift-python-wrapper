@@ -216,6 +216,7 @@ def test_connectivity_over_linux_bridge(
     bridge,
     skip_when_one_node,
     module_namespace,
+    attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -254,6 +255,7 @@ def test_connectivity_bond_over_linux_bridge(
 def test_connectivity_positive_vlan_over_linux_bridge(
     skip_when_one_node,
     module_namespace,
+    attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -272,6 +274,7 @@ def test_connectivity_positive_vlan_over_linux_bridge(
 def test_connectivity_negative_vlan_over_linux_bridge(
     skip_when_one_node,
     module_namespace,
+    attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -289,6 +292,7 @@ def test_connectivity_negative_vlan_over_linux_bridge(
 def test_guest_performance_over_linux_bridge(
     skip_when_one_node,
     module_namespace,
+    attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
