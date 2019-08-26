@@ -5,6 +5,28 @@ OpenShift + CNV installation.
 
 # Prerequirements
 
+Following binaries are needed:
+
+##jq
+Install using sudo yum install
+
+##virtctl
+
+Install using the following cli commands:
+
+```bash
+export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases|grep tag_name|sort -V | tail -1 | awk -F':' 
+curl -L -o virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/virtctl-${KUBEVIRT_VERSION}-linux-amd64
+chmod +x virtctl
+sudo mv virtctl /usr/bin
+```bash
+
+##oc
+
+Copy oc from /bin/oc on the master to /usr/local/bin/
+
+##Setup VirtualEnv
+
 ```bash
 pip3 install pipenv
 pipenv --three install
