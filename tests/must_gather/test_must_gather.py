@@ -4,21 +4,55 @@ from tests.must_gather import utils
 from resources.network_addons_config import NetworkAddonsConfig
 from resources.namespace import Namespace
 from resources.pod import Pod
-import pytest
+from resources.network_attachment_definition import NetworkAttachmentDefinition
+from resources.virtual_machine import VirtualMachine
+from resources.node_network_state import NodeNetworkState
 
+import pytest
 
 LINUX_BRIDGE_NS = "linux-bridge"
 
 
-@pytest.mark.polarion("CNV-2707")
-def test_networkaddonsconfig(cnv_must_gather, default_client):
+@pytest.mark.parametrize(
+    ("resource_type", "resource_path", "checks"),
+    [
+        pytest.param(
+            NodeNetworkState,
+            "cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
+            (("spec",), ("metadata", "uid"), ("metadata", "name")),
+            marks=(pytest.mark.polarion("CNV-2707")),
+        ),
+        pytest.param(
+            NetworkAddonsConfig,
+            "cluster-scoped-resources/networkaddonsoperator.network"
+            ".kubevirt.io/networkaddonsconfigs/{name}.yaml",
+            (("spec",), ("metadata", "uid"), ("metadata", "name")),
+            marks=(pytest.mark.polarion("CNV-2707")),
+        ),
+        pytest.param(
+            NetworkAttachmentDefinition,
+            "namespaces/{namespace}/k8s.cni.cncf.io/"
+            "network-attachment-definitions/{name}.yaml",
+            (("spec",), ("metadata", "uid"), ("metadata", "name")),
+            marks=(pytest.mark.polarion("CNV-2720")),
+        ),
+        pytest.param(
+            VirtualMachine,
+            "namespaces/{namespace}/kubevirt.io/virtualmachines/{name}.yaml",
+            (("spec",), ("metadata", "uid"), ("metadata", "name")),
+            marks=(pytest.mark.polarion("CNV-2720")),
+        ),
+    ],
+)
+def test_resource(
+    cnv_must_gather, default_client, resource_type, resource_path, checks
+):
     utils.check_list_of_resources(
         default_client=default_client,
-        resource_type=NetworkAddonsConfig,
+        resource_type=resource_type,
         temp_dir=cnv_must_gather,
-        resource_path="cluster-scoped-resources/networkaddonsoperator.network"
-        ".kubevirt.io/networkaddonsconfigs/{name}.yaml",
-        checks=(("spec",), ("metadata", "uid"), ("metadata", "name")),
+        resource_path=resource_path,
+        checks=checks,
     )
 
 
