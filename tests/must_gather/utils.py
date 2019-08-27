@@ -20,7 +20,7 @@ def resources_match(resource_field, file_part):
     return True
 
 
-def compare_resources(resource, path, checks):
+def compare_resource_values(resource, path, checks):
     with open(path) as resource_file:
         file_content = yaml.load(resource_file.read(), Loader=yaml.FullLoader)
     for check in checks:
@@ -39,12 +39,24 @@ def compare_resources(resource, path, checks):
             )
 
 
+def compare_resources(resource_instance, temp_dir, resource_path, checks):
+    path = os.path.join(
+        temp_dir,
+        resource_path.format(
+            name=resource_instance.name,
+            namespace=resource_instance.namespace or DEFAULT_NAMESPACE,
+        ),
+    )
+    compare_resource_values(resource_instance, path, checks)
+
+
 def check_list_of_resources(
     default_client, resource_type, temp_dir, resource_path, checks
 ):
-    for resource in resource_type.get(default_client):
-        ns = resource.namespace or DEFAULT_NAMESPACE
-        path = os.path.join(
-            temp_dir, resource_path.format(name=resource.name, namespace=ns)
-        )
-        compare_resources(resource, path, checks)
+    for resource_instance in resource_type.get(default_client):
+        compare_resources(resource_instance, temp_dir, resource_path, checks)
+
+
+def check_resource(resource, resource_name, temp_dir, resource_path, checks):
+    resource_instance = resource(name=resource_name)
+    compare_resources(resource_instance, temp_dir, resource_path, checks)
