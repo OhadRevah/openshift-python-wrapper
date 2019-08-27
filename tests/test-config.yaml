@@ -16,7 +16,6 @@ bare_metal_cluster: False
 distribution: downstream
 
 region: USA
-nmstate_version: v0.6.0
 
 
 USA:
