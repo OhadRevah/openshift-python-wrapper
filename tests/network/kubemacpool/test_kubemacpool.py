@@ -77,13 +77,6 @@ def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, kubem
     assert_ping_successful(src_vm=vm_a, dst_ip=dst_ip_address)
 
 
-# TODO Remove skip once this card is ready.
-#  Link to the card: https://jira.coreos.com/browse/CNV-2691
-pytestmark = pytest.mark.skip(
-    "Skipping kubemacpool test module because kubemacpool feature is not implemented."
-)
-
-
 class TestConnectivity:
     #: TestConnectivity setup
     # .........                                                                      ..........
