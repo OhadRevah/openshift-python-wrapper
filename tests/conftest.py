@@ -28,6 +28,16 @@ UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--upgrade", action="store_true", default=False, help="Run upgrade tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "upgrade: Upgrade tests")
+
+
 def pytest_collection_modifyitems(session, config, items):
     """
     Add polarion test case it from tests to junit xml
@@ -44,6 +54,20 @@ def pytest_collection_modifyitems(session, config, items):
         for marker in item.iter_markers(name="jira"):
             test_id = marker.args[0]
             item.user_properties.append(("jira", test_id))
+
+    #  Collect only 'upgrade' tests when running pytest with --upgrade
+    upgrade_tests = [item for item in items if "upgrade" in item.keywords]
+    non_upgrade_tests = [item for item in items if "upgrade" not in item.keywords]
+    if config.getoption("--upgrade"):
+        discard = non_upgrade_tests
+        keep = upgrade_tests
+
+    else:
+        discard = upgrade_tests
+        keep = non_upgrade_tests
+
+    items[:] = keep
+    config.hook.pytest_deselected(items=discard)
 
 
 def pytest_runtest_makereport(item, call):

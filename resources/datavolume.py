@@ -39,6 +39,14 @@ class DataVolume(NamespacedResource):
         KUBEVIRT = "kubevirt"
         ARCHIVE = "archive"
 
+    class VolumeMode:
+        """
+        VolumeMode object
+        """
+
+        BLOCK = "Block"
+        FILE = "File"
+
     def wait_deleted(self, timeout=TIMEOUT):
         """
         Wait until DataVolume and the PVC created by it are deleted
@@ -72,6 +80,7 @@ class DataVolumeTemplate(DataVolume):
         cert_configmap=None,
         secret=None,
         client=None,
+        volume_mode=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
@@ -82,6 +91,7 @@ class DataVolumeTemplate(DataVolume):
         self.size = size
         self.access_modes = access_modes
         self.storage_class = storage_class
+        self.volume_mode = volume_mode
 
     def _to_dict(self):
         res = super()._base_body()
@@ -104,10 +114,12 @@ class DataVolumeTemplate(DataVolume):
             res["spec"]["pvc"]["storageClassName"] = self.storage_class
         if self.secret:
             res["spec"]["source"][self.source]["secretRef"] = self.secret
+        if self.volume_mode:
+            res["spec"]["pvc"]["volumeMode"] = self.volume_mode
         if self.source == "http" or "registry":
             res["spec"]["source"][self.source]["url"] = self.url
         elif self.source == "upload":
-            res["spec"]["source"]["upload"] = {}
+            res["spec"]["source"][self.source] = {}
         return res
 
 
@@ -123,18 +135,20 @@ class ImportFromHttpDataVolume(DataVolumeTemplate):
         access_modes=DataVolume.AccessMode.RWO,
         cert_configmap=None,
         secret=None,
+        volume_mode=None,
     ):
         super().__init__(
-            name,
-            namespace,
-            "http",
-            size,
-            storage_class,
-            url,
-            content_type,
-            access_modes,
-            cert_configmap,
-            secret,
+            name=name,
+            namespace=namespace,
+            source="http",
+            size=size,
+            storage_class=storage_class,
+            url=url,
+            content_type=content_type,
+            access_modes=access_modes,
+            cert_configmap=cert_configmap,
+            secret=secret,
+            volume_mode=volume_mode,
         )
 
 
@@ -149,6 +163,7 @@ class ImportFromRegistryDataVolume(DataVolumeTemplate):
         content_type,
         access_modes=DataVolume.AccessMode.RWO,
         cert_configmap=None,
+        volume_mode=None,
     ):
         super().__init__(
             name,
@@ -160,6 +175,7 @@ class ImportFromRegistryDataVolume(DataVolumeTemplate):
             content_type,
             access_modes,
             cert_configmap,
+            volume_mode,
         )
 
 

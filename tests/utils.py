@@ -251,6 +251,7 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
         storage_class=None,
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         access_modes=ImportFromHttpDataVolume.AccessMode.RWO,
+        volume_mode=None,
     ):
         storage_class = storage_class or py_config["storage_defaults"]["storage_class"]
         super().__init__(
@@ -261,6 +262,7 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
             url=url,
             content_type=content_type,
             access_modes=access_modes,
+            volume_mode=volume_mode,
         )
         self.os_release = os_release
         self.template_labels = template_labels
@@ -348,7 +350,7 @@ class VXLANTunnel:
             self._stack.__exit__(*args)
 
 
-def vm_console_run_commands(console_impl, vm, commands, timeout=60):
+def vm_console_run_commands(console_impl, vm, commands, timeout=60, console_timeout=60):
     """
     Run a list of commands inside VM and check all commands return 0.
     If return code other than 0 then it will break execution and raise exception.
@@ -358,8 +360,9 @@ def vm_console_run_commands(console_impl, vm, commands, timeout=60):
         vm (obj): VirtualMachine
         commands (list): List of commands
         timeout (int): Time to wait for the command output
+        console_timeout (int): Time to wait to establish console connection.
     """
-    with console_impl(vm=vm) as vmc:
+    with console_impl(vm=vm, timeout=console_timeout) as vmc:
         for command in commands:
             LOGGER.info(f"Execute {command} on {vm.name}")
             vmc.sendline(command)

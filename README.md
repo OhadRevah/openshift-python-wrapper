@@ -103,6 +103,12 @@ example, to run all network related tests, do:
 make tests PYTEST_ARGS="-k network"
 ```
 
+### Upgrade tests
+To run upgrade test pass --upgrade to pytest command.
+```bash
+--upgrade
+```
+
 ### Other parameters
 
 There are other parameters that can be passed to the test suite if needed.
