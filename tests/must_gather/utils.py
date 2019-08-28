@@ -78,3 +78,12 @@ def check_list_of_resources(
 def check_resource(resource, resource_name, temp_dir, resource_path, checks):
     resource_instance = resource(name=resource_name)
     compare_resources(resource_instance, temp_dir, resource_path, checks)
+
+
+def check_node_resource(temp_dir, cmd, node_gather_pods, results_file):
+    for pod in node_gather_pods:
+        cmd_output = pod.execute(command=cmd)
+        file_name = f"{temp_dir}/nodes/{pod.node.name}/{results_file}"
+        with open(file_name) as result_file:
+            file_content = result_file.read()
+            assert file_content == cmd_output
