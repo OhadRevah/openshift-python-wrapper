@@ -4,19 +4,21 @@ Network policy tests
 
 import pytest
 
-from resources.namespace import Namespace
 from resources.network_policy import NetworkPolicy
 from tests.utils import (
     TestVirtualMachine,
     wait_for_vm_interfaces,
     CommandExecFailed,
     vm_run_commands,
+    create_ns,
 )
 
 
 class VirtualMachineMasquerade(TestVirtualMachine):
-    def __init__(self, name, namespace, node_selector):
-        super().__init__(name=name, namespace=namespace, node_selector=node_selector)
+    def __init__(self, name, namespace, node_selector, client=None):
+        super().__init__(
+            name=name, namespace=namespace, node_selector=node_selector, client=client
+        )
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -51,15 +53,13 @@ class ApplyNetworkPolicy(NetworkPolicy):
 
 
 @pytest.fixture(scope="module")
-def namespace_1():
-    with Namespace(name="network-policy-test-1") as ns:
-        yield ns
+def namespace_1(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="network-policy-test-1")
 
 
 @pytest.fixture(scope="module")
-def namespace_2():
-    with Namespace(name="network-policy-test-2") as ns:
-        yield ns
+def namespace_2(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="network-policy-test-2")
 
 
 @pytest.fixture()
@@ -87,9 +87,12 @@ def allow_http80_port(namespace_1):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace_1, nodes):
+def vma(namespace_1, nodes, unprivileged_client):
     with VirtualMachineMasquerade(
-        namespace=namespace_1.name, name="vma", node_selector=nodes[0].name
+        namespace=namespace_1.name,
+        name="vma",
+        node_selector=nodes[0].name,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -97,9 +100,12 @@ def vma(namespace_1, nodes):
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace_2, nodes):
+def vmb(namespace_2, nodes, unprivileged_client):
     with TestVirtualMachine(
-        namespace=namespace_2.name, name="vmb", node_selector=nodes[0].name
+        namespace=namespace_2.name,
+        name="vmb",
+        node_selector=nodes[0].name,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

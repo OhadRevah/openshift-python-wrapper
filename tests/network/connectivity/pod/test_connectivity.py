@@ -6,10 +6,9 @@ from ipaddress import ip_interface
 import pytest
 from pytest_testconfig import config as py_config
 
-from resources.namespace import Namespace
 from tests.network.connectivity import utils
 from tests.network.utils import assert_ping_successful
-from tests.utils import wait_for_vm_interfaces, TestVirtualMachine
+from tests.utils import wait_for_vm_interfaces, TestVirtualMachine, create_ns
 
 
 class FedoraVirtualMachineTest(TestVirtualMachine):
@@ -32,16 +31,18 @@ class FedoraVirtualMachineTest(TestVirtualMachine):
         )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def module_namespace():
-    with Namespace(name="pod-connectivity") as ns:
-        yield ns
+@pytest.fixture(scope="module")
+def module_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="pod-connectivity")
 
 
 @pytest.fixture(scope="module")
-def vma(nodes, module_namespace):
+def vma(nodes, module_namespace, unprivileged_client):
     with FedoraVirtualMachineTest(
-        namespace=module_namespace.name, name="vma", node_selector=nodes[0].name
+        namespace=module_namespace.name,
+        name="vma",
+        node_selector=nodes[0].name,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -49,9 +50,12 @@ def vma(nodes, module_namespace):
 
 
 @pytest.fixture(scope="module")
-def vmb(nodes, module_namespace):
+def vmb(nodes, module_namespace, unprivileged_client):
     with FedoraVirtualMachineTest(
-        namespace=module_namespace.name, name="vmb", node_selector=nodes[1].name
+        namespace=module_namespace.name,
+        name="vmb",
+        node_selector=nodes[1].name,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

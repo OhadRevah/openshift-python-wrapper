@@ -5,7 +5,6 @@ VM to VM connectivity
 import pytest
 from pytest_testconfig import config as py_config
 
-from resources.namespace import Namespace
 from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import (
     linux_bridge_nad,
@@ -14,7 +13,13 @@ from tests.network.utils import (
     get_vmi_ip_v4_by_name,
     nmcli_add_con_cmds,
 )
-from tests.utils import TestVirtualMachine, wait_for_vm_interfaces, Bridge, VXLANTunnel
+from tests.utils import (
+    create_ns,
+    TestVirtualMachine,
+    wait_for_vm_interfaces,
+    Bridge,
+    VXLANTunnel,
+)
 
 BR1TEST = "br1test"
 BR1BOND = "br1bond"
@@ -64,9 +69,8 @@ class BridgedFedoraVirtualMachine(TestVirtualMachine):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_namespace():
-    with Namespace(name="linux-bridge-connectivity") as ns:
-        yield ns
+def module_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="linux-bridge-connectivity")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -134,7 +138,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(nodes, bond_supported, module_namespace):
+def bridge_attached_vma(nodes, bond_supported, module_namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN200: BR1VLAN200}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
@@ -151,6 +155,7 @@ def bridge_attached_vma(nodes, bond_supported, module_namespace):
         interfaces=sorted(networks.keys()),
         node_selector=nodes[0].name,
         bootcmds=bootcmds,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -158,7 +163,7 @@ def bridge_attached_vma(nodes, bond_supported, module_namespace):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(nodes, bond_supported, module_namespace):
+def bridge_attached_vmb(nodes, bond_supported, module_namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN300: BR1VLAN300}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
@@ -175,6 +180,7 @@ def bridge_attached_vmb(nodes, bond_supported, module_namespace):
         interfaces=sorted(networks.keys()),
         node_selector=nodes[1].name,
         bootcmds=bootcmds,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

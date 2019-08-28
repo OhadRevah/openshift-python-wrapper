@@ -10,7 +10,6 @@ import pytest
 
 import tests.network.utils as net_utils
 from tests import utils
-from resources.namespace import Namespace
 from resources.utils import TimeoutSampler
 
 LOGGER = logging.getLogger(__name__)
@@ -35,9 +34,10 @@ def count_veth_devices_on_host(pod):
 
 
 @pytest.fixture()
-def namespace():
-    with Namespace(name=__name__.split(".")[-1].replace("_", "-")) as ns:
-        yield ns
+def namespace(unprivileged_client):
+    yield from utils.create_ns(
+        client=unprivileged_client, name=__name__.split(".")[-1].replace("_", "-")
+    )
 
 
 @pytest.fixture()
@@ -63,12 +63,13 @@ def bridge_device(network_utility_pods):
 
 
 @pytest.fixture()
-def bridge_attached_vma(namespace):
+def bridge_attached_vma(namespace, unprivileged_client):
     with utils.TestVirtualMachine(
         namespace=namespace.name,
         name="vma",
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -76,12 +77,13 @@ def bridge_attached_vma(namespace):
 
 
 @pytest.fixture()
-def bridge_attached_vmb(namespace):
+def bridge_attached_vmb(namespace, unprivileged_client):
     with utils.TestVirtualMachine(
         namespace=namespace.name,
         name="vmb",
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

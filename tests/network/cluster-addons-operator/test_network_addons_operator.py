@@ -1,15 +1,13 @@
 import pytest
 
 import tests.network.utils as network_utils
-from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
 from tests import utils
 
 
 @pytest.fixture(scope="module", autouse="True")
-def module_namespace():
-    with Namespace(name="test-network-operator") as ns:
-        yield ns
+def module_namespace(unprivileged_client):
+    yield from utils.create_ns(client=unprivileged_client, name="test-network-operator")
 
 
 @pytest.fixture(scope="module", autouse="True")

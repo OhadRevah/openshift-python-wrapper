@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from resources.namespace import Namespace
+from tests.utils import create_ns
 from tests.network.utils import (
     linux_bridge_nad,
     assert_ping_successful,
@@ -46,9 +46,8 @@ class BridgedMtuFedoraVirtualMachine(TestVirtualMachine):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_namespace():
-    with Namespace(name="jumbo-frame-test") as ns:
-        yield ns
+def module_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="jumbo-frame-test")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -76,7 +75,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(nodes, module_namespace):
+def bridge_attached_vma(nodes, module_namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
     with BridgedMtuFedoraVirtualMachine(
         namespace=module_namespace.name,
@@ -85,6 +84,7 @@ def bridge_attached_vma(nodes, module_namespace):
         interfaces=sorted(networks.keys()),
         node_selector=nodes[0].name,
         iface_ip="192.168.0.1",
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -92,7 +92,7 @@ def bridge_attached_vma(nodes, module_namespace):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(nodes, module_namespace):
+def bridge_attached_vmb(nodes, module_namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
     with BridgedMtuFedoraVirtualMachine(
         namespace=module_namespace.name,
@@ -101,6 +101,7 @@ def bridge_attached_vmb(nodes, module_namespace):
         interfaces=sorted(networks.keys()),
         node_selector=nodes[1].name,
         iface_ip="192.168.0.2",
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

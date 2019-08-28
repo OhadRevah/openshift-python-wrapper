@@ -7,7 +7,6 @@ import logging
 
 import pytest
 
-from resources.namespace import Namespace
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import (
@@ -21,6 +20,7 @@ from tests.utils import (
     Bridge,
     VXLANTunnel,
     vm_run_commands,
+    create_ns,
 )
 from utilities import console
 
@@ -86,13 +86,12 @@ class BridgedFedoraVirtualMachine(TestVirtualMachine):
 
 
 @pytest.fixture(scope="module")
-def namespace():
-    with Namespace(name="network-migration-test") as ns:
-        yield ns
+def namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="network-migration-test")
 
 
 @pytest.fixture(scope="module")
-def vma(namespace):
+def vma(namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
@@ -103,13 +102,14 @@ def vma(namespace):
         networks=networks,
         interfaces=sorted(networks.keys()),
         bootcmds=bootcmds,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         yield vm
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace):
+def vmb(namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
@@ -120,6 +120,7 @@ def vmb(namespace):
         networks=networks,
         interfaces=sorted(networks.keys()),
         bootcmds=bootcmds,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         yield vm

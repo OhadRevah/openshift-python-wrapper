@@ -7,9 +7,9 @@ from pytest_testconfig import config as py_config
 
 from tests import utils
 from resources import network_attachment_definition as nad
-from resources.namespace import Namespace
 from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
+from tests.utils import create_ns
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)
@@ -21,9 +21,8 @@ def _get_name(suffix):
 
 
 @pytest.fixture(scope="module")
-def namespace():
-    with Namespace(name=_get_name("ns")) as ns:
-        yield ns
+def namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name=_get_name("ns"))
 
 
 @pytest.fixture()
@@ -56,13 +55,14 @@ def bridge_attached_vmi(namespace, bridge_network):
 
 
 @pytest.fixture()
-def multi_bridge_attached_vmi(namespace, bridge_networks):
+def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
     networks = {b.name: b.name for b in bridge_networks}
     with utils.TestVirtualMachine(
         namespace=namespace.name,
         name=_get_name(f"multi-bridge-vm-{time.time()}"),
         networks=networks,
         interfaces=sorted(networks.keys()),
+        client=unprivileged_client,
     ) as vm:
         vm.start()
         yield vm.vmi

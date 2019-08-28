@@ -11,6 +11,9 @@ class Project(Resource):
 
     api_group = API_GROUP
 
+    class Status:
+        ACTIVE = "Active"
+
 
 class ProjectRequest(Resource):
     """
@@ -21,8 +24,5 @@ class ProjectRequest(Resource):
 
     api_group = API_GROUP
 
-    def __init__(self, name, client):
-        super().__init__(name=name, client=client)
-
     def __exit__(self, exception_type, exception_value, traceback):
-        Project(name=self.name).delete()
+        Project(name=self.name).delete(wait=True)

@@ -1,7 +1,7 @@
-import logging
 from collections import namedtuple
 from ipaddress import ip_interface
 from itertools import chain
+import logging
 from time import sleep, time
 
 import pytest
@@ -11,15 +11,22 @@ from resources.configmap import ConfigMap
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
-from tests.network.utils import linux_bridge_nad, running_vmi, nmcli_add_con_cmds
-from tests.utils import TestVirtualMachine, wait_for_vm_interfaces, Bridge, VXLANTunnel
+from tests.utils import (
+    TestVirtualMachine,
+    wait_for_vm_interfaces,
+    create_ns,
+    Bridge,
+    VXLANTunnel,
+)
+from tests.network.utils import running_vmi, nmcli_add_con_cmds, linux_bridge_nad
+
 
 LOGGER = logging.getLogger(__name__)
 BRIDGE_BR1 = "br1test"
 KUBEMACPOOL_CONFIG_MAP_NAME = "kubemacpool-mac-range-config"
 IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
 CREATE_VM_TIMEOUT = 50
-KUBEMACPOOL_NAMESPACE = "kubemacpool-system"
+KUBEMACPOOL_NAMESPACE = "openshift-cnv"
 
 
 def restart_kubemacpool(default_client):
@@ -34,7 +41,7 @@ def restart_kubemacpool(default_client):
     kubemac_pool_deployment.wait_until_avail_replicas()
 
 
-def create_vm(name, namespace, iface_config):
+def create_vm(name, namespace, iface_config, client):
 
     # Even if kubemacpool is in running state is not operational.
     # We need try: except block as workaround.
@@ -44,7 +51,10 @@ def create_vm(name, namespace, iface_config):
     while time() < end_time:
         try:
             with VirtualMachineWithMultipleAttachments(
-                namespace=namespace.name, name=name, iface_config=iface_config
+                namespace=namespace.name,
+                name=name,
+                iface_config=iface_config,
+                client=client,
             ) as vm:
                 yield vm
                 return
@@ -68,7 +78,7 @@ def update_kubemacpool_scope(api_client, namespace, scope):
 
 
 class VirtualMachineWithMultipleAttachments(TestVirtualMachine):
-    def __init__(self, name, namespace, iface_config):
+    def __init__(self, name, namespace, iface_config, client=None):
         self.iface_config = iface_config
 
         networks = {}
@@ -80,6 +90,7 @@ class VirtualMachineWithMultipleAttachments(TestVirtualMachine):
             namespace=namespace,
             networks=networks,
             interfaces=networks.keys(),
+            client=client,
         )
 
     def _cloud_init_user_data(self):
@@ -173,9 +184,8 @@ def kubemacpool_second_scope(default_client, kubemacpool_namespace):
 
 
 @pytest.fixture(scope="module")
-def namespace():
-    with Namespace(name="kubemacpool-ns") as ns:
-        yield ns
+def namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="kubemacpool-ns")
 
 
 @pytest.fixture(scope="module")
@@ -253,7 +263,14 @@ def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_ni
 
 
 @pytest.fixture(scope="module")
-def vm_a(namespace, all_nads, bridge_device, vxlan, kubemacpool_first_scope):
+def vm_a(
+    namespace,
+    all_nads,
+    bridge_device,
+    vxlan,
+    kubemacpool_first_scope,
+    unprivileged_client,
+):
     requested_network_config = {
         "eth1": IfaceTuple(
             ip_address="192.168.1.1", mac_address="02:aa:bc:00:00:10", name=all_nads[0]
@@ -269,12 +286,22 @@ def vm_a(namespace, all_nads, bridge_device, vxlan, kubemacpool_first_scope):
         ),
     }
     yield from create_vm(
-        name="vm-fedora-a", iface_config=requested_network_config, namespace=namespace
+        name="vm-fedora-a",
+        iface_config=requested_network_config,
+        namespace=namespace,
+        client=unprivileged_client,
     )
 
 
 @pytest.fixture(scope="module")
-def vm_b(namespace, all_nads, bridge_device, vxlan, kubemacpool_first_scope):
+def vm_b(
+    namespace,
+    all_nads,
+    bridge_device,
+    vxlan,
+    kubemacpool_first_scope,
+    unprivileged_client,
+):
     requested_network_config = {
         "eth1": IfaceTuple(
             ip_address="192.168.1.2", mac_address="02:aa:bc:00:00:20", name=all_nads[0]
@@ -290,7 +317,10 @@ def vm_b(namespace, all_nads, bridge_device, vxlan, kubemacpool_first_scope):
         ),
     }
     yield from create_vm(
-        name="vm-fedora-b", iface_config=requested_network_config, namespace=namespace
+        name="vm-fedora-b",
+        iface_config=requested_network_config,
+        namespace=namespace,
+        client=unprivileged_client,
     )
 
 
@@ -329,7 +359,7 @@ def restarted_vmi_b(vm_b):
 
 
 @pytest.fixture(scope="class")
-def vm_c(namespace, vm_a, all_nads):
+def vm_c(namespace, vm_a, all_nads, unprivileged_client):
     vm_a.delete(wait=True)
     requested_network_config = {
         "eth1": IfaceTuple(
@@ -346,12 +376,15 @@ def vm_c(namespace, vm_a, all_nads):
         ),
     }
     yield from create_vm(
-        name="vm-fedora-c", iface_config=requested_network_config, namespace=namespace
+        name="vm-fedora-c",
+        iface_config=requested_network_config,
+        namespace=namespace,
+        client=unprivileged_client,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_d(namespace, vm_b, all_nads):
+def vm_d(namespace, vm_b, all_nads, unprivileged_client):
     vm_b.delete(wait=True)
     requested_network_config = {
         "eth1": IfaceTuple(
@@ -368,7 +401,10 @@ def vm_d(namespace, vm_b, all_nads):
         ),
     }
     yield from create_vm(
-        name="vm-fedora-d", iface_config=requested_network_config, namespace=namespace
+        name="vm-fedora-d",
+        iface_config=requested_network_config,
+        namespace=namespace,
+        client=unprivileged_client,
     )
 
 

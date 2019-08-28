@@ -9,6 +9,8 @@ import pexpect
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 
+from resources.namespace import Namespace
+from resources.project import ProjectRequest, Project
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.template import Template
 from resources.utils import TimeoutSampler, TimeoutExpiredError
@@ -470,3 +472,15 @@ def vm_run_commands(vm, commands, timeout=60):
                 vmc.expect("rc==0==", timeout=timeout)  # Expected return code is 0
             except pexpect.exceptions.TIMEOUT:
                 raise CommandExecFailed(command)
+
+
+def create_ns(client, name):
+    if not client:
+        with Namespace(name=name) as ns:
+            ns.wait_for_status(Namespace.Status.ACTIVE, timeout=120)
+            yield ns
+    else:
+        with ProjectRequest(name=name, client=client):
+            project = Project(name=name, client=client)
+            project.wait_for_status(Project.Status.ACTIVE, timeout=120)
+            yield project

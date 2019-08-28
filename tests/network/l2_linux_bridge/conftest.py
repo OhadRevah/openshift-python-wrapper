@@ -3,11 +3,15 @@ from ipaddress import ip_interface
 
 import pytest
 
-from resources.namespace import Namespace
-from resources.project import ProjectRequest
-from tests import utils
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
-from tests.utils import TestVirtualMachine, Bridge, VXLANTunnel, vm_run_commands
+from tests.utils import (
+    wait_for_vm_interfaces,
+    TestVirtualMachine,
+    Bridge,
+    VXLANTunnel,
+    vm_run_commands,
+    create_ns,
+)
 
 #: Test setup
 #       .........                                                                                      ..........
@@ -143,13 +147,8 @@ def bridge_attached_vm(
 
 
 @pytest.fixture(scope="class")
-def namespace(default_client, unprivileged_client):
-    if not unprivileged_client:
-        with Namespace(name="l2-bridge-ns") as ns:
-            yield ns
-    else:
-        with ProjectRequest(name="l2-bridge-ns", client=unprivileged_client) as project:
-            yield project
+def namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="l2-linux-bridge")
 
 
 @pytest.fixture(scope="class")
@@ -287,10 +286,10 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     runs dhcpd server. To avoid incorrect dhcpd IP address allocation
     this commands are critical to run ONLY after vm_b is UP and configured
     """
-    assert utils.wait_for_vm_interfaces(vmi=started_vmi_a)
+    assert wait_for_vm_interfaces(vmi=started_vmi_a)
 
     # This is mandatory step to avoid ip allocation to the incorrect interface
-    assert utils.wait_for_vm_interfaces(vmi=started_vmi_b)
+    assert wait_for_vm_interfaces(vmi=started_vmi_b)
 
     vm_run_commands(vm_a, ["sudo systemctl start dhcpd"])
     return vm_a
