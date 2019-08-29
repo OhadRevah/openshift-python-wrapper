@@ -159,14 +159,18 @@ def unprivileged_client(default_client, unprivileged_secret):
             },
         }
     )
+
+    current_user = (
+        check_output("oc whoami", shell=True).decode().strip()
+    )  # Get current admin account
     login_to_account(
         api_address=default_client.configuration.host,
         user=UNPRIVILEGED_USER,
         password=UNPRIVILEGED_PASSWORD,
     )  # Login to unprivileged account
-    token = check_output("oc whoami -t", shell=True).decode().strip("\n")  # Get token
+    token = check_output("oc whoami -t", shell=True).decode().strip()  # Get token
     login_to_account(
-        api_address=default_client.configuration.host, user="system:admin"
+        api_address=default_client.configuration.host, user=current_user.strip()
     )  # Get back to admin account
     token_auth = {
         "api_key": {"authorization": f"Bearer {token}"},
