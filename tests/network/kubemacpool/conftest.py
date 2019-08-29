@@ -237,16 +237,16 @@ def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_ni
     # There is no need to build vxlan tunnel on bare metal because
     # it has enough physical interfaces for direct connection
     if multi_nics_nodes:
-        return
-
-    with VXLANTunnel(
-        name="kubemactest",
-        worker_pods=network_utility_pods,
-        vxlan_id=100,
-        master_bridge=bridge_device.name,
-        nodes_nics=nodes_active_nics,
-    ) as vxlan:
-        yield vxlan
+        yield
+    else:
+        with VXLANTunnel(
+            name="kubemactest",
+            worker_pods=network_utility_pods,
+            vxlan_id=100,
+            master_bridge=bridge_device.name,
+            nodes_nics=nodes_active_nics,
+        ) as vxlan:
+            yield vxlan
 
 
 @pytest.fixture(scope="module")
