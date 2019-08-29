@@ -6,12 +6,14 @@ Import from HTTP server
 
 import pytest
 
+from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from tests.storage import utils
 
 QCOW_IMG = "cirros-qcow2.img"
+ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
 COMPRESSED_XZ_FILE = "cirros-0.4.0-x86_64-disk.raw.xz"
 COMPRESSED_GZ_FILE = "cirros-0.4.0-x86_64-disk.raw.gz"
@@ -23,6 +25,34 @@ CLOUD_INIT_USER_DATA = r"""
 
 def get_file_url(url, file_name):
     return f"{url}{file_name}"
+
+
+@pytest.mark.polarion("CNV-876")
+def test_invalid_url(storage_ns):
+    # negative flow - invalid url
+    with ImportFromHttpDataVolume(
+        name="import-http-dv-negative",
+        namespace=storage_ns.name,
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        url="https://noneexist.com",
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
+
+
+@pytest.mark.polarion("CNV-674")
+def test_empty_url(storage_ns):
+    with pytest.raises(UnprocessibleEntityError):
+        with ImportFromHttpDataVolume(
+            name="import-http-dv",
+            namespace=storage_ns.name,
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            url="",
+            size="500Mi",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+        ):
+            pass
 
 
 @pytest.mark.polarion("CNV-2145")
@@ -46,9 +76,16 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
 
 
-@pytest.mark.polarion("CNV-2143")
-def test_successful_import_image(storage_ns, images_internal_http_server):
-    url = get_file_url(images_internal_http_server["http"], QCOW_IMG)
+@pytest.mark.parametrize(
+    ("file_name"),
+    [
+        pytest.param(QCOW_IMG, marks=(pytest.mark.polarion("CNV-2143"))),
+        pytest.param(ISO_IMG, marks=(pytest.mark.polarion("CNV-377"))),
+    ],
+    ids=["import_qcow_image", "import_iso_image"],
+)
+def test_successful_import_image(storage_ns, images_internal_http_server, file_name):
+    url = get_file_url(images_internal_http_server["http"], file_name)
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
@@ -136,36 +173,13 @@ def test_successful_import_basic_auth(
             pod.wait_for_status(status="Running")
 
 
-@pytest.mark.parametrize(
-    ("content_type", "file_name"),
-    [
-        pytest.param(
-            ImportFromHttpDataVolume.ContentType.ARCHIVE,
-            QCOW_IMG,
-            marks=(pytest.mark.polarion("CNV-2144")),
-        ),
-        pytest.param(
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            TAR_IMG,
-            marks=(
-                pytest.mark.polarion("CNV-2147"),
-                pytest.mark.bugzilla(
-                    1725718,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
-                ),
-            ),
-        ),
-    ],
-    ids=["qcow_image_archive_content_type", "tar_image_kubevirt_content_type"],
-)
-def test_wrong_content_type(
-    storage_ns, images_internal_http_server, file_name, content_type
-):
+@pytest.mark.polarion("CNV-2144")
+def test_wrong_content_type(storage_ns, images_internal_http_server):
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
-        content_type=content_type,
-        url=get_file_url(images_internal_http_server["http"], file_name),
+        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
+        url=get_file_url(images_internal_http_server["http"], QCOW_IMG),
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
@@ -205,9 +219,7 @@ def test_import_http_vm(storage_ns, images_internal_http_server, content_type):
 
 
 @pytest.mark.polarion("CNV-1909")
-def test_default_storage_class(
-    skip_no_default_sc, storage_ns, images_internal_http_server
-):
+def test_default_storage_class(storage_ns, images_internal_http_server):
     create_vm_with_dv(storage_ns.name, None, images_internal_http_server, None)
 
 
