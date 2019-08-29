@@ -76,7 +76,7 @@ class NodeNetworkState(Resource):
         samples = TimeoutSampler(timeout=TIMEOUT, sleep=SLEEP, func=_find_up_interface)
         for sample in samples:
             if sample:
-                break
+                return
 
     def wait_until_deleted(self, name):
         def _find_deleted_interface():
@@ -91,4 +91,4 @@ class NodeNetworkState(Resource):
         )
         for sample in samples:
             if not sample:
-                break
+                return
