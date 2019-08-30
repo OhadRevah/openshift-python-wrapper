@@ -44,10 +44,12 @@ for resource in ${HCO_RESOURCES}; do
 done
 
 # Wait for all components to become ready
-# TODO: Wait for HCO once it exposes conditions
-until ${KUBECTL} get networkaddonsconfig cluster; do sleep 15; done
-${KUBECTL} wait networkaddonsconfig cluster --for condition=Available --timeout=10m
-until ${KUBECTL} get cdi cdi-hyperconverged-cluster; do sleep 15; done
-${KUBECTL} wait cdi cdi-hyperconverged-cluster --for condition=Running  --timeout=10m
-until ${KUBECTL} get kubevirt kubevirt-hyperconverged-cluster -n kubevirt-hyperconverged; do sleep 15; done
-${KUBECTL} wait kubevirt kubevirt-hyperconverged-cluster --for condition=Available -n kubevirt-hyperconverged --timeout=10m
+if ! ${KUBECTL} wait hyperconverged hyperconverged-cluster --for condition=Available --timeout=30m; then
+    ${KUBECTL} get hyperconverged hyperconverged-cluster -o yaml
+    # TODO WIP, checking why linux-bridge CNI doesn't get up withing the timeout
+    ${KUBECTL} get ds --all-namespaces | grep bridge -o yaml
+    ${KUBECTL} describe ds -n linux-bridge
+    ${KUBECTL} get pods --all-namespaces | grep bridge -o yaml
+    echo 'Timed out while waiting for HyperConverged to become ready'
+    exit 1
+fi
