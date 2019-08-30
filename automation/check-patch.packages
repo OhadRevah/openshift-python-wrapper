@@ -2,7 +2,8 @@ docker
 gcc
 git
 make
-python3-setuptools
-wget
+openshift-clients
 python3-devel
 python3-pip
+python3-setuptools
+wget
