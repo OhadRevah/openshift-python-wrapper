@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 
 import pytest
 from resources.namespace import Namespace
@@ -244,4 +245,79 @@ def test_sriov_logs_gathering(
         running_sriov_network_operator_containers,
         label_selector,
         utils.SRIOV_NETWORK_OPERATOR_NAMESPACE,
+    )
+
+
+@pytest.mark.parametrize(
+    ("file_suffix", "section_title", "format_regex"),
+    [
+        pytest.param(
+            "ip.txt", None, "\\A1: lo: .*", marks=(pytest.mark.polarion("CNV-2734"))
+        ),
+        pytest.param(
+            "bridge.txt",
+            "bridge fdb show:",
+            "^(?:[0-9a-fA-F]:?){12} dev .*$",
+            marks=(pytest.mark.polarion("CNV-2735")),
+        ),
+        pytest.param(
+            "bridge.txt",
+            "bridge vlan show:",
+            ".*1 PVID .*untagged$",
+            marks=(pytest.mark.polarion("CNV-2736")),
+        ),
+        pytest.param(
+            "iptables.txt",
+            "Filter table:",
+            "^Chain INPUT \\(policy ACCEPT\\)$",
+            marks=(pytest.mark.polarion("CNV-2737")),
+        ),
+        pytest.param(
+            "iptables.txt",
+            "NAT table:",
+            "^Chain PREROUTING \\(policy ACCEPT\\)$",
+            marks=(pytest.mark.polarion("CNV-2741")),
+        ),
+    ],
+)
+def test_data_collected_from_virt_launcher(
+    cnv_must_gather, running_vm, file_suffix, section_title, format_regex
+):
+    virt_launcher = running_vm.vmi.virt_launcher_pod
+
+    gathered_data_path = (
+        f"{cnv_must_gather}/namespaces/{virt_launcher.namespace}/vms/"
+        f"{virt_launcher.name}.{file_suffix}"
+    )
+
+    assert os.path.exists(
+        gathered_data_path
+    ), "Have not found gathered data file on given path"
+
+    with open(gathered_data_path) as f:
+        gathered_data = f.read()
+
+    # If the gathered data file consists of multiple sections, extract the one
+    # we are interested in.
+    if section_title:
+        matches = re.findall(
+            f"^{section_title}\n"  # title
+            "^#+\n"  # title separator
+            "(.*?)"  # capture section body
+            "(?:^#+\n|\\Z)",  # next title separator or end of data
+            gathered_data,
+            re.MULTILINE | re.DOTALL,
+        )
+        assert matches, (
+            "Section has not been found in gathered data.\n"
+            f"Section title: {section_title}\n"
+            f"Gathered data: {gathered_data}"
+        )
+        gathered_data = matches[0]
+
+    # Make sure that gathered data roughly matches expected format.
+    assert re.search(format_regex, gathered_data, re.MULTILINE), (
+        "Gathered data are not matching expected format.\n"
+        f"Expected format:\n{format_regex}\n "
+        f"Gathered data:\n{gathered_data}"
     )
