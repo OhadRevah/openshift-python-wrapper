@@ -24,6 +24,8 @@ sudo mv virtctl /usr/bin
 ##oc
 
 Copy oc from /bin/oc on the master to /usr/local/bin/
+Or download `http://download.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/4.2/latest/puddle.repo`
+into /etc/yum.repos and install openshift-clients
 
 ##Setup VirtualEnv
 
