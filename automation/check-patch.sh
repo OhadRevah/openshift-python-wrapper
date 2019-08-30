@@ -35,7 +35,7 @@ hco() {
 
     echo "Installing dependencies"
     $python -m pip install pipenv
-    PIPENV_HIDE_EMOJIS=1 $python -m pipenv --three install
+    PIPENV_HIDE_EMOJIS=1 PIPENV_NOSPIN=1 $python -m pipenv --three install
 
     echo "Install local cluster"
     make cluster-up
