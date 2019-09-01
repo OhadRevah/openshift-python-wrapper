@@ -61,10 +61,14 @@ class LinuxBridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
             spec_config.update({"plugins": [bridge_dict]})
             tuning_dict = {"type": self._tuning_type}
             if self._mtu:
-                tuning_dict.update({"mtu": self._mtu})
+                tuning_dict["mtu"] = self._mtu
+
             spec_config["plugins"].append(tuning_dict)
         else:
+            if self._mtu:
+                spec_config["mtu"] = self._mtu
             spec_config.update(bridge_dict)
+
         if self._vlan:
             spec_config["vlan"] = self._vlan
 

@@ -1,7 +1,6 @@
 """
 VM to VM connectivity with  custom MTU (jumbo frame)
 """
-import re
 
 import pytest
 from tests.network.utils import (
@@ -125,24 +124,6 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     return vmi
 
 
-# TODO: this should be handled by bridge CNI, This fixture should be removed once it's fixed
-# https://github.com/containernetworking/plugins/issues/352
-@pytest.fixture(scope="module")
-def fixed_veth_mtu_on_host(
-    network_utility_pods, running_bridge_attached_vmia, running_bridge_attached_vmib
-):
-    for vmi in (running_bridge_attached_vmia, running_bridge_attached_vmib):
-        pod = [pod for pod in network_utility_pods if vmi.node.name == pod.node.name][0]
-        ip_link_out = pod.execute(
-            ["bash", "-c", "--", f"ip -o link show type veth | grep {BR1TEST}"]
-        )
-        for line in ip_link_out.split("\n"):
-            veth_match = re.findall(r"veth.*@", line)
-            if veth_match:
-                veth = veth_match[0].strip("@")
-                pod.execute(["ip", "link", "set", veth, "mtu", MTU_SIZE])
-
-
 @pytest.mark.polarion("CNV-2685")
 def test_connectivity_over_linux_bridge_large_mtu(
     skip_if_no_multinic_nodes,
@@ -150,7 +131,6 @@ def test_connectivity_over_linux_bridge_large_mtu(
     namespace,
     bridge_attached_vma,
     bridge_attached_vmb,
-    fixed_veth_mtu_on_host,
     running_bridge_attached_vmia,
     running_bridge_attached_vmib,
 ):
