@@ -17,3 +17,6 @@ distribution: upstream
 
 must_gather:
   url: quay.io/kubevirt/must-gather
+
+hco_namespace: kubevirt-hyperconverged
+

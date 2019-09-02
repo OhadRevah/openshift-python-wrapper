@@ -15,6 +15,8 @@ bare_metal_cluster: False
 
 distribution: downstream
 
+hco_namespace: openshift-cnv
+
 region: USA
 
 
@@ -24,6 +26,7 @@ USA:
   http_server_auth: http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/mod-auth-basic/
   registry_server: docker://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com
   https_cert: usa_https.crt
+  registry_cert: usa_registry.crt
 
 EMEA:
   http_server:  http://cnv-qe-server.scl.lab.tlv.redhat.com/files/
@@ -31,8 +34,10 @@ EMEA:
   http_server_auth: http://cnv-qe-server.scl.lab.tlv.redhat.com/files/mod-auth-basic/
   registry_server: docker://cnv-qe-server.scl.lab.tlv.redhat.com
   https_cert: emea_https.crt
+  registry_cert: emea_registry.crt
 
 
 must_gather:
   url: brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/container-native-virtualization/cnv-must-gather
   version: v2.1.0-7
+
