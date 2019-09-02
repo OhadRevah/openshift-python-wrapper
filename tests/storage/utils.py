@@ -10,7 +10,8 @@ from resources.virtual_machine import VirtualMachine
 import tests.utils
 from utilities import console
 from utilities import utils
-
+from resources.route import Route
+from pytest_testconfig import config as py_config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,3 +123,22 @@ def downloaded_image(remote_name, local_name):
     except FileNotFoundError as err:
         LOGGER.error(err)
         raise
+
+
+def upload_image(token, data):
+    headers = {"Authorization": f"Bearer {token}"}
+    uploadproxy = Route(name="cdi-uploadproxy", namespace="openshift-cnv")
+    uploadproxy_url = f"https://{uploadproxy.host}/v1alpha1/upload"
+    LOGGER.info(msg=f"Upload {data} to {uploadproxy_url}")
+    with open(data, "rb") as fd:
+        fd_data = fd.read()
+    return requests.post(
+        uploadproxy_url, data=fd_data, headers=headers, verify=False
+    ).status_code
+
+
+def get_images_private_registry_server():
+    """
+    Fetch url from config and return if available.
+    """
+    return py_config[py_config["region"]]["registry_server"]

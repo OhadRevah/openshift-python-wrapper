@@ -12,9 +12,12 @@ from resources.configmap import ConfigMap
 from resources.secret import Secret
 from tests.storage import utils as storage_utils
 from openshift.dynamic.exceptions import NotFoundError
+from resources.utils import TimeoutSampler
+from resources.datavolume import UploadDataVolume
+from resources.upload_token_request import UploadTokenRequest
 
 LOGGER = logging.getLogger(__name__)
-PRIVATE_REGISTRY_HOST = "docker://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
+CDI_IMAGES_DIR = "cdi-test-images/cirros_images/"
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 RAW_IMAGE = "cirros-0.4.0-x86_64-disk.raw"
 RAW_COMPRESSED_IMAGE = "cirros-0.4.0-x86_64-disk.raw.gz"
@@ -26,8 +29,6 @@ pytestmark = pytest.mark.skipif(
     reason="importing only from local http/https and registry servers for d/s",
 )
 
-pytestmark = pytest.mark.skip("Tests are failing. skipped until fixed")
-
 
 @pytest.mark.parametrize(
     ("dv_name", "file_name", "content_type", "size"),
@@ -37,14 +38,14 @@ pytestmark = pytest.mark.skip("Tests are failing. skipped until fixed")
             RAW_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2321-1")),
+            marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-compressed-https",
             RAW_COMPRESSED_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2321-2")),
+            marks=(pytest.mark.polarion("CNV-2321")),
         ),
     ],
     ids=[
@@ -52,7 +53,7 @@ pytestmark = pytest.mark.skip("Tests are failing. skipped until fixed")
         "no-scratch-space-import-raw-compressed-https",
     ],
 )
-def test_no_scratch_space_import_https(
+def test_no_scratch_space_import_https_data_volume(
     storage_ns, images_https_server, dv_name, file_name, content_type, size
 ):
     url = get_file_url_https_server(images_https_server, file_name)
@@ -64,6 +65,23 @@ def test_no_scratch_space_import_https(
         )
 
 
+@pytest.mark.polarion("CNV-2323")
+def test_scratch_space_import_https_data_volume(storage_ns, images_https_server):
+    url = get_file_url_https_server(images_https_server, QCOW2_IMG)
+    with ConfigMap(
+        name="https-cert-configmap", namespace=storage_ns.name, data=get_cert("https")
+    ) as configmap:
+        create_dv_and_vm(
+            server_type="https",
+            dv_name="scratch-space-import-https",
+            namespace=storage_ns.name,
+            url=url,
+            configmap=configmap.name,
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            size="5Gi",
+        )
+
+
 @pytest.mark.parametrize(
     ("dv_name", "file_name", "content_type", "size"),
     [
@@ -72,14 +90,14 @@ def test_no_scratch_space_import_https(
             RAW_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2321-3")),
+            marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-compressed-http-basic-auth",
             RAW_COMPRESSED_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2321-4")),
+            marks=(pytest.mark.polarion("CNV-2321")),
         ),
     ],
     ids=[
@@ -110,14 +128,14 @@ def test_no_scratch_space_import_http_basic_auth(
             RAW_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2321-5")),
+            marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-compressed-http",
             RAW_COMPRESSED_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2321-6")),
+            marks=(pytest.mark.polarion("CNV-2321")),
         ),
     ],
     ids=[
@@ -134,59 +152,45 @@ def test_no_scratch_space_import_http(
     )
 
 
-@pytest.mark.bugzilla(
-    1732944, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
-)
 @pytest.mark.polarion("CNV-2315")
 def test_scratch_space_upload_data_volume(storage_ns, tmpdir):
     local_name = f"{tmpdir}/{QCOW2_IMG}"
-    storage_utils.downloaded_image(
-        remote_name=f"cdi-test-images/{QCOW2_IMG}", local_name=local_name
-    )
-    pvc_name = "cnv-2315"
-    virtctl_upload = storage_utils.virtctl_upload(
+    remote_name = f"{CDI_IMAGES_DIR}{QCOW2_IMG}"
+    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    with UploadDataVolume(
+        name="cnv-2315",
         namespace=storage_ns.name,
-        pvc_name=pvc_name,
-        pvc_size="5Gi",
-        image_path=local_name,
-    )
-    with PersistentVolumeClaim(
-        name=f"{pvc_name}-scratch",
-        namespace=storage_ns.name,
-        accessmodes=ImportFromHttpDataVolume.AccessMode.RWO,
-        size="5Gi",
-    ) as pvc:
-        pvc.wait_for_status(status="Bound", timeout=300)
-        assert virtctl_upload
-        LOGGER.info(f"{virtctl_upload}")
-        assert PersistentVolumeClaim(name=pvc_name, namespace=storage_ns.name).bound()
+        size="3Gi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
+        with UploadTokenRequest(name="cnv-2315", namespace=storage_ns.name) as utr:
+            token = utr.create().status.token
+            LOGGER.info("Ensure upload was successful")
+            sampler = TimeoutSampler(
+                timeout=120,
+                sleep=5,
+                func=storage_utils.upload_image,
+                token=token,
+                data=local_name,
+            )
+            for sample in sampler:
+                if sample == 200:
+                    scratch_pvc = PersistentVolumeClaim(
+                        name=f"{dv.name}-scratch", namespace=dv.namespace
+                    )
+                    scratch_pvc.wait_for_status(
+                        status=PersistentVolumeClaim.Status.BOUND, timeout=300
+                    )
+                    dv.wait_for_status(status="Succeeded", timeout=300)
+                    storage_utils.create_vm_with_dv(dv)
+                    return True
 
 
-@pytest.mark.bugzilla(
-    1732944, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
-)
-@pytest.mark.polarion("CNV-2323")
-def test_scratch_space_import_https_data_volume(storage_ns, images_https_server):
-    url = get_file_url_https_server(images_https_server, QCOW2_IMG)
-    with ConfigMap(
-        name="https-cert-configmap", namespace=storage_ns.name, data=get_cert("https")
-    ) as configmap:
-        create_dv_and_vm(
-            "https",
-            "scratch-space-import-https",
-            storage_ns.name,
-            url,
-            configmap.name,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            "5Gi",
-        )
-
-
-@pytest.mark.bugzilla(
-    1732944, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
-)
 @pytest.mark.polarion("CNV-2319")
-def test_scratch_space_import_registry_data_volume(storage_ns):
+def test_scratch_space_import_registry_data_volume(
+    storage_ns, images_private_registry_server
+):
     with ConfigMap(
         name="registry-cert-configmap",
         namespace=storage_ns.name,
@@ -196,7 +200,7 @@ def test_scratch_space_import_registry_data_volume(storage_ns):
             "registry",
             "scratch-space-import-registry",
             storage_ns.name,
-            f"{PRIVATE_REGISTRY_HOST}:8443/{PRIVATE_REGISTRY_IMAGE}",
+            f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
             configmap.name,
             ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
             "5Gi",
@@ -208,7 +212,9 @@ def get_cert(server_type):
     if server_type == "registry":
         path = os.path.join("tests/storage/cdi_import", "tlsregistry.crt")
     elif server_type == "https":
-        path = os.path.join("tests/storage/cdi_import", "https.crt")
+        path = os.path.join(
+            "tests/storage/cdi_import", py_config[py_config["region"]]["https_cert"]
+        )
     with open(path, "r") as cert_content:
         data = cert_content.read()
     return data
@@ -242,12 +248,7 @@ def create_dv_and_vm_no_scratch_space(
         thread = threading.Thread(target=dv.wait())
         thread.daemon = True
         thread.start()
-        pvc = PersistentVolumeClaim(
-            name=f"{dv_name}-scratch",
-            namespace=namespace,
-            accessmodes=ImportFromHttpDataVolume.AccessMode.RWO,
-            size="5Gi",
-        )
+        pvc = PersistentVolumeClaim(name=f"{dv_name}-scratch", namespace=namespace)
         try:
             assert pvc.instance()
         except NotFoundError:
@@ -256,7 +257,7 @@ def create_dv_and_vm_no_scratch_space(
 
 
 def create_dv_and_vm(
-    server_type, dv_name, namespace, url, cert_configmap, content_type, size
+    server_type, dv_name, namespace, url, configmap, content_type, size
 ):
     if server_type == "registry":
         with ImportFromRegistryDataVolume(
@@ -266,7 +267,7 @@ def create_dv_and_vm(
             content_type=content_type,
             size=size,
             storage_class=py_config["storage_defaults"]["storage_class"],
-            cert_configmap=cert_configmap,
+            cert_configmap=configmap,
         ) as dv:
             verify_completeness(dv)
     elif server_type == "https":
@@ -277,18 +278,13 @@ def create_dv_and_vm(
             content_type=content_type,
             size=size,
             storage_class=py_config["storage_defaults"]["storage_class"],
-            cert_configmap=cert_configmap,
+            cert_configmap=configmap,
         ) as dv:
             verify_completeness(dv)
 
 
 def verify_completeness(dv):
-    with PersistentVolumeClaim(
-        name=f"{dv.name}-scratch",
-        namespace=dv.namespace,
-        accessmodes=ImportFromHttpDataVolume.AccessMode.RWO,
-        size="5Gi",
-    ) as pvc:
-        pvc.wait_for_status(status="Bound", timeout=300)
-        dv.wait()
-        storage_utils.create_vm_with_dv(dv)
+    pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
+    pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+    dv.wait()
+    storage_utils.create_vm_with_dv(dv)

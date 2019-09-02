@@ -8,7 +8,6 @@ import sh
 import time
 import pytest
 import logging
-import requests
 import multiprocessing
 from string_utils import shuffle
 
@@ -18,7 +17,6 @@ import tests.storage.utils as storage_utils
 from resources.utils import TimeoutSampler
 from resources.datavolume import UploadDataVolume
 from resources.upload_token_request import UploadTokenRequest
-from resources.route import Route
 from resources.persistent_volume import PersistentVolume
 
 LOGGER = logging.getLogger(__name__)
@@ -31,18 +29,6 @@ RAW_IMG = "cirros.raw"
 RAW_IMG_GZ = "cirros-0.4.0-x86_64-disk.raw.gz"
 RAW_IMG_XZ = "cirros-0.4.0-x86_64-disk.raw.xz"
 RHEL8_QCOW2 = "rhel-8.qcow2"
-
-
-def upload_image(token, data):
-    headers = {"Authorization": "Bearer {0}".format(token)}
-    uploadproxy_host = Route(
-        name="cdi-uploadproxy", namespace="kubevirt-hyperconverged"
-    ).host
-    uploadproxy_url = "{0}/{1}/upload".format(f"https://{uploadproxy_host}", "v1alpha1")
-    LOGGER.info(msg=f"Upload {data} to {uploadproxy_url}")
-    return requests.post(
-        uploadproxy_url, data=open(data, "rb"), headers=headers, verify=False
-    ).status_code
 
 
 @pytest.mark.parametrize(
@@ -146,7 +132,11 @@ def test_successful_upload_with_supported_formats(
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
-                timeout=60, sleep=5, func=upload_image, token=token, data=local_name
+                timeout=60,
+                sleep=5,
+                func=storage_utils.upload_image,
+                token=token,
+                data=local_name,
             )
             for sample in sampler:
                 if sample == 200:
@@ -176,7 +166,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
             sampler = TimeoutSampler(
                 timeout=60,
                 sleep=5,
-                func=upload_image,
+                func=storage_utils.upload_image,
                 token=shuffle(token),
                 data=local_name,
             )
@@ -188,7 +178,11 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
         ) as utr:
             token = utr.create().status.token
             sampler = TimeoutSampler(
-                timeout=60, sleep=5, func=upload_image, token=token, data=local_name
+                timeout=60,
+                sleep=5,
+                func=storage_utils.upload_image,
+                token=token,
+                data=local_name,
             )
             for sample in sampler:
                 if sample == 200:
@@ -217,7 +211,11 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
             LOGGER.info("Wait until token expires ...")
             time.sleep(310)
             sampler = TimeoutSampler(
-                timeout=60, sleep=5, func=upload_image, token=token, data=local_name
+                timeout=60,
+                sleep=5,
+                func=storage_utils.upload_image,
+                token=token,
+                data=local_name,
             )
             for sample in sampler:
                 if sample == 401:
@@ -245,7 +243,11 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
             dv.wait()
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
-                timeout=60, sleep=5, func=upload_image, token=token, data=local_name
+                timeout=60,
+                sleep=5,
+                func=storage_utils.upload_image,
+                token=token,
+                data=local_name,
             )
             for sample in sampler:
                 if sample == 200:

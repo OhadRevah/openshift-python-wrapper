@@ -22,11 +22,15 @@ USA:
   http_server:  http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/
   https_server: https://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/
   http_server_auth: http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/mod-auth-basic/
+  registry_server: docker://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com
+  https_cert: usa_https.crt
 
 EMEA:
   http_server:  http://cnv-qe-server.scl.lab.tlv.redhat.com/files/
   https_server: https://cnv-qe-server.scl.lab.tlv.redhat.com/files/
   http_server_auth: http://cnv-qe-server.scl.lab.tlv.redhat.com/files/mod-auth-basic/
+  registry_server: docker://cnv-qe-server.scl.lab.tlv.redhat.com
+  https_cert: emea_https.crt
 
 
 must_gather:

@@ -16,6 +16,7 @@ from resources.secret import Secret
 from resources.namespace import Namespace
 from resources.route import Route
 from resources.storage_class import StorageClass
+from tests.storage import utils
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -73,6 +74,11 @@ def images_internal_http_server(internal_http_deployment, internal_http_service)
         "https": f"https://{server_address}/",
         "http_auth": f"http://{server_address}:81/",
     }
+
+
+@pytest.fixture(scope="session")
+def images_private_registry_server():
+    return utils.get_images_private_registry_server()
 
 
 @pytest.fixture()

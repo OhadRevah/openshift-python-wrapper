@@ -15,6 +15,9 @@ class PersistentVolumeClaim(NamespacedResource):
 
     api_version = "v1"
 
+    class Status:
+        BOUND = "Bound"
+
     def __init__(self, name, namespace, accessmodes=None, size=None):
         super().__init__(name=name, namespace=namespace)
         self.accessmodes = accessmodes
