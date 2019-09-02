@@ -43,13 +43,26 @@ for resource in ${HCO_RESOURCES}; do
     ${KUBECTL} apply -f ${HCO_SOURCES}/deploy/${resource}
 done
 
-# Wait for all components to become ready
-if ! ${KUBECTL} wait hyperconverged hyperconverged-cluster --for condition=Available --timeout=30m; then
-    ${KUBECTL} get hyperconverged hyperconverged-cluster -o yaml
-    # TODO WIP, checking why linux-bridge CNI doesn't get up withing the timeout
-    ${KUBECTL} get ds --all-namespaces | grep bridge -o yaml
-    ${KUBECTL} describe ds -n linux-bridge
-    ${KUBECTL} get pods --all-namespaces | grep bridge -o yaml
-    echo 'Timed out while waiting for HyperConverged to become ready'
-    exit 1
-fi
+function wait_until_available() {
+  ${KUBECTL} wait hyperconverged hyperconverged-cluster --for condition=Available --timeout=1m
+  return $?
+}
+
+set +e
+for i in {0..30}
+do
+  echo "Try Number: $i"
+  wait_until_available
+  [ $? -eq 0 ] && exit 0
+done
+set -e
+
+
+${KUBECTL} get hyperconverged hyperconverged-cluster -o yaml
+# TODO WIP, checking why linux-bridge CNI doesn't get up withing the timeout
+${KUBECTL} get ds --all-namespaces -o yaml | grep bridge
+${KUBECTL} describe ds -n linux-bridge
+${KUBECTL} get pods --all-namespaces -o yaml | grep bridge
+echo 'Timed out while waiting for HyperConverged to become ready'
+exit 1
+
