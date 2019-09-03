@@ -50,6 +50,7 @@ tests/network/general/test_veth_removed_after_vms_deleted.py::test_veth_removed_
 tests/network/jumbo_frame/test_jumbo_frame.py::test_connectivity_over_linux_bridge_large_mtu
 tests/network/kubemacpool/test_kubemacpool.py::TestConnectivity::test_manual_mac_from_pool
 tests/network/kubemacpool/test_kubemacpool.py::TestConnectivity::test_manual_mac_not_from_pool
+tests/network/kubemacpool/test_kubemacpool.py::TestConnectivity::test_automatic_mac_from_pool
 tests/network/kubemacpool/test_kubemacpool.py::TestConnectivity::test_automatic_mac_from_pool_pod_network
 tests/network/kubemacpool/test_kubemacpool.py::TestConnectivity::test_automatic_mac_from_pool_tuning
 tests/network/kubemacpool/test_kubemacpool.py::TestConnectivity::test_mac_preserved_after_shutdown
