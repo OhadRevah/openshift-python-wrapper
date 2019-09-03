@@ -17,6 +17,9 @@ def create_dv(
     volume_mode=DataVolume.VolumeMode.FILE,
     hostpath_node=None,
     access_modes=DataVolume.AccessMode.RWO,
+    client=None,
+    source_pvc=None,
+    source_namespace=None,
 ):
     with DataVolume(
         source=source,
@@ -31,5 +34,8 @@ def create_dv(
         hostpath_node=hostpath_node,
         access_modes=access_modes,
         secret={"secret": secret} if secret else {},
+        client=client,
+        source_pvc=source_pvc,
+        source_namespace=source_namespace,
     ) as dv:
         yield dv

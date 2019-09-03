@@ -81,6 +81,8 @@ class DataVolume(NamespacedResource):
         client=None,
         volume_mode=VolumeMode.FILE,
         hostpath_node=None,
+        source_pvc=None,
+        source_namespace=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
@@ -93,6 +95,8 @@ class DataVolume(NamespacedResource):
         self.storage_class = storage_class
         self.volume_mode = volume_mode
         self.hostpath_node = hostpath_node
+        self.source_pvc = source_pvc
+        self.source_namespace = source_namespace
 
     def _to_dict(self):
         res = super()._base_body()
@@ -119,17 +123,15 @@ class DataVolume(NamespacedResource):
             res["spec"]["source"][self.source]["url"] = self.url
         if self.cert_configmap:
             res["spec"]["source"][self.source]["certConfigMap"] = self.cert_configmap
-        elif self.source == "upload":
-            res["spec"]["source"][self.source] = {}
-        if self.source == "upload":
-            res["spec"]["source"]["upload"] = {}
-        if self.source == "pvc":
-            res["spec"]["source"]["pvc"]["name"] = "dv-source"
-            res["spec"]["source"]["pvc"]["namespace"] = self.namespace
-        elif self.source == "blank":
+        if self.source == "upload" or self.source == "blank":
             res["spec"]["source"][self.source] = {}
         if self.hostpath_node:
             res["metadata"]["annotations"] = {
                 "kubevirt.io/provisionOnNode": self.hostpath_node
+            }
+        elif self.source == "pvc":
+            res["spec"]["source"]["pvc"] = {
+                "name": self.source_pvc or "dv-source",
+                "namespace": self.source_namespace or self.namespace,
             }
         return res
