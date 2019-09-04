@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 
-from pytest_testconfig import config as py_config
-
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.virtual_machine import VirtualMachine
 
@@ -23,11 +21,11 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
         namespace,
         url,
         os_release,
-        template_name,
+        template_labels,
         size="25Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=None,
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
     ):
         super().__init__(name, namespace, size, storage_class, url, content_type)
         self.os_release = os_release
-        self.template_name = template_name
+        self.template_labels = template_labels

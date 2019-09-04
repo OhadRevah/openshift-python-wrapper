@@ -14,6 +14,7 @@ from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from tests.compute.virt.common_templates import utils as ct_utils
+from tests.utils import get_template_by_labels
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,8 +63,12 @@ def winrmcli_pod(namespace, sa_ready):
             {
                 "os_image": "windows-images/window_qcow2_images/win_10.qcow2",
                 "os_release": "Microsoft Windows 10 Enterprise",
-                "template_name": "win2k12r2-desktop-medium",
                 "dv_size": "30Gi",
+                "template_labels": [
+                    f"{Template.Labels.OS}/win10",
+                    f"{Template.Labels.WORKLOAD}/desktop",
+                    f"{Template.Labels.FLAVOR}/medium",
+                ],
             },
             marks=(pytest.mark.polarion("CNV-2196")),
         ),
@@ -71,8 +76,12 @@ def winrmcli_pod(namespace, sa_ready):
             {
                 "os_image": "windows-images/window_qcow2_images/win_12.qcow2",
                 "os_release": "Microsoft Windows Server 2012 R2 Datacenter",
-                "template_name": "win2k12r2-desktop-medium",
                 "dv_size": "25Gi",
+                "template_labels": [
+                    f"{Template.Labels.OS}/win2k12r2",
+                    f"{Template.Labels.WORKLOAD}/desktop",
+                    f"{Template.Labels.FLAVOR}/medium",
+                ],
             },
             marks=(pytest.mark.polarion("CNV-2228")),
         ),
@@ -80,8 +89,12 @@ def winrmcli_pod(namespace, sa_ready):
             {
                 "os_image": "windows-images/window_qcow2_images/win_16.qcow2",
                 "os_release": "Microsoft Windows Server 2016 Datacenter",
-                "template_name": "win2k12r2-desktop-medium",
                 "dv_size": "30Gi",
+                "template_labels": [
+                    f"{Template.Labels.OS}/win2k16",
+                    f"{Template.Labels.WORKLOAD}/desktop",
+                    f"{Template.Labels.FLAVOR}/medium",
+                ],
             },
             marks=(pytest.mark.polarion("CNV-2175")),
         ),
@@ -89,42 +102,51 @@ def winrmcli_pod(namespace, sa_ready):
             {
                 "os_image": "windows-images/window_qcow2_images/win_19.qcow2",
                 "os_release": "Microsoft Windows Server 2019 Standard",
-                "template_name": "win2k12r2-desktop-medium",
                 "dv_size": "25Gi",
+                "template_labels": [
+                    f"{Template.Labels.OS}/win2k19",
+                    f"{Template.Labels.WORKLOAD}/desktop",
+                    f"{Template.Labels.FLAVOR}/medium",
+                ],
             },
             marks=(pytest.mark.polarion("CNV-2816")),
         ),
     ]
 )
 def data_volume(request, images_external_http_server, namespace):
-    template_name = request.param["template_name"]
+    template_labels = request.param["template_labels"]
     with ct_utils.DataVolumeTestResource(
-        name=f"dv-{template_name}",
+        name=f"dv-windows-{request.param['os_release'].replace(' ', '-').lower()}",
         namespace=namespace.name,
         url=f"{images_external_http_server}{request.param['os_image']}",
         os_release=request.param["os_release"],
-        template_name=template_name,
+        template_labels=template_labels,
         size=request.param["dv_size"],
     ) as dv:
-        dv.wait()
+        dv.wait(timeout=1200)
         yield dv
 
 
-def test_common_templates_with_windows(winrmcli_pod, data_volume, namespace):
+def test_common_templates_with_windows(
+    default_client, winrmcli_pod, data_volume, namespace
+):
     """
     Test CNV common templates with Windows
     """
-    template_instance = Template(name=data_volume.template_name, namespace="openshift")
+    vm_name = f"{data_volume.name.strip('dv-')}"
+    template_instance = get_template_by_labels(
+        client=default_client, labels=data_volume.template_labels
+    )
     resources_list = template_instance.process(
-        **{"NAME": data_volume.template_name, "PVCNAME": data_volume.name}
+        **{"NAME": vm_name, "PVCNAME": data_volume.name}
     )
     for resource in resources_list:
         if (
             resource["kind"] == VirtualMachine.kind
-            and resource["metadata"]["name"] == data_volume.template_name
+            and resource["metadata"]["name"] == vm_name
         ):
             with ct_utils.VirtualMachineFromTemplate(
-                name=data_volume.template_name, namespace=namespace.name, body=resource
+                name=vm_name, namespace=namespace.name, body=resource
             ) as vm:
                 vm.start()
                 vm.vmi.wait_until_running()
