@@ -6,6 +6,7 @@ import urllib.request
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 
+from resources.template import Template
 from resources.utils import TimeoutSampler, TimeoutExpiredError
 from resources.virtual_machine import VirtualMachine
 from utilities import utils
@@ -208,3 +209,14 @@ class FedoraVirtualMachine(VirtualMachine):
             res["spec"]["template"]["metadata"]["labels"]["kubevirt.io/vm"] = self.label
 
         return res
+
+
+def get_template_by_labels(client, labels):
+    labels = [f"{label}=true" for label in labels]
+    template = Template.get(
+        dyn_client=client,
+        singular_name=Template.singular_name,
+        namespace="openshift",
+        label_selector=",".join(labels),
+    )
+    return list(template)[0]

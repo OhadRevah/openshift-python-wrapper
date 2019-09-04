@@ -6,6 +6,11 @@ class Template(NamespacedResource):
     api_group = "template.openshift.io"
     singular_name = "template"
 
+    class Labels:
+        FLAVOR = "flavor.template.kubevirt.io"
+        OS = "os.template.kubevirt.io"
+        WORKLOAD = "workload.template.kubevirt.io"
+
     def process(self, **kwargs):
         instance_dict = self.instance.to_dict()
         params = instance_dict["parameters"]
