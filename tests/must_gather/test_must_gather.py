@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 from tests.must_gather import utils
 from resources.network_addons_config import NetworkAddonsConfig
 from resources.namespace import Namespace
@@ -7,8 +8,9 @@ from resources.pod import Pod
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.virtual_machine import VirtualMachine
 from resources.node_network_state import NodeNetworkState
-
+from resources.template import Template
 import pytest
+
 
 LINUX_BRIDGE_NS = "linux-bridge"
 
@@ -94,4 +96,19 @@ def test_linux_bridge_pods_data(cnv_must_gather, default_client, label_selector)
         checks=(("metadata", "uid"), ("metadata", "name")),
         namespace=LINUX_BRIDGE_NS,
         label_selector=label_selector,
+    )
+
+
+@pytest.mark.polarion("CNV-2727")
+def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
+    template_resource = list(
+        Template.get(default_client, singular_name="template", namespace="openshift")
+    )
+    template_log = os.path.join(
+        cnv_must_gather, "namespaces/openshift/templates/openshift.yaml"
+    )
+    with open(template_log, "r") as fd:
+        data = fd.read()
+    assert len(template_resource) == data.count(
+        f"apiVersion: {template_resource[0].api_version}"
     )
