@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import time
 import json
 import logging
 
@@ -106,18 +107,25 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         Raises:
             WaitToBeStartedTimedOut: if VM failed to start.
         """
-        body = self.instance.to_dict()
-        body["spec"]["running"] = True
-        LOGGER.info(f"Start VM {self.name}")
-        try:
-            self.update(body)
-        except ConflictError:
-            body = self.instance.to_dict()
-            body["spec"]["running"] = True
-            LOGGER.info(f"Start VM {self.name} Retry")
-            self.update(body)
+
+        self.apply()
         if wait:
             return self.wait_for_status(timeout=timeout, status=True)
+
+    def apply(self):
+        retries_on_conflict = 3
+        while True:
+            try:
+                body = self.instance.to_dict()
+                body["spec"]["running"] = True
+                LOGGER.info(f"Start VM {self.name} Retries left {retries_on_conflict}")
+                self.update(body)
+                break
+            except ConflictError:
+                retries_on_conflict -= 1
+                if retries_on_conflict == 0:
+                    raise
+                time.sleep(1)
 
     def stop(self, timeout=TIMEOUT, wait=False):
         """
