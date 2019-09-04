@@ -2,7 +2,8 @@
 distro: fc30
 sub-stages:
   - check
-  - hco-master
+# TODO: Enable once we can deploy OKD
+#  - hco-master
 
 runtime_requirements:
   support_nesting_level: 2
