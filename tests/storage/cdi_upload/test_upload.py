@@ -143,7 +143,7 @@ def test_successful_upload_with_supported_formats(
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
-            token = utr.create(body=utr._to_dict()).status.token
+            token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
                 timeout=60, sleep=5, func=upload_image, token=token, data=local_name
@@ -172,7 +172,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
-            token = utr.create(body=utr._to_dict()).status.token
+            token = utr.create().status.token
             sampler = TimeoutSampler(
                 timeout=60,
                 sleep=5,
@@ -186,7 +186,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
-            token = utr.create(body=utr._to_dict()).status.token
+            token = utr.create().status.token
             sampler = TimeoutSampler(
                 timeout=60, sleep=5, func=upload_image, token=token, data=local_name
             )
@@ -213,7 +213,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
-            token = utr.create(body=utr._to_dict()).status.token
+            token = utr.create().status.token
             LOGGER.info("Wait until token expires ...")
             time.sleep(310)
             sampler = TimeoutSampler(
@@ -240,7 +240,7 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
         with UploadTokenRequest(
             name=dv_name, namespace=storage_ns.name, client=default_client
         ) as utr:
-            token = utr.create(body=utr._to_dict()).status.token
+            token = utr.create().status.token
             sleep(5)
             dv.wait()
             LOGGER.info("Ensure upload was successful")

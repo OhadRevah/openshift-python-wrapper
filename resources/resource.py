@@ -353,7 +353,7 @@ class Resource(object):
         Raises:
             ValueMismatch: When body value doesn't match class value
         """
-        data = self._base_body()
+        data = self._to_dict()
         if body:
             kind = body["kind"]
             name = body.get("name")
