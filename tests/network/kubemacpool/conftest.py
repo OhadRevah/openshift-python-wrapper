@@ -1,34 +1,42 @@
+import logging
 from collections import namedtuple
 from ipaddress import ip_interface
 from itertools import chain
-import logging
-from openshift.dynamic.exceptions import InternalServerError
 from time import sleep, time
 
 import pytest
-from resources.namespace import Namespace
+from openshift.dynamic.exceptions import InternalServerError
 from resources.configmap import ConfigMap
+from resources.deployment import Deployment
+from resources.namespace import Namespace
 from resources.pod import Pod
-from tests.network.utils import Bridge, VXLANTunnel, linux_bridge_nad
+from tests.network.utils import (
+    Bridge,
+    VXLANTunnel,
+    linux_bridge_nad,
+    nmcli_add_con_cmds,
+    running_vmi,
+)
 from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
-from tests.network.utils import running_vmi, nmcli_add_con_cmds
-
 
 LOGGER = logging.getLogger(__name__)
 BRIDGE_BR1 = "br1test"
 KUBEMACPOOL_CONFIG_MAP_NAME = "kubemacpool-mac-range-config"
 IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
 CREATE_VM_TIMEOUT = 50
+KUBEMACPOOL_NAMESPACE = "kubemacpool-system"
 
 
 def restart_kubemacpool(default_client):
-    kubemacpool_label = "control-plane=mac-controller-manager"
-    kube_pod = next(
-        Pod.get(dyn_client=default_client, label_selector=kubemacpool_label)
+    for pod in Pod.get(
+        dyn_client=default_client, label_selector="control-plane=mac-controller-manager"
+    ):
+        pod.delete(wait=True)
+
+    kubemac_pool_deployment = Deployment(
+        name="kubemacpool-mac-controller-manager", namespace=KUBEMACPOOL_NAMESPACE
     )
-    kube_pod.delete(wait=True)
-    for pod in Pod.get(dyn_client=default_client, label_selector=kubemacpool_label):
-        pod.wait_for_status("Running")
+    kubemac_pool_deployment.wait_until_avail_replicas()
 
 
 def create_vm(name, namespace, iface_config):
@@ -135,7 +143,7 @@ class VirtualMachineWithMultipleAttachments(FedoraVirtualMachine):
 
 @pytest.fixture(scope="module", autouse=True)
 def kubemacpool_namespace():
-    return Namespace(name="kubemacpool-system")
+    return Namespace(name=KUBEMACPOOL_NAMESPACE)
 
 
 @pytest.fixture(scope="module", autouse=True)

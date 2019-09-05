@@ -4,7 +4,6 @@ import time
 
 import pytest
 from pytest_testconfig import config as py_config
-
 from resources import network_attachment_definition as nad
 from resources.namespace import Namespace
 from resources.utils import TimeoutExpiredError
@@ -13,7 +12,7 @@ from tests.utils import FedoraVirtualMachine
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)
-_VM_RUNNING_TIMEOUT = 60  # seems to be enough
+_VM_RUNNING_TIMEOUT = 120  # seems to be enough
 
 
 def _get_name(suffix):
