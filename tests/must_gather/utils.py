@@ -51,9 +51,17 @@ def compare_resources(resource_instance, temp_dir, resource_path, checks):
 
 
 def check_list_of_resources(
-    default_client, resource_type, temp_dir, resource_path, checks
+    default_client,
+    resource_type,
+    temp_dir,
+    resource_path,
+    checks,
+    namespace=None,
+    label_selector=None,
 ):
-    for resource_instance in resource_type.get(default_client):
+    for resource_instance in resource_type.get(
+        default_client, namespace=namespace, label_selector=label_selector
+    ):
         compare_resources(resource_instance, temp_dir, resource_path, checks)
 
 
