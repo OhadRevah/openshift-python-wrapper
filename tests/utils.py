@@ -1,4 +1,5 @@
 import logging
+import socket
 import ssl
 import urllib.error
 import urllib.request
@@ -64,9 +65,12 @@ def get_images_external_http_server():
     """
     server = py_config[py_config["region"]]["http_server"]
     try:
-        assert urllib.request.urlopen(server).getcode() == 200
-    except urllib.error.URLError:
-        LOGGER.error("URL Error when testing connectivity to HTTP server")
+        LOGGER.info(f"Testing connectivity to {server} HTTP server")
+        assert urllib.request.urlopen(server, timeout=60).getcode() == 200
+    except (urllib.error.URLError, socket.timeout) as e:
+        LOGGER.error(
+            f"URL Error when testing connectivity to {server} HTTP server.\nError: {e}"
+        )
         raise
 
     return server
