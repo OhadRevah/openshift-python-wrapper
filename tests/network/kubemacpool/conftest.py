@@ -12,12 +12,7 @@ from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
 from tests.network.utils import linux_bridge_nad, running_vmi, nmcli_add_con_cmds
-from tests.utils import (
-    FedoraVirtualMachine,
-    wait_for_vm_interfaces,
-    Bridge,
-    VXLANTunnel,
-)
+from tests.utils import TestVirtualMachine, wait_for_vm_interfaces, Bridge, VXLANTunnel
 
 LOGGER = logging.getLogger(__name__)
 BRIDGE_BR1 = "br1test"
@@ -72,7 +67,7 @@ def update_kubemacpool_scope(api_client, namespace, scope):
     return kubemacpool_config_map.instance
 
 
-class VirtualMachineWithMultipleAttachments(FedoraVirtualMachine):
+class VirtualMachineWithMultipleAttachments(TestVirtualMachine):
     def __init__(self, name, namespace, iface_config):
         self.iface_config = iface_config
 

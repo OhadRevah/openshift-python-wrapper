@@ -22,7 +22,7 @@ from utilities import console
     ids=["Feature: name: pcid", "Feature: name: pcid , policy:force"],
 )
 def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
-    with test_utils.FedoraVirtualMachine(
+    with test_utils.TestVirtualMachine(
         name=f"vm-cpu-features-positive-{request.param[1]}",
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
@@ -46,7 +46,7 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
     ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid "],
 )
 def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
-    with test_utils.FedoraVirtualMachine(
+    with test_utils.TestVirtualMachine(
         name=f"vm-cpu-features-negative-{request.param[1]}",
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],

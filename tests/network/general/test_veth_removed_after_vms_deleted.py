@@ -64,7 +64,7 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture()
 def bridge_attached_vma(namespace):
-    with utils.FedoraVirtualMachine(
+    with utils.TestVirtualMachine(
         namespace=namespace.name,
         name="vma",
         networks=NETWORKS,
@@ -76,7 +76,7 @@ def bridge_attached_vma(namespace):
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace):
-    with utils.FedoraVirtualMachine(
+    with utils.TestVirtualMachine(
         namespace=namespace.name,
         name="vmb",
         networks=NETWORKS,

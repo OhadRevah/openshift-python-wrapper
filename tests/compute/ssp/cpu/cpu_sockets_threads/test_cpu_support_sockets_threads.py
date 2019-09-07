@@ -7,7 +7,7 @@ import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests import utils as test_utils
-from tests.utils import FedoraVirtualMachine
+from tests.utils import TestVirtualMachine
 from resources.namespace import Namespace
 
 
@@ -69,7 +69,7 @@ def vm_with_cpu_support(request, cpu_sockets_threads_ns):
     VM with CPU support (cores,sockets,threads)
     """
 
-    with test_utils.FedoraVirtualMachine(
+    with test_utils.TestVirtualMachine(
         name=f"vm-cpu-support-{time.time()}",
         namespace=cpu_sockets_threads_ns.name,
         cpu_cores=request.param["cores"],
@@ -85,7 +85,7 @@ def no_cpu_settings_vm(cpu_sockets_threads_ns):
     """
     Create VM without specific CPU settings
     """
-    with FedoraVirtualMachine(
+    with TestVirtualMachine(
         name="no-cpu-settings-vm", namespace=cpu_sockets_threads_ns.name
     ) as vm:
         vm.start(wait=True)
@@ -106,7 +106,7 @@ def test_vm_with_cpu_limitation(cpu_sockets_threads_ns):
     """
     Test VM with cpu limitation, CPU requests and limits are equals
     """
-    with test_utils.FedoraVirtualMachine(
+    with test_utils.TestVirtualMachine(
         name="vm-cpu-limitation",
         namespace=cpu_sockets_threads_ns.name,
         cpu_cores=2,
@@ -124,7 +124,7 @@ def test_vm_with_cpu_limitation_negative(cpu_sockets_threads_ns):
     negative case: CPU requests is larger then limits
     """
     with pytest.raises(UnprocessibleEntityError):
-        with test_utils.FedoraVirtualMachine(
+        with test_utils.TestVirtualMachine(
             name="vm-cpu-limitation-negative",
             namespace=cpu_sockets_threads_ns.name,
             cpu_limits=2,

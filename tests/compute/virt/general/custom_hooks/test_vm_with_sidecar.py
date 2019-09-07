@@ -5,7 +5,7 @@ VM with sidecar
 import pytest
 
 from tests import utils as test_utils
-from tests.utils import FedoraVirtualMachine
+from tests.utils import TestVirtualMachine
 from utilities import console
 
 CHECK_DMIDECODE_PACKAGE = (
@@ -13,7 +13,7 @@ CHECK_DMIDECODE_PACKAGE = (
 )
 
 
-class FedoraVirtualMachineWithSideCar(FedoraVirtualMachine):
+class FedoraVirtualMachineWithSideCar(TestVirtualMachine):
     def __init__(self, name, namespace, interfaces=None, networks=None):
         super().__init__(
             name=name, namespace=namespace, interfaces=interfaces, networks=networks

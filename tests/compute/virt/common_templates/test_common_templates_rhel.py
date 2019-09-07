@@ -82,8 +82,11 @@ def test_common_templates_with_rhel(default_client, data_volume, namespace):
             resource["kind"] == VirtualMachine.kind
             and resource["metadata"]["name"] == vm_name
         ):
-            with tests.utils.VirtualMachineFromTemplate(
-                name=vm_name, namespace=namespace.name, body=resource
+            with tests.utils.TestVirtualMachine(
+                name=vm_name,
+                namespace=namespace.name,
+                body=resource,
+                set_cloud_init=False,
             ) as vm:
                 vm.start()
                 vm.vmi.wait_until_running()

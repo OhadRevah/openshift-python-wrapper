@@ -45,7 +45,7 @@ def bridge_networks(namespace):
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
     networks = {bridge_network.name: bridge_network.name}
-    with utils.FedoraVirtualMachine(
+    with utils.TestVirtualMachine(
         namespace=namespace.name,
         name=_get_name(f"bridge-vm-{time.time()}"),
         networks=networks,
@@ -58,7 +58,7 @@ def bridge_attached_vmi(namespace, bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks):
     networks = {b.name: b.name for b in bridge_networks}
-    with utils.FedoraVirtualMachine(
+    with utils.TestVirtualMachine(
         namespace=namespace.name,
         name=_get_name(f"multi-bridge-vm-{time.time()}"),
         networks=networks,

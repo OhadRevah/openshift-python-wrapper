@@ -7,7 +7,7 @@ from resources.namespace import Namespace
 from resources.project import ProjectRequest
 from tests import utils
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
-from tests.utils import FedoraVirtualMachine, Bridge, VXLANTunnel, vm_run_commands
+from tests.utils import TestVirtualMachine, Bridge, VXLANTunnel, vm_run_commands
 
 #: Test setup
 #       .........                                                                                      ..........
@@ -26,7 +26,7 @@ VMB_DHCP_ADDRESS = "192.168.3.3"
 DOT1Q_VLAN_ID = 10
 
 
-class VirtualMachineAttachedToBridge(FedoraVirtualMachine):
+class VirtualMachineAttachedToBridge(TestVirtualMachine):
     def __init__(
         self,
         name,

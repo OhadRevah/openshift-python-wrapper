@@ -14,12 +14,7 @@ from tests.network.utils import (
     get_vmi_ip_v4_by_name,
     nmcli_add_con_cmds,
 )
-from tests.utils import (
-    FedoraVirtualMachine,
-    wait_for_vm_interfaces,
-    Bridge,
-    VXLANTunnel,
-)
+from tests.utils import TestVirtualMachine, wait_for_vm_interfaces, Bridge, VXLANTunnel
 
 BR1TEST = "br1test"
 BR1BOND = "br1bond"
@@ -41,7 +36,7 @@ def _masquerade_vmib_ip(vmib, bridge):
     return get_vmi_ip_v4_by_name(vmi=vmib, name=bridge)
 
 
-class BridgedFedoraVirtualMachine(FedoraVirtualMachine):
+class BridgedFedoraVirtualMachine(TestVirtualMachine):
     def __init__(
         self,
         name,

@@ -43,7 +43,7 @@ def network_addons_config_cr(default_client):
 @pytest.fixture(scope="module", autouse="True")
 def bridge_attached_vm(module_namespace):
 
-    with utils.FedoraVirtualMachine(
+    with utils.TestVirtualMachine(
         namespace=module_namespace.name,
         interfaces=[LINUX_BRIDGE_NAME],
         networks={LINUX_BRIDGE_NAME: LINUX_BRIDGE_NAME},

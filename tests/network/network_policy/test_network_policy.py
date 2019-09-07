@@ -7,14 +7,14 @@ import pytest
 from resources.namespace import Namespace
 from resources.network_policy import NetworkPolicy
 from tests.utils import (
-    FedoraVirtualMachine,
+    TestVirtualMachine,
     wait_for_vm_interfaces,
     CommandExecFailed,
     vm_run_commands,
 )
 
 
-class VirtualMachineMasquerade(FedoraVirtualMachine):
+class VirtualMachineMasquerade(TestVirtualMachine):
     def __init__(self, name, namespace, node_selector):
         super().__init__(name=name, namespace=namespace, node_selector=node_selector)
 
@@ -97,7 +97,7 @@ def vma(namespace_1, nodes):
 
 @pytest.fixture(scope="module")
 def vmb(namespace_2, nodes):
-    with FedoraVirtualMachine(
+    with TestVirtualMachine(
         namespace=namespace_2.name, name="vmb", node_selector=nodes[0].name
     ) as vm:
         vm.start()

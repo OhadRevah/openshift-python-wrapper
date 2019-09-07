@@ -112,11 +112,12 @@ def get_images_https_server():
     return server
 
 
-class FedoraVirtualMachine(VirtualMachine):
+class TestVirtualMachine(VirtualMachine):
     def __init__(
         self,
         name,
         namespace,
+        body=None,
         eviction=None,
         client=None,
         interfaces=None,
@@ -131,8 +132,10 @@ class FedoraVirtualMachine(VirtualMachine):
         cpu_threads=None,
         memory=None,
         label=None,
+        set_cloud_init=True,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
+        self.body = body
         self.interfaces = interfaces or []
         self.service_accounts = service_accounts or []
         self.networks = networks or {}
@@ -146,18 +149,20 @@ class FedoraVirtualMachine(VirtualMachine):
         self.cpu_threads = cpu_threads
         self.memory = memory
         self.label = label
+        self.set_cloud_init = set_cloud_init
 
     def _cloud_init_user_data(self):
         return {"password": "fedora", "chpasswd": "{ expire: False }"}
 
     def _to_dict(self):
         res = super()._to_dict()
-        json_out = utils.generate_yaml_from_template(
-            file_="tests/manifests/vm-fedora.yaml", name=self.name
-        )
+        if not self.body:
+            self.body = utils.generate_yaml_from_template(
+                file_="tests/manifests/vm-fedora.yaml", name=self.name
+            )
 
-        res["metadata"] = json_out["metadata"]
-        res["spec"] = json_out["spec"]
+        res["metadata"] = self.body["metadata"]
+        res["spec"] = self.body["spec"]
 
         spec = res["spec"]["template"]["spec"]
         for iface_name in self.interfaces:
@@ -170,12 +175,13 @@ class FedoraVirtualMachine(VirtualMachine):
                 {"name": iface_name, "multus": {"networkName": network}}
             )
 
-        for vol in spec["volumes"]:
-            if vol["name"] == "cloudinitdisk":
-                vol["cloudInitNoCloud"]["userData"] = _generate_cloud_init_user_data(
-                    self._cloud_init_user_data()
-                )
-                break
+        if self.set_cloud_init:
+            for vol in spec["volumes"]:
+                if vol["name"] == "cloudinitdisk":
+                    vol["cloudInitNoCloud"][
+                        "userData"
+                    ] = _generate_cloud_init_user_data(self._cloud_init_user_data())
+                    break
 
         for sa in self.service_accounts:
             spec["domain"]["devices"]["disks"].append({"disk": {}, "name": sa})
@@ -228,15 +234,6 @@ def get_template_by_labels(client, labels):
         label_selector=",".join(labels),
     )
     return list(template)[0]
-
-
-class VirtualMachineFromTemplate(VirtualMachine):
-    def __init__(self, name, namespace, body):
-        super().__init__(name=name, namespace=namespace)
-        self.body = body
-
-    def _to_dict(self):
-        return self.body
 
 
 class DataVolumeTestResource(ImportFromHttpDataVolume):
