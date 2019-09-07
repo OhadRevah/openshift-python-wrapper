@@ -39,7 +39,7 @@ if [ -z "$namespace" ]; then
     exit 1
 fi
 
-PORT=9000
+PORT=9999
 kubectl proxy -p $PORT &
 proxy_pid=$!
 
