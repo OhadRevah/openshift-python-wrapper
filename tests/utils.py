@@ -7,6 +7,7 @@ import urllib.request
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 
+from resources.datavolume import ImportFromHttpDataVolume
 from resources.template import Template
 from resources.utils import TimeoutSampler, TimeoutExpiredError
 from resources.virtual_machine import VirtualMachine
@@ -224,3 +225,38 @@ def get_template_by_labels(client, labels):
         label_selector=",".join(labels),
     )
     return list(template)[0]
+
+
+class VirtualMachineFromTemplate(VirtualMachine):
+    def __init__(self, name, namespace, body):
+        super().__init__(name=name, namespace=namespace)
+        self.body = body
+
+    def _to_dict(self):
+        return self.body
+
+
+class DataVolumeTestResource(ImportFromHttpDataVolume):
+    def __init__(
+        self,
+        name,
+        namespace,
+        url,
+        os_release,
+        template_labels,
+        size="25Gi",
+        storage_class=None,
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        access_modes=ImportFromHttpDataVolume.AccessMode.RWO,
+    ):
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            size=size,
+            storage_class=storage_class,
+            url=url,
+            content_type=content_type,
+            access_modes=access_modes,
+        )
+        self.os_release = os_release
+        self.template_labels = template_labels

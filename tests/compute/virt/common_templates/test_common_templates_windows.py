@@ -8,12 +8,12 @@ import logging
 
 import pytest
 
+import tests.utils
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
-from tests.compute.virt.common_templates import utils as ct_utils
 from tests.utils import get_template_by_labels
 
 LOGGER = logging.getLogger(__name__)
@@ -115,7 +115,7 @@ def winrmcli_pod(namespace, sa_ready):
 )
 def data_volume(request, images_external_http_server, namespace):
     template_labels = request.param["template_labels"]
-    with ct_utils.DataVolumeTestResource(
+    with tests.utils.DataVolumeTestResource(
         name=f"dv-windows-{request.param['os_release'].replace(' ', '-').lower()}",
         namespace=namespace.name,
         url=f"{images_external_http_server}{request.param['os_image']}",
@@ -145,7 +145,7 @@ def test_common_templates_with_windows(
             resource["kind"] == VirtualMachine.kind
             and resource["metadata"]["name"] == vm_name
         ):
-            with ct_utils.VirtualMachineFromTemplate(
+            with tests.utils.VirtualMachineFromTemplate(
                 name=vm_name, namespace=namespace.name, body=resource
             ) as vm:
                 vm.start()
