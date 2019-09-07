@@ -12,13 +12,16 @@ from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import (
     linux_bridge_nad,
-    Bridge,
-    VXLANTunnel,
     nmcli_add_con_cmds,
     get_vmi_ip_v4_by_name,
+)
+from tests.utils import (
+    FedoraVirtualMachine,
+    wait_for_vm_interfaces,
+    Bridge,
+    VXLANTunnel,
     vm_run_commands,
 )
-from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 from utilities import console
 
 BR1TEST = "br1test"

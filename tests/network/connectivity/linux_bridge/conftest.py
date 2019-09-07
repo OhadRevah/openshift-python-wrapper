@@ -1,7 +1,7 @@
 import pytest
 
 import logging
-from tests.network.utils import Bridge
+from tests.utils import Bridge
 
 LOGGER = logging.getLogger(__name__)
 

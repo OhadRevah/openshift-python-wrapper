@@ -4,11 +4,12 @@ import time
 
 import pytest
 from pytest_testconfig import config as py_config
+
+from tests import utils
 from resources import network_attachment_definition as nad
 from resources.namespace import Namespace
 from resources.utils import TimeoutExpiredError
-from tests.network import utils
-from tests.utils import FedoraVirtualMachine
+from tests.network import utils as network_utils
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)
@@ -36,15 +37,15 @@ def bridge_network(namespace):
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with utils.linux_bridge_nad(namespace, "redbr", "redbr") as rednad:
-        with utils.linux_bridge_nad(namespace, "bluebr", "bluebr") as bluenad:
+    with network_utils.linux_bridge_nad(namespace, "redbr", "redbr") as rednad:
+        with network_utils.linux_bridge_nad(namespace, "bluebr", "bluebr") as bluenad:
             yield (rednad, bluenad)
 
 
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
     networks = {bridge_network.name: bridge_network.name}
-    with FedoraVirtualMachine(
+    with utils.FedoraVirtualMachine(
         namespace=namespace.name,
         name=_get_name(f"bridge-vm-{time.time()}"),
         networks=networks,
@@ -57,7 +58,7 @@ def bridge_attached_vmi(namespace, bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks):
     networks = {b.name: b.name for b in bridge_networks}
-    with FedoraVirtualMachine(
+    with utils.FedoraVirtualMachine(
         namespace=namespace.name,
         name=_get_name(f"multi-bridge-vm-{time.time()}"),
         networks=networks,

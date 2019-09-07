@@ -6,14 +6,8 @@ import pytest
 from resources.namespace import Namespace
 from resources.project import ProjectRequest
 from tests import utils
-from tests.network.utils import (
-    Bridge,
-    VXLANTunnel,
-    linux_bridge_nad,
-    nmcli_add_con_cmds,
-    vm_run_commands,
-)
-from tests.utils import FedoraVirtualMachine
+from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
+from tests.utils import FedoraVirtualMachine, Bridge, VXLANTunnel, vm_run_commands
 
 #: Test setup
 #       .........                                                                                      ..........

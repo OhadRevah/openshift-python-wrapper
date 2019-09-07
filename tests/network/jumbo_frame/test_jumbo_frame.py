@@ -10,10 +10,9 @@ from tests.network.utils import (
     linux_bridge_nad,
     assert_ping_successful,
     get_vmi_ip_v4_by_name,
-    Bridge,
     nmcli_add_con_cmds,
 )
-from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
+from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces, Bridge
 
 MTU_SIZE = 9000
 BR1TEST = "br1test"

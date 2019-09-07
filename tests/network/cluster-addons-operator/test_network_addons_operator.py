@@ -1,9 +1,9 @@
 import pytest
 
-import tests.network.utils as net_utils
+import tests.network.utils as network_utils
+from tests import utils
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
-from tests.utils import FedoraVirtualMachine
 
 LINUX_BRIDGE_NAME = "br1test"
 
@@ -16,7 +16,7 @@ def module_namespace():
 
 @pytest.fixture(scope="module", autouse="True")
 def bridge_device(network_utility_pods):
-    with net_utils.Bridge(
+    with utils.Bridge(
         name=LINUX_BRIDGE_NAME, worker_pods=network_utility_pods
     ) as br_dev:
         yield br_dev
@@ -24,7 +24,7 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture(scope="module", autouse="True")
 def br1test_nad(module_namespace):
-    with net_utils.linux_bridge_nad(
+    with network_utils.linux_bridge_nad(
         namespace=module_namespace, name=LINUX_BRIDGE_NAME, bridge=LINUX_BRIDGE_NAME
     ) as nad:
         yield nad
@@ -43,7 +43,7 @@ def network_addons_config_cr(default_client):
 @pytest.fixture(scope="module", autouse="True")
 def bridge_attached_vm(module_namespace):
 
-    with FedoraVirtualMachine(
+    with utils.FedoraVirtualMachine(
         namespace=module_namespace.name,
         interfaces=[LINUX_BRIDGE_NAME],
         networks={LINUX_BRIDGE_NAME: LINUX_BRIDGE_NAME},

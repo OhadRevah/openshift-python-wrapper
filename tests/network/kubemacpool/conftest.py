@@ -6,18 +6,18 @@ from time import sleep, time
 
 import pytest
 from openshift.dynamic.exceptions import InternalServerError
+
 from resources.configmap import ConfigMap
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
-from tests.network.utils import (
+from tests.network.utils import linux_bridge_nad, running_vmi, nmcli_add_con_cmds
+from tests.utils import (
+    FedoraVirtualMachine,
+    wait_for_vm_interfaces,
     Bridge,
     VXLANTunnel,
-    linux_bridge_nad,
-    nmcli_add_con_cmds,
-    running_vmi,
 )
-from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
 
 LOGGER = logging.getLogger(__name__)
 BRIDGE_BR1 = "br1test"

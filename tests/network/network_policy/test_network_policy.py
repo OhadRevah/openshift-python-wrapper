@@ -6,8 +6,12 @@ import pytest
 
 from resources.namespace import Namespace
 from resources.network_policy import NetworkPolicy
-from tests.network.utils import vm_run_commands, CommandExecFailed
-from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
+from tests.utils import (
+    FedoraVirtualMachine,
+    wait_for_vm_interfaces,
+    CommandExecFailed,
+    vm_run_commands,
+)
 
 
 class VirtualMachineMasquerade(FedoraVirtualMachine):

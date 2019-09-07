@@ -9,9 +9,9 @@ import logging
 import pytest
 
 import tests.network.utils as net_utils
+from tests import utils
 from resources.namespace import Namespace
 from resources.utils import TimeoutSampler
-from tests.utils import FedoraVirtualMachine
 
 LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"
@@ -58,13 +58,13 @@ def br1vlan100_nad(namespace):
 
 @pytest.fixture()
 def bridge_device(network_utility_pods):
-    with net_utils.Bridge(name=BR1TEST, worker_pods=network_utility_pods) as dev:
+    with utils.Bridge(name=BR1TEST, worker_pods=network_utility_pods) as dev:
         yield dev
 
 
 @pytest.fixture()
 def bridge_attached_vma(namespace):
-    with FedoraVirtualMachine(
+    with utils.FedoraVirtualMachine(
         namespace=namespace.name,
         name="vma",
         networks=NETWORKS,
@@ -76,7 +76,7 @@ def bridge_attached_vma(namespace):
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace):
-    with FedoraVirtualMachine(
+    with utils.FedoraVirtualMachine(
         namespace=namespace.name,
         name="vmb",
         networks=NETWORKS,

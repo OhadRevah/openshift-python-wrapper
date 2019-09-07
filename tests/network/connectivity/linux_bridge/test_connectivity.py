@@ -12,11 +12,14 @@ from tests.network.utils import (
     assert_no_ping,
     assert_ping_successful,
     get_vmi_ip_v4_by_name,
-    VXLANTunnel,
-    Bridge,
     nmcli_add_con_cmds,
 )
-from tests.utils import FedoraVirtualMachine, wait_for_vm_interfaces
+from tests.utils import (
+    FedoraVirtualMachine,
+    wait_for_vm_interfaces,
+    Bridge,
+    VXLANTunnel,
+)
 
 BR1TEST = "br1test"
 BR1BOND = "br1bond"
