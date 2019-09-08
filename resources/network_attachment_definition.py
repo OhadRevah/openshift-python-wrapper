@@ -55,7 +55,7 @@ class LinuxBridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
 
     def _to_dict(self):
         res = super()._to_dict()
-        spec_config = {"cniVersion": "0.3.1"}
+        spec_config = {"cniVersion": "0.3.1", "name": self._bridge_name}
         bridge_dict = {"type": self._cni_type, "bridge": self._bridge_name}
         if self._tuning_type:
             spec_config.update({"plugins": [bridge_dict]})
