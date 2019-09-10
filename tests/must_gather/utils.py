@@ -8,16 +8,23 @@ from openshift.dynamic.client import ResourceField
 DEFAULT_NAMESPACE = "default"
 
 
-def resources_match(resource_field, file_part):
-    if type(resource_field) != ResourceField:
-        return resource_field == file_part
-    resource_field_keys = resource_field.keys()
-    if not resource_field_keys == file_part.keys():
-        return False
-    for k in resource_field_keys:
-        if not resources_match(getattr(resource_field, k), file_part[k]):
-            return False
-    return True
+# TODO: this is a workaround for an openshift bug
+# An issue was opened in openshift for this:
+# https://github.com/openshift/openshift-restclient-python/issues/320
+# To be removed after the issue is fixed in openshift
+class ResourceFieldEqBugWorkaround(object):
+    def __enter__(self):
+        self.prev_eq_func = ResourceField.__eq__
+
+        def new_eq_func(self, other):
+            if type(other) == dict:
+                return self.__dict__ == other
+            return self.prev_eq_func(self, other)
+
+        ResourceField.__eq__ = new_eq_func
+
+    def __exit__(self, *args):
+        ResourceField.__eq__ = self.prev_eq_func
 
 
 def compare_resource_values(resource, path, checks):
@@ -30,13 +37,14 @@ def compare_resource_values(resource, path, checks):
         for part in check:
             oc_part = getattr(oc_part, part)
             file_part = file_part[part]
-        if not resources_match(oc_part, file_part):
-            raise Exception(
-                f"Comparison of resource {resource.name} "
-                f"(namespace: {resource.namespace}) "
-                f"failed for element {check}."
-                f"Mismatched values: \n {oc_part}\n{file_part}"
-            )
+        with ResourceFieldEqBugWorkaround():
+            if oc_part != file_part:
+                raise Exception(
+                    f"Comparison of resource {resource.name} "
+                    f"(namespace: {resource.namespace}) "
+                    f"failed for element {check}."
+                    f"Mismatched values: \n {oc_part}\n{file_part}"
+                )
 
 
 def compare_resources(resource_instance, temp_dir, resource_path, checks):
