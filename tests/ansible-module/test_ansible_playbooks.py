@@ -92,7 +92,16 @@ def cleanup(default_client):
     "playbook_name",
     [
         pytest.param("kubevirt_preset.yml", marks=(pytest.mark.polarion("CNV-2575"))),
-        pytest.param("kubevirt_vmir.yml", marks=(pytest.mark.polarion("CNV-2564"))),
+        pytest.param(
+            "kubevirt_vmir.yml",
+            marks=(
+                pytest.mark.polarion("CNV-2564"),
+                pytest.mark.bugzilla(
+                    1749704,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
+        ),
         pytest.param("kubevirt_vm.yml", marks=(pytest.mark.polarion("CNV-2562"))),
         pytest.param(
             "kubevirt_dv_vm.yaml",
@@ -102,6 +111,10 @@ def cleanup(default_client):
                     1730706,
                     skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
                 ),
+                pytest.mark.bugzilla(
+                    1751744,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
             ),
         ),
         pytest.param(
@@ -109,11 +122,31 @@ def cleanup(default_client):
         ),
         pytest.param(
             "kubevirt_pvc.yml",
-            marks=(pytest.mark.polarion("CNV-2563"), pytest.mark.bugzilla(1716905)),
+            marks=(
+                pytest.mark.polarion("CNV-2563"),
+                pytest.mark.bugzilla(
+                    1716905,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+                pytest.mark.bugzilla(
+                    1751744,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
         ),
         pytest.param(
             "e2e.yaml",
-            marks=(pytest.mark.polarion("CNV-720"), pytest.mark.bugzilla(1716905)),
+            marks=(
+                pytest.mark.polarion("CNV-720"),
+                pytest.mark.bugzilla(
+                    1749704,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+                pytest.mark.bugzilla(
+                    1751744,
+                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                ),
+            ),
         ),
     ],
 )
