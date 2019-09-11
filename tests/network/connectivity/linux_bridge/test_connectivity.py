@@ -265,6 +265,9 @@ def test_connectivity_positive_vlan_over_linux_bridge(
     )
 
 
+@pytest.mark.bugzilla(
+    1751201, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 @pytest.mark.skipif(
     py_config["bare_metal_cluster"], reason="Running on BM, no trunk on switches yet!!"
 )
