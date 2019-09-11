@@ -302,6 +302,7 @@ class Resource(object):
             exceptions=ProtocolError,
             func=self.api().get,
             field_selector=f"metadata.name=={self.name}",
+            namespace=self.namespace,
         )
         final_status = None
         try:

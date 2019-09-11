@@ -91,7 +91,8 @@ def vma(namespace_1, nodes):
     with VirtualMachineMasquerade(
         namespace=namespace_1.name, name="vma", node_selector=nodes[0].name
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -100,7 +101,8 @@ def vmb(namespace_2, nodes):
     with TestVirtualMachine(
         namespace=namespace_2.name, name="vmb", node_selector=nodes[0].name
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 

@@ -34,6 +34,7 @@ def rng_vm(default_client, rng_namespace):
     name = "vmi-with-rng"
     with FedoraVirtualMachineWithRNG(name=name, namespace=rng_namespace.name) as vm:
         vm.start(wait=True)
+        vm.vmi.wait_until_running()
         assert test_utils.wait_for_vm_interfaces(vm.vmi)
         yield vm
 

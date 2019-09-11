@@ -43,6 +43,7 @@ def sidecar_vm(default_client, virt_namespace):
         name=name, namespace=virt_namespace.name
     ) as vm:
         vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 

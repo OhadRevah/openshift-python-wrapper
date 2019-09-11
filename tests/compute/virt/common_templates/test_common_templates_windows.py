@@ -148,7 +148,7 @@ def test_common_templates_with_windows(
             with tests.utils.VirtualMachineFromTemplate(
                 name=vm_name, namespace=namespace.name, body=resource
             ) as vm:
-                vm.start()
+                vm.start(wait=True)
                 vm.vmi.wait_until_running()
                 LOGGER.info(
                     f"The value of Windows os_release is {data_volume.os_release}"

@@ -106,7 +106,7 @@ class VirtualMachineAttachedToBridge(TestVirtualMachine):
 
 
 def running_vmi(vm):
-    vm.start()
+    vm.start(wait=True)
     vm.vmi.wait_until_running()
     return vm.vmi
 

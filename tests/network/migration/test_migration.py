@@ -104,7 +104,7 @@ def vma(namespace):
         interfaces=sorted(networks.keys()),
         bootcmds=bootcmds,
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
         yield vm
 
 
@@ -121,7 +121,7 @@ def vmb(namespace):
         interfaces=sorted(networks.keys()),
         bootcmds=bootcmds,
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
         yield vm
 
 

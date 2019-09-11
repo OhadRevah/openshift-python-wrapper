@@ -34,6 +34,7 @@ def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
         cpu_flags={"model": cpu_module},
     ) as vm:
         vm.start(wait=True, timeout=240)
+        vm.vmi.wait_until_running()
         test_utils.wait_for_vm_interfaces(vm.vmi)
         yield vm
 

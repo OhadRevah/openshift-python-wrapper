@@ -88,7 +88,7 @@ def test_common_templates_with_rhel(default_client, data_volume, namespace):
                 body=resource,
                 set_cloud_init=False,
             ) as vm:
-                vm.start()
+                vm.start(wait=True)
                 vm.vmi.wait_until_running()
                 with console.Fedora(
                     vm=vm, username="cloud-user", password="redhat", timeout=1100

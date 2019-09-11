@@ -70,7 +70,8 @@ def bridge_attached_vma(namespace):
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -82,7 +83,8 @@ def bridge_attached_vmb(namespace):
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 

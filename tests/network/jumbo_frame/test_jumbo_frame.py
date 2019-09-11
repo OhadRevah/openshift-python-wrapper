@@ -86,7 +86,8 @@ def bridge_attached_vma(nodes, module_namespace):
         node_selector=nodes[0].name,
         iface_ip="192.168.0.1",
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -101,7 +102,8 @@ def bridge_attached_vmb(nodes, module_namespace):
         node_selector=nodes[1].name,
         iface_ip="192.168.0.2",
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 

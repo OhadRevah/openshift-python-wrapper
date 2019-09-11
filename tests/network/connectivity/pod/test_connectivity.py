@@ -43,7 +43,8 @@ def vma(nodes, module_namespace):
     with FedoraVirtualMachineTest(
         namespace=module_namespace.name, name="vma", node_selector=nodes[0].name
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -52,7 +53,8 @@ def vmb(nodes, module_namespace):
     with FedoraVirtualMachineTest(
         namespace=module_namespace.name, name="vmb", node_selector=nodes[1].name
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 

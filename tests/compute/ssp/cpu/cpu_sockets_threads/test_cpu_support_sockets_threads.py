@@ -76,7 +76,8 @@ def vm_with_cpu_support(request, cpu_sockets_threads_ns):
         cpu_sockets=request.param["sockets"],
         cpu_threads=request.param["threads"],
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -89,6 +90,7 @@ def no_cpu_settings_vm(cpu_sockets_threads_ns):
         name="no-cpu-settings-vm", namespace=cpu_sockets_threads_ns.name
     ) as vm:
         vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -114,6 +116,7 @@ def test_vm_with_cpu_limitation(cpu_sockets_threads_ns):
         cpu_requests=2,
     ) as vm:
         vm.start(wait=True)
+        vm.vmi.wait_until_running()
         check_vm_dumpxml(vm=vm, sockets="1", cores="2", threads="1")
 
 

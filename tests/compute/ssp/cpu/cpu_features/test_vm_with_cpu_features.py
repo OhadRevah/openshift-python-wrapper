@@ -28,6 +28,7 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
         cpu_flags=request.param[0],
     ) as vm:
         vm.start(wait=True, timeout=240)
+        vm.vmi.wait_until_running()
         test_utils.wait_for_vm_interfaces(vm.vmi)
         yield vm
 

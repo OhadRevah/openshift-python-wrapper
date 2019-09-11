@@ -152,7 +152,8 @@ def bridge_attached_vma(nodes, bond_supported, module_namespace):
         node_selector=nodes[0].name,
         bootcmds=bootcmds,
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -175,7 +176,8 @@ def bridge_attached_vmb(nodes, bond_supported, module_namespace):
         node_selector=nodes[1].name,
         bootcmds=bootcmds,
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
 
 
