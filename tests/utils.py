@@ -252,6 +252,7 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         access_modes=ImportFromHttpDataVolume.AccessMode.RWO,
     ):
+        storage_class = storage_class or py_config["storage_defaults"]["storage_class"]
         super().__init__(
             name=name,
             namespace=namespace,
