@@ -1,11 +1,9 @@
 import pytest
 
 import tests.network.utils as network_utils
-from tests import utils
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
-
-LINUX_BRIDGE_NAME = "br1test"
+from tests import utils
 
 
 @pytest.fixture(scope="module", autouse="True")
@@ -16,16 +14,14 @@ def module_namespace():
 
 @pytest.fixture(scope="module", autouse="True")
 def bridge_device(network_utility_pods):
-    with utils.Bridge(
-        name=LINUX_BRIDGE_NAME, worker_pods=network_utility_pods
-    ) as br_dev:
+    with utils.Bridge(name="br1test", worker_pods=network_utility_pods) as br_dev:
         yield br_dev
 
 
 @pytest.fixture(scope="module", autouse="True")
-def br1test_nad(module_namespace):
+def br1test_nad(module_namespace, bridge_device):
     with network_utils.linux_bridge_nad(
-        namespace=module_namespace, name=LINUX_BRIDGE_NAME, bridge=LINUX_BRIDGE_NAME
+        namespace=module_namespace, name=bridge_device.name, bridge=bridge_device.name
     ) as nad:
         yield nad
 
@@ -40,16 +36,15 @@ def network_addons_config_cr(default_client):
     yield nac_list[0]
 
 
-@pytest.fixture(scope="module", autouse="True")
-def bridge_attached_vm(module_namespace):
-
+@pytest.fixture(scope="module")
+def bridge_attached_vm(module_namespace, br1test_nad):
     with utils.TestVirtualMachine(
         namespace=module_namespace.name,
-        interfaces=[LINUX_BRIDGE_NAME],
-        networks={LINUX_BRIDGE_NAME: LINUX_BRIDGE_NAME},
+        interfaces=[br1test_nad.name],
+        networks={br1test_nad.name: br1test_nad.name},
         name="oper-test-vm",
     ) as vm:
-        vm.start()
+        vm.start(wait=True)
         yield vm
 
 
