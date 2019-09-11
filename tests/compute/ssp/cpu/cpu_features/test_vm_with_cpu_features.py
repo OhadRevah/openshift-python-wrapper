@@ -56,6 +56,9 @@ def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
         yield vm
 
 
+@pytest.mark.bugzilla(
+    1751217, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
     """
     Test VM with cpu flag, test the VM started and enter the console
@@ -70,6 +73,9 @@ def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
         vm_console.expect("1", timeout=20)
 
 
+@pytest.mark.bugzilla(
+    1751217, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 def test_vm_with_cpu_feature_negative(cpu_features_vm_negative):
     """
     Negative test:
