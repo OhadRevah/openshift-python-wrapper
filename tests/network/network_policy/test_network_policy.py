@@ -6,7 +6,7 @@ import pytest
 
 from resources.network_policy import NetworkPolicy
 from tests.utils import (
-    TestVirtualMachine,
+    VirtualMachineForTests,
     wait_for_vm_interfaces,
     CommandExecFailed,
     vm_run_commands,
@@ -14,7 +14,7 @@ from tests.utils import (
 )
 
 
-class VirtualMachineMasquerade(TestVirtualMachine):
+class VirtualMachineMasquerade(VirtualMachineForTests):
     def __init__(self, name, namespace, node_selector, client=None):
         super().__init__(
             name=name, namespace=namespace, node_selector=node_selector, client=client
@@ -101,7 +101,7 @@ def vma(namespace_1, nodes, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def vmb(namespace_2, nodes, unprivileged_client):
-    with TestVirtualMachine(
+    with VirtualMachineForTests(
         namespace=namespace_2.name,
         name="vmb",
         node_selector=nodes[0].name,

@@ -4,7 +4,7 @@ Check VM with Service Account
 
 import pytest
 
-from tests.utils import TestVirtualMachine
+from tests.utils import VirtualMachineForTests
 from resources.service_account import ServiceAccount
 from resources.namespace import Namespace
 from utilities import console
@@ -26,7 +26,7 @@ def service_account(sa_namespace):
 
 @pytest.fixture()
 def vm_vmi(sa_namespace, service_account):
-    with TestVirtualMachine(
+    with VirtualMachineForTests(
         name="service-account-vm",
         namespace=sa_namespace.name,
         service_accounts=[service_account.name],
@@ -67,7 +67,7 @@ def test_vm_with_2_service_accounts(sa_namespace):
     Negative: Verifies that VM with 2 ServiceAccounts can't be created
     """
     with pytest.raises(ApiException, match=r".* must have max one serviceAccount .*"):
-        with TestVirtualMachine(
+        with VirtualMachineForTests(
             name="vm-with-2-sa",
             namespace=sa_namespace.name,
             service_accounts=["sa-1", "sa-2"],

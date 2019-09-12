@@ -6,7 +6,7 @@ import pytest
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
 from tests.utils import (
     wait_for_vm_interfaces,
-    TestVirtualMachine,
+    VirtualMachineForTests,
     Bridge,
     VXLANTunnel,
     vm_run_commands,
@@ -30,7 +30,7 @@ VMB_DHCP_ADDRESS = "192.168.3.3"
 DOT1Q_VLAN_ID = 10
 
 
-class VirtualMachineAttachedToBridge(TestVirtualMachine):
+class VirtualMachineAttachedToBridge(VirtualMachineForTests):
     def __init__(
         self,
         name,

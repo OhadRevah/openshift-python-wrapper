@@ -12,13 +12,13 @@ from tests.network.utils import (
     get_vmi_ip_v4_by_name,
     nmcli_add_con_cmds,
 )
-from tests.utils import TestVirtualMachine, wait_for_vm_interfaces, Bridge
+from tests.utils import VirtualMachineForTests, wait_for_vm_interfaces, Bridge
 
 MTU_SIZE = 9000
 BR1TEST = "br1test"
 
 
-class BridgedMtuFedoraVirtualMachine(TestVirtualMachine):
+class BridgedMtuFedoraVirtualMachine(VirtualMachineForTests):
     def __init__(
         self,
         name,

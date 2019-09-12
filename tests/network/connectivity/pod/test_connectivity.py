@@ -8,10 +8,10 @@ from pytest_testconfig import config as py_config
 
 from tests.network.connectivity import utils
 from tests.network.utils import assert_ping_successful
-from tests.utils import wait_for_vm_interfaces, TestVirtualMachine, create_ns
+from tests.utils import wait_for_vm_interfaces, VirtualMachineForTests, create_ns
 
 
-class FedoraVirtualMachineTest(TestVirtualMachine):
+class FedoraVirtualMachineTest(VirtualMachineForTests):
     def __init__(
         self,
         name,

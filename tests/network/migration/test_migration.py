@@ -15,7 +15,7 @@ from tests.network.utils import (
     get_vmi_ip_v4_by_name,
 )
 from tests.utils import (
-    TestVirtualMachine,
+    VirtualMachineForTests,
     wait_for_vm_interfaces,
     Bridge,
     VXLANTunnel,
@@ -48,7 +48,7 @@ class HTTPService(Service):
         return res
 
 
-class BridgedFedoraVirtualMachine(TestVirtualMachine):
+class BridgedFedoraVirtualMachine(VirtualMachineForTests):
     def __init__(
         self,
         name,

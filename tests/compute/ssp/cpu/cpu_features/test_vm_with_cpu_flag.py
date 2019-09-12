@@ -28,7 +28,7 @@ def cpu_module(default_client):
 
 @pytest.fixture()
 def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
-    with test_utils.TestVirtualMachine(
+    with test_utils.VirtualMachineForTests(
         name="vm-cpu-flags-positive",
         namespace=cpu_features_namespace.name,
         cpu_flags={"model": cpu_module},
@@ -53,7 +53,7 @@ def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
     ids=["CPU-flag: Bad-Skylake-Server", "CPU-flag: commodore64"],
 )
 def cpu_flag_vm_negative(request, default_client, cpu_features_namespace):
-    with test_utils.TestVirtualMachine(
+    with test_utils.VirtualMachineForTests(
         name=f"vm-cpu-flags-negative-{request.param[1]}",
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],

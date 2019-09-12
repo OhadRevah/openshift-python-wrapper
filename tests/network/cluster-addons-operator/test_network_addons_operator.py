@@ -36,7 +36,7 @@ def network_addons_config_cr(default_client):
 
 @pytest.fixture(scope="module")
 def bridge_attached_vm(module_namespace, br1test_nad):
-    with utils.TestVirtualMachine(
+    with utils.VirtualMachineForTests(
         namespace=module_namespace.name,
         interfaces=[br1test_nad.name],
         networks={br1test_nad.name: br1test_nad.name},

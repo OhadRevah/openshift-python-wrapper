@@ -5,12 +5,12 @@ Test VM with RNG
 import pytest
 
 from tests import utils as test_utils
-from tests.utils import TestVirtualMachine
+from tests.utils import VirtualMachineForTests
 from utilities import console
 from resources.namespace import Namespace
 
 
-class FedoraVirtualMachineWithRNG(TestVirtualMachine):
+class FedoraVirtualMachineWithRNG(VirtualMachineForTests):
     def __init__(self, name, namespace, interfaces=None, networks=None):
         super().__init__(
             name=name, namespace=namespace, interfaces=interfaces, networks=networks

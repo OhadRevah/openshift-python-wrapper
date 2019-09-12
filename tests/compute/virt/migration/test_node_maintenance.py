@@ -36,7 +36,7 @@ def skip_when_other_vmi_present(default_client):
 
 @pytest.fixture()
 def vm0(virt_namespace):
-    with test_utils.TestVirtualMachine(
+    with test_utils.VirtualMachineForTests(
         name="vm-node-maintenance", namespace=virt_namespace.name, eviction=True
     ) as vm:
         vm.start(wait=True)

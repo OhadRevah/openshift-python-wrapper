@@ -12,7 +12,7 @@ from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
 from tests.utils import (
-    TestVirtualMachine,
+    VirtualMachineForTests,
     wait_for_vm_interfaces,
     create_ns,
     Bridge,
@@ -77,7 +77,7 @@ def update_kubemacpool_scope(api_client, namespace, scope):
     return kubemacpool_config_map.instance
 
 
-class VirtualMachineWithMultipleAttachments(TestVirtualMachine):
+class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
     def __init__(self, name, namespace, iface_config, client=None):
         self.iface_config = iface_config
 

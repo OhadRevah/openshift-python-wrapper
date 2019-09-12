@@ -7,11 +7,11 @@ This test case includes only Linux based test case
 
 import xmltodict
 import pytest
-from tests.utils import TestVirtualMachine
+from tests.utils import VirtualMachineForTests
 from resources.namespace import Namespace
 
 
-class HyperVVM(TestVirtualMachine):
+class HyperVVM(VirtualMachineForTests):
     def __init__(self, name, namespace):
         super().__init__(
             name=name, namespace=namespace, label="HyperV", cpu_cores=1, memory="1G"

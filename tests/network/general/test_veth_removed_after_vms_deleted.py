@@ -64,7 +64,7 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture()
 def bridge_attached_vma(namespace, unprivileged_client):
-    with utils.TestVirtualMachine(
+    with utils.VirtualMachineForTests(
         namespace=namespace.name,
         name="vma",
         networks=NETWORKS,
@@ -78,7 +78,7 @@ def bridge_attached_vma(namespace, unprivileged_client):
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace, unprivileged_client):
-    with utils.TestVirtualMachine(
+    with utils.VirtualMachineForTests(
         namespace=namespace.name,
         name="vmb",
         networks=NETWORKS,

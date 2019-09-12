@@ -114,7 +114,7 @@ def get_images_https_server():
     return server
 
 
-class TestVirtualMachine(VirtualMachine):
+class VirtualMachineForTests(VirtualMachine):
     def __init__(
         self,
         name,
