@@ -19,8 +19,8 @@ from tests.utils import (
     wait_for_vm_interfaces,
     Bridge,
     VXLANTunnel,
-    vm_run_commands,
     create_ns,
+    vm_console_run_commands,
 )
 from utilities import console
 
@@ -29,7 +29,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def http_port_accessible(vm, server_ip):
-    vm_run_commands(vm, [f"curl --head {server_ip}:80 --connect-timeout 5"], timeout=10)
+    vm_console_run_commands(
+        console_impl=console.Fedora,
+        vm=vm,
+        commands=[f"curl --head {server_ip}:80 --connect-timeout 5"],
+        timeout=10,
+    )
 
 
 class HTTPService(Service):

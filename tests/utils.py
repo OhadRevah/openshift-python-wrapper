@@ -9,14 +9,14 @@ import pexpect
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 
+from resources.datavolume import ImportFromHttpDataVolume
 from resources.namespace import Namespace
 from resources.project import ProjectRequest, Project
-from resources.datavolume import ImportFromHttpDataVolume
 from resources.template import Template
 from resources.utils import TimeoutSampler, TimeoutExpiredError
 from resources.virtual_machine import VirtualMachine
 from tests.network.nmstate import linux_bridge
-from utilities import utils, console
+from utilities import utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -451,17 +451,18 @@ class VXLANTunnel:
             self._stack.__exit__(*args)
 
 
-def vm_run_commands(vm, commands, timeout=60):
+def vm_console_run_commands(console_impl, vm, commands, timeout=60):
     """
     Run a list of commands inside VM and check all commands return 0.
     If return code other than 0 then it will break execution and raise exception.
 
     Args:
+        console_impl (Console): Console implementation (RHEL, Fedora, etc)
         vm (obj): VirtualMachine
         commands (list): List of commands
         timeout (int): Time to wait for the command output
     """
-    with console.Fedora(vm=vm) as vmc:
+    with console_impl(vm=vm) as vmc:
         for command in commands:
             LOGGER.info(f"Execute {command} on {vm.name}")
             vmc.sendline(command)

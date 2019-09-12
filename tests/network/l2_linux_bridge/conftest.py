@@ -9,8 +9,8 @@ from tests.utils import (
     VirtualMachineForTests,
     Bridge,
     VXLANTunnel,
-    vm_run_commands,
     create_ns,
+    vm_console_run_commands,
 )
 
 #: Test setup
@@ -20,6 +20,7 @@ from tests.utils import (
 #       | VM-A  |---eth2:192.168.2.1    : multicast(ICMP), custom eth type test:    192.168.2.2:eth2---|  VM-B  |
 #       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
 #       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
+from utilities import console
 
 BRIDGE_BR1 = "br1test"
 VMA_MPLS_LOOPBACK_IP = "192.168.100.1/32"
@@ -291,7 +292,9 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     # This is mandatory step to avoid ip allocation to the incorrect interface
     assert wait_for_vm_interfaces(vmi=started_vmi_b)
 
-    vm_run_commands(vm_a, ["sudo systemctl start dhcpd"])
+    vm_console_run_commands(
+        console.Fedora, vm=vm_a, commands=["sudo systemctl start dhcpd"]
+    )
     return vm_a
 
 
@@ -304,5 +307,5 @@ def configured_vm_b(vm_a, vm_b, started_vmi_b, configured_vm_a):
         "sudo nmcli connection modify eth3 ipv4.method auto",
         "sudo nmcli con up eth3",
     ]
-    vm_run_commands(vm_b, post_install_command)
+    vm_console_run_commands(console.Fedora, vm=vm_b, commands=post_install_command)
     return vm_b

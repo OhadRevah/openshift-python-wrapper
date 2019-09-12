@@ -9,9 +9,10 @@ from tests.utils import (
     VirtualMachineForTests,
     wait_for_vm_interfaces,
     CommandExecFailed,
-    vm_run_commands,
     create_ns,
+    vm_console_run_commands,
 )
+from utilities import console
 
 
 class VirtualMachineMasquerade(VirtualMachineForTests):
@@ -132,9 +133,12 @@ def test_network_policy_deny_all_http(
 ):
     dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
     with pytest.raises(CommandExecFailed):
-        vm_run_commands(
-            vmb,
-            [f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]],
+        vm_console_run_commands(
+            console_impl=console.Fedora,
+            vm=vmb,
+            commands=[
+                f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]
+            ],
             timeout=10,
         )
 
@@ -144,9 +148,12 @@ def test_network_policy_allow_all_http(
     allow_all_http_ports, vma, vmb, running_vma, running_vmb
 ):
     dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
-    vm_run_commands(
-        vmb,
-        [f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]],
+    vm_console_run_commands(
+        console_impl=console.Fedora,
+        vm=vmb,
+        commands=[
+            f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]
+        ],
         timeout=10,
     )
 
@@ -156,8 +163,17 @@ def test_network_policy_allow_http80(
     allow_http80_port, vma, vmb, running_vma, running_vmb
 ):
     dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
-    vm_run_commands(vmb, [f"curl --head {dst_ip}:80 --connect-timeout 5"], timeout=10)
+    vm_console_run_commands(
+        console_impl=console.Fedora,
+        vm=vmb,
+        commands=[f"curl --head {dst_ip}:80 --connect-timeout 5"],
+        timeout=10,
+    )
+
     with pytest.raises(CommandExecFailed):
-        vm_run_commands(
-            vmb, [f"curl --head {dst_ip}:81 --connect-timeout 5"], timeout=10
+        vm_console_run_commands(
+            console_impl=console.Fedora,
+            vm=vmb,
+            commands=[f"curl --head {dst_ip}:81 --connect-timeout 5"],
+            timeout=10,
         )
