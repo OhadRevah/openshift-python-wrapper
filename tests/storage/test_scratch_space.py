@@ -150,11 +150,19 @@ def test_scratch_space_import_https_data_volume(
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
+        pytest.param(
+            "no-scratch-space-import-qcow2-http-basic-auth",
+            QCOW2_IMG,
+            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            "5Gi",
+            marks=(pytest.mark.polarion("CNV-2324")),
+        ),
     ],
     ids=[
         "no-scratch-space-import-raw-http-auth",
         "no-scratch-space-import-raw-gz-http-auth",
         "no-scratch-space-import-raw-xz-http-auth",
+        "no-scratch-space-import-qcow2-http-auth",
     ],
 )
 def test_no_scratch_space_import_http_basic_auth(
