@@ -302,14 +302,13 @@ def _bridge(pod, name, nic, mtu, disable_vlan_filtering):
             )
 
         if mtu:
-            iface_mtu = pod.execute(
-                command=["cat", f"/sys/class/net/{nic}/mtu"]
-            ).strip()
-            pod.execute(command=_set_mtu(name, mtu))
-
-        if nic is not None:
-            if mtu:
+            if nic is not None:
+                iface_mtu = pod.execute(
+                    command=["cat", f"/sys/class/net/{nic}/mtu"]
+                ).strip()
                 pod.execute(command=_set_mtu(nic, mtu))
+
+            pod.execute(command=_set_mtu(name, mtu))
         yield
     finally:
         if nic is not None and mtu and iface_mtu:
