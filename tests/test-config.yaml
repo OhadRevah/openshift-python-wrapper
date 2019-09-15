@@ -35,9 +35,3 @@ EMEA:
   registry_server: docker://cnv-qe-server.scl.lab.tlv.redhat.com
   https_cert: emea_https.crt
   registry_cert: emea_registry.crt
-
-
-must_gather:
-  url: brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/container-native-virtualization/cnv-must-gather
-  version: v2.1.0-7
-

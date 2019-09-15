@@ -15,14 +15,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def cnv_must_gather(tmpdir_factory):
+def cnv_must_gather(tmpdir_factory, cnv_containers):
     """
     Run cnv-must-gather for data collection.
     """
-    image = py_config["must_gather"]["url"]
-    version = py_config["must_gather"].get("version")
-    if version:
-        image = f"{image}:{version}"
+    if py_config["distribution"] == "upstream":
+        image = "quay.io/kubevirt/must-gather"
+    else:
+        image = cnv_containers["cnv-must-gather"]
 
     path = tmpdir_factory.mktemp("must_gather")
     try:
