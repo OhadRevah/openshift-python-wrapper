@@ -8,8 +8,8 @@ from utilities.infra import create_ns
 
 
 @pytest.fixture(scope="module")
-def windows_namespace(default_client):
-    yield from create_ns(client=default_client, name="compute-win-ns")
+def windows_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="compute-win-ns")
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +26,7 @@ def sa_ready(windows_namespace):
 
 
 @pytest.fixture(scope="module")
-def winrmcli_pod(windows_namespace, sa_ready):
+def winrmcli_pod(windows_namespace, sa_ready, unprivileged_client):
     """
     Deploy winrm-cli Pod into the same namespace.
     """

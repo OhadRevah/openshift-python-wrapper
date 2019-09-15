@@ -114,7 +114,7 @@ def data_volume(request, images_external_http_server, windows_namespace):
 
 
 @pytest.fixture()
-def windows_vm(default_client, data_volume, windows_namespace):
+def windows_vm(unprivileged_client, data_volume, windows_namespace):
     """
     Create Windows VM with CNV common templates.
     """
@@ -122,7 +122,7 @@ def windows_vm(default_client, data_volume, windows_namespace):
     with VirtualMachineForTestsFromTemplate(
         name=vm_name,
         namespace=windows_namespace.name,
-        client=default_client,
+        client=unprivileged_client,
         labels=data_volume.template_labels,
         template_dv=data_volume.name,
     ) as vm:

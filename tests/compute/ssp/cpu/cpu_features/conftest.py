@@ -3,11 +3,9 @@
 """
 
 import pytest
-from resources.namespace import Namespace
+from utilities.infra import create_ns
 
 
 @pytest.fixture(scope="module", autouse=True)
-def cpu_features_namespace():
-    with Namespace(name="cpu-features-test") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE)
-        yield ns
+def cpu_features_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="cpu-features-test")

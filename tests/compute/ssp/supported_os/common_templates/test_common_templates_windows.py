@@ -89,7 +89,7 @@ def data_volume(request, images_external_http_server, windows_namespace):
 
 
 @pytest.fixture()
-def windows_vm(default_client, data_volume, windows_namespace):
+def windows_vm(unprivileged_client, data_volume, windows_namespace):
     """
     Create Windows VM with CNV common templates.
     """
@@ -97,7 +97,7 @@ def windows_vm(default_client, data_volume, windows_namespace):
     with VirtualMachineForTestsFromTemplate(
         name=vm_name,
         namespace=windows_namespace.name,
-        client=default_client,
+        client=unprivileged_client,
         labels=data_volume.template_labels,
         template_dv=data_volume.name,
     ) as vm:
@@ -124,10 +124,10 @@ def test_common_templates_with_windows(winrmcli_pod, data_volume, windows_vm):
         'wmic os get Caption /value'",
     ]
     pod_output_samples = TimeoutSampler(
-        timeout=600, sleep=15, func=winrmcli_pod.execute, command=command
+        timeout=1500, sleep=15, func=winrmcli_pod.execute, command=command
     )
     LOGGER.info(
-        f"Windows VM {windows_vm.name} booting up, will attempt to access it upto 10 mins."
+        f"Windows VM {windows_vm.name} booting up, will attempt to access it upto 25 mins."
     )
     for pod_output in pod_output_samples:
         if data_volume.os_release in str(pod_output):

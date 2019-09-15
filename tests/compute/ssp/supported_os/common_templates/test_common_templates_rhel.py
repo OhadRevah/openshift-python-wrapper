@@ -7,8 +7,14 @@ Common templates test RHEL
 import pytest
 from resources.template import Template
 from utilities import console
+from utilities.infra import create_ns
 from utilities.storage import DataVolumeTestResource
 from utilities.virt import VirtualMachineForTestsFromTemplate
+
+
+@pytest.fixture(scope="module")
+def rhel_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="common-templates-rhel")
 
 
 @pytest.fixture(
@@ -63,11 +69,11 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
         ),
     ]
 )
-def data_volume(request, images_external_http_server, namespace):
+def data_volume(request, images_external_http_server, rhel_namespace):
     template_labels = request.param["template_labels"]
     with DataVolumeTestResource(
         name=f"dv-rhel-{request.param['os_release'].replace(' ', '-').lower()}",
-        namespace=namespace.name,
+        namespace=rhel_namespace.name,
         url=f"{images_external_http_server}{request.param['image']}",
         os_release=request.param["os_release"],
         template_labels=template_labels,
@@ -76,15 +82,15 @@ def data_volume(request, images_external_http_server, namespace):
         yield dv
 
 
-def test_common_templates_with_rhel(default_client, data_volume, namespace):
+def test_common_templates_with_rhel(unprivileged_client, data_volume, rhel_namespace):
     """
     Test CNV common templates with RHEL
     """
     vm_name = f"{data_volume.name.strip('dv-')}"
     with VirtualMachineForTestsFromTemplate(
         name=vm_name,
-        namespace=namespace.name,
-        client=default_client,
+        namespace=rhel_namespace.name,
+        client=unprivileged_client,
         labels=data_volume.template_labels,
         template_dv=data_volume.name,
     ) as vm:

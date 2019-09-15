@@ -28,7 +28,7 @@ from utilities.virt import (
     ],
     ids=["Feature: name: pcid", "Feature: name: pcid , policy:force"],
 )
-def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
+def cpu_features_vm_positive(request, unprivileged_client, cpu_features_namespace):
     name = f"vm-cpu-features-positive-{request.param[1]}"
     with VirtualMachineForTests(
         name=name,
@@ -36,6 +36,7 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
@@ -54,9 +55,9 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
             marks=(pytest.mark.polarion("CNV-1835")),
         ),
     ],
-    ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid "],
+    ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid"],
 )
-def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
+def cpu_features_vm_negative(request, unprivileged_client, cpu_features_namespace):
     name = f"vm-cpu-features-negative-{request.param[1]}"
     with VirtualMachineForTests(
         name=name,
@@ -64,13 +65,14 @@ def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+        client=unprivileged_client,
     ) as vm:
         vm.start()
         yield vm
 
 
 @pytest.fixture()
-def cpu_features_vm_require_pcid(cpu_features_namespace):
+def cpu_features_vm_require_pcid(cpu_features_namespace, unprivileged_client):
     name = "vm-cpu-features-require"
     with VirtualMachineForTests(
         name=name,
@@ -78,6 +80,7 @@ def cpu_features_vm_require_pcid(cpu_features_namespace):
         cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+        client=unprivileged_client,
     ) as vm:
         vm.start()
         yield vm

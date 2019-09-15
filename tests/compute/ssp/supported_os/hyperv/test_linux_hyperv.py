@@ -7,7 +7,7 @@ This test case includes only Linux based test case
 
 import pytest
 import xmltodict
-from resources.namespace import Namespace
+from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -16,7 +16,7 @@ from utilities.virt import (
 
 
 class HyperVVM(VirtualMachineForTests):
-    def __init__(self, name, namespace):
+    def __init__(self, name, namespace, client):
         super().__init__(
             name=name,
             namespace=namespace,
@@ -24,6 +24,7 @@ class HyperVVM(VirtualMachineForTests):
             cpu_cores=1,
             memory="1G",
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+            client=client,
         )
 
     def _to_dict(self):
@@ -54,18 +55,20 @@ class HyperVVM(VirtualMachineForTests):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def ssp_linuxhyperv_namespace():
-    with Namespace(name="cnv-ssp-linuxhyperv-ns") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE)
-        yield ns
+def ssp_linuxhyperv_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="cnv-ssp-linuxhyperv-ns")
 
 
 @pytest.mark.polarion("CNV-2651")
-def test_linux_hyperv(ssp_linuxhyperv_namespace):
+def test_linux_hyperv(ssp_linuxhyperv_namespace, unprivileged_client):
     """
     Linux test: check hyperV with VM dumpxml
     """
-    with HyperVVM(name="hyperv-test", namespace=ssp_linuxhyperv_namespace.name) as vm:
+    with HyperVVM(
+        name="hyperv-test",
+        namespace=ssp_linuxhyperv_namespace.name,
+        client=unprivileged_client,
+    ) as vm:
         vm.start(wait=True)
         vmi = vm.vmi
         vmi.wait_until_running()
