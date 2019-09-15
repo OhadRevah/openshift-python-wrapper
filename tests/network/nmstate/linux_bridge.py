@@ -2,6 +2,7 @@ import logging
 
 from resources.node_network_state import NodeNetworkState
 
+
 LOGGER = logging.getLogger(__name__)
 SLEEP = 1
 TIMEOUT = 120

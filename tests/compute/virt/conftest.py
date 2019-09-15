@@ -5,7 +5,6 @@ Pytest conftest file for CNV VIRT tests
 """
 
 import pytest
-
 from resources.namespace import Namespace
 
 

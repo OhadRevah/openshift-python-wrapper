@@ -2,8 +2,8 @@ import json
 import logging
 
 import bitmath
-
 from utilities import console
+
 
 LOGGER = logging.getLogger(__name__)
 

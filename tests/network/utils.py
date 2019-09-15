@@ -4,12 +4,11 @@ import logging
 import re
 
 from pytest_testconfig import config as py_config
-
 from resources.network_attachment_definition import (
     LinuxBridgeNetworkAttachmentDefinition,
 )
-
 from utilities import console
+
 
 LOGGER = logging.getLogger(__name__)
 

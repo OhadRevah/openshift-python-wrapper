@@ -2,10 +2,11 @@
 
 import logging
 
+from resources.utils import TimeoutSampler
 from urllib3.exceptions import ProtocolError
 
-from resources.utils import TimeoutSampler
-from .resource import Resource, TIMEOUT
+from .resource import TIMEOUT, Resource
+
 
 LOGGER = logging.getLogger(__name__)
 

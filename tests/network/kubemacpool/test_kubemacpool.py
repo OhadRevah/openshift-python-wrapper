@@ -1,6 +1,5 @@
-import pytest
 import netaddr
-
+import pytest
 from tests.network.utils import assert_ping_successful
 
 

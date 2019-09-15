@@ -4,15 +4,19 @@ VM to VM connectivity with  custom MTU (jumbo frame)
 import re
 
 import pytest
-
-from tests.utils import create_ns
 from tests.network.utils import (
-    linux_bridge_nad,
     assert_ping_successful,
     get_vmi_ip_v4_by_name,
+    linux_bridge_nad,
     nmcli_add_con_cmds,
 )
-from tests.utils import VirtualMachineForTests, wait_for_vm_interfaces, Bridge
+from tests.utils import (
+    Bridge,
+    VirtualMachineForTests,
+    create_ns,
+    wait_for_vm_interfaces,
+)
+
 
 MTU_SIZE = 9000
 BR1TEST = "br1test"

@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import os
-import requests
 import logging
+import os
 import urllib.request
 
-from resources.pod import Pod
-from resources.virtual_machine import VirtualMachine
+import requests
 import tests.utils
-from utilities import console
-from utilities import utils
-from resources.route import Route
 from pytest_testconfig import config as py_config
+from resources.pod import Pod
+from resources.route import Route
+from resources.virtual_machine import VirtualMachine
+from utilities import console, utils
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ Install using sudo yum install
 Install using the following cli commands:
 
 ```bash
-export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases|grep tag_name|sort -V | tail -1 | awk -F':' 
+export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases|grep tag_name|sort -V | tail -1 | awk -F':'
 curl -L -o virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/virtctl-${KUBEVIRT_VERSION}-linux-amd64
 chmod +x virtctl
 sudo mv virtctl /usr/bin
@@ -47,7 +47,7 @@ Deploy Kubernetes cluster using kubevirtci and install upstream HCO on top of
 it. This can be used during development, but the results should not be used
 for patch verification.
 
-NOTE: Local cluster runs OKD4 by default and due to that, it has high memory requirements. 
+NOTE: Local cluster runs OKD4 by default and due to that, it has high memory requirements.
       You may need 20 GB of memory or more to run the cluster.
 
 
@@ -165,6 +165,16 @@ Code style must pass flake8-black.
 The plugin: https://github.com/peterjc/flake8-black
 How to install and use black tool: https://github.com/python/black
 
+Code style must pass flake8-isort
+The plugin: https://github.com/gforcada/flake8-isort
+How to install and use isort: https://github.com/timothycrosley/isort/wiki/isort-Plugins
+
+To get automatic black and isort check and fix on pre-commit:
+```bash
+pip install pre-commit --user
+```
+This will use .pre-commit-config.yaml configuration.
+
 To check for PEP 8 issues locally run:
 
 ```bash
@@ -191,7 +201,7 @@ make cluster-down
 
 ### Run functional tests via an OCP Jenkins job
 
-Run the Jenkins job for cnv-tests: 
+Run the Jenkins job for cnv-tests:
     Find the right job for you patch by cnv version/branch.
     branch cnv-2.0 will use `test-pytest-ocp-4.1-cnv-2.0-cluster`
     branch master will use `test-pytest-ocp-4.2-cnv-2.1-cluster` which is the latest cnv version.
@@ -201,7 +211,7 @@ https://cnv-qe-jenkins.rhev-ci-vms.eng.rdu2.redhat.com/job/<job name based on pa
 Click on Build with Parameters.
 Under `SLAVE_LABEL` choose 'cnv-executor-cnv-tests'.
 Under `REFS` add you patch refs in format `refs/changes/<link>/<commit>/<patch set>`, like: `refs/changes/71/176971/4`.
-    ref can be found under 'download' in the top right corner gerrit patch page. 
+    ref can be found under 'download' in the top right corner gerrit patch page.
     can be set multiple refs.
 To pass parameters to pytest command add them to `PYTEST_PARAMS`.
     for example `-k 'network'` will run only tests that match 'network'

@@ -3,7 +3,6 @@ Check VM, VMI, POD owner references
 """
 
 import pytest
-
 from resources.utils import TimeoutSampler
 from tests import utils as test_utils
 

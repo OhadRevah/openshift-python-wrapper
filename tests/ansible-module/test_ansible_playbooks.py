@@ -2,19 +2,20 @@
 Test Ansible Module with running test playbooks
 """
 import logging
-import pytest
 import os
 import shutil
 import subprocess
 
+import pytest
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.template import Template
 from resources.virtual_machine import (
-    VirtualMachineInstance,
     VirtualMachine,
+    VirtualMachineInstance,
     VirtualMachineInstancePreset,
     VirtualMachineInstanceReplicaSet,
 )
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -8,15 +8,15 @@ import urllib.request
 import pexpect
 from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
-
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.namespace import Namespace
-from resources.project import ProjectRequest, Project
+from resources.project import Project, ProjectRequest
 from resources.template import Template
-from resources.utils import TimeoutSampler, TimeoutExpiredError
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from tests.network.nmstate import linux_bridge
 from utilities import utils
+
 
 LOGGER = logging.getLogger(__name__)
 

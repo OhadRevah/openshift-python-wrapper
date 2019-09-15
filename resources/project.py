@@ -1,5 +1,6 @@
 from .resource import Resource
 
+
 API_GROUP = "project.openshift.io"
 
 

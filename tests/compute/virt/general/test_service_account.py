@@ -3,12 +3,11 @@ Check VM with Service Account
 """
 
 import pytest
-
-from tests.utils import VirtualMachineForTests
-from resources.service_account import ServiceAccount
-from resources.namespace import Namespace
-from utilities import console
 from kubernetes.client.rest import ApiException
+from resources.namespace import Namespace
+from resources.service_account import ServiceAccount
+from tests.utils import VirtualMachineForTests
+from utilities import console
 
 
 @pytest.fixture(scope="module", autouse=True)

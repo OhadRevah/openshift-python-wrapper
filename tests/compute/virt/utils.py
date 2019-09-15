@@ -1,5 +1,6 @@
 from resources.utils import TimeoutSampler
 
+
 KUBEVIRT_TAINT = "kubevirt.io/drain"
 K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"

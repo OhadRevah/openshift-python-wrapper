@@ -7,7 +7,6 @@ Common templates test Windows
 import logging
 
 import pytest
-
 import tests.utils
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
@@ -15,6 +14,7 @@ from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from tests.utils import get_template_by_labels
+
 
 LOGGER = logging.getLogger(__name__)
 

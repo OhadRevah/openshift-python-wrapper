@@ -44,4 +44,3 @@ echo "Save docker image as TAR"
 docker save --output fedora.tar fedora
 popd
 echo "Fedora image locate at $BUILD_DIR"
-

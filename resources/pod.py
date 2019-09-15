@@ -2,9 +2,9 @@ import json
 
 import kubernetes
 
+from . import utils
 from .node import Node
 from .resource import NamespacedResource
-from . import utils
 
 
 class ExecOnPodError(Exception):

@@ -3,11 +3,10 @@ Test VM with RNG
 """
 
 import pytest
-
+from resources.namespace import Namespace
 from tests import utils as test_utils
 from tests.utils import VirtualMachineForTests
 from utilities import console
-from resources.namespace import Namespace
 
 
 class FedoraVirtualMachineWithRNG(VirtualMachineForTests):

@@ -65,4 +65,3 @@ ${KUBECTL} describe ds -n linux-bridge
 ${KUBECTL} get pods --all-namespaces -o yaml | grep bridge
 echo 'Timed out while waiting for HyperConverged to become ready'
 exit 1
-

@@ -1,20 +1,24 @@
 # -*- coding: utf-8 -*-
 
-import pytest
-import os
 import logging
+import os
 import threading
 
-from pytest_testconfig import config as py_config
-from resources.datavolume import ImportFromRegistryDataVolume, ImportFromHttpDataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.configmap import ConfigMap
-from resources.secret import Secret
-from tests.storage import utils as storage_utils
+import pytest
 from openshift.dynamic.exceptions import NotFoundError
-from resources.utils import TimeoutSampler
-from resources.datavolume import UploadDataVolume
+from pytest_testconfig import config as py_config
+from resources.configmap import ConfigMap
+from resources.datavolume import (
+    ImportFromHttpDataVolume,
+    ImportFromRegistryDataVolume,
+    UploadDataVolume,
+)
+from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
+from resources.utils import TimeoutSampler
+from tests.storage import utils as storage_utils
+
 
 LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images/cirros_images/"

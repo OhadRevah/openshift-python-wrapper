@@ -1,16 +1,16 @@
 import logging
+import re
+from distutils.version import Version
 
 import kubernetes
 import urllib3
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
+from resources.utils import TimeoutExpiredError, nudge_delete
 from urllib3.exceptions import ProtocolError
 
-from distutils.version import Version
-import re
-
-from resources.utils import TimeoutExpiredError, nudge_delete
 from . import utils
+
 
 LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240

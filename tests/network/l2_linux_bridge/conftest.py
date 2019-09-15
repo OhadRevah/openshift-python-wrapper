@@ -2,16 +2,17 @@
 from ipaddress import ip_interface
 
 import pytest
-
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
 from tests.utils import (
-    wait_for_vm_interfaces,
-    VirtualMachineForTests,
     Bridge,
+    VirtualMachineForTests,
     VXLANTunnel,
     create_ns,
     vm_console_run_commands,
+    wait_for_vm_interfaces,
 )
+from utilities import console
+
 
 #: Test setup
 #       .........                                                                                      ..........
@@ -20,7 +21,6 @@ from tests.utils import (
 #       | VM-A  |---eth2:192.168.2.1    : multicast(ICMP), custom eth type test:    192.168.2.2:eth2---|  VM-B  |
 #       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
 #       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
-from utilities import console
 
 BRIDGE_BR1 = "br1test"
 VMA_MPLS_LOOPBACK_IP = "192.168.100.1/32"

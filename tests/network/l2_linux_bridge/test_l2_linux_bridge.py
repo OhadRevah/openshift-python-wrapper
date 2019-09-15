@@ -2,10 +2,10 @@ import contextlib
 
 import pytest
 from pytest_testconfig import config as py_config
-
 from resources.utils import TimeoutSampler
-from tests.network.utils import get_vmi_ip_v4_by_name, assert_ping_successful
+from tests.network.utils import assert_ping_successful, get_vmi_ip_v4_by_name
 from utilities.console import Fedora
+
 
 CUSTOM_ETH_PROTOCOL = (
     "0x88B6"

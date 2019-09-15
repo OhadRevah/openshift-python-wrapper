@@ -32,7 +32,7 @@ If extra packages needed add them in user-data file.
 
 Once executed you should have a login prompt to the VM.
 If extra steps needed login with username fedora and password fedora, execute whats needed.
-When done shutdown the VM:  
+When done shutdown the VM:
 ```
 sudo shutdown -h now
 ```

@@ -7,14 +7,13 @@ import base64
 import os
 import os.path
 import urllib.request
-from subprocess import Popen, check_output, CalledProcessError, PIPE
+from subprocess import PIPE, CalledProcessError, Popen, check_output
 
 import bcrypt
 import kubernetes
 import pytest
 from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
-
 from resources.daemonset import DaemonSet
 from resources.node import Node
 from resources.oauth import OAuth
@@ -23,6 +22,7 @@ from resources.secret import Secret
 from resources.utils import TimeoutSampler
 from tests import utils as test_utils
 from utilities import utils
+
 
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"

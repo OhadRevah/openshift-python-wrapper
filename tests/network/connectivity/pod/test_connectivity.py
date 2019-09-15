@@ -5,10 +5,9 @@ from ipaddress import ip_interface
 
 import pytest
 from pytest_testconfig import config as py_config
-
 from tests.network.connectivity import utils
 from tests.network.utils import assert_ping_successful
-from tests.utils import wait_for_vm_interfaces, VirtualMachineForTests, create_ns
+from tests.utils import VirtualMachineForTests, create_ns, wait_for_vm_interfaces
 
 
 class FedoraVirtualMachineTest(VirtualMachineForTests):

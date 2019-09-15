@@ -4,12 +4,12 @@ import time
 
 import pytest
 from pytest_testconfig import config as py_config
-
-from tests import utils
 from resources import network_attachment_definition as nad
 from resources.utils import TimeoutExpiredError
+from tests import utils
 from tests.network import utils as network_utils
 from tests.utils import create_ns
+
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)

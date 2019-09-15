@@ -1,15 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
-
 import base64
 import os
-import pexpect
 import re
 import uuid
+
+import pexpect
 from ansible.errors import AnsibleFileNotFound
 from ansible.module_utils._text import to_native
 from ansible.plugins.connection import ConnectionBase
+
+
+__metaclass__ = type
+
 
 try:
     from __main__ import display

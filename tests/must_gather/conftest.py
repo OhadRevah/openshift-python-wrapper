@@ -11,6 +11,7 @@ from subprocess import check_output
 import pytest
 from pytest_testconfig import config as py_config
 
+
 LOGGER = logging.getLogger(__name__)
 
 

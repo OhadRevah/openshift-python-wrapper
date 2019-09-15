@@ -1,5 +1,4 @@
 import pytest
-
 import tests.network.utils as network_utils
 from resources.network_addons_config import NetworkAddonsConfig
 from tests import utils

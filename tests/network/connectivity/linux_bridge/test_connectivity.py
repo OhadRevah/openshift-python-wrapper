@@ -4,22 +4,22 @@ VM to VM connectivity
 
 import pytest
 from pytest_testconfig import config as py_config
-
 from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import (
-    linux_bridge_nad,
     assert_no_ping,
     assert_ping_successful,
     get_vmi_ip_v4_by_name,
+    linux_bridge_nad,
     nmcli_add_con_cmds,
 )
 from tests.utils import (
-    create_ns,
-    VirtualMachineForTests,
-    wait_for_vm_interfaces,
     Bridge,
+    VirtualMachineForTests,
     VXLANTunnel,
+    create_ns,
+    wait_for_vm_interfaces,
 )
+
 
 BR1TEST = "br1test"
 BR1BOND = "br1bond"

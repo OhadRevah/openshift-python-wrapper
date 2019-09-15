@@ -2,6 +2,7 @@ import logging
 
 from .resource import NamespacedResource
 
+
 LOGGER = logging.getLogger(__name__)
 
 

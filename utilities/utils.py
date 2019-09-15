@@ -7,6 +7,7 @@ import jinja2
 import yaml
 from autologs.autologs import generate_logs
 
+
 LOGGER = logging.getLogger(__name__)
 
 

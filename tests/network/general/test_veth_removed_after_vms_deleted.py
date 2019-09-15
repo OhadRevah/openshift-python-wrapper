@@ -7,10 +7,10 @@ Veth interfaces deleted after VMs are removed
 import logging
 
 import pytest
-
 import tests.network.utils as net_utils
-from tests import utils
 from resources.utils import TimeoutSampler
+from tests import utils
+
 
 LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"

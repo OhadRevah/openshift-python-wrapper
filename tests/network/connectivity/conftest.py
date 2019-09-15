@@ -1,8 +1,8 @@
-import pytest
-
 import logging
 
+import pytest
 from tests.network.nmstate import bond
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import time
 import json
 import logging
+import time
 
-from openshift.dynamic.exceptions import ResourceNotFoundError, ConflictError
-
+from openshift.dynamic.exceptions import ConflictError, ResourceNotFoundError
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from urllib3.exceptions import ProtocolError
 
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 from .node import Node
 from .pod import Pod
 from .resource import TIMEOUT, NamespacedResource
+
 
 LOGGER = logging.getLogger(__name__)
 API_GROUP = "kubevirt.io"

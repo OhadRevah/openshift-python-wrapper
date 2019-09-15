@@ -6,23 +6,23 @@ Network Migration test
 import logging
 
 import pytest
-
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import (
+    get_vmi_ip_v4_by_name,
     linux_bridge_nad,
     nmcli_add_con_cmds,
-    get_vmi_ip_v4_by_name,
 )
 from tests.utils import (
-    VirtualMachineForTests,
-    wait_for_vm_interfaces,
     Bridge,
+    VirtualMachineForTests,
     VXLANTunnel,
     create_ns,
     vm_console_run_commands,
+    wait_for_vm_interfaces,
 )
 from utilities import console
+
 
 BR1TEST = "br1test"
 LOGGER = logging.getLogger(__name__)

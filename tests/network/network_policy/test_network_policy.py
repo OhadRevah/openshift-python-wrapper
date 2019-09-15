@@ -3,14 +3,13 @@ Network policy tests
 """
 
 import pytest
-
 from resources.network_policy import NetworkPolicy
 from tests.utils import (
-    VirtualMachineForTests,
-    wait_for_vm_interfaces,
     CommandExecFailed,
+    VirtualMachineForTests,
     create_ns,
     vm_console_run_commands,
+    wait_for_vm_interfaces,
 )
 from utilities import console
 

@@ -2,7 +2,6 @@
 VM with CPU features
 """
 import pytest
-
 from resources.utils import TimeoutExpiredError
 from tests import utils as test_utils
 from utilities import console

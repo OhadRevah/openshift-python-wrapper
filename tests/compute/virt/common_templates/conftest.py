@@ -5,7 +5,6 @@ Pytest conftest file for CNV virt common-templates tests
 """
 
 import pytest
-
 from resources.namespace import Namespace
 
 

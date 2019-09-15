@@ -3,12 +3,13 @@ Test cpu support for sockets and threads
 """
 
 import time
+
 import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
+from resources.namespace import Namespace
 from tests import utils as test_utils
 from tests.utils import VirtualMachineForTests
-from resources.namespace import Namespace
 
 
 def check_vm_dumpxml(vm, cores, sockets, threads):

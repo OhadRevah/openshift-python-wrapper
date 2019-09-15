@@ -4,9 +4,9 @@
 import logging
 
 import pytest
-
 from resources.cdi_config import CDIConfig
 from resources.route import Route
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -4,11 +4,12 @@
 Upload using virtctl
 """
 
-import pytest
 import logging
 
+import pytest
 import tests.storage.utils as storage_utils
 from resources.persistent_volume_claim import PersistentVolumeClaim
+
 
 LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images"

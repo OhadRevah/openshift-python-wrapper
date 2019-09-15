@@ -1,24 +1,23 @@
+import logging
 from collections import namedtuple
 from ipaddress import ip_interface
 from itertools import chain
-import logging
 from time import sleep, time
 
 import pytest
 from openshift.dynamic.exceptions import InternalServerError
-
 from resources.configmap import ConfigMap
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
+from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds, running_vmi
 from tests.utils import (
-    VirtualMachineForTests,
-    wait_for_vm_interfaces,
-    create_ns,
     Bridge,
+    VirtualMachineForTests,
     VXLANTunnel,
+    create_ns,
+    wait_for_vm_interfaces,
 )
-from tests.network.utils import running_vmi, nmcli_add_con_cmds, linux_bridge_nad
 
 
 LOGGER = logging.getLogger(__name__)

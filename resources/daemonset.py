@@ -2,10 +2,11 @@ import logging
 
 import kubernetes
 from openshift.dynamic.exceptions import NotFoundError
+from resources.utils import TimeoutSampler
 from urllib3.exceptions import ProtocolError
 
-from resources.utils import TimeoutSampler
-from .resource import NamespacedResource, TIMEOUT
+from .resource import TIMEOUT, NamespacedResource
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -5,7 +5,6 @@ Base templates test
 """
 
 import pytest
-
 from resources.template import Template
 from tests.compute.virt import config as virt_config
 

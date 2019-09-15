@@ -14,16 +14,15 @@ by default.
 """
 from __future__ import absolute_import
 
-from six import iteritems
-
-from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
-
-from kubernetes import config
-from openshift.dynamic import DynamicClient
-
 # HACK import the inventory plugin openshift_nodes while running in Ansible
 import imp
 import os.path
+
+from ansible.plugins.inventory import BaseInventoryPlugin, Cacheable, Constructable
+from kubernetes import config
+from openshift.dynamic import DynamicClient
+from six import iteritems
+
 
 openshift_nodes = imp.load_source(
     "openshift_nodes", os.path.join(os.path.dirname(__file__), "openshift_nodes.py")

@@ -5,11 +5,10 @@
 from contextlib import contextmanager
 
 import pytest
-
 from resources.node_maintenance import NodeMaintenance
 from resources.virtual_machine import (
-    VirtualMachineInstanceMigration,
     VirtualMachineInstance,
+    VirtualMachineInstanceMigration,
 )
 from tests import utils as test_utils
 from tests.compute.virt import utils as virt_utils

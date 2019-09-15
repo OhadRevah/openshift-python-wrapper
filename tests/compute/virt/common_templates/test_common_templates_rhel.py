@@ -5,7 +5,6 @@ Common templates test RHEL
 """
 
 import pytest
-
 import tests.utils
 from resources.template import Template
 from resources.virtual_machine import VirtualMachine

@@ -5,10 +5,10 @@
 This test case includes only Linux based test case
 """
 
-import xmltodict
 import pytest
-from tests.utils import VirtualMachineForTests
+import xmltodict
 from resources.namespace import Namespace
+from tests.utils import VirtualMachineForTests
 
 
 class HyperVVM(VirtualMachineForTests):

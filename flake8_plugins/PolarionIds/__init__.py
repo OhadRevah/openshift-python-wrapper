@@ -7,6 +7,7 @@ flake8 extension check that every test has Polarion ID attach to it.
 import ast
 import re
 
+
 PID001 = "PID001: [{f_name} ({params})], Polarion ID is missing"
 PID002 = "PID002: [{f_name} {pid}], Polarion ID is wrong"
 

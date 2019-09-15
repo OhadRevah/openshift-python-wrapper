@@ -4,20 +4,21 @@
 Upload tests
 """
 
-import sh
-import time
-import pytest
 import logging
 import multiprocessing
+import time
+from time import sleep
+
+import pytest
+import sh
+import tests.storage.utils as storage_utils
+from pytest_testconfig import config as py_config
+from resources.datavolume import UploadDataVolume
+from resources.persistent_volume import PersistentVolume
+from resources.upload_token_request import UploadTokenRequest
+from resources.utils import TimeoutSampler
 from string_utils import shuffle
 
-from time import sleep
-from pytest_testconfig import config as py_config
-import tests.storage.utils as storage_utils
-from resources.utils import TimeoutSampler
-from resources.datavolume import UploadDataVolume
-from resources.upload_token_request import UploadTokenRequest
-from resources.persistent_volume import PersistentVolume
 
 LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images"

@@ -1,7 +1,8 @@
-import pytest
-
 import logging
+
+import pytest
 from tests.utils import Bridge
+
 
 LOGGER = logging.getLogger(__name__)
 

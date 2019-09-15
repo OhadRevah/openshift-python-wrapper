@@ -4,10 +4,10 @@ import os
 
 import pytest
 from pytest_testconfig import config as py_config
-
 from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
 from tests.storage import utils
+
 
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"

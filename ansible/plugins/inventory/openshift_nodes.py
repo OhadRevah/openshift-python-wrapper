@@ -12,13 +12,12 @@ plugin: openshift_nodes
 
 from __future__ import absolute_import
 
-from kubernetes import config
-from openshift.dynamic import DynamicClient
-
-from six import iteritems
 import json
 
 from ansible.plugins.inventory import BaseInventoryPlugin
+from kubernetes import config
+from openshift.dynamic import DynamicClient
+from six import iteritems
 
 
 def ansible_annotation_vars(annotations):

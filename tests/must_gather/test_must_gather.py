@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import os
-from tests.must_gather import utils
-from resources.network_addons_config import NetworkAddonsConfig
-from resources.namespace import Namespace
-from resources.pod import Pod
-from resources.network_attachment_definition import NetworkAttachmentDefinition
-from resources.virtual_machine import VirtualMachine
-from resources.node_network_state import NodeNetworkState
-from resources.template import Template
+
 import pytest
+from resources.namespace import Namespace
+from resources.network_addons_config import NetworkAddonsConfig
+from resources.network_attachment_definition import NetworkAttachmentDefinition
+from resources.node_network_state import NodeNetworkState
+from resources.pod import Pod
+from resources.template import Template
+from resources.virtual_machine import VirtualMachine
+from tests.must_gather import utils
 
 
 LINUX_BRIDGE_NS = "linux-bridge"
