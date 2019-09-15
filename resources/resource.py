@@ -315,7 +315,9 @@ class Resource(object):
                             return
 
                         if sample_status.phase == stop_status:
-                            break
+                            raise ValueError(
+                                f"Status of {self.kind} {self.name} is {stop_status}"
+                            )
 
         except TimeoutExpiredError:
             if final_status:
