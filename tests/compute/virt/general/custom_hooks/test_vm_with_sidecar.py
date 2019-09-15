@@ -4,6 +4,7 @@ VM with sidecar
 
 import pytest
 from utilities import console
+from utilities.infra import create_ns
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -17,9 +18,13 @@ CHECK_DMIDECODE_PACKAGE = (
 
 
 class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
-    def __init__(self, name, namespace, interfaces=None, networks=None):
+    def __init__(self, name, namespace, interfaces=None, networks=None, client=None):
         super().__init__(
-            name=name, namespace=namespace, interfaces=interfaces, networks=networks
+            name=name,
+            namespace=namespace,
+            interfaces=interfaces,
+            networks=networks,
+            client=client,
         )
 
     def _to_dict(self):
@@ -40,11 +45,17 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
         return res
 
 
+@pytest.fixture(scope="module", autouse=True)
+def sidecar_ns(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="sidecar-ns")
+
+
 @pytest.fixture()
-def sidecar_vm(default_client, virt_namespace):
+def sidecar_vm(sidecar_ns, unprivileged_client):
+    """ Test VM with sidecar hook """
     name = "vmi-with-sidecar-hook"
     with FedoraVirtualMachineWithSideCar(
-        name=name, namespace=virt_namespace.name
+        name=name, namespace=sidecar_ns.name, client=unprivileged_client
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

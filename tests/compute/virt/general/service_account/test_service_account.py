@@ -4,17 +4,15 @@ Check VM with Service Account
 
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.namespace import Namespace
 from resources.service_account import ServiceAccount
 from utilities import console
+from utilities.infra import create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module", autouse=True)
-def sa_namespace():
-    with Namespace(name="service-account-test") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE)
-        yield ns
+def sa_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="service-account-test-ns")
 
 
 @pytest.fixture(scope="module")
@@ -24,13 +22,14 @@ def service_account(sa_namespace):
 
 
 @pytest.fixture()
-def vm_vmi(sa_namespace, service_account):
+def vm_vmi(sa_namespace, service_account, unprivileged_client):
     name = "service-account-vm"
     with VirtualMachineForTests(
         name=name,
         namespace=sa_namespace.name,
         service_accounts=[service_account.name],
         body=fedora_vm_body(name),
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

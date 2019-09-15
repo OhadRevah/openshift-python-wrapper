@@ -3,8 +3,8 @@ Test VM with RNG
 """
 
 import pytest
-from resources.namespace import Namespace
 from utilities import console
+from utilities.infra import create_ns
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -13,14 +13,12 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="module", autouse=True)
-def rng_namespace():
-    with Namespace(name="rng-test") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE)
-        yield ns
+def rng_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="rng-test-ns")
 
 
 @pytest.fixture()
-def rng_vm(default_client, rng_namespace):
+def rng_vm(unprivileged_client, rng_namespace):
     name = "vmi-with-rng"
     with VirtualMachineForTests(
         name=name, namespace=rng_namespace.name, body=fedora_vm_body(name)
