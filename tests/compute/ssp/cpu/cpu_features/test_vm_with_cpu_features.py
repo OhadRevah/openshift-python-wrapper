@@ -2,6 +2,9 @@
 VM with CPU features
 """
 import pytest
+from pytest_testconfig import config as py_config
+from resources.configmap import ConfigMap
+from resources.node import Node
 from resources.utils import TimeoutExpiredError
 from tests import utils as test_utils
 from utilities import console
@@ -55,6 +58,74 @@ def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
         yield vm
 
 
+@pytest.fixture()
+def cpu_features_vm_require_pcid(cpu_features_namespace):
+    with test_utils.VirtualMachineForTests(
+        name=f"vm-cpu-features-require",
+        namespace=cpu_features_namespace.name,
+        cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
+    ) as vm:
+        vm.start()
+        yield vm
+
+
+@pytest.fixture()
+def config_map_with_cpu_discovery(default_client):
+    config_map_namespace = py_config["hco_namespace"]
+    cpu_node_discovery = "CPUNodeDiscovery"
+
+    kubevirt_config_map = ConfigMap(
+        name="kubevirt-config", namespace=config_map_namespace
+    )
+    original_feature_gates = kubevirt_config_map.instance["data"]["feature-gates"]
+    feature_gates = original_feature_gates.split(",")
+
+    if cpu_node_discovery not in feature_gates:
+        try:
+            feature_gates.append(cpu_node_discovery)
+            new_config_map_dict = kubevirt_config_map.instance.to_dict()
+            new_config_map_dict["data"]["feature-gates"] = ",".join(feature_gates)
+            kubevirt_config_map.update(new_config_map_dict)
+            yield
+        finally:
+            to_restore_config_map_dict = kubevirt_config_map.instance.to_dict()
+            to_restore_config_map_dict["data"]["feature-gates"] = original_feature_gates
+            kubevirt_config_map.update(to_restore_config_map_dict)
+    else:
+        yield
+
+
+@pytest.fixture()
+def nodes_with_no_pciid_label(default_client):
+    nodes_with_cpu_feature = Node.get(
+        default_client,
+        label_selector=f"feature.node.kubernetes.io/cpu-feature-pcid=true",
+    )
+
+    nodes_to_restore = []
+    try:
+        for node in nodes_with_cpu_feature:
+            node_dict = node.instance.to_dict()
+            node_dict["metadata"]["labels"][
+                "feature.node.kubernetes.io/cpu-feature-pcid"
+            ] = "false"
+            node.update(node_dict)
+
+            nodes_to_restore.append(node.name)
+        yield
+    finally:
+        for node_name in nodes_to_restore:
+            node = Node(name=node_name)
+            to_restore = node.instance.to_dict()
+            to_restore["metadata"]["labels"][
+                "feature.node.kubernetes.io/cpu-feature-pcid"
+            ] = "true"
+            node.update(to_restore)
+
+
+@pytest.mark.bugzilla(
+    1751217, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
     """
     Test VM with cpu flag, test the VM started and enter the console
@@ -77,3 +148,18 @@ def test_vm_with_cpu_feature_negative(cpu_features_vm_negative):
     """
     with pytest.raises(TimeoutExpiredError):
         cpu_features_vm_negative.vmi.wait_until_running(timeout=60)
+
+
+@pytest.mark.polarion("CNV-1834")
+def test_vm_with_cpu_feature_required_not_schedulable(
+    nodes_with_no_pciid_label,
+    config_map_with_cpu_discovery,
+    cpu_features_vm_require_pcid,
+):
+    """
+    Negative test:
+    Test VM with required cpu type, no node available.
+    VM should not be able to get scheduled in this case.
+    """
+    with pytest.raises(TimeoutExpiredError):
+        cpu_features_vm_require_pcid.vmi.wait_until_running(timeout=120)
