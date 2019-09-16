@@ -26,18 +26,14 @@ def wait_for_node_unschedulable_status(node, status, timeout=30):
     for sample in sampler:
         if sample.items:
             if status:
-                if (
-                    sample.items[0].spec.unschedulable
-                    and _kubevirt_taint_exists(node)
-                    and _kubernetes_taint_exists(node)
+                if sample.items[0].spec.unschedulable and _kubernetes_taint_exists(
+                    node
                 ):
                     return
             else:
-                if (
-                    not sample.items[0].spec.unschedulable
-                    and not _kubevirt_taint_exists(node)
-                    and not _kubernetes_taint_exists(node)
-                ):
+                if not sample.items[
+                    0
+                ].spec.unschedulable and not _kubernetes_taint_exists(node):
                     return
 
 
