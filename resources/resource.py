@@ -304,24 +304,22 @@ class Resource(object):
             field_selector=f"metadata.name=={self.name}",
             namespace=self.namespace,
         )
-        final_status = None
+        current_status = None
         try:
             for sample in samples:
                 if sample.items:
                     sample_status = sample.items[0].status
                     if sample_status:
-                        final_status = sample_status.phase
-                        if sample_status.phase == status:
+                        current_status = sample_status.phase
+                        if current_status == status:
                             return
 
-                        if sample_status.phase == stop_status:
-                            raise ValueError(
-                                f"Status of {self.kind} {self.name} is {stop_status}"
-                            )
+                        if current_status == stop_status:
+                            raise TimeoutExpiredError
 
         except TimeoutExpiredError:
-            if final_status:
-                LOGGER.error(f"Status of {self.kind} {self.name} is {final_status}")
+            if current_status:
+                LOGGER.error(f"Status of {self.kind} {self.name} is {current_status}")
             raise
 
     @classmethod
