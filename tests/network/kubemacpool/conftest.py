@@ -335,13 +335,13 @@ def started_vmi_b(vm_b):
 
 @pytest.fixture(scope="class")
 def configured_vm_a(vm_a, started_vmi_a):
-    assert wait_for_vm_interfaces(vmi=started_vmi_a)
+    wait_for_vm_interfaces(vmi=started_vmi_a)
     return vm_a
 
 
 @pytest.fixture(scope="class")
 def configured_vm_b(vm_b, started_vmi_b):
-    assert wait_for_vm_interfaces(vmi=started_vmi_b)
+    wait_for_vm_interfaces(vmi=started_vmi_b)
     return vm_b
 
 
@@ -419,11 +419,11 @@ def started_vmi_d(vm_d):
 
 @pytest.fixture(scope="class")
 def booted_vm_c(vm_c, started_vmi_c):
-    assert wait_for_vm_interfaces(vmi=started_vmi_c)
+    wait_for_vm_interfaces(vmi=started_vmi_c)
     return vm_c
 
 
 @pytest.fixture(scope="class")
 def booted_vm_d(vm_d, started_vmi_d):
-    assert wait_for_vm_interfaces(vmi=started_vmi_d)
+    wait_for_vm_interfaces(vmi=started_vmi_d)
     return vm_d

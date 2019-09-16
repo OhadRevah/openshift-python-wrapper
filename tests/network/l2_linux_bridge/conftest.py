@@ -287,10 +287,10 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     runs dhcpd server. To avoid incorrect dhcpd IP address allocation
     this commands are critical to run ONLY after vm_b is UP and configured
     """
-    assert wait_for_vm_interfaces(vmi=started_vmi_a)
+    wait_for_vm_interfaces(vmi=started_vmi_a)
 
     # This is mandatory step to avoid ip allocation to the incorrect interface
-    assert wait_for_vm_interfaces(vmi=started_vmi_b)
+    wait_for_vm_interfaces(vmi=started_vmi_b)
 
     vm_console_run_commands(
         console.Fedora, vm=vm_a, commands=["sudo systemctl start dhcpd"]

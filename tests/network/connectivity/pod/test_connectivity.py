@@ -63,13 +63,13 @@ def vmb(nodes, module_namespace, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def running_vma(vma):
-    assert wait_for_vm_interfaces(vmi=vma.vmi)
+    wait_for_vm_interfaces(vmi=vma.vmi)
     return vma
 
 
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
-    assert wait_for_vm_interfaces(vmi=vmb.vmi)
+    wait_for_vm_interfaces(vmi=vmb.vmi)
     return vmb
 
 
