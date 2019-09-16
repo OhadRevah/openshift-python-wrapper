@@ -145,7 +145,7 @@ def test_common_templates_with_windows(
             resource["kind"] == VirtualMachine.kind
             and resource["metadata"]["name"] == vm_name
         ):
-            with tests.utils.VirtualMachineFromTemplate(
+            with tests.utils.VirtualMachineForTests(
                 name=vm_name, namespace=namespace.name, body=resource
             ) as vm:
                 vm.start(wait=True)
