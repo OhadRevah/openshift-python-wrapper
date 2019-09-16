@@ -3,6 +3,7 @@
 import os
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
 from resources.network_attachment_definition import NetworkAttachmentDefinition
@@ -13,7 +14,7 @@ from resources.virtual_machine import VirtualMachine
 from tests.must_gather import utils
 
 
-LINUX_BRIDGE_NS = "linux-bridge"
+HCO_NS = py_config["hco_namespace"]
 
 
 @pytest.mark.parametrize(
@@ -60,8 +61,7 @@ def test_resource(
 
 
 @pytest.mark.parametrize(
-    "namespace",
-    [pytest.param("linux-bridge", marks=(pytest.mark.polarion("CNV-2982")))],
+    "namespace", [pytest.param(HCO_NS, marks=(pytest.mark.polarion("CNV-2982")))]
 )
 def test_namespace(cnv_must_gather, namespace):
     utils.check_resource(
@@ -95,7 +95,7 @@ def test_linux_bridge_pods_data(cnv_must_gather, default_client, label_selector)
         temp_dir=cnv_must_gather,
         resource_path="namespaces/linux-bridge/pods/{name}/{name}.yaml",
         checks=(("metadata", "uid"), ("metadata", "name")),
-        namespace=LINUX_BRIDGE_NS,
+        namespace=HCO_NS,
         label_selector=label_selector,
     )
 
