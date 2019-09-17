@@ -19,7 +19,7 @@ export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt
 curl -L -o virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/virtctl-${KUBEVIRT_VERSION}-linux-amd64
 chmod +x virtctl
 sudo mv virtctl /usr/bin
-```bash
+```
 
 ##oc
 
@@ -31,7 +31,7 @@ into /etc/yum.repos and install openshift-clients
 
 ```bash
 pip3 install pipenv
-pipenv --three install
+pipenv install
 ```
 
 # Getting started
