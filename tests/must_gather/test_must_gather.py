@@ -86,9 +86,27 @@ def test_namespace(cnv_must_gather, namespace):
             marks=(pytest.mark.polarion("CNV-2705")),
             id="test_kube_cni_pods",
         ),
+        pytest.param(
+            "kubemacpool-leader=true",
+            marks=(pytest.mark.polarion("CNV-2983")),
+            id="kubemacpool-mac-controller-manager_pods",
+        ),
+        pytest.param(
+            "name=nmstate-handler",
+            marks=(pytest.mark.polarion("CNV-2984")),
+            id="nmstate-handler_pods",
+        ),
+        pytest.param(
+            "name=cluster-network-addons-operator",
+            marks=(pytest.mark.polarion("CNV-2985")),
+            id="cluster-network-addons-operator_pods",
+        ),
+        pytest.param(
+            "app=ovs-cni", marks=(pytest.mark.polarion("CNV-2986")), id="ovs-cni_pods"
+        ),
     ],
 )
-def test_linux_bridge_pods_data(cnv_must_gather, default_client, label_selector):
+def test_pods(cnv_must_gather, default_client, label_selector):
     utils.check_list_of_resources(
         default_client=default_client,
         resource_type=Pod,
