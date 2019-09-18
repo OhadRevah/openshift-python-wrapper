@@ -62,7 +62,7 @@ def test_connectivity_over_pod_network(
     """
     assert_ping_successful(
         src_vm=running_vma,
-        dst_ip=ip_interface(running_vma.vmi.interfaces[0]["ipAddress"]).ip,
+        dst_ip=ip_interface(running_vmb.vmi.interfaces[0]["ipAddress"]).ip,
     )
 
 
