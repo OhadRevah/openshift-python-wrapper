@@ -10,26 +10,6 @@ from tests.network.utils import assert_ping_successful
 from tests.utils import VirtualMachineForTests, create_ns, wait_for_vm_interfaces
 
 
-class FedoraVirtualMachineTest(VirtualMachineForTests):
-    def __init__(
-        self,
-        name,
-        namespace,
-        client=None,
-        interfaces=None,
-        networks=None,
-        node_selector=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            client=client,
-            interfaces=interfaces,
-            networks=networks,
-            node_selector=node_selector,
-        )
-
-
 @pytest.fixture(scope="module")
 def module_namespace(unprivileged_client):
     yield from create_ns(client=unprivileged_client, name="pod-connectivity")
@@ -37,7 +17,7 @@ def module_namespace(unprivileged_client):
 
 @pytest.fixture(scope="module")
 def vma(nodes, module_namespace, unprivileged_client):
-    with FedoraVirtualMachineTest(
+    with VirtualMachineForTests(
         namespace=module_namespace.name,
         name="vma",
         node_selector=nodes[0].name,
@@ -50,7 +30,7 @@ def vma(nodes, module_namespace, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def vmb(nodes, module_namespace, unprivileged_client):
-    with FedoraVirtualMachineTest(
+    with VirtualMachineForTests(
         namespace=module_namespace.name,
         name="vmb",
         node_selector=nodes[1].name,
