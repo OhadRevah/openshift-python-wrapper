@@ -384,7 +384,7 @@ def create_ns(client, name):
             yield project
 
 
-def _disable_vlan_filtering(pod, bridge_name):
+def _set_vlan_filtering(pod, bridge_name, enable):
     # This is a temporal measure there are some tests where we need
     # trunk but that will be fixed at future versions of CNI linux-bridge [1]
     # [1] https://jira.coreos.com/browse/CNV-1804
@@ -399,7 +399,7 @@ def _disable_vlan_filtering(pod, bridge_name):
             "type",
             "bridge",
             "vlan_filtering",
-            "0",
+            str(int(enable)),
         ]
     )
 
@@ -416,8 +416,8 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         bridge_name,
         ports=None,
         mtu=None,
-        vlan_filtering=True,
         node_selector=None,
+        vlan_filtering=True,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -428,17 +428,16 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             bridge_name (str): Bridge name.
             ports (list): The bridge's slave port(s).
             mtu (int): MTU size
-            vlan_filtering: determines if vlan_filtering configured at node bridges
         """
         super().__init__(name=name)
         self._worker_pods = worker_pods
         self.bridge_name = bridge_name
         self.ports = ports or []
         self.mtu = mtu
-        self.vlan_filtering = vlan_filtering
         self.bridge = None
         self.node_selector = node_selector
         self.mtu_dict = {}
+        self.vlan_filtering = vlan_filtering
 
     def _to_dict(self):
         bridge_ports = []
@@ -477,8 +476,9 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         try:
             self.validate_create()
             for pod in self._worker_pods:
-                if not self.vlan_filtering:
-                    _disable_vlan_filtering(pod, self.bridge_name)
+                # TODO: remove this once https://github.com/nmstate/kubernetes-nmstate/pull/172
+                # TODO: available downstream
+                _set_vlan_filtering(pod, self.bridge_name, enable=self.vlan_filtering)
                 if self.mtu:
                     for port in self.ports:
                         _set_iface_mtu(pod, port, self.mtu)
