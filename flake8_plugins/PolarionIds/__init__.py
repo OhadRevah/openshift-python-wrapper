@@ -56,12 +56,20 @@ def iter_polarion_ids_from_pytest_fixture(tree, name):
                         for deco_elts in deco_keyword.value.elts:
                             has_polarion_id = False
                             for deco_elts_keyword in deco_elts.keywords:
-                                if (
-                                    deco_elts_keyword.arg == "marks"
-                                    and deco_elts_keyword.value.func.attr == "polarion"
-                                ):
-                                    has_polarion_id = True
-                                    yield deco_elts_keyword.value.args[0]
+                                if deco_elts_keyword.arg == "marks":
+                                    if isinstance(deco_elts_keyword.value, ast.Tuple):
+                                        for dekv in deco_elts_keyword.value.elts:
+                                            if dekv.func.attr == "polarion":
+                                                has_polarion_id = True
+                                                yield dekv.args[0]
+                                    else:
+                                        if (
+                                            deco_elts_keyword.value.func.attr
+                                            == "polarion"
+                                        ):
+                                            has_polarion_id = True
+                                            yield deco_elts_keyword.value.args[0]
+
                             if not has_polarion_id:
                                 yield deco_elts
 
