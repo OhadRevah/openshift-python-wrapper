@@ -93,7 +93,7 @@ def test_linux_bridge_pods_data(cnv_must_gather, default_client, label_selector)
         default_client=default_client,
         resource_type=Pod,
         temp_dir=cnv_must_gather,
-        resource_path="namespaces/linux-bridge/pods/{name}/{name}.yaml",
+        resource_path="namespaces/{namespace}/pods/{name}/{name}.yaml",
         checks=(("metadata", "uid"), ("metadata", "name")),
         namespace=HCO_NS,
         label_selector=label_selector,
