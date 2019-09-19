@@ -1,0 +1,50 @@
+# -*- coding: utf-8 -*-
+
+import pytest
+from resources.pod import Pod
+from resources.service_account import ServiceAccount
+from resources.utils import TimeoutSampler
+from tests.utils import create_ns
+
+
+class WinRMcliPod(Pod):
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "containers": [
+                {
+                    "name": "winrmcli-con",
+                    "image": "kubevirt/winrmcli:latest",
+                    "command": ["bash", "-c", "/usr/bin/sleep 6000"],
+                }
+            ]
+        }
+        return res
+
+
+@pytest.fixture(scope="module")
+def windows_namespace(default_client):
+    yield from create_ns(client=default_client, name="compute-win-ns")
+
+
+@pytest.fixture(scope="module")
+def sa_ready(windows_namespace):
+    #  Wait for 'default' service account secrets to be exists.
+    #  The Pod creating will fail if we try to create it before.
+    default_sa = ServiceAccount(name="default", namespace=windows_namespace.name)
+    sampler = TimeoutSampler(
+        timeout=10, sleep=1, func=lambda: default_sa.instance.secrets
+    )
+    for sample in sampler:
+        if sample:
+            return
+
+
+@pytest.fixture(scope="module")
+def winrmcli_pod(windows_namespace, sa_ready):
+    """
+    Deploy winrm-cli Pod into the same namespace.
+    """
+    with WinRMcliPod(name="winrmcli-pod", namespace=windows_namespace.name) as pod:
+        pod.wait_for_status(status=pod.Status.RUNNING, timeout=60)
+        yield pod
