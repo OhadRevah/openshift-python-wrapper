@@ -3,7 +3,6 @@
 import os
 
 import pytest
-from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
 from resources.network_attachment_definition import NetworkAttachmentDefinition
@@ -12,9 +11,6 @@ from resources.pod import Pod
 from resources.template import Template
 from resources.virtual_machine import VirtualMachine
 from tests.must_gather import utils
-
-
-HCO_NS = py_config["hco_namespace"]
 
 
 @pytest.mark.parametrize(
@@ -68,7 +64,9 @@ def test_resource(
     "namespace",
     [
         pytest.param(
-            HCO_NS, marks=(pytest.mark.polarion("CNV-2982")), id="test_hco_namespace"
+            utils.HCO_NS,
+            marks=(pytest.mark.polarion("CNV-2982")),
+            id="test_hco_namespace",
         )
     ],
 )
@@ -87,37 +85,37 @@ def test_namespace(cnv_must_gather, namespace):
     [
         pytest.param(
             "app=bridge-marker",
-            HCO_NS,
+            utils.HCO_NS,
             marks=(pytest.mark.polarion("CNV-2721")),
             id="test_bridge_marker_pods",
         ),
         pytest.param(
             "name=kube-cni-linux-bridge-plugin",
-            HCO_NS,
+            utils.HCO_NS,
             marks=(pytest.mark.polarion("CNV-2705")),
             id="test_kube_cni_pods",
         ),
         pytest.param(
             "kubemacpool-leader=true",
-            HCO_NS,
+            utils.HCO_NS,
             marks=(pytest.mark.polarion("CNV-2983")),
             id="kubemacpool-mac-controller-manager_pods",
         ),
         pytest.param(
             "name=nmstate-handler",
-            HCO_NS,
+            utils.HCO_NS,
             marks=(pytest.mark.polarion("CNV-2984")),
             id="nmstate-handler_pods",
         ),
         pytest.param(
             "name=cluster-network-addons-operator",
-            HCO_NS,
+            utils.HCO_NS,
             marks=(pytest.mark.polarion("CNV-2985")),
             id="cluster-network-addons-operator_pods",
         ),
         pytest.param(
             "app=ovs-cni",
-            HCO_NS,
+            utils.HCO_NS,
             marks=(pytest.mark.polarion("CNV-2986")),
             id="ovs-cni_pods",
         ),
@@ -203,3 +201,11 @@ def test_nmstate_config_data(cnv_must_gather, default_client):
         resource_path="cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
         checks=(("spec",), ("metadata", "name"), ("metadata", "uid")),
     )
+
+
+@pytest.mark.parametrize(
+    "label_selector",
+    [pytest.param({"app": "cni-plugins"}, marks=(pytest.mark.polarion("CNV-2715")))],
+)
+def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector):
+    utils.check_logs(cnv_must_gather, running_hco_containers, label_selector)

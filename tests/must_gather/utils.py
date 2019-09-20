@@ -5,9 +5,11 @@ import os
 
 import yaml
 from openshift.dynamic.client import ResourceField
+from pytest_testconfig import config as py_config
 
 
 DEFAULT_NAMESPACE = "default"
+HCO_NS = py_config["hco_namespace"]
 
 
 # TODO: this is a workaround for an openshift bug
@@ -87,3 +89,52 @@ def check_node_resource(temp_dir, cmd, node_gather_pods, results_file):
         with open(file_name) as result_file:
             file_content = result_file.read()
             assert file_content == cmd_output
+
+
+def _pod_logfile_path(pod_name, container_name, previous, cnv_must_gather_path):
+    log = "previous" if previous else "current"
+    return (
+        f"{cnv_must_gather_path}/namespaces/{HCO_NS}/pods/{pod_name}/"
+        f"{container_name}/{container_name}/logs/{log}.log"
+    )
+
+
+def pod_logfile(pod_name, container_name, previous, cnv_must_gather_path):
+    with open(
+        _pod_logfile_path(pod_name, container_name, previous, cnv_must_gather_path)
+    ) as log_file:
+        return log_file.read()
+
+
+def pod_logfile_size(pod_name, container_name, previous, cnv_must_gather_path):
+    return os.path.getsize(
+        _pod_logfile_path(pod_name, container_name, previous, cnv_must_gather_path)
+    )
+
+
+def filter_pods(running_hco_containers, labels):
+    for pod, container in running_hco_containers:
+        for k, v in labels.items():
+            if pod.labels.get(k) == v:
+                yield pod, container
+
+
+def check_logs(cnv_must_gather, running_hco_containers, label_selector):
+    for pod, container in filter_pods(running_hco_containers, label_selector):
+        container_name = container["name"]
+        for is_previous in (True, False):
+            log_size = pod_logfile_size(
+                pod.name, container_name, is_previous, cnv_must_gather
+            )
+            # Skip comparison of empty/large files. Large files could be ratated, and hence not equal.
+            if log_size > 10000 or log_size == 0:
+                continue
+            pod_log = pod.log(
+                previous=is_previous, container=container_name, timestamps=True
+            )
+            log_file = pod_logfile(
+                pod.name, container_name, is_previous, cnv_must_gather
+            )
+            assert (
+                log_file in pod_log
+            ), f"Log file are different for pod/container {pod.name}/{container_name}"

@@ -18,6 +18,7 @@ from resources.network_attachment_definition import (
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests import utils as test_utils
+from tests.must_gather import utils as mg_utils
 from utilities import utils
 
 
@@ -110,3 +111,14 @@ def nodenetworkstate_with_bridge(network_utility_pods):
         name="must-gather-br", bridge_name="mgbr", worker_pods=network_utility_pods
     ) as br:
         yield br
+
+
+@pytest.fixture(scope="module")
+def running_hco_containers(default_client):
+    pods = []
+    for pod in Pod.get(default_client, namespace=mg_utils.HCO_NS):
+        for container in pod.instance["status"].get("containerStatuses", []):
+            if container["ready"]:
+                pods.append((pod, container))
+    assert pods, f"No running pods in the {mg_utils.HCO_NS} namespace were found."
+    return pods
