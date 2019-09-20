@@ -1,25 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from resources.utils import TimeoutSampler
+from tests.compute.utils import WinRMcliPod
 from utilities.infra import create_ns
-
-
-class WinRMcliPod(Pod):
-    def _to_dict(self):
-        res = super()._to_dict()
-        res["spec"] = {
-            "containers": [
-                {
-                    "name": "winrmcli-con",
-                    "image": "kubevirt/winrmcli:latest",
-                    "command": ["bash", "-c", "/usr/bin/sleep 6000"],
-                }
-            ]
-        }
-        return res
 
 
 @pytest.fixture(scope="module")
