@@ -192,3 +192,14 @@ def test_node_resource(cnv_must_gather, node_gather_pods, command, results_file)
         node_gather_pods=node_gather_pods,
         results_file=results_file,
     )
+
+
+@pytest.mark.polarion("CNV-2810")
+def test_nmstate_config_data(cnv_must_gather, default_client):
+    utils.check_list_of_resources(
+        default_client=default_client,
+        resource_type=NodeNetworkState,
+        temp_dir=cnv_must_gather,
+        resource_path="cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
+        checks=(("spec",), ("metadata", "name"), ("metadata", "uid")),
+    )

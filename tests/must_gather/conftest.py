@@ -17,7 +17,7 @@ from resources.network_attachment_definition import (
 )
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
-from tests.utils import create_ns
+from tests import utils as test_utils
 from utilities import utils
 
 
@@ -25,7 +25,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def cnv_must_gather(tmpdir_factory, cnv_containers, network_attachment_definition):
+def cnv_must_gather(
+    tmpdir_factory,
+    cnv_containers,
+    network_attachment_definition,
+    nodenetworkstate_with_bridge,
+):
     """
     Run cnv-must-gather for data collection.
     """
@@ -47,7 +52,7 @@ def cnv_must_gather(tmpdir_factory, cnv_containers, network_attachment_definitio
 
 @pytest.fixture(scope="module")
 def node_gather_namespace(default_client):
-    yield from create_ns(client=default_client, name="node-gather")
+    yield from test_utils.create_ns(client=default_client, name="node-gather")
 
 
 @pytest.fixture(scope="module")
@@ -88,3 +93,11 @@ def network_attachment_definition(namespace):
         namespace=namespace.name, name="mgnad", bridge_name="mgbr", cni_type=cni_type
     ) as network_attachment_definition:
         yield network_attachment_definition
+
+
+@pytest.fixture(scope="module")
+def nodenetworkstate_with_bridge(network_utility_pods):
+    with test_utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="must-gather-br", bridge_name="mgbr", worker_pods=network_utility_pods
+    ) as br:
+        yield br
