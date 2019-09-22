@@ -9,18 +9,6 @@ from tests.utils import VirtualMachineForTests
 from utilities import console
 
 
-class FedoraVirtualMachineWithRNG(VirtualMachineForTests):
-    def __init__(self, name, namespace, interfaces=None, networks=None):
-        super().__init__(
-            name=name, namespace=namespace, interfaces=interfaces, networks=networks
-        )
-
-    def _to_dict(self):
-        res = super()._to_dict()
-        res["spec"]["template"]["spec"]["domain"]["devices"].setdefault("rng", {})
-        return res
-
-
 @pytest.fixture(scope="module", autouse=True)
 def rng_namespace():
     with Namespace(name="rng-test") as ns:
@@ -31,7 +19,7 @@ def rng_namespace():
 @pytest.fixture()
 def rng_vm(default_client, rng_namespace):
     name = "vmi-with-rng"
-    with FedoraVirtualMachineWithRNG(name=name, namespace=rng_namespace.name) as vm:
+    with VirtualMachineForTests(name=name, namespace=rng_namespace.name) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         test_utils.wait_for_vm_interfaces(vm.vmi)

@@ -225,6 +225,10 @@ class VirtualMachineForTests(VirtualMachine):
         if self.label:
             res["spec"]["template"]["metadata"]["labels"]["kubevirt.io/vm"] = self.label
 
+        # Create rng device so the vm will able to use /dev/rnd without
+        # waiting for entropy collecting.
+        res["spec"]["template"]["spec"]["domain"]["devices"].setdefault("rng", {})
+
         return res
 
 
