@@ -2,9 +2,8 @@
 
 import json
 import logging
-import time
 
-from openshift.dynamic.exceptions import ConflictError, ResourceNotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from urllib3.exceptions import ProtocolError
 
@@ -89,6 +88,14 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         super().__init__(name=name, namespace=namespace, client=client)
         self._store_login_information(username, password)
 
+    @property
+    def _subresource_api_url(self):
+        return (
+            f"{self.client.configuration.host}/"
+            f"apis/subresources.kubevirt.io/{self.api().api_version}/"
+            f"namespaces/{self.namespace}/virtualmachines/{self.name}"
+        )
+
     def _to_dict(self):
         res = super()._to_dict()
         res["spec"] = {"template": {"spec": get_base_vmi_spec()}, "running": False}
@@ -97,51 +104,17 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         return res
 
     def start(self, timeout=TIMEOUT, wait=False):
-        """
-        Start VM
-
-        Args:
-            timeout (int): Time to wait for the resource.
-            wait (bool): If True wait else Not
-
-        Raises:
-            WaitToBeStartedTimedOut: if VM failed to start.
-        """
-
-        self.apply()
+        self.client.client.request("PUT", f"{self._subresource_api_url}/start")
         if wait:
             return self.wait_for_status(timeout=timeout, status=True)
 
-    def apply(self):
-        retries_on_conflict = 3
-        while True:
-            try:
-                body = self.instance.to_dict()
-                body["spec"]["running"] = True
-                LOGGER.info(f"Start VM {self.name} Retries left {retries_on_conflict}")
-                self.update(body)
-                break
-            except ConflictError:
-                retries_on_conflict -= 1
-                if retries_on_conflict == 0:
-                    raise
-                time.sleep(1)
+    def restart(self, timeout=TIMEOUT, wait=False):
+        self.client.client.request("PUT", f"{self._subresource_api_url}/restart")
+        if wait:
+            return self.wait_for_status(timeout=timeout, status=True)
 
     def stop(self, timeout=TIMEOUT, wait=False):
-        """
-        Stop VM
-
-        Args:
-            timeout (int): Time to wait for the resource.
-            wait (bool): If True wait else Not
-
-        Raises:
-            WaitToBeStoppedTimedOut: if VM failed to stop.
-        """
-        body = self.instance.to_dict()
-        body["spec"]["running"] = False
-        LOGGER.info(f"Stop VM {self.name}")
-        self.update(body)
+        self.client.client.request("PUT", f"{self._subresource_api_url}/stop")
         if wait:
             return self.wait_for_status(timeout=timeout, status=False)
 
@@ -153,8 +126,8 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
             status (bool): Expected status.
             timeout (int): Time to wait for the resource.
 
-        Returns:
-            bool: True if resource in desire status, False if timeout reached.
+        Raises:
+            TimeoutExpiredError: If timeout reached.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
         samples = TimeoutSampler(
