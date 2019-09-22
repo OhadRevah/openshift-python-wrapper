@@ -208,13 +208,31 @@ def test_no_scratch_space_import_http(
     )
 
 
-@pytest.mark.polarion("CNV-2315")
-def test_scratch_space_upload_data_volume(storage_ns, tmpdir):
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
-    remote_name = f"{CDI_IMAGES_DIR}{QCOW2_IMG}"
+@pytest.mark.parametrize(
+    ("file_name", "dv_name"),
+    [
+        pytest.param(QCOW2_IMG, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))),
+        pytest.param(
+            QCOW2_IMG_GZ, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+        ),
+        pytest.param(
+            QCOW2_IMG_XZ, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+        ),
+        pytest.param(RAW_IMAGE, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))),
+        pytest.param(
+            RAW_XZ_IMAGE, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+        ),
+        pytest.param(
+            RAW_GZ_IMAGE, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+        ),
+    ],
+)
+def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name):
+    local_name = f"{tmpdir}/{file_name}"
+    remote_name = f"{CDI_IMAGES_DIR}{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with UploadDataVolume(
-        name="cnv-2315",
+        name=dv_name,
         namespace=storage_ns.name,
         size="3Gi",
         storage_class=py_config["storage_defaults"]["storage_class"],
