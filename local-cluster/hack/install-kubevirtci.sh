@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-commit="c7a1f8d14f722e911798f27bfc7511e94f6f2392"
+commit="db8c24bf830bb927f01829e6c9f083627fe6b832"
 
 script_dir=$(dirname "$(readlink -f "$0")")
 kubevirtci_dir=local-cluster/kubevirtci
