@@ -391,40 +391,13 @@ def create_ns(client, name):
             yield project
 
 
-def _set_vlan_filtering(pod, bridge_name, enable):
-    # This is a temporal measure there are some tests where we need
-    # trunk but that will be fixed at future versions of CNI linux-bridge [1]
-    # [1] https://jira.coreos.com/browse/CNV-1804
-    # [2] https://jira.coreos.com/browse/CNV-2455
-    pod.execute(
-        [
-            "ip",
-            "link",
-            "set",
-            "dev",
-            bridge_name,
-            "type",
-            "bridge",
-            "vlan_filtering",
-            str(int(enable)),
-        ]
-    )
-
-
 def _set_iface_mtu(pod, port, mtu):
     pod.execute(command=["ip", "link", "set", port, "mtu", mtu])
 
 
 class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
-        self,
-        name,
-        worker_pods,
-        bridge_name,
-        ports=None,
-        mtu=None,
-        node_selector=None,
-        vlan_filtering=True,
+        self, name, worker_pods, bridge_name, ports=None, mtu=None, node_selector=None
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -444,7 +417,6 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.bridge = None
         self.node_selector = node_selector
         self.mtu_dict = {}
-        self.vlan_filtering = vlan_filtering
 
     def _to_dict(self):
         bridge_ports = []
@@ -483,9 +455,6 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         try:
             self.validate_create()
             for pod in self._worker_pods:
-                # TODO: remove this once https://github.com/nmstate/kubernetes-nmstate/pull/172
-                # TODO: available downstream
-                _set_vlan_filtering(pod, self.bridge_name, enable=self.vlan_filtering)
                 if self.mtu:
                     for port in self.ports:
                         _set_iface_mtu(pod, port, self.mtu)

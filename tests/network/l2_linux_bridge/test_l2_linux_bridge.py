@@ -36,6 +36,10 @@ class TestL2LinuxBridge:
                         py_config["bare_metal_cluster"],
                         reason="Missing VLAN config on the switch [Ticket PNT0584216]",
                     ),
+                    pytest.mark.bugzilla(
+                        1754283,
+                        skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    ),
                 ),
             ),
             pytest.param(

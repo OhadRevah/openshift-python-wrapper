@@ -200,7 +200,6 @@ def bridge_device(network_utility_pods, multi_nics_nodes, nodes_active_nics):
         bridge_name=BRIDGE_BR1,
         worker_pods=network_utility_pods,
         ports=ports,
-        vlan_filtering=False,
     ) as br:
         if not multi_nics_nodes:
             with VXLANTunnel(
