@@ -315,7 +315,9 @@ class Resource(object):
                             return
 
                         if current_status == stop_status:
-                            raise TimeoutExpiredError
+                            raise TimeoutExpiredError(
+                                f"Status of {self.kind} {self.name} is {current_status}"
+                            )
 
         except TimeoutExpiredError:
             if current_status:
