@@ -12,6 +12,7 @@ from tests.utils import (
     VXLANTunnel,
     create_ns,
     get_template_by_labels,
+    wait_for_vm_interfaces,
 )
 
 
@@ -113,4 +114,6 @@ def vm_for_upgrade(
                 set_cloud_init=False,
             ) as vm:
                 vm.start(wait=True)
+                vm.vmi.wait_until_running()
+                wait_for_vm_interfaces(vmi=vm.vmi, timeout=1100)
                 yield vm
