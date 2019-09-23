@@ -26,7 +26,8 @@ PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 RAW_IMAGE = "cirros-0.4.0-x86_64-disk.raw"
 RAW_COMPRESSED_IMAGE = "cirros-0.4.0-x86_64-disk.raw.gz"
 QCOW2_IMG = "cirros-0.4.0-x86_64-disk.qcow2"
-
+QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
+QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
 
 pytestmark = pytest.mark.skipif(
     py_config["distribution"] == "upstream",
@@ -69,15 +70,41 @@ def test_no_scratch_space_import_https_data_volume(
         )
 
 
-@pytest.mark.polarion("CNV-2323")
-def test_scratch_space_import_https_data_volume(storage_ns, images_https_server):
-    url = get_file_url_https_server(images_https_server, QCOW2_IMG)
+@pytest.mark.parametrize(
+    ("dv_name", "file_name"),
+    [
+        pytest.param(
+            "scratch-space-import-qcow2-https",
+            QCOW2_IMG,
+            marks=(pytest.mark.polarion("CNV-2323")),
+        ),
+        pytest.param(
+            "scratch-space-import-qcow2gz-https",
+            QCOW2_IMG_GZ,
+            marks=(pytest.mark.polarion("CNV-2323")),
+        ),
+        pytest.param(
+            "scratch-space-import-qcow2xz-https",
+            QCOW2_IMG_XZ,
+            marks=(pytest.mark.polarion("CNV-2323")),
+        ),
+    ],
+    ids=[
+        "scratch-space-import-qcow2-https",
+        "scratch-space-import-qcow2gz-https",
+        "scratch-space-import-qcow2xz-https",
+    ],
+)
+def test_scratch_space_import_https_data_volume(
+    storage_ns, images_https_server, dv_name, file_name
+):
+    url = get_file_url_https_server(images_https_server, file_name)
     with ConfigMap(
         name="https-cert-configmap", namespace=storage_ns.name, data=get_cert("https")
     ) as configmap:
         create_dv_and_vm(
             server_type="https",
-            dv_name="scratch-space-import-https",
+            dv_name=dv_name,
             namespace=storage_ns.name,
             url=url,
             configmap=configmap.name,
