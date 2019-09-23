@@ -24,7 +24,8 @@ LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images/cirros_images/"
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 RAW_IMAGE = "cirros-0.4.0-x86_64-disk.raw"
-RAW_COMPRESSED_IMAGE = "cirros-0.4.0-x86_64-disk.raw.gz"
+RAW_GZ_IMAGE = "cirros-0.4.0-x86_64-disk.raw.gz"
+RAW_XZ_IMAGE = "cirros-0.4.0-x86_64-disk.raw.xz"
 QCOW2_IMG = "cirros-0.4.0-x86_64-disk.qcow2"
 QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
 QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
@@ -46,8 +47,15 @@ pytestmark = pytest.mark.skipif(
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
-            "no-scratch-space-import-raw-compressed-https",
-            RAW_COMPRESSED_IMAGE,
+            "no-scratch-space-import-raw-gz-https",
+            RAW_GZ_IMAGE,
+            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            "5Gi",
+            marks=(pytest.mark.polarion("CNV-2321")),
+        ),
+        pytest.param(
+            "no-scratch-space-import-raw-xz-https",
+            RAW_XZ_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
@@ -55,7 +63,8 @@ pytestmark = pytest.mark.skipif(
     ],
     ids=[
         "no-scratch-space-import-raw-https",
-        "no-scratch-space-import-raw-compressed-https",
+        "no-scratch-space-import-raw-gz-https",
+        "no-scratch-space-import-raw-xz-https",
     ],
 )
 def test_no_scratch_space_import_https_data_volume(
@@ -124,8 +133,15 @@ def test_scratch_space_import_https_data_volume(
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
-            "no-scratch-space-import-raw-compressed-http-basic-auth",
-            RAW_COMPRESSED_IMAGE,
+            "no-scratch-space-import-raw-gz-http-basic-auth",
+            RAW_GZ_IMAGE,
+            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            "5Gi",
+            marks=(pytest.mark.polarion("CNV-2321")),
+        ),
+        pytest.param(
+            "no-scratch-space-import-raw-xz-http-basic-auth",
+            RAW_XZ_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
@@ -133,7 +149,8 @@ def test_scratch_space_import_https_data_volume(
     ],
     ids=[
         "no-scratch-space-import-raw-http-auth",
-        "no-scratch-space-import-raw-compressed-http-auth",
+        "no-scratch-space-import-raw-gz-http-auth",
+        "no-scratch-space-import-raw-xz-http-auth",
     ],
 )
 def test_no_scratch_space_import_http_basic_auth(
@@ -162,8 +179,15 @@ def test_no_scratch_space_import_http_basic_auth(
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
-            "no-scratch-space-import-raw-compressed-http",
-            RAW_COMPRESSED_IMAGE,
+            "no-scratch-space-import-raw-gz-http",
+            RAW_GZ_IMAGE,
+            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            "5Gi",
+            marks=(pytest.mark.polarion("CNV-2321")),
+        ),
+        pytest.param(
+            "no-scratch-space-import-raw-xz-http",
+            RAW_XZ_IMAGE,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
@@ -171,7 +195,8 @@ def test_no_scratch_space_import_http_basic_auth(
     ],
     ids=[
         "no-scratch-space-import-raw-http",
-        "no-scratch-space-import-raw-compressed-http",
+        "no-scratch-space-import-raw-gz-http",
+        "no-scratch-space-import-raw-xz-http",
     ],
 )
 def test_no_scratch_space_import_http(
