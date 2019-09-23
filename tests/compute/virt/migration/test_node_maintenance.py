@@ -18,7 +18,7 @@ from utilities import console
 
 
 @contextmanager
-def running_sleep_in_guest(vm):
+def running_sleep_in_fedora(vm):
     process = "sleep 1000"
     with console.Fedora(vm) as vm_console:
         vm_console.sendline(f"nohup {process} &")
@@ -72,17 +72,19 @@ def check_draining_process(default_client, source_pod, vm):
 
 
 @pytest.mark.polarion("CNV-2286")
-def test_node_maintenance(
+def test_node_maintenance_fedora(
     skip_when_other_vmi_present, skip_when_one_node, vm0, default_client
 ):
     source_pod = vm0.vmi.virt_launcher_pod
     source_node = source_pod.node
 
-    with running_sleep_in_guest(vm0):
-        with NodeMaintenance(name="node-maintenance-job", node=source_node):
+    with running_sleep_in_fedora(vm0):
+        with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
+            nm.wait_for_status(status="Running")
             check_draining_process(
                 default_client=default_client, source_pod=source_pod, vm=vm0
             )
+            nm.wait_for_status(status="Succeeded")
         virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
 
 
@@ -93,7 +95,7 @@ def test_node_drain_console(
     source_pod = vm0.vmi.virt_launcher_pod
     source_node = source_pod.node
 
-    with running_sleep_in_guest(vm0):
+    with running_sleep_in_fedora(vm0):
         with drain_node_console(node=source_node):
             check_draining_process(
                 default_client=default_client, source_pod=source_pod, vm=vm0
