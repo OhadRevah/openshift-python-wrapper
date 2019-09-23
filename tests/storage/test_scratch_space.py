@@ -214,7 +214,9 @@ def test_scratch_space_import_registry_data_volume(
 def get_cert(server_type):
     path = ""
     if server_type == "registry":
-        path = os.path.join("tests/storage/cdi_import", "tlsregistry.crt")
+        path = os.path.join(
+            "tests/storage/cdi_import", py_config[py_config["region"]]["registry_cert"]
+        )
     elif server_type == "https":
         path = os.path.join(
             "tests/storage/cdi_import", py_config[py_config["region"]]["https_cert"]
