@@ -70,7 +70,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
             pod.wait_for_status(status="Running")
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -98,7 +98,7 @@ def test_successful_import_image(storage_ns, images_internal_http_server, file_n
         pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
             pod.wait_for_status(status="Running")
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
@@ -122,7 +122,7 @@ def test_successful_import_secure_archive(
         pvc = PersistentVolumeClaim(name="import-https-dv", namespace=storage_ns.name)
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
             pod.wait_for_status(status="Running")
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -146,7 +146,7 @@ def test_successful_import_secure_image(
         pvc = PersistentVolumeClaim(name="import-https-dv", namespace=storage_ns.name)
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=pvc.name + "-pod", pvc_name=pvc.name
+            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
             pod.wait_for_status(status="Running")
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
