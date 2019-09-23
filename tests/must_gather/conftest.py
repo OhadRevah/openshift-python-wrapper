@@ -36,7 +36,8 @@ def cnv_must_gather(tmpdir_factory, cnv_containers):
         must_gather_cmd = f"oc adm must-gather --image={image} --dest-dir={path}"
         LOGGER.info(f"Running: {must_gather_cmd}")
         check_output(must_gather_cmd, shell=True)
-        yield path
+        must_gather_log_dir = os.path.join(path, os.listdir(path)[0])
+        yield must_gather_log_dir
     finally:
         shutil.rmtree(path)
 
