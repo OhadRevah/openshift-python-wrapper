@@ -62,9 +62,6 @@ def cpu_flag_vm_negative(request, default_client, cpu_features_namespace):
         yield vm
 
 
-@pytest.mark.bugzilla(
-    1751217, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
-)
 @pytest.mark.polarion("CNV-1269")
 def test_vm_with_cpu_flag_positive_case(cpu_flag_vm_positive):
     """
@@ -80,9 +77,6 @@ def test_vm_with_cpu_flag_positive_case(cpu_flag_vm_positive):
         vm_console.expect("1", timeout=20)
 
 
-@pytest.mark.bugzilla(
-    1751217, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
-)
 def test_vm_with_cpu_flag_negative(cpu_flag_vm_negative):
     """
     Negative test:
