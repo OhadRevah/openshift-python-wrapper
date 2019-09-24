@@ -7,11 +7,41 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
 from tests.storage import utils
+from utilities import console
 
 
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
+
+
+@pytest.mark.polarion("CNV-2042")
+def test_public_registry_multiple_data_volume(storage_ns):
+    for dv in ("dv1", "dv2", "dv3"):
+        rdv = ImportFromRegistryDataVolume(
+            name=f"import-registry-dockerhub-{dv}",
+            namespace=storage_ns.name,
+            url=DOCKERHUB_IMAGE,
+            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            size="5Gi",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+        )
+        rdv.create()
+        rdv.wait_for_status(status="Succeeded", timeout=300)
+
+    for vm in ("1", "2", "3"):
+        rvm = utils.VirtualMachineWithDV(
+            name=f"import-registry-dockerhub-dv{vm}",
+            namespace=storage_ns.name,
+            dv_name=f"import-registry-dockerhub-dv{vm}",
+            cloud_init_data=utils.CLOUD_INIT_USER_DATA,
+        )
+        rvm.create()
+        rvm.start(wait=True)
+        rvm.vmi.wait_until_running()
+        with console.Cirros(vm=rvm) as vm_console:
+            vm_console.sendline("lsblk | grep disk | wc -l")
+            vm_console.expect("2", timeout=60)
 
 
 @pytest.mark.skipif(
