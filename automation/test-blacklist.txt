@@ -70,6 +70,10 @@ tests/network/migration/test_migration.py::test_migration_with_masquerade
 tests/network/network_policy/test_network_policy.py::test_network_policy_deny_all_http
 tests/network/network_policy/test_network_policy.py::test_network_policy_allow_all_http
 tests/network/network_policy/test_network_policy.py::test_network_policy_allow_http80
+tests/network/nmstate/test_nmstate.py::test_ping_between_vms_through_brext
+tests/network/nmstate/test_nmstate.py::test_ping_remote_ip_through_brext
+tests/network/nmstate/test_nmstate.py::test_ping_between_vms_through_main_interface
+tests/network/nmstate/test_nmstate.py::test_ping_remote_ip_through_main_interface
 tests/storage/cdi_config_test.py::test_cdi_config_exists
 tests/storage/cdi_config_test.py::test_different_route_for_upload_proxy
 tests/storage/cdi_config_test.py::test_route_for_different_service
