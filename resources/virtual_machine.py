@@ -104,17 +104,29 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         return res
 
     def start(self, timeout=TIMEOUT, wait=False):
-        self.client.client.request("PUT", f"{self._subresource_api_url}/start")
+        self.client.client.request(
+            "PUT",
+            f"{self._subresource_api_url}/start",
+            headers=self.client.configuration.api_key,
+        )
         if wait:
             return self.wait_for_status(timeout=timeout, status=True)
 
     def restart(self, timeout=TIMEOUT, wait=False):
-        self.client.client.request("PUT", f"{self._subresource_api_url}/restart")
+        self.client.client.request(
+            "PUT",
+            f"{self._subresource_api_url}/restart",
+            headers=self.client.configuration.api_key,
+        )
         if wait:
             return self.wait_for_status(timeout=timeout, status=True)
 
     def stop(self, timeout=TIMEOUT, wait=False):
-        self.client.client.request("PUT", f"{self._subresource_api_url}/stop")
+        self.client.client.request(
+            "PUT",
+            f"{self._subresource_api_url}/stop",
+            headers=self.client.configuration.api_key,
+        )
         if wait:
             return self.wait_for_status(timeout=timeout, status=False)
 
