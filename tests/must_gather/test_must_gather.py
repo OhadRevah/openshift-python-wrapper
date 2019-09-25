@@ -74,46 +74,59 @@ def test_namespace(cnv_must_gather, namespace):
 
 
 @pytest.mark.parametrize(
-    "label_selector",
+    "label_selector, resource_namespace",
     [
         pytest.param(
             "app=bridge-marker",
+            HCO_NS,
             marks=(pytest.mark.polarion("CNV-2721")),
             id="test_bridge_marker_pods",
         ),
         pytest.param(
             "name=kube-cni-linux-bridge-plugin",
+            HCO_NS,
             marks=(pytest.mark.polarion("CNV-2705")),
             id="test_kube_cni_pods",
         ),
         pytest.param(
             "kubemacpool-leader=true",
+            HCO_NS,
             marks=(pytest.mark.polarion("CNV-2983")),
             id="kubemacpool-mac-controller-manager_pods",
         ),
         pytest.param(
             "name=nmstate-handler",
+            HCO_NS,
             marks=(pytest.mark.polarion("CNV-2984")),
             id="nmstate-handler_pods",
         ),
         pytest.param(
             "name=cluster-network-addons-operator",
+            HCO_NS,
             marks=(pytest.mark.polarion("CNV-2985")),
             id="cluster-network-addons-operator_pods",
         ),
         pytest.param(
-            "app=ovs-cni", marks=(pytest.mark.polarion("CNV-2986")), id="ovs-cni_pods"
+            "app=ovs-cni",
+            HCO_NS,
+            marks=(pytest.mark.polarion("CNV-2986")),
+            id="ovs-cni_pods",
+        ),
+        pytest.param(
+            "app=sriov-device-plugin",
+            "sriov-network-operator",
+            marks=(pytest.mark.polarion("CNV-2710")),
         ),
     ],
 )
-def test_pods(cnv_must_gather, default_client, label_selector):
+def test_pods(cnv_must_gather, default_client, label_selector, resource_namespace):
     utils.check_list_of_resources(
         default_client=default_client,
         resource_type=Pod,
         temp_dir=cnv_must_gather,
         resource_path="namespaces/{namespace}/pods/{name}/{name}.yaml",
         checks=(("metadata", "uid"), ("metadata", "name")),
-        namespace=HCO_NS,
+        namespace=resource_namespace,
         label_selector=label_selector,
     )
 
