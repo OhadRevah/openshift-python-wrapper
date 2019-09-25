@@ -117,6 +117,11 @@ def test_namespace(cnv_must_gather, namespace):
             "sriov-network-operator",
             marks=(pytest.mark.polarion("CNV-2710")),
         ),
+        pytest.param(
+            "app=sriov-cni",
+            "sriov-network-operator",
+            marks=(pytest.mark.polarion("CNV-2709")),
+        ),
     ],
 )
 def test_pods(cnv_must_gather, default_client, label_selector, resource_namespace):
