@@ -147,6 +147,11 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
             "dev_vfio",
             marks=(pytest.mark.polarion("CNV-2807")),
         ),
+        pytest.param(
+            ["cat", "/host/etc/pcidp/config.json"],
+            "pcidp_config.json",
+            marks=(pytest.mark.polarion("CNV-2807")),
+        ),
     ],
 )
 @pytest.mark.polarion("CNV-2720")
