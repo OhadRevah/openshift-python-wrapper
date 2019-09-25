@@ -216,3 +216,27 @@ def test_nmstate_config_data(cnv_must_gather, default_client):
 )
 def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector):
     utils.check_logs(cnv_must_gather, running_hco_containers, label_selector)
+
+
+@pytest.mark.parametrize(
+    "label_selector",
+    [
+        pytest.param(
+            {"app": "sriov-device-plugin"},
+            marks=(pytest.mark.polarion("CNV-2710")),
+            id="test_sriov_device_plugin_logs",
+        )
+    ],
+)
+def test_sriov_logs_gathering(
+    cnv_must_gather,
+    running_sriov_network_operator_containers,
+    label_selector,
+    skip_when_no_sriov,
+):
+    utils.check_logs(
+        cnv_must_gather,
+        running_sriov_network_operator_containers,
+        label_selector,
+        utils.SRIOV_NETWORK_OPERATOR_NAMESPACE,
+    )

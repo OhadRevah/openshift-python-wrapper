@@ -169,3 +169,16 @@ def resource_type(request, default_client):
     if not next(resource_type.get(default_client), None):
         raise MissingResourceException(resource_type.__name__)
     return resource_type
+
+
+@pytest.fixture(scope="module")
+def running_sriov_network_operator_containers(default_client):
+    pods_and_containers = []
+    for pod in Pod.get(
+        default_client, namespace=mg_utils.SRIOV_NETWORK_OPERATOR_NAMESPACE
+    ):
+        for container in pod.instance["status"].get("containerStatuses", []):
+            if container["ready"]:
+                pods_and_containers.append((pod, container))
+    assert pods_and_containers, "No sriov pods were found."
+    return pods_and_containers

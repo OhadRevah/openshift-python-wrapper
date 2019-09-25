@@ -9,6 +9,7 @@ from pytest_testconfig import config as py_config
 
 
 DEFAULT_NAMESPACE = "default"
+SRIOV_NETWORK_OPERATOR_NAMESPACE = "sriov-network-operator"
 HCO_NS = py_config["hco_namespace"]
 
 
@@ -91,24 +92,34 @@ def check_node_resource(temp_dir, cmd, node_gather_pods, results_file):
             assert file_content == cmd_output
 
 
-def _pod_logfile_path(pod_name, container_name, previous, cnv_must_gather_path):
+def _pod_logfile_path(
+    pod_name, container_name, previous, cnv_must_gather_path, namespace
+):
     log = "previous" if previous else "current"
     return (
-        f"{cnv_must_gather_path}/namespaces/{HCO_NS}/pods/{pod_name}/"
+        f"{cnv_must_gather_path}/namespaces/{namespace}/pods/{pod_name}/"
         f"{container_name}/{container_name}/logs/{log}.log"
     )
 
 
-def pod_logfile(pod_name, container_name, previous, cnv_must_gather_path):
+def pod_logfile(
+    pod_name, container_name, previous, cnv_must_gather_path, namespace=HCO_NS
+):
     with open(
-        _pod_logfile_path(pod_name, container_name, previous, cnv_must_gather_path)
+        _pod_logfile_path(
+            pod_name, container_name, previous, cnv_must_gather_path, namespace
+        )
     ) as log_file:
         return log_file.read()
 
 
-def pod_logfile_size(pod_name, container_name, previous, cnv_must_gather_path):
+def pod_logfile_size(
+    pod_name, container_name, previous, cnv_must_gather_path, namespace=HCO_NS
+):
     return os.path.getsize(
-        _pod_logfile_path(pod_name, container_name, previous, cnv_must_gather_path)
+        _pod_logfile_path(
+            pod_name, container_name, previous, cnv_must_gather_path, namespace
+        )
     )
 
 
@@ -119,12 +130,14 @@ def filter_pods(running_hco_containers, labels):
                 yield pod, container
 
 
-def check_logs(cnv_must_gather, running_hco_containers, label_selector):
+def check_logs(
+    cnv_must_gather, running_hco_containers, label_selector, namespace=HCO_NS
+):
     for pod, container in filter_pods(running_hco_containers, label_selector):
         container_name = container["name"]
         for is_previous in (True, False):
             log_size = pod_logfile_size(
-                pod.name, container_name, is_previous, cnv_must_gather
+                pod.name, container_name, is_previous, cnv_must_gather, namespace
             )
             # Skip comparison of empty/large files. Large files could be ratated, and hence not equal.
             if log_size > 10000 or log_size == 0:
@@ -133,7 +146,7 @@ def check_logs(cnv_must_gather, running_hco_containers, label_selector):
                 previous=is_previous, container=container_name, timestamps=True
             )
             log_file = pod_logfile(
-                pod.name, container_name, is_previous, cnv_must_gather
+                pod.name, container_name, is_previous, cnv_must_gather, namespace
             )
             assert (
                 log_file in pod_log
