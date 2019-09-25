@@ -141,7 +141,12 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
             "bridge",
             marks=(pytest.mark.polarion("CNV-2720")),
             id="test_bridge_marker_pods",
-        )
+        ),
+        pytest.param(
+            ["ls", "-al", "/host/dev/vfio"],
+            "dev_vfio",
+            marks=(pytest.mark.polarion("CNV-2807")),
+        ),
     ],
 )
 @pytest.mark.polarion("CNV-2720")
