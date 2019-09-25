@@ -6,6 +6,7 @@ from time import sleep, time
 
 import pytest
 from openshift.dynamic.exceptions import InternalServerError
+from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.deployment import Deployment
 from resources.namespace import Namespace
@@ -25,7 +26,6 @@ BRIDGE_BR1 = "br1test"
 KUBEMACPOOL_CONFIG_MAP_NAME = "kubemacpool-mac-range-config"
 IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
 CREATE_VM_TIMEOUT = 50
-KUBEMACPOOL_NAMESPACE = "openshift-cnv"
 
 
 def restart_kubemacpool(default_client):
@@ -35,7 +35,7 @@ def restart_kubemacpool(default_client):
         pod.delete(wait=True)
 
     kubemac_pool_deployment = Deployment(
-        name="kubemacpool-mac-controller-manager", namespace=KUBEMACPOOL_NAMESPACE
+        name="kubemacpool-mac-controller-manager", namespace=py_config["hco_namespace"]
     )
     kubemac_pool_deployment.wait_until_avail_replicas()
 
@@ -148,7 +148,7 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
 
 @pytest.fixture(scope="module", autouse=True)
 def kubemacpool_namespace():
-    return Namespace(name=KUBEMACPOOL_NAMESPACE)
+    return Namespace(name=py_config["hco_namespace"])
 
 
 @pytest.fixture(scope="module", autouse=True)
