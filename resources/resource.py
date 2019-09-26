@@ -29,6 +29,14 @@ def _find_supported_resource(dyn_client, api_group, kind):
             return result
 
 
+def _get_api_version(dyn_client, api_group, kind):
+    res = _find_supported_resource(dyn_client, api_group, kind)
+    if not res:
+        LOGGER.error(f"Couldn't find {kind} in {api_group} api group")
+        raise
+    return res.group_version
+
+
 class KubeAPIVersion(Version):
     """
     Implement the Kubernetes API versioning scheme from
@@ -143,11 +151,14 @@ class Resource(object):
                 )
                 raise
         if not self.api_version:
-            res = _find_supported_resource(self.client, self.api_group, self.kind)
-            if not res:
-                LOGGER.error(f"Couldn't find {self.kind} in {self.api_group} api group")
-                raise
-            self.api_version = res.group_version
+            self._get_api_version()
+
+    def _get_api_version(self):
+        res = _find_supported_resource(self.client, self.api_group, self.kind)
+        if not res:
+            LOGGER.error(f"Couldn't find {self.kind} in {self.api_group} api group")
+            raise
+        self.api_version = _get_api_version(self.client, self.api_group, self.kind)
 
     @classproperty
     def kind(cls):  # noqa: N805
@@ -469,13 +480,9 @@ class Resource(object):
             generator: Generator of Resources of cls.kind
         """
         if not cls.api_version:
-            res = _find_supported_resource(dyn_client, cls.api_group, cls.kind)
-            if not res:
-                LOGGER.error(f"Couldn't find {cls.kind} in {cls.api_group} api group")
-                raise
-            cls.api_version = res.group_version
+            cls.api_version = _get_api_version(dyn_client, cls.api_group, cls.kind)
 
-        get_kwargs = {"singular_name": "singular_name"} if singular_name else {}
+        get_kwargs = {"singular_name": singular_name} if singular_name else {}
         for resource_field in (
             dyn_client.resources.get(
                 kind=cls.kind, api_version=cls.api_version, **get_kwargs
@@ -528,6 +535,9 @@ class NamespacedResource(Resource):
         Returns:
             generator: Generator of Resources of cls.kind
         """
+        if not cls.api_version:
+            cls.api_version = _get_api_version(dyn_client, cls.api_group, cls.kind)
+
         get_kwargs = {"singular_name": singular_name} if singular_name else {}
         for resource_field in (
             dyn_client.resources.get(
