@@ -31,7 +31,7 @@ HCO_NS = py_config["hco_namespace"]
             "cluster-scoped-resources/networkaddonsoperator.network"
             ".kubevirt.io/networkaddonsconfigs/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
-            marks=(pytest.mark.polarion("CNV-2707")),
+            marks=(pytest.mark.polarion("CNV-3042")),
         ),
         pytest.param(
             NetworkAttachmentDefinition,
@@ -44,7 +44,7 @@ HCO_NS = py_config["hco_namespace"]
             VirtualMachine,
             "namespaces/{namespace}/kubevirt.io/virtualmachines/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
-            marks=(pytest.mark.polarion("CNV-2720")),
+            marks=(pytest.mark.polarion("CNV-3043")),
         ),
     ],
 )
@@ -157,22 +157,20 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
         pytest.param(
             ["ip", "-o", "link", "show", "type", "bridge"],
             "bridge",
-            marks=(pytest.mark.polarion("CNV-2720")),
-            id="test_bridge_marker_pods",
+            marks=(pytest.mark.polarion("CNV-2730")),
         ),
         pytest.param(
             ["ls", "-al", "/host/dev/vfio"],
             "dev_vfio",
-            marks=(pytest.mark.polarion("CNV-2807")),
+            marks=(pytest.mark.polarion("CNV-3045")),
         ),
         pytest.param(
             ["cat", "/host/etc/pcidp/config.json"],
             "pcidp_config.json",
-            marks=(pytest.mark.polarion("CNV-2807")),
+            marks=(pytest.mark.polarion("CNV-3046")),
         ),
     ],
 )
-@pytest.mark.polarion("CNV-2720")
 def test_node_resource(cnv_must_gather, node_gather_pods, command, results_file):
     utils.check_node_resource(
         temp_dir=cnv_must_gather,
