@@ -35,9 +35,7 @@ def test_successful_virtctl_upload_no_url(storage_ns, tmpdir):
 
 
 @pytest.mark.polarion("CNV-2191")
-def test_successful_virtctl_upload_no_route(
-    storage_ns, tmpdir, uploadproxy_route_deleted
-):
+def test_successful_virtctl_upload_no_route(storage_ns, tmpdir):
     local_name = f"{tmpdir}/{QCOW2_IMG}"
     storage_utils.downloaded_image(
         remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
