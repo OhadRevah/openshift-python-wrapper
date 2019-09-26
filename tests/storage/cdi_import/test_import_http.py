@@ -26,6 +26,30 @@ def get_file_url(url, file_name):
     return f"{url}{file_name}"
 
 
+@pytest.mark.polarion("CNV-675")
+def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_server):
+    url = get_file_url(images_internal_http_server["http"], QCOW_IMG)
+    with ImportFromHttpDataVolume(
+        name="import-http-dv",
+        namespace=storage_ns.name,
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        url=url,
+        size="500Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+    ) as dv:
+        dv.wait_for_status(status="Succeeded")
+        pvc = dv.pvc
+        pvc.delete()
+        pvc.wait_for_status(status="Bound")
+        dv.wait_for_status(status="ImportScheduled")
+        dv.wait_for_status(status="Succeeded")
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+            assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
+
+
 @pytest.mark.polarion("CNV-876")
 def test_invalid_url(storage_ns):
     # negative flow - invalid url
