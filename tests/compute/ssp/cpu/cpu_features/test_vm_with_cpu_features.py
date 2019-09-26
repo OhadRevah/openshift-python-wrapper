@@ -123,9 +123,6 @@ def nodes_with_no_pciid_label(default_client):
             node.update(to_restore)
 
 
-@pytest.mark.bugzilla(
-    1751217, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
-)
 def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
     """
     Test VM with cpu flag, test the VM started and enter the console
