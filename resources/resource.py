@@ -512,6 +512,40 @@ class Resource(object):
         """
         return self.instance["metadata"]["labels"]
 
+    def wait_for_condition(self, condition, status, timeout=300):
+        """
+        Wait for Pod condition to be in desire status.
+
+        Args:
+            condition (str): Condition to query.
+            status (str): Expected condition status.
+            timeout (int): Time to wait for the resource.
+
+        Raises:
+            TimeoutExpiredError: If Pod condition in not in desire status.
+        """
+        LOGGER.info(f"Wait for {self.kind} {self.name} condition to be {condition}")
+        samples = utils.TimeoutSampler(
+            timeout=timeout,
+            sleep=1,
+            exceptions=ProtocolError,
+            func=self.api().get,
+            field_selector=f"metadata.name=={self.name}",
+            namespace=self.namespace,
+        )
+        current_status = None
+        try:
+            for sample in samples:
+                sample_conditions = sample.items[0].status.conditions
+                for cond in sample_conditions:
+                    if cond.type == condition:
+                        return cond.status == status
+
+        except TimeoutExpiredError:
+            if current_status:
+                LOGGER.error(f"Status of {self.kind} {self.name} is {current_status}")
+            raise
+
 
 class NamespacedResource(Resource):
     """
