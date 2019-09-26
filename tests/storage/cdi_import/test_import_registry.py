@@ -15,6 +15,22 @@ QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 
 
+@pytest.mark.polarion("CNV-2198")
+def test_disk_image_not_conform_to_registy_disk(storage_ns):
+    with ImportFromRegistryDataVolume(
+        name="image-registry-not-conform-registrydisk",
+        namespace=storage_ns.name,
+        url="docker://docker.io/cirros",
+        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+        size="5Gi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        cert_configmap=None,
+    ) as dv:
+        dv.wait_for_status(
+            status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
+        )
+
+
 @pytest.mark.polarion("CNV-2042")
 def test_public_registry_multiple_data_volume(storage_ns):
     for dv in ("dv1", "dv2", "dv3"):
