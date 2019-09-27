@@ -37,7 +37,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
                 ],
             },
             marks=(
-                pytest.mark.polarion("CNV-2652"),
+                pytest.mark.polarion("CNV-2776"),
                 pytest.mark.bugzilla(
                     1663162,
                     skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
@@ -56,7 +56,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
                 ],
             },
             marks=(
-                pytest.mark.polarion("CNV-2776"),
+                pytest.mark.polarion("CNV-2652"),
                 pytest.mark.bugzilla(
                     1663162,
                     skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
