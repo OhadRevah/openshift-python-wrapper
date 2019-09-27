@@ -25,6 +25,7 @@ HCO_NS = py_config["hco_namespace"]
             "cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-2707")),
+            id="test_nodenetworkstate_resources",
         ),
         pytest.param(
             NetworkAddonsConfig,
@@ -32,6 +33,7 @@ HCO_NS = py_config["hco_namespace"]
             ".kubevirt.io/networkaddonsconfigs/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-3042")),
+            id="test_networkaddonsoperator_resources",
         ),
         pytest.param(
             NetworkAttachmentDefinition,
@@ -39,12 +41,14 @@ HCO_NS = py_config["hco_namespace"]
             "network-attachment-definitions/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-2720")),
+            id="test_network_attachment_definitions_resources",
         ),
         pytest.param(
             VirtualMachine,
             "namespaces/{namespace}/kubevirt.io/virtualmachines/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-3043")),
+            id="test_virtualmachine_resources",
         ),
     ],
 )
@@ -61,7 +65,12 @@ def test_resource(
 
 
 @pytest.mark.parametrize(
-    "namespace", [pytest.param(HCO_NS, marks=(pytest.mark.polarion("CNV-2982")))]
+    "namespace",
+    [
+        pytest.param(
+            HCO_NS, marks=(pytest.mark.polarion("CNV-2982")), id="test_hco_namespace"
+        )
+    ],
 )
 def test_namespace(cnv_must_gather, namespace):
     utils.check_resource(
@@ -116,11 +125,13 @@ def test_namespace(cnv_must_gather, namespace):
             "app=sriov-device-plugin",
             "sriov-network-operator",
             marks=(pytest.mark.polarion("CNV-2710")),
+            id="test_sriov_device_plugin_pods",
         ),
         pytest.param(
             "app=sriov-cni",
             "sriov-network-operator",
             marks=(pytest.mark.polarion("CNV-2709")),
+            id="test_sriov_cni_pods",
         ),
     ],
 )
@@ -158,16 +169,19 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
             ["ip", "-o", "link", "show", "type", "bridge"],
             "bridge",
             marks=(pytest.mark.polarion("CNV-2730")),
+            id="test_bridges_on_node",
         ),
         pytest.param(
             ["ls", "-al", "/host/dev/vfio"],
             "dev_vfio",
             marks=(pytest.mark.polarion("CNV-3045")),
+            id="test_dev_vfio_on_node",
         ),
         pytest.param(
             ["cat", "/host/etc/pcidp/config.json"],
             "pcidp_config.json",
             marks=(pytest.mark.polarion("CNV-3046")),
+            id="test_pcidp_config_on_node",
         ),
     ],
 )
