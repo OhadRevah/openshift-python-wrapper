@@ -43,17 +43,13 @@ def cnv_must_gather(tmpdir_factory, cnv_containers):
 
 
 @pytest.fixture(scope="module")
-def node_gather_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="node-gather")
+def node_gather_namespace(default_client):
+    yield from create_ns(client=default_client, name="node-gather")
 
 
 @pytest.fixture(scope="module")
-def node_gather_serviceaccount(unprivileged_client, node_gather_namespace):
-    with ServiceAccount(
-        name="node-gather",
-        namespace=node_gather_namespace.name,
-        client=unprivileged_client,
-    ) as sa:
+def node_gather_serviceaccount(node_gather_namespace):
+    with ServiceAccount(name="node-gather", namespace=node_gather_namespace.name) as sa:
         yield sa
 
 
@@ -69,18 +65,14 @@ class NodeGatherDaemonSet(DaemonSet):
 
 
 @pytest.fixture(scope="module")
-def node_gather_daemonset(
-    unprivileged_client, node_gather_namespace, node_gather_serviceaccount
-):
+def node_gather_daemonset(node_gather_namespace, node_gather_serviceaccount):
     with NodeGatherDaemonSet(
-        name="node-gather-daemonset",
-        namespace=node_gather_namespace.name,
-        client=unprivileged_client,
+        name="node-gather-daemonset", namespace=node_gather_namespace.name
     ) as ds:
         ds.wait_until_deployed()
         yield ds
 
 
 @pytest.fixture(scope="module")
-def node_gather_pods(unprivileged_client, node_gather_daemonset):
-    yield list(Pod.get(unprivileged_client, namespace=node_gather_daemonset.namespace))
+def node_gather_pods(default_client, node_gather_daemonset):
+    yield list(Pod.get(default_client, namespace=node_gather_daemonset.namespace))
