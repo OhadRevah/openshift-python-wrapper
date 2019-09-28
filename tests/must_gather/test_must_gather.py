@@ -47,8 +47,9 @@ from tests.must_gather import utils
             id="test_virtualmachine_resources",
         ),
     ],
+    indirect=["resource_type"],
 )
-def test_resource(
+def test_resource_type(
     cnv_must_gather, default_client, resource_type, resource_path, checks
 ):
     utils.check_list_of_resources(

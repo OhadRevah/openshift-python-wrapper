@@ -161,3 +161,11 @@ def running_vm(node_gather_unprivileged_namespace, unprivileged_client):
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         yield vm
+
+
+@pytest.fixture(scope="function")
+def resource_type(request, default_client):
+    resource_type = request.param
+    if not next(resource_type.get(default_client), None):
+        raise MissingResourceException(resource_type.__name__)
+    return resource_type
