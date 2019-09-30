@@ -12,6 +12,9 @@ from subprocess import check_output
 import pytest
 from pytest_testconfig import config as py_config
 from resources.daemonset import DaemonSet
+from resources.network_attachment_definition import (
+    LinuxBridgeNetworkAttachmentDefinition,
+)
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.utils import create_ns
@@ -22,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def cnv_must_gather(tmpdir_factory, cnv_containers):
+def cnv_must_gather(tmpdir_factory, cnv_containers, network_attachment_definition):
     """
     Run cnv-must-gather for data collection.
     """
@@ -76,3 +79,12 @@ def node_gather_daemonset(node_gather_namespace, node_gather_serviceaccount):
 @pytest.fixture(scope="module")
 def node_gather_pods(default_client, node_gather_daemonset):
     yield list(Pod.get(default_client, namespace=node_gather_daemonset.namespace))
+
+
+@pytest.fixture()
+def network_attachment_definition(namespace):
+    cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
+    with LinuxBridgeNetworkAttachmentDefinition(
+        namespace=namespace.name, name="mgnad", bridge_name="mgbr", cni_type=cni_type
+    ) as network_attachment_definition:
+        yield network_attachment_definition
