@@ -54,6 +54,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                     1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
+            id="test_windows10_hyperv",
         ),
         pytest.param(
             {
@@ -77,6 +78,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                     1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
+            id="test_windows2012R2_hyperv",
         ),
         pytest.param(
             {
@@ -100,6 +102,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                     1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
+            id="test_windows2016_hyperv",
         ),
         pytest.param(
             {
@@ -123,6 +126,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                     1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
+            id="test_windows2019_hyperv",
         ),
     ],
     indirect=True,
@@ -130,6 +134,10 @@ def download_hvinfo(winrmcli_pod_scope_module):
 @pytest.mark.skipif(
     py_config["distribution"] == "upstream",
     reason="Running only on downstream, Reason: http_server is not available for upstream",
+)
+@pytest.mark.skipif(
+    not py_config["bare_metal_cluster"],
+    reason="Running only BM, Reason: windows run slow on nested visualization",
 )
 def test_windows_hyperv(
     namespace,
@@ -139,8 +147,16 @@ def test_windows_hyperv(
     download_hvinfo,
 ):
     """ Windows test: check hyperV """
+    windows_vmi = vm_instance_from_template_scope_function.vmi
+    windows_vmi.wait_until_running()
 
-    vmi_ipaddr = vm_instance_from_template_scope_function.vmi.interfaces[0]["ipAddress"]
+    features = windows_vmi.xml_dict["domain"]["features"]
+    hyperv = features["hyperv"]
+    assert hyperv["relaxed"]["@state"] == "on"
+    assert hyperv["vapic"]["@state"] == "on"
+    assert hyperv["spinlocks"]["@retries"] == "8191"
+
+    vmi_ipaddr = windows_vmi.virt_launcher_pod.instance.status.podIP
     command = [
         "bash",
         "-c",
@@ -148,14 +164,14 @@ def test_windows_hyperv(
         'wmic os get Caption /value'",
     ]
     pod_output_samples = TimeoutSampler(
-        timeout=600, sleep=15, func=winrmcli_pod_scope_module.execute, command=command
+        timeout=1800, sleep=15, func=winrmcli_pod_scope_module.execute, command=command
     )
     LOGGER.info(
         f"Windows VM {vm_instance_from_template_scope_function.name} "
-        f"booting up, will attempt to access it upto 10 mins."
+        f"booting up, will attempt to access it upto 30 mins."
     )
     for pod_output in pod_output_samples:
-        if vm_instance_from_template_scope_function.vm_name.split("-")[-1] in str(
+        if vm_instance_from_template_scope_function.name.split("-")[-1] in str(
             pod_output
         ):
             copy_hvinfo_cmd = [
@@ -166,6 +182,10 @@ def test_windows_hyperv(
                 /hvinfo.exe C:\\hvinfo.exe",
             ]
             winrmcli_pod_scope_module.execute(copy_hvinfo_cmd, timeout=600)
+            LOGGER.info(
+                f"Copied the binary hvinfo.exe into the Windows VM \
+                {vm_instance_from_template_scope_function.name} successfully."
+            )
             run_hvinfo_cmd = [
                 "bash",
                 "-c",
@@ -174,4 +194,8 @@ def test_windows_hyperv(
             ]
             hvinfo = winrmcli_pod_scope_module.execute(run_hvinfo_cmd, timeout=20)
             hvinfo_dict = json.loads(hvinfo)
+
             assert hvinfo_dict["HyperVsupport"]
+            assert hvinfo_dict["Recommendations"]["RelaxedTiming"]
+            assert hvinfo_dict["Recommendations"]["MSRAPICRegisters"]
+            assert hvinfo_dict["Recommendations"]["SpinlockRetries"] == "8191"
