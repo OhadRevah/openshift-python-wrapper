@@ -160,15 +160,19 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
     )
 
 
+@pytest.mark.polarion("CNV-2730")
+def test_node_resource(cnv_must_gather, node_gather_pods):
+    utils.check_node_resource(
+        temp_dir=cnv_must_gather,
+        cmd=["ip", "-o", "link", "show", "type", "bridge"],
+        node_gather_pods=node_gather_pods,
+        results_file="bridge",
+    )
+
+
 @pytest.mark.parametrize(
     "command, results_file",
     [
-        pytest.param(
-            ["ip", "-o", "link", "show", "type", "bridge"],
-            "bridge",
-            marks=(pytest.mark.polarion("CNV-2730")),
-            id="test_bridges_on_node",
-        ),
         pytest.param(
             ["ls", "-al", "/host/dev/vfio"],
             "dev_vfio",
@@ -183,7 +187,9 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
         ),
     ],
 )
-def test_node_resource(cnv_must_gather, node_gather_pods, command, results_file):
+def test_node_sriov_resource(
+    skip_when_no_sriov, cnv_must_gather, node_gather_pods, command, results_file
+):
     utils.check_node_resource(
         temp_dir=cnv_must_gather,
         cmd=command,

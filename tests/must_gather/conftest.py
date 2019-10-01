@@ -11,6 +11,7 @@ from subprocess import check_output
 
 import pytest
 from pytest_testconfig import config as py_config
+from resources.custom_resource_definition import CustomResourceDefinition
 from resources.daemonset import DaemonSet
 from resources.network_attachment_definition import (
     LinuxBridgeNetworkAttachmentDefinition,
@@ -34,6 +35,14 @@ class NodeGatherDaemonSet(DaemonSet):
             )
         )
         return res
+
+
+class MissingResourceException(Exception):
+    def __init__(self, resource):
+        self.resource = resource
+
+    def __str__(self):
+        return f"No resources of type {self.resource} were found. Please check the test environment setup."
 
 
 @pytest.fixture(scope="module")
@@ -122,3 +131,14 @@ def running_hco_containers(default_client):
                 pods.append((pod, container))
     assert pods, f"No running pods in the {mg_utils.HCO_NS} namespace were found."
     return pods
+
+
+@pytest.fixture(scope="module")
+def skip_when_no_sriov(default_client):
+    # TODO: remove once sriov is supported in downstream
+    if py_config["distribution"] == "downstream":
+        pytest.skip(msg="Skipping sriov tests in downstream.")
+    for crd in list(CustomResourceDefinition.get(default_client)):
+        if crd.name == "sriovnetworknodestates.sriovnetwork.openshift.io":
+            return
+    raise MissingResourceException(CustomResourceDefinition)
