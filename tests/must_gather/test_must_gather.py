@@ -122,6 +122,12 @@ def test_namespace(cnv_must_gather, namespace):
             id="ovs-cni_pods",
         ),
         pytest.param(
+            "app=kubemacpool",
+            utils.HCO_NS,
+            marks=(pytest.mark.polarion("CNV-2718")),
+            id="kubemacpool_pods",
+        ),
+        pytest.param(
             "app=sriov-device-plugin",
             "sriov-network-operator",
             marks=(pytest.mark.polarion("CNV-2710")),
