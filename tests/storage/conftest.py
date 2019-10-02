@@ -7,6 +7,7 @@ Pytest conftest file for CNV CDI tests
 import os
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.cdi_config import CDIConfig
 from resources.configmap import ConfigMap
 from resources.deployment import Deployment, HttpDeployment
@@ -115,18 +116,17 @@ def uploadproxy_route_deleted():
     This scales down cdi-operator replicas to 0 so that the route is not auto-created by the cdi-operator pod.
     Once the cdi-operator is terminated, route is deleted to perform the test.
     """
-    deployment = Deployment(name="cdi-operator", namespace="kubevirt-hyperconverged")
+    ns = py_config["hco_namespace"]
+    deployment = Deployment(name="cdi-operator", namespace=ns)
     try:
         deployment.scale_replicas(replica_count=0)
         deployment.wait_until_no_replicas()
-        Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").delete(
-            wait=True
-        )
+        Route(name="cdi-uploadproxy", namespace=ns).delete(wait=True)
         yield
     finally:
         deployment.scale_replicas(replica_count=1)
         deployment.wait_until_avail_replicas()
-        Route(name="cdi-uploadproxy", namespace="kubevirt-hyperconverged").wait()
+        Route(name="cdi-uploadproxy", namespace=ns).wait()
 
 
 @pytest.fixture()
