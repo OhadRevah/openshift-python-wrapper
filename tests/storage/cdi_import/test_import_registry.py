@@ -3,6 +3,7 @@
 import os
 
 import pytest
+from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
@@ -256,16 +257,19 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
 @pytest.mark.bugzilla(1725372, skip_when=lambda bug: bug.status != "VERIFIED")
 @pytest.mark.polarion("CNV-2150")
 def test_public_registry_data_volume_dockerhub_archive(storage_ns):
-    with ImportFromRegistryDataVolume(
-        name="import-registry-archive",
-        namespace=storage_ns.name,
-        url=DOCKERHUB_IMAGE,
-        content_type=ImportFromRegistryDataVolume.ContentType.ARCHIVE,
-        size="5Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
-        cert_configmap=None,
-    ) as dv:
-        assert dv is None
+    with pytest.raises(
+        ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
+    ):
+        with ImportFromRegistryDataVolume(
+            name="import-registry-archive",
+            namespace=storage_ns.name,
+            url=DOCKERHUB_IMAGE,
+            content_type=ImportFromRegistryDataVolume.ContentType.ARCHIVE,
+            size="5Gi",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+            cert_configmap=None,
+        ):
+            return
 
 
 def get_cert():
