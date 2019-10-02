@@ -327,3 +327,28 @@ def test_data_collected_from_virt_launcher(
         f"Expected format:\n{format_regex}\n "
         f"Gathered data:\n{gathered_data}"
     )
+
+
+@pytest.mark.parametrize(
+    "config_map_by_name",
+    [
+        pytest.param(
+            ["kubemacpool-mac-range-config", utils.HCO_NS],
+            marks=(pytest.mark.polarion("CNV-2718")),
+            id="test_config_map_kubemacpool-mac-range-config",
+        )
+    ],
+    indirect=True,
+)
+def test_gathered_config_maps(cnv_must_gather, config_maps_file, config_map_by_name):
+    utils.compare_resource_contents(
+        config_map_by_name,
+        next(
+            filter(
+                lambda resource: resource["metadata"]["name"]
+                == config_map_by_name.name,
+                config_maps_file["items"],
+            )
+        ),
+        (("metadata", "name"), ("metadata", "uid"), ("metadata", "ownerReferences")),
+    )

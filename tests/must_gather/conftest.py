@@ -10,7 +10,9 @@ import shutil
 from subprocess import check_output
 
 import pytest
+import yaml
 from pytest_testconfig import config as py_config
+from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
 from resources.daemonset import DaemonSet
 from resources.network_attachment_definition import (
@@ -181,3 +183,17 @@ def running_sriov_network_operator_containers(default_client):
                 pods_and_containers.append((pod, container))
     assert pods_and_containers, "No sriov pods were found."
     return pods_and_containers
+
+
+@pytest.fixture(scope="function")
+def config_map_by_name(request, default_client):
+    cm_name, cm_namespace = request.param
+    return ConfigMap(name=cm_name, namespace=cm_namespace)
+
+
+@pytest.fixture(scope="module")
+def config_maps_file(cnv_must_gather):
+    with open(
+        f"{cnv_must_gather}/namespaces/{mg_utils.HCO_NS}/core/configmaps.yaml", "r"
+    ) as config_map_file:
+        return yaml.safe_load(config_map_file)
