@@ -86,11 +86,14 @@ def node_gather_pods(default_client, node_gather_daemonset):
     yield list(Pod.get(default_client, namespace=node_gather_daemonset.namespace))
 
 
-@pytest.fixture()
-def network_attachment_definition(namespace):
+@pytest.fixture(scope="module")
+def network_attachment_definition(node_gather_namespace):
     cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
     with LinuxBridgeNetworkAttachmentDefinition(
-        namespace=namespace.name, name="mgnad", bridge_name="mgbr", cni_type=cni_type
+        namespace=node_gather_namespace.name,
+        name="mgnad",
+        bridge_name="mgbr",
+        cni_type=cni_type,
     ) as network_attachment_definition:
         yield network_attachment_definition
 
