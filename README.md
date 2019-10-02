@@ -15,7 +15,7 @@ Install using sudo yum install
 Install using the following cli commands:
 
 ```bash
-export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases|grep tag_name|sort -V | tail -1 | awk -F':'
+export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases | grep tag_name | sort -V | tail -1 | awk -F '"' '{print $4}')
 curl -L -o virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/virtctl-${KUBEVIRT_VERSION}-linux-amd64
 chmod +x virtctl
 sudo mv virtctl /usr/bin
