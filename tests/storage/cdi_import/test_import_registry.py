@@ -235,7 +235,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
         content_type="",
-        size="10Mi",
+        size="16Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=None,
     ) as dv:
