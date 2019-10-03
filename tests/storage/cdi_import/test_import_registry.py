@@ -254,7 +254,9 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     )
 
 
-@pytest.mark.bugzilla(1725372, skip_when=lambda bug: bug.status != "VERIFIED")
+@pytest.mark.bugzilla(
+    1725372, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA")
+)
 @pytest.mark.polarion("CNV-2150")
 def test_public_registry_data_volume_dockerhub_archive(storage_ns):
     with pytest.raises(
