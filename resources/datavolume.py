@@ -57,13 +57,16 @@ class DataVolume(NamespacedResource):
         Returns:
         bool: True if DataVolume and its PVC are gone, False if timeout reached.
         """
-        pvc = PersistentVolumeClaim(name=self.name, namespace=self.namespace)
         super().wait_deleted(timeout=timeout)
-        return pvc.wait_deleted(timeout=timeout)
+        return self.pvc.wait_deleted(timeout=timeout)
 
     def wait(self, timeout=600):
         self.wait_for_status(status=self.Status.SUCCEEDED, timeout=timeout)
-        assert PersistentVolumeClaim(name=self.name, namespace=self.namespace).bound()
+        assert self.pvc.bound()
+
+    @property
+    def pvc(self):
+        return PersistentVolumeClaim(name=self.name, namespace=self.namespace)
 
 
 class DataVolumeTemplate(DataVolume):
