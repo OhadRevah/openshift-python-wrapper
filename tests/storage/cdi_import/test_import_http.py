@@ -8,7 +8,6 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromHttpDataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
 from tests.storage import utils
 
 
@@ -67,7 +66,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait()
-        pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
+        pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
@@ -95,7 +94,7 @@ def test_successful_import_image(storage_ns, images_internal_http_server, file_n
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait()
-        pvc = PersistentVolumeClaim(name="import-http-dv", namespace=storage_ns.name)
+        pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
@@ -119,7 +118,7 @@ def test_successful_import_secure_archive(
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_status(status="Succeeded", timeout=300)
-        pvc = PersistentVolumeClaim(name="import-https-dv", namespace=storage_ns.name)
+        pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
@@ -143,7 +142,7 @@ def test_successful_import_secure_image(
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_status(status="Succeeded", timeout=300)
-        pvc = PersistentVolumeClaim(name="import-https-dv", namespace=storage_ns.name)
+        pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
@@ -166,7 +165,7 @@ def test_successful_import_basic_auth(
         secret=internal_http_secret.name,
     ) as dv:
         dv.wait()
-        pvc = PersistentVolumeClaim(name=dv.name, namespace=storage_ns.name)
+        pvc = dv.pvc
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
