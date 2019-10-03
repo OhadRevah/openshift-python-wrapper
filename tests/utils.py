@@ -378,7 +378,7 @@ def vm_console_run_commands(console_impl, vm, commands, timeout=60):
                 raise CommandExecFailed(command)
 
 
-def create_ns(client, name):
+def create_ns(name, client=None):
     if not client:
         with Namespace(name=name) as ns:
             ns.wait_for_status(Namespace.Status.ACTIVE, timeout=120)

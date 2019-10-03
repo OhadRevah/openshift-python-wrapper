@@ -24,6 +24,17 @@ from utilities import utils
 LOGGER = logging.getLogger(__name__)
 
 
+class NodeGatherDaemonSet(DaemonSet):
+    def _to_dict(self):
+        res = super()._to_dict()
+        res.update(
+            utils.generate_yaml_from_template(
+                file_=os.path.join(os.path.dirname(__file__), "node-gather-ds.yaml")
+            )
+        )
+        return res
+
+
 @pytest.fixture(scope="module")
 def cnv_must_gather(
     tmpdir_factory,
@@ -51,25 +62,14 @@ def cnv_must_gather(
 
 
 @pytest.fixture(scope="module")
-def node_gather_namespace(default_client):
-    yield from test_utils.create_ns(client=default_client, name="node-gather")
+def node_gather_namespace():
+    yield from test_utils.create_ns(name="node-gather")
 
 
 @pytest.fixture(scope="module")
 def node_gather_serviceaccount(node_gather_namespace):
     with ServiceAccount(name="node-gather", namespace=node_gather_namespace.name) as sa:
         yield sa
-
-
-class NodeGatherDaemonSet(DaemonSet):
-    def _to_dict(self):
-        res = super()._to_dict()
-        res.update(
-            utils.generate_yaml_from_template(
-                file_=os.path.join(os.path.dirname(__file__), "node-gather-ds.yaml")
-            )
-        )
-        return res
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +83,13 @@ def node_gather_daemonset(node_gather_namespace, node_gather_serviceaccount):
 
 @pytest.fixture(scope="module")
 def node_gather_pods(default_client, node_gather_daemonset):
-    yield list(Pod.get(default_client, namespace=node_gather_daemonset.namespace))
+    yield list(
+        Pod.get(
+            default_client,
+            namespace=node_gather_daemonset.namespace,
+            label_selector="cnv-test=must-gather",
+        )
+    )
 
 
 @pytest.fixture(scope="module")

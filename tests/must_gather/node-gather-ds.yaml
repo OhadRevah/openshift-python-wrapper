@@ -5,14 +5,12 @@ metadata:
   name: node-gather-daemonset
   namespace: node-gather
   labels:
+    cnv-test: must-gather
 spec:
-  selector:
-    matchLabels:
-      name: node-gather-daemonset
   template:
     metadata:
       labels:
-        name: node-gather-daemonset
+        cnv-test: must-gather
     spec:
       serviceaccount: node-gather
       serviceAccountName: node-gather
