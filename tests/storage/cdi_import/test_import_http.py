@@ -14,6 +14,7 @@ from resources.configmap import ConfigMap
 from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
+from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, get_cert
 from utilities.virt import CIRROS_IMAGE
 
@@ -542,3 +543,30 @@ def test_vmi_image_size(storage_ns, images_https_server, size, unit, expected_si
                             awk '{$0=substr($0,1,length($0)-1); print $0}'|tr -d '\n'",
                         ]
                     )
+
+
+@pytest.mark.polarion("CNV-3065")
+def test_disk_falloc(storage_ns, images_https_server):
+    with ConfigMap(
+        name="https-cert",
+        namespace=storage_ns.name,
+        cert_name="ca.pem",
+        data=get_cert("https_cert"),
+    ) as configmap:
+        with ImportFromHttpDataVolume(
+            name="cnv-3065",
+            namespace=storage_ns.name,
+            size="100Mi",
+            storage_class=py_config["storage_defaults"]["storage_class"],
+            url=get_file_url(
+                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+            ),
+            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            cert_configmap=configmap.name,
+        ) as dv:
+            dv.wait()
+            with utils.create_vm_with_dv(dv) as vm_dv:
+                with console.Cirros(vm=vm_dv) as vm_console:
+                    LOGGER.info("Fill disk space.")
+                    vm_console.sendline("dd if=/dev/zero of=file bs=1M")
+                vm_dv.restart(timeout=300, wait=True)
