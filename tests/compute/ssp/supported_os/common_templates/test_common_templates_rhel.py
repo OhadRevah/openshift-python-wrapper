@@ -5,11 +5,11 @@ Common templates test RHEL
 """
 
 import pytest
-import tests.utils
 from resources.template import Template
 from resources.virtual_machine import VirtualMachine
-from tests.utils import get_template_by_labels
 from utilities import console
+from utilities.storage import DataVolumeTestResource
+from utilities.virt import VirtualMachineForTests, get_template_by_labels
 
 
 @pytest.fixture(
@@ -54,7 +54,7 @@ from utilities import console
 )
 def data_volume(request, images_external_http_server, namespace):
     template_labels = request.param["template_labels"]
-    with tests.utils.DataVolumeTestResource(
+    with DataVolumeTestResource(
         name=f"dv-rhel-{request.param['os_release'].replace(' ', '-').lower()}",
         namespace=namespace.name,
         url=f"{images_external_http_server}{request.param['image']}",
@@ -81,7 +81,7 @@ def test_common_templates_with_rhel(default_client, data_volume, namespace):
             resource["kind"] == VirtualMachine.kind
             and resource["metadata"]["name"] == vm_name
         ):
-            with tests.utils.VirtualMachineForTests(
+            with VirtualMachineForTests(
                 name=vm_name,
                 namespace=namespace.name,
                 body=resource,

@@ -8,7 +8,7 @@ This test case includes only Linux based test case
 import pytest
 import xmltodict
 from resources.namespace import Namespace
-from tests.utils import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests
 
 
 class HyperVVM(VirtualMachineForTests):

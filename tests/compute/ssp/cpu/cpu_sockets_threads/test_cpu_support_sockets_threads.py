@@ -8,13 +8,12 @@ import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.namespace import Namespace
-from tests import utils as test_utils
-from tests.utils import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
 
 
 def check_vm_dumpxml(vm, cores, sockets, threads):
     def _parse_xml(vm):
-        test_utils.wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vm.vmi)
         data_xml = vm.vmi.get_xml()
         xml_dict = xmltodict.parse(data_xml, process_namespaces=True)
         return xml_dict["domain"]["cpu"]["topology"]
@@ -70,7 +69,7 @@ def vm_with_cpu_support(request, cpu_sockets_threads_ns):
     VM with CPU support (cores,sockets,threads)
     """
 
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name=f"vm-cpu-support-{time.time()}",
         namespace=cpu_sockets_threads_ns.name,
         cpu_cores=request.param["cores"],
@@ -109,7 +108,7 @@ def test_vm_with_cpu_limitation(cpu_sockets_threads_ns):
     """
     Test VM with cpu limitation, CPU requests and limits are equals
     """
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name="vm-cpu-limitation",
         namespace=cpu_sockets_threads_ns.name,
         cpu_cores=2,
@@ -128,7 +127,7 @@ def test_vm_with_cpu_limitation_negative(cpu_sockets_threads_ns):
     negative case: CPU requests is larger then limits
     """
     with pytest.raises(UnprocessibleEntityError):
-        with test_utils.VirtualMachineForTests(
+        with VirtualMachineForTests(
             name="vm-cpu-limitation-negative",
             namespace=cpu_sockets_threads_ns.name,
             cpu_limits=2,

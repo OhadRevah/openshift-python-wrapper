@@ -9,8 +9,8 @@ from resources.installplan import InstallPlan
 from resources.pod import Pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from tests.utils import vm_console_run_commands
 from utilities import console
+from utilities.virt import vm_console_run_commands
 
 
 LOGGER = logging.getLogger(__name__)

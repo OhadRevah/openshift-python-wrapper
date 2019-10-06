@@ -8,8 +8,8 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
 from tests.storage import utils
-from tests.utils import VirtualMachineForTests
 from utilities import console
+from utilities.virt import VirtualMachineForTests
 
 
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"

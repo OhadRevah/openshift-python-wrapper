@@ -3,18 +3,23 @@ Test VM restart
 """
 
 import pytest
-from tests import utils as test_utils
 from utilities import console
+from utilities.infra import create_ns
+from utilities.virt import (
+    VirtualMachineForTests,
+    vm_console_run_commands,
+    wait_for_vm_interfaces,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
 def restart_test_namespace(unprivileged_client):
-    yield from test_utils.create_ns(client=unprivileged_client, name="restart-test")
+    yield from create_ns(client=unprivileged_client, name="restart-test")
 
 
 @pytest.fixture()
 def vm_to_restart(unprivileged_client, restart_test_namespace):
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         client=unprivileged_client,
         name="vmi-to-restart",
         namespace=restart_test_namespace.name,
@@ -36,7 +41,5 @@ def test_vm_restart(vm_to_restart):
     vm_to_restart.vmi.wait_until_running()
     # we just need to run something trivial to doublecheck the VM
     # is really running
-    test_utils.wait_for_vm_interfaces(vm_to_restart.vmi)
-    test_utils.vm_console_run_commands(
-        console.Fedora, vm_to_restart, ["cat /proc/cmdline"]
-    )
+    wait_for_vm_interfaces(vm_to_restart.vmi)
+    vm_console_run_commands(console.Fedora, vm_to_restart, ["cat /proc/cmdline"])

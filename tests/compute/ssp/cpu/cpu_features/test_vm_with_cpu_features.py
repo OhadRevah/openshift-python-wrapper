@@ -6,8 +6,8 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
-from tests import utils as test_utils
 from utilities import console
+from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
 
 
 @pytest.fixture(
@@ -24,14 +24,14 @@ from utilities import console
     ids=["Feature: name: pcid", "Feature: name: pcid , policy:force"],
 )
 def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name=f"vm-cpu-features-positive-{request.param[1]}",
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
-        test_utils.wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vm.vmi)
         yield vm
 
 
@@ -49,7 +49,7 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
     ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid "],
 )
 def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name=f"vm-cpu-features-negative-{request.param[1]}",
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
@@ -60,7 +60,7 @@ def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
 
 @pytest.fixture()
 def cpu_features_vm_require_pcid(cpu_features_namespace):
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name=f"vm-cpu-features-require",
         namespace=cpu_features_namespace.name,
         cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},

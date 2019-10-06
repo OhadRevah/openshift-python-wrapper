@@ -5,11 +5,12 @@ import os
 import urllib.request
 
 import requests
-import tests.utils
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from resources.route import Route
-from utilities import console, utils
+from utilities import console
+from utilities.infra import get_images_external_http_server
+from utilities.virt import VirtualMachineForTests, run_virtctl_command
 
 
 LOGGER = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ class PodWithPVC(Pod):
 
 
 def create_vm_with_dv(dv):
-    with tests.utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name="cirros-vm",
         namespace=dv.namespace,
         dv=dv.name,
@@ -70,7 +71,7 @@ def create_vm_with_dv(dv):
 
 
 def virtctl_upload(namespace, pvc_name, pvc_size, image_path):
-    return utils.run_virtctl_command(
+    return run_virtctl_command(
         command=[
             "image-upload",
             f"--image-path={image_path}",
@@ -86,7 +87,7 @@ def downloaded_image(remote_name, local_name):
     """
     Download image to local tmpdir path
     """
-    url = f"{tests.utils.get_images_external_http_server()}{remote_name}"
+    url = f"{get_images_external_http_server()}{remote_name}"
     assert requests.head(url).status_code == requests.codes.ok
     LOGGER.info(f"Download {url} to {local_name}")
     urllib.request.urlretrieve(url, local_name)

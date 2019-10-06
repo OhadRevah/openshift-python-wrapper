@@ -18,9 +18,9 @@ from resources.network_attachment_definition import (
 )
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
-from tests import utils as test_utils
 from tests.must_gather import utils as mg_utils
-from utilities import utils
+from utilities.infra import create_ns, generate_yaml_from_template
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class NodeGatherDaemonSet(DaemonSet):
     def _to_dict(self):
         res = super()._to_dict()
         res.update(
-            utils.generate_yaml_from_template(
+            generate_yaml_from_template(
                 file_=os.path.join(os.path.dirname(__file__), "node-gather-ds.yaml")
             )
         )
@@ -73,7 +73,7 @@ def cnv_must_gather(
 
 @pytest.fixture(scope="module")
 def node_gather_namespace():
-    yield from test_utils.create_ns(name="node-gather")
+    yield from create_ns(name="node-gather")
 
 
 @pytest.fixture(scope="module")
@@ -116,7 +116,7 @@ def network_attachment_definition(node_gather_namespace):
 
 @pytest.fixture(scope="module")
 def nodenetworkstate_with_bridge(network_utility_pods):
-    with test_utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
         name="must-gather-br", bridge_name="mgbr", worker_pods=network_utility_pods
     ) as br:
         yield br

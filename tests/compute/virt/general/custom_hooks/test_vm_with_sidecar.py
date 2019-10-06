@@ -3,9 +3,8 @@ VM with sidecar
 """
 
 import pytest
-from tests import utils as test_utils
-from tests.utils import VirtualMachineForTests
 from utilities import console
+from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
 
 
 CHECK_DMIDECODE_PACKAGE = (
@@ -49,7 +48,7 @@ def sidecar_vm(default_client, virt_namespace):
 
 @pytest.fixture()
 def running_sidecar_vm(sidecar_vm):
-    test_utils.wait_for_vm_interfaces(sidecar_vm.vmi)
+    wait_for_vm_interfaces(sidecar_vm.vmi)
     yield sidecar_vm
 
 

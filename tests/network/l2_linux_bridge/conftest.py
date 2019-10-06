@@ -3,15 +3,14 @@ from ipaddress import ip_interface
 
 import pytest
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
-from tests.utils import (
-    LinuxBridgeNodeNetworkConfigurationPolicy,
+from utilities import console
+from utilities.infra import create_ns
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
+from utilities.virt import (
     VirtualMachineForTests,
-    VXLANTunnel,
-    create_ns,
     vm_console_run_commands,
     wait_for_vm_interfaces,
 )
-from utilities import console
 
 
 #: Test setup

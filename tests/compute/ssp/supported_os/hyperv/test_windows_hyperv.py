@@ -9,12 +9,12 @@ import logging
 import os
 
 import pytest
-import tests.utils
 from pytest_testconfig import config as py_config
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
-from tests.utils import get_template_by_labels
+from utilities.storage import DataVolumeTestResource
+from utilities.virt import VirtualMachineForTests, get_template_by_labels
 
 
 LOGGER = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
     ]
 )
 def data_volume(request, images_external_http_server, windows_namespace):
-    with tests.utils.DataVolumeTestResource(
+    with DataVolumeTestResource(
         name=f"dv-windows-{request.param['os_release'].replace(' ', '-').lower()}",
         namespace=windows_namespace.name,
         url=f"{images_external_http_server}{request.param['os_image']}",
@@ -134,7 +134,7 @@ def windows_vm(default_client, data_volume, windows_namespace):
             resource["kind"] == VirtualMachine.kind
             and resource["metadata"]["name"] == vm_name
         ):
-            with tests.utils.VirtualMachineForTests(
+            with VirtualMachineForTests(
                 name=vm_name, namespace=windows_namespace.name, body=resource
             ) as vm:
                 yield vm

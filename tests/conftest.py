@@ -20,8 +20,11 @@ from resources.oauth import OAuth
 from resources.pod import Pod
 from resources.secret import Secret
 from resources.utils import TimeoutSampler
-from tests import utils as test_utils
-from utilities import utils
+from utilities.infra import (
+    generate_yaml_from_template,
+    get_images_external_http_server,
+    get_images_https_server,
+)
 
 
 UNPRIVILEGED_USER = "unprivileged-user"
@@ -244,12 +247,12 @@ def nodes(default_client):
 
 @pytest.fixture()
 def images_external_http_server():
-    return test_utils.get_images_external_http_server()
+    return get_images_external_http_server()
 
 
 @pytest.fixture()
 def images_https_server():
-    return test_utils.get_images_https_server()
+    return get_images_https_server()
 
 
 @pytest.fixture(scope="session")
@@ -324,7 +327,7 @@ class NetUtilityDaemonSet(DaemonSet):
     def _to_dict(self):
         res = super()._to_dict()
         res.update(
-            utils.generate_yaml_from_template(
+            generate_yaml_from_template(
                 file_=os.path.join(
                     os.path.dirname(__file__), "net-utility-daemonset.yaml"
                 )

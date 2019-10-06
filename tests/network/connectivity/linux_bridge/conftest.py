@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from tests.utils import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 
 
 LOGGER = logging.getLogger(__name__)

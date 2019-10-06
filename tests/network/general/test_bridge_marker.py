@@ -6,9 +6,10 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources import network_attachment_definition as nad
 from resources.utils import TimeoutExpiredError
-from tests import utils
 from tests.network import utils as network_utils
-from tests.utils import create_ns
+from utilities.infra import create_ns
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.virt import VirtualMachineForTests
 
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
@@ -44,7 +45,7 @@ def bridge_networks(namespace):
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
     networks = {bridge_network.name: bridge_network.name}
-    with utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=_get_name(f"bridge-vm-{time.time()}"),
         networks=networks,
@@ -57,7 +58,7 @@ def bridge_attached_vmi(namespace, bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
     networks = {b.name: b.name for b in bridge_networks}
-    with utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=_get_name(f"multi-bridge-vm-{time.time()}"),
         networks=networks,
@@ -70,7 +71,7 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods):
-    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
         name="bridge-marker1", bridge_name="redbr", worker_pods=network_utility_pods
     ) as dev:
         yield dev
@@ -78,13 +79,13 @@ def bridge_device_on_all_nodes(network_utility_pods):
 
 @pytest.fixture()
 def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
-    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
         name="bridge-marker2",
         bridge_name="redbr",
         worker_pods=[network_utility_pods[0]],
         node_selector={"kubernetes.io/hostname": network_utility_pods[0].node.name},
     ) as redbr:
-        with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+        with LinuxBridgeNodeNetworkConfigurationPolicy(
             name="bridge-marker3",
             bridge_name="bluebr",
             worker_pods=[network_utility_pods[1]],

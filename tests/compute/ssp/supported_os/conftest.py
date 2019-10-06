@@ -4,7 +4,7 @@ import pytest
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from resources.utils import TimeoutSampler
-from tests.utils import create_ns
+from utilities.infra import create_ns
 
 
 class WinRMcliPod(Pod):

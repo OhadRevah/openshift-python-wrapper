@@ -12,13 +12,9 @@ from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds, running_vmi
-from tests.utils import (
-    LinuxBridgeNodeNetworkConfigurationPolicy,
-    VirtualMachineForTests,
-    VXLANTunnel,
-    create_ns,
-    wait_for_vm_interfaces,
-)
+from utilities.infra import create_ns
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
+from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)

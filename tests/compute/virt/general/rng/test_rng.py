@@ -4,9 +4,8 @@ Test VM with RNG
 
 import pytest
 from resources.namespace import Namespace
-from tests import utils as test_utils
-from tests.utils import VirtualMachineForTests
 from utilities import console
+from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -22,7 +21,7 @@ def rng_vm(default_client, rng_namespace):
     with VirtualMachineForTests(name=name, namespace=rng_namespace.name) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
-        test_utils.wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vm.vmi)
         yield vm
 
 

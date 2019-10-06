@@ -4,14 +4,14 @@ Network policy tests
 
 import pytest
 from resources.network_policy import NetworkPolicy
-from tests.utils import (
+from utilities import console
+from utilities.infra import create_ns
+from utilities.virt import (
     CommandExecFailed,
     VirtualMachineForTests,
-    create_ns,
     vm_console_run_commands,
     wait_for_vm_interfaces,
 )
-from utilities import console
 
 
 class VirtualMachineMasquerade(VirtualMachineForTests):

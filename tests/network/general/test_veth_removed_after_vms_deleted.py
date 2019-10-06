@@ -9,7 +9,9 @@ import logging
 import pytest
 import tests.network.utils as net_utils
 from resources.utils import TimeoutSampler
-from tests import utils
+from utilities.infra import create_ns
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -35,7 +37,7 @@ def count_veth_devices_on_host(pod):
 
 @pytest.fixture()
 def namespace(unprivileged_client):
-    yield from utils.create_ns(
+    yield from create_ns(
         client=unprivileged_client, name=__name__.split(".")[-1].replace("_", "-")
     )
 
@@ -58,7 +60,7 @@ def br1vlan100_nad(namespace):
 
 @pytest.fixture()
 def bridge_device(network_utility_pods):
-    with utils.LinuxBridgeNodeNetworkConfigurationPolicy(
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
         name="veth-removed", bridge_name=BR1TEST, worker_pods=network_utility_pods
     ) as dev:
         yield dev
@@ -66,7 +68,7 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture()
 def bridge_attached_vma(namespace, unprivileged_client):
-    with utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name="vma",
         networks=NETWORKS,
@@ -80,7 +82,7 @@ def bridge_attached_vma(namespace, unprivileged_client):
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace, unprivileged_client):
-    with utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name="vmb",
         networks=NETWORKS,

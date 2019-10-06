@@ -6,8 +6,8 @@ import pytest
 from kubernetes.client.rest import ApiException
 from resources.namespace import Namespace
 from resources.service_account import ServiceAccount
-from tests.utils import VirtualMachineForTests
 from utilities import console
+from utilities.virt import VirtualMachineForTests
 
 
 @pytest.fixture(scope="module", autouse=True)

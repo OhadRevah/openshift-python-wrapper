@@ -5,12 +5,12 @@ VM to VM connectivity
 import pytest
 from resources.template import Template
 from resources.virtual_machine import VirtualMachine
-from tests import utils
 from tests.network.utils import linux_bridge_nad
-from tests.utils import (
-    LinuxBridgeNodeNetworkConfigurationPolicy,
-    VXLANTunnel,
-    create_ns,
+from utilities.infra import create_ns
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
+from utilities.storage import DataVolumeTestResource
+from utilities.virt import (
+    VirtualMachineForTests,
     get_template_by_labels,
     wait_for_vm_interfaces,
 )
@@ -57,6 +57,10 @@ def br1test_nad(upgrade_namespace, bridge_on_all_nodes):
         yield nad
 
 
+def get_images_external_http_server():
+    pass
+
+
 @pytest.fixture(scope="module")
 def data_volume(upgrade_namespace):
     template_labels = [
@@ -64,14 +68,14 @@ def data_volume(upgrade_namespace):
         f"{Template.Labels.WORKLOAD}/server",
         f"{Template.Labels.FLAVOR}/tiny",
     ]
-    with utils.DataVolumeTestResource(
+    with DataVolumeTestResource(
         name="dv-rhel8-server-tiny",
         namespace=upgrade_namespace.name,
-        url=f"{utils.get_images_external_http_server()}rhel-images/rhel-8/rhel-8.qcow2",
+        url=f"{get_images_external_http_server()}rhel-images/rhel-8/rhel-8.qcow2",
         os_release="8.0",
         template_labels=template_labels,
-        access_modes=utils.DataVolumeTestResource.AccessMode.RWX,
-        volume_mode=utils.DataVolumeTestResource.VolumeMode.BLOCK,
+        access_modes=DataVolumeTestResource.AccessMode.RWX,
+        volume_mode=DataVolumeTestResource.VolumeMode.BLOCK,
     ) as dv:
         dv.wait(timeout=900)
         yield dv
@@ -104,7 +108,7 @@ def vm_for_upgrade(
             resource["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"] = [
                 {"masquerade": {}, "name": "default"}
             ]
-            with utils.VirtualMachineForTests(
+            with VirtualMachineForTests(
                 name=vm_name,
                 namespace=upgrade_namespace.name,
                 body=resource,

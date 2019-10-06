@@ -4,8 +4,8 @@ VM with CPU flag
 import pytest
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
-from tests import utils as test_utils
 from utilities import console
+from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
 
 
 @pytest.fixture()
@@ -28,14 +28,14 @@ def cpu_module(default_client):
 
 @pytest.fixture()
 def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name="vm-cpu-flags-positive",
         namespace=cpu_features_namespace.name,
         cpu_flags={"model": cpu_module},
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
-        test_utils.wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vm.vmi)
         yield vm
 
 
@@ -53,7 +53,7 @@ def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
     ids=["CPU-flag: Bad-Skylake-Server", "CPU-flag: commodore64"],
 )
 def cpu_flag_vm_negative(request, default_client, cpu_features_namespace):
-    with test_utils.VirtualMachineForTests(
+    with VirtualMachineForTests(
         name=f"vm-cpu-flags-negative-{request.param[1]}",
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
