@@ -8,7 +8,10 @@ import logging
 
 import pytest
 import tests.storage.utils as storage_utils
+from openshift.dynamic.exceptions import NotFoundError
+from pytest_testconfig import config as py_config
 from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.route import Route
 
 
 LOGGER = logging.getLogger(__name__)
@@ -35,7 +38,13 @@ def test_successful_virtctl_upload_no_url(storage_ns, tmpdir):
 
 
 @pytest.mark.polarion("CNV-2191")
-def test_successful_virtctl_upload_no_route(storage_ns, tmpdir):
+def test_successful_virtctl_upload_no_route(
+    storage_ns, tmpdir, uploadproxy_route_deleted
+):
+    route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+    with pytest.raises(NotFoundError):
+        route.instance
+
     local_name = f"{tmpdir}/{QCOW2_IMG}"
     storage_utils.downloaded_image(
         remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
