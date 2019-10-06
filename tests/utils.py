@@ -6,7 +6,6 @@ import urllib.error
 import urllib.request
 
 import pexpect
-from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.namespace import Namespace
@@ -22,7 +21,6 @@ from utilities import utils
 LOGGER = logging.getLogger(__name__)
 
 
-@generate_logs()
 def wait_for_vm_interfaces(vmi, timeout=720):
     """
     Wait until guest agent report VMI network interfaces.
@@ -38,7 +36,7 @@ def wait_for_vm_interfaces(vmi, timeout=720):
         TimeoutExpiredError: After timeout reached.
     """
     sampler = TimeoutSampler(timeout=timeout, sleep=1, func=lambda: vmi.instance)
-    LOGGER.info("Wait until guest agent is active")
+    LOGGER.info(f"Wait until guest agent is active on {vmi.name}")
     try:
         for sample in sampler:
             #  Check if guest agent is activate
@@ -48,7 +46,7 @@ def wait_for_vm_interfaces(vmi, timeout=720):
                 if i.get("type") == "AgentConnected" and i.get("status") == "True"
             ]
             if agent_status:
-                LOGGER.info("Wait until VMI report network interfaces status")
+                LOGGER.info(f"Wait until {vmi.name} report network interfaces status")
                 for sample in sampler:
                     #  Get MVI interfaces from guest agent
                     ifcs = sample.get("status", {}).get("interfaces", [])
@@ -58,11 +56,11 @@ def wait_for_vm_interfaces(vmi, timeout=720):
                     if len(active_ifcs) == len(ifcs):
                         return True
                 LOGGER.error(
-                    "VMI did not report network interfaces status in given time"
+                    f"{vmi.name} did not report network interfaces status in given time"
                 )
 
     except TimeoutExpiredError:
-        LOGGER.error("Guest agent is not installed or not active")
+        LOGGER.error(f"Guest agent is not installed or not active on {vmi.name}")
         raise
 
 

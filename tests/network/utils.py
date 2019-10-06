@@ -7,6 +7,7 @@ from pytest_testconfig import config as py_config
 from resources.network_attachment_definition import (
     LinuxBridgeNetworkAttachmentDefinition,
 )
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from utilities import console
 
 
@@ -40,14 +41,17 @@ class IpNotFound(Exception):
 
 
 def get_vmi_ip_v4_by_name(vmi, name):
-    for iface in vmi.interfaces:
-        if iface.name == name:
-            for ipaddr in iface.ipAddresses:
-                ip = ipaddress.ip_interface(ipaddr)
-                if ip.version == 4:
-                    return ip.ip
-
-    raise IpNotFound(name)
+    sampler = TimeoutSampler(timeout=120, sleep=1, func=lambda: vmi.interfaces)
+    try:
+        for sample in sampler:
+            for iface in sample:
+                if iface.name == name:
+                    for ipaddr in iface.ipAddresses:
+                        ip = ipaddress.ip_interface(ipaddr)
+                        if ip.version == 4:
+                            return ip.ip
+    except TimeoutExpiredError:
+        raise IpNotFound(name)
 
 
 def _console_ping(src_vm, dst_ip, packetsize=None):
