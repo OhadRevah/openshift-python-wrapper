@@ -241,7 +241,6 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
         ) as utr:
             token = utr.create().status.token
             sleep(5)
-            dv.wait()
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
                 timeout=60,
