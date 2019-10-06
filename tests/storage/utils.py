@@ -9,41 +9,13 @@ import tests.utils
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from resources.route import Route
-from resources.virtual_machine import VirtualMachine
 from utilities import console, utils
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-CLOUD_INIT_USER_DATA = r"""
-            #!/bin/sh
-            echo 'printed from cloud-init userdata'"""
-
-
-class VirtualMachineWithDV(VirtualMachine):
-    def __init__(self, name, namespace, dv_name, cloud_init_data, client=None):
-        super().__init__(name=name, namespace=namespace, client=client)
-        self._dv_name = dv_name
-        self._cloud_init_data = cloud_init_data
-
-    def _to_dict(self):
-        res = super()._to_dict()
-
-        spec = res["spec"]["template"]["spec"]
-        spec["domain"]["devices"]["disks"] = [
-            {"disk": {"bus": "virtio"}, "name": "dv-disk"},
-            {"disk": {"bus": "virtio"}, "name": "cloudinitdisk"},
-        ]
-
-        spec["volumes"] = [
-            {
-                "name": "cloudinitdisk",
-                "cloudInitNoCloud": {"userData": self._cloud_init_data},
-            },
-            {"name": "dv-disk", "dataVolume": {"name": self._dv_name}},
-        ]
-        return res
+CLOUD_INIT_USER_DATA = {"#!/bin/sh": "echo 'printed from cloud-init userdata'"}
 
 
 class PodWithPVC(Pod):
@@ -84,10 +56,10 @@ class PodWithPVC(Pod):
 
 
 def create_vm_with_dv(dv):
-    with VirtualMachineWithDV(
+    with tests.utils.VirtualMachineForTests(
         name="cirros-vm",
         namespace=dv.namespace,
-        dv_name=dv.name,
+        dv=dv.name,
         cloud_init_data=CLOUD_INIT_USER_DATA,
     ) as vm:
         vm.start(wait=True)

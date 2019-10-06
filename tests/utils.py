@@ -136,6 +136,8 @@ class VirtualMachineForTests(VirtualMachine):
         memory=None,
         label=None,
         set_cloud_init=True,
+        dv=None,
+        cloud_init_data=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.body = body
@@ -153,12 +155,17 @@ class VirtualMachineForTests(VirtualMachine):
         self.memory = memory
         self.label = label
         self.set_cloud_init = set_cloud_init
+        self.dv = dv
+        self.cloud_init_data = cloud_init_data
 
     def _cloud_init_user_data(self):
         return {"password": "fedora", "chpasswd": "{ expire: False }"}
 
     def _to_dict(self):
         res = super()._to_dict()
+        if self.dv:
+            self.body = res
+
         if not self.body:
             self.body = utils.generate_yaml_from_template(
                 file_="tests/manifests/vm-fedora.yaml", name=self.name
@@ -179,12 +186,23 @@ class VirtualMachineForTests(VirtualMachine):
             )
 
         if self.set_cloud_init:
+            cloud_init_volume = {}
             for vol in spec["volumes"]:
                 if vol["name"] == "cloudinitdisk":
-                    vol["cloudInitNoCloud"][
-                        "userData"
-                    ] = _generate_cloud_init_user_data(self._cloud_init_user_data())
+                    cloud_init_volume = vol
                     break
+
+            if not cloud_init_volume:
+                spec["volumes"].append(
+                    {"name": "cloudinitdisk", "cloudInitNoCloud": {"userData": None}}
+                )
+                cloud_init_volume = spec["volumes"][-1]
+
+            cloud_init_volume["cloudInitNoCloud"][
+                "userData"
+            ] = _generate_cloud_init_user_data(
+                self.cloud_init_data or self._cloud_init_user_data()
+            )
 
         for sa in self.service_accounts:
             spec["domain"]["devices"]["disks"].append({"disk": {}, "name": sa})
@@ -229,6 +247,11 @@ class VirtualMachineForTests(VirtualMachine):
         # waiting for entropy collecting.
         res["spec"]["template"]["spec"]["domain"]["devices"].setdefault("rng", {})
 
+        if self.dv:
+            spec["domain"]["devices"]["disks"].append(
+                {"disk": {"bus": "virtio"}, "name": "dv-disk"}
+            )
+            spec["volumes"].append({"name": "dv-disk", "dataVolume": {"name": self.dv}})
         return res
 
 

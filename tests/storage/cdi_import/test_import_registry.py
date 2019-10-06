@@ -8,6 +8,7 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
 from tests.storage import utils
+from tests.utils import VirtualMachineForTests
 from utilities import console
 
 
@@ -34,36 +35,44 @@ def test_disk_image_not_conform_to_registy_disk(storage_ns):
 
 @pytest.mark.polarion("CNV-2042")
 def test_public_registry_multiple_data_volume(storage_ns):
-    for dv in ("dv1", "dv2", "dv3"):
-        rdv = ImportFromRegistryDataVolume(
-            name=f"import-registry-dockerhub-{dv}",
-            namespace=storage_ns.name,
-            url=DOCKERHUB_IMAGE,
-            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-            size="5Gi",
-            storage_class=py_config["storage_defaults"]["storage_class"],
-        )
-        rdv.create()
-        rdv.wait_for_status(status="Succeeded", timeout=300)
+    dvs = []
+    vms = []
+    try:
+        for dv in ("dv1", "dv2", "dv3"):
+            rdv = ImportFromRegistryDataVolume(
+                name=f"import-registry-dockerhub-{dv}",
+                namespace=storage_ns.name,
+                url=DOCKERHUB_IMAGE,
+                content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+                size="5Gi",
+                storage_class=py_config["storage_defaults"]["storage_class"],
+            )
+            rdv.create()
+            dvs.append(rdv)
+            rdv.wait_for_status(status="Succeeded", timeout=300)
 
-    for vm in ("1", "2", "3"):
-        rvm = utils.VirtualMachineWithDV(
-            name=f"import-registry-dockerhub-dv{vm}",
-            namespace=storage_ns.name,
-            dv_name=f"import-registry-dockerhub-dv{vm}",
-            cloud_init_data=utils.CLOUD_INIT_USER_DATA,
-        )
-        rvm.create()
-        rvm.start(wait=True)
-        rvm.vmi.wait_until_running()
-        with console.Cirros(vm=rvm) as vm_console:
-            vm_console.sendline("lsblk | grep disk | wc -l")
-            vm_console.expect("2", timeout=60)
+        for vm in [vm.name for vm in dvs]:
+            rvm = VirtualMachineForTests(
+                name=vm,
+                namespace=storage_ns.name,
+                dv=vm,
+                cloud_init_data=utils.CLOUD_INIT_USER_DATA,
+            )
+            rvm.create()
+            vms.append(rvm)
+            rvm.start(wait=True)
+            rvm.vmi.wait_until_running()
+            with console.Cirros(vm=rvm) as vm_console:
+                vm_console.sendline("lsblk | grep disk | wc -l")
+                vm_console.expect("2", timeout=60)
+    finally:
+        for rcs in dvs + vms:
+            rcs.delete()
 
 
 @pytest.mark.skipif(
     py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/w",
+    reason="importing from private registry for d/s",
 )
 @pytest.mark.polarion("CNV-2183")
 def test_private_registry_insecured_configmap(
@@ -93,7 +102,7 @@ def test_private_registry_insecured_configmap(
 
 @pytest.mark.skipif(
     py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/w",
+    reason="importing from private registry for d/s",
 )
 @pytest.mark.polarion("CNV-2182")
 def test_private_registry_recover_after_missing_configmap(
@@ -123,7 +132,7 @@ def test_private_registry_recover_after_missing_configmap(
 
 @pytest.mark.skipif(
     py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/w",
+    reason="importing from private registry for d/s",
 )
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
