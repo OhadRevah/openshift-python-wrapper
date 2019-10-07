@@ -21,6 +21,7 @@ from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns, generate_yaml_from_template
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ def cnv_must_gather(
     cnv_containers,
     network_attachment_definition,
     nodenetworkstate_with_bridge,
+    running_vm,
 ):
     """
     Run cnv-must-gather for data collection.
@@ -142,3 +144,20 @@ def skip_when_no_sriov(default_client):
         if crd.name == "sriovnetworknodestates.sriovnetwork.openshift.io":
             return
     raise MissingResourceException(CustomResourceDefinition)
+
+
+@pytest.fixture(scope="module")
+def node_gather_unprivileged_namespace(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="node-gather-unprivileged")
+
+
+@pytest.fixture(scope="module")
+def running_vm(node_gather_unprivileged_namespace, unprivileged_client):
+    with VirtualMachineForTests(
+        client=unprivileged_client,
+        namespace=node_gather_unprivileged_namespace.name,
+        name="vm",
+    ) as vm:
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
+        yield vm
