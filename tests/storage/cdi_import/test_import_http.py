@@ -37,16 +37,16 @@ def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_ser
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
-        dv.wait_for_status(status="Succeeded")
+        dv.wait_for_status(status=dv.Status.SUCCEEDED)
         pvc = dv.pvc
         pvc.delete()
-        pvc.wait_for_status(status="Bound")
-        dv.wait_for_status(status="ImportScheduled")
-        dv.wait_for_status(status="Succeeded")
+        pvc.wait_for_status(status=pvc.Status.BOUND)
+        dv.wait_for_status(status=dv.Status.IMPORT_SCHEDULED)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED)
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
         ) as pod:
-            pod.wait_for_status(status="Running")
+            pod.wait_for_status(status=pod.Status.RUNNING)
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
@@ -95,12 +95,12 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
-            pod.wait_for_status(status="Running")
+            pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
 
 
 @pytest.mark.parametrize(
-    ("file_name"),
+    "file_name",
     [
         pytest.param(QCOW_IMG, marks=(pytest.mark.polarion("CNV-2143"))),
         pytest.param(ISO_IMG, marks=(pytest.mark.polarion("CNV-377"))),
@@ -123,7 +123,7 @@ def test_successful_import_image(storage_ns, images_internal_http_server, file_n
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
-            pod.wait_for_status(status="Running")
+            pod.wait_for_status(status=pod.Status.RUNNING)
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
@@ -141,13 +141,13 @@ def test_successful_import_secure_archive(
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=internal_http_configmap.name,
     ) as dv:
-        dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
-            pod.wait_for_status(status="Running")
+            pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
 
 
@@ -165,13 +165,13 @@ def test_successful_import_secure_image(
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=internal_http_configmap.name,
     ) as dv:
-        dv.wait_for_status(status="Succeeded", timeout=300)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
-            pod.wait_for_status(status="Running")
+            pod.wait_for_status(status=pod.Status.RUNNING)
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
@@ -193,7 +193,7 @@ def test_successful_import_basic_auth(
         with utils.PodWithPVC(
             namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
         ) as pod:
-            pod.wait_for_status(status="Running")
+            pod.wait_for_status(status=pod.Status.RUNNING)
 
 
 @pytest.mark.polarion("CNV-2144")

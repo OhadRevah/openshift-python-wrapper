@@ -18,7 +18,7 @@ class Namespace(Resource):
 
     api_version = "v1"
 
-    class Status:
+    class Status(Resource.Status):
         ACTIVE = "Active"
 
     # TODO: remove the nudge when the underlying issue with namespaces stuck in

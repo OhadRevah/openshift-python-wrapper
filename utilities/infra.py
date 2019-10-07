@@ -59,7 +59,7 @@ def create_ns(name, client=None):
     else:
         with ProjectRequest(name=name, client=client):
             project = Project(name=name, client=client)
-            project.wait_for_status(Project.Status.ACTIVE, timeout=120)
+            project.wait_for_status(project.Status.ACTIVE, timeout=120)
             yield project
 
 

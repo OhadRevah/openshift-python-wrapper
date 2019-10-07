@@ -14,7 +14,7 @@ class Project(Resource):
 
     api_group = API_GROUP
 
-    class Status:
+    class Status(Resource.Status):
         ACTIVE = "Active"
 
     def nudge_delete(self):

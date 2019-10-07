@@ -31,7 +31,7 @@ class Pod(NamespacedResource):
 
     api_version = "v1"
 
-    class Status:
+    class Status(NamespacedResource.Status):
         RUNNING = "Running"
 
     def __init__(self, name, namespace, client=None):

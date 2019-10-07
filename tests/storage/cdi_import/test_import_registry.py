@@ -49,7 +49,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
             )
             rdv.create()
             dvs.append(rdv)
-            rdv.wait_for_status(status="Succeeded", timeout=300)
+            rdv.wait_for_status(status=rdv.Status.SUCCEEDED, timeout=300)
 
         for vm in [vm.name for vm in dvs]:
             rvm = VirtualMachineForTests(

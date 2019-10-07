@@ -16,9 +16,7 @@ class DataVolume(NamespacedResource):
 
     api_group = "cdi.kubevirt.io"
 
-    class Status:
-        SUCCEEDED = "Succeeded"
-        FAILED = "Failed"
+    class Status(NamespacedResource.Status):
         IMPORT_SCHEDULED = "ImportScheduled"
         UPLOAD_READY = "UploadReady"
 

@@ -61,7 +61,7 @@ class TestUpgrade:
         with VirtualMachineInstanceMigration(
             name=f"{when}-upgrade-migration", namespace=vm.namespace, vmi=vm.vmi
         ) as mig:
-            mig.wait_for_status(status="Succeeded", timeout=720)
+            mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
             assert vm.vmi.instance.status.nodeName != vmi_node_before_migration
             assert vm.vmi.instance.status.migrationState.completed
 
@@ -95,7 +95,7 @@ class TestUpgrade:
                 ip_dict = ip.instance.to_dict()
                 ip_dict["spec"]["approved"] = True
                 ip.update(ip_dict)
-                ip.wait_for_status("Complete", timeout=TIMEOUT_10MIN)
+                ip.wait_for_status(ip.Status.COMPLETE, timeout=TIMEOUT_10MIN)
 
     @staticmethod
     def get_all_operators_pods(default_client, hco_namespace):
@@ -150,7 +150,9 @@ class TestUpgrade:
         )
 
         LOGGER.info("Check that CSV status is Installing")
-        new_csv.wait_for_status("Installing", timeout=TIMEOUT_10MIN, stop_status=None)
+        new_csv.wait_for_status(
+            new_csv.Status.INSTALLING, timeout=TIMEOUT_10MIN, stop_status=None
+        )
 
         LOGGER.info("Get all operators PODs names and images version from the new CSV")
         operators_versions = self.get_operators_names_and_images(new_csv)
@@ -181,7 +183,9 @@ class TestUpgrade:
             hco.wait_for_condition(condition="Available", status="True")
 
         LOGGER.info("Check that CSV status is Succeeded")
-        new_csv.wait_for_status("Succeeded", timeout=TIMEOUT_10MIN, stop_status=None)
+        new_csv.wait_for_status(
+            new_csv.Status.SUCCEEDED, timeout=TIMEOUT_10MIN, stop_status=None
+        )
 
     @pytest.mark.run(after="test_upgrade")
     @pytest.mark.polarion("CNV-2978")

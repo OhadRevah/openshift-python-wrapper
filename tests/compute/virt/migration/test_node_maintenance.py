@@ -64,7 +64,9 @@ def check_draining_process(default_client, source_pod, vm):
     virt_utils.wait_for_node_unschedulable_status(node=source_node, status=True)
     for migration_job in VirtualMachineInstanceMigration.get(default_client):
         if migration_job.instance.spec.vmiName == vm.name:
-            migration_job.wait_for_status(status="Succeeded", timeout=600)
+            migration_job.wait_for_status(
+                status=migration_job.Status.SUCCEEDED, timeout=600
+            )
 
     source_pod.wait_deleted()
     target_node = vm.vmi.virt_launcher_pod.node
@@ -80,11 +82,11 @@ def test_node_maintenance_fedora(
 
     with running_sleep_in_fedora(vm0):
         with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
-            nm.wait_for_status(status="Running")
+            nm.wait_for_status(status=nm.Status.RUNNING)
             check_draining_process(
                 default_client=default_client, source_pod=source_pod, vm=vm0
             )
-            nm.wait_for_status(status="Succeeded")
+            nm.wait_for_status(status=nm.Status.SUCCEEDED)
         virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
 
 

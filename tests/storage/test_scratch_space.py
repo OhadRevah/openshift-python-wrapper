@@ -256,7 +256,7 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name
                     scratch_pvc.wait_for_status(
                         status=PersistentVolumeClaim.Status.BOUND, timeout=300
                     )
-                    dv.wait_for_status(status="Succeeded", timeout=300)
+                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
                     storage_utils.create_vm_with_dv(dv)
                     return True
 

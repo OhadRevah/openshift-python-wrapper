@@ -125,6 +125,10 @@ class Resource(object):
     api_version = None
     singular_name = None
 
+    class Status:
+        SUCCEEDED = "Succeeded"
+        FAILED = "Failed"
+
     def __init__(self, name, client=None):
         """
         Create a API resource
@@ -294,7 +298,7 @@ class Resource(object):
             if not sample:
                 return
 
-    def wait_for_status(self, status, timeout=TIMEOUT, stop_status="Failed"):
+    def wait_for_status(self, status, timeout=TIMEOUT, stop_status=None):
         """
         Wait for resource to be in status
 
@@ -306,6 +310,7 @@ class Resource(object):
         Raises:
             TimeoutExpiredError: If resource in not in desire status.
         """
+        stop_status = stop_status if stop_status else self.Status.FAILED
         LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
         samples = utils.TimeoutSampler(
             timeout=timeout,

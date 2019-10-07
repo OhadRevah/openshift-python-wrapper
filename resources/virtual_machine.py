@@ -189,6 +189,9 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     api_group = API_GROUP
 
+    class Status(NamespacedResource.Status):
+        RUNNING = "Running"
+
     def __init__(self, name, namespace, client=None, username=None, password=None):
         super().__init__(name=name, namespace=namespace, client=client)
         self._store_login_information(username, password)
@@ -238,7 +241,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             TimeoutExpiredError: If VMI failed to run.
         """
         try:
-            self.wait_for_status(status="Running", timeout=timeout)
+            self.wait_for_status(status=self.Status.RUNNING, timeout=timeout)
         except TimeoutExpiredError:
             if not logs:
                 raise

@@ -245,7 +245,7 @@ def test_ping_vm_migration(
     with VirtualMachineInstanceMigration(
         name="l2-migration", namespace=running_vmb.namespace, vmi=running_vmb.vmi
     ) as mig:
-        mig.wait_for_status(status="Succeeded", timeout=720)
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert running_vmb.vmi.instance.status.nodeName != src_node
 
     assert_low_packet_loss(running_vma)
@@ -259,7 +259,7 @@ def test_ssh_vm_migration(
     with VirtualMachineInstanceMigration(
         name="tcp-migration", namespace=namespace.name, vmi=running_vmb.vmi
     ) as mig:
-        mig.wait_for_status(status="Succeeded", timeout=720)
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert running_vmb.vmi.instance.status.nodeName != src_node
 
     assert_ssh_alive(running_vma)
@@ -282,7 +282,7 @@ def test_migration_with_masquerade(
         namespace=running_vmb.namespace,
         vmi=running_vmb.vmi,
     ) as mig:
-        mig.wait_for_status(status="Succeeded", timeout=720)
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert running_vmb.vmi.instance.status.nodeName != vmi_node_before_migration
         assert running_vmb.vmi.instance.status.migrationState.completed
         http_port_accessible(
