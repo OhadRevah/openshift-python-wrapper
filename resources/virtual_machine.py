@@ -128,7 +128,8 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
             headers=self.client.configuration.api_key,
         )
         if wait:
-            return self.wait_for_status(timeout=timeout, status=False)
+            self.wait_for_status(timeout=timeout, status=False)
+            return self.vmi.wait_deleted()
 
     def wait_for_status(self, status, timeout=TIMEOUT):
         """
