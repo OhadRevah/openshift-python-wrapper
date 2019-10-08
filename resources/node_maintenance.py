@@ -8,6 +8,9 @@ class NodeMaintenance(Resource):
 
     api_group = "kubevirt.io"
 
+    class Status(Resource.Status):
+        RUNNING = "Running"
+
     def __init__(self, name, node=None, reason="TEST Reason"):
         super().__init__(name)
         self.node = node
