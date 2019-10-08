@@ -12,6 +12,9 @@ from utilities.infra import generate_yaml_from_template
 
 LOGGER = logging.getLogger(__name__)
 
+K8S_TAINT = "node.kubernetes.io/unschedulable"
+NO_SCHEDULE = "NoSchedule"
+
 
 def wait_for_vm_interfaces(vmi, timeout=720):
     """
@@ -348,3 +351,11 @@ def fedora_vm_body(name):
     return generate_yaml_from_template(
         file_="tests/manifests/vm-fedora.yaml", name=name
     )
+
+
+def kubernetes_taint_exists(node):
+    taints = node.instance.spec.taints
+    if taints:
+        return any(
+            taint.key == K8S_TAINT and taint.effect == NO_SCHEDULE for taint in taints
+        )

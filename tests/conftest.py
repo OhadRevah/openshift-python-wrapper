@@ -25,6 +25,7 @@ from utilities.infra import (
     get_images_external_http_server,
     get_images_https_server,
 )
+from utilities.virt import kubernetes_taint_exists
 
 
 UNPRIVILEGED_USER = "unprivileged-user"
@@ -238,11 +239,15 @@ def skip_when_one_node(nodes):
 
 @pytest.fixture(scope="session")
 def nodes(default_client):
-    yield list(
-        Node.get(
-            dyn_client=default_client, label_selector="kubevirt.io/schedulable=true"
+    yield [
+        node
+        for node in list(
+            Node.get(
+                dyn_client=default_client, label_selector="kubevirt.io/schedulable=true"
+            )
         )
-    )
+        if not node.instance.spec.unschedulable and not kubernetes_taint_exists(node)
+    ]
 
 
 @pytest.fixture()

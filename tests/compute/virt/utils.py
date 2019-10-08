@@ -1,9 +1,5 @@
 from resources.utils import TimeoutSampler
-
-
-KUBEVIRT_TAINT = "kubevirt.io/drain"
-K8S_TAINT = "node.kubernetes.io/unschedulable"
-NO_SCHEDULE = "NoSchedule"
+from utilities.virt import kubernetes_taint_exists
 
 
 class NodeMaintenanceException(Exception):
@@ -26,29 +22,10 @@ def wait_for_node_unschedulable_status(node, status, timeout=30):
     for sample in sampler:
         if sample.items:
             if status:
-                if sample.items[0].spec.unschedulable and _kubernetes_taint_exists(
-                    node
-                ):
+                if sample.items[0].spec.unschedulable and kubernetes_taint_exists(node):
                     return
             else:
                 if not sample.items[
                     0
-                ].spec.unschedulable and not _kubernetes_taint_exists(node):
+                ].spec.unschedulable and not kubernetes_taint_exists(node):
                     return
-
-
-def _kubevirt_taint_exists(node):
-    taints = node.instance.spec.taints
-    if taints:
-        return any(
-            taint.key == KUBEVIRT_TAINT and taint.effect == NO_SCHEDULE
-            for taint in taints
-        )
-
-
-def _kubernetes_taint_exists(node):
-    taints = node.instance.spec.taints
-    if taints:
-        return any(
-            taint.key == K8S_TAINT and taint.effect == NO_SCHEDULE for taint in taints
-        )
