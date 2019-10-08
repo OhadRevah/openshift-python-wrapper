@@ -118,16 +118,9 @@ class VirtualMachineForTests(VirtualMachine):
 
     def _to_dict(self):
         res = super()._to_dict()
-        if self.dv:
-            self.body = res
-
-        if not self.body:
-            self.body = generate_yaml_from_template(
-                file_="tests/manifests/vm-fedora.yaml", name=self.name
-            )
-
-        res["metadata"] = self.body["metadata"]
-        res["spec"] = self.body["spec"]
+        if self.body:
+            res["metadata"] = self.body["metadata"]
+            res["spec"] = self.body["spec"]
 
         spec = res["spec"]["template"]["spec"]
         for iface_name in self.interfaces:
@@ -300,3 +293,9 @@ def run_virtctl_command(command, namespace=None):
 
     virtctl_cmd = virtctl_cmd + command
     return _run_command(command=virtctl_cmd)
+
+
+def fedora_vm_body(name):
+    return generate_yaml_from_template(
+        file_="tests/manifests/vm-fedora.yaml", name=name
+    )

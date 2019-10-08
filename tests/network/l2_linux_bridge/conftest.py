@@ -8,6 +8,7 @@ from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     VirtualMachineForTests,
+    fedora_vm_body,
     vm_console_run_commands,
     wait_for_vm_interfaces,
 )
@@ -67,6 +68,11 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
             networks=networks,
             client=client,
         )
+
+    def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
+        res = super()._to_dict()
+        return res
 
     def _cloud_init_user_data(self):
         data = super()._cloud_init_user_data()

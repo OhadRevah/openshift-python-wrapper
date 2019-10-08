@@ -7,7 +7,7 @@ from kubernetes.client.rest import ApiException
 from resources.namespace import Namespace
 from resources.service_account import ServiceAccount
 from utilities import console
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -25,10 +25,12 @@ def service_account(sa_namespace):
 
 @pytest.fixture()
 def vm_vmi(sa_namespace, service_account):
+    name = "service-account-vm"
     with VirtualMachineForTests(
-        name="service-account-vm",
+        name=name,
         namespace=sa_namespace.name,
         service_accounts=[service_account.name],
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -65,10 +67,12 @@ def test_vm_with_2_service_accounts(sa_namespace):
     """
     Negative: Verifies that VM with 2 ServiceAccounts can't be created
     """
+    name = "vm-with-2-sa"
     with pytest.raises(ApiException, match=r".* must have max one serviceAccount .*"):
         with VirtualMachineForTests(
-            name="vm-with-2-sa",
+            name=name,
             namespace=sa_namespace.name,
             service_accounts=["sa-1", "sa-2"],
+            body=fedora_vm_body(name),
         ):
             return

@@ -9,7 +9,7 @@ from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
@@ -45,11 +45,13 @@ def bridge_networks(namespace):
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
     networks = {bridge_network.name: bridge_network.name}
+    name = _get_name(f"bridge-vm-{time.time()}")
     with VirtualMachineForTests(
         namespace=namespace.name,
-        name=_get_name(f"bridge-vm-{time.time()}"),
+        name=name,
         networks=networks,
         interfaces=sorted(networks.keys()),
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start()
         yield vm.vmi
@@ -58,12 +60,14 @@ def bridge_attached_vmi(namespace, bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
     networks = {b.name: b.name for b in bridge_networks}
+    name = _get_name(f"multi-bridge-vm-{time.time()}")
     with VirtualMachineForTests(
         namespace=namespace.name,
-        name=_get_name(f"multi-bridge-vm-{time.time()}"),
+        name=name,
         networks=networks,
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start()
         yield vm.vmi

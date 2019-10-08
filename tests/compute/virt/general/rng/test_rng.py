@@ -5,7 +5,11 @@ Test VM with RNG
 import pytest
 from resources.namespace import Namespace
 from utilities import console
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -18,7 +22,9 @@ def rng_namespace():
 @pytest.fixture()
 def rng_vm(default_client, rng_namespace):
     name = "vmi-with-rng"
-    with VirtualMachineForTests(name=name, namespace=rng_namespace.name) as vm:
+    with VirtualMachineForTests(
+        name=name, namespace=rng_namespace.name, body=fedora_vm_body(name)
+    ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         wait_for_vm_interfaces(vm.vmi)

@@ -21,7 +21,7 @@ from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns, generate_yaml_from_template
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
@@ -153,10 +153,12 @@ def node_gather_unprivileged_namespace(unprivileged_client):
 
 @pytest.fixture(scope="module")
 def running_vm(node_gather_unprivileged_namespace, unprivileged_client):
+    name = "vm"
     with VirtualMachineForTests(
         client=unprivileged_client,
         namespace=node_gather_unprivileged_namespace.name,
-        name="vm",
+        name=name,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

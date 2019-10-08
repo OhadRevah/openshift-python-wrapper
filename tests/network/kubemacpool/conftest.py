@@ -14,7 +14,11 @@ from resources.pod import Pod
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds, running_vmi
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -132,6 +136,7 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
         return self.iface_config["eth4"]
 
     def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
         res = super()._to_dict()
         for mac, iface in zip(
             self.iface_config.values(),

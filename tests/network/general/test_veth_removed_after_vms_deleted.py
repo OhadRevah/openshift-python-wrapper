@@ -11,7 +11,7 @@ import tests.network.utils as net_utils
 from resources.utils import TimeoutSampler
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
@@ -68,12 +68,14 @@ def bridge_device(network_utility_pods):
 
 @pytest.fixture()
 def bridge_attached_vma(namespace, unprivileged_client):
+    name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
-        name="vma",
+        name=name,
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
         client=unprivileged_client,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -82,12 +84,14 @@ def bridge_attached_vma(namespace, unprivileged_client):
 
 @pytest.fixture()
 def bridge_attached_vmb(namespace, unprivileged_client):
+    name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
-        name="vmb",
+        name=name,
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
         client=unprivileged_client,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

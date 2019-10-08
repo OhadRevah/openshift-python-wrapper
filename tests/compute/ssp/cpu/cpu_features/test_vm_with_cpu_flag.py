@@ -5,7 +5,11 @@ import pytest
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
 from utilities import console
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 @pytest.fixture()
@@ -28,10 +32,12 @@ def cpu_module(default_client):
 
 @pytest.fixture()
 def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
+    name = "vm-cpu-flags-positive"
     with VirtualMachineForTests(
-        name="vm-cpu-flags-positive",
+        name=name,
         namespace=cpu_features_namespace.name,
         cpu_flags={"model": cpu_module},
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
@@ -53,10 +59,12 @@ def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
     ids=["CPU-flag: Bad-Skylake-Server", "CPU-flag: commodore64"],
 )
 def cpu_flag_vm_negative(request, default_client, cpu_features_namespace):
+    name = f"vm-cpu-flags-negative-{request.param[1]}"
     with VirtualMachineForTests(
-        name=f"vm-cpu-flags-negative-{request.param[1]}",
+        name=name,
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start()
         yield vm

@@ -14,7 +14,11 @@ from tests.network.utils import (
 )
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 BR1TEST = "br1test"
@@ -62,6 +66,11 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         data = super()._cloud_init_user_data()
         data["bootcmd"] = self.bootcmds
         return data
+
+    def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
+        res = super()._to_dict()
+        return res
 
 
 @pytest.fixture(scope="module", autouse=True)

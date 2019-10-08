@@ -8,7 +8,11 @@ import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.namespace import Namespace
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 def check_vm_dumpxml(vm, cores, sockets, threads):
@@ -68,13 +72,14 @@ def vm_with_cpu_support(request, cpu_sockets_threads_ns):
     """
     VM with CPU support (cores,sockets,threads)
     """
-
+    name = f"vm-cpu-support-{time.time()}"
     with VirtualMachineForTests(
-        name=f"vm-cpu-support-{time.time()}",
+        name=name,
         namespace=cpu_sockets_threads_ns.name,
         cpu_cores=request.param["cores"],
         cpu_sockets=request.param["sockets"],
         cpu_threads=request.param["threads"],
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -86,8 +91,9 @@ def no_cpu_settings_vm(cpu_sockets_threads_ns):
     """
     Create VM without specific CPU settings
     """
+    name = "no-cpu-settings-vm"
     with VirtualMachineForTests(
-        name="no-cpu-settings-vm", namespace=cpu_sockets_threads_ns.name
+        name=name, namespace=cpu_sockets_threads_ns.name, body=fedora_vm_body(name)
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -108,12 +114,14 @@ def test_vm_with_cpu_limitation(cpu_sockets_threads_ns):
     """
     Test VM with cpu limitation, CPU requests and limits are equals
     """
+    name = "vm-cpu-limitation"
     with VirtualMachineForTests(
-        name="vm-cpu-limitation",
+        name=name,
         namespace=cpu_sockets_threads_ns.name,
         cpu_cores=2,
         cpu_limits=2,
         cpu_requests=2,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -126,12 +134,14 @@ def test_vm_with_cpu_limitation_negative(cpu_sockets_threads_ns):
     Test VM with cpu limitation
     negative case: CPU requests is larger then limits
     """
+    name = "vm-cpu-limitation-negative"
     with pytest.raises(UnprocessibleEntityError):
         with VirtualMachineForTests(
-            name="vm-cpu-limitation-negative",
+            name=name,
             namespace=cpu_sockets_threads_ns.name,
             cpu_limits=2,
             cpu_requests=4,
+            body=fedora_vm_body(name),
         ):
             pass
 

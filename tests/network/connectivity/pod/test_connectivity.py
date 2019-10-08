@@ -8,7 +8,11 @@ import tests.network.utils as network_utils
 from pytest_testconfig import config as py_config
 from tests.network.connectivity import utils
 from utilities.infra import create_ns
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 @pytest.fixture(scope="module")
@@ -18,11 +22,13 @@ def module_namespace(unprivileged_client):
 
 @pytest.fixture(scope="module")
 def vma(nodes, module_namespace, unprivileged_client):
+    name = "vma"
     with VirtualMachineForTests(
         namespace=module_namespace.name,
-        name="vma",
+        name=name,
         node_selector=nodes[0].name,
         client=unprivileged_client,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -31,11 +37,13 @@ def vma(nodes, module_namespace, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def vmb(nodes, module_namespace, unprivileged_client):
+    name = "vmb"
     with VirtualMachineForTests(
         namespace=module_namespace.name,
-        name="vmb",
+        name=name,
         node_selector=nodes[1].name,
         client=unprivileged_client,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

@@ -4,7 +4,11 @@ VM with sidecar
 
 import pytest
 from utilities import console
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 CHECK_DMIDECODE_PACKAGE = (
@@ -19,6 +23,7 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
         )
 
     def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
         res = super()._to_dict()
 
         res["spec"]["template"]["metadata"].setdefault("annotations", {})

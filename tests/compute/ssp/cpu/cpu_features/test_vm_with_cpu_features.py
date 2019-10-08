@@ -7,7 +7,11 @@ from resources.configmap import ConfigMap
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
 from utilities import console
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 @pytest.fixture(
@@ -24,10 +28,12 @@ from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
     ids=["Feature: name: pcid", "Feature: name: pcid , policy:force"],
 )
 def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
+    name = f"vm-cpu-features-positive-{request.param[1]}"
     with VirtualMachineForTests(
-        name=f"vm-cpu-features-positive-{request.param[1]}",
+        name=name,
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
@@ -49,10 +55,12 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
     ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid "],
 )
 def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
+    name = f"vm-cpu-features-negative-{request.param[1]}"
     with VirtualMachineForTests(
-        name=f"vm-cpu-features-negative-{request.param[1]}",
+        name=name,
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start()
         yield vm
@@ -60,10 +68,12 @@ def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
 
 @pytest.fixture()
 def cpu_features_vm_require_pcid(cpu_features_namespace):
+    name = "vm-cpu-features-require"
     with VirtualMachineForTests(
-        name=f"vm-cpu-features-require",
+        name=name,
         namespace=cpu_features_namespace.name,
         cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start()
         yield vm

@@ -3,7 +3,7 @@ import tests.network.utils as network_utils
 from resources.network_addons_config import NetworkAddonsConfig
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module", autouse="True")
@@ -43,11 +43,13 @@ def network_addons_config_cr(default_client):
 
 @pytest.fixture(scope="module")
 def bridge_attached_vm(module_namespace, br1test_nad):
+    name = "oper-test-vm"
     with VirtualMachineForTests(
         namespace=module_namespace.name,
         interfaces=[br1test_nad.name],
         networks={br1test_nad.name: br1test_nad.name},
-        name="oper-test-vm",
+        name=name,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         yield vm

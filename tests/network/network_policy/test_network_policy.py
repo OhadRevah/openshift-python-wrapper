@@ -9,6 +9,7 @@ from utilities.infra import create_ns
 from utilities.virt import (
     CommandExecFailed,
     VirtualMachineForTests,
+    fedora_vm_body,
     vm_console_run_commands,
     wait_for_vm_interfaces,
 )
@@ -21,6 +22,7 @@ class VirtualMachineMasquerade(VirtualMachineForTests):
         )
 
     def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
         res = super()._to_dict()
         vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
             "interfaces"
@@ -88,9 +90,10 @@ def allow_http80_port(namespace_1):
 
 @pytest.fixture(scope="module")
 def vma(namespace_1, nodes, unprivileged_client):
+    name = "vma"
     with VirtualMachineMasquerade(
         namespace=namespace_1.name,
-        name="vma",
+        name=name,
         node_selector=nodes[0].name,
         client=unprivileged_client,
     ) as vm:
@@ -101,11 +104,13 @@ def vma(namespace_1, nodes, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def vmb(namespace_2, nodes, unprivileged_client):
+    name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace_2.name,
-        name="vmb",
+        name=name,
         node_selector=nodes[0].name,
         client=unprivileged_client,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

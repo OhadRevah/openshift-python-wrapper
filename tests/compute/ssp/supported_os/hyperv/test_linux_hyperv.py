@@ -8,7 +8,7 @@ This test case includes only Linux based test case
 import pytest
 import xmltodict
 from resources.namespace import Namespace
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 class HyperVVM(VirtualMachineForTests):
@@ -18,6 +18,7 @@ class HyperVVM(VirtualMachineForTests):
         )
 
     def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
         res = super()._to_dict()
         res["spec"]["template"]["spec"]["domain"]["clock"] = {
             "utc": {},

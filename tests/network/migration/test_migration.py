@@ -18,6 +18,7 @@ from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     VirtualMachineForTests,
+    fedora_vm_body,
     vm_console_run_commands,
     wait_for_vm_interfaces,
 )
@@ -79,6 +80,7 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         return data
 
     def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
         res = super()._to_dict()
         vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
             "interfaces"

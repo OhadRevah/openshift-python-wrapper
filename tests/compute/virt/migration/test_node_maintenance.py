@@ -14,7 +14,7 @@ from resources.virtual_machine import (
 )
 from tests.compute.virt import utils as virt_utils
 from utilities import console
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @contextmanager
@@ -49,10 +49,12 @@ def skip_when_other_vmi_present(default_client):
 
 @pytest.fixture()
 def vm0(virt_namespace):
+    name = f"vm-nodemaintenance-{random.randrange(99999)}"
     with VirtualMachineForTests(
-        name=f"vm-nodemaintenance-{random.randrange(99999)}",
+        name=name,
         namespace=virt_namespace.name,
         eviction=True,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

@@ -12,7 +12,11 @@ from tests.network.utils import (
 )
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
-from utilities.virt import VirtualMachineForTests, wait_for_vm_interfaces
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 MTU_SIZE = 9000
@@ -44,6 +48,11 @@ class BridgedMtuFedoraVirtualMachine(VirtualMachineForTests):
         data = super()._cloud_init_user_data()
         data["bootcmd"] = nmcli_add_con_cmds("eth1", self.iface_ip)
         return data
+
+    def _to_dict(self):
+        self.body = fedora_vm_body(self.name)
+        res = super()._to_dict()
+        return res
 
 
 @pytest.fixture(scope="module", autouse=True)

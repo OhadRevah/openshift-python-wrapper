@@ -7,6 +7,7 @@ from utilities import console
 from utilities.infra import create_ns
 from utilities.virt import (
     VirtualMachineForTests,
+    fedora_vm_body,
     vm_console_run_commands,
     wait_for_vm_interfaces,
 )
@@ -19,10 +20,12 @@ def restart_test_namespace(unprivileged_client):
 
 @pytest.fixture()
 def vm_to_restart(unprivileged_client, restart_test_namespace):
+    name = "vmi-to-restart"
     with VirtualMachineForTests(
         client=unprivileged_client,
-        name="vmi-to-restart",
+        name=name,
         namespace=restart_test_namespace.name,
+        body=fedora_vm_body(name),
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
