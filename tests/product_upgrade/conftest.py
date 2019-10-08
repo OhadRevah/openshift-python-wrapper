@@ -4,16 +4,11 @@ VM to VM connectivity
 
 import pytest
 from resources.template import Template
-from resources.virtual_machine import VirtualMachine
 from tests.network.utils import linux_bridge_nad
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.storage import DataVolumeTestResource
-from utilities.virt import (
-    VirtualMachineForTests,
-    get_template_by_labels,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_vm_interfaces
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -91,33 +86,16 @@ def vm_for_upgrade(
 ):
     networks = {bridge_on_all_nodes.bridge_name: bridge_on_all_nodes.bridge_name}
     vm_name = "vm-for-product-upgrade"
-    template_instance = get_template_by_labels(
-        client=default_client, labels=data_volume.template_labels
-    )
-    resources_list = template_instance.process(
-        **{"NAME": vm_name, "PVCNAME": data_volume.name}
-    )
-    for resource in resources_list:
-        if (
-            resource["kind"] == VirtualMachine.kind
-            and resource["metadata"]["name"] == vm_name
-        ):
-            # Template have bridge pod network that wont work for migration.
-            # Replacing the bridge pod network with masquerade.
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1751869
-            resource["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"] = [
-                {"masquerade": {}, "name": "default"}
-            ]
-            with VirtualMachineForTests(
-                name=vm_name,
-                namespace=upgrade_namespace.name,
-                body=resource,
-                networks=networks,
-                interfaces=sorted(networks.keys()),
-                client=unprivileged_client,
-                set_cloud_init=False,
-            ) as vm:
-                vm.start(wait=True)
-                vm.vmi.wait_until_running()
-                wait_for_vm_interfaces(vmi=vm.vmi, timeout=1100)
-                yield vm
+    with VirtualMachineForTestsFromTemplate(
+        name=vm_name,
+        namespace=upgrade_namespace.name,
+        client=default_client,
+        labels=data_volume.template_labels,
+        dv=data_volume.name,
+        networks=networks,
+        interfaces=sorted(networks.keys()),
+    ) as vm:
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
+        wait_for_vm_interfaces(vmi=vm.vmi, timeout=1100)
+        yield vm

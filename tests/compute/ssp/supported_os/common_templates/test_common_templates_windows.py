@@ -10,9 +10,8 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.template import Template
 from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachine
 from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTests, get_template_by_labels
+from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 LOGGER = logging.getLogger(__name__)
@@ -95,21 +94,14 @@ def windows_vm(default_client, data_volume, windows_namespace):
     Create Windows VM with CNV common templates.
     """
     vm_name = f"{data_volume.name.strip('dv-')}"
-    template_instance = get_template_by_labels(
-        client=default_client, labels=data_volume.template_labels
-    )
-    resources_list = template_instance.process(
-        **{"NAME": vm_name, "PVCNAME": data_volume.name}
-    )
-    for resource in resources_list:
-        if (
-            resource["kind"] == VirtualMachine.kind
-            and resource["metadata"]["name"] == vm_name
-        ):
-            with VirtualMachineForTests(
-                name=vm_name, namespace=windows_namespace.name, body=resource
-            ) as vm:
-                yield vm
+    with VirtualMachineForTestsFromTemplate(
+        name=vm_name,
+        namespace=windows_namespace.name,
+        client=default_client,
+        labels=data_volume.template_labels,
+        dv=data_volume.name,
+    ) as vm:
+        yield vm
 
 
 def test_common_templates_with_windows(winrmcli_pod, data_volume, windows_vm):

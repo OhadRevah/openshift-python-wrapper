@@ -203,15 +203,64 @@ class VirtualMachineForTests(VirtualMachine):
         return res
 
 
-def get_template_by_labels(client, labels):
-    labels = [f"{label}=true" for label in labels]
-    template = Template.get(
-        dyn_client=client,
-        singular_name=Template.singular_name,
-        namespace="openshift",
-        label_selector=",".join(labels),
-    )
-    return list(template)[0]
+class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
+    def __init__(
+        self,
+        name,
+        namespace,
+        client,
+        labels,
+        dv,
+        set_cloud_init=False,
+        networks=None,
+        interfaces=None,
+    ):
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            client=client,
+            set_cloud_init=set_cloud_init,
+            networks=networks,
+            interfaces=interfaces,
+        )
+        self.template_labels = labels
+        self.dv = dv
+
+    def _to_dict(self):
+        self.body = self.process_template()
+        res = super()._to_dict()
+        return res
+
+    def process_template(self):
+        template_instance = self.get_template_by_labels()
+        resources_list = template_instance.process(
+            **{"NAME": self.name, "PVCNAME": self.dv}
+        )
+        for resource in resources_list:
+            if (
+                resource["kind"] == VirtualMachine.kind
+                and resource["metadata"]["name"] == self.name
+            ):
+                # Template have bridge pod network that wont work for migration.
+                # Replacing the bridge pod network with masquerade.
+                # https://bugzilla.redhat.com/show_bug.cgi?id=1751869
+                resource["spec"]["template"]["spec"]["domain"]["devices"][
+                    "interfaces"
+                ] = [{"masquerade": {}, "name": "default"}]
+                return resource
+
+        raise ValueError(f"Template not found for {self.name}")
+
+    def get_template_by_labels(self):
+        template = Template.get(
+            dyn_client=self.client,
+            singular_name=Template.singular_name,
+            namespace="openshift",
+            label_selector=",".join(
+                [f"{label}=true" for label in self.template_labels]
+            ),
+        )
+        return list(template)[0]
 
 
 def vm_console_run_commands(console_impl, vm, commands, timeout=60):

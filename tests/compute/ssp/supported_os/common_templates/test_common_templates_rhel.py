@@ -6,10 +6,9 @@ Common templates test RHEL
 
 import pytest
 from resources.template import Template
-from resources.virtual_machine import VirtualMachine
 from utilities import console
 from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTests, get_template_by_labels
+from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 @pytest.fixture(
@@ -70,30 +69,18 @@ def test_common_templates_with_rhel(default_client, data_volume, namespace):
     Test CNV common templates with RHEL
     """
     vm_name = f"{data_volume.name.strip('dv-')}"
-    template_instance = get_template_by_labels(
-        client=default_client, labels=data_volume.template_labels
-    )
-    resources_list = template_instance.process(
-        **{"NAME": vm_name, "PVCNAME": data_volume.name}
-    )
-    for resource in resources_list:
-        if (
-            resource["kind"] == VirtualMachine.kind
-            and resource["metadata"]["name"] == vm_name
-        ):
-            with VirtualMachineForTests(
-                name=vm_name,
-                namespace=namespace.name,
-                body=resource,
-                set_cloud_init=False,
-            ) as vm:
-                vm.start(wait=True)
-                vm.vmi.wait_until_running()
-                with console.Fedora(
-                    vm=vm, username="cloud-user", password="redhat", timeout=1100
-                ) as vm_console:
-                    vm_console.sendline(
-                        f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"
-                    )
-                    vm_console.expect("1", timeout=60)
-                vm.stop(wait=True)
+    with VirtualMachineForTestsFromTemplate(
+        name=vm_name,
+        namespace=namespace.name,
+        client=default_client,
+        labels=data_volume.template_labels,
+        dv=data_volume.name,
+    ) as vm:
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
+        with console.RHEL(vm=vm, timeout=1100) as vm_console:
+            vm_console.sendline(
+                f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"
+            )
+            vm_console.expect("1", timeout=60)
+        vm.stop(wait=True)
