@@ -186,15 +186,34 @@ def test_successful_import_secure_image(
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
-@pytest.mark.polarion("CNV-2339")
+@pytest.mark.parametrize(
+    ("content_type", "file_name"),
+    [
+        pytest.param(
+            ImportFromHttpDataVolume.ContentType.ARCHIVE,
+            TAR_IMG,
+            marks=(pytest.mark.polarion("CNV-2339")),
+        ),
+        pytest.param(
+            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            COMPRESSED_XZ_FILE,
+            marks=(pytest.mark.polarion("CNV-784")),
+        ),
+    ],
+    ids=["import_basic_auth_archive", "import_basic_auth_kubevirt"],
+)
 def test_successful_import_basic_auth(
-    storage_ns, images_internal_http_server, internal_http_secret
+    storage_ns,
+    images_internal_http_server,
+    internal_http_secret,
+    content_type,
+    file_name,
 ):
     with ImportFromHttpDataVolume(
         name="import-http-dv",
         namespace=storage_ns.name,
-        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
-        url=get_file_url(images_internal_http_server["http_auth"], TAR_IMG),
+        content_type=content_type,
+        url=get_file_url(images_internal_http_server["http_auth"], file_name),
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
         secret=internal_http_secret.name,
