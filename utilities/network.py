@@ -90,12 +90,14 @@ def _set_iface_mtu(pod, port, mtu):
     pod.execute(command=["ip", "link", "set", port, "mtu", mtu])
 
 
-class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,
         name,
         worker_pods,
         bridge_name,
+        bridge_type,
+        stp_config,
         ports=None,
         mtu=None,
         node_selector=None,
@@ -108,6 +110,8 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             name (str): Policy name.
             worker_pods (list): List of Pods instances.
             bridge_name (str): Bridge name.
+            bridge_type (str): Bridge type (Linux Bridge, OVS)
+            stp_config (bool): Spanning Tree enabled/disabled.
             ports (list): The bridge's slave port(s).
             mtu (int): MTU size
             ipv4_dhcp: determines if ipv4_dhcp should be used
@@ -115,6 +119,8 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         super().__init__(name=name)
         self._worker_pods = worker_pods
         self.bridge_name = bridge_name
+        self.bridge_type = bridge_type
+        self.stp_config = stp_config
         self.ports = ports or []
         self.mtu = mtu
         self.bridge = None
@@ -136,12 +142,9 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             bridge_ports = [{"name": port} for port in self.ports]
             self.bridge = {
                 "name": self.bridge_name,
-                "type": "linux-bridge",
+                "type": self.bridge_type,
                 "state": "up",
-                "bridge": {
-                    "options": {"stp": {"enabled": False}},
-                    "port": bridge_ports,
-                },
+                "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
             }
 
         if self._ipv4_dhcp:
@@ -280,6 +283,71 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 self.set_interface(interface)
 
         self.apply()
+
+
+class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        worker_pods,
+        bridge_name,
+        stp_config=False,
+        ports=None,
+        mtu=None,
+        node_selector=None,
+    ):
+        super().__init__(
+            name,
+            worker_pods,
+            bridge_name,
+            bridge_type="linux-bridge",
+            stp_config={"enabled": stp_config},
+            ports=None,
+            mtu=None,
+            node_selector=None,
+        )
+
+
+class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        worker_pods,
+        bridge_name,
+        ports,
+        stp_config=True,
+        mtu=None,
+        node_selector=None,
+    ):
+        super().__init__(
+            name,
+            worker_pods,
+            bridge_name,
+            bridge_type="ovs-bridge",
+            stp_config=stp_config,
+            ports=ports,
+            mtu=None,
+            node_selector=node_selector,
+        )
+
+    def _to_dict(self):
+        res = super()._to_dict()
+
+        if self.ports is None:
+            # If no ports were specified - should add:
+            # 1. an internal port entry
+            # 2. an interface entry (of type "ovs-interface")
+            ovs_iface_name = "ovs"
+            for idx, iface in enumerate(res["spec"]["desiredState"]["interfaces"]):
+                ovs_iface_name = f"{ovs_iface_name}{idx}"
+                if iface["type"] == "ovs-bridge":
+                    iface["bridge"]["port"].append({"name": ovs_iface_name})
+                    break
+
+            ovs_iface = {"name": ovs_iface_name, "type": "ovs-interface", "state": "up"}
+            res["spec"]["desiredState"]["interfaces"].append(ovs_iface)
+
+        return res
 
 
 class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
