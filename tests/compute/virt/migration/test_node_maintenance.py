@@ -14,7 +14,13 @@ from resources.virtual_machine import (
 )
 from tests.compute.virt import utils as virt_utils
 from utilities import console
+from utilities.infra import create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
+
+
+@pytest.fixture(scope="module", autouse=True)
+def node_maintenance_ns(unprivileged_client):
+    yield from create_ns(client=unprivileged_client, name="node-maintenance-ns")
 
 
 @contextmanager
@@ -48,13 +54,14 @@ def skip_when_other_vmi_present(default_client):
 
 
 @pytest.fixture()
-def vm0(virt_namespace):
+def vm0(node_maintenance_ns, unprivileged_client):
     name = f"vm-nodemaintenance-{random.randrange(99999)}"
     with VirtualMachineForTests(
         name=name,
-        namespace=virt_namespace.name,
+        namespace=node_maintenance_ns.name,
         eviction=True,
         body=fedora_vm_body(name),
+        client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
