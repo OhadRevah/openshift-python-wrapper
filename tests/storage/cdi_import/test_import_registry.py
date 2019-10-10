@@ -63,10 +63,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
 
         for vm in [vm.name for vm in dvs]:
             rvm = VirtualMachineForTests(
-                name=vm,
-                namespace=storage_ns.name,
-                dv=vm,
-                cloud_init_data=utils.CLOUD_INIT_USER_DATA,
+                name=vm, namespace=storage_ns.name, dv=vm, set_cloud_init=False
             )
             rvm.create(wait=True)
             vms.append(rvm)
