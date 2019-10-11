@@ -56,14 +56,18 @@ class Console(object):
     def _connect(self, login_prompt, username, password, prompt):
         self.child.send("\n\n")
         self.child.expect(login_prompt, timeout=300)
+        LOGGER.info(f"{self.vm.name}: Using username {self.username}")
         self.child.sendline(username)
         if self.password:
             self.child.expect("Password:")
+            LOGGER.info(f"{self.vm.name}: Using password {self.password}")
             self.child.sendline(password)
         self.child.expect(prompt)
+        LOGGER.info(f"{self.vm.name}: Got prompt.")
         if self.child.after:
-            LOGGER.error(self.err_msg.format(vm=self.vm.name, error=self.child.after))
-            return False
+            raise ConnectionError(
+                f"Failed to open console to {self.vm.name}. error: {self.child.after}"
+            )
 
         return self.child
 
@@ -72,7 +76,6 @@ class Console(object):
         Connect to console
         """
         LOGGER.info(f"Connect to {self.vm.name} console")
-        self.err_msg = "Failed to get console to {vm}. error: {error}"
         cmd = "virtctl console {vm}".format(vm=self.vm.name)
         if self.vm.namespace:
             cmd += " -n {namespace}".format(namespace=self.vm.namespace)
