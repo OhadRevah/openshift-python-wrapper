@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import multiprocessing
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -36,6 +37,8 @@ def test_disk_image_not_conform_to_registy_disk(storage_ns):
 def test_public_registry_multiple_data_volume(storage_ns):
     dvs = []
     vms = []
+    dvs_processes = []
+    vms_processes = []
     try:
         for dv in ("dv1", "dv2", "dv3"):
             rdv = ImportFromRegistryDataVolume(
@@ -46,9 +49,17 @@ def test_public_registry_multiple_data_volume(storage_ns):
                 size="5Gi",
                 storage_class=py_config["storage_defaults"]["storage_class"],
             )
-            rdv.create()
+
+            dv_process = multiprocessing.Process(target=rdv.create)
+            dv_process.start()
+            dvs_processes.append(dv_process)
             dvs.append(rdv)
-            rdv.wait_for_status(status=rdv.Status.SUCCEEDED, timeout=300)
+
+        for dvp in dvs_processes:
+            dvp.join()
+
+        for dv in dvs:
+            dv.wait_for_status(status=rdv.Status.SUCCEEDED, timeout=300)
 
         for vm in [vm.name for vm in dvs]:
             rvm = VirtualMachineForTests(
@@ -57,11 +68,20 @@ def test_public_registry_multiple_data_volume(storage_ns):
                 dv=vm,
                 cloud_init_data=utils.CLOUD_INIT_USER_DATA,
             )
-            rvm.create()
+            rvm.create(wait=True)
             vms.append(rvm)
-            rvm.start(wait=True)
-            rvm.vmi.wait_until_running()
-            with console.Cirros(vm=rvm) as vm_console:
+
+        for vm in vms:
+            vm_process = multiprocessing.Process(target=vm.start)
+            vm_process.start()
+            vms_processes.append(vm_process)
+
+        for vmp in vms_processes:
+            vmp.join()
+
+        for vm in vms:
+            vm.vmi.wait_until_running()
+            with console.Cirros(vm=vm) as vm_console:
                 vm_console.sendline("lsblk | grep disk | wc -l")
                 vm_console.expect("2", timeout=60)
     finally:
