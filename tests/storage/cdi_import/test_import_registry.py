@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 import pytest
 from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
@@ -9,6 +7,7 @@ from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
 from tests.storage import utils
 from utilities import console
+from utilities.infra import get_cert
 from utilities.virt import VirtualMachineForTests
 
 
@@ -123,7 +122,9 @@ def test_private_registry_recover_after_missing_configmap(
         )
         # create the configmap with the untrusted certificate
         with ConfigMap(
-            name="registry-cert-configmap", namespace=storage_ns.name, data=get_cert()
+            name="registry-cert-configmap",
+            namespace=storage_ns.name,
+            data=get_cert("registry_cert"),
         ) as configmap:
             assert configmap is not None
             dv.wait()
@@ -139,7 +140,9 @@ def test_private_registry_with_untrusted_certificate(
     storage_ns, images_private_registry_server
 ):
     with ConfigMap(
-        name="registry-cert-configmap", namespace=storage_ns.name, data=get_cert()
+        name="registry-cert-configmap",
+        namespace=storage_ns.name,
+        data=get_cert("registry_cert"),
     ) as configmap:
         assert configmap is not None
         create_dv_and_vm(
@@ -281,12 +284,3 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
             cert_configmap=None,
         ):
             return
-
-
-def get_cert():
-    path = os.path.join(
-        "tests/storage/cdi_import", py_config[py_config["region"]]["registry_cert"]
-    )
-    with open(path, "r") as cert_content:
-        data = cert_content.read()
-    return data

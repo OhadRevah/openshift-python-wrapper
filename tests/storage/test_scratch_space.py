@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import threading
 
 import pytest
@@ -18,6 +17,7 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
+from utilities.infra import get_cert
 
 
 LOGGER = logging.getLogger(__name__)
@@ -72,7 +72,9 @@ def test_no_scratch_space_import_https_data_volume(
 ):
     url = get_file_url_https_server(images_https_server, file_name)
     with ConfigMap(
-        name="https-cert-configmap", namespace=storage_ns.name, data=get_cert("https")
+        name="https-cert-configmap",
+        namespace=storage_ns.name,
+        data=get_cert("https_cert"),
     ) as configmap:
         create_dv_and_vm_no_scratch_space(
             dv_name, storage_ns.name, url, configmap.name, None, content_type, size
@@ -109,7 +111,9 @@ def test_scratch_space_import_https_data_volume(
 ):
     url = get_file_url_https_server(images_https_server, file_name)
     with ConfigMap(
-        name="https-cert-configmap", namespace=storage_ns.name, data=get_cert("https")
+        name="https-cert-configmap",
+        namespace=storage_ns.name,
+        data=get_cert("https_cert"),
     ) as configmap:
         create_dv_and_vm(
             server_type="https",
@@ -268,7 +272,7 @@ def test_scratch_space_import_registry_data_volume(
     with ConfigMap(
         name="registry-cert-configmap",
         namespace=storage_ns.name,
-        data=get_cert("registry"),
+        data=get_cert("registry_cert"),
     ) as configmap:
         create_dv_and_vm(
             "registry",
@@ -279,21 +283,6 @@ def test_scratch_space_import_registry_data_volume(
             ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
             "5Gi",
         )
-
-
-def get_cert(server_type):
-    path = ""
-    if server_type == "registry":
-        path = os.path.join(
-            "tests/storage/cdi_import", py_config[py_config["region"]]["registry_cert"]
-        )
-    elif server_type == "https":
-        path = os.path.join(
-            "tests/storage/cdi_import", py_config[py_config["region"]]["https_cert"]
-        )
-    with open(path, "r") as cert_content:
-        data = cert_content.read()
-    return data
 
 
 def get_file_url_http_server(get_images_external_http_server, file_name):

@@ -5,7 +5,6 @@ Import from HTTP server
 """
 
 import logging
-import os
 
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
@@ -14,6 +13,7 @@ from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
+from utilities.infra import get_cert
 
 
 LOGGER = logging.getLogger(__name__)
@@ -330,20 +330,13 @@ def test_unpack_compressed(
         dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
 
 
-def get_cert():
-    with open(
-        os.path.join("tests/storage/cdi_import", "https.crt"), "r"
-    ) as cert_content:
-        return cert_content.read()
-
-
 @pytest.mark.polarion("CNV-2811")
 def test_certconfigmap(storage_ns, images_https_server):
     with ConfigMap(
         name="https-cert",
         namespace=storage_ns.name,
         cert_name="ca.pem",
-        data=get_cert(),
+        data=get_cert("https_cert"),
     ) as configmap:
         with ImportFromHttpDataVolume(
             name="cnv-2811",

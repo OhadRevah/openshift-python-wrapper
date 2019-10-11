@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import socket
 import ssl
@@ -104,3 +105,12 @@ def generate_yaml_from_template(file_, **kwargs):
     template = jinja2.Template(data)
     out = template.render(**kwargs)
     return yaml.safe_load(out)
+
+
+def get_cert(server_type):
+    path = os.path.join(
+        "tests/storage/cdi_import", py_config[py_config["region"]][server_type]
+    )
+    with open(path, "r") as cert_content:
+        data = cert_content.read()
+    return data
