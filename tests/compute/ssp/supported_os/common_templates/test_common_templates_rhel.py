@@ -49,6 +49,18 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
             },
             marks=(pytest.mark.polarion("CNV-2211")),
         ),
+        pytest.param(
+            {
+                "image": "rhel-images/rhel-81/rhel-81.qcow2",
+                "os_release": "8.1",
+                "template_labels": [
+                    f"{Template.Labels.OS}/rhel8.0",
+                    f"{Template.Labels.WORKLOAD}/server",
+                    f"{Template.Labels.FLAVOR}/tiny",
+                ],
+            },
+            marks=(pytest.mark.polarion("CNV-3091")),
+        ),
     ]
 )
 def data_volume(request, images_external_http_server, namespace):
