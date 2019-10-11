@@ -91,7 +91,7 @@ def vm_for_upgrade(
         namespace=upgrade_namespace.name,
         client=default_client,
         labels=data_volume.template_labels,
-        dv=data_volume.name,
+        template_dv=data_volume.name,
         networks=networks,
         interfaces=sorted(networks.keys()),
     ) as vm:

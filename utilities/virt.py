@@ -213,7 +213,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         namespace,
         client,
         labels,
-        dv,
+        template_dv,
         set_cloud_init=False,
         networks=None,
         interfaces=None,
@@ -227,7 +227,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             interfaces=interfaces,
         )
         self.template_labels = labels
-        self.dv = dv
+        self.template_dv = template_dv
 
     def _to_dict(self):
         self.body = self.process_template()
@@ -237,7 +237,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def process_template(self):
         template_instance = self.get_template_by_labels()
         resources_list = template_instance.process(
-            **{"NAME": self.name, "PVCNAME": self.dv}
+            **{"NAME": self.name, "PVCNAME": self.template_dv}
         )
         for resource in resources_list:
             if (

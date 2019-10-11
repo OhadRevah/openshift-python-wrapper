@@ -99,7 +99,7 @@ def windows_vm(default_client, data_volume, windows_namespace):
         namespace=windows_namespace.name,
         client=default_client,
         labels=data_volume.template_labels,
-        dv=data_volume.name,
+        template_dv=data_volume.name,
     ) as vm:
         yield vm
 

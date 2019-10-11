@@ -74,7 +74,7 @@ def test_common_templates_with_rhel(default_client, data_volume, namespace):
         namespace=namespace.name,
         client=default_client,
         labels=data_volume.template_labels,
-        dv=data_volume.name,
+        template_dv=data_volume.name,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
