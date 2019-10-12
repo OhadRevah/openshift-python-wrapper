@@ -17,6 +17,9 @@ from utilities.virt import VirtualMachineForTests, run_virtctl_command
 LOGGER = logging.getLogger(__name__)
 
 
+CLOUD_INIT_USER_DATA = {"#!/bin/sh": "echo 'printed from cloud-init userdata'"}
+
+
 class PodWithPVC(Pod):
     def __init__(self, name, namespace, pvc_name):
         super().__init__(name=name, namespace=namespace)
@@ -64,7 +67,10 @@ def check_disk_count_in_vm_with_dv(vm):
 @contextmanager
 def create_vm_with_dv(dv):
     with VirtualMachineForTests(
-        name="cirros-vm", namespace=dv.namespace, dv=dv.name, set_cloud_init=False
+        name="cirros-vm",
+        namespace=dv.namespace,
+        dv=dv.name,
+        cloud_init_data=CLOUD_INIT_USER_DATA,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running(timeout=300)

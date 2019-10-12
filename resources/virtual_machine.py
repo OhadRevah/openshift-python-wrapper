@@ -16,6 +16,27 @@ LOGGER = logging.getLogger(__name__)
 API_GROUP = "kubevirt.io"
 
 
+def get_base_vmi_spec():
+    return {
+        "domain": {
+            "devices": {
+                "disks": [{"disk": {"bus": "virtio"}, "name": "containerdisk"}]
+            },
+            "machine": {"type": ""},
+            "resources": {"requests": {"memory": "64M"}},
+        },
+        "terminationGracePeriodSeconds": 0,
+        "volumes": [
+            {
+                "name": "containerdisk",
+                "containerDisk": {
+                    "image": "kubevirt/cirros-container-disk-demo:latest"
+                },
+            }
+        ],
+    }
+
+
 class AnsibleLoginAnnotationsMixin(object):
     """A mixin class that enhances the object.metadata.annotations
        with login credentials stored in Ansible variables.
@@ -77,8 +98,9 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     def _to_dict(self):
         res = super()._to_dict()
-        res["spec"] = {"template": {"spec": {}}}
+        res["spec"] = {"template": {"spec": get_base_vmi_spec()}, "running": False}
         self._add_login_annotation(vmi=res["spec"]["template"])
+
         return res
 
     def start(self, timeout=TIMEOUT, wait=False):
@@ -176,6 +198,8 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     def _to_dict(self):
         res = super()._to_dict()
+        res["spec"] = get_base_vmi_spec()
+
         self._add_login_annotation(vmi=res)
 
         return res
