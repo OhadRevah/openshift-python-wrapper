@@ -7,7 +7,11 @@ from kubernetes.client.rest import ApiException
 from resources.service_account import ServiceAccount
 from utilities import console
 from utilities.infra import create_ns
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    VirtualMachineForTests,
+    fedora_vm_body,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -30,6 +34,7 @@ def vm_vmi(sa_namespace, service_account, unprivileged_client):
         service_accounts=[service_account.name],
         body=fedora_vm_body(name),
         client=unprivileged_client,
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -73,5 +78,6 @@ def test_vm_with_2_service_accounts(sa_namespace):
             namespace=sa_namespace.name,
             service_accounts=["sa-1", "sa-2"],
             body=fedora_vm_body(name),
+            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         ):
             return

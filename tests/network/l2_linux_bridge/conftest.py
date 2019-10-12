@@ -7,6 +7,7 @@ from utilities import console
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     vm_console_run_commands,
@@ -31,6 +32,51 @@ VMB_DHCP_ADDRESS = "192.168.3.3"
 DOT1Q_VLAN_ID = 10
 
 
+def _cloud_init_data(
+    ip_addresses,
+    mpls_local_ip,
+    mpls_local_tag,
+    mpls_dest_ip,
+    mpls_dest_tag,
+    mpls_route_next_hop,
+    cloud_init_extra_user_data,
+):
+    data = FEDORA_CLOUD_INIT_PASSWORD
+
+    bootcmds = []
+    bootcmds.extend(nmcli_add_con_cmds("eth1", ip_addresses[0]))
+    bootcmds.extend(nmcli_add_con_cmds("eth2", ip_addresses[1]))
+    bootcmds.extend(nmcli_add_con_cmds("eth3", ip_addresses[2]))
+    bootcmds.extend(nmcli_add_con_cmds("eth4", ip_addresses[3]))
+    bootcmds.append(
+        "nmcli conn add con-name VLAN_10 type vlan ifname eth1.10 ipv4.method manual ipv4.addresses "
+        f"{ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true"
+    )
+
+    data["bootcmd"] = bootcmds
+
+    runcmd = [
+        "modprobe mpls_router",  # In order to test mpls we need to load driver
+        "sysctl -w net.mpls.platform_labels=1000",  # Activate mpls labeling feature
+        "sysctl -w net.mpls.conf.eth4.input=1",  # Allow incoming mpls traffic
+        "sysctl -w net.ipv4.conf.all.arp_ignore=1",  # 2 kernel flags are used to disable wrong arp behavior
+        "sysctl -w net.ipv4.conf.all.arp_announce=2",  # Send arp reply only if ip belongs to the interface
+        f"ip addr add {mpls_local_ip} dev lo",
+        f"ip -f mpls route add {mpls_local_tag} dev lo",
+        "nmcli connection up eth4",  # In order to add mpls route we need to make sure that connection is UP
+        f"ip route add {mpls_dest_ip} encap mpls {mpls_dest_tag} via inet {mpls_route_next_hop}",
+        "nmcli connection up eth2",
+        "ip route add 224.0.0.0/4 dev eth2",
+    ]
+    data["runcmd"] = runcmd
+
+    if cloud_init_extra_user_data:
+        for k, v in cloud_init_extra_user_data.items():
+            data[k] = data[k] + v
+
+    return data
+
+
 class VirtualMachineAttachedToBridge(VirtualMachineForTests):
     def __init__(
         self,
@@ -46,6 +92,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         dhcp_pool_address,
         cloud_init_extra_user_data=None,
         client=None,
+        cloud_init_data=None,
     ):
 
         self.mpls_local_tag = mpls_local_tag
@@ -67,48 +114,13 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
             interfaces=interfaces,
             networks=networks,
             client=client,
+            cloud_init_data=cloud_init_data,
         )
 
     def _to_dict(self):
         self.body = fedora_vm_body(self.name)
         res = super()._to_dict()
         return res
-
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-
-        bootcmds = []
-        bootcmds.extend(nmcli_add_con_cmds("eth1", self.ip_addresses[0]))
-        bootcmds.extend(nmcli_add_con_cmds("eth2", self.ip_addresses[1]))
-        bootcmds.extend(nmcli_add_con_cmds("eth3", self.ip_addresses[2]))
-        bootcmds.extend(nmcli_add_con_cmds("eth4", self.ip_addresses[3]))
-        bootcmds.append(
-            "nmcli conn add con-name VLAN_10 type vlan ifname eth1.10 ipv4.method manual ipv4.addresses "
-            f"{self.ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true"
-        )
-
-        data["bootcmd"] = bootcmds
-
-        runcmd = [
-            "modprobe mpls_router",  # In order to test mpls we need to load driver
-            "sysctl -w net.mpls.platform_labels=1000",  # Activate mpls labeling feature
-            "sysctl -w net.mpls.conf.eth4.input=1",  # Allow incoming mpls traffic
-            "sysctl -w net.ipv4.conf.all.arp_ignore=1",  # 2 kernel flags are used to disable wrong arp behavior
-            "sysctl -w net.ipv4.conf.all.arp_announce=2",  # Send arp reply only if ip belongs to the interface
-            f"ip addr add {self.mpls_local_ip} dev lo",
-            f"ip -f mpls route add {self.mpls_local_tag} dev lo",
-            "nmcli connection up eth4",  # In order to add mpls route we need to make sure that connection is UP
-            f"ip route add {self.mpls_dest_ip} encap mpls {self.mpls_dest_tag} via inet {self.mpls_route_next_hop}",
-            "nmcli connection up eth2",
-            "ip route add 224.0.0.0/4 dev eth2",
-        ]
-        data["runcmd"] = runcmd
-
-        if self.cloud_init_extra_user_data:
-            for k, v in self.cloud_init_extra_user_data.items():
-                data[k] = data[k] + v
-
-        return data
 
     @property
     def dot1q_ip(self):
@@ -135,6 +147,15 @@ def bridge_attached_vm(
     cloud_init_extra_user_data=None,
     client=None,
 ):
+    cloud_init_data = _cloud_init_data(
+        ip_addresses,
+        mpls_local_ip,
+        mpls_local_tag,
+        mpls_dest_ip,
+        mpls_dest_tag,
+        mpls_route_next_hop,
+        cloud_init_extra_user_data,
+    )
     with VirtualMachineAttachedToBridge(
         namespace=namespace,
         name=name,
@@ -148,6 +169,7 @@ def bridge_attached_vm(
         mpls_route_next_hop=mpls_route_next_hop,
         cloud_init_extra_user_data=cloud_init_extra_user_data,
         client=client,
+        cloud_init_data=cloud_init_data,
     ) as vm:
         yield vm
 

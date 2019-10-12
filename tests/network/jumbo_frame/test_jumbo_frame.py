@@ -13,6 +13,7 @@ from tests.network.utils import (
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -32,7 +33,7 @@ class BridgedMtuFedoraVirtualMachine(VirtualMachineForTests):
         interfaces=None,
         networks=None,
         node_selector=None,
-        iface_ip=None,
+        cloud_init_data=None,
     ):
         super().__init__(
             name=name,
@@ -41,13 +42,8 @@ class BridgedMtuFedoraVirtualMachine(VirtualMachineForTests):
             interfaces=interfaces,
             networks=networks,
             node_selector=node_selector,
+            cloud_init_data=cloud_init_data,
         )
-        self.iface_ip = iface_ip
-
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-        data["bootcmd"] = nmcli_add_con_cmds("eth1", self.iface_ip)
-        return data
 
     def _to_dict(self):
         self.body = fedora_vm_body(self.name)
@@ -88,34 +84,38 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
 @pytest.fixture(scope="module")
 def bridge_attached_vma(nodes, module_namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.1")
+
     with BridgedMtuFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=nodes[0].name,
-        iface_ip="192.168.0.1",
         client=unprivileged_client,
+        cloud_init_data=cloud_init_data,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 
 @pytest.fixture(scope="module")
 def bridge_attached_vmb(nodes, module_namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.2")
+
     with BridgedMtuFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=nodes[1].name,
-        iface_ip="192.168.0.2",
         client=unprivileged_client,
+        cloud_init_data=cloud_init_data,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 

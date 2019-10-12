@@ -21,6 +21,7 @@ from utilities import console
 from utilities.infra import create_ns
 from utilities.storage import DataVolumeTestResource
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
@@ -74,6 +75,7 @@ def vm0(node_maintenance_ns, unprivileged_client):
         eviction=True,
         body=fedora_vm_body(name),
         client=unprivileged_client,
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

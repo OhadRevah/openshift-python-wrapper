@@ -6,6 +6,7 @@ import pytest
 from utilities import console
 from utilities.infra import create_ns
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -25,6 +26,7 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
             interfaces=interfaces,
             networks=networks,
             client=client,
+            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         )
 
     def _to_dict(self):

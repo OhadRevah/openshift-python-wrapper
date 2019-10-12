@@ -15,6 +15,7 @@ from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds, running_vm
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -30,7 +31,9 @@ CREATE_VM_TIMEOUT = 50
 
 def restart_kubemacpool(default_client):
     for pod in Pod.get(
-        dyn_client=default_client, label_selector="control-plane=mac-controller-manager"
+        dyn_client=default_client,
+        label_selector="control-plane=mac-controller-manager",
+        namespace=py_config["hco_namespace"],
     ):
         pod.delete(wait=True)
 
@@ -41,7 +44,21 @@ def restart_kubemacpool(default_client):
 
 
 def create_vm(name, namespace, iface_config, client):
-
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    bootcmds = list(
+        chain.from_iterable(
+            nmcli_add_con_cmds(iface, iface_config[iface].ip_address)
+            for iface in ("eth%d" % idx for idx in range(1, 5))
+        )
+    )
+    cloud_init_data["bootcmd"] = bootcmds
+    runcmd = [
+        # 2 kernel flags are used to disable wrong arp behavior
+        "sysctl -w net.ipv4.conf.all.arp_ignore=1",
+        # Send arp reply only if ip belongs to the interface
+        "sysctl -w net.ipv4.conf.all.arp_announce=2",
+    ]
+    cloud_init_data["runcmd"] = runcmd
     # Even if kubemacpool is in running state is not operational.
     # We need try: except block as workaround.
     # In case if error occurs because of kubemacpool pod is not operational it will retry
@@ -54,6 +71,7 @@ def create_vm(name, namespace, iface_config, client):
                 name=name,
                 iface_config=iface_config,
                 client=client,
+                cloud_init_data=cloud_init_data,
             ) as vm:
                 yield vm
                 return
@@ -77,7 +95,9 @@ def update_kubemacpool_scope(api_client, namespace, scope):
 
 
 class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
-    def __init__(self, name, namespace, iface_config, client=None):
+    def __init__(
+        self, name, namespace, iface_config, client=None, cloud_init_data=None
+    ):
         self.iface_config = iface_config
 
         networks = {}
@@ -90,25 +110,8 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
             networks=networks,
             interfaces=networks.keys(),
             client=client,
+            cloud_init_data=cloud_init_data,
         )
-
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-        bootcmds = list(
-            chain.from_iterable(
-                nmcli_add_con_cmds(iface, self.iface_config[iface].ip_address)
-                for iface in ("eth%d" % idx for idx in range(1, 5))
-            )
-        )
-        data["bootcmd"] = bootcmds
-        runcmd = [
-            # 2 kernel flags are used to disable wrong arp behavior
-            "sysctl -w net.ipv4.conf.all.arp_ignore=1",
-            # Send arp reply only if ip belongs to the interface
-            "sysctl -w net.ipv4.conf.all.arp_announce=2",
-        ]
-        data["runcmd"] = runcmd
-        return data
 
     @property
     def default_masquerade_iface_config(self):

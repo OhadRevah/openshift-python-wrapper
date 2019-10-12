@@ -9,6 +9,7 @@ import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.namespace import Namespace
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -80,6 +81,7 @@ def vm_with_cpu_support(request, cpu_sockets_threads_ns):
         cpu_sockets=request.param["sockets"],
         cpu_threads=request.param["threads"],
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -93,7 +95,10 @@ def no_cpu_settings_vm(cpu_sockets_threads_ns):
     """
     name = "no-cpu-settings-vm"
     with VirtualMachineForTests(
-        name=name, namespace=cpu_sockets_threads_ns.name, body=fedora_vm_body(name)
+        name=name,
+        namespace=cpu_sockets_threads_ns.name,
+        body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -122,6 +127,7 @@ def test_vm_with_cpu_limitation(cpu_sockets_threads_ns):
         cpu_limits=2,
         cpu_requests=2,
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -142,6 +148,7 @@ def test_vm_with_cpu_limitation_negative(cpu_sockets_threads_ns):
             cpu_limits=2,
             cpu_requests=4,
             body=fedora_vm_body(name),
+            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         ):
             pass
 

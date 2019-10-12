@@ -7,6 +7,7 @@ from resources.network_policy import NetworkPolicy
 from utilities import console
 from utilities.infra import create_ns
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     CommandExecFailed,
     VirtualMachineForTests,
     fedora_vm_body,
@@ -18,7 +19,11 @@ from utilities.virt import (
 class VirtualMachineMasquerade(VirtualMachineForTests):
     def __init__(self, name, namespace, node_selector, client=None):
         super().__init__(
-            name=name, namespace=namespace, node_selector=node_selector, client=client
+            name=name,
+            namespace=namespace,
+            node_selector=node_selector,
+            client=client,
+            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         )
 
     def _to_dict(self):
@@ -98,7 +103,6 @@ def vma(namespace_1, nodes, unprivileged_client):
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -111,9 +115,9 @@ def vmb(namespace_2, nodes, unprivileged_client):
         node_selector=nodes[0].name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 

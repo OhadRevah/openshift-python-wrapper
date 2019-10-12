@@ -8,6 +8,7 @@ from resources.node import Node
 from resources.utils import TimeoutExpiredError
 from utilities import console
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -34,6 +35,7 @@ def cpu_features_vm_positive(request, default_client, cpu_features_namespace):
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
@@ -61,6 +63,7 @@ def cpu_features_vm_negative(request, default_client, cpu_features_namespace):
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start()
         yield vm
@@ -74,6 +77,7 @@ def cpu_features_vm_require_pcid(cpu_features_namespace):
         namespace=cpu_features_namespace.name,
         cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start()
         yield vm

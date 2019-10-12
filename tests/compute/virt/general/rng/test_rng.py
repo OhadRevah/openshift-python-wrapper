@@ -6,6 +6,7 @@ import pytest
 from utilities import console
 from utilities.infra import create_ns
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -21,7 +22,10 @@ def rng_namespace(unprivileged_client):
 def rng_vm(unprivileged_client, rng_namespace):
     name = "vmi-with-rng"
     with VirtualMachineForTests(
-        name=name, namespace=rng_namespace.name, body=fedora_vm_body(name)
+        name=name,
+        namespace=rng_namespace.name,
+        body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

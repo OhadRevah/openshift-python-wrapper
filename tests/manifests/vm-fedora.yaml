@@ -23,9 +23,6 @@ spec:
           - disk:
               bus: virtio
             name: containerdisk
-          - disk:
-              bus: virtio
-            name: cloudinitdisk
           interfaces:
           - masquerade: {}
             name: default
@@ -42,7 +39,4 @@ spec:
       - containerDisk:
           image: quay.io/redhat/cnv-tests-fedora-staging
         name: containerdisk
-      - cloudInitNoCloud:
-          userData:
-        name: cloudinitdisk
 status: {}

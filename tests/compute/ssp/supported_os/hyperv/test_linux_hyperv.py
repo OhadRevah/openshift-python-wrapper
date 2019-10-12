@@ -8,13 +8,22 @@ This test case includes only Linux based test case
 import pytest
 import xmltodict
 from resources.namespace import Namespace
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    VirtualMachineForTests,
+    fedora_vm_body,
+)
 
 
 class HyperVVM(VirtualMachineForTests):
     def __init__(self, name, namespace):
         super().__init__(
-            name=name, namespace=namespace, label="HyperV", cpu_cores=1, memory="1G"
+            name=name,
+            namespace=namespace,
+            label="HyperV",
+            cpu_cores=1,
+            memory="1G",
+            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         )
 
     def _to_dict(self):

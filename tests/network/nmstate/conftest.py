@@ -8,6 +8,7 @@ from resources.utils import TimeoutSampler
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -92,9 +93,9 @@ def vma(nodes, module_namespace, unprivileged_client):
         node_selector=nodes[0].name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -107,20 +108,22 @@ def vmb(nodes, module_namespace, unprivileged_client):
         node_selector=nodes[1].name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 
 @pytest.fixture(scope="module")
 def running_vma(vma):
+    vma.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vma.vmi)
     return vma
 
 
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
+    vmb.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmb.vmi)
     return vmb
 

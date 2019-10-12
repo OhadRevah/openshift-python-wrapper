@@ -5,7 +5,11 @@ Check VM, VMI, POD owner references
 import pytest
 from resources.utils import TimeoutSampler
 from utilities.infra import create_ns
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    VirtualMachineForTests,
+    fedora_vm_body,
+)
 
 
 def _wait_for_virt_launcher_pod(vmi):
@@ -24,7 +28,10 @@ def owner_references_ns(unprivileged_client):
 def fedora_vm(unprivileged_client, owner_references_ns):
     name = "owner-references-vm"
     with VirtualMachineForTests(
-        name=name, namespace=owner_references_ns.name, body=fedora_vm_body(name)
+        name=name,
+        namespace=owner_references_ns.name,
+        body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

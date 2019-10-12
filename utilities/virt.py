@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"
 CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
+FEDORA_CLOUD_INIT_PASSWORD = {"password": "fedora", "chpasswd": "{ expire: False }"}
 
 
 def wait_for_vm_interfaces(vmi, timeout=720):
@@ -94,7 +95,6 @@ class VirtualMachineForTests(VirtualMachine):
         cpu_threads=None,
         memory=None,
         label=None,
-        set_cloud_init=True,
         dv=None,
         cloud_init_data=None,
         machine_type=None,
@@ -115,14 +115,10 @@ class VirtualMachineForTests(VirtualMachine):
         self.cpu_threads = cpu_threads
         self.memory = memory
         self.label = label
-        self.set_cloud_init = set_cloud_init
         self.dv = dv
         self.cloud_init_data = cloud_init_data
         self.machine_type = machine_type
         self.image = image
-
-    def _cloud_init_user_data(self):
-        return {"password": "fedora", "chpasswd": "{ expire: False }"}
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -147,7 +143,7 @@ class VirtualMachineForTests(VirtualMachine):
                 {"name": iface_name, "multus": {"networkName": network}}
             )
 
-        if self.set_cloud_init:
+        if self.cloud_init_data:
             cloud_init_volume = {}
             for vol in spec.setdefault("volumes", []):
                 if vol["name"] == "cloudinitdisk":
@@ -162,9 +158,10 @@ class VirtualMachineForTests(VirtualMachine):
 
             cloud_init_volume["cloudInitNoCloud"][
                 "userData"
-            ] = _generate_cloud_init_user_data(
-                self.cloud_init_data or self._cloud_init_user_data()
-            )
+            ] = _generate_cloud_init_user_data(self.cloud_init_data)
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {"bus": "virtio"}, "name": "cloudinitdisk"})
 
         for sa in self.service_accounts:
             spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
@@ -261,7 +258,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         client,
         labels,
         template_dv,
-        set_cloud_init=False,
         networks=None,
         interfaces=None,
     ):
@@ -269,7 +265,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             name=name,
             namespace=namespace,
             client=client,
-            set_cloud_init=set_cloud_init,
             networks=networks,
             interfaces=interfaces,
         )

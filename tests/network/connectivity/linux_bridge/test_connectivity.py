@@ -15,6 +15,7 @@ from tests.network.utils import (
 from utilities.infra import BUG_STATUS_CLOSED, create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -50,7 +51,7 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         interfaces=None,
         networks=None,
         node_selector=None,
-        bootcmds=None,
+        cloud_init_data=None,
     ):
         super().__init__(
             name=name,
@@ -59,13 +60,8 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
             interfaces=interfaces,
             networks=networks,
             node_selector=node_selector,
+            cloud_init_data=cloud_init_data,
         )
-        self.bootcmds = bootcmds
-
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-        data["bootcmd"] = self.bootcmds
-        return data
 
     def _to_dict(self):
         self.body = fedora_vm_body(self.name)
@@ -156,17 +152,19 @@ def bridge_attached_vma(nodes, bond_supported, module_namespace, unprivileged_cl
         bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.1"))
         networks[BR1BOND] = BR1BOND
 
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = bootcmds
+
     with BridgedFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=nodes[0].name,
-        bootcmds=bootcmds,
+        cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 
@@ -181,17 +179,19 @@ def bridge_attached_vmb(nodes, bond_supported, module_namespace, unprivileged_cl
         bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.2"))
         networks[BR1BOND] = BR1BOND
 
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = bootcmds
+
     with BridgedFedoraVirtualMachine(
         namespace=module_namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=nodes[1].name,
-        bootcmds=bootcmds,
+        cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
-        vm.vmi.wait_until_running()
         yield vm
 
 

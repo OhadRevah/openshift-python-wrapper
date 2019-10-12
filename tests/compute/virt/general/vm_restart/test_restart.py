@@ -7,6 +7,7 @@ import pytest
 from utilities import console
 from utilities.infra import create_ns
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     vm_console_run_commands,
@@ -30,6 +31,7 @@ def vm_to_restart(unprivileged_client, restart_test_namespace):
         name=name,
         namespace=restart_test_namespace.name,
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

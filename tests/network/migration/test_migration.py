@@ -17,6 +17,7 @@ from utilities import console
 from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     vm_console_run_commands,
@@ -62,7 +63,7 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         interfaces=None,
         networks=None,
         node_selector=None,
-        bootcmds=None,
+        cloud_init_data=None,
     ):
         super().__init__(
             name=name,
@@ -71,13 +72,8 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
             interfaces=interfaces,
             networks=networks,
             node_selector=node_selector,
+            cloud_init_data=cloud_init_data,
         )
-        self.bootcmds = bootcmds
-
-    def _cloud_init_user_data(self):
-        data = super()._cloud_init_user_data()
-        data["bootcmd"] = self.bootcmds
-        return data
 
     def _to_dict(self):
         self.body = fedora_vm_body(self.name)
@@ -102,13 +98,16 @@ def vma(namespace, unprivileged_client):
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
 
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = bootcmds
+
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
-        bootcmds=bootcmds,
         client=unprivileged_client,
+        cloud_init_data=cloud_init_data,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -120,13 +119,16 @@ def vmb(namespace, unprivileged_client):
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
 
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = bootcmds
+
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
-        bootcmds=bootcmds,
         client=unprivileged_client,
+        cloud_init_data=cloud_init_data,
     ) as vm:
         vm.start(wait=True)
         yield vm

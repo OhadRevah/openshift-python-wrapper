@@ -6,6 +6,7 @@ from resources.node import Node
 from resources.utils import TimeoutExpiredError
 from utilities import console
 from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -38,6 +39,7 @@ def cpu_flag_vm_positive(cpu_module, cpu_features_namespace):
         namespace=cpu_features_namespace.name,
         cpu_flags={"model": cpu_module},
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
@@ -65,6 +67,7 @@ def cpu_flag_vm_negative(request, default_client, cpu_features_namespace):
         namespace=cpu_features_namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
+        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start()
         yield vm
