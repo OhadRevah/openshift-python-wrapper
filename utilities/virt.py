@@ -14,6 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"
+CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
 
 
 def wait_for_vm_interfaces(vmi, timeout=720):
@@ -96,6 +97,8 @@ class VirtualMachineForTests(VirtualMachine):
         set_cloud_init=True,
         dv=None,
         cloud_init_data=None,
+        machine_type=None,
+        image=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.body = body
@@ -115,6 +118,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.set_cloud_init = set_cloud_init
         self.dv = dv
         self.cloud_init_data = cloud_init_data
+        self.machine_type = machine_type
+        self.image = image
 
     def _cloud_init_user_data(self):
         return {"password": "fedora", "chpasswd": "{ expire: False }"}
@@ -122,23 +127,29 @@ class VirtualMachineForTests(VirtualMachine):
     def _to_dict(self):
         res = super()._to_dict()
         if self.body:
-            res["metadata"] = self.body["metadata"]
+            if self.body.get("metadata"):
+                res["metadata"] = self.body["metadata"]
+
             res["spec"] = self.body["spec"]
 
+        if "running" not in res["spec"]:
+            res["spec"]["running"] = False
+
         spec = res["spec"]["template"]["spec"]
+
         for iface_name in self.interfaces:
-            spec["domain"]["devices"]["interfaces"].append(
-                {"name": iface_name, "bridge": {}}
-            )
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "interfaces", []
+            ).append({"name": iface_name, "bridge": {}})
 
         for iface_name, network in self.networks.items():
-            spec["networks"].append(
+            spec.setdefault("networks", []).append(
                 {"name": iface_name, "multus": {"networkName": network}}
             )
 
         if self.set_cloud_init:
             cloud_init_volume = {}
-            for vol in spec["volumes"]:
+            for vol in spec.setdefault("volumes", []):
                 if vol["name"] == "cloudinitdisk":
                     cloud_init_volume = vol
                     break
@@ -156,8 +167,10 @@ class VirtualMachineForTests(VirtualMachine):
             )
 
         for sa in self.service_accounts:
-            spec["domain"]["devices"]["disks"].append({"disk": {}, "name": sa})
-            spec["volumes"].append(
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {}, "name": sa})
+            spec.setdefault("volumes", []).append(
                 {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
             )
 
@@ -169,40 +182,74 @@ class VirtualMachineForTests(VirtualMachine):
 
         # cpu settings
         if self.cpu_flags:
-            spec["domain"]["cpu"] = self.cpu_flags
+            spec.setdefault("domain", {})["cpu"] = self.cpu_flags
 
         if self.cpu_limits:
-            spec["domain"]["resources"].setdefault("limits", {})
+            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
+                "limits", {}
+            )
             spec["domain"]["resources"]["limits"].update({"cpu": self.cpu_limits})
 
         if self.cpu_requests:
-            spec["domain"]["resources"].setdefault("requests", {})
+            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
+                "requests", {}
+            )
             spec["domain"]["resources"]["requests"].update({"cpu": self.cpu_requests})
 
         if self.cpu_cores:
-            spec["domain"]["cpu"]["cores"] = self.cpu_cores
+            spec.setdefault("domain", {}).setdefault("cpu", {})[
+                "cores"
+            ] = self.cpu_cores
 
         if self.cpu_threads:
-            spec["domain"]["cpu"]["threads"] = self.cpu_threads
+            spec.setdefault("domain", {}).setdefault("cpu", {})[
+                "threads"
+            ] = self.cpu_threads
 
         if self.cpu_sockets:
-            spec["domain"]["cpu"]["sockets"] = self.cpu_sockets
+            spec.setdefault("domain", {}).setdefault("cpu", {})[
+                "sockets"
+            ] = self.cpu_sockets
 
-        if self.memory:
-            spec["domain"]["resources"]["requests"]["memory"] = self.memory
+        # Memory must be set.
+        if self.memory or not self.body:
+            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
+                "requests", {}
+            )["memory"] = (self.memory or "64M")
 
         if self.label:
-            res["spec"]["template"]["metadata"]["labels"]["kubevirt.io/vm"] = self.label
+            res.setdefault("spec", {}).setdefault("template", {}).setdefault(
+                "metadata", {}
+            ).setdefault("labels", {})["kubevirt.io/vm"] = self.label
 
         # Create rng device so the vm will able to use /dev/rnd without
         # waiting for entropy collecting.
-        res["spec"]["template"]["spec"]["domain"]["devices"].setdefault("rng", {})
+        res.setdefault("spec", {}).setdefault("template", {}).setdefault(
+            "spec", {}
+        ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
+
+        # image must be set before DV in order to boot from it.
+        if self.image:
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {"bus": "virtio"}, "name": "containerdisk"})
+            spec.setdefault("volumes", []).append(
+                {"name": "containerdisk", "containerDisk": {"image": self.image}}
+            )
 
         if self.dv:
-            spec["domain"]["devices"]["disks"].append(
-                {"disk": {"bus": "virtio"}, "name": "dv-disk"}
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {"bus": "virtio"}, "name": "dv-disk"})
+            spec.setdefault("volumes", []).append(
+                {"name": "dv-disk", "dataVolume": {"name": self.dv}}
             )
-            spec["volumes"].append({"name": "dv-disk", "dataVolume": {"name": self.dv}})
+
+        if self.machine_type:
+            spec.setdefault("domain", {}).setdefault("machine", {})[
+                "type"
+            ] = self.machine_type
+
         return res
 
 

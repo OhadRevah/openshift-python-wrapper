@@ -15,6 +15,7 @@ from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities.infra import BUG_STATUS_CLOSED, get_cert
+from utilities.virt import CIRROS_IMAGE
 
 
 LOGGER = logging.getLogger(__name__)
@@ -467,11 +468,11 @@ def blank_disk_import(storage_ns, dv_name):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait(timeout=180)
-        utils.create_vm_with_dv(dv)
+        utils.create_vm_with_dv(dv, CIRROS_IMAGE)
 
 
 @pytest.mark.polarion("CNV-1025")
-def test_successful_blank_disk_import(storage_ns, images_https_server):
+def test_successful_blank_disk_import(storage_ns):
     with BlankDataVolume(
         name="cnv-1025",
         namespace=storage_ns.name,
@@ -479,7 +480,7 @@ def test_successful_blank_disk_import(storage_ns, images_https_server):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait()
-        with utils.create_vm_with_dv(dv) as vm_dv:
+        with utils.create_vm_with_dv(dv, CIRROS_IMAGE) as vm_dv:
             utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
