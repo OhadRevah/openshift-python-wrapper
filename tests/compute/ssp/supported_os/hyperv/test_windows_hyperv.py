@@ -12,6 +12,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.template import Template
 from resources.utils import TimeoutSampler
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import DataVolumeTestResource
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
@@ -38,8 +39,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
             marks=(
                 pytest.mark.polarion("CNV-2776"),
                 pytest.mark.bugzilla(
-                    1663162,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -57,8 +57,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
             marks=(
                 pytest.mark.polarion("CNV-2652"),
                 pytest.mark.bugzilla(
-                    1663162,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -76,8 +75,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
             marks=(
                 pytest.mark.polarion("CNV-2777"),
                 pytest.mark.bugzilla(
-                    1663162,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -95,8 +93,7 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
             marks=(
                 pytest.mark.polarion("CNV-2778"),
                 pytest.mark.bugzilla(
-                    1663162,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),

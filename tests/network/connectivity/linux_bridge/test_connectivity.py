@@ -12,7 +12,7 @@ from tests.network.utils import (
     linux_bridge_nad,
     nmcli_add_con_cmds,
 )
-from utilities.infra import create_ns
+from utilities.infra import BUG_STATUS_CLOSED, create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     VirtualMachineForTests,
@@ -285,7 +285,7 @@ def test_connectivity_positive_vlan_over_linux_bridge(
     py_config["bare_metal_cluster"], reason="Running on BM, no trunk on switches yet!!"
 )
 @pytest.mark.bugzilla(
-    1758917, skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA", "CLOSED")
+    1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-2075")
 def test_connectivity_negative_vlan_over_linux_bridge(

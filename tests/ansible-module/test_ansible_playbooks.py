@@ -15,6 +15,7 @@ from resources.virtual_machine import (
     VirtualMachineInstancePreset,
     VirtualMachineInstanceReplicaSet,
 )
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
@@ -97,8 +98,7 @@ def cleanup(default_client):
             marks=(
                 pytest.mark.polarion("CNV-2564"),
                 pytest.mark.bugzilla(
-                    1749704,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1749704, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -108,12 +108,10 @@ def cleanup(default_client):
             marks=(
                 pytest.mark.polarion("CNV-2576"),
                 pytest.mark.bugzilla(
-                    1730706,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1730706, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
                 pytest.mark.bugzilla(
-                    1751744,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1751744, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -125,12 +123,10 @@ def cleanup(default_client):
             marks=(
                 pytest.mark.polarion("CNV-2563"),
                 pytest.mark.bugzilla(
-                    1716905,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1716905, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
                 pytest.mark.bugzilla(
-                    1751744,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1751744, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -139,12 +135,10 @@ def cleanup(default_client):
             marks=(
                 pytest.mark.polarion("CNV-720"),
                 pytest.mark.bugzilla(
-                    1749704,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1749704, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
                 pytest.mark.bugzilla(
-                    1751744,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1751744, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),

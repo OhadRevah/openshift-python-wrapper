@@ -15,6 +15,7 @@ from resources.project import Project, ProjectRequest
 
 
 LOGGER = logging.getLogger(__name__)
+BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
 
 
 def get_images_external_http_server():

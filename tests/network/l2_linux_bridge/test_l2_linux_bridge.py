@@ -5,6 +5,7 @@ from pytest_testconfig import config as py_config
 from resources.utils import TimeoutSampler
 from tests.network.utils import assert_ping_successful, get_vmi_ip_v4_by_name
 from utilities.console import Fedora
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 CUSTOM_ETH_PROTOCOL = (
@@ -38,7 +39,7 @@ class TestL2LinuxBridge:
                     ),
                     pytest.mark.bugzilla(
                         1754283,
-                        skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
                     ),
                 ),
             ),

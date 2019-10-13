@@ -14,7 +14,7 @@ from resources.configmap import ConfigMap
 from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
-from utilities.infra import get_cert
+from utilities.infra import BUG_STATUS_CLOSED, get_cert
 
 
 LOGGER = logging.getLogger(__name__)
@@ -285,8 +285,7 @@ def test_default_storage_class(storage_ns, images_internal_http_server):
             marks=(
                 pytest.mark.polarion("CNV-2553"),
                 pytest.mark.bugzilla(
-                    1739149,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1739149, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
@@ -420,8 +419,7 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
             marks=(
                 pytest.mark.polarion("CNV-2814"),
                 pytest.mark.bugzilla(
-                    1740073,
-                    skip_when=lambda bug: bug.status not in ("VERIFIED", "ON_QA"),
+                    1740073, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
             ),
         ),
