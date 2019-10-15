@@ -33,9 +33,7 @@ def br1test_nad(module_namespace, bridge_device):
 
 @pytest.fixture(scope="module")
 def network_addons_config_cr(default_client):
-    nac = NetworkAddonsConfig.get(
-        default_client, label_selector="app=hyperconverged-cluster"
-    )
+    nac = NetworkAddonsConfig.get(default_client)
     nac_list = list(nac)
     assert nac_list, "There should be one NetworkAddonsConfig CR."
     yield nac_list[0]
