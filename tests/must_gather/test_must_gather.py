@@ -330,17 +330,35 @@ def test_data_collected_from_virt_launcher(
 
 
 @pytest.mark.parametrize(
-    "config_map_by_name",
+    "config_map_by_name, has_owner",
     [
         pytest.param(
             ["kubemacpool-mac-range-config", utils.HCO_NS],
+            True,
             marks=(pytest.mark.polarion("CNV-2718")),
             id="test_config_map_kubemacpool-mac-range-config",
-        )
+        ),
+        pytest.param(
+            ["kubemacpool-election", utils.HCO_NS],
+            False,
+            marks=(pytest.mark.polarion("CNV-2718")),
+            id="test_config_map_kubemacpool-election",
+        ),
+        pytest.param(
+            ["kubemacpool-vm-configmap", utils.HCO_NS],
+            False,
+            marks=(pytest.mark.polarion("CNV-2718")),
+            id="test_config_map_kubemacpool-vm-configmap",
+        ),
     ],
-    indirect=True,
+    indirect=["config_map_by_name"],
 )
-def test_gathered_config_maps(cnv_must_gather, config_maps_file, config_map_by_name):
+def test_gathered_config_maps(
+    cnv_must_gather, config_maps_file, config_map_by_name, has_owner
+):
+    checks = [("metadata", "name"), ("metadata", "uid")]
+    if has_owner:
+        checks.append(("metadata", "ownerReferences"))
     utils.compare_resource_contents(
         config_map_by_name,
         next(
@@ -350,5 +368,5 @@ def test_gathered_config_maps(cnv_must_gather, config_maps_file, config_map_by_n
                 config_maps_file["items"],
             )
         ),
-        (("metadata", "name"), ("metadata", "uid"), ("metadata", "ownerReferences")),
+        checks,
     )
