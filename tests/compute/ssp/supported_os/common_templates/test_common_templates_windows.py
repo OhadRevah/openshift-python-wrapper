@@ -104,6 +104,10 @@ def windows_vm(default_client, data_volume, windows_namespace):
         yield vm
 
 
+@pytest.mark.skipif(
+    not py_config["bare_metal_cluster"],
+    reason="Running only BM, Reason: windows run slow on nested visualization",
+)
 def test_common_templates_with_windows(winrmcli_pod, data_volume, windows_vm):
     """
     Test CNV common templates with Windows
