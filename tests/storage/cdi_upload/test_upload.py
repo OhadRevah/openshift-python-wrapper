@@ -257,23 +257,24 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
 
 @pytest.mark.polarion("CNV-2015")
 def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
+    dvs_processes = []
     local_name = f"{tmpdir}/{QCOW2_IMG}"
     storage_utils.downloaded_image(
         remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
     )
     available_pv = PersistentVolume(storage_ns).max_available_pvs
-    upload_process = [
-        multiprocessing.Process(
-            target=upload_test, args=(f"dv-{x}", storage_ns, local_name, default_client)
+    for dv in range(available_pv):
+        dv_process = multiprocessing.Process(
+            target=upload_test,
+            args=(f"dv-{dv}", storage_ns, local_name, default_client),
         )
-        for x in range(available_pv)
-    ]
-    # Run processes in parallel
-    for upload in upload_process:
-        upload.start()
-    # Exit the completed processes
-    for upload in upload_process:
-        upload.join()
+        dv_process.start()
+        dvs_processes.append(dv_process)
+
+    for dvs in dvs_processes:
+        dvs.join()
+        if dvs.exitcode != 0:
+            raise pytest.fail("Creating DV exited with non-zero return code")
 
 
 @pytest.mark.polarion("CNV-2017")

@@ -470,7 +470,7 @@ def blank_disk_import(storage_ns, dv_name):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait(timeout=180)
-        with utils.create_vm_with_dv(dv, CIRROS_IMAGE) as vm_dv:
+        with utils.create_vm_with_dv(dv, dv_name, CIRROS_IMAGE) as vm_dv:
             utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
@@ -489,16 +489,18 @@ def test_successful_blank_disk_import(storage_ns):
 
 @pytest.mark.polarion("CNV-2001")
 def test_successful_concurrent_blank_disk_import(storage_ns):
-    import_process = [
-        multiprocessing.Process(target=blank_disk_import, args=(storage_ns, f"dv-{x}"))
-        for x in range(4)
-    ]
-    # Run processes in parallel
-    for imp in import_process:
-        imp.start()
-    # Exit the completed processes
-    for imp in import_process:
-        imp.join()
+    dv_processes = []
+    for dv in range(4):
+        dv_process = multiprocessing.Process(
+            target=blank_disk_import, args=(storage_ns, f"dv-{dv}")
+        )
+        dv_process.start()
+        dv_processes.append(dv_process)
+
+    for dvs in dv_processes:
+        dvs.join()
+        if dvs.exitcode != 0:
+            raise pytest.fail("Creating DV exited with non-zero return code")
 
 
 @pytest.mark.parametrize(
