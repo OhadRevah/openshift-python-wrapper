@@ -123,6 +123,9 @@ class DataVolumeTemplate(DataVolume):
             res["spec"]["source"][self.source] = {}
         if self.source == "upload":
             res["spec"]["source"]["upload"] = {}
+        if self.source == "pvc":
+            res["spec"]["source"]["pvc"]["name"] = "dv-source"
+            res["spec"]["source"]["pvc"]["namespace"] = self.namespace
         elif self.source == "blank":
             res["spec"]["source"][self.source] = {}
         return res
@@ -192,3 +195,8 @@ class UploadDataVolume(DataVolumeTemplate):
 class BlankDataVolume(DataVolumeTemplate):
     def __init__(self, name, namespace, size, storage_class):
         super().__init__(name, namespace, "blank", size, storage_class)
+
+
+class CloneDataVolume(DataVolumeTemplate):
+    def __init__(self, name, namespace, size, storage_class):
+        super().__init__(name, namespace, "pvc", size, storage_class)
