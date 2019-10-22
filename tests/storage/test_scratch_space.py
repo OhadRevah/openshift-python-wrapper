@@ -60,11 +60,19 @@ pytestmark = pytest.mark.skipif(
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
+        pytest.param(
+            "no-scratch-space-import-qcow2-https",
+            QCOW2_IMG,
+            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            "5Gi",
+            marks=(pytest.mark.polarion("CNV-2324")),
+        ),
     ],
     ids=[
         "no-scratch-space-import-raw-https",
         "no-scratch-space-import-raw-gz-https",
         "no-scratch-space-import-raw-xz-https",
+        "no-scratch-space-import-qcow2-https",
     ],
 )
 def test_no_scratch_space_import_https_data_volume(
