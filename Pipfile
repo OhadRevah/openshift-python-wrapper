@@ -31,6 +31,7 @@ pytest-ansible = {git = "https://github.com/ansible/pytest-ansible.git"}
 requests = "*"
 xmltodict = "*"
 pytest-jira = "==0.3.11"
+pytest-lazy-fixture = "*"
 
 [requires]
 python_version = "3"
