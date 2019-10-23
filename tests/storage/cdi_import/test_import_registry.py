@@ -14,7 +14,44 @@ from utilities.virt import VirtualMachineForTests
 
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
-PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
+PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
+PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
+PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
+
+
+@pytest.mark.skipif(
+    py_config["distribution"] == "upstream",
+    reason="importing from private registry for d/s",
+)
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        pytest.param(
+            PRIVATE_REGISTRY_CIRROS_RAW_IMAGE,
+            marks=(pytest.mark.polarion("CNV-2343")),
+            id="import_cirros_raw",
+        ),
+        pytest.param(
+            PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE,
+            marks=(pytest.mark.polarion("CNV-2341")),
+            id="import_cirros_qcow2_image",
+        ),
+    ],
+)
+def test_private_registry_cirros(storage_ns, images_private_registry_server, file_name):
+    with ConfigMap(
+        name="registry-cert-configmap",
+        namespace=storage_ns.name,
+        data=get_cert("registry_cert"),
+    ) as configmap:
+        create_dv_and_vm(
+            "import-private-registry-cirros-image",
+            storage_ns.name,
+            f"{images_private_registry_server}:8443/{file_name}",
+            configmap.name,
+            ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            "5Gi",
+        )
 
 
 @pytest.mark.polarion("CNV-2198")
@@ -107,7 +144,7 @@ def test_private_registry_insecured_configmap(
     create_dv_and_vm(
         "import-private-insecured-registry",
         storage_ns.name,
-        f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_IMAGE}",
+        f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         None,
         ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
         "5Gi",
@@ -126,7 +163,7 @@ def test_private_registry_recover_after_missing_configmap(
     with ImportFromRegistryDataVolume(
         name="import-private-registry-with-no-configmap",
         namespace=storage_ns.name,
-        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
+        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
         size="5Gi",
         storage_class=py_config["storage_defaults"]["storage_class"],
@@ -163,7 +200,7 @@ def test_private_registry_with_untrusted_certificate(
         create_dv_and_vm(
             "import-private-registry-with-untrusted-certificate",
             storage_ns.name,
-            f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
+            f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             configmap.name,
             ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
             "5Gi",
@@ -178,7 +215,7 @@ def test_private_registry_with_untrusted_certificate(
         with ImportFromRegistryDataVolume(
             name="import-private-registry-no-certificate",
             namespace=storage_ns.name,
-            url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
+            url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             content_type="",
             size="5Gi",
             storage_class=py_config["storage_defaults"]["storage_class"],
