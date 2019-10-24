@@ -7,12 +7,24 @@ Common templates test RHEL
 import pytest
 from resources.template import Template
 from utilities import console
-from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTestsFromTemplate
+from utilities.virt import wait_for_vm_interfaces
 
 
-@pytest.fixture(
-    params=[
+@pytest.mark.parametrize(
+    "data_volume",
+    [
+        pytest.param(
+            {
+                "image": "rhel-images/rhel-610/rhel-610.qcow2",
+                "os_release": "6",
+                "template_labels": [
+                    f"{Template.Labels.OS}/rhel6.0",
+                    f"{Template.Labels.WORKLOAD}/server",
+                    f"{Template.Labels.FLAVOR}/tiny",
+                ],
+            },
+            marks=(pytest.mark.polarion("CNV-2211")),
+        ),
         pytest.param(
             {
                 "image": "rhel-images/rhel-76/rhel-76.qcow2",
@@ -39,18 +51,6 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
         ),
         pytest.param(
             {
-                "image": "rhel-images/rhel-610/rhel-610.qcow2",
-                "os_release": "6",
-                "template_labels": [
-                    f"{Template.Labels.OS}/rhel6.0",
-                    f"{Template.Labels.WORKLOAD}/server",
-                    f"{Template.Labels.FLAVOR}/tiny",
-                ],
-            },
-            marks=(pytest.mark.polarion("CNV-2211")),
-        ),
-        pytest.param(
-            {
                 "image": "rhel-images/rhel-81/rhel-81.qcow2",
                 "os_release": "8.1",
                 "template_labels": [
@@ -61,38 +61,17 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
             },
             marks=(pytest.mark.polarion("CNV-3091")),
         ),
-    ]
+    ],
+    indirect=True,
 )
-def data_volume(request, images_external_http_server, namespace):
-    template_labels = request.param["template_labels"]
-    with DataVolumeTestResource(
-        name=f"dv-rhel-{request.param['os_release'].replace(' ', '-').lower()}",
-        namespace=namespace.name,
-        url=f"{images_external_http_server}{request.param['image']}",
-        os_release=request.param["os_release"],
-        template_labels=template_labels,
-    ) as dv:
-        dv.wait(timeout=900)
-        yield dv
+def test_common_templates_with_rhel(namespace, data_volume, vm_from_template):
+    """ Test CNV common templates with RHEL """
 
+    vm_from_template.start(timeout=360, wait=True)
+    wait_for_vm_interfaces(vm_from_template.vmi)
 
-def test_common_templates_with_rhel(unprivileged_client, data_volume, namespace):
-    """
-    Test CNV common templates with RHEL
-    """
-    vm_name = f"{data_volume.name.strip('dv-')}"
-    with VirtualMachineForTestsFromTemplate(
-        name=vm_name,
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=data_volume.template_labels,
-        template_dv=data_volume.name,
-    ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        with console.RHEL(vm=vm, timeout=1100) as vm_console:
-            vm_console.sendline(
-                f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"
-            )
-            vm_console.expect("1", timeout=60)
-        vm.stop(wait=True)
+    with console.RHEL(vm=vm_from_template, timeout=1100) as vm_console:
+        vm_console.sendline(
+            f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"
+        )
+        vm_console.expect("1", timeout=60)

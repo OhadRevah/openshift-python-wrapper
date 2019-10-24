@@ -10,15 +10,14 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.template import Template
 from resources.utils import TimeoutSampler
-from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(
-    params=[
+@pytest.mark.parametrize(
+    "data_volume",
+    [
         pytest.param(
             {
                 "os_image": "windows-images/window_qcow2_images/win_10.qcow2",
@@ -71,51 +70,22 @@ LOGGER = logging.getLogger(__name__)
             },
             marks=(pytest.mark.polarion("CNV-2816")),
         ),
-    ]
+    ],
+    indirect=True,
 )
-def data_volume(request, images_external_http_server, namespace):
-    template_labels = request.param["template_labels"]
-    with DataVolumeTestResource(
-        name=f"dv-windows-{request.param['os_release'].replace(' ', '-').lower()}",
-        namespace=namespace.name,
-        url=f"{images_external_http_server}{request.param['os_image']}",
-        os_release=request.param["os_release"],
-        template_labels=template_labels,
-        size=request.param["dv_size"],
-        storage_class=py_config["storage_defaults"]["storage_class"],
-    ) as dv:
-        dv.wait(timeout=1200)
-        yield dv
-
-
-@pytest.fixture()
-def windows_vm(unprivileged_client, data_volume, namespace):
-    """
-    Create Windows VM with CNV common templates.
-    """
-    vm_name = f"{data_volume.name.strip('dv-')}"
-    with VirtualMachineForTestsFromTemplate(
-        name=vm_name,
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=data_volume.template_labels,
-        template_dv=data_volume.name,
-    ) as vm:
-        yield vm
-
-
 @pytest.mark.skipif(
     not py_config["bare_metal_cluster"],
     reason="Running only BM, Reason: windows run slow on nested visualization",
 )
-def test_common_templates_with_windows(winrmcli_pod, data_volume, windows_vm):
-    """
-    Test CNV common templates with Windows
-    """
-    windows_vm.start()
-    windows_vm.vmi.wait_until_running()
+def test_common_templates_with_windows(
+    namespace, data_volume, vm_from_template, winrmcli_pod
+):
+    """ Test CNV common templates with Windows """
+
+    vm_from_template.start(timeout=360, wait=True)
+
     LOGGER.info(f"The value of Windows os_release is {data_volume.os_release}")
-    vmi_ipaddr = windows_vm.vmi.interfaces[0]["ipAddress"]
+    vmi_ipaddr = vm_from_template.vmi.interfaces[0]["ipAddress"]
     command = [
         "bash",
         "-c",
@@ -127,7 +97,7 @@ def test_common_templates_with_windows(winrmcli_pod, data_volume, windows_vm):
         timeout=1500, sleep=15, func=winrmcli_pod.execute, command=command
     )
     LOGGER.info(
-        f"Windows VM {windows_vm.name} booting up, will attempt to access it upto 25 mins."
+        f"Windows VM {vm_from_template.name} booting up, will attempt to access it upto 25 mins."
     )
     for pod_output in pod_output_samples:
         if data_volume.os_release in str(pod_output):

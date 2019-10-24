@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Pytest conftest file for CNV virt common-templates tests
+[SSP] hyperv feature - checking VMI XML
+This test case includes only windows based test case
 """
 
 import json
@@ -13,8 +14,6 @@ from pytest_testconfig import config as py_config
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 LOGGER = logging.getLogger(__name__)
@@ -23,8 +22,17 @@ USERNAME = "Administrator"
 WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
 
 
-@pytest.fixture(
-    params=[
+@pytest.fixture()
+def download_hvinfo(winrmcli_pod):
+    server_name = py_config[py_config["region"]]["http_server"]
+    binary_url = os.path.join(server_name, "binaries/hvinfo/hvinfo.exe")
+    download_hvinfo_cmd = ["bash", "-c", f"curl -OL {binary_url}"]
+    winrmcli_pod.execute(download_hvinfo_cmd, timeout=30)
+
+
+@pytest.mark.parametrize(
+    "data_volume",
+    [
         pytest.param(
             {
                 "os_image": "windows-images/window_qcow2_images/win_10.qcow2",
@@ -97,54 +105,19 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
                 ),
             ),
         ),
-    ]
+    ],
+    indirect=True,
 )
-def data_volume(request, images_external_http_server, namespace):
-    with DataVolumeTestResource(
-        name=f"dv-windows-{request.param['os_release'].replace(' ', '-').lower()}",
-        namespace=namespace.name,
-        url=f"{images_external_http_server}{request.param['os_image']}",
-        os_release=request.param["os_release"],
-        template_labels=request.param["template_labels"],
-        size=request.param["dv_size"],
-        storage_class=py_config["storage_defaults"]["storage_class"],
-    ) as dv:
-        dv.wait()
-        yield dv
+@pytest.mark.skipif(
+    py_config["distribution"] == "upstream",
+    reason="Running only on downstream, Reason: http_server is not available for upstream",
+)
+def test_windows_hyperv(
+    namespace, data_volume, vm_from_template, running_vm, winrmcli_pod, download_hvinfo
+):
+    """ Windows test: check hyperV """
 
-
-@pytest.fixture()
-def windows_vm(unprivileged_client, data_volume, namespace):
-    """
-    Create Windows VM with CNV common templates.
-    """
-    vm_name = f"{data_volume.name.strip('dv-')}"
-    with VirtualMachineForTestsFromTemplate(
-        name=vm_name,
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=data_volume.template_labels,
-        template_dv=data_volume.name,
-    ) as vm:
-        yield vm
-
-
-@pytest.fixture()
-def download_hvinfo(winrmcli_pod):
-    server_name = py_config[py_config["region"]]["http_server"]
-    base_url = os.path.join(server_name, "binaries")
-    binary_url = os.path.join(base_url, "hvinfo/hvinfo.exe")
-    download_hvinfo_cmd = ["bash", "-c", f"curl -OL {binary_url}"]
-    winrmcli_pod.execute(download_hvinfo_cmd, timeout=30)
-
-
-def test_windows_hyperv(winrmcli_pod, data_volume, windows_vm, download_hvinfo):
-    """
-    Test CNV common templates with Windows
-    """
-    windows_vm.start()
-    windows_vm.vmi.wait_until_running()
-    vmi_ipaddr = windows_vm.vmi.interfaces[0]["ipAddress"]
+    vmi_ipaddr = vm_from_template.vmi.interfaces[0]["ipAddress"]
     command = [
         "bash",
         "-c",
@@ -155,7 +128,7 @@ def test_windows_hyperv(winrmcli_pod, data_volume, windows_vm, download_hvinfo):
         timeout=600, sleep=15, func=winrmcli_pod.execute, command=command
     )
     LOGGER.info(
-        f"Windows VM {windows_vm.name} booting up, will attempt to access it upto 10 mins."
+        f"Windows VM {vm_from_template.name} booting up, will attempt to access it upto 10 mins."
     )
     for pod_output in pod_output_samples:
         if data_volume.os_release in str(pod_output):
