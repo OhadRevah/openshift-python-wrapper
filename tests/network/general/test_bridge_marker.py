@@ -4,10 +4,12 @@ import time
 
 import pytest
 from pytest_testconfig import config as py_config
-from resources import network_attachment_definition as nad
 from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.network import (
+    LinuxBridgeNetworkAttachmentDefinition,
+    LinuxBridgeNodeNetworkConfigurationPolicy,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -27,7 +29,7 @@ def _get_name(suffix):
 @pytest.fixture()
 def bridge_network(namespace):
     cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
-    with nad.LinuxBridgeNetworkAttachmentDefinition(
+    with LinuxBridgeNetworkAttachmentDefinition(
         namespace=namespace.name,
         name=BRIDGEMARKER1,
         bridge_name=BRIDGEMARKER1,
@@ -105,15 +107,15 @@ def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
             yield (bridgemarker2_ncp, bridgemarker3_ncp)
 
 
-def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
+def _assert_failure_reason_is_bridge_missing(pod, bridge):
     cond = pod.instance.status.conditions[0]
-    missing_resource = nad.get_resource_name(bridge_name)
+    missing_resource = bridge.resource_name
     assert cond.reason == "Unschedulable"
     assert f"Insufficient {missing_resource}" in cond.message
 
 
 @pytest.mark.polarion("CNV-2234")
-def test_bridge_marker_no_device(bridge_attached_vmi):
+def test_bridge_marker_no_device(bridge_network, bridge_attached_vmi):
     """Check that VMI fails to start when bridge device is missing."""
     with pytest.raises(TimeoutExpiredError):
         bridge_attached_vmi.wait_until_running(
@@ -122,7 +124,7 @@ def test_bridge_marker_no_device(bridge_attached_vmi):
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod
-    _assert_failure_reason_is_bridge_missing(pod, BRIDGEMARKER1)
+    _assert_failure_reason_is_bridge_missing(pod, bridge_network)
 
 
 # note: the order of fixtures is important because we should first create the
@@ -146,4 +148,4 @@ def test_bridge_marker_devices_exist_on_different_nodes(
     # validate the exact reason for VMI startup failure is missing bridge
     pod = multi_bridge_attached_vmi.virt_launcher_pod
     for bridge in non_homogenous_bridges:
-        _assert_failure_reason_is_bridge_missing(pod, bridge.bridge_name)
+        _assert_failure_reason_is_bridge_missing(pod, bridge)

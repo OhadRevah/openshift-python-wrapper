@@ -37,6 +37,20 @@ def _get_api_version(dyn_client, api_group, kind):
     return res.group_version
 
 
+def sub_resource_level(current_class, owner_class, parent_class):
+    # return the name of the last class in MRO list that is not one of base
+    # classes; otherwise return None
+    for class_iterator in reversed(
+        list(
+            class_iterator
+            for class_iterator in current_class.mro()
+            if class_iterator not in owner_class.mro()
+            and issubclass(class_iterator, parent_class)
+        )
+    ):
+        return class_iterator.__name__
+
+
 class KubeAPIVersion(Version):
     """
     Implement the Kubernetes API versioning scheme from
@@ -166,16 +180,7 @@ class Resource(object):
 
     @classproperty
     def kind(cls):  # noqa: N805
-        # return the name of the last class in MRO list that is not one of base
-        # classes; otherwise return None
-        for c in reversed(
-            list(
-                c
-                for c in cls.mro()
-                if c not in NamespacedResource.mro() and issubclass(c, Resource)
-            )
-        ):
-            return c.__name__
+        return sub_resource_level(cls, NamespacedResource, Resource)
 
     def _base_body(self):
         return {

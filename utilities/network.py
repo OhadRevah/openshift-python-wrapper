@@ -1,8 +1,11 @@
 import contextlib
+import json
 import logging
 
+from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
+from resources.resource import sub_resource_level
 from resources.utils import TimeoutExpiredError
 
 
@@ -276,3 +279,96 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 self.set_interface(interface)
 
         self.apply()
+
+
+class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
+    def __init__(
+        self, name, namespace, bridge_name, cni_type, vlan=None, client=None, mtu=None
+    ):
+        super().__init__(name=name, namespace=namespace, client=client)
+
+        # An object must not be created as type BridgeNetworkAttachmentDefinition, but only as one of its successors.
+        sub_lvl = sub_resource_level(
+            current_class=self.__class__,
+            owner_class=BridgeNetworkAttachmentDefinition,
+            parent_class=NetworkAttachmentDefinition,
+        )
+        if sub_lvl is None:
+            raise TypeError(
+                f"Cannot create an object of type {self.__class__}.\n"
+                "Only its sub-types LinuxBridgeNetworkAttachmentDefinition and "
+                "OvsBridgeNetworkAttachmentDefinition are allowed."
+            )
+
+        self._bridge_name = bridge_name
+        self._cni_type = cni_type
+        self._vlan = vlan
+        self._mtu = mtu
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        spec_config = {"cniVersion": "0.3.1", "name": self._bridge_name}
+        bridge_dict = {"type": self._cni_type, "bridge": self._bridge_name}
+        spec_config["plugins"] = [bridge_dict]
+        if self._vlan:
+            spec_config["vlan"] = self._vlan
+
+        res["spec"]["config"] = spec_config
+        return res
+
+
+class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
+    def __init__(
+        self,
+        name,
+        namespace,
+        bridge_name,
+        cni_type="cnv-bridge",
+        vlan=None,
+        client=None,
+        mtu=None,
+        tuning_type=None,
+    ):
+        super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
+        self._tuning_type = tuning_type
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        config_plugins = res["spec"]["config"]["plugins"]
+
+        if self._tuning_type:
+            tuning_dict = {"type": self._tuning_type}
+            if self._mtu:
+                tuning_dict["mtu"] = self._mtu
+
+            config_plugins.append(tuning_dict)
+
+        res["spec"]["config"] = json.dumps(res["spec"]["config"])
+        return res
+
+    @property
+    def resource_name(self):
+        return f"bridge.network.kubevirt.io/{self._bridge_name}"
+
+
+class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
+    def __init__(
+        self,
+        name,
+        namespace,
+        bridge_name,
+        cni_type="ovs",
+        vlan=None,
+        client=None,
+        mtu=None,
+    ):
+        super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"]["config"] = json.dumps(res["spec"]["config"])
+        return res
+
+    @property
+    def resource_name(self):
+        return f"ovs-cni.network.kubevirt.io/{self._bridge_name}"

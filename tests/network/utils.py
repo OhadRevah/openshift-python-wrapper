@@ -4,11 +4,12 @@ import logging
 import re
 
 from pytest_testconfig import config as py_config
-from resources.network_attachment_definition import (
-    LinuxBridgeNetworkAttachmentDefinition,
-)
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from utilities import console
+from utilities.network import (
+    LinuxBridgeNetworkAttachmentDefinition,
+    OvsBridgeNetworkAttachmentDefinition,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -28,6 +29,17 @@ def linux_bridge_nad(namespace, name, bridge, vlan=None, tuning=None, mtu=None):
         vlan=vlan,
         tuning_type=tuning_type,
         mtu=mtu,
+    ) as nad:
+        yield nad
+
+
+@contextlib.contextmanager
+def ovs_bridge_nad(namespace, name, bridge, vlan=None, mtu=None):
+    # No need to extract the configuration for CNI type like in linux_bridge_nad, because the OVS CNI name is similar
+    # in both upstream and downstream.
+
+    with OvsBridgeNetworkAttachmentDefinition(
+        namespace=namespace.name, name=name, bridge_name=bridge, vlan=vlan, mtu=mtu
     ) as nad:
         yield nad
 

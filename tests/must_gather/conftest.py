@@ -15,14 +15,14 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
 from resources.daemonset import DaemonSet
-from resources.network_attachment_definition import (
-    LinuxBridgeNetworkAttachmentDefinition,
-)
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns, generate_yaml_from_template
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.network import (
+    LinuxBridgeNetworkAttachmentDefinition,
+    LinuxBridgeNodeNetworkConfigurationPolicy,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
