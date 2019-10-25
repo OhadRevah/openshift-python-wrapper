@@ -29,4 +29,4 @@ class Template(NamespacedResource):
             path="/apis/template.openshift.io/v1/namespaces/openshift/processedtemplates",
             body=body,
         )
-        return json.loads(response.data)["objects"]
+        return response.to_dict()["objects"]
