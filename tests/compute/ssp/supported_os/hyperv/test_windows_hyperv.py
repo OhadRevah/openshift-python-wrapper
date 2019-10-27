@@ -99,10 +99,10 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
         ),
     ]
 )
-def data_volume(request, images_external_http_server, windows_namespace):
+def data_volume(request, images_external_http_server, namespace):
     with DataVolumeTestResource(
         name=f"dv-windows-{request.param['os_release'].replace(' ', '-').lower()}",
-        namespace=windows_namespace.name,
+        namespace=namespace.name,
         url=f"{images_external_http_server}{request.param['os_image']}",
         os_release=request.param["os_release"],
         template_labels=request.param["template_labels"],
@@ -114,14 +114,14 @@ def data_volume(request, images_external_http_server, windows_namespace):
 
 
 @pytest.fixture()
-def windows_vm(unprivileged_client, data_volume, windows_namespace):
+def windows_vm(unprivileged_client, data_volume, namespace):
     """
     Create Windows VM with CNV common templates.
     """
     vm_name = f"{data_volume.name.strip('dv-')}"
     with VirtualMachineForTestsFromTemplate(
         name=vm_name,
-        namespace=windows_namespace.name,
+        namespace=namespace.name,
         client=unprivileged_client,
         labels=data_volume.template_labels,
         template_dv=data_volume.name,

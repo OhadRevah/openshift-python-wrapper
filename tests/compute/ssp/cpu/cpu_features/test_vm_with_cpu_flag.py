@@ -32,11 +32,11 @@ def cpu_module(default_client):
 
 
 @pytest.fixture()
-def cpu_flag_vm_positive(cpu_module, cpu_features_namespace, unprivileged_client):
+def cpu_flag_vm_positive(cpu_module, namespace, unprivileged_client):
     name = "vm-cpu-flags-positive"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_features_namespace.name,
+        namespace=namespace.name,
         cpu_flags={"model": cpu_module},
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -61,11 +61,11 @@ def cpu_flag_vm_positive(cpu_module, cpu_features_namespace, unprivileged_client
     ],
     ids=["CPU-flag: Bad-Skylake-Server", "CPU-flag: commodore64"],
 )
-def cpu_flag_vm_negative(request, unprivileged_client, cpu_features_namespace):
+def cpu_flag_vm_negative(request, unprivileged_client, namespace):
     name = f"vm-cpu-flags-negative-{request.param[1]}"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_features_namespace.name,
+        namespace=namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,

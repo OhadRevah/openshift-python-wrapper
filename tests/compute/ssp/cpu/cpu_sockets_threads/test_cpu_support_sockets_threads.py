@@ -7,7 +7,6 @@ import time
 import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
-from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -38,11 +37,6 @@ def check_vm_dumpxml(vm, cores, sockets, threads):
         ), f"CPU threads: Expected {threads}, Found: {cpu['@threads']}"
 
 
-@pytest.fixture(scope="module", autouse=True)
-def cpu_sockets_threads_ns(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="cpu-sockets-threads-ns")
-
-
 @pytest.fixture(
     params=[
         pytest.param(
@@ -67,14 +61,14 @@ def cpu_sockets_threads_ns(unprivileged_client):
         ),
     ]
 )
-def vm_with_cpu_support(request, cpu_sockets_threads_ns, unprivileged_client):
+def vm_with_cpu_support(request, namespace, unprivileged_client):
     """
     VM with CPU support (cores,sockets,threads)
     """
     name = f"vm-cpu-support-{time.time()}"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_sockets_threads_ns.name,
+        namespace=namespace.name,
         cpu_cores=request.param["cores"],
         cpu_sockets=request.param["sockets"],
         cpu_threads=request.param["threads"],
@@ -88,14 +82,14 @@ def vm_with_cpu_support(request, cpu_sockets_threads_ns, unprivileged_client):
 
 
 @pytest.fixture()
-def no_cpu_settings_vm(cpu_sockets_threads_ns, unprivileged_client):
+def no_cpu_settings_vm(namespace, unprivileged_client):
     """
     Create VM without specific CPU settings
     """
     name = "no-cpu-settings-vm"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_sockets_threads_ns.name,
+        namespace=namespace.name,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
@@ -115,14 +109,14 @@ def test_vm_with_no_cpu_settings(no_cpu_settings_vm):
 
 
 @pytest.mark.polarion("CNV-2818")
-def test_vm_with_cpu_limitation(cpu_sockets_threads_ns, unprivileged_client):
+def test_vm_with_cpu_limitation(namespace, unprivileged_client):
     """
     Test VM with cpu limitation, CPU requests and limits are equals
     """
     name = "vm-cpu-limitation"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_sockets_threads_ns.name,
+        namespace=namespace.name,
         cpu_cores=2,
         cpu_limits=2,
         cpu_requests=2,
@@ -136,7 +130,7 @@ def test_vm_with_cpu_limitation(cpu_sockets_threads_ns, unprivileged_client):
 
 
 @pytest.mark.polarion("CNV-2819")
-def test_vm_with_cpu_limitation_negative(cpu_sockets_threads_ns, unprivileged_client):
+def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
     """
     Test VM with cpu limitation
     negative case: CPU requests is larger then limits
@@ -145,7 +139,7 @@ def test_vm_with_cpu_limitation_negative(cpu_sockets_threads_ns, unprivileged_cl
     with pytest.raises(UnprocessibleEntityError):
         with VirtualMachineForTests(
             name=name,
-            namespace=cpu_sockets_threads_ns.name,
+            namespace=namespace.name,
             cpu_limits=2,
             cpu_requests=4,
             body=fedora_vm_body(name),

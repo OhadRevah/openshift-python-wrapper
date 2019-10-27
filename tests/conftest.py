@@ -21,6 +21,7 @@ from resources.pod import Pod
 from resources.secret import Secret
 from resources.utils import TimeoutSampler
 from utilities.infra import (
+    create_ns,
     generate_yaml_from_template,
     get_images_external_http_server,
     get_images_https_server,
@@ -364,3 +365,12 @@ def cnv_containers():
             res[name] = image_url
 
     return res
+
+
+@pytest.fixture(scope="module")
+def namespace(request, unprivileged_client):
+    """ Generate namespace from the test's module name """
+    yield from create_ns(
+        client=unprivileged_client,
+        name=request.module.__name__.split(".")[-1].replace("_", "-"),
+    )

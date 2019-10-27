@@ -28,11 +28,11 @@ from utilities.virt import (
     ],
     ids=["Feature: name: pcid", "Feature: name: pcid , policy:force"],
 )
-def cpu_features_vm_positive(request, unprivileged_client, cpu_features_namespace):
+def cpu_features_vm_positive(request, unprivileged_client, namespace):
     name = f"vm-cpu-features-positive-{request.param[1]}"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_features_namespace.name,
+        namespace=namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -57,11 +57,11 @@ def cpu_features_vm_positive(request, unprivileged_client, cpu_features_namespac
     ],
     ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid"],
 )
-def cpu_features_vm_negative(request, unprivileged_client, cpu_features_namespace):
+def cpu_features_vm_negative(request, unprivileged_client, namespace):
     name = f"vm-cpu-features-negative-{request.param[1]}"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_features_namespace.name,
+        namespace=namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -72,11 +72,11 @@ def cpu_features_vm_negative(request, unprivileged_client, cpu_features_namespac
 
 
 @pytest.fixture()
-def cpu_features_vm_require_pcid(cpu_features_namespace, unprivileged_client):
+def cpu_features_vm_require_pcid(namespace, unprivileged_client):
     name = "vm-cpu-features-require"
     with VirtualMachineForTests(
         name=name,
-        namespace=cpu_features_namespace.name,
+        namespace=namespace.name,
         cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
