@@ -604,3 +604,151 @@ class NamespacedResource(Resource):
             openshift.dynamic.client.ResourceInstance
         """
         return self.api().get(name=self.name, namespace=self.namespace)
+
+
+class ResourceEditor(object):
+    def __init__(self, patches):
+        """
+        Args:
+            patches (dict): {<Resource object>: <yaml patch as dict>}
+                e.g. {<Resource object>:
+                        {'metadata': {'labels': {'label1': 'true'}}}
+
+        Allows for temporary edits to cluster resources for tests. During
+        __enter__ user-specified patches (see args) are applied and old values
+        are backed up, and during __exit__ these backups are used to reverse
+        all changes made.
+
+        Flow:
+        1) apply patches
+        2) automation runs
+        3) edits made to resources are reversed
+
+        May also be used without being treated as a context manager by
+        calling the methods update() and restore() after instantiation.
+
+        *** the DynamicClient object used to get the resources must not be
+         using an unprivileged_user; use default_client or similar instead.***
+        """
+
+        self._patches = patches
+        self._backups = {}
+
+    @property
+    def backups(self):
+        """Returns a dict {<Resource object>: <backup_as_dict>}
+        The backup dict kept for each resource edited """
+        return self._backups
+
+    @property
+    def patches(self):
+        """Returns the patches dict provided in the constructor"""
+        return self._patches
+
+    def update(self):
+        """Prepares backup dicts (where necessary) and applies patches"""
+        # prepare update dicts and backups
+        LOGGER.info("ResourceEdit: Backing up old data")
+
+        resource_to_patch = []
+
+        for resource, update in self._patches.items():
+            # prepare backup
+            backup = self._create_backup(resource.instance.to_dict(), update)
+
+            # no need to back up if no changes have been made
+            if backup:
+                resource_to_patch.append(resource)
+                self._backups[resource] = backup
+            else:
+                LOGGER.info(
+                    f"ResourceEdit: no diff found in patch for "
+                    f"{resource.name} -- skipping"
+                )
+
+        patches_to_apply = {
+            resource: self._patches[resource] for resource in resource_to_patch
+        }
+
+        # apply changes
+        self._apply_patches(patches_to_apply, "Updating")
+
+    def restore(self):
+        self._apply_patches(self._backups, "Restoring")
+
+    def __enter__(self):
+        self.update()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # restore backups
+        self.restore()
+
+    @staticmethod
+    def _create_backup(original, patch):
+        """
+        Args:
+            original (dict*): source of values to back up if necessary
+            patch (dict*): 'new' values; keys needn't necessarily all be
+                contained in original
+
+        Returns a dict containing the fields in original that are different
+        from update. Performs the
+
+        Places None for fields in update that don't appear in
+        original (because that's how the API knows to remove those fields from
+        the yaml).
+
+        * the first call will be with both of these arguments as dicts but
+        this will not necessarily be the case during recursion"""
+
+        # when both are dicts, get the diff (recursively if need be)
+        if isinstance(original, dict) and isinstance(patch, dict):
+            diff_dict = {}
+            for key, value in patch.items():
+                if key not in original:
+                    diff_dict[key] = None
+                    continue
+
+                # recursive call
+                key_diff = ResourceEditor._create_backup(original[key], value)
+
+                if key_diff:
+                    diff_dict[key] = key_diff
+
+            return diff_dict
+
+        # for one or more non-dict values, just compare them
+        if patch != original:
+            return original
+        else:
+            # this return value will be received by key_diff above
+            return None
+
+    @staticmethod
+    def _apply_patches(patches, action_text):
+        """
+        Updates provided Resource objects with provided yaml patches
+
+        Args:
+            patches (dict): {<Resource object>: <yaml patch as dict>}
+            action_text (str):
+                "ResourceEdit <action_text> for resource <resource name>"
+                will be printed for each resource; see below
+        """
+        for resource, patch in patches.items():
+            LOGGER.info(
+                f"ResourceEdits: {action_text} data for "
+                f"resource {resource.kind} {resource.name}"
+            )
+
+            # add name to patch
+            if "metadata" not in patch:
+                patch["metadata"] = {}
+
+            # the api requires this field to be present in a yaml patch for
+            # some resource kinds even if it is not changed
+            if "name" not in patch["metadata"]:
+                patch["metadata"]["name"] = resource.name
+
+            resource.update(patch)  # update the resource
