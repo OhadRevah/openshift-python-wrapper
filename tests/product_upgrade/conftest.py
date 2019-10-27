@@ -5,7 +5,7 @@ VM to VM connectivity
 import pytest
 from resources.template import Template
 from tests.network.utils import linux_bridge_nad
-from utilities.infra import create_ns
+from utilities.infra import create_ns, get_images_external_http_server
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.storage import DataVolumeTestResource
 from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_vm_interfaces
@@ -50,10 +50,6 @@ def br1test_nad(upgrade_namespace, bridge_on_all_nodes):
         bridge=bridge_on_all_nodes.bridge_name,
     ) as nad:
         yield nad
-
-
-def get_images_external_http_server():
-    pass
 
 
 @pytest.fixture(scope="module")
