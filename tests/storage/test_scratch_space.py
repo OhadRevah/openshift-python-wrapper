@@ -277,7 +277,8 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name
                         status=PersistentVolumeClaim.Status.BOUND, timeout=300
                     )
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
-                    storage_utils.create_vm_with_dv(dv)
+                    with storage_utils.create_vm_with_dv(dv) as vm_dv:
+                        storage_utils.check_disk_count_in_vm_with_dv(vm_dv)
                     return True
 
 
@@ -334,7 +335,8 @@ def create_dv_and_vm_no_scratch_space(
             assert pvc.instance()
         except NotFoundError:
             pass
-        storage_utils.create_vm_with_dv(dv)
+        with storage_utils.create_vm_with_dv(dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
 def create_dv_and_vm(
@@ -368,4 +370,5 @@ def verify_completeness(dv):
     pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
     pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
     dv.wait()
-    storage_utils.create_vm_with_dv(dv)
+    with storage_utils.create_vm_with_dv(dv) as vm_dv:
+        storage_utils.check_disk_count_in_vm_with_dv(vm_dv)

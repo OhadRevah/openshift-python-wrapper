@@ -250,7 +250,8 @@ def create_vm_with_dv(ns_name, content_type, images_internal_http_server, sc):
         storage_class=sc,
     ) as dv:
         dv.wait()
-        utils.create_vm_with_dv(dv)
+        with utils.create_vm_with_dv(dv) as vm_dv:
+            utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -468,7 +469,8 @@ def blank_disk_import(storage_ns, dv_name):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait(timeout=180)
-        utils.create_vm_with_dv(dv, CIRROS_IMAGE)
+        with utils.create_vm_with_dv(dv, CIRROS_IMAGE) as vm_dv:
+            utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
 @pytest.mark.polarion("CNV-1025")

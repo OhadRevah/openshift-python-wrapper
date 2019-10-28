@@ -59,7 +59,9 @@ def check_disk_count_in_vm_with_dv(vm):
     with console.Cirros(vm=vm) as vm_console:
         LOGGER.info(f"Check disk count.")
         vm_console.sendline("lsblk | grep disk | wc -l")
-        vm_console.expect("2", timeout=60)
+        vm_console.expect(
+            str(len(vm.instance.spec.template.spec.domain.devices.disks)), timeout=60
+        )
 
 
 @contextmanager

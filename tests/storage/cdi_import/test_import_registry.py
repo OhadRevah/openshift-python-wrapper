@@ -7,7 +7,6 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import ImportFromRegistryDataVolume
 from tests.storage import utils
-from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, get_cert
 from utilities.virt import VirtualMachineForTests
 
@@ -113,9 +112,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
 
         for vm in vms:
             vm.vmi.wait_until_running()
-            with console.Cirros(vm=vm) as vm_console:
-                vm_console.sendline("lsblk | grep disk | wc -l")
-                vm_console.expect("2", timeout=60)
+            utils.check_disk_count_in_vm_with_dv(vm)
     finally:
         for rcs in dvs + vms:
             rcs.delete()
@@ -180,7 +177,8 @@ def test_private_registry_recover_after_missing_configmap(
         ) as configmap:
             assert configmap is not None
             dv.wait()
-            utils.create_vm_with_dv(dv)
+            with utils.create_vm_with_dv(dv) as vm_dv:
+                utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
 @pytest.mark.skipif(
@@ -237,7 +235,8 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
         cert_configmap=cert_configmap,
     ) as dv:
         dv.wait()
-        utils.create_vm_with_dv(dv)
+        with utils.create_vm_with_dv(dv) as vm_dv:
+            utils.check_disk_count_in_vm_with_dv(vm_dv)
 
 
 @pytest.mark.parametrize(
