@@ -70,7 +70,7 @@ def test_disk_image_not_conform_to_registy_disk(storage_ns):
         )
 
 
-@pytest.mark.polarion("CNV-2042")
+@pytest.mark.polarion("CNV-2028")
 def test_public_registry_multiple_data_volume(storage_ns):
     dvs = []
     vms = []
