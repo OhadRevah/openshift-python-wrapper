@@ -370,7 +370,13 @@ def cnv_containers():
 @pytest.fixture(scope="module")
 def namespace(request, unprivileged_client):
     """ Generate namespace from the test's module name """
+    test_ns_path = []
+    for x in request.fspath.dirname.split(
+        "/"
+    ):  # Dir name from the module that call the fixture.
+        if x not in os.path.dirname(__file__).split("/"):  # Current dir name.
+            test_ns_path.append(x)
+
     yield from create_ns(
-        client=unprivileged_client,
-        name=request.module.__name__.split(".")[-1].replace("_", "-"),
+        client=unprivileged_client, name="-".join(test_ns_path).replace("_", "-")
     )

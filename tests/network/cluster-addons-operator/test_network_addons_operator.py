@@ -1,14 +1,8 @@
 import pytest
 import tests.network.utils as network_utils
 from resources.network_addons_config import NetworkAddonsConfig
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
-
-
-@pytest.fixture(scope="module", autouse="True")
-def module_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="test-network-operator")
 
 
 @pytest.fixture(scope="module", autouse="True")
@@ -22,9 +16,9 @@ def bridge_device(network_utility_pods):
 
 
 @pytest.fixture(scope="module", autouse="True")
-def br1test_nad(module_namespace, bridge_device):
+def br1test_nad(namespace, bridge_device):
     with network_utils.linux_bridge_nad(
-        namespace=module_namespace,
+        namespace=namespace,
         name=bridge_device.bridge_name,
         bridge=bridge_device.bridge_name,
     ) as nad:
@@ -40,10 +34,10 @@ def network_addons_config_cr(default_client):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vm(module_namespace, br1test_nad):
+def bridge_attached_vm(namespace, br1test_nad):
     name = "oper-test-vm"
     with VirtualMachineForTests(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         interfaces=[br1test_nad.name],
         networks={br1test_nad.name: br1test_nad.name},
         name=name,

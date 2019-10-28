@@ -7,7 +7,6 @@ from pytest_testconfig import config as py_config
 from resources import network_attachment_definition as nad
 from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -19,11 +18,6 @@ _VM_RUNNING_TIMEOUT = 120  # seems to be enough
 
 def _get_name(suffix):
     return f"brm-{suffix}"
-
-
-@pytest.fixture(scope="module")
-def namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name=_get_name("ns"))
 
 
 @pytest.fixture()

@@ -4,7 +4,6 @@ from ipaddress import ip_interface
 import pytest
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
 from utilities import console
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -172,11 +171,6 @@ def bridge_attached_vm(
         cloud_init_data=cloud_init_data,
     ) as vm:
         yield vm
-
-
-@pytest.fixture(scope="class")
-def namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="l2-linux-bridge")
 
 
 @pytest.fixture(scope="class")

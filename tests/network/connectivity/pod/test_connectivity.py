@@ -7,7 +7,6 @@ import pytest
 import tests.network.utils as network_utils
 from pytest_testconfig import config as py_config
 from tests.network.connectivity import utils
-from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -17,15 +16,10 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="module")
-def module_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="pod-connectivity")
-
-
-@pytest.fixture(scope="module")
-def vma(nodes, module_namespace, unprivileged_client):
+def vma(nodes, namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name=name,
         node_selector=nodes[0].name,
         client=unprivileged_client,
@@ -37,10 +31,10 @@ def vma(nodes, module_namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(nodes, module_namespace, unprivileged_client):
+def vmb(nodes, namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name=name,
         node_selector=nodes[1].name,
         client=unprivileged_client,
@@ -67,7 +61,7 @@ def running_vmb(vmb):
 
 @pytest.mark.polarion("CNV-2332")
 def test_connectivity_over_pod_network(
-    skip_when_one_node, vma, vmb, running_vma, running_vmb, module_namespace
+    skip_when_one_node, vma, vmb, running_vma, running_vmb, namespace
 ):
     """
     Check connectivity
@@ -82,7 +76,7 @@ def test_connectivity_over_pod_network(
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2334")
 def test_guest_performance_over_pod_network(
-    skip_when_one_node, vma, vmb, running_vma, running_vmb, module_namespace
+    skip_when_one_node, vma, vmb, running_vma, running_vmb, namespace
 ):
     """
     In-guest performance bandwidth passthrough over Linux bridge

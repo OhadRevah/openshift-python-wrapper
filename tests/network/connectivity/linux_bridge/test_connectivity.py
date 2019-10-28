@@ -12,7 +12,7 @@ from tests.network.utils import (
     linux_bridge_nad,
     nmcli_add_con_cmds,
 )
-from utilities.infra import BUG_STATUS_CLOSED, create_ns
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -69,11 +69,6 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         return res
 
 
-@pytest.fixture(scope="module", autouse=True)
-def module_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="linux-bridge-connectivity")
-
-
 @pytest.fixture(scope="module")
 def attach_linux_bridge_to_bond(bond1, network_utility_pods):
     """
@@ -93,41 +88,37 @@ def attach_linux_bridge_to_bond(bond1, network_utility_pods):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def br1test_nad(module_namespace):
+def br1test_nad(namespace):
+    with linux_bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module", autouse=True)
+def brbond_nad(namespace):
+    with linux_bridge_nad(namespace=namespace, name=BR1BOND, bridge=BR1BOND) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module", autouse=True)
+def br1vlan100_nad(namespace):
     with linux_bridge_nad(
-        namespace=module_namespace, name=BR1TEST, bridge=BR1TEST
+        namespace=namespace, name=BR1VLAN100, bridge=BR1TEST, vlan=100
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module", autouse=True)
-def brbond_nad(module_namespace):
+def br1vlan200_nad(namespace):
     with linux_bridge_nad(
-        namespace=module_namespace, name=BR1BOND, bridge=BR1BOND
+        namespace=namespace, name=BR1VLAN200, bridge=BR1TEST, vlan=200
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module", autouse=True)
-def br1vlan100_nad(module_namespace):
+def br1vlan300_nad(namespace):
     with linux_bridge_nad(
-        namespace=module_namespace, name=BR1VLAN100, bridge=BR1TEST, vlan=100
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1vlan200_nad(module_namespace):
-    with linux_bridge_nad(
-        namespace=module_namespace, name=BR1VLAN200, bridge=BR1TEST, vlan=200
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1vlan300_nad(module_namespace):
-    with linux_bridge_nad(
-        namespace=module_namespace, name=BR1VLAN300, bridge=BR1TEST, vlan=300
+        namespace=namespace, name=BR1VLAN300, bridge=BR1TEST, vlan=300
     ) as nad:
         yield nad
 
@@ -160,7 +151,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(nodes, bond_supported, module_namespace, unprivileged_client):
+def bridge_attached_vma(nodes, bond_supported, namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN200: BR1VLAN200}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
@@ -174,7 +165,7 @@ def bridge_attached_vma(nodes, bond_supported, module_namespace, unprivileged_cl
     cloud_init_data["bootcmd"] = bootcmds
 
     with BridgedFedoraVirtualMachine(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
@@ -187,7 +178,7 @@ def bridge_attached_vma(nodes, bond_supported, module_namespace, unprivileged_cl
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(nodes, bond_supported, module_namespace, unprivileged_client):
+def bridge_attached_vmb(nodes, bond_supported, namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN300: BR1VLAN300}
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
@@ -201,7 +192,7 @@ def bridge_attached_vmb(nodes, bond_supported, module_namespace, unprivileged_cl
     cloud_init_data["bootcmd"] = bootcmds
 
     with BridgedFedoraVirtualMachine(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
@@ -247,7 +238,7 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
 def test_connectivity_over_linux_bridge(
     bridge,
     skip_when_one_node,
-    module_namespace,
+    namespace,
     attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -263,7 +254,7 @@ def test_connectivity_over_linux_bridge(
 @pytest.mark.polarion("CNV-2141")
 def test_connectivity_bond_over_linux_bridge(
     skip_when_one_node,
-    module_namespace,
+    namespace,
     attach_linux_bridge_to_bond,
     bond_supported,
     bridge_attached_vma,
@@ -286,7 +277,7 @@ def test_connectivity_bond_over_linux_bridge(
 @pytest.mark.polarion("CNV-2072")
 def test_connectivity_positive_vlan_over_linux_bridge(
     skip_when_one_node,
-    module_namespace,
+    namespace,
     attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -308,7 +299,7 @@ def test_connectivity_positive_vlan_over_linux_bridge(
 @pytest.mark.polarion("CNV-2075")
 def test_connectivity_negative_vlan_over_linux_bridge(
     skip_when_one_node,
-    module_namespace,
+    namespace,
     attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -326,7 +317,7 @@ def test_connectivity_negative_vlan_over_linux_bridge(
 @pytest.mark.polarion("CNV-2335")
 def test_guest_performance_over_linux_bridge(
     skip_when_one_node,
-    module_namespace,
+    namespace,
     attach_linux_bridge_to_bond,
     bridge_attached_vma,
     bridge_attached_vmb,

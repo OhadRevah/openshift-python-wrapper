@@ -14,7 +14,6 @@ from tests.network.utils import (
     nmcli_add_con_cmds,
 )
 from utilities import console
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -85,11 +84,6 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
             if "masquerade" in iface.keys():
                 iface["ports"] = [{"name": "http80", "port": 80, "protocol": "TCP"}]
         return res
-
-
-@pytest.fixture(scope="module")
-def namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="network-migration-test")
 
 
 @pytest.fixture(scope="module")

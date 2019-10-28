@@ -12,7 +12,6 @@ from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds, running_vmi
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -184,11 +183,6 @@ def kubemacpool_second_scope(default_client, kubemacpool_namespace):
         namespace=kubemacpool_namespace,
         scope=("02:ff:fb:00:00:00", "02:ff:fb:ff:ff:ff"),
     )
-
-
-@pytest.fixture(scope="module")
-def namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="kubemacpool-ns")
 
 
 @pytest.fixture(scope="module")

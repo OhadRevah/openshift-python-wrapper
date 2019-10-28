@@ -9,7 +9,6 @@ import logging
 import pytest
 import tests.network.utils as net_utils
 from resources.utils import TimeoutSampler
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -33,13 +32,6 @@ def count_veth_devices_on_host(pod):
     out = pod.execute(command=["bash", "-c", "ip -o link show type veth | wc -l"])
 
     return int(out.strip())
-
-
-@pytest.fixture()
-def namespace(unprivileged_client):
-    yield from create_ns(
-        client=unprivileged_client, name=__name__.split(".")[-1].replace("_", "-")
-    )
 
 
 @pytest.fixture()

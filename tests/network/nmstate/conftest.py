@@ -5,7 +5,6 @@ import logging
 import pytest
 from resources.node_network_state import NodeNetworkState
 from resources.utils import TimeoutSampler
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -16,11 +15,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="module")
-def module_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="nmstate-test")
 
 
 def check_address_on_iface(
@@ -85,10 +79,10 @@ def node_management_iface_stats(network_utility_pods):
 
 
 @pytest.fixture(scope="module")
-def vma(nodes, module_namespace, unprivileged_client):
+def vma(nodes, namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name=name,
         node_selector=nodes[0].name,
         client=unprivileged_client,
@@ -100,10 +94,10 @@ def vma(nodes, module_namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(nodes, module_namespace, unprivileged_client):
+def vmb(nodes, namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name=name,
         node_selector=nodes[1].name,
         client=unprivileged_client,

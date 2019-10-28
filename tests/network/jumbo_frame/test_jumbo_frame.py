@@ -10,7 +10,6 @@ from tests.network.utils import (
     linux_bridge_nad,
     nmcli_add_con_cmds,
 )
-from utilities.infra import create_ns
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -52,18 +51,9 @@ class BridgedMtuFedoraVirtualMachine(VirtualMachineForTests):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="jumbo-frame-test")
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1test_nad(module_namespace):
+def br1test_nad(namespace):
     with linux_bridge_nad(
-        namespace=module_namespace,
-        name=BR1TEST,
-        bridge=BR1TEST,
-        tuning=True,
-        mtu=MTU_SIZE,
+        namespace=namespace, name=BR1TEST, bridge=BR1TEST, tuning=True, mtu=MTU_SIZE
     ) as nad:
         yield nad
 
@@ -82,13 +72,13 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vma(nodes, module_namespace, unprivileged_client):
+def bridge_attached_vma(nodes, namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.1")
 
     with BridgedMtuFedoraVirtualMachine(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name="vma",
         networks=networks,
         interfaces=sorted(networks.keys()),
@@ -101,13 +91,13 @@ def bridge_attached_vma(nodes, module_namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(nodes, module_namespace, unprivileged_client):
+def bridge_attached_vmb(nodes, namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.2")
 
     with BridgedMtuFedoraVirtualMachine(
-        namespace=module_namespace.name,
+        namespace=namespace.name,
         name="vmb",
         networks=networks,
         interfaces=sorted(networks.keys()),
@@ -157,7 +147,7 @@ def fixed_veth_mtu_on_host(
 def test_connectivity_over_linux_bridge_large_mtu(
     skip_if_no_multinic_nodes,
     skip_when_one_node,
-    module_namespace,
+    namespace,
     bridge_attached_vma,
     bridge_attached_vmb,
     fixed_veth_mtu_on_host,
