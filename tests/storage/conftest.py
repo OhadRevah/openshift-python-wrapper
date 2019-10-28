@@ -14,9 +14,9 @@ from resources.deployment import Deployment, HttpDeployment
 from resources.namespace import Namespace
 from resources.route import Route
 from resources.secret import Secret
-from resources.service import HttpService
 from resources.storage_class import StorageClass
 from tests.storage import utils
+from tests.storage.utils import HttpService
 
 
 @pytest.fixture(scope="session", autouse=True)

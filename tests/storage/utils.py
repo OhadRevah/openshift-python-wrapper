@@ -9,6 +9,7 @@ import requests
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from resources.route import Route
+from resources.service import Service
 from utilities import console
 from utilities.infra import get_images_external_http_server
 from utilities.virt import VirtualMachineForTests, run_virtctl_command
@@ -116,3 +117,22 @@ def get_images_private_registry_server():
     Fetch url from config and return if available.
     """
     return py_config[py_config["region"]]["registry_server"]
+
+
+class HttpService(Service):
+    def _to_dict(self):
+        res = super()._base_body()
+        res.update(
+            {
+                "spec": {
+                    "selector": {"name": "internal-http"},
+                    "ports": [
+                        {"name": "rate-limit", "port": 82},
+                        {"name": "http-auth", "port": 81},
+                        {"name": "http-no-auth", "port": 80},
+                        {"name": "https", "port": 443},
+                    ],
+                }
+            }
+        )
+        return res
