@@ -34,7 +34,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         res = super()._base_body()
         res.update({"spec": {"desiredState": self.desired_state}})
         if self.node_selector:
-            res["spec"]["nodeSelector"] = self.node_selector
+            res["spec"]["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
 
         return res
 
