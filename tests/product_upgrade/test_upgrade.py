@@ -1,5 +1,7 @@
 import logging
+from ipaddress import ip_interface
 
+import netaddr
 import pytest
 from pytest_testconfig import config as py_config
 from resources.clusterserviceversion import ClusterServiceVersion
@@ -9,6 +11,7 @@ from resources.installplan import InstallPlan
 from resources.pod import Pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
+from tests.network.utils import assert_ping_successful
 from utilities import console
 from utilities.virt import vm_console_run_commands
 
@@ -110,6 +113,25 @@ class TestUpgrade:
         hco_operator_pod = list(filter(lambda x: "hco-operator" in x.name, pods))[0]
         return hco_operator_pod
 
+    @staticmethod
+    def assert_bridge_and_vms_on_same_node(vm_a, vm_b, bridge):
+        for vm in [vm_a, vm_b]:
+            assert vm.vmi.node.name == bridge.node_selector
+
+    @staticmethod
+    def assert_node_is_marked_by_bridge(bridge_nad, vm):
+        for bridge_annotation in bridge_nad.instance.metadata.annotations.values():
+            assert bridge_annotation in vm.vmi.node.instance.status.capacity.keys()
+            assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
+
+    @staticmethod
+    def assert_mac_in_range(mac_range, vm_a, vm_b):
+        start_range = int(netaddr.EUI(mac_range.instance.data.RANGE_START))
+        end_range = int(netaddr.EUI(mac_range.instance.data.RANGE_END))
+        for vm in [vm_a, vm_b]:
+            vm_mac = int(netaddr.EUI(vm.vmi.interfaces[1].mac))
+            assert start_range <= vm_mac <= end_range
+
     @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-2974")
     def test_is_vm_running_before_upgrade(self, vm_for_upgrade):
@@ -131,6 +153,53 @@ class TestUpgrade:
         vm_console_run_commands(
             console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"]
         )
+
+    @pytest.mark.run(before="test_upgrade")
+    @pytest.mark.polarion("CNV-2743")
+    def test_nmstate_bridge_before_upgrade(self, bridge_on_one_node):
+        bridge_on_one_node.validate_create()
+
+    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    @pytest.mark.polarion("CNV-2744")
+    def test_bridge_marker_before_upgrade(
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_a,
+        running_vm_b,
+        upgrade_bridge_marker_nad,
+        bridge_on_one_node,
+    ):
+        self.assert_bridge_and_vms_on_same_node(
+            vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
+        )
+        self.assert_node_is_marked_by_bridge(
+            bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
+        )
+
+    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    @pytest.mark.polarion("CNV-2745")
+    def test_kubemacpool_before_upgrade(
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_a,
+        running_vm_b,
+        kubemacpool_configmap,
+    ):
+        self.assert_mac_in_range(
+            mac_range=kubemacpool_configmap, vm_a=running_vm_a, vm_b=running_vm_b
+        )
+
+    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    @pytest.mark.polarion("CNV-2745")
+    def test_linux_bridge_before_upgrade(
+        self, vm_upgrade_a, vm_upgrade_b, running_vm_a, running_vm_b
+    ):
+        dst_ip_address = ip_interface(
+            running_vm_b.vmi.instance.status.interfaces[1].ipAddress
+        ).ip
+        assert_ping_successful(src_vm=running_vm_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-2991")
     def test_upgrade(self, default_client):
@@ -212,3 +281,50 @@ class TestUpgrade:
         vm_console_run_commands(
             console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"], timeout=1100
         )
+
+    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.polarion("CNV-2747")
+    def test_nmstate_bridge_after_upgrade(self, bridge_on_one_node):
+        bridge_on_one_node.validate_create()
+
+    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    @pytest.mark.polarion("CNV-2749")
+    def test_bridge_marker_after_upgrade(
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_a,
+        running_vm_b,
+        upgrade_bridge_marker_nad,
+        bridge_on_one_node,
+    ):
+        self.assert_bridge_and_vms_on_same_node(
+            vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
+        )
+        self.assert_node_is_marked_by_bridge(
+            bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
+        )
+
+    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    @pytest.mark.polarion("CNV-2746")
+    def test_kubemacpool_after_upgrade(
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_a,
+        running_vm_b,
+        kubemacpool_configmap,
+    ):
+        self.assert_mac_in_range(
+            mac_range=kubemacpool_configmap, vm_a=running_vm_a, vm_b=running_vm_b
+        )
+
+    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    @pytest.mark.polarion("CNV-2748")
+    def test_linux_bridge_after_upgrade(
+        self, vm_upgrade_a, vm_upgrade_b, running_vm_a, running_vm_b
+    ):
+        dst_ip_address = ip_interface(
+            running_vm_b.vmi.instance.status.interfaces[1].ipAddress
+        ).ip
+        assert_ping_successful(src_vm=running_vm_a, dst_ip=str(dst_ip_address))

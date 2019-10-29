@@ -1,14 +1,22 @@
 """
 VM to VM connectivity
 """
-
 import pytest
+from pytest_testconfig import py_config
+from resources.configmap import ConfigMap
 from resources.template import Template
-from tests.network.utils import linux_bridge_nad
+from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
+from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
 from utilities.infra import create_ns, get_images_external_http_server
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_vm_interfaces
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    VirtualMachineForTests,
+    VirtualMachineForTestsFromTemplate,
+    fedora_vm_body,
+    wait_for_vm_interfaces,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -40,6 +48,92 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
                 yield br
         else:
             yield br
+
+
+@pytest.fixture(scope="module")
+def bridge_on_one_node(network_utility_pods):
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="upgrade-br-marker",
+        worker_pods=[network_utility_pods[0]],
+        ports=[],
+        bridge_name="upg-br-mark",
+        node_selector=network_utility_pods[0].node.name,
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="module")
+def upgrade_bridge_marker_nad(bridge_on_one_node, upgrade_namespace):
+    with linux_bridge_nad(
+        namespace=upgrade_namespace,
+        name=bridge_on_one_node.bridge_name,
+        bridge=bridge_on_one_node.bridge_name,
+        tuning=True,
+    ) as nad:
+        yield nad
+
+
+def cloud_init(ip_address):
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    bootcmds = nmcli_add_con_cmds(iface="eth1", ip=ip_address)
+    cloud_init_data["bootcmd"] = bootcmds
+    return cloud_init_data
+
+
+@pytest.fixture(scope="module")
+def vm_upgrade_a(upgrade_bridge_marker_nad, upgrade_namespace, unprivileged_client):
+    name = "vm-upgrade-a"
+    with VirtualMachineForTests(
+        name=name,
+        namespace=upgrade_namespace.name,
+        networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
+        interfaces=[upgrade_bridge_marker_nad.name],
+        client=unprivileged_client,
+        cloud_init_data=cloud_init("192.168.100.1"),
+        body=fedora_vm_body(name),
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def vm_upgrade_b(upgrade_bridge_marker_nad, upgrade_namespace, unprivileged_client):
+    name = "vm-upgrade-b"
+    with VirtualMachineForTests(
+        name=name,
+        namespace=upgrade_namespace.name,
+        networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
+        interfaces=[upgrade_bridge_marker_nad.name],
+        client=unprivileged_client,
+        cloud_init_data=cloud_init("192.168.100.2"),
+        body=fedora_vm_body(name),
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def running_vm_a(vm_upgrade_a):
+    vmi = vm_upgrade_a.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    return vm_upgrade_a
+
+
+@pytest.fixture(scope="module")
+def running_vm_b(vm_upgrade_b):
+    vmi = vm_upgrade_b.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    return vm_upgrade_b
+
+
+@pytest.fixture(scope="module")
+def kubemacpool_configmap(upgrade_namespace):
+    kubemacpool_config_map = ConfigMap(
+        namespace=py_config["hco_namespace"], name=KUBEMACPOOL_CONFIG_MAP_NAME
+    )
+    return kubemacpool_config_map
 
 
 @pytest.fixture(scope="module", autouse=True)
