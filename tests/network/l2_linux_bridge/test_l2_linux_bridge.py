@@ -8,9 +8,7 @@ from utilities.console import Fedora
 from utilities.infra import BUG_STATUS_CLOSED
 
 
-CUSTOM_ETH_PROTOCOL = (
-    "0x88B6"
-)  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
+CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
 
 
 @contextlib.contextmanager

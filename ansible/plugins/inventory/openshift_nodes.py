@@ -88,9 +88,7 @@ def get_nodes():
 
 
 class InventoryModule(BaseInventoryPlugin):
-    NAME = (
-        "openshift_nodes"
-    )  # used internally by Ansible, it should match the file name but not required
+    NAME = "openshift_nodes"  # used internally by Ansible, it should match the file name but not required
 
     def verify_file(self, path):
         """ return true/false if this is possibly a valid file for this plugin to consume """
