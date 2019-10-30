@@ -13,6 +13,13 @@ LOGGER = logging.getLogger(__name__)
 CONFIG_NAME = "config"
 
 
+@pytest.mark.polarion("CNV-2412")
+def test_cdi_config_scratch_space_value_is_default(skip_no_default_sc, default_sc):
+    cdi_config = CDIConfig(CONFIG_NAME)
+    assert cdi_config.instance is not None
+    assert cdi_config.scratch_space_storage_class_from_status == default_sc.name
+
+
 @pytest.mark.polarion("CNV-2208")
 def test_cdi_config_exists(upload_proxy_route):
     cdi_config = CDIConfig(CONFIG_NAME)

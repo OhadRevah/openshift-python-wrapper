@@ -19,6 +19,14 @@ class CDIConfig(Resource):
     api_group = "cdi.kubevirt.io"
 
     @property
+    def scratch_space_storage_class_from_spec(self):
+        return self.instance.spec.scratchSpaceStorageClass
+
+    @property
+    def scratch_space_storage_class_from_status(self):
+        return self.instance.status.scratchSpaceStorageClass
+
+    @property
     def upload_proxy_url(self):
         return self.instance.status.uploadProxyURL
 

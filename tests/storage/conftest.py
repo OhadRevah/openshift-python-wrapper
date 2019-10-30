@@ -93,19 +93,27 @@ def upload_proxy_route(default_client):
 
 
 @pytest.fixture(scope="session")
-def skip_no_default_sc(default_client):
+def default_sc(default_client):
     """
-    Skip test if no default Storage Class defined
+    Get default Storage Class defined
     """
     for sc in StorageClass.get(default_client):
         if (
-            sc.instance["metadata"]["annotations"][
+            sc.instance.metadata.get("annotations", {}).get(
                 "storageclass.kubernetes.io/is-default-class"
-            ]
+            )
             == "true"
         ):
-            return
-    pytest.skip("Skipping test, no default storage class configured")
+            return sc
+
+
+@pytest.fixture(scope="session")
+def skip_no_default_sc(default_sc):
+    """
+    Skip test if no default Storage Class defined
+    """
+    if not default_sc:
+        pytest.skip("Skipping test, no default storage class configured")
 
 
 @pytest.fixture()
