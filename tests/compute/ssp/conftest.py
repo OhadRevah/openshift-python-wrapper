@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import re
+from contextlib import contextmanager
 
 import pytest
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from tests.compute.utils import WinRMcliPod
+from utilities.infra import get_images_external_http_server
 from utilities.storage import DataVolumeTestResource
-from utilities.virt import VirtualMachineForTestsFromTemplate
+from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_vm_interfaces
 
 
 """
@@ -16,9 +18,13 @@ General tests fixtures
 """
 
 
-@pytest.fixture()
-def data_volume(request, images_external_http_server, namespace):
-    """ Fixture to create a DV
+@contextmanager
+def data_volume(request, namespace):
+    """ DV creation.
+
+    The call to this function is triggered by calling either
+    data_volume_scope_function or data_volume_scope_module.
+
 
     Example:
         @pytest.mark.parametrize('data_volume',
@@ -46,7 +52,7 @@ def data_volume(request, images_external_http_server, namespace):
     dv_kwargs = {
         "name": f"dv-{os}-{request.param['os_release'].replace(' ', '-')}".lower(),
         "namespace": namespace.name,
-        "url": f"{images_external_http_server}{request.param['image']}",
+        "url": f"{get_images_external_http_server()}{request.param['image']}",
         "os_release": request.param["os_release"],
         "template_labels": request.param.get("template_labels", None),
         "size": request.param.get("dv_size", None),
@@ -64,8 +70,25 @@ def data_volume(request, images_external_http_server, namespace):
 
 
 @pytest.fixture()
-def vm_from_template(unprivileged_client, namespace, data_volume):
-    """ Create a VM from template.
+def data_volume_scope_function(request, namespace):
+    with data_volume(request, namespace) as dv:
+        yield dv
+
+
+@pytest.fixture(scope="module")
+def data_volume_scope_module(request, namespace):
+    with data_volume(request, namespace) as dv:
+        yield dv
+
+
+@contextmanager
+def vm_from_template(request, unprivileged_client, namespace, data_volume):
+    """ Create a VM from template and start it (if explicitly requested in
+    request.param['start_vm'].
+
+    The call to this function is triggered by calling either
+    vm_from_template_scope_function or vm_from_template_scope_module.
+
     Prerequisite - a DV must be created prior to VM creation.
     """
 
@@ -77,14 +100,31 @@ def vm_from_template(unprivileged_client, namespace, data_volume):
         labels=data_volume.template_labels,
         template_dv=data_volume.name,
     ) as vm:
+        if hasattr(request, "param") and request.param.get("start_vm", False):
+            vm.start(wait=True)
+            vm.vmi.wait_until_running()
+            wait_for_vm_interfaces(vm.vmi)
         yield vm
 
 
 @pytest.fixture()
-def running_vm(vm_from_template):
-    """ Starts a VM and wait for it to run """
+def vm_from_template_scope_function(
+    request, unprivileged_client, namespace, data_volume_scope_function
+):
+    with vm_from_template(
+        request, unprivileged_client, namespace, data_volume_scope_function
+    ) as vm:
+        yield vm
 
-    vm_from_template.start(timeout=360, wait=True)
+
+@pytest.fixture(scope="module")
+def vm_from_template_scope_module(
+    request, unprivileged_client, namespace, data_volume_scope_module
+):
+    with vm_from_template(
+        unprivileged_client, namespace, data_volume_scope_module
+    ) as vm:
+        yield vm
 
 
 """

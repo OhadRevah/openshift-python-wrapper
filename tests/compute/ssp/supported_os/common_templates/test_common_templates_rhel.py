@@ -11,7 +11,7 @@ from utilities.virt import wait_for_vm_interfaces
 
 
 @pytest.mark.parametrize(
-    "data_volume",
+    "data_volume_scope_function",
     [
         pytest.param(
             {
@@ -64,14 +64,17 @@ from utilities.virt import wait_for_vm_interfaces
     ],
     indirect=True,
 )
-def test_common_templates_with_rhel(namespace, data_volume, vm_from_template):
+def test_common_templates_with_rhel(
+    namespace, data_volume_scope_function, vm_from_template_scope_function
+):
     """ Test CNV common templates with RHEL """
 
-    vm_from_template.start(timeout=360, wait=True)
-    wait_for_vm_interfaces(vm_from_template.vmi)
+    vm_from_template_scope_function.start(wait=True)
+    vm_from_template_scope_function.vmi.wait_until_running()
+    wait_for_vm_interfaces(vm_from_template_scope_function.vmi)
 
-    with console.RHEL(vm=vm_from_template, timeout=1100) as vm_console:
+    with console.RHEL(vm=vm_from_template_scope_function, timeout=1100) as vm_console:
         vm_console.sendline(
-            f"cat /etc/redhat-release | grep {data_volume.os_release} | wc -l\n"
+            f"cat /etc/redhat-release | grep {data_volume_scope_function.os_release} | wc -l\n"
         )
         vm_console.expect("1", timeout=60)
