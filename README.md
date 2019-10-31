@@ -223,3 +223,11 @@ To pass parameters to pytest command add them to `PYTEST_PARAMS`.
     for example `-k 'network'` will run only tests that match 'network'
 
 Add the link of the passed job to the patch in Gerrit when verifying it.
+
+### Generate source docs
+```bash
+cd docs
+make html
+```
+The HTML file location is:
+docs/build/html/index.html

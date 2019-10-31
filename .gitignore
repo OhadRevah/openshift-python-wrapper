@@ -113,3 +113,6 @@ venv.bak/
 
 # Fedora container build folder
 fedora_build
+
+# Sphinx docs
+docs/source/rst
