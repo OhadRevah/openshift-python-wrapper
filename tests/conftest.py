@@ -4,6 +4,7 @@
 Pytest conftest file for CNV tests
 """
 import base64
+import logging
 import os
 import os.path
 import urllib.request
@@ -29,6 +30,7 @@ from utilities.infra import (
 from utilities.virt import kubernetes_taint_exists
 
 
+LOGGER = logging.getLogger(__name__)
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
 
@@ -113,9 +115,16 @@ def login_to_account(api_address, user, password=None):
         stderr=PIPE,
     )
     for sample in samples:
-        sample.communicate()
+        LOGGER.info(
+            f"Trying to login to {user} user shell. Login command: {login_command}"
+        )
+        login_result = sample.communicate()
         if sample.returncode == 0:
+            LOGGER.info(f"Login to {user} user shell - success")
             return
+        LOGGER.warning(
+            f"Login to unprivileged user - warning due to the following error: {login_result[0]}"
+        )
 
 
 @pytest.fixture(scope="session", autouse=True)
