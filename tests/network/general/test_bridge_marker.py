@@ -14,6 +14,10 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)
 _VM_RUNNING_TIMEOUT = 120  # seems to be enough
+_VM_NOT_RUNNING_TIMEOUT = 30
+BRIDGEMARKER1 = "bridgemarker1"
+BRIDGEMARKER2 = "bridgemarker2"
+BRIDGEMARKER3 = "bridgemarker3"
 
 
 def _get_name(suffix):
@@ -24,16 +28,23 @@ def _get_name(suffix):
 def bridge_network(namespace):
     cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
     with nad.LinuxBridgeNetworkAttachmentDefinition(
-        namespace=namespace.name, name="redbr", bridge_name="redbr", cni_type=cni_type
+        namespace=namespace.name,
+        name=BRIDGEMARKER1,
+        bridge_name=BRIDGEMARKER1,
+        cni_type=cni_type,
     ) as attachdef:
         yield attachdef
 
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with network_utils.linux_bridge_nad(namespace, "redbr", "redbr") as rednad:
-        with network_utils.linux_bridge_nad(namespace, "bluebr", "bluebr") as bluenad:
-            yield (rednad, bluenad)
+    with network_utils.linux_bridge_nad(
+        namespace=namespace, name=BRIDGEMARKER2, bridge=BRIDGEMARKER2
+    ) as bridgemarker2_nad:
+        with network_utils.linux_bridge_nad(
+            namespace=namespace, name=BRIDGEMARKER3, bridge=BRIDGEMARKER3
+        ) as bridgemarker3_nad:
+            yield (bridgemarker2_nad, bridgemarker3_nad)
 
 
 @pytest.fixture()
@@ -70,7 +81,9 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods):
     with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="bridge-marker1", bridge_name="redbr", worker_pods=network_utility_pods
+        name="bridge-marker1",
+        bridge_name=BRIDGEMARKER1,
+        worker_pods=network_utility_pods,
     ) as dev:
         yield dev
 
@@ -79,17 +92,17 @@ def bridge_device_on_all_nodes(network_utility_pods):
 def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
     with LinuxBridgeNodeNetworkConfigurationPolicy(
         name="bridge-marker2",
-        bridge_name="redbr",
+        bridge_name=BRIDGEMARKER2,
         worker_pods=[network_utility_pods[0]],
-        node_selector={"kubernetes.io/hostname": network_utility_pods[0].node.name},
-    ) as redbr:
+        node_selector=network_utility_pods[0].node.name,
+    ) as bridgemarker2_ncp:
         with LinuxBridgeNodeNetworkConfigurationPolicy(
             name="bridge-marker3",
-            bridge_name="bluebr",
+            bridge_name=BRIDGEMARKER3,
             worker_pods=[network_utility_pods[1]],
-            node_selector={"kubernetes.io/hostname": network_utility_pods[1].node.name},
-        ) as bluebr:
-            yield (redbr, bluebr)
+            node_selector=network_utility_pods[1].node.name,
+        ) as bridgemarker3_ncp:
+            yield (bridgemarker2_ncp, bridgemarker3_ncp)
 
 
 def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
@@ -103,11 +116,13 @@ def _assert_failure_reason_is_bridge_missing(pod, bridge_name):
 def test_bridge_marker_no_device(bridge_attached_vmi):
     """Check that VMI fails to start when bridge device is missing."""
     with pytest.raises(TimeoutExpiredError):
-        bridge_attached_vmi.wait_until_running(timeout=_VM_RUNNING_TIMEOUT, logs=False)
+        bridge_attached_vmi.wait_until_running(
+            timeout=_VM_NOT_RUNNING_TIMEOUT, logs=False
+        )
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod
-    _assert_failure_reason_is_bridge_missing(pod, "redbr")
+    _assert_failure_reason_is_bridge_missing(pod, BRIDGEMARKER1)
 
 
 # note: the order of fixtures is important because we should first create the
@@ -125,7 +140,7 @@ def test_bridge_marker_devices_exist_on_different_nodes(
     """Check that VMI fails to start when attached to two bridges located on different nodes."""
     with pytest.raises(TimeoutExpiredError):
         multi_bridge_attached_vmi.wait_until_running(
-            timeout=_VM_RUNNING_TIMEOUT, logs=False
+            timeout=_VM_NOT_RUNNING_TIMEOUT, logs=False
         )
 
     # validate the exact reason for VMI startup failure is missing bridge
