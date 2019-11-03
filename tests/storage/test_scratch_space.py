@@ -123,15 +123,22 @@ def test_scratch_space_import_https_data_volume(
         namespace=storage_ns.name,
         data=get_cert("https_cert"),
     ) as configmap:
-        create_dv_and_vm(
-            server_type="https",
+        with storage_utils.create_dv(
+            server_type="http",
             dv_name=dv_name,
             namespace=storage_ns.name,
             url=url,
-            configmap=configmap.name,
+            cert_configmap=configmap.name,
             content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             size="5Gi",
-        )
+        ) as dv:
+            pvc = PersistentVolumeClaim(
+                name=f"{dv.name}-scratch", namespace=dv.namespace
+            )
+            pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+            dv.wait()
+            with storage_utils.create_vm_from_dv(dv) as vm_dv:
+                storage_utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -277,8 +284,8 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name
                         status=PersistentVolumeClaim.Status.BOUND, timeout=300
                     )
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
-                    with storage_utils.create_vm_with_dv(dv) as vm_dv:
-                        storage_utils.check_disk_count_in_vm_with_dv(vm_dv)
+                    with storage_utils.create_vm_from_dv(dv) as vm_dv:
+                        storage_utils.check_disk_count_in_vm(vm_dv)
                     return True
 
 
@@ -291,15 +298,22 @@ def test_scratch_space_import_registry_data_volume(
         namespace=storage_ns.name,
         data=get_cert("registry_cert"),
     ) as configmap:
-        create_dv_and_vm(
-            "registry",
-            "scratch-space-import-registry",
-            storage_ns.name,
-            f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
-            configmap.name,
-            ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-            "5Gi",
-        )
+        with storage_utils.create_dv(
+            server_type="registry",
+            dv_name="scratch-space-import-registry",
+            namespace=storage_ns.name,
+            url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
+            cert_configmap=configmap.name,
+            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            size="5Gi",
+        ) as dv:
+            pvc = PersistentVolumeClaim(
+                name=f"{dv.name}-scratch", namespace=dv.namespace
+            )
+            pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+            dv.wait()
+            with storage_utils.create_vm_from_dv(dv) as vm_dv:
+                storage_utils.check_disk_count_in_vm(vm_dv)
 
 
 def get_file_url_http_server(get_images_external_http_server, file_name):
@@ -317,14 +331,14 @@ def get_file_url_https_server(images_https_server, file_name):
 def create_dv_and_vm_no_scratch_space(
     dv_name, namespace, url, cert_configmap, secret, content_type, size
 ):
-    with ImportFromHttpDataVolume(
-        name=dv_name,
+    with storage_utils.create_dv(
+        server_type="http",
+        dv_name=dv_name,
         namespace=namespace,
         content_type=content_type,
         url=url,
-        size=size,
-        storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=cert_configmap,
+        size=size,
         secret=secret,
     ) as dv:
         thread = threading.Thread(target=dv.wait())
@@ -335,40 +349,5 @@ def create_dv_and_vm_no_scratch_space(
             assert pvc.instance()
         except NotFoundError:
             pass
-        with storage_utils.create_vm_with_dv(dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm_with_dv(vm_dv)
-
-
-def create_dv_and_vm(
-    server_type, dv_name, namespace, url, configmap, content_type, size
-):
-    if server_type == "registry":
-        with ImportFromRegistryDataVolume(
-            name=dv_name,
-            namespace=namespace,
-            url=url,
-            content_type=content_type,
-            size=size,
-            storage_class=py_config["storage_defaults"]["storage_class"],
-            cert_configmap=configmap,
-        ) as dv:
-            verify_completeness(dv)
-    elif server_type == "https":
-        with ImportFromHttpDataVolume(
-            name=dv_name,
-            namespace=namespace,
-            url=url,
-            content_type=content_type,
-            size=size,
-            storage_class=py_config["storage_defaults"]["storage_class"],
-            cert_configmap=configmap,
-        ) as dv:
-            verify_completeness(dv)
-
-
-def verify_completeness(dv):
-    pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
-    pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
-    dv.wait()
-    with storage_utils.create_vm_with_dv(dv) as vm_dv:
-        storage_utils.check_disk_count_in_vm_with_dv(vm_dv)
+        with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm_dv)

@@ -7,6 +7,7 @@ from contextlib import contextmanager
 
 import requests
 from pytest_testconfig import config as py_config
+from resources.datavolume import ImportFromHttpDataVolume, ImportFromRegistryDataVolume
 from resources.pod import Pod
 from resources.route import Route
 from resources.service import Service
@@ -15,7 +16,38 @@ from utilities.infra import get_images_external_http_server
 from utilities.virt import VirtualMachineForTests, run_virtctl_command
 
 
+SERVER_TYPES = {
+    "registry": ImportFromRegistryDataVolume,
+    "http": ImportFromHttpDataVolume,
+}
+
+
 LOGGER = logging.getLogger(__name__)
+
+
+@contextmanager
+def create_dv(
+    server_type,
+    dv_name,
+    namespace,
+    url,
+    content_type,
+    size,
+    secret=None,
+    cert_configmap=None,
+):
+    kwargs = {"secret": secret} if secret else {}
+    with SERVER_TYPES.get(server_type)(
+        name=dv_name,
+        namespace=namespace,
+        url=url,
+        content_type=content_type,
+        size=size,
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        cert_configmap=cert_configmap,
+        **kwargs,
+    ) as dv:
+        yield dv
 
 
 class PodWithPVC(Pod):
@@ -55,7 +87,7 @@ class PodWithPVC(Pod):
         return res
 
 
-def check_disk_count_in_vm_with_dv(vm):
+def check_disk_count_in_vm(vm):
     with console.Cirros(vm=vm) as vm_console:
         LOGGER.info(f"Check disk count.")
         vm_console.sendline("lsblk | grep disk | wc -l")
@@ -65,7 +97,7 @@ def check_disk_count_in_vm_with_dv(vm):
 
 
 @contextmanager
-def create_vm_with_dv(dv, vm_name="cirros-vm", image=None, start=True):
+def create_vm_from_dv(dv, vm_name="cirros-vm", image=None, start=True):
     with VirtualMachineForTests(
         name=vm_name, namespace=dv.namespace, dv=dv.name, image=image
     ) as vm:

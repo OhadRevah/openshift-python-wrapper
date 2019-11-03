@@ -43,26 +43,29 @@ def test_private_registry_cirros(storage_ns, images_private_registry_server, fil
         namespace=storage_ns.name,
         data=get_cert("registry_cert"),
     ) as configmap:
-        create_dv_and_vm(
-            "import-private-registry-cirros-image",
-            storage_ns.name,
-            f"{images_private_registry_server}:8443/{file_name}",
-            configmap.name,
-            ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-            "5Gi",
-        )
+        with utils.create_dv(
+            server_type="registry",
+            dv_name="import-private-registry-cirros-image",
+            namespace=storage_ns.name,
+            url=f"{images_private_registry_server}:8443/{file_name}",
+            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            size="5Gi",
+            cert_configmap=configmap.name,
+        ) as dv:
+            dv.wait()
+            with utils.create_vm_from_dv(dv) as vm_dv:
+                utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.polarion("CNV-2198")
 def test_disk_image_not_conform_to_registy_disk(storage_ns):
-    with ImportFromRegistryDataVolume(
-        name="image-registry-not-conform-registrydisk",
+    with utils.create_dv(
+        server_type="registry",
+        dv_name="image-registry-not-conform-registrydisk",
         namespace=storage_ns.name,
         url="docker://docker.io/cirros",
         content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
         size="5Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
-        cert_configmap=None,
     ) as dv:
         dv.wait_for_status(
             status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
@@ -112,7 +115,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
 
         for vm in vms:
             vm.vmi.wait_until_running()
-            utils.check_disk_count_in_vm_with_dv(vm)
+            utils.check_disk_count_in_vm(vm)
     finally:
         for rcs in dvs + vms:
             rcs.delete()
@@ -138,14 +141,17 @@ def test_private_registry_insecured_configmap(
             "metadata": {"name": "cdi-insecure-registries"},
         }
     )
-    create_dv_and_vm(
-        "import-private-insecured-registry",
-        storage_ns.name,
-        f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-        None,
-        ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        "5Gi",
-    )
+    with utils.create_dv(
+        server_type="registry",
+        dv_name="import-private-insecured-registry",
+        namespace=storage_ns.name,
+        url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+        size="5Gi",
+    ) as dv:
+        dv.wait()
+        with utils.create_vm_from_dv(dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.skipif(
@@ -157,14 +163,14 @@ def test_private_registry_recover_after_missing_configmap(
     storage_ns, images_private_registry_server
 ):
     # creating DV before configmap with certificate is created
-    with ImportFromRegistryDataVolume(
-        name="import-private-registry-with-no-configmap",
+    with utils.create_dv(
+        server_type="registry",
+        dv_name="import-private-registry-with-no-configmap",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        cert_configmap="registry-cert-configmap",
         content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
         size="5Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
-        cert_configmap="registry-cert-configmap",
     ) as dv:
         dv.wait_for_status(
             ImportFromRegistryDataVolume.Status.IMPORT_SCHEDULED, timeout=300
@@ -177,8 +183,8 @@ def test_private_registry_recover_after_missing_configmap(
         ) as configmap:
             assert configmap is not None
             dv.wait()
-            with utils.create_vm_with_dv(dv) as vm_dv:
-                utils.check_disk_count_in_vm_with_dv(vm_dv)
+            with utils.create_vm_from_dv(dv) as vm_dv:
+                utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.skipif(
@@ -195,48 +201,38 @@ def test_private_registry_with_untrusted_certificate(
         data=get_cert("registry_cert"),
     ) as configmap:
         assert configmap is not None
-        create_dv_and_vm(
-            "import-private-registry-with-untrusted-certificate",
-            storage_ns.name,
-            f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-            configmap.name,
-            ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-            "5Gi",
-        )
-        # negative flow - remove certificate from configmap
-        configmap.update(
-            resource_dict={
-                "data": {"tlsregistry.crt": ""},
-                "metadata": {"name": "registry-cert-configmap"},
-            }
-        )
-        with ImportFromRegistryDataVolume(
-            name="import-private-registry-no-certificate",
+        with utils.create_dv(
+            server_type="registry",
+            dv_name="import-private-registry-with-untrusted-certificate",
             namespace=storage_ns.name,
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-            content_type="",
-            size="5Gi",
-            storage_class=py_config["storage_defaults"]["storage_class"],
             cert_configmap=configmap.name,
+            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            size="5Gi",
         ) as dv:
-            dv.wait_for_status(
-                status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
+            dv.wait()
+            with utils.create_vm_from_dv(dv) as vm_dv:
+                utils.check_disk_count_in_vm(vm_dv)
+
+            # negative flow - remove certificate from configmap
+            configmap.update(
+                resource_dict={
+                    "data": {"tlsregistry.crt": ""},
+                    "metadata": {"name": "registry-cert-configmap"},
+                }
             )
-
-
-def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size):
-    with ImportFromRegistryDataVolume(
-        name=dv_name,
-        namespace=namespace,
-        url=url,
-        content_type=content_type,
-        size=size,
-        storage_class=py_config["storage_defaults"]["storage_class"],
-        cert_configmap=cert_configmap,
-    ) as dv:
-        dv.wait()
-        with utils.create_vm_with_dv(dv) as vm_dv:
-            utils.check_disk_count_in_vm_with_dv(vm_dv)
+            with utils.create_dv(
+                server_type="registry",
+                dv_name="import-private-registry-no-certificate",
+                namespace=storage_ns.name,
+                url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+                cert_configmap=configmap.name,
+                content_type="",
+                size="5Gi",
+            ) as dv:
+                dv.wait_for_status(
+                    status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
+                )
 
 
 @pytest.mark.parametrize(
@@ -285,7 +281,18 @@ def create_dv_and_vm(dv_name, namespace, url, cert_configmap, content_type, size
 def test_public_registry_data_volume(
     storage_ns, dv_name, url, cert_configmap, content_type, size
 ):
-    create_dv_and_vm(dv_name, storage_ns.name, url, cert_configmap, content_type, size)
+    with utils.create_dv(
+        server_type="registry",
+        dv_name=dv_name,
+        namespace=storage_ns.name,
+        url=url,
+        cert_configmap=cert_configmap,
+        content_type=content_type,
+        size=size,
+    ) as dv:
+        dv.wait()
+        with utils.create_vm_from_dv(dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm_dv)
 
 
 # The following test is to show after imports fails because low capacity storage,
@@ -293,28 +300,30 @@ def test_public_registry_data_volume(
 @pytest.mark.polarion("CNV-2024")
 def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     # negative flow - low capacity volume
-    with ImportFromRegistryDataVolume(
-        name="import-registry-dockerhub-low-capacity-dv",
+    with utils.create_dv(
+        server_type="registry",
+        dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
         content_type="",
         size="16Mi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
-        cert_configmap=None,
     ) as dv:
         dv.wait_for_status(
             status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
         )
 
     # positive flow
-    create_dv_and_vm(
-        "import-registry-dockerhub-low-capacity-dv",
-        storage_ns.name,
-        DOCKERHUB_IMAGE,
-        None,
-        ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        "5Gi",
-    )
+    with utils.create_dv(
+        server_type="registry",
+        dv_name="import-registry-dockerhub-low-capacity-dv",
+        namespace=storage_ns.name,
+        url=DOCKERHUB_IMAGE,
+        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+        size="5Gi",
+    ) as dv:
+        dv.wait()
+        with utils.create_vm_from_dv(dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.bugzilla(
@@ -325,13 +334,12 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
     with pytest.raises(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
-        with ImportFromRegistryDataVolume(
-            name="import-registry-archive",
+        with utils.create_dv(
+            server_type="registry",
+            dv_name="import-registry-archive",
             namespace=storage_ns.name,
             url=DOCKERHUB_IMAGE,
             content_type=ImportFromRegistryDataVolume.ContentType.ARCHIVE,
             size="5Gi",
-            storage_class=py_config["storage_defaults"]["storage_class"],
-            cert_configmap=None,
         ):
             return
