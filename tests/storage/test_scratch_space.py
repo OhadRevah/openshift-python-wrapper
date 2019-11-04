@@ -6,7 +6,6 @@ import threading
 import pytest
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
-from resources.configmap import ConfigMap
 from resources.datavolume import (
     ImportFromHttpDataVolume,
     ImportFromRegistryDataVolume,
@@ -17,7 +16,8 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
-from utilities.infra import Images, get_cert
+from tests.storage.utils import get_file_url_https_server
+from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -70,17 +70,18 @@ pytestmark = pytest.mark.skipif(
     ],
 )
 def test_no_scratch_space_import_https_data_volume(
-    storage_ns, images_https_server, dv_name, file_name, content_type, size
+    storage_ns,
+    images_https_server,
+    https_config_map,
+    dv_name,
+    file_name,
+    content_type,
+    size,
 ):
-    url = storage_utils.get_file_url_https_server(images_https_server, file_name)
-    with ConfigMap(
-        name="https-cert-configmap",
-        namespace=storage_ns.name,
-        data=get_cert("https_cert"),
-    ) as configmap:
-        create_dv_and_vm_no_scratch_space(
-            dv_name, storage_ns.name, url, configmap.name, None, content_type, size
-        )
+    url = get_file_url_https_server(images_https_server, file_name)
+    create_dv_and_vm_no_scratch_space(
+        dv_name, storage_ns.name, url, https_config_map.name, None, content_type, size
+    )
 
 
 @pytest.mark.parametrize(
@@ -109,30 +110,23 @@ def test_no_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_https_data_volume(
-    storage_ns, images_https_server, dv_name, file_name
+    storage_ns, images_https_server, https_config_map, dv_name, file_name
 ):
-    url = storage_utils.get_file_url_https_server(images_https_server, file_name)
-    with ConfigMap(
-        name="https-cert-configmap",
+    url = get_file_url_https_server(images_https_server, file_name)
+    with storage_utils.create_dv(
+        server_type="http",
+        dv_name=dv_name,
         namespace=storage_ns.name,
-        data=get_cert("https_cert"),
-    ) as configmap:
-        with storage_utils.create_dv(
-            server_type="http",
-            dv_name=dv_name,
-            namespace=storage_ns.name,
-            url=url,
-            cert_configmap=configmap.name,
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            size="5Gi",
-        ) as dv:
-            pvc = PersistentVolumeClaim(
-                name=f"{dv.name}-scratch", namespace=dv.namespace
-            )
-            pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
-            dv.wait()
-            with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-                storage_utils.check_disk_count_in_vm(vm_dv)
+        url=url,
+        cert_configmap=https_config_map.name,
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        size="5Gi",
+    ) as dv:
+        pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
+        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        dv.wait()
+        with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -248,7 +242,7 @@ def test_no_scratch_space_import_http(
             marks=(pytest.mark.polarion("CNV-2315")),
         ),
         pytest.param(
-            Images.Cirros.RAW_IMG, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315")),
+            Images.Cirros.RAW_IMG, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
         ),
         pytest.param(
             Images.Cirros.RAW_IMG_XZ,
@@ -299,29 +293,22 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name
 
 @pytest.mark.polarion("CNV-2319")
 def test_scratch_space_import_registry_data_volume(
-    storage_ns, images_private_registry_server
+    storage_ns, images_private_registry_server, registry_config_map
 ):
-    with ConfigMap(
-        name="registry-cert-configmap",
+    with storage_utils.create_dv(
+        server_type="registry",
+        dv_name="scratch-space-import-registry",
         namespace=storage_ns.name,
-        data=get_cert("registry_cert"),
-    ) as configmap:
-        with storage_utils.create_dv(
-            server_type="registry",
-            dv_name="scratch-space-import-registry",
-            namespace=storage_ns.name,
-            url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
-            cert_configmap=configmap.name,
-            content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-            size="5Gi",
-        ) as dv:
-            pvc = PersistentVolumeClaim(
-                name=f"{dv.name}-scratch", namespace=dv.namespace
-            )
-            pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
-            dv.wait()
-            with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-                storage_utils.check_disk_count_in_vm(vm_dv)
+        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
+        cert_configmap=registry_config_map.name,
+        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+        size="5Gi",
+    ) as dv:
+        pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
+        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        dv.wait()
+        with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm_dv)
 
 
 def get_file_url_http_server(get_images_external_http_server, file_name):

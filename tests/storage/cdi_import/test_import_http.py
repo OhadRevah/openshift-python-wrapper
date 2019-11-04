@@ -15,7 +15,7 @@ from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import CIRROS_IMAGE
 
 
@@ -309,31 +309,25 @@ def test_unpack_compressed(
 
 
 @pytest.mark.polarion("CNV-2811")
-def test_certconfigmap(storage_ns, images_https_server):
-    with ConfigMap(
-        name="https-cert",
+def test_certconfigmap(storage_ns, images_https_server, https_config_map):
+    with ImportFromHttpDataVolume(
+        name="cnv-2811",
         namespace=storage_ns.name,
-        cert_name="ca.pem",
-        data=get_cert("https_cert"),
-    ) as configmap:
-        with utils.create_dv(
-            server_type="http",
-            dv_name="cnv-2811",
-            namespace=storage_ns.name,
-            url=get_file_url(
-                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-            ),
-            cert_configmap=configmap.name,
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            size="1Gi",
-        ) as dv:
-            dv.wait()
-            pvc = dv.pvc
-            with utils.PodWithPVC(
-                namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
-            ) as pod:
-                pod.wait_for_status(status="Running")
-                assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 1
+        size="1Gi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        url=get_file_url(
+            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+        ),
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        cert_configmap=https_config_map.name,
+    ) as dv:
+        dv.wait()
+        pvc = dv.pvc
+        with utils.PodWithPVC(
+            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+        ) as pod:
+            pod.wait_for_status(status="Running")
+            assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 1
 
 
 @pytest.mark.parametrize(
@@ -448,64 +442,54 @@ def test_successful_concurrent_blank_disk_import(storage_ns):
         pytest.param("13", "Gi", "13", marks=(pytest.mark.polarion("CNV-1404"))),
     ],
 )
-def test_vmi_image_size(storage_ns, images_https_server, size, unit, expected_size):
-    with ConfigMap(
-        name="https-cert",
+def test_vmi_image_size(
+    storage_ns, images_https_server, https_config_map, size, unit, expected_size
+):
+    with ImportFromHttpDataVolume(
+        name="cnv-1404",
         namespace=storage_ns.name,
-        cert_name="ca.pem",
-        data=get_cert("https_cert"),
-    ) as configmap:
-        with ImportFromHttpDataVolume(
-            name="cnv-1404",
-            namespace=storage_ns.name,
-            size=f"{size}{unit}",
-            storage_class=py_config["storage_defaults"]["storage_class"],
-            url=get_file_url(
-                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-            ),
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            cert_configmap=configmap.name,
-        ) as dv:
-            dv.wait_for_status(
-                status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
-            )
-            with utils.create_vm_from_dv(dv=dv, start=False):
-                with utils.PodWithPVC(
-                    namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
-                ) as pod:
-                    pod.wait_for_status(status=pod.Status.RUNNING)
-                    assert f"{expected_size}" <= pod.execute(
-                        command=[
-                            "bash",
-                            "-c",
-                            "qemu-img info /pvc/disk.img|grep 'disk size'|awk '{print $3}'|\
-                            awk '{$0=substr($0,1,length($0)-1); print $0}'|tr -d '\n'",
-                        ]
-                    )
+        size=f"{size}{unit}",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        url=get_file_url(
+            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+        ),
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        cert_configmap=https_config_map.name,
+    ) as dv:
+        dv.wait_for_status(
+            status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
+        )
+        with utils.create_vm_from_dv(dv, CIRROS_IMAGE, start=False):
+            with utils.PodWithPVC(
+                namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
+            ) as pod:
+                pod.wait_for_status(status=pod.Status.RUNNING)
+                assert f"{expected_size}" <= pod.execute(
+                    command=[
+                        "bash",
+                        "-c",
+                        "qemu-img info /pvc/disk.img|grep 'disk size'|awk '{print $3}'|\
+                        awk '{$0=substr($0,1,length($0)-1); print $0}'|tr -d '\n'",
+                    ]
+                )
 
 
 @pytest.mark.polarion("CNV-3065")
-def test_disk_falloc(storage_ns, images_https_server):
-    with ConfigMap(
-        name="https-cert",
+def test_disk_falloc(storage_ns, images_https_server, https_config_map):
+    with ImportFromHttpDataVolume(
+        name="cnv-3065",
         namespace=storage_ns.name,
-        cert_name="ca.pem",
-        data=get_cert("https_cert"),
-    ) as configmap:
-        with ImportFromHttpDataVolume(
-            name="cnv-3065",
-            namespace=storage_ns.name,
-            size="100Mi",
-            storage_class=py_config["storage_defaults"]["storage_class"],
-            url=get_file_url(
-                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-            ),
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            cert_configmap=configmap.name,
-        ) as dv:
-            dv.wait()
-            with utils.create_vm_from_dv(dv=dv) as vm_dv:
-                with console.Cirros(vm=vm_dv) as vm_console:
-                    LOGGER.info("Fill disk space.")
-                    vm_console.sendline("dd if=/dev/zero of=file bs=1M")
-                vm_dv.restart(timeout=300, wait=True)
+        size="100Mi",
+        storage_class=py_config["storage_defaults"]["storage_class"],
+        url=get_file_url(
+            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+        ),
+        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+        cert_configmap=https_config_map.name,
+    ) as dv:
+        dv.wait()
+        with utils.create_vm_from_dv(dv) as vm_dv:
+            with console.Cirros(vm=vm_dv) as vm_console:
+                LOGGER.info("Fill disk space.")
+                vm_console.sendline("dd if=/dev/zero of=file bs=1M")
+            vm_dv.restart(timeout=300, wait=True)

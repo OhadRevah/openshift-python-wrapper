@@ -18,6 +18,7 @@ from resources.secret import Secret
 from resources.storage_class import StorageClass
 from tests.storage import utils
 from tests.storage.utils import HttpService
+from utilities.infra import get_cert
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -210,3 +211,22 @@ def cdi():
     cdi = CDI("cdi-hyperconverged-cluster", py_config["hco_namespace"])
     assert cdi.instance is not None
     yield cdi
+
+
+@pytest.fixture()
+def https_config_map(storage_ns):
+    with ConfigMap(
+        name="https-cert",
+        namespace=storage_ns.name,
+        cert_name="ca.pem",
+        data=get_cert("https_cert"),
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def registry_config_map(storage_ns):
+    with ConfigMap(
+        name="registry-cert", namespace=storage_ns.name, data=get_cert("registry_cert")
+    ) as configmap:
+        yield configmap
