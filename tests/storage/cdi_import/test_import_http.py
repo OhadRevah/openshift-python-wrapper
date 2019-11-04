@@ -375,35 +375,16 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
             )
 
 
-@pytest.mark.parametrize(
-    ("dv_name", "cert_cm_name"),
-    [
-        pytest.param(
-            "cnv-2814",
-            None,
-            marks=(
-                pytest.mark.polarion("CNV-2814"),
-                pytest.mark.bugzilla(
-                    1740073, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
-        ),
-        pytest.param(
-            "cnv-2815", "wrong_name", marks=(pytest.mark.polarion("CNV-2815"))
-        ),
-    ],
-)
-def test_certconfigmap_missing_or_wrong_cm(
-    storage_ns, images_https_server, dv_name, cert_cm_name
-):
+@pytest.mark.polarion("CNV-2815")
+def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_https_server):
     with utils.create_dv(
         server_type="http",
-        dv_name=dv_name,
+        dv_name="cnv-2815",
         namespace=storage_ns.name,
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
-        cert_configmap=cert_cm_name,
+        cert_configmap="wrong_name",
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         size="1Gi",
     ) as dv:
