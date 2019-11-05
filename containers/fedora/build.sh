@@ -3,6 +3,7 @@ set -xe
 
 BUILD_DIR="fedora_build"
 FEDORA_IMAGE=$1
+FEDORA_VERSION=$2
 CLOUD_INIT_ISO="cidata.iso"
 mkdir $BUILD_DIR
 
@@ -38,9 +39,9 @@ echo "ADD $FEDORA_IMAGE /disk" >> $BUILD_DIR/Dockerfile
 
 pushd $BUILD_DIR
 echo "Build docker image"
-docker build -t fedora:30 .
+docker build -t fedora:$FEDORA_VERSION .
 
 echo "Save docker image as TAR"
-docker save --output fedora.tar fedora
+docker save --output fedora-$FEDORA_VERSION.tar fedora
 popd
 echo "Fedora image locate at $BUILD_DIR"

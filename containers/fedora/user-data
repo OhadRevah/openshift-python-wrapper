@@ -8,5 +8,7 @@ runcmd:
   - sudo systemctl start qemu-guest-agent
   - sudo sed -i 's/listen       80 default_server;/listen       80 default_server;\n\tlisten       81 default_server;/g' /etc/nginx/nginx.conf
   - sudo systemctl enable nginx --now
+  - sudo sed -iE 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+  - sudo systemctl enable sshd
+  - sudo systemctl restart sshd
   - rpm -q kernel-core | sort | head -1 | xargs sudo rpm -e
-  - sudo reboot
