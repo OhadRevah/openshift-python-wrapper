@@ -4,6 +4,7 @@ import subprocess
 
 import pexpect
 from autologs.autologs import generate_logs
+from resources.service import Service
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -99,6 +100,7 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_data=None,
         machine_type=None,
         image=None,
+        ssh=False,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.body = body
@@ -119,6 +121,20 @@ class VirtualMachineForTests(VirtualMachine):
         self.cloud_init_data = cloud_init_data
         self.machine_type = machine_type
         self.image = image
+        self.ssh = ssh
+        self.ssh_service = None
+        self.ssh_node_port = None
+
+    def __enter__(self):
+        super().__enter__()
+        if self.ssh:
+            self.ssh_enable()
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        super().__exit__(exception_type, exception_value, traceback)
+        if self.ssh_service:
+            self.ssh_service.delete(wait=True)
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -132,6 +148,9 @@ class VirtualMachineForTests(VirtualMachine):
             res["spec"]["running"] = False
 
         spec = res["spec"]["template"]["spec"]
+        res["spec"]["template"]["metadata"].setdefault("labels", {}).update(
+            {"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name}
+        )
 
         for iface_name in self.interfaces:
             spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
@@ -249,6 +268,15 @@ class VirtualMachineForTests(VirtualMachine):
 
         return res
 
+    def ssh_enable(self):
+        self.ssh_service = SSHServiceForVirtualMachineForTests(
+            name=f"ssh-{self.name}", namespace=self.namespace, vm_name=self.name,
+        )
+        self.ssh_service.create(wait=True)
+        self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
+            "nodePort"
+        ]
+
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def __init__(
@@ -260,6 +288,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         template_dv,
         networks=None,
         interfaces=None,
+        ssh=False,
     ):
         super().__init__(
             name=name,
@@ -267,6 +296,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             client=client,
             networks=networks,
             interfaces=interfaces,
+            ssh=ssh,
         )
         self.template_labels = labels
         self.template_dv = template_dv
@@ -401,3 +431,19 @@ def kubernetes_taint_exists(node):
         return any(
             taint.key == K8S_TAINT and taint.effect == NO_SCHEDULE for taint in taints
         )
+
+
+class SSHServiceForVirtualMachineForTests(Service):
+    def __init__(self, name, namespace, vm_name):
+        super().__init__(name=name, namespace=namespace)
+        self._vm_name = vm_name
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "ports": [{"port": 22, "protocol": "TCP"}],
+            "selector": {"kubevirt.io/domain": self._vm_name},
+            "sessionAffinity": "None",
+            "type": "NodePort",
+        }
+        return res
