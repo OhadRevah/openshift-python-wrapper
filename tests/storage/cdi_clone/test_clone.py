@@ -57,6 +57,6 @@ def test_successful_vm_restart_with_cloned_dv(storage_ns):
             storage_class=py_config["storage_defaults"]["storage_class"],
         ) as cdv:
             cdv.wait(timeout=600)
-            with utils.create_vm_with_dv(dv=cdv) as vm_dv:
-                utils.check_disk_count_in_vm_with_dv(vm=vm_dv)
+            with utils.create_vm_from_dv(dv=cdv) as vm_dv:
+                utils.check_disk_count_in_vm(vm=vm_dv)
                 vm_dv.restart(timeout=300, wait=True)

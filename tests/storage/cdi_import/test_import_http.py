@@ -475,7 +475,7 @@ def test_vmi_image_size(storage_ns, images_https_server, size, unit, expected_si
             dv.wait_for_status(
                 status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
             )
-            with utils.create_vm_with_dv(dv, start=False):
+            with utils.create_vm_from_dv(dv, start=False):
                 with utils.PodWithPVC(
                     namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
                 ) as pod:
@@ -510,7 +510,7 @@ def test_disk_falloc(storage_ns, images_https_server):
             cert_configmap=configmap.name,
         ) as dv:
             dv.wait()
-            with utils.create_vm_with_dv(dv) as vm_dv:
+            with utils.create_vm_from_dv(dv) as vm_dv:
                 with console.Cirros(vm=vm_dv) as vm_console:
                     LOGGER.info("Fill disk space.")
                     vm_console.sendline("dd if=/dev/zero of=file bs=1M")
