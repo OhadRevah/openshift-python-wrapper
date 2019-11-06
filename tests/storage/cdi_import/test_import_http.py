@@ -22,17 +22,11 @@ from utilities.virt import CIRROS_IMAGE
 LOGGER = logging.getLogger(__name__)
 
 TEST_IMG_LOCATION = "cdi-test-images"
-FEDORA_IMG_LOCATION = "fedora-images"
-FEDORA_QCOW_IMG = "Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
 QCOW_IMG = "cirros-qcow2.img"
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
 COMPRESSED_XZ_FILE = "cirros-0.4.0-x86_64-disk.raw.xz"
 COMPRESSED_GZ_FILE = "cirros-0.4.0-x86_64-disk.raw.gz"
-
-CLOUD_INIT_USER_DATA = r"""
-            #!/bin/sh
-            echo 'printed from cloud-init userdata'"""
 
 
 def get_file_url(url, file_name):
