@@ -71,7 +71,8 @@ def test_common_templates_with_rhel(
 
     vm_from_template_scope_function.start(wait=True)
     vm_from_template_scope_function.vmi.wait_until_running()
-    wait_for_vm_interfaces(vm_from_template_scope_function.vmi)
+    if not data_volume_scope_function.os_release == "6":
+        wait_for_vm_interfaces(vm_from_template_scope_function.vmi)
 
     with console.RHEL(vm=vm_from_template_scope_function, timeout=1100) as vm_console:
         vm_console.sendline(

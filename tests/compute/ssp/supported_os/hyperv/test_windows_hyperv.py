@@ -44,7 +44,7 @@ def download_hvinfo(winrmcli_pod):
                     f"{Template.Labels.FLAVOR}/medium",
                 ],
             },
-            {"start_vm": True},
+            {"start_vm": True, "guest_agent": False},
             marks=(
                 pytest.mark.polarion("CNV-2776"),
                 pytest.mark.bugzilla(
@@ -63,7 +63,7 @@ def download_hvinfo(winrmcli_pod):
                     f"{Template.Labels.FLAVOR}/medium",
                 ],
             },
-            {"start_vm": True},
+            {"start_vm": True, "guest_agent": False},
             marks=(
                 pytest.mark.polarion("CNV-2652"),
                 pytest.mark.bugzilla(
@@ -82,7 +82,7 @@ def download_hvinfo(winrmcli_pod):
                     f"{Template.Labels.FLAVOR}/medium",
                 ],
             },
-            {"start_vm": True},
+            {"start_vm": True, "guest_agent": False},
             marks=(
                 pytest.mark.polarion("CNV-2777"),
                 pytest.mark.bugzilla(
@@ -101,7 +101,7 @@ def download_hvinfo(winrmcli_pod):
                     f"{Template.Labels.FLAVOR}/medium",
                 ],
             },
-            {"start_vm": True},
+            {"start_vm": True, "guest_agent": False},
             marks=(
                 pytest.mark.polarion("CNV-2778"),
                 pytest.mark.bugzilla(

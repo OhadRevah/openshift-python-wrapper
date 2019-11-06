@@ -100,10 +100,11 @@ def vm_from_template(request, unprivileged_client, namespace, data_volume):
         labels=data_volume.template_labels,
         template_dv=data_volume.name,
     ) as vm:
-        if hasattr(request, "param") and request.param.get("start_vm", False):
+        if hasattr(request, "param") and request.param.get("start_vm"):
             vm.start(wait=True)
             vm.vmi.wait_until_running()
-            wait_for_vm_interfaces(vm.vmi)
+            if request.param.get("guest_agent", True):
+                wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
 
 
