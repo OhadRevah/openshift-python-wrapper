@@ -18,17 +18,14 @@ from resources.persistent_volume import PersistentVolume
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from string_utils import shuffle
+from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images"
 RHEL8_IMAGES = "rhel-images/rhel-8"
 QCOW2_IMG = "cirros-qcow2.img"
-QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
-QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
 RAW_IMG = "cirros.raw"
-RAW_IMG_GZ = "cirros-0.4.0-x86_64-disk.raw.gz"
-RAW_IMG_XZ = "cirros-0.4.0-x86_64-disk.raw.xz"
 RHEL8_QCOW2 = "rhel-8.qcow2"
 
 
@@ -43,14 +40,14 @@ RHEL8_QCOW2 = "rhel-8.qcow2"
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{QCOW2_IMG_GZ}",
-            QCOW2_IMG_GZ,
+            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.QCOW2_IMG_GZ}",
+            Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{QCOW2_IMG_XZ}",
-            QCOW2_IMG_XZ,
+            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.QCOW2_IMG_XZ}",
+            Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
@@ -61,14 +58,14 @@ RHEL8_QCOW2 = "rhel-8.qcow2"
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{RAW_IMG_GZ}",
-            RAW_IMG_GZ,
+            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_GZ}",
+            Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{RAW_IMG_XZ}",
-            RAW_IMG_GZ,
+            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_XZ}",
+            Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
@@ -80,37 +77,37 @@ RHEL8_QCOW2 = "rhel-8.qcow2"
         pytest.param(
             "cnv-2008",
             f"{CDI_IMAGES_DIR}/{QCOW2_IMG}",
-            QCOW2_IMG_XZ,
+            Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
             f"{CDI_IMAGES_DIR}/{QCOW2_IMG}",
-            QCOW2_IMG_GZ,
+            Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
             f"{CDI_IMAGES_DIR}/{RAW_IMG}",
-            RAW_IMG_XZ,
+            Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
             f"{CDI_IMAGES_DIR}/{RAW_IMG}",
-            RAW_IMG_GZ,
+            Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/cirros_images/{RAW_IMG_GZ}",
-            RAW_IMG_XZ,
+            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_GZ}",
+            Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/cirros_images/{RAW_IMG_XZ}",
-            RAW_IMG_GZ,
+            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_XZ}",
+            Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
     ],

@@ -17,18 +17,12 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
-from utilities.infra import get_cert
+from utilities.infra import Images, get_cert
 
 
 LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images/cirros_images/"
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
-RAW_IMAGE = "cirros-0.4.0-x86_64-disk.raw"
-RAW_GZ_IMAGE = "cirros-0.4.0-x86_64-disk.raw.gz"
-RAW_XZ_IMAGE = "cirros-0.4.0-x86_64-disk.raw.xz"
-QCOW2_IMG = "cirros-0.4.0-x86_64-disk.qcow2"
-QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
-QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
 
 pytestmark = pytest.mark.skipif(
     py_config["distribution"] == "upstream",
@@ -41,28 +35,28 @@ pytestmark = pytest.mark.skipif(
     [
         pytest.param(
             "no-scratch-space-import-raw-https",
-            RAW_IMAGE,
+            Images.Cirros.RAW_IMG,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-gz-https",
-            RAW_GZ_IMAGE,
+            Images.Cirros.RAW_IMG_GZ,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-xz-https",
-            RAW_XZ_IMAGE,
+            Images.Cirros.RAW_IMG_XZ,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-qcow2-https",
-            QCOW2_IMG,
+            Images.Cirros.QCOW2_IMG,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2324")),
@@ -94,17 +88,17 @@ def test_no_scratch_space_import_https_data_volume(
     [
         pytest.param(
             "scratch-space-import-qcow2-https",
-            QCOW2_IMG,
+            Images.Cirros.QCOW2_IMG,
             marks=(pytest.mark.polarion("CNV-2323")),
         ),
         pytest.param(
             "scratch-space-import-qcow2gz-https",
-            QCOW2_IMG_GZ,
+            Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2323")),
         ),
         pytest.param(
             "scratch-space-import-qcow2xz-https",
-            QCOW2_IMG_XZ,
+            Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2323")),
         ),
     ],
@@ -146,28 +140,28 @@ def test_scratch_space_import_https_data_volume(
     [
         pytest.param(
             "no-scratch-space-import-raw-http-basic-auth",
-            RAW_IMAGE,
+            Images.Cirros.RAW_IMG,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-gz-http-basic-auth",
-            RAW_GZ_IMAGE,
+            Images.Cirros.RAW_IMG_GZ,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-xz-http-basic-auth",
-            RAW_XZ_IMAGE,
+            Images.Cirros.RAW_IMG_XZ,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-qcow2-http-basic-auth",
-            QCOW2_IMG,
+            Images.Cirros.QCOW2_IMG,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2324")),
@@ -200,21 +194,21 @@ def test_no_scratch_space_import_http_basic_auth(
     [
         pytest.param(
             "no-scratch-space-import-raw-http",
-            RAW_IMAGE,
+            Images.Cirros.RAW_IMG,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-gz-http",
-            RAW_GZ_IMAGE,
+            Images.Cirros.RAW_IMG_GZ,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-xz-http",
-            RAW_XZ_IMAGE,
+            Images.Cirros.RAW_IMG_XZ,
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
@@ -238,19 +232,33 @@ def test_no_scratch_space_import_http(
 @pytest.mark.parametrize(
     ("file_name", "dv_name"),
     [
-        pytest.param(QCOW2_IMG, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))),
         pytest.param(
-            QCOW2_IMG_GZ, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+            Images.Cirros.QCOW2_IMG,
+            "cnv-2315",
+            marks=(pytest.mark.polarion("CNV-2315")),
         ),
         pytest.param(
-            QCOW2_IMG_XZ, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
-        ),
-        pytest.param(RAW_IMAGE, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))),
-        pytest.param(
-            RAW_XZ_IMAGE, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+            Images.Cirros.QCOW2_IMG_GZ,
+            "cnv-2315",
+            marks=(pytest.mark.polarion("CNV-2315")),
         ),
         pytest.param(
-            RAW_GZ_IMAGE, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315"))
+            Images.Cirros.QCOW2_IMG_XZ,
+            "cnv-2315",
+            marks=(pytest.mark.polarion("CNV-2315")),
+        ),
+        pytest.param(
+            Images.Cirros.RAW_IMG, "cnv-2315", marks=(pytest.mark.polarion("CNV-2315")),
+        ),
+        pytest.param(
+            Images.Cirros.RAW_IMG_XZ,
+            "cnv-2315",
+            marks=(pytest.mark.polarion("CNV-2315")),
+        ),
+        pytest.param(
+            Images.Cirros.RAW_IMG_GZ,
+            "cnv-2315",
+            marks=(pytest.mark.polarion("CNV-2315")),
         ),
     ],
 )

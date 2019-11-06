@@ -15,7 +15,7 @@ from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, get_cert
+from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
 from utilities.virt import CIRROS_IMAGE
 
 
@@ -25,8 +25,6 @@ TEST_IMG_LOCATION = "cdi-test-images"
 QCOW_IMG = "cirros-qcow2.img"
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
-COMPRESSED_XZ_FILE = "cirros-0.4.0-x86_64-disk.raw.xz"
-COMPRESSED_GZ_FILE = "cirros-0.4.0-x86_64-disk.raw.gz"
 
 
 def get_file_url(url, file_name):
@@ -192,7 +190,7 @@ def test_successful_import_secure_image(
         ),
         pytest.param(
             ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-            COMPRESSED_XZ_FILE,
+            Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-784")),
         ),
     ],
@@ -284,12 +282,12 @@ def test_import_invalid_qcow(
     [
         pytest.param(
             ImportFromHttpDataVolume.ContentType.ARCHIVE,
-            COMPRESSED_XZ_FILE,
+            Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2220")),
         ),
         pytest.param(
             ImportFromHttpDataVolume.ContentType.ARCHIVE,
-            COMPRESSED_GZ_FILE,
+            Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2701")),
         ),
     ],

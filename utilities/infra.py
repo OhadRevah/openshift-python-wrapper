@@ -18,6 +18,16 @@ LOGGER = logging.getLogger(__name__)
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
 
 
+class Images:
+    class Cirros:
+        RAW_IMG = "cirros-0.4.0-x86_64-disk.raw"
+        RAW_IMG_GZ = "cirros-0.4.0-x86_64-disk.raw.gz"
+        RAW_IMG_XZ = "cirros-0.4.0-x86_64-disk.raw.xz"
+        QCOW2_IMG = "cirros-0.4.0-x86_64-disk.qcow2"
+        QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
+        QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
+
+
 def get_images_external_http_server():
     """
     Fetch http_server url from config and return if available.
