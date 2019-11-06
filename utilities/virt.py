@@ -148,9 +148,9 @@ class VirtualMachineForTests(VirtualMachine):
             res["spec"]["running"] = False
 
         spec = res["spec"]["template"]["spec"]
-        res["spec"]["template"]["metadata"].setdefault("labels", {}).update(
-            {"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name}
-        )
+        res["spec"]["template"].setdefault("metadata", {}).setdefault(
+            "labels", {}
+        ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
 
         for iface_name in self.interfaces:
             spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
