@@ -66,7 +66,7 @@ def cnv_must_gather(
     if py_config["distribution"] == "upstream":
         image = "quay.io/kubevirt/must-gather"
     else:
-        image = cnv_containers["cnv-must-gather"]
+        image = cnv_containers["container-native-virtualization-cnv-must-gather"]
 
     path = tmpdir_factory.mktemp("must_gather")
     try:
