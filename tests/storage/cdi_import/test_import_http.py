@@ -407,7 +407,9 @@ def blank_disk_import(storage_ns, dv_name):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait(timeout=180)
-        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
+        with utils.create_vm_from_dv(
+            dv=dv, image=CIRROS_IMAGE, vm_name=f"vm-{dv_name}"
+        ) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 
