@@ -53,7 +53,7 @@ def test_private_registry_cirros(storage_ns, images_private_registry_server, fil
             cert_configmap=configmap.name,
         ) as dv:
             dv.wait()
-            with utils.create_vm_from_dv(dv) as vm_dv:
+            with utils.create_vm_from_dv(dv=dv) as vm_dv:
                 utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -150,7 +150,7 @@ def test_private_registry_insecured_configmap(
         size="5Gi",
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -183,7 +183,7 @@ def test_private_registry_recover_after_missing_configmap(
         ) as configmap:
             assert configmap is not None
             dv.wait()
-            with utils.create_vm_from_dv(dv) as vm_dv:
+            with utils.create_vm_from_dv(dv=dv) as vm_dv:
                 utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -211,7 +211,7 @@ def test_private_registry_with_untrusted_certificate(
             size="5Gi",
         ) as dv:
             dv.wait()
-            with utils.create_vm_from_dv(dv) as vm_dv:
+            with utils.create_vm_from_dv(dv=dv) as vm_dv:
                 utils.check_disk_count_in_vm(vm_dv)
 
             # negative flow - remove certificate from configmap
@@ -291,7 +291,7 @@ def test_public_registry_data_volume(
         size=size,
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -322,7 +322,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         size="5Gi",
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 

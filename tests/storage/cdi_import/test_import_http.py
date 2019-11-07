@@ -407,7 +407,7 @@ def blank_disk_import(storage_ns, dv_name):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait(timeout=180)
-        with utils.create_vm_from_dv(dv, CIRROS_IMAGE) as vm_dv:
+        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -420,7 +420,7 @@ def test_successful_blank_disk_import(storage_ns):
         storage_class=py_config["storage_defaults"]["storage_class"],
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv, CIRROS_IMAGE) as vm_dv:
+        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -469,7 +469,7 @@ def test_vmi_image_size(storage_ns, images_https_server, size, unit, expected_si
             dv.wait_for_status(
                 status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
             )
-            with utils.create_vm_from_dv(dv, start=False):
+            with utils.create_vm_from_dv(dv=dv, start=False):
                 with utils.PodWithPVC(
                     namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
                 ) as pod:
@@ -504,7 +504,7 @@ def test_disk_falloc(storage_ns, images_https_server):
             cert_configmap=configmap.name,
         ) as dv:
             dv.wait()
-            with utils.create_vm_from_dv(dv) as vm_dv:
+            with utils.create_vm_from_dv(dv=dv) as vm_dv:
                 with console.Cirros(vm=vm_dv) as vm_console:
                     LOGGER.info("Fill disk space.")
                     vm_console.sendline("dd if=/dev/zero of=file bs=1M")

@@ -143,7 +143,7 @@ def test_successful_upload_with_supported_formats(
                 if sample == 200:
                     return True
             dv.wait()
-            with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                 storage_utils.check_disk_count_in_vm(vm_dv)
 
 

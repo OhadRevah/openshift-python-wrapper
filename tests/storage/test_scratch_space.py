@@ -137,7 +137,7 @@ def test_scratch_space_import_https_data_volume(
             )
             pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
             dv.wait()
-            with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                 storage_utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -284,7 +284,7 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name
                         status=PersistentVolumeClaim.Status.BOUND, timeout=300
                     )
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
-                    with storage_utils.create_vm_from_dv(dv) as vm_dv:
+                    with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm_dv)
                     return True
 
@@ -312,7 +312,7 @@ def test_scratch_space_import_registry_data_volume(
             )
             pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
             dv.wait()
-            with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                 storage_utils.check_disk_count_in_vm(vm_dv)
 
 
@@ -349,5 +349,5 @@ def create_dv_and_vm_no_scratch_space(
             assert pvc.instance()
         except NotFoundError:
             pass
-        with storage_utils.create_vm_from_dv(dv) as vm_dv:
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm_dv)
