@@ -182,6 +182,10 @@ def unprivileged_client(default_client, unprivileged_secret):
     """
     Provides none privilege API client
     """
+    #  We fail to login with unprivileged user on OCP 4.3
+    #  Disable for now
+    return
+
     if py_config["distribution"] == "upstream":
         return
 
