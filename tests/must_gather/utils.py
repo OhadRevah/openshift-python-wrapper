@@ -6,6 +6,7 @@ import os
 import yaml
 from openshift.dynamic.client import ResourceField
 from pytest_testconfig import config as py_config
+from resources.service import Service
 
 
 DEFAULT_NAMESPACE = "default"
@@ -75,11 +76,13 @@ def check_list_of_resources(
     checks,
     namespace=None,
     label_selector=None,
+    filter_resource=None,
 ):
     for resource_instance in resource_type.get(
         default_client, namespace=namespace, label_selector=label_selector
     ):
-        compare_resources(resource_instance, temp_dir, resource_path, checks)
+        if filter_resource is None or filter_resource in resource_instance.name:
+            compare_resources(resource_instance, temp_dir, resource_path, checks)
 
 
 def check_resource(resource, resource_name, temp_dir, resource_path, checks):
@@ -155,3 +158,32 @@ def check_logs(
             assert (
                 log_file in pod_log
             ), f"Log file are different for pod/container {pod.name}/{container_name}"
+
+
+def compare_webhook_svc_contents(
+    webhook_resources, cnv_must_gather, default_client, checks
+):
+    for webhook_resource in webhook_resources:
+        if webhook_resource.kind == "MutatingWebhookConfiguration":
+            service_file = os.path.join(
+                cnv_must_gather,
+                f"webhooks/mutating/{webhook_resource.name}/service.yaml",
+            )
+        elif webhook_resource.kind == "ValidatingWebhookConfiguration":
+            service_file = os.path.join(
+                cnv_must_gather,
+                f"webhooks/validating/{webhook_resource.name}/service.yaml",
+            )
+        webhooks_resource_instance = webhook_resource.instance.webhooks
+        webhooks_svc_name = webhooks_resource_instance[0]["clientConfig"]["service"][
+            "name"
+        ]
+        webhooks_svc_namespace = webhooks_resource_instance[0]["clientConfig"][
+            "service"
+        ]["namespace"]
+        svc_resources = list(
+            Service.get(default_client, namespace=webhooks_svc_namespace)
+        )
+        for svc_resource in svc_resources:
+            if webhooks_svc_name == svc_resource.name:
+                compare_resource_values(svc_resource, service_file, checks)

@@ -4,12 +4,15 @@ import os
 import re
 
 import pytest
+from resources.api_service import APIService
+from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_state import NodeNetworkState
 from resources.pod import Pod
 from resources.template import Template
+from resources.validating_webhook_config import ValidatingWebhookConfiguration
 from resources.virtual_machine import VirtualMachine
 from tests.must_gather import utils
 
@@ -370,3 +373,42 @@ def test_gathered_config_maps(
         ),
         checks,
     )
+
+
+@pytest.mark.polarion("CNV-2723")
+def test_apiservice_resources(cnv_must_gather, default_client):
+    utils.check_list_of_resources(
+        default_client=default_client,
+        resource_type=APIService,
+        temp_dir=cnv_must_gather,
+        resource_path="apiservices/{name}.yaml",
+        checks=(("spec",), ("metadata", "name"), ("metadata", "uid")),
+        filter_resource="kubevirt",
+    )
+
+
+@pytest.mark.polarion("CNV-2726")
+def test_webhookconfig_resources(cnv_must_gather, default_client):
+    checks = (("metadata", "name"), ("metadata", "uid"))
+    utils.check_list_of_resources(
+        default_client=default_client,
+        resource_type=ValidatingWebhookConfiguration,
+        temp_dir=cnv_must_gather,
+        resource_path="webhooks/validating/{name}/validatingwebhookconfiguration.yaml",
+        checks=checks,
+    )
+    utils.check_list_of_resources(
+        default_client=default_client,
+        resource_type=MutatingWebhookConfiguration,
+        temp_dir=cnv_must_gather,
+        resource_path="webhooks/mutating/{name}/mutatingwebhookconfiguration.yaml",
+        checks=checks,
+    )
+
+    for webhook_resources in [
+        list(ValidatingWebhookConfiguration.get(default_client)),
+        list(MutatingWebhookConfiguration.get(default_client)),
+    ]:
+        utils.compare_webhook_svc_contents(
+            webhook_resources, cnv_must_gather, default_client, checks
+        )
