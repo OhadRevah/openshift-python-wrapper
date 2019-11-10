@@ -116,6 +116,32 @@ def skip_no_default_sc(default_sc):
         pytest.skip("Skipping test, no default storage class configured")
 
 
+@pytest.fixture(scope="session")
+def local_storage_class(default_client):
+    """
+    Get the local storage class if configured
+    """
+    for sc in StorageClass.get(default_client):
+        if sc.instance.metadata.get("name") == StorageClass.Types.LOCAL:
+            return sc
+
+
+@pytest.fixture(scope="session")
+def skip_no_local_storage_class(default_sc):
+    """
+    Skip test if local storage Class is not configured
+    """
+    if not local_storage_class:
+        pytest.skip("Skipping test, local storage class is not configured")
+
+
+@pytest.fixture(scope="session")
+def cdi_config():
+    cdi_config = CDIConfig("config")
+    assert cdi_config.instance is not None
+    return cdi_config
+
+
 @pytest.fixture()
 def uploadproxy_route_deleted():
     """

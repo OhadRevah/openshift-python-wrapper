@@ -7,3 +7,8 @@ class StorageClass(Resource):
     """
 
     api_group = "storage.k8s.io"
+
+    class Types:
+        LOCAL = "local-sc"
+        HOSTPATH = "kubevirt-hostpath-provisioner"
+        ROOK = "rook-ceph-block"

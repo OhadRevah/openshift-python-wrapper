@@ -72,7 +72,7 @@ pytestmark = pytest.mark.skipif(
 def test_no_scratch_space_import_https_data_volume(
     storage_ns, images_https_server, dv_name, file_name, content_type, size
 ):
-    url = get_file_url_https_server(images_https_server, file_name)
+    url = storage_utils.get_file_url_https_server(images_https_server, file_name)
     with ConfigMap(
         name="https-cert-configmap",
         namespace=storage_ns.name,
@@ -111,7 +111,7 @@ def test_no_scratch_space_import_https_data_volume(
 def test_scratch_space_import_https_data_volume(
     storage_ns, images_https_server, dv_name, file_name
 ):
-    url = get_file_url_https_server(images_https_server, file_name)
+    url = storage_utils.get_file_url_https_server(images_https_server, file_name)
     with ConfigMap(
         name="https-cert-configmap",
         namespace=storage_ns.name,
@@ -330,10 +330,6 @@ def get_file_url_http_server(get_images_external_http_server, file_name):
 
 def get_file_url_http_server_basic_auth(get_images_external_http_server, file_name):
     return f"{get_images_external_http_server}mod-auth-basic/cirros_images/{file_name}"
-
-
-def get_file_url_https_server(images_https_server, file_name):
-    return f"{images_https_server}cdi-test-images/cirros_images/{file_name}"
 
 
 def create_dv_and_vm_no_scratch_space(

@@ -171,3 +171,7 @@ class HttpService(Service):
             }
         )
         return res
+
+
+def get_file_url_https_server(images_https_server, file_name):
+    return f"{images_https_server}cdi-test-images/cirros_images/{file_name}"
