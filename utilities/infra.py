@@ -27,6 +27,18 @@ class Images:
         QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
         QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
 
+    class Rhel:
+        RHEL6_IMG = "rhel-images/rhel-610/rhel-610.qcow2"
+        RHEL7_6_IMG = "rhel-images/rhel-76/rhel-76.qcow2"
+        RHEL8_0_IMG = "rhel-images/rhel-8/rhel-8.qcow2"
+        RHEL8_1_IMG = "rhel-images/rhel-81/rhel-81.qcow2"
+
+    class Windows:
+        WIM10_IMG = "windows-images/window_qcow2_images/win_10.qcow2"
+        WIN12_IMG = "windows-images/window_qcow2_images/win_12.qcow2"
+        WIN16_IMG = "windows-images/window_qcow2_images/win_16.qcow2"
+        WIN19_IMG = "windows-images/window_qcow2_images/win_19.qcow2"
+
 
 def get_images_external_http_server():
     """

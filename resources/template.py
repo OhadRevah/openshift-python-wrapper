@@ -12,6 +12,17 @@ class Template(NamespacedResource):
         OS = "os.template.kubevirt.io"
         WORKLOAD = "workload.template.kubevirt.io"
 
+    class Workload:
+        DESKTOP = "desktop"
+        HIGH_PERFORMANCE = "highperformance"
+        SERVER = "server"
+
+    class Flavor:
+        LARGE = "large"
+        MEDIUM = "medium"
+        SMALL = "small"
+        TINY = "tiny"
+
     def process(self, **kwargs):
         instance_dict = self.instance.to_dict()
         params = instance_dict["parameters"]
@@ -30,3 +41,11 @@ class Template(NamespacedResource):
             body=body,
         )
         return response.to_dict()["objects"]
+
+    @staticmethod
+    def generate_template_labels(os, workload, flavor):
+        return [
+            f"{Template.Labels.OS}/{os}",
+            f"{Template.Labels.WORKLOAD}/{getattr(Template.Workload, workload.upper())}",
+            f"{Template.Labels.FLAVOR}/{getattr(Template.Flavor, flavor.upper())}",
+        ]

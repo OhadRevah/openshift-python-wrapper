@@ -11,9 +11,8 @@ import os
 
 import pytest
 from pytest_testconfig import config as py_config
-from resources.template import Template
 from resources.utils import TimeoutSampler
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -23,28 +22,32 @@ WINRMCLI = f"/bin/winrm-cli -username {USERNAME} -password {PASSWORD}"
 
 
 @pytest.fixture()
-def download_hvinfo(winrmcli_pod):
+def download_hvinfo(winrmcli_pod_scope_module):
     server_name = py_config[py_config["region"]]["http_server"]
     binary_url = os.path.join(server_name, "binaries/hvinfo/hvinfo.exe")
     download_hvinfo_cmd = ["bash", "-c", f"curl -OL {binary_url}"]
-    winrmcli_pod.execute(download_hvinfo_cmd, timeout=30)
+    winrmcli_pod_scope_module.execute(download_hvinfo_cmd, timeout=30)
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_from_template_scope_function",
+    "data_volume_scope_function, vm_instance_from_template_scope_function",
     [
         pytest.param(
             {
-                "image": "windows-images/window_qcow2_images/win_10.qcow2",
-                "os_release": "Microsoft Windows 10 Enterprise",
+                "image": Images.Windows.WIM10_IMG,
+                "dv_name": "dv-win-10",
                 "dv_size": "30Gi",
-                "template_labels": [
-                    f"{Template.Labels.OS}/win10",
-                    f"{Template.Labels.WORKLOAD}/desktop",
-                    f"{Template.Labels.FLAVOR}/medium",
-                ],
             },
-            {"start_vm": True, "guest_agent": False},
+            {
+                "vm_name": "win-10",
+                "template_labels": {
+                    "os": "win10",
+                    "workload": "desktop",
+                    "flavor": "medium",
+                },
+                "start_vm": True,
+                "guest_agent": False,
+            },
             marks=(
                 pytest.mark.polarion("CNV-2776"),
                 pytest.mark.bugzilla(
@@ -54,16 +57,20 @@ def download_hvinfo(winrmcli_pod):
         ),
         pytest.param(
             {
-                "image": "windows-images/window_qcow2_images/win_12.qcow2",
-                "os_release": "Microsoft Windows Server 2012 R2 Datacenter",
+                "image": Images.Windows.WIN12_IMG,
+                "dv_name": "dv-win-12",
                 "dv_size": "25Gi",
-                "template_labels": [
-                    f"{Template.Labels.OS}/win2k12r2",
-                    f"{Template.Labels.WORKLOAD}/desktop",
-                    f"{Template.Labels.FLAVOR}/medium",
-                ],
             },
-            {"start_vm": True, "guest_agent": False},
+            {
+                "vm_name": "win-12",
+                "template_labels": {
+                    "os": "win2k12r2",
+                    "workload": "desktop",
+                    "flavor": "medium",
+                },
+                "start_vm": True,
+                "guest_agent": False,
+            },
             marks=(
                 pytest.mark.polarion("CNV-2652"),
                 pytest.mark.bugzilla(
@@ -73,16 +80,20 @@ def download_hvinfo(winrmcli_pod):
         ),
         pytest.param(
             {
-                "image": "windows-images/window_qcow2_images/win_16.qcow2",
-                "os_release": "Microsoft Windows Server 2016 Datacenter",
+                "image": Images.Windows.WIN16_IMG,
+                "dv_name": "dv-win-16",
                 "dv_size": "30Gi",
-                "template_labels": [
-                    f"{Template.Labels.OS}/win2k16",
-                    f"{Template.Labels.WORKLOAD}/desktop",
-                    f"{Template.Labels.FLAVOR}/medium",
-                ],
             },
-            {"start_vm": True, "guest_agent": False},
+            {
+                "vm_name": "win-16",
+                "template_labels": {
+                    "os": "win2k16",
+                    "workload": "desktop",
+                    "flavor": "medium",
+                },
+                "start_vm": True,
+                "guest_agent": False,
+            },
             marks=(
                 pytest.mark.polarion("CNV-2777"),
                 pytest.mark.bugzilla(
@@ -92,16 +103,20 @@ def download_hvinfo(winrmcli_pod):
         ),
         pytest.param(
             {
-                "image": "windows-images/window_qcow2_images/win_16.qcow2",
-                "os_release": "Microsoft Windows Server 2019 Standard",
+                "image": Images.Windows.WIN19_IMG,
+                "dv_name": "dv-win-19",
                 "dv_size": "25Gi",
-                "template_labels": [
-                    f"{Template.Labels.OS}/win2k19",
-                    f"{Template.Labels.WORKLOAD}/desktop",
-                    f"{Template.Labels.FLAVOR}/medium",
-                ],
             },
-            {"start_vm": True, "guest_agent": False},
+            {
+                "vm_name": "win-19",
+                "template_labels": {
+                    "os": "win2k19",
+                    "workload": "desktop",
+                    "flavor": "medium",
+                },
+                "start_vm": True,
+                "guest_agent": False,
+            },
             marks=(
                 pytest.mark.polarion("CNV-2778"),
                 pytest.mark.bugzilla(
@@ -119,13 +134,13 @@ def download_hvinfo(winrmcli_pod):
 def test_windows_hyperv(
     namespace,
     data_volume_scope_function,
-    vm_from_template_scope_function,
-    winrmcli_pod,
+    vm_instance_from_template_scope_function,
+    winrmcli_pod_scope_module,
     download_hvinfo,
 ):
     """ Windows test: check hyperV """
 
-    vmi_ipaddr = vm_from_template_scope_function.vmi.interfaces[0]["ipAddress"]
+    vmi_ipaddr = vm_instance_from_template_scope_function.vmi.interfaces[0]["ipAddress"]
     command = [
         "bash",
         "-c",
@@ -133,13 +148,16 @@ def test_windows_hyperv(
         'wmic os get Caption /value'",
     ]
     pod_output_samples = TimeoutSampler(
-        timeout=600, sleep=15, func=winrmcli_pod.execute, command=command
+        timeout=600, sleep=15, func=winrmcli_pod_scope_module.execute, command=command
     )
     LOGGER.info(
-        f"Windows VM {vm_from_template_scope_function.name} booting up, will attempt to access it upto 10 mins."
+        f"Windows VM {vm_instance_from_template_scope_function.name} "
+        f"booting up, will attempt to access it upto 10 mins."
     )
     for pod_output in pod_output_samples:
-        if data_volume_scope_function.os_release in str(pod_output):
+        if vm_instance_from_template_scope_function.vm_name.split("-")[-1] in str(
+            pod_output
+        ):
             copy_hvinfo_cmd = [
                 "bash",
                 "-c",
@@ -147,13 +165,13 @@ def test_windows_hyperv(
                 -pass={PASSWORD} -addr={vmi_ipaddr}:5985  \
                 /hvinfo.exe C:\\hvinfo.exe",
             ]
-            winrmcli_pod.execute(copy_hvinfo_cmd, timeout=600)
+            winrmcli_pod_scope_module.execute(copy_hvinfo_cmd, timeout=600)
             run_hvinfo_cmd = [
                 "bash",
                 "-c",
                 f"{WINRMCLI} -hostname {vmi_ipaddr} \
                 C:\\hvinfo.exe",
             ]
-            hvinfo = winrmcli_pod.execute(run_hvinfo_cmd, timeout=20)
+            hvinfo = winrmcli_pod_scope_module.execute(run_hvinfo_cmd, timeout=20)
             hvinfo_dict = json.loads(hvinfo)
             assert hvinfo_dict["HyperVsupport"]
