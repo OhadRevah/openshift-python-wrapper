@@ -3,6 +3,7 @@
 import json
 import logging
 
+import xmltodict
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from urllib3.exceptions import ProtocolError
@@ -250,6 +251,12 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             command=["virsh", "dumpxml", f"{self.namespace}_{self.name}"],
             container="compute",
         )
+
+    @property
+    def xml_dict(self):
+        """ Get virtual machine instance XML as dict """
+
+        return xmltodict.parse(self.get_xml(), process_namespaces=True)
 
 
 class VirtualMachineInstanceMigration(NamespacedResource):

@@ -234,6 +234,9 @@ class VirtualMachineForTests(VirtualMachine):
             )["memory"] = (self.memory or "64M")
 
         if self.label:
+            # Windows templates are missing spec -> template -> metadata -> labels path
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1769692
+            # Once fixed, setdefault to 'template' and 'metadata' should be removed.
             res.setdefault("spec", {}).setdefault("template", {}).setdefault(
                 "metadata", {}
             ).setdefault("labels", {})["kubevirt.io/vm"] = self.label
