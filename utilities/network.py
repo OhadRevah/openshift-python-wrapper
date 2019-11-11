@@ -302,9 +302,9 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             bridge_name,
             bridge_type="linux-bridge",
             stp_config={"enabled": stp_config},
-            ports=None,
-            mtu=None,
-            node_selector=None,
+            ports=ports,
+            mtu=mtu,
+            node_selector=node_selector,
         )
 
 
@@ -326,7 +326,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             bridge_type="ovs-bridge",
             stp_config=stp_config,
             ports=ports,
-            mtu=None,
+            mtu=mtu,
             node_selector=node_selector,
         )
 
@@ -441,3 +441,67 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
     @property
     def resource_name(self):
         return f"ovs-cni.network.kubevirt.io/{self._bridge_name}"
+
+
+class OvsBridgeOverVxlan(object):
+    def __init__(self, bridge_name, vxlan_iface_name, ovs_worker_pods, remote_ips):
+        self.bridge_name = bridge_name
+        self.vxlan_iface_name = vxlan_iface_name
+        self.ovs_worker_pods = ovs_worker_pods
+        self.remote_ips = remote_ips
+        self.successfully_bridged_pods = []
+
+    def __enter__(self):
+        self.setup_ovs_br()
+        return self
+
+    def __exit__(self, excpt_type, excpt_value, excpt_traceback):
+        self.clean_up_ovs_br()
+
+    def setup_ovs_br(self):
+        LOGGER.info(
+            f"Creating OVS bridge {self.bridge_name} over new VXLAN interface {self.vxlan_iface_name}."
+        )
+
+        br_idx = 0
+        base_port = 4795
+        for pod in self.ovs_worker_pods:
+            pod.execute(command=["ovs-vsctl", "add-br", self.bridge_name])
+            self.successfully_bridged_pods.append(pod)
+
+            ovs_br_cmds = []
+            idx = 0
+            for node_name, node_ip in self.remote_ips.items():
+                if node_name != pod.node.name:
+                    iface_name = f"{self.vxlan_iface_name}{idx}"
+                    ovs_br_cmds.append(
+                        [
+                            "ovs-vsctl",
+                            "add-port",
+                            self.bridge_name,
+                            iface_name,  # OVS port name
+                            "--",
+                            "set",
+                            "Interface",
+                            iface_name,  # VXLAN interface name
+                            "type=vxlan",
+                            f"options:remote_ip={node_ip}",
+                            f"options:dst_port={base_port + idx}",
+                        ]
+                    )
+                    idx += 1
+
+            ovs_br_cmds.append(["ip", "link", "set", "up", f"{self.bridge_name}"])
+
+            for cmd in ovs_br_cmds:
+                pod.execute(command=cmd)
+
+            br_idx += 1
+
+    def clean_up_ovs_br(self):
+        LOGGER.info(
+            f"Removing OVS bridge {self.bridge_name} with its new VXLAN interface {self.vxlan_iface_name}."
+        )
+        for bridge_pod in self.successfully_bridged_pods:
+            bridge_pod.execute(["ovs-vsctl", "del-br", self.bridge_name])
+        self.successfully_bridged_pods.clear()
