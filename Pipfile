@@ -20,7 +20,7 @@ bitmath = "*"
 urllib3 = "*"
 netaddr = "*"
 bcrypt = "*"
-pytest-marker-bugzilla = {editable = true,git = "https://github.com/myakove/pytest_marker_bugzilla.git",ref = "py3-fix"}
+pytest-marker-bugzilla = "*"
 pytest-testconfig = "*"
 python-bugzilla = "*"
 sh = "*"
