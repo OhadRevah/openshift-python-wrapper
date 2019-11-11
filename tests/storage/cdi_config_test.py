@@ -16,6 +16,81 @@ from utilities.infra import Images, get_cert
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.polarion("CNV-2441")
+def test_cdiconfig_changing_storage_class_default(
+    skip_no_local_storage_class,
+    cdi_config,
+    storage_ns,
+    images_https_server,
+    local_storage_class,
+    default_sc,
+):
+    try:
+        default_sc.update(
+            resource_dict={
+                "metadata": {
+                    "annotations": {
+                        "storageclass.kubernetes.io/is-default-class": "false"
+                    },
+                    "name": "rook-ceph-block",
+                },
+            }
+        )
+
+        local_storage_class.update(
+            resource_dict={
+                "metadata": {
+                    "annotations": {
+                        "storageclass.kubernetes.io/is-default-class": "true"
+                    },
+                    "name": "local-sc",
+                },
+            }
+        )
+        url = utils.get_file_url_https_server(
+            images_https_server, Images.Cirros.QCOW2_IMG
+        )
+        with ConfigMap(
+            name="https-cert-configmap",
+            namespace=storage_ns.name,
+            data=get_cert("https_cert"),
+        ) as configmap:
+            with utils.create_dv(
+                server_type="http",
+                dv_name="import-cdiconfig-scratch-space-not-default",
+                namespace=configmap.namespace,
+                url=url,
+                cert_configmap=configmap.name,
+                content_type=DataVolume.ContentType.KUBEVIRT,
+                size="5Gi",
+            ) as dv:
+                dv.wait()
+                with utils.create_vm_from_dv(dv) as vm_dv:
+                    utils.check_disk_count_in_vm(vm_dv)
+
+    finally:
+        local_storage_class.update(
+            resource_dict={
+                "metadata": {
+                    "annotations": {
+                        "storageclass.kubernetes.io/is-default-class": "false"
+                    },
+                    "name": "local-sc",
+                },
+            }
+        )
+        default_sc.update(
+            resource_dict={
+                "metadata": {
+                    "annotations": {
+                        "storageclass.kubernetes.io/is-default-class": "true"
+                    },
+                    "name": "rook-ceph-block",
+                },
+            }
+        )
+
+
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
     skip_no_local_storage_class, cdi_config, storage_ns, images_https_server, default_sc
