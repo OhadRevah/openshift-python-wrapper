@@ -8,6 +8,7 @@ import os
 
 import pytest
 from pytest_testconfig import config as py_config
+from resources.cdi import CDI
 from resources.cdi_config import CDIConfig
 from resources.configmap import ConfigMap
 from resources.deployment import Deployment, HttpDeployment
@@ -186,3 +187,10 @@ def cdi_config_upload_proxy_overridden(upload_proxy_route):
             }
         )
         cdi_config.wait_until_upload_url_changed(upload_proxy_route.host)
+
+
+@pytest.fixture(scope="session")
+def cdi():
+    cdi = CDI("cdi-hyperconverged-cluster", py_config["hco_namespace"])
+    assert cdi.instance is not None
+    yield cdi
