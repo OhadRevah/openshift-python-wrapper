@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import time
 
 import pytest
@@ -137,7 +136,7 @@ def test_bridge_marker_device_exists(bridge_device_on_all_nodes, bridge_attached
 
 @pytest.mark.polarion("CNV-2309")
 def test_bridge_marker_devices_exist_on_different_nodes(
-    non_homogenous_bridges, multi_bridge_attached_vmi
+    bridge_networks, non_homogenous_bridges, multi_bridge_attached_vmi
 ):
     """Check that VMI fails to start when attached to two bridges located on different nodes."""
     with pytest.raises(TimeoutExpiredError):
@@ -147,5 +146,5 @@ def test_bridge_marker_devices_exist_on_different_nodes(
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = multi_bridge_attached_vmi.virt_launcher_pod
-    for bridge in non_homogenous_bridges:
+    for bridge in bridge_networks:
         _assert_failure_reason_is_bridge_missing(pod, bridge)
