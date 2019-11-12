@@ -121,7 +121,6 @@ def vm_object_from_template(
         client=unprivileged_client,
         template_dv=data_volume_scope_class.name,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
-        ssh=True,
     )
 
 

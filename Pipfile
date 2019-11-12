@@ -32,6 +32,7 @@ requests = "*"
 xmltodict = "*"
 pytest-jira = "==0.3.11"
 pytest-lazy-fixture = "*"
+python-rrmngmnt = "*"
 
 [requires]
 python_version = "3"

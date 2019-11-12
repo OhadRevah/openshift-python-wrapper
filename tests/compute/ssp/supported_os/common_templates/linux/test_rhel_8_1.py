@@ -74,7 +74,8 @@ class TestCommonTemplatesRhel81:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        console.RHEL(vm=vm_object_from_template, timeout=1500)
+        with console.RHEL(vm=vm_object_from_template, timeout=1500):
+            pass
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3316")
@@ -84,6 +85,38 @@ class TestCommonTemplatesRhel81:
         """ Test CNV common templates OS version """
 
         utils.vm_os_version(vm=vm_object_from_template)
+
+    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.polarion("CNV-3304")
+    def test_domain_label(
+        self, namespace, data_volume_scope_class, vm_object_from_template
+    ):
+        """ CNV common templates 'domain' label contains vm name """
+
+        domain_label = vm_object_from_template.instance.spec.template.metadata[
+            "labels"
+        ]["kubevirt.io/domain"]
+        assert (
+            domain_label == vm_object_from_template.name
+        ), f"Wrong domain label: {domain_label}"
+
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3322")
+    def test_expose_ssh(
+        self,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template,
+        enabled_ssh_service_in_vm,
+        vm_ssh_service,
+        schedulable_node_ips,
+    ):
+        """ CNV common templates access VM via SSH """
+
+        assert utils.check_ssh_connection(
+            ip=list(schedulable_node_ips.values())[0],
+            port=vm_object_from_template.ssh_node_port,
+        ), "Failed to login via SSH"
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3270")

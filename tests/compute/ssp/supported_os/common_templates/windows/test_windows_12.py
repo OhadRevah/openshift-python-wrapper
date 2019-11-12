@@ -9,7 +9,7 @@ import logging
 import pytest
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -79,6 +79,23 @@ class TestCommonTemplatesWin10:
             version=VM_NAME.split("-")[-1],
             winrmcli_pod=winrmcli_pod_scope_class,
         )
+
+    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.polarion("CNV-1745")
+    @pytest.mark.bugzilla(
+        1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
+    def test_domain_label(
+        self, namespace, data_volume_scope_class, vm_object_from_template
+    ):
+        """ CNV common templates 'domain' label contains vm name """
+
+        domain_label = vm_object_from_template.body["spec"]["template"]["metadata"][
+            "labels"
+        ]["kubevirt.io/domain"]
+        assert (
+            domain_label == vm_object_from_template.name
+        ), f"Wrong domain label: {domain_label}"
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3288")
