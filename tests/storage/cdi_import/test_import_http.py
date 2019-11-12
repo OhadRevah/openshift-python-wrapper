@@ -411,10 +411,10 @@ def blank_disk_import(storage_ns, dv_name):
             utils.check_disk_count_in_vm(vm_dv)
 
 
-@pytest.mark.polarion("CNV-1025")
+@pytest.mark.polarion("CNV-2151")
 def test_successful_blank_disk_import(storage_ns):
     with BlankDataVolume(
-        name="cnv-1025",
+        name="cnv-2151",
         namespace=storage_ns.name,
         size="500Mi",
         storage_class=py_config["storage_defaults"]["storage_class"],
