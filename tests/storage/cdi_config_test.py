@@ -32,7 +32,7 @@ def test_cdiconfig_changing_storage_class_default(
                     "annotations": {
                         "storageclass.kubernetes.io/is-default-class": "false"
                     },
-                    "name": "rook-ceph-block",
+                    "name": StorageClass.Types.ROOK,
                 },
             }
         )
@@ -43,7 +43,7 @@ def test_cdiconfig_changing_storage_class_default(
                     "annotations": {
                         "storageclass.kubernetes.io/is-default-class": "true"
                     },
-                    "name": "local-sc",
+                    "name": StorageClass.Types.LOCAL,
                 },
             }
         )
@@ -75,7 +75,7 @@ def test_cdiconfig_changing_storage_class_default(
                     "annotations": {
                         "storageclass.kubernetes.io/is-default-class": "false"
                     },
-                    "name": "local-sc",
+                    "name": StorageClass.Types.LOCAL,
                 },
             }
         )
@@ -85,7 +85,7 @@ def test_cdiconfig_changing_storage_class_default(
                     "annotations": {
                         "storageclass.kubernetes.io/is-default-class": "true"
                     },
-                    "name": "rook-ceph-block",
+                    "name": StorageClass.Types.ROOK,
                 },
             }
         )
