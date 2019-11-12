@@ -15,6 +15,7 @@ import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.datavolume import UploadDataVolume
 from resources.persistent_volume import PersistentVolume
+from resources.route import Route
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from string_utils import shuffle
@@ -27,6 +28,14 @@ RHEL8_IMAGES = "rhel-images/rhel-8"
 QCOW2_IMG = "cirros-qcow2.img"
 RAW_IMG = "cirros.raw"
 RHEL8_QCOW2 = "rhel-8.qcow2"
+
+
+@pytest.mark.polarion("CNV-2318")
+def test_cdi_uploadproxy_route_owner_references():
+    route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+    assert route.instance
+    assert route.instance["metadata"]["ownerReferences"][0]["name"] == "cdi-deployment"
+    assert route.instance["metadata"]["ownerReferences"][0]["kind"] == "Deployment"
 
 
 @pytest.mark.parametrize(
