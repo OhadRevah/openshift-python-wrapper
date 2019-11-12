@@ -172,7 +172,7 @@ def bridge_attached_vm(
 
 
 @pytest.fixture(scope="class")
-def vm_a(namespace, all_nads, bridge_device, unprivileged_client):
+def vm_a(namespace, all_nads, unprivileged_client):
     cloud_init_extra_user_data = {
         "runcmd": [
             "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
@@ -207,7 +207,7 @@ def vm_a(namespace, all_nads, bridge_device, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def vm_b(namespace, all_nads, bridge_device, unprivileged_client):
+def vm_b(namespace, all_nads, unprivileged_client):
     interface_ip_addresses = [
         "192.168.0.2",
         "192.168.2.2",

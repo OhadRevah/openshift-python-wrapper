@@ -7,8 +7,10 @@ Pytest conftest file for CNV network tests
 import pytest
 from resources.pod import Pod
 from utilities.network import (
+    LinuxBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeOverVxlan,
+    VXLANTunnel,
 )
 
 
@@ -105,3 +107,32 @@ def ovs_worker_pods(nodes, default_client):
                 worker_pods.append(pod)
 
     return worker_pods
+
+
+@pytest.fixture(scope="module")
+def linux_bridge_on_all_nodes(
+    network_utility_pods, multi_nics_nodes, nodes_active_nics, index_number
+):
+    ports = (
+        [nodes_active_nics[network_utility_pods[0].node.name][1]]
+        if multi_nics_nodes
+        else []
+    )
+    unique_index = next(index_number)
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
+        name=f"linux-br{unique_index}",
+        bridge_name=f"br{unique_index}test",
+        worker_pods=network_utility_pods,
+        ports=ports,
+    ) as br:
+        if not multi_nics_nodes:
+            with VXLANTunnel(
+                name=f"vxlan-{unique_index}",
+                worker_pods=network_utility_pods,
+                vxlan_id=10 + unique_index,
+                master_bridge=br.bridge_name,
+                nodes_nics=nodes_active_nics,
+            ):
+                yield br
+        else:
+            yield br
