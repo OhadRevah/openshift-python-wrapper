@@ -66,7 +66,7 @@ def cnv_must_gather(
     if py_config["distribution"] == "upstream":
         image = "quay.io/kubevirt/must-gather"
     else:
-        image = cnv_containers["container-native-virtualization-cnv-must-gather"]
+        image = cnv_containers["container-native-virtualization-cnv-must-gather-rhel8"]
 
     path = tmpdir_factory.mktemp("must_gather")
     try:
@@ -114,7 +114,10 @@ def node_gather_pods(default_client, node_gather_daemonset):
 def network_attachment_definition():
     cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
     with LinuxBridgeNetworkAttachmentDefinition(
-        namespace=mg_utils.HCO_NS, name="mgnad", bridge_name="mgbr", cni_type=cni_type
+        namespace=py_config["hco_namespace"],
+        name="mgnad",
+        bridge_name="mgbr",
+        cni_type=cni_type,
     ) as network_attachment_definition:
         yield network_attachment_definition
 
@@ -130,11 +133,13 @@ def nodenetworkstate_with_bridge(network_utility_pods):
 @pytest.fixture(scope="module")
 def running_hco_containers(default_client):
     pods = []
-    for pod in Pod.get(default_client, namespace=mg_utils.HCO_NS):
+    for pod in Pod.get(default_client, namespace=py_config["hco_namespace"]):
         for container in pod.instance["status"].get("containerStatuses", []):
             if container["ready"]:
                 pods.append((pod, container))
-    assert pods, f"No running pods in the {mg_utils.HCO_NS} namespace were found."
+    assert (
+        pods
+    ), f"No running pods in the {py_config['hco_namespace']} namespace were found."
     return pods
 
 
@@ -199,6 +204,7 @@ def config_map_by_name(request, default_client):
 @pytest.fixture(scope="module")
 def config_maps_file(cnv_must_gather):
     with open(
-        f"{cnv_must_gather}/namespaces/{mg_utils.HCO_NS}/core/configmaps.yaml", "r"
+        f"{cnv_must_gather}/namespaces/{py_config['hco_namespace']}/core/configmaps.yaml",
+        "r",
     ) as config_map_file:
         return yaml.safe_load(config_map_file)

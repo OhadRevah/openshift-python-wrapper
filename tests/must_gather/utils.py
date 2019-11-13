@@ -5,13 +5,11 @@ import os
 
 import yaml
 from openshift.dynamic.client import ResourceField
-from pytest_testconfig import config as py_config
 from resources.service import Service
 
 
 DEFAULT_NAMESPACE = "default"
 SRIOV_NETWORK_OPERATOR_NAMESPACE = "sriov-network-operator"
-HCO_NS = py_config["hco_namespace"]
 
 
 # TODO: this is a workaround for an openshift bug
@@ -109,9 +107,7 @@ def _pod_logfile_path(
     )
 
 
-def pod_logfile(
-    pod_name, container_name, previous, cnv_must_gather_path, namespace=HCO_NS
-):
+def pod_logfile(pod_name, container_name, previous, cnv_must_gather_path, namespace):
     with open(
         _pod_logfile_path(
             pod_name, container_name, previous, cnv_must_gather_path, namespace
@@ -121,7 +117,7 @@ def pod_logfile(
 
 
 def pod_logfile_size(
-    pod_name, container_name, previous, cnv_must_gather_path, namespace=HCO_NS
+    pod_name, container_name, previous, cnv_must_gather_path, namespace
 ):
     return os.path.getsize(
         _pod_logfile_path(
@@ -137,9 +133,7 @@ def filter_pods(running_hco_containers, labels):
                 yield pod, container
 
 
-def check_logs(
-    cnv_must_gather, running_hco_containers, label_selector, namespace=HCO_NS
-):
+def check_logs(cnv_must_gather, running_hco_containers, label_selector, namespace):
     for pod, container in filter_pods(running_hco_containers, label_selector):
         container_name = container["name"]
         for is_previous in (True, False):

@@ -4,6 +4,7 @@ import os
 import re
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.api_service import APIService
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
@@ -69,7 +70,7 @@ def test_resource_type(
     "namespace",
     [
         pytest.param(
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2982")),
             id="test_hco_namespace",
         )
@@ -90,43 +91,43 @@ def test_namespace(cnv_must_gather, namespace):
     [
         pytest.param(
             "app=bridge-marker",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2721")),
             id="test_bridge_marker_pods",
         ),
         pytest.param(
             "name=kube-cni-linux-bridge-plugin",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2705")),
             id="test_kube_cni_pods",
         ),
         pytest.param(
             "kubemacpool-leader=true",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2983")),
             id="kubemacpool-mac-controller-manager_pods",
         ),
         pytest.param(
             "name=nmstate-handler",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2984")),
             id="nmstate-handler_pods",
         ),
         pytest.param(
             "name=cluster-network-addons-operator",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2985")),
             id="cluster-network-addons-operator_pods",
         ),
         pytest.param(
             "app=ovs-cni",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2986")),
             id="ovs-cni_pods",
         ),
         pytest.param(
             "app=kubemacpool",
-            utils.HCO_NS,
+            py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2718")),
             id="kubemacpool_pods",
         ),
@@ -225,7 +226,12 @@ def test_nmstate_config_data(cnv_must_gather, default_client):
     [pytest.param({"app": "cni-plugins"}, marks=(pytest.mark.polarion("CNV-2715")))],
 )
 def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector):
-    utils.check_logs(cnv_must_gather, running_hco_containers, label_selector)
+    utils.check_logs(
+        cnv_must_gather,
+        running_hco_containers,
+        label_selector,
+        namespace=py_config["hco_namespace"],
+    )
 
 
 @pytest.mark.parametrize(
@@ -336,19 +342,19 @@ def test_data_collected_from_virt_launcher(
     "config_map_by_name, has_owner",
     [
         pytest.param(
-            ["kubemacpool-mac-range-config", utils.HCO_NS],
+            ["kubemacpool-mac-range-config", py_config["hco_namespace"]],
             True,
             marks=(pytest.mark.polarion("CNV-2718")),
             id="test_config_map_kubemacpool-mac-range-config",
         ),
         pytest.param(
-            ["kubemacpool-election", utils.HCO_NS],
+            ["kubemacpool-election", py_config["hco_namespace"]],
             False,
             marks=(pytest.mark.polarion("CNV-2718")),
             id="test_config_map_kubemacpool-election",
         ),
         pytest.param(
-            ["kubemacpool-vm-configmap", utils.HCO_NS],
+            ["kubemacpool-vm-configmap", py_config["hco_namespace"]],
             False,
             marks=(pytest.mark.polarion("CNV-2718")),
             id="test_config_map_kubemacpool-vm-configmap",
