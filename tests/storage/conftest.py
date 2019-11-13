@@ -169,7 +169,9 @@ def cdi_config_upload_proxy_overridden(upload_proxy_route):
     cdi_config = CDIConfig("config")
     assert cdi_config.instance is not None
     upload_proxy_override = cdi_config.instance.spec["uploadProxyURLOverride"]
-    new_upload_proxy_url = "newuploadroute-cdi.apps.working.oc4"
+    new_upload_proxy_url = (
+        f"newuploadroute-cdi-{py_config['hco_namespace']}.apps.working.oc4"
+    )
     try:
         cdi_config.update(
             resource_dict={
@@ -187,6 +189,20 @@ def cdi_config_upload_proxy_overridden(upload_proxy_route):
             }
         )
         cdi_config.wait_until_upload_url_changed(upload_proxy_route.host)
+
+
+@pytest.fixture()
+def new_route_created():
+    existing_route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+    route = Route(
+        name="newuploadroute-cdi",
+        namespace=py_config["hco_namespace"],
+        destination_ca_cert=existing_route.ca_cert,
+        service="cdi-uploadproxy",
+    )
+    route.create(wait=True)
+    yield
+    route.delete(wait=True)
 
 
 @pytest.fixture(scope="session")

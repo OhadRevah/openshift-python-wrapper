@@ -14,14 +14,20 @@ class Route(NamespacedResource):
 
     api_group = "route.openshift.io"
 
-    def __init__(self, name, namespace, service=None):
+    def __init__(self, name, namespace, service=None, destination_ca_cert=None):
         super().__init__(name=name, namespace=namespace)
         self.service = service
+        self.destination_ca_cert = destination_ca_cert
 
     def _to_dict(self):
         body = super()._base_body()
         if self.service:
             body.update({"spec": {"to": {"kind": "Service", "name": self.service}}})
+        if self.destination_ca_cert:
+            body["spec"]["tls"] = {
+                "destinationCACertificate": self.destination_ca_cert,
+                "termination": "reencrypt",
+            }
         return body
 
     @property
@@ -37,3 +43,10 @@ class Route(NamespacedResource):
         returns hostname that is exposing the service
         """
         return self.instance.spec.host
+
+    @property
+    def ca_cert(self):
+        """
+        returns destinationCACertificate
+        """
+        return self.instance.spec.tls.destinationCACertificate
