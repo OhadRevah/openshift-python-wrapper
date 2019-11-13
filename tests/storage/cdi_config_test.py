@@ -91,6 +91,44 @@ def test_cdiconfig_changing_storage_class_default(
         )
 
 
+@pytest.mark.polarion("CNV-2214")
+def test_cdiconfig_status_scratchspace_update_with_spec(cdi_config):
+    cdi_spec = cdi_config.instance.to_dict()["spec"]
+    cdi_status_scratch_space = cdi_config.scratch_space_storage_class_from_status
+    try:
+        cdi_config.update(
+            resource_dict={
+                "spec": {"scratchSpaceStorageClass": StorageClass.Types.LOCAL},
+                "metadata": {"name": cdi_config.name},
+            }
+        )
+        samples = TimeoutSampler(
+            timeout=30,
+            sleep=1,
+            func=lambda: cdi_config.scratch_space_storage_class_from_status
+            == StorageClass.Types.LOCAL,
+        )
+        for sample in samples:
+            if sample:
+                break
+    finally:
+        cdi_config.update(
+            resource_dict={"spec": "", "metadata": {"name": cdi_config.name}}
+        )
+        cdi_config.update(
+            resource_dict={"spec": cdi_spec, "metadata": {"name": cdi_config.name}}
+        )
+        samples = TimeoutSampler(
+            timeout=10,
+            sleep=1,
+            func=lambda: cdi_config.scratch_space_storage_class_from_status
+            == cdi_status_scratch_space,
+        )
+        for sample in samples:
+            if sample:
+                return
+
+
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
     skip_no_local_storage_class, cdi_config, storage_ns, images_https_server, default_sc
