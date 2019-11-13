@@ -17,6 +17,17 @@ distribution: downstream
 
 hco_namespace: openshift-cnv
 
+# os label should be '8.1, currently set to '8.0' because of bug 1766070
+latest_rhel_version: {
+    'os_label': 'rhel8.0',
+    'image': 'rhel-images/rhel-81/rhel-81.qcow2',
+}
+
+latest_windows_version: {
+    'os_label': 'win2k19',
+    'image': 'windows-images/window_qcow2_images/win_19.qcow2',
+}
+
 region: USA
 
 
