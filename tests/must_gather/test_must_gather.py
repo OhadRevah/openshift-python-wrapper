@@ -16,6 +16,7 @@ from resources.template import Template
 from resources.validating_webhook_config import ValidatingWebhookConfiguration
 from resources.virtual_machine import VirtualMachine
 from tests.must_gather import utils
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 @pytest.mark.parametrize(
@@ -173,6 +174,9 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
 
 
 @pytest.mark.polarion("CNV-2730")
+@pytest.mark.bugzilla(
+    1771916, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 def test_node_resource(cnv_must_gather, node_gather_pods):
     utils.check_node_resource(
         temp_dir=cnv_must_gather,
