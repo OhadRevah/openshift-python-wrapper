@@ -91,101 +91,98 @@ def test_cdiconfig_changing_storage_class_default(
         )
 
 
-@pytest.mark.polarion("CNV-2214")
-def test_cdiconfig_status_scratchspace_update_with_spec(cdi_config):
-    cdi_spec = cdi_config.instance.to_dict()["spec"]
-    cdi_status_scratch_space = cdi_config.scratch_space_storage_class_from_status
+def cdiconfig_update(
+    cdiconfig,
+    storage_class_type,
+    cdiconfig_spec,
+    cdiconfig_status_scratch_space,
+    images_https_server_name="",
+    storage_ns_name="",
+    run_vm=False,
+):
     try:
-        cdi_config.update(
+        cdiconfig.update(
             resource_dict={
-                "spec": {"scratchSpaceStorageClass": StorageClass.Types.LOCAL},
-                "metadata": {"name": cdi_config.name},
+                "spec": {"scratchSpaceStorageClass": storage_class_type},
+                "metadata": {"name": cdiconfig.name},
             }
         )
         samples = TimeoutSampler(
             timeout=30,
             sleep=1,
-            func=lambda: cdi_config.scratch_space_storage_class_from_status
-            == StorageClass.Types.LOCAL,
+            func=lambda: cdiconfig.scratch_space_storage_class_from_status
+            == storage_class_type,
         )
         for sample in samples:
             if sample:
+                if run_vm:
+                    url = utils.get_file_url_https_server(
+                        images_https_server_name, Images.Cirros.QCOW2_IMG
+                    )
+                    with ConfigMap(
+                        name="https-cert-configmap",
+                        namespace=storage_ns_name,
+                        data=get_cert("https_cert"),
+                    ) as configmap:
+                        with utils.create_dv(
+                            server_type="http",
+                            dv_name="import-cdiconfig-scratch-space-not-default",
+                            namespace=configmap.namespace,
+                            url=url,
+                            cert_configmap=configmap.name,
+                            content_type=DataVolume.ContentType.KUBEVIRT,
+                            size="5Gi",
+                        ) as dv:
+                            dv.wait()
+                            with utils.create_vm_from_dv(dv) as vm_dv:
+                                utils.check_disk_count_in_vm(vm_dv)
+                                break
                 break
     finally:
-        cdi_config.update(
-            resource_dict={"spec": "", "metadata": {"name": cdi_config.name}}
+        cdiconfig.update(
+            resource_dict={"spec": "", "metadata": {"name": cdiconfig.name}}
         )
-        cdi_config.update(
-            resource_dict={"spec": cdi_spec, "metadata": {"name": cdi_config.name}}
+        cdiconfig.update(
+            resource_dict={"spec": cdiconfig_spec, "metadata": {"name": cdiconfig.name}}
         )
         samples = TimeoutSampler(
             timeout=10,
             sleep=1,
-            func=lambda: cdi_config.scratch_space_storage_class_from_status
-            == cdi_status_scratch_space,
+            func=lambda: cdiconfig.scratch_space_storage_class_from_status
+            == cdiconfig_status_scratch_space,
         )
         for sample in samples:
             if sample:
                 return
+
+
+@pytest.mark.polarion("CNV-2214")
+def test_cdiconfig_status_scratchspace_update_with_spec(cdi_config):
+    cdiconfig_spec = cdi_config.instance.to_dict()["spec"]
+    cdiconfig_status_scratch_space = cdi_config.scratch_space_storage_class_from_status
+    cdiconfig_update(
+        cdi_config,
+        StorageClass.Types.LOCAL,
+        cdiconfig_spec,
+        cdiconfig_status_scratch_space,
+    )
 
 
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_no_local_storage_class, cdi_config, storage_ns, images_https_server, default_sc
+    skip_no_local_storage_class, cdi_config, storage_ns, images_https_server
 ):
-    cdi_spec = cdi_config.instance.to_dict()["spec"]
-    try:
-        cdi_config.update(
-            resource_dict={
-                "spec": {"scratchSpaceStorageClass": StorageClass.Types.LOCAL},
-                "metadata": {"name": cdi_config.name},
-            }
-        )
-        samples = TimeoutSampler(
-            timeout=30,
-            sleep=1,
-            func=lambda: cdi_config.scratch_space_storage_class_from_status
-            == StorageClass.Types.LOCAL,
-        )
-        for sample in samples:
-            if sample:
-                url = utils.get_file_url_https_server(
-                    images_https_server, Images.Cirros.QCOW2_IMG
-                )
-                with ConfigMap(
-                    name="https-cert-configmap",
-                    namespace=storage_ns.name,
-                    data=get_cert("https_cert"),
-                ) as configmap:
-                    with utils.create_dv(
-                        server_type="http",
-                        dv_name="import-cdiconfig-scratch-space-not-default",
-                        namespace=configmap.namespace,
-                        url=url,
-                        cert_configmap=configmap.name,
-                        content_type=DataVolume.ContentType.KUBEVIRT,
-                        size="5Gi",
-                    ) as dv:
-                        dv.wait()
-                        with utils.create_vm_from_dv(dv) as vm_dv:
-                            utils.check_disk_count_in_vm(vm_dv)
-                            break
-    finally:
-        cdi_config.update(
-            resource_dict={"spec": "", "metadata": {"name": cdi_config.name}}
-        )
-        cdi_config.update(
-            resource_dict={"spec": cdi_spec, "metadata": {"name": cdi_config.name}}
-        )
-        samples = TimeoutSampler(
-            timeout=10,
-            sleep=1,
-            func=lambda: cdi_config.scratch_space_storage_class_from_status
-            == default_sc.name,
-        )
-        for sample in samples:
-            if sample:
-                return
+    cdiconfig_spec = cdi_config.instance.to_dict()["spec"]
+    cdiconfig_status_scratch_space = cdi_config.scratch_space_storage_class_from_status
+    cdiconfig_update(
+        cdi_config,
+        StorageClass.Types.LOCAL,
+        cdiconfig_spec,
+        cdiconfig_status_scratch_space,
+        images_https_server,
+        storage_ns.name,
+        run_vm=True,
+    )
 
 
 @pytest.mark.polarion("CNV-2412")
