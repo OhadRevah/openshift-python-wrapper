@@ -66,8 +66,7 @@ class TestCommonTemplatesRhel8:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        with console.RHEL(vm=vm_object_from_template, timeout=1500):
-            pass
+        utils.wait_for_console(vm_object_from_template, console.RHEL)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3317")
@@ -95,15 +94,17 @@ class TestCommonTemplatesRhel8:
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3321")
     @pytest.mark.parametrize(
-        "enabled_ssh_service_in_vm", [{"console_impl": console.RHEL}], indirect=True
+        "enabled_ssh_service_in_vm_scope_class",
+        [{"console_impl": console.RHEL}],
+        indirect=True,
     )
     def test_expose_ssh(
         self,
         namespace,
         data_volume_scope_class,
         vm_object_from_template,
-        enabled_ssh_service_in_vm,
-        vm_ssh_service,
+        enabled_ssh_service_in_vm_scope_class,
+        vm_ssh_service_scope_class,
         schedulable_node_ips,
     ):
         """ CNV common templates access VM via SSH """

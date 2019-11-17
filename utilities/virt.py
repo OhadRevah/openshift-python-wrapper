@@ -137,6 +137,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.ssh = ssh
         self.ssh_service = None
         self.ssh_node_port = None
+        self.custom_service = None
+        self.custom_service_port = None
 
     def __enter__(self):
         super().__enter__()
@@ -148,6 +150,8 @@ class VirtualMachineForTests(VirtualMachine):
         super().__exit__(exception_type, exception_value, traceback)
         if self.ssh_service:
             self.ssh_service.delete(wait=True)
+        if self.custom_service:
+            self.custom_service.delete(wait=True)
 
     def _to_dict(self):
         res = super()._to_dict()
@@ -292,6 +296,18 @@ class VirtualMachineForTests(VirtualMachine):
         self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
             "nodePort"
         ]
+
+    def custom_service_enable(self, service_name, port):
+        self.custom_service = CustomServiceForVirtualMachineForTests(
+            name=f"{service_name}-{self.name}",
+            namespace=self.namespace,
+            vm_name=self.name,
+            port=port,
+        )
+        self.custom_service.create(wait=True)
+        self.custom_service_port = self.custom_service.instance.attributes.spec.ports[
+            0
+        ]["nodePort"]
 
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
@@ -466,6 +482,23 @@ class SSHServiceForVirtualMachineForTests(Service):
         res = super()._to_dict()
         res["spec"] = {
             "ports": [{"port": 22, "protocol": "TCP"}],
+            "selector": {"kubevirt.io/domain": self._vm_name},
+            "sessionAffinity": "None",
+            "type": "NodePort",
+        }
+        return res
+
+
+class CustomServiceForVirtualMachineForTests(Service):
+    def __init__(self, name, namespace, vm_name, port):
+        super().__init__(name=name, namespace=namespace)
+        self._vm_name = vm_name
+        self.port = port
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"] = {
+            "ports": [{"port": self.port, "protocol": "TCP"}],
             "selector": {"kubevirt.io/domain": self._vm_name},
             "sessionAffinity": "None",
             "type": "NodePort",

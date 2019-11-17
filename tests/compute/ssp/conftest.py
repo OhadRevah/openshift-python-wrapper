@@ -77,10 +77,10 @@ def vm_instance_from_template(request, unprivileged_client, namespace, data_volu
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         template_dv=data_volume.name,
     ) as vm:
-        if request.param.get("start_vm", False):
+        if request.param.get("start_vm", True):
             vm.start(wait=True)
             vm.vmi.wait_until_running()
-            if request.param.get("guest_agent", False):
+            if request.param.get("guest_agent", True):
                 wait_for_vm_interfaces(vm.vmi)
         yield vm
 
@@ -158,6 +158,11 @@ def winrmcli_pod(namespace, sa_ready):
     with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name) as pod:
         pod.wait_for_status(status=pod.Status.RUNNING, timeout=90)
         yield pod
+
+
+@pytest.fixture()
+def winrmcli_pod_scope_function(namespace, sa_ready):
+    yield from winrmcli_pod(namespace, sa_ready)
 
 
 @pytest.fixture(scope="module")

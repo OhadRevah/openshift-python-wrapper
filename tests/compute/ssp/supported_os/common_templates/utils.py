@@ -3,11 +3,13 @@
 import json
 import logging
 import re
+import socket
 
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources import pod
 from resources.utils import TimeoutSampler
+from resources.virtual_machine import VirtualMachineInstanceMigration
 from rrmngmnt import ssh, user
 from utilities.virt import vm_console_run_commands, wait_for_vm_interfaces
 
@@ -62,7 +64,7 @@ def execute_winrm_cmd(vmi_ip, winrmcli_pod, cmd, timeout=20):
     return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)
 
 
-def wait_for_windows_vm(vm, version, winrmcli_pod):
+def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500):
     """
     Samples Windows VM; wait for it to complete the boot process.
     """
@@ -73,7 +75,7 @@ def wait_for_windows_vm(vm, version, winrmcli_pod):
     )
 
     sampler = TimeoutSampler(
-        timeout=1500,
+        timeout=timeout,
         sleep=15,
         func=execute_winrm_cmd,
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
@@ -106,6 +108,11 @@ def vm_deleted(vm):
         return False
 
 
+def wait_for_console(vm, console_impl):
+    with console_impl(vm=vm, timeout=1500):
+        pass
+
+
 def check_ssh_connection(ip, port, console_impl):
     """ Verifies successful SSH connection
     Args:
@@ -121,6 +128,33 @@ def check_ssh_connection(ip, port, console_impl):
     return ssh.RemoteExecutor(
         user=ssh_user, address=ip, port=port
     ).wait_for_connectivity_state(positive=True, timeout=120)
+
+
+def check_telnet_connection(ip, port):
+    """ Verifies successful telnet connection
+    Args:
+        ip (str): host IP
+        port (int): host port
+
+    Returns:
+        bool: True if connection succeeds else False
+    """
+
+    LOGGER.info("Check telnet connection to VM.")
+    s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s1.connect((ip, int(port)))
+        s1.close()
+        return True
+    except ConnectionRefusedError:
+        return False
+
+
+def migrate_vm(vm):
+    with VirtualMachineInstanceMigration(
+        name=vm.name, namespace=vm.namespace, vmi=vm.vmi,
+    ) as mig:
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
 
 
 def check_vm_xml_hyperv(vm):
