@@ -2,6 +2,7 @@
 VM with CPU features
 """
 import pytest
+from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.node import Node
@@ -69,6 +70,22 @@ def cpu_features_vm_negative(request, unprivileged_client, namespace):
     ) as vm:
         vm.start()
         yield vm
+
+
+@pytest.mark.polarion("CNV-1832")
+def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace):
+    """VM should not be created successfully"""
+    vm_name = "invalid-cpu-feature-policy-vm"
+    with pytest.raises(UnprocessibleEntityError):
+        with VirtualMachineForTests(
+            name=vm_name,
+            namespace=namespace.name,
+            cpu_flags={"features": [{"name": "pcid", "policy": "invalid_policy"}]},
+            body=fedora_vm_body(vm_name),
+            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+            client=unprivileged_client,
+        ):
+            pytest.fail("VM was created with an invalid cpu feature policy.")
 
 
 @pytest.fixture()
