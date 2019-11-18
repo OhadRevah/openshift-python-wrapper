@@ -33,3 +33,15 @@ def bond_supported(network_utility_pods, nodes_active_nics):
 def skip_if_no_multinic_nodes(multi_nics_nodes):
     if not multi_nics_nodes:
         pytest.skip("Only run on multi NICs node")
+
+
+def get_index_number():
+    num = 1
+    while True:
+        yield num
+        num += 1
+
+
+@pytest.fixture(scope="session")
+def index_number():
+    return get_index_number()
