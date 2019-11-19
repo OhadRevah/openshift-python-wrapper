@@ -12,7 +12,7 @@ import os
 import pytest
 from pytest_testconfig import config as py_config
 from resources.utils import TimeoutSampler
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -48,12 +48,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                 "start_vm": True,
                 "guest_agent": False,
             },
-            marks=(
-                pytest.mark.polarion("CNV-2776"),
-                pytest.mark.bugzilla(
-                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-2776"),
             id="test_windows10_hyperv",
         ),
         pytest.param(
@@ -72,12 +67,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                 "start_vm": True,
                 "guest_agent": False,
             },
-            marks=(
-                pytest.mark.polarion("CNV-2652"),
-                pytest.mark.bugzilla(
-                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-2652"),
             id="test_windows2012R2_hyperv",
         ),
         pytest.param(
@@ -96,12 +86,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                 "start_vm": True,
                 "guest_agent": False,
             },
-            marks=(
-                pytest.mark.polarion("CNV-2777"),
-                pytest.mark.bugzilla(
-                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-2777"),
             id="test_windows2016_hyperv",
         ),
         pytest.param(
@@ -120,12 +105,7 @@ def download_hvinfo(winrmcli_pod_scope_module):
                 "start_vm": True,
                 "guest_agent": False,
             },
-            marks=(
-                pytest.mark.polarion("CNV-2778"),
-                pytest.mark.bugzilla(
-                    1663162, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-2778"),
             id="test_windows2019_hyperv",
         ),
     ],
@@ -154,7 +134,7 @@ def test_windows_hyperv(
     hyperv = features["hyperv"]
     assert hyperv["relaxed"]["@state"] == "on"
     assert hyperv["vapic"]["@state"] == "on"
-    assert hyperv["spinlocks"]["@retries"] == "8191"
+    assert int(hyperv["spinlocks"]["@retries"]) == 8191
 
     vmi_ipaddr = windows_vmi.virt_launcher_pod.instance.status.podIP
     command = [
@@ -198,4 +178,4 @@ def test_windows_hyperv(
             assert hvinfo_dict["HyperVsupport"]
             assert hvinfo_dict["Recommendations"]["RelaxedTiming"]
             assert hvinfo_dict["Recommendations"]["MSRAPICRegisters"]
-            assert hvinfo_dict["Recommendations"]["SpinlockRetries"] == "8191"
+            assert int(hvinfo_dict["Recommendations"]["SpinlockRetries"]) == 8191
