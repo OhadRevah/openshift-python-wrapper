@@ -88,3 +88,13 @@ def check_ssh_connection(ip, port):
     return ssh.RemoteExecutor(
         user=ssh_user, address=ip, port=port
     ).wait_for_connectivity_state(positive=True, timeout=120)
+
+
+def check_vm_xml_hyperv(vm):
+    """ Verify HyperV values in VMI """
+
+    hyperv_features = vm.vmi.xml_dict["domain"]["features"]["hyperv"]
+    assert hyperv_features["relaxed"]["@state"] == "on"
+    assert hyperv_features["vapic"]["@state"] == "on"
+    assert hyperv_features["spinlocks"]["@state"] == "on"
+    assert int(hyperv_features["spinlocks"]["@retries"]) == 8191

@@ -18,14 +18,20 @@ distribution: downstream
 hco_namespace: openshift-cnv
 
 # os label should be '8.1, currently set to '8.0' because of bug 1766070
-latest_rhel_version: {
-    'os_label': 'rhel8.0',
-    'image': 'rhel-images/rhel-81/rhel-81.qcow2',
+common_templates_latest_rhel_version: {
+  'os_label': 'rhel8.0',
+  'image': 'rhel-images/rhel-81/rhel-81.qcow2',
 }
 
-latest_windows_version: {
-    'os_label': 'win2k19',
-    'image': 'windows-images/window_qcow2_images/win_19.qcow2',
+common_templates_latest_windows_version: {
+  'os_label': 'win2k19',
+  'image': 'windows-images/window_qcow2_images/win_19.qcow2',
+}
+
+# os label should be 'fedora29, currently set to 'fedora28' because of bug 1766069
+common_templates_latest_fedora_version: {
+  'os_label': 'fedora28',
+  'image': 'fedora-images/Fedora-Cloud-Base-29-1.2.x86_64.qcow2',
 }
 
 region: USA

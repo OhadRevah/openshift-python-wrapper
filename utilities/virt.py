@@ -76,6 +76,19 @@ def _generate_cloud_init_user_data(user_data):
     return data
 
 
+def merge_dicts(source_dict, target_dict):
+    """ Merge nested source_dict into target_dict """
+
+    for key, value in source_dict.items():
+        if isinstance(value, dict):
+            node = target_dict.setdefault(key, {})
+            merge_dicts(value, node)
+        else:
+            target_dict[key] = value
+
+    return target_dict
+
+
 class VirtualMachineForTests(VirtualMachine):
     def __init__(
         self,
@@ -292,6 +305,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         networks=None,
         interfaces=None,
         ssh=False,
+        vm_dict=None,
     ):
         super().__init__(
             name=name,
@@ -303,10 +317,13 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         )
         self.template_labels = labels
         self.template_dv = template_dv
+        self.vm_dict = vm_dict
 
     def _to_dict(self):
         self.body = self.process_template()
         res = super()._to_dict()
+        if self.vm_dict:
+            res = merge_dicts(self.vm_dict, res)
         return res
 
     def process_template(self):

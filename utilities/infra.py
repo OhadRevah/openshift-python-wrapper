@@ -39,6 +39,9 @@ class Images:
         WIN16_IMG = "windows-images/window_qcow2_images/win_16.qcow2"
         WIN19_IMG = "windows-images/window_qcow2_images/win_19.qcow2"
 
+    class Fedora:
+        FEDORA29_IMG = "fedora-images/Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
+
 
 def get_images_external_http_server():
     """
