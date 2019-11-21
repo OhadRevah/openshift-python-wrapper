@@ -35,6 +35,7 @@ def create_dv(
     size,
     secret=None,
     cert_configmap=None,
+    volume_mode=None,
 ):
     kwargs = {"secret": secret} if secret else {}
     with SERVER_TYPES.get(server_type)(
@@ -45,6 +46,7 @@ def create_dv(
         size=size,
         storage_class=py_config["storage_defaults"]["storage_class"],
         cert_configmap=cert_configmap,
+        volume_mode=volume_mode,
         **kwargs,
     ) as dv:
         yield dv

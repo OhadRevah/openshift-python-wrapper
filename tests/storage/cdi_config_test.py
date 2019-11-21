@@ -16,6 +16,24 @@ from utilities.infra import Images, get_cert
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.polarion("CNV-2478")
+def test_cdiconfig_scratchspace_fs_import_to_block(
+    skip_no_local_storage_class, cdi_config, storage_ns, images_https_server
+):
+    cdiconfig_spec = cdi_config.instance.to_dict()["spec"]
+    cdiconfig_status_scratch_space = cdi_config.scratch_space_storage_class_from_status
+    cdiconfig_update(
+        cdi_config,
+        StorageClass.Types.LOCAL,
+        cdiconfig_spec,
+        cdiconfig_status_scratch_space,
+        images_https_server,
+        storage_ns.name,
+        run_vm=True,
+        volume_mode="Block",
+    )
+
+
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
     skip_no_local_storage_class,
@@ -99,6 +117,7 @@ def cdiconfig_update(
     images_https_server_name="",
     storage_ns_name="",
     run_vm=False,
+    volume_mode=None,
 ):
     try:
         cdiconfig.update(
@@ -132,6 +151,7 @@ def cdiconfig_update(
                             cert_configmap=configmap.name,
                             content_type=DataVolume.ContentType.KUBEVIRT,
                             size="5Gi",
+                            volume_mode=volume_mode,
                         ) as dv:
                             dv.wait()
                             with utils.create_vm_from_dv(dv) as vm_dv:
