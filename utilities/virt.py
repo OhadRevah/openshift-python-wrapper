@@ -306,6 +306,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         interfaces=None,
         ssh=False,
         vm_dict=None,
+        cpu_threads=None,
     ):
         super().__init__(
             name=name,
@@ -318,6 +319,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.template_labels = labels
         self.template_dv = template_dv
         self.vm_dict = vm_dict
+        self.cpu_threads = cpu_threads
 
     def _to_dict(self):
         self.body = self.process_template()

@@ -19,11 +19,7 @@ VM_NAME = "win-10"
     "data_volume_scope_class, vm_object_from_template",
     [
         (
-            {
-                "image": Images.Windows.WIM10_IMG,
-                "dv_name": f"dv-{VM_NAME}",
-                "dv_size": "30Gi",
-            },
+            {"image": Images.Windows.WIM10_IMG, "dv_name": f"dv-{VM_NAME}"},
             {
                 "vm_name": VM_NAME,
                 "template_labels": {
@@ -31,6 +27,7 @@ VM_NAME = "win-10"
                     "workload": "desktop",
                     "flavor": "medium",
                 },
+                "cpu_threads": 2,
             },
         )
     ],
@@ -87,6 +84,20 @@ class TestCommonTemplatesWin10:
         assert (
             domain_label == vm_object_from_template.name
         ), f"Wrong domain label: {domain_label}"
+
+    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.polarion("CNV-2776")
+    def test_hyperv(
+        self,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template,
+        winrmcli_pod_scope_class,
+    ):
+
+        LOGGER.info("Verify VM HyperV values.")
+        utils.check_vm_xml_hyperv(vm_object_from_template)
+        utils.check_windows_vm_hvinfo(vm_object_from_template, winrmcli_pod_scope_class)
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3289")

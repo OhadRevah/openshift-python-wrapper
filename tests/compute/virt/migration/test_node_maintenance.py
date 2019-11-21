@@ -9,6 +9,7 @@ from subprocess import run
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
+from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
 from resources.template import Template
 from resources.utils import TimeoutSampler
@@ -176,7 +177,7 @@ def check_windows_boot_time(vm, winrmcli_pod, timeout=120):
         "bash",
         "-c",
         f"/bin/winrm-cli -hostname {vm.vmi.virt_launcher_pod.instance.status.podIP} \
-        -username Administrator -password Heslo123 \
+        -username {py_config['windows_username']} -password {py_config['windows_password']} \
         'wmic os get lastbootuptime'",
     ]
     pod_output_samples = TimeoutSampler(

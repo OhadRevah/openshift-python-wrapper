@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import json
 import logging
 import re
 
 from openshift.dynamic.exceptions import NotFoundError
+from pytest_testconfig import config as py_config
 from resources.utils import TimeoutSampler
 from rrmngmnt import ssh, user
 from utilities import console
@@ -40,7 +42,7 @@ def wait_for_windows_vm(vm, version, winrmcli_pod):
         "bash",
         "-c",
         f"/bin/winrm-cli -hostname {vmi_ipaddr} \
-        -username Administrator -password Heslo123 \
+        -username {py_config['windows_username']} -password {py_config['windows_password']} \
         'wmic os get Caption /value'",
     ]
 
@@ -98,3 +100,26 @@ def check_vm_xml_hyperv(vm):
     assert hyperv_features["vapic"]["@state"] == "on"
     assert hyperv_features["spinlocks"]["@state"] == "on"
     assert int(hyperv_features["spinlocks"]["@retries"]) == 8191
+
+
+def check_windows_vm_hvinfo(vm, winrmcli_pod):
+    """ Verify HyperV values in Windows VMI using hvinfo """
+
+    vmi_ipaddr = vm.vmi.virt_launcher_pod.instance.status.podIP
+    winrmcli = (
+        f"/bin/winrm-cli -username {py_config['windows_username']} "
+        f"-password {py_config['windows_password']}"
+    )
+    run_hvinfo_cmd = [
+        "bash",
+        "-c",
+        f"{winrmcli} -hostname {vmi_ipaddr} C:\\\\hvinfo\\\\hvinfo.exe",
+    ]
+
+    hvinfo_dict = json.loads(winrmcli_pod.execute(run_hvinfo_cmd, timeout=20))
+
+    assert hvinfo_dict["HyperVsupport"]
+    recommendations = hvinfo_dict["Recommendations"]
+    assert recommendations["RelaxedTiming"]
+    assert recommendations["MSRAPICRegisters"]
+    assert int(recommendations["SpinlockRetries"]) == 8191

@@ -32,7 +32,9 @@ def data_volume(request, namespace):
         "name": request.param["dv_name"].replace(".", "-").lower(),
         "namespace": namespace.name,
         "url": f"{get_images_external_http_server()}{request.param['image']}",
-        "size": request.param.get("dv_size", None),
+        "size": request.param.get(
+            "dv_size", "35Gi" if "win" in request.param["dv_name"] else None
+        ),
         "access_modes": request.param.get("access_modes", None),
         "volume_mode": request.param.get("volume_mode", None),
         "storage_class": request.param.get("storage_class", None),
@@ -122,6 +124,7 @@ def vm_object_from_template(
         template_dv=data_volume_scope_class.name,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         vm_dict=request.param.get("vm_dict", None),
+        cpu_threads=request.param.get("cpu_threads", None),
     )
 
 
