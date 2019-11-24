@@ -7,16 +7,68 @@ from contextlib import contextmanager
 
 import requests
 from pytest_testconfig import config as py_config
+from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.pod import Pod
 from resources.route import Route
 from resources.service import Service
+from resources.upload_token_request import UploadTokenRequest
+from resources.utils import TimeoutSampler
 from utilities import console
-from utilities.infra import get_images_external_http_server
+from utilities.infra import Images, get_cert, get_images_external_http_server
 from utilities.virt import VirtualMachineForTests, run_virtctl_command
 
 
+CDI_IMAGES_DIR = "cdi-test-images"
+CIRROS_IMAGES_DIR = "cirros_images"
+
 LOGGER = logging.getLogger(__name__)
+
+
+@contextmanager
+def import_image_to_dv(images_https_server_name, volume_mode, storage_ns_name):
+    url = get_file_url_https_server(images_https_server_name, Images.Cirros.QCOW2_IMG)
+    with ConfigMap(
+        name="https-cert-configmap",
+        namespace=storage_ns_name,
+        data=get_cert("https_cert"),
+    ) as configmap:
+        with create_dv(
+            source="http",
+            dv_name="import-image",
+            namespace=configmap.namespace,
+            url=url,
+            cert_configmap=configmap.name,
+            volume_mode=volume_mode,
+            storage_class=py_config["default_storage_class"],
+        ) as dv:
+            yield dv
+
+
+@contextmanager
+def upload_image_to_dv(tmpdir, volume_mode, storage_ns_name):
+    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
+    remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
+    downloaded_image(remote_name=remote_name, local_name=local_name)
+    with create_dv(
+        source="upload",
+        dv_name="upload-image",
+        namespace=storage_ns_name,
+        size="3Gi",
+        volume_mode=volume_mode,
+        storage_class=py_config["default_storage_class"],
+    ) as dv:
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        with UploadTokenRequest(name="upload-image", namespace=storage_ns_name) as utr:
+            token = utr.create().status.token
+            LOGGER.info("Ensure upload was successful")
+            sampler = TimeoutSampler(
+                timeout=120, sleep=5, func=upload_image, token=token, data=local_name,
+            )
+            for sample in sampler:
+                if sample == 200:
+                    break
+            yield dv
 
 
 @contextmanager
@@ -172,4 +224,4 @@ class HttpService(Service):
 
 
 def get_file_url_https_server(images_https_server, file_name):
-    return f"{images_https_server}cdi-test-images/cirros_images/{file_name}"
+    return f"{images_https_server}{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{file_name}"

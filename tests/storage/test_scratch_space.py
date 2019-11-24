@@ -12,12 +12,16 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
-from tests.storage.utils import get_file_url_https_server
+from tests.storage.utils import (
+    CDI_IMAGES_DIR,
+    CIRROS_IMAGES_DIR,
+    get_file_url_https_server,
+)
 from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
-CDI_IMAGES_DIR = "cdi-test-images/cirros_images/"
+
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 
 
@@ -263,7 +267,7 @@ def test_scratch_space_upload_data_volume(
     skip_upstream, storage_ns, tmpdir, file_name, dv_name
 ):
     local_name = f"{tmpdir}/{file_name}"
-    remote_name = f"{CDI_IMAGES_DIR}{file_name}"
+    remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with storage_utils.create_dv(
         source="upload",

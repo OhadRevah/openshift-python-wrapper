@@ -12,10 +12,10 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
+from tests.storage.utils import CDI_IMAGES_DIR
 
 
 LOGGER = logging.getLogger(__name__)
-CDI_IMAGES_DIR = "cdi-test-images"
 QCOW2_IMG = "cirros-qcow2.img"
 
 

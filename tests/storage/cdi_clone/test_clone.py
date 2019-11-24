@@ -7,10 +7,10 @@ Clone tests
 import pytest
 from pytest_testconfig import config as py_config
 from tests.storage import utils
+from tests.storage.utils import CDI_IMAGES_DIR
 from utilities.infra import get_images_external_http_server
 
 
-CDI_IMAGES_DIR = "cdi-test-images"
 WIN_IMAGES_DIR = "window_qcow2_images"
 QCOW2_IMG = "cirros-qcow2.img"
 WIN10_QCOW2 = "win_10.qcow2"

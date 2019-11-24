@@ -19,11 +19,11 @@ from resources.route import Route
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from string_utils import shuffle
+from tests.storage.utils import CDI_IMAGES_DIR, CIRROS_IMAGES_DIR
 from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
-CDI_IMAGES_DIR = "cdi-test-images"
 RHEL8_IMAGES = "rhel-images/rhel-8"
 QCOW2_IMG = "cirros-qcow2.img"
 RAW_IMG = "cirros.raw"
@@ -49,13 +49,13 @@ def test_cdi_uploadproxy_route_owner_references():
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.QCOW2_IMG_GZ}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG_GZ}",
             Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.QCOW2_IMG_XZ}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG_XZ}",
             Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
@@ -67,13 +67,13 @@ def test_cdi_uploadproxy_route_owner_references():
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_GZ}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_GZ}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_XZ}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_XZ}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
@@ -109,13 +109,13 @@ def test_cdi_uploadproxy_route_owner_references():
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_GZ}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_GZ}",
             Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/cirros_images/{Images.Cirros.RAW_IMG_XZ}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_XZ}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
