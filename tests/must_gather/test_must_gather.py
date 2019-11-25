@@ -4,6 +4,7 @@ import os
 import re
 
 import pytest
+import yaml
 from pytest_testconfig import config as py_config
 from resources.api_service import APIService
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
@@ -297,6 +298,18 @@ def test_sriov_logs_gathering(
             "^Chain PREROUTING \\(policy ACCEPT\\)$",
             marks=(pytest.mark.polarion("CNV-2741")),
         ),
+        pytest.param(
+            "qemu.log",
+            None,
+            "^/usr/libexec/qemu-kvm \\\\$",
+            marks=(pytest.mark.polarion("CNV-2725")),
+        ),
+        pytest.param(
+            "dumpxml.xml",
+            None,
+            "^<domain type='kvm' id='1'>$",
+            marks=(pytest.mark.polarion("CNV-3477")),
+        ),
     ],
 )
 def test_data_collected_from_virt_launcher(
@@ -422,3 +435,31 @@ def test_webhookconfig_resources(cnv_must_gather, default_client):
         utils.compare_webhook_svc_contents(
             webhook_resources, cnv_must_gather, default_client, checks
         )
+
+
+@pytest.mark.polarion("CNV-2724")
+def test_crd_resources(default_client, cnv_must_gather, kubevirt_crd_resources):
+    for kubevirt_crd_resource in kubevirt_crd_resources:
+        crd_name = kubevirt_crd_resource.name
+        resource_objs = default_client.resources.get(
+            kind=kubevirt_crd_resource.instance.spec.names.kind
+        )
+        resource_items = resource_objs.get().to_dict()["items"]
+
+        for resource_item in resource_items:
+            metadata = resource_item["metadata"]
+            name = metadata["name"]
+            if "namespace" in metadata:
+                resource_file = os.path.join(
+                    cnv_must_gather,
+                    f"namespaces/{metadata['namespace']}/crs/{crd_name}/{name}.yaml",
+                )
+            else:
+                resource_file = os.path.join(
+                    cnv_must_gather, f"cluster-scoped-resources/{crd_name}/{name}.yaml",
+                )
+
+            with open(resource_file) as resource_file:
+                file_content = yaml.load(resource_file.read(), Loader=yaml.FullLoader)
+            assert resource_item["metadata"]["name"] == file_content["metadata"]["name"]
+            assert resource_item["metadata"]["uid"] == file_content["metadata"]["uid"]

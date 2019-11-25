@@ -108,6 +108,20 @@ def node_gather_pods(default_client, node_gather_daemonset):
 
 
 @pytest.fixture(scope="module")
+def custom_resource_definitions(default_client):
+    yield list(CustomResourceDefinition.get(default_client))
+
+
+@pytest.fixture(scope="module")
+def kubevirt_crd_resources(default_client, custom_resource_definitions):
+    kubevirt_resources = []
+    for resource in custom_resource_definitions:
+        if "kubevirt.io" in resource.instance.spec.group:
+            kubevirt_resources.append(resource)
+    return kubevirt_resources
+
+
+@pytest.fixture(scope="module")
 def network_attachment_definition():
     with network_utils.bridge_nad(
         nad_type=network_utils.LINUX_BRIDGE,
