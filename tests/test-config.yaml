@@ -11,6 +11,10 @@ template_defaults:
 storage_defaults:
   storage_class: rook-ceph-block
 
+storage_classes:
+  - rook-ceph-block
+  - kubevirt-hostpath-provisioner
+
 bare_metal_cluster: False
 
 distribution: downstream

@@ -97,6 +97,20 @@ def pytest_runtest_setup(item):
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
 
+def pytest_generate_tests(metafunc):
+    if "storage_class_matrix" in metafunc.fixturenames:
+        _storage_classes = py_config.get("storage_classes")
+        if not _storage_classes:
+            storages = [py_config["storage_defaults"]["storage_class"]]
+        else:
+            storages = (
+                _storage_classes
+                if isinstance(_storage_classes, list)
+                else [_storage_classes]
+            )
+        metafunc.parametrize("storage_class_matrix", storages)
+
+
 def login_to_account(api_address, user, password=None):
     """
     Helper function for login. Raise exception if login failed
