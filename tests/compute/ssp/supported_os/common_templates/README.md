@@ -4,7 +4,7 @@ VM creation is done using CNV common templates.
 
 - Current tests cover RHEL and Windows.
 - The tests can only be executed on downstream as http_server is not available for upstream.
-- Windows tests can be executed on bare metal only, as Windows VMs 
+- Windows tests can be executed on bare metal only, as Windows VMs
 run slow on nested visualization.
 
 ## RHEL Tests
@@ -17,7 +17,7 @@ run slow on nested visualization.
 * VM migration
 * VM deletion
 
-## Windows Tests 
+## Windows Tests
 * Create VM
 * Start VM
 * HyperV
