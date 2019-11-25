@@ -15,11 +15,6 @@ from utilities.infra import BUG_STATUS_CLOSED
 
 LOGGER = logging.getLogger(__name__)
 
-pytestmark = pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="Running only on downstream,"
-    "Reason: http_server is not available for upstream",
-)
 
 HYPERV_DICT = {
     "spec": {
@@ -81,6 +76,7 @@ HYPERV_DICT = {
     ],
     indirect=True,
 )
+@pytest.mark.usefixtures("skip_upstream")
 class TestCommonTemplatesFedora:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3351")

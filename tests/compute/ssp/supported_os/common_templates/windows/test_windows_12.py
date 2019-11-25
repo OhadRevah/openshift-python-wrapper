@@ -7,7 +7,6 @@ Common templates test Windows 12
 import logging
 
 import pytest
-from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import BUG_STATUS_CLOSED, Images
 
@@ -16,15 +15,6 @@ LOGGER = logging.getLogger(__name__)
 VM_NAME = "win-12"
 
 
-@pytest.mark.skipif(
-    not py_config["bare_metal_cluster"],
-    reason="Running only BM, Reason: windows run slow on nested visualization",
-)
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="Running only on downstream,"
-    "Reason: http_server is not available for upstream",
-)
 @pytest.mark.parametrize(
     "data_volume_scope_class, vm_object_from_template",
     [
@@ -46,6 +36,7 @@ VM_NAME = "win-12"
     ],
     indirect=True,
 )
+@pytest.mark.usefixtures("skip_upstream", "skip_not_bare_metal")
 class TestCommonTemplatesWin10:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-2228")

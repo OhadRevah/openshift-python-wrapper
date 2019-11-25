@@ -271,11 +271,9 @@ def test_connectivity_bond_over_linux_bridge(
     )
 
 
-@pytest.mark.skipif(
-    py_config["bare_metal_cluster"], reason="Running on BM, no trunk on switches yet!!"
-)
 @pytest.mark.polarion("CNV-2072")
 def test_connectivity_positive_vlan_over_linux_bridge(
+    skip_not_bare_metal,
     skip_when_one_node,
     namespace,
     attach_linux_bridge_to_bond,
@@ -290,14 +288,12 @@ def test_connectivity_positive_vlan_over_linux_bridge(
     )
 
 
-@pytest.mark.skipif(
-    py_config["bare_metal_cluster"], reason="Running on BM, no trunk on switches yet!!"
-)
 @pytest.mark.bugzilla(
     1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-2075")
 def test_connectivity_negative_vlan_over_linux_bridge(
+    skip_not_bare_metal,
     skip_when_one_node,
     namespace,
     attach_linux_bridge_to_bond,
@@ -312,10 +308,10 @@ def test_connectivity_negative_vlan_over_linux_bridge(
     )
 
 
-@pytest.mark.skipif(not py_config["bare_metal_cluster"], reason="virtualized cluster")
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2335")
 def test_guest_performance_over_linux_bridge(
+    skip_not_bare_metal,
     skip_when_one_node,
     namespace,
     attach_linux_bridge_to_bond,

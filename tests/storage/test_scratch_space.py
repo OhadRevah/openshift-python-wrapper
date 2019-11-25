@@ -24,11 +24,6 @@ LOGGER = logging.getLogger(__name__)
 CDI_IMAGES_DIR = "cdi-test-images/cirros_images/"
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 
-pytestmark = pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="importing only from local http/https and registry servers for d/s",
-)
-
 
 @pytest.mark.parametrize(
     ("dv_name", "file_name", "content_type", "size"),
@@ -70,6 +65,7 @@ pytestmark = pytest.mark.skipif(
     ],
 )
 def test_no_scratch_space_import_https_data_volume(
+    skip_upstream,
     storage_ns,
     images_https_server,
     https_config_map,
@@ -110,7 +106,7 @@ def test_no_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_https_data_volume(
-    storage_ns, images_https_server, https_config_map, dv_name, file_name
+    skip_upstream, storage_ns, images_https_server, https_config_map, dv_name, file_name
 ):
     url = get_file_url_https_server(images_https_server, file_name)
     with storage_utils.create_dv(
@@ -169,7 +165,13 @@ def test_scratch_space_import_https_data_volume(
     ],
 )
 def test_no_scratch_space_import_http_basic_auth(
-    storage_ns, images_external_http_server, dv_name, file_name, content_type, size
+    skip_upstream,
+    storage_ns,
+    images_external_http_server,
+    dv_name,
+    file_name,
+    content_type,
+    size,
 ):
     url = get_file_url_http_server_basic_auth(images_external_http_server, file_name)
     with Secret(
@@ -215,7 +217,13 @@ def test_no_scratch_space_import_http_basic_auth(
     ],
 )
 def test_no_scratch_space_import_http(
-    storage_ns, images_external_http_server, dv_name, file_name, content_type, size
+    skip_upstream,
+    storage_ns,
+    images_external_http_server,
+    dv_name,
+    file_name,
+    content_type,
+    size,
 ):
     url = get_file_url_http_server(images_external_http_server, file_name)
     create_dv_and_vm_no_scratch_space(
@@ -256,7 +264,9 @@ def test_no_scratch_space_import_http(
         ),
     ],
 )
-def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name):
+def test_scratch_space_upload_data_volume(
+    skip_upstream, storage_ns, tmpdir, file_name, dv_name
+):
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{CDI_IMAGES_DIR}{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
@@ -293,7 +303,7 @@ def test_scratch_space_upload_data_volume(storage_ns, tmpdir, file_name, dv_name
 
 @pytest.mark.polarion("CNV-2319")
 def test_scratch_space_import_registry_data_volume(
-    storage_ns, images_private_registry_server, registry_config_map
+    skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     with storage_utils.create_dv(
         server_type="registry",

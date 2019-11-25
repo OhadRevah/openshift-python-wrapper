@@ -72,11 +72,16 @@ def test_connectivity_over_pod_network(
     )
 
 
-@pytest.mark.skipif(not py_config["bare_metal_cluster"], reason="virtualized cluster")
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2334")
 def test_guest_performance_over_pod_network(
-    skip_when_one_node, vma, vmb, running_vma, running_vmb, namespace
+    skip_not_bare_metal,
+    skip_when_one_node,
+    vma,
+    vmb,
+    running_vma,
+    running_vmb,
+    namespace,
 ):
     """
     In-guest performance bandwidth passthrough over Linux bridge

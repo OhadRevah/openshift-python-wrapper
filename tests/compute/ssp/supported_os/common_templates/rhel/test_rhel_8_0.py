@@ -7,7 +7,6 @@ Common templates test RHEL 8.0
 import logging
 
 import pytest
-from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
 from utilities.infra import Images
@@ -17,11 +16,6 @@ LOGGER = logging.getLogger(__name__)
 VM_NAME = "rhel-8-0"
 
 
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="Running only on downstream,"
-    "Reason: http_server is not available for upstream",
-)
 @pytest.mark.parametrize(
     "data_volume_scope_class, vm_object_from_template",
     [
@@ -39,6 +33,7 @@ VM_NAME = "rhel-8-0"
     ],
     indirect=True,
 )
+@pytest.mark.usefixtures("skip_upstream")
 class TestCommonTemplatesRhel8:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-2174")

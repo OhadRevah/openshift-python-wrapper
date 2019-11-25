@@ -390,3 +390,18 @@ def namespace(request, unprivileged_client):
         .replace("_", "-")
     )[-63:]
     yield from create_ns(client=unprivileged_client, name=name.split("-", 1)[-1])
+
+
+@pytest.fixture(scope="session")
+def skip_upstream():
+    if py_config["distribution"] == "upstream":
+        pytest.skip(
+            msg="Running only on downstream,"
+            "Reason: HTTP/Registry servers are not available for upstream",
+        )
+
+
+@pytest.fixture(scope="session")
+def skip_not_bare_metal():
+    if not py_config["bare_metal_cluster"]:
+        pytest.skip(msg="Test should run only BM",)

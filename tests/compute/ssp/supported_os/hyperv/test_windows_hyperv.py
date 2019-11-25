@@ -111,15 +111,9 @@ def download_hvinfo(winrmcli_pod_scope_module):
     ],
     indirect=True,
 )
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="Running only on downstream, Reason: http_server is not available for upstream",
-)
-@pytest.mark.skipif(
-    not py_config["bare_metal_cluster"],
-    reason="Running only BM, Reason: windows run slow on nested visualization",
-)
 def test_windows_hyperv(
+    skip_upstream,
+    skip_not_bare_metal,
     namespace,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,

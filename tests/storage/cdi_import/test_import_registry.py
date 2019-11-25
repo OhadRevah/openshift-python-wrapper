@@ -18,10 +18,6 @@ PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
 
 
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/s",
-)
 @pytest.mark.parametrize(
     "file_name",
     [
@@ -38,7 +34,11 @@ PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
     ],
 )
 def test_private_registry_cirros(
-    storage_ns, images_private_registry_server, registry_config_map, file_name
+    skip_upstream,
+    storage_ns,
+    images_private_registry_server,
+    registry_config_map,
+    file_name,
 ):
     with utils.create_dv(
         server_type="registry",
@@ -118,13 +118,9 @@ def test_public_registry_multiple_data_volume(storage_ns):
             rcs.delete()
 
 
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/s",
-)
 @pytest.mark.polarion("CNV-2183")
 def test_private_registry_insecured_configmap(
-    storage_ns, images_private_registry_server
+    skip_upstream, storage_ns, images_private_registry_server
 ):
 
     server = images_private_registry_server[9:]
@@ -151,13 +147,9 @@ def test_private_registry_insecured_configmap(
             utils.check_disk_count_in_vm(vm_dv)
 
 
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/s",
-)
 @pytest.mark.polarion("CNV-2182")
 def test_private_registry_recover_after_missing_configmap(
-    storage_ns, images_private_registry_server, registry_config_map
+    skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     # creating DV before configmap with certificate is created
     with utils.create_dv(
@@ -177,13 +169,9 @@ def test_private_registry_recover_after_missing_configmap(
             utils.check_disk_count_in_vm(vm_dv)
 
 
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="importing from private registry for d/s",
-)
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
-    storage_ns, images_private_registry_server, registry_config_map
+    skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     with utils.create_dv(
         server_type="registry",
