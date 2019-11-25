@@ -89,7 +89,7 @@ class TestCommonTemplatesFedora:
         """ Test CNV VM creation from template """
 
         LOGGER.info(
-            'Create VM from template - {py_config["common_templates_latest_fedora_version"]["os_label"]}'
+            f'Create VM from template - {py_config["common_templates_latest_fedora_version"]["os_label"]}'
         )
         vm_object_from_template.create(wait=True)
 

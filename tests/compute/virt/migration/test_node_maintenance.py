@@ -10,6 +10,7 @@ from subprocess import run
 import pytest
 from pytest_lazyfixture import lazy_fixture
 from pytest_testconfig import config as py_config
+from resources.datavolume import DataVolume
 from resources.node_maintenance import NodeMaintenance
 from resources.template import Template
 from resources.utils import TimeoutSampler
@@ -21,7 +22,7 @@ from tests.compute.utils import WinRMcliPod
 from tests.compute.virt import utils as virt_utils
 from utilities import console
 from utilities.infra import create_ns
-from utilities.storage import DataVolumeTestResource
+from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -62,20 +63,6 @@ def drain_node_console(node):
         run(f"oc adm uncordon {node.name}", shell=True)
 
 
-@contextmanager
-def create_dv(dv_name, url, node_maintenance_ns):
-    with DataVolumeTestResource(
-        name=dv_name,
-        namespace=node_maintenance_ns.name,
-        url=url,
-        size="30Gi",
-        access_modes=DataVolumeTestResource.AccessMode.RWX,
-        volume_mode=DataVolumeTestResource.VolumeMode.BLOCK,
-    ) as dv:
-        dv.wait(timeout=1200)
-        yield dv
-
-
 @pytest.fixture(scope="module")
 def skip_when_other_vmi_present(default_client):
     if list(VirtualMachineInstance.get(default_client)):
@@ -100,21 +87,33 @@ def vm_container_disk_fedora(node_maintenance_ns, unprivileged_client):
 
 @pytest.fixture()
 def vm_template_dv_rhel8(
-    node_maintenance_ns, unprivileged_client, images_external_http_server
+    node_maintenance_ns, unprivileged_client, images_external_http_server,
 ):
     vm_dv_name = "rhel8-template-node-maintenance"
     url = f"{images_external_http_server}rhel-images/rhel-81/rhel-81.qcow2"
-    template_labels = [
-        f"{Template.Labels.OS}/rhel8.0",
-        f"{Template.Labels.WORKLOAD}/server",
-        f"{Template.Labels.FLAVOR}/tiny",
-    ]
-    with create_dv(vm_dv_name, url, node_maintenance_ns) as dv:
+    template_labels_dict = {
+        "os": "rhel8.0",
+        "workload": "server",
+        "flavor": "tiny",
+    }
+    with create_dv(
+        source="http",
+        dv_name=vm_dv_name,
+        namespace=node_maintenance_ns.name,
+        url=url,
+        size="30Gi",
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        access_modes=DataVolume.AccessMode.RWX,
+        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=py_config["default_storage_class"],
+    ) as dv:
+        dv.wait(timeout=1200)
+        yield dv
         with VirtualMachineForTestsFromTemplate(
             name="dv-rhel8-node-maintenance",
             namespace=node_maintenance_ns.name,
             client=unprivileged_client,
-            labels=template_labels,
+            labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,
         ) as vm:
             vm.start(wait=True)
@@ -154,17 +153,27 @@ def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_serv
     url = (
         f"{images_external_http_server}windows-images/window_qcow2_images/win_10.qcow2"
     )
-    template_labels = [
-        f"{Template.Labels.OS}/win10",
-        f"{Template.Labels.WORKLOAD}/desktop",
-        f"{Template.Labels.FLAVOR}/large",
-    ]
-    with create_dv(vm_dv_name, url, node_maintenance_ns) as dv:
+    template_labels_dict = {
+        "os": "win10",
+        "workload": "desktop",
+        "flavor": "large",
+    }
+    with create_dv(
+        source="http",
+        dv_name=vm_dv_name,
+        namespace=node_maintenance_ns.name,
+        url=url,
+        size="30Gi",
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        access_modes=DataVolume.AccessMode.RWX,
+        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=py_config["default_storage_class"],
+    ) as dv:
         with VirtualMachineForTestsFromTemplate(
             name=vm_dv_name,
             namespace=node_maintenance_ns.name,
             client=unprivileged_client,
-            labels=template_labels,
+            labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,
         ) as vm:
             vm.start(wait=True)

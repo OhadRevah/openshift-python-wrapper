@@ -4,12 +4,13 @@ VM to VM connectivity
 import pytest
 from pytest_testconfig import py_config
 from resources.configmap import ConfigMap
+from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
 from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
 from utilities.infra import create_ns, get_images_external_http_server
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
-from utilities.storage import DataVolumeTestResource
+from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -148,19 +149,16 @@ def br1test_nad(upgrade_namespace, bridge_on_all_nodes):
 
 @pytest.fixture(scope="module")
 def data_volume(upgrade_namespace):
-    template_labels = [
-        f"{Template.Labels.OS}/rhel8.0",
-        f"{Template.Labels.WORKLOAD}/server",
-        f"{Template.Labels.FLAVOR}/tiny",
-    ]
-    with DataVolumeTestResource(
-        name="dv-rhel8-server-tiny",
+    with create_dv(
+        source="http",
+        dv_name="dv-rhel8-server-tiny",
+        size="25Gi",
         namespace=upgrade_namespace.name,
         url=f"{get_images_external_http_server()}rhel-images/rhel-8/rhel-8.qcow2",
-        os_release="8.0",
-        template_labels=template_labels,
-        access_modes=DataVolumeTestResource.AccessMode.RWX,
-        volume_mode=DataVolumeTestResource.VolumeMode.BLOCK,
+        volume_mode=DataVolume.VolumeMode.BLOCK,
+        access_modes=DataVolume.AccessMode.RWX,
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait(timeout=900)
         yield dv
@@ -174,13 +172,18 @@ def vm_for_upgrade(
     upgrade_namespace,
     data_volume,
 ):
+    template_labels_dict = {
+        "os": "rhel8.0",
+        "workload": "server",
+        "flavor": "tiny",
+    }
     networks = {bridge_on_all_nodes.bridge_name: bridge_on_all_nodes.bridge_name}
     vm_name = "vm-for-product-upgrade"
     with VirtualMachineForTestsFromTemplate(
         name=vm_name,
         namespace=upgrade_namespace.name,
         client=default_client,
-        labels=data_volume.template_labels,
+        labels=Template.generate_template_labels(**template_labels_dict),
         template_dv=data_volume.name,
         networks=networks,
         interfaces=sorted(networks.keys()),

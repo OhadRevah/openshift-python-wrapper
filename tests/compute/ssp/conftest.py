@@ -9,7 +9,7 @@ from resources.template import Template
 from resources.utils import TimeoutSampler
 from tests.compute.utils import WinRMcliPod
 from utilities.infra import get_images_external_http_server
-from utilities.storage import DataVolume
+from utilities.storage import DataVolume, create_dv
 from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_vm_interfaces
 
 
@@ -27,25 +27,25 @@ def data_volume(request, namespace):
     The call to this function is triggered by calling either
     data_volume_scope_function or data_volume_scope_class.
     """
-
     # Set dv attributes
     dv_kwargs = {
-        "name": request.param["dv_name"].replace(".", "-").lower(),
+        "dv_name": request.param["dv_name"].replace(".", "-").lower(),
         "namespace": namespace.name,
         "source": "http",
         "url": f"{get_images_external_http_server()}{request.param['image']}",
         "size": request.param.get(
             "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
         ),
-        "access_modes": request.param.get("access_modes", None),
+        "access_modes": request.param.get("access_modes", DataVolume.AccessMode.RWO),
         "volume_mode": request.param.get("volume_mode", None),
         "storage_class": request.param.get(
             "storage_class", py_config["default_storage_class"]
         ),
+        "content_type": DataVolume.ContentType.KUBEVIRT,
     }
 
     # Create dv
-    with DataVolume(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
+    with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
         dv.wait(timeout=1200 if "win" in request.param["dv_name"] else 900)
         yield dv
 
