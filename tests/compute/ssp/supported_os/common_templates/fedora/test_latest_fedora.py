@@ -15,6 +15,11 @@ from utilities.infra import BUG_STATUS_CLOSED
 
 LOGGER = logging.getLogger(__name__)
 
+pytestmark = pytest.mark.skipif(
+    py_config["distribution"] == "upstream",
+    reason="Running only on downstream,"
+    "Reason: http_server is not available for upstream",
+)
 
 HYPERV_DICT = {
     "spec": {
@@ -49,27 +54,24 @@ HYPERV_DICT = {
 }
 
 
-@pytest.mark.skipif(
-    py_config["distribution"] == "upstream",
-    reason="Running only on downstream,"
-    "Reason: http_server is not available for upstream",
-)
 @pytest.mark.parametrize(
     "data_volume_scope_class, vm_object_from_template",
     [
         (
             {
-                "dv_name": f'dv-{py_config["common_templates_latest_fedora_version"]["os_label"]}',
-                "image": py_config["common_templates_latest_fedora_version"]["image"],
+                "dv_name": f'dv-{py_config.get("common_templates_latest_fedora_version", {}).get("os_label")}',
+                "image": py_config.get(
+                    "common_templates_latest_fedora_version", {}
+                ).get("image"),
             },
             {
-                "vm_name": py_config["common_templates_latest_fedora_version"][
-                    "os_label"
-                ],
+                "vm_name": py_config.get(
+                    "common_templates_latest_fedora_version", {}
+                ).get("os_label"),
                 "template_labels": {
-                    "os": py_config["common_templates_latest_fedora_version"][
-                        "os_label"
-                    ],
+                    "os": py_config.get(
+                        "common_templates_latest_fedora_version", {}
+                    ).get("os_label"),
                     "workload": "desktop",
                     "flavor": "tiny",
                 },
