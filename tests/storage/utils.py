@@ -7,7 +7,13 @@ from contextlib import contextmanager
 
 import requests
 from pytest_testconfig import config as py_config
-from resources.datavolume import ImportFromHttpDataVolume, ImportFromRegistryDataVolume
+from resources.datavolume import (
+    BlankDataVolume,
+    CloneDataVolume,
+    ImportFromHttpDataVolume,
+    ImportFromRegistryDataVolume,
+    UploadDataVolume,
+)
 from resources.pod import Pod
 from resources.route import Route
 from resources.service import Service
@@ -16,9 +22,12 @@ from utilities.infra import get_images_external_http_server
 from utilities.virt import VirtualMachineForTests, run_virtctl_command
 
 
-SERVER_TYPES = {
+SOURCE_TYPES = {
     "registry": ImportFromRegistryDataVolume,
     "http": ImportFromHttpDataVolume,
+    "upload": UploadDataVolume,
+    "blank": BlankDataVolume,
+    "pvc": CloneDataVolume,
 }
 
 
@@ -27,7 +36,7 @@ LOGGER = logging.getLogger(__name__)
 
 @contextmanager
 def create_dv(
-    server_type,
+    source_type,
     dv_name,
     namespace,
     url,
@@ -38,7 +47,7 @@ def create_dv(
     volume_mode=None,
 ):
     kwargs = {"secret": secret} if secret else {}
-    with SERVER_TYPES.get(server_type)(
+    with SOURCE_TYPES.get(source_type)(
         name=dv_name,
         namespace=namespace,
         url=url,

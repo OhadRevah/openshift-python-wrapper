@@ -74,7 +74,7 @@ def test_cdiconfig_changing_storage_class_default(
             data=get_cert("https_cert"),
         ) as configmap:
             with utils.create_dv(
-                server_type="http",
+                source_type="http",
                 dv_name="import-cdiconfig-scratch-space-not-default",
                 namespace=configmap.namespace,
                 url=url,
@@ -144,7 +144,7 @@ def cdiconfig_update(
                         data=get_cert("https_cert"),
                     ) as configmap:
                         with utils.create_dv(
-                            server_type="http",
+                            source_type="http",
                             dv_name="import-cdiconfig-scratch-space-not-default",
                             namespace=configmap.namespace,
                             url=url,

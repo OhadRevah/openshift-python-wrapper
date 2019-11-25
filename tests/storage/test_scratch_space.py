@@ -110,7 +110,7 @@ def test_scratch_space_import_https_data_volume(
 ):
     url = get_file_url_https_server(images_https_server, file_name)
     with storage_utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name=dv_name,
         namespace=storage_ns.name,
         url=url,
@@ -306,7 +306,7 @@ def test_scratch_space_import_registry_data_volume(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     with storage_utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="scratch-space-import-registry",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
@@ -333,7 +333,7 @@ def create_dv_and_vm_no_scratch_space(
     dv_name, namespace, url, cert_configmap, secret, content_type, size
 ):
     with storage_utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name=dv_name,
         namespace=namespace,
         content_type=content_type,

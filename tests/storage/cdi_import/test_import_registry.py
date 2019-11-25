@@ -41,7 +41,7 @@ def test_private_registry_cirros(
     file_name,
 ):
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="import-private-registry-cirros-image",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{file_name}",
@@ -57,7 +57,7 @@ def test_private_registry_cirros(
 @pytest.mark.polarion("CNV-2198")
 def test_disk_image_not_conform_to_registy_disk(storage_ns):
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="image-registry-not-conform-registrydisk",
         namespace=storage_ns.name,
         url="docker://docker.io/cirros",
@@ -135,7 +135,7 @@ def test_private_registry_insecured_configmap(
         }
     )
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="import-private-insecured-registry",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
@@ -153,7 +153,7 @@ def test_private_registry_recover_after_missing_configmap(
 ):
     # creating DV before configmap with certificate is created
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="import-private-registry-with-no-configmap",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
@@ -174,7 +174,7 @@ def test_private_registry_with_untrusted_certificate(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
@@ -194,7 +194,7 @@ def test_private_registry_with_untrusted_certificate(
             }
         )
         with utils.create_dv(
-            server_type="registry",
+            source_type="registry",
             dv_name="import-private-registry-no-certificate",
             namespace=storage_ns.name,
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
@@ -254,7 +254,7 @@ def test_public_registry_data_volume(
     storage_ns, dv_name, url, cert_configmap, content_type, size
 ):
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name=dv_name,
         namespace=storage_ns.name,
         url=url,
@@ -273,7 +273,7 @@ def test_public_registry_data_volume(
 def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     # negative flow - low capacity volume
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
@@ -286,7 +286,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
 
     # positive flow
     with utils.create_dv(
-        server_type="registry",
+        source_type="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
@@ -307,7 +307,7 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
         with utils.create_dv(
-            server_type="registry",
+            source_type="registry",
             dv_name="import-registry-archive",
             namespace=storage_ns.name,
             url=DOCKERHUB_IMAGE,

@@ -35,7 +35,7 @@ def get_file_url(url, file_name):
 def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_server):
     url = get_file_url(images_internal_http_server["http"], QCOW_IMG)
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
@@ -59,7 +59,7 @@ def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_ser
 def test_invalid_url(storage_ns):
     # negative flow - invalid url
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-http-dv-negative",
         namespace=storage_ns.name,
         url="https://noneexist.com",
@@ -73,7 +73,7 @@ def test_invalid_url(storage_ns):
 def test_empty_url(storage_ns):
     with pytest.raises(UnprocessibleEntityError):
         with utils.create_dv(
-            server_type="http",
+            source_type="http",
             dv_name="import-http-dv",
             namespace=storage_ns.name,
             url="",
@@ -87,7 +87,7 @@ def test_empty_url(storage_ns):
 def test_successful_import_archive(storage_ns, images_internal_http_server):
     url = get_file_url(images_internal_http_server["http"], TAR_IMG)
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
@@ -115,7 +115,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
 def test_successful_import_image(storage_ns, images_internal_http_server, file_name):
     url = get_file_url(images_internal_http_server["http"], file_name)
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
@@ -138,7 +138,7 @@ def test_successful_import_secure_archive(
 ):
     url = get_file_url(images_internal_http_server["https"], TAR_IMG)
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-https-dv",
         namespace=storage_ns.name,
         url=url,
@@ -162,7 +162,7 @@ def test_successful_import_secure_image(
 ):
     url = get_file_url(images_internal_http_server["https"], QCOW_IMG)
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-https-dv",
         namespace=storage_ns.name,
         url=url,
@@ -204,7 +204,7 @@ def test_successful_import_basic_auth(
     file_name,
 ):
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http_auth"], file_name),
@@ -223,7 +223,7 @@ def test_successful_import_basic_auth(
 @pytest.mark.polarion("CNV-2144")
 def test_wrong_content_type(storage_ns, images_internal_http_server):
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], QCOW_IMG),
@@ -267,7 +267,7 @@ def test_import_invalid_qcow(
     storage_ns, images_internal_http_server, dv_name, file_name
 ):
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name=dv_name,
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
@@ -298,7 +298,7 @@ def test_unpack_compressed(
     storage_ns, images_internal_http_server, file_name, content_type
 ):
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="unpack-compressed-dv",
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
@@ -346,7 +346,7 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
         name="https-cert", namespace=storage_ns.name, cert_name="ca.pem", data=data
     ) as configmap:
         with utils.create_dv(
-            server_type="http",
+            source_type="http",
             dv_name=name,
             namespace=storage_ns.name,
             url=get_file_url(
@@ -364,7 +364,7 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
 @pytest.mark.polarion("CNV-2815")
 def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_https_server):
     with utils.create_dv(
-        server_type="http",
+        source_type="http",
         dv_name="cnv-2815",
         namespace=storage_ns.name,
         url=get_file_url(
