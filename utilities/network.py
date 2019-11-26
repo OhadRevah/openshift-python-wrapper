@@ -205,15 +205,11 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
     def wait_for_bridge_deleted(self):
         for pod in self._worker_pods:
-            LOGGER.info(
-                f"validating bridge delete {self.bridge_name} - {pod.node.name}"
-            )
             node_network_state = NodeNetworkState(name=pod.node.name)
             node_network_state.wait_until_deleted(self.bridge_name)
 
     def validate_create(self):
         for pod in self._worker_pods:
-            LOGGER.info(f"validating bridge is up {self.bridge_name} - {pod.node.name}")
             node_network_state = NodeNetworkState(name=pod.node.name)
             node_network_state.wait_until_up(self.bridge_name)
 

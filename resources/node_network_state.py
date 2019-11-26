@@ -72,7 +72,7 @@ class NodeNetworkState(Resource):
                     return interface
             return None
 
-        LOGGER.info(f"Checking if interface {name} is up")
+        LOGGER.info(f"Checking if interface {name} is up -- {self.name}")
         samples = TimeoutSampler(timeout=TIMEOUT, sleep=SLEEP, func=_find_up_interface)
         for sample in samples:
             if sample:
@@ -85,7 +85,7 @@ class NodeNetworkState(Resource):
                     return interface
             return None
 
-        LOGGER.info(f"Checking if interface {name} is deleted")
+        LOGGER.info(f"Checking if interface {name} is deleted -- {self.name}")
         samples = TimeoutSampler(
             timeout=TIMEOUT, sleep=SLEEP, func=_find_deleted_interface
         )

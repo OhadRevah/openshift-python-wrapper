@@ -22,33 +22,6 @@ MTU_SIZE = 9000
 BR1TEST = "br1test"
 
 
-class BridgedMtuFedoraVirtualMachine(VirtualMachineForTests):
-    def __init__(
-        self,
-        name,
-        namespace,
-        client=None,
-        interfaces=None,
-        networks=None,
-        node_selector=None,
-        cloud_init_data=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            client=client,
-            interfaces=interfaces,
-            networks=networks,
-            node_selector=node_selector,
-            cloud_init_data=cloud_init_data,
-        )
-
-    def _to_dict(self):
-        self.body = fedora_vm_body(self.name)
-        res = super()._to_dict()
-        return res
-
-
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
     with linux_bridge_nad(
@@ -72,13 +45,15 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics):
 
 @pytest.fixture(scope="module")
 def bridge_attached_vma(nodes, namespace, unprivileged_client):
+    name = "vma"
     networks = {BR1TEST: BR1TEST}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.1")
 
-    with BridgedMtuFedoraVirtualMachine(
+    with VirtualMachineForTests(
         namespace=namespace.name,
-        name="vma",
+        name=name,
+        body=fedora_vm_body(name),
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=nodes[0].name,
@@ -91,13 +66,15 @@ def bridge_attached_vma(nodes, namespace, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def bridge_attached_vmb(nodes, namespace, unprivileged_client):
+    name = "vmb"
     networks = {BR1TEST: BR1TEST}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.0.2")
 
-    with BridgedMtuFedoraVirtualMachine(
+    with VirtualMachineForTests(
         namespace=namespace.name,
-        name="vmb",
+        name=name,
+        body=fedora_vm_body(name),
         networks=networks,
         interfaces=sorted(networks.keys()),
         node_selector=nodes[1].name,
