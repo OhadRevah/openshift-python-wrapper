@@ -8,11 +8,25 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from utilities import console
 from utilities.network import (
     LinuxBridgeNetworkAttachmentDefinition,
+    LinuxBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeNetworkAttachmentDefinition,
+    OvsBridgeNodeNetworkConfigurationPolicy,
+    OvsBridgeOverVxlan,
+    VXLANTunnel,
 )
 
 
 LOGGER = logging.getLogger(__name__)
+LINUX_BRIDGE = "linux-bridge"
+OVS = "ovs"
+BRIDGE_DEVICE_TYPE = {
+    LINUX_BRIDGE: LinuxBridgeNodeNetworkConfigurationPolicy,
+    OVS: OvsBridgeNodeNetworkConfigurationPolicy,
+}
+BRIDGE_NAD_TYPE = {
+    LINUX_BRIDGE: LinuxBridgeNetworkAttachmentDefinition,
+    OVS: OvsBridgeNetworkAttachmentDefinition,
+}
 
 
 @contextlib.contextmanager
@@ -101,3 +115,71 @@ def running_vmi(vm):
     vm.start(wait=True)
     vm.vmi.wait_until_running()
     return vm.vmi
+
+
+@contextlib.contextmanager
+def bridge_device(
+    bridge_type,
+    nncp_name,
+    bridge_name,
+    network_utility_pods,
+    ports=None,
+    nodes_active_nics=None,
+    mtu=None,
+    node_selector=None,
+    schedulable_node_ips=None,
+    ovs_worker_pods=None,
+    idx=None,
+):
+    if bridge_type == OVS and not ports:
+        with OvsBridgeOverVxlan(
+            bridge_name=bridge_name,
+            vxlan_iface_name=f"vxlan-ovs{idx}",
+            ovs_worker_pods=ovs_worker_pods,
+            remote_ips=schedulable_node_ips,
+        ) as br:
+            yield br
+
+    else:
+        with BRIDGE_DEVICE_TYPE[bridge_type](
+            name=nncp_name,
+            bridge_name=bridge_name,
+            worker_pods=network_utility_pods,
+            ports=ports,
+            mtu=mtu,
+            node_selector=node_selector,
+        ) as br:
+            if not ports:
+                with VXLANTunnel(
+                    name=f"vxlan{idx}",
+                    worker_pods=network_utility_pods,
+                    vxlan_id=idx,
+                    master_bridge=br.bridge_name,
+                    nodes_nics=nodes_active_nics,
+                ):
+                    yield br
+            else:
+                yield br
+
+
+@contextlib.contextmanager
+def bridge_nad(
+    nad_type, nad_name, bridge_name, namespace, tuning=None, vlan=None, mtu=None
+):
+    kwargs = {
+        "namespace": namespace.name,
+        "name": nad_name,
+        "bridge_name": bridge_name,
+        "vlan": vlan,
+        "mtu": mtu,
+    }
+    if nad_type == LINUX_BRIDGE:
+        cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
+        tuning_type = (
+            py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
+        )
+        kwargs["cni_type"] = cni_type
+        kwargs["tuning_type"] = tuning_type
+
+    with BRIDGE_NAD_TYPE[nad_type](**kwargs) as nad:
+        yield nad
