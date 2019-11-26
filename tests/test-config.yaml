@@ -59,3 +59,7 @@ EMEA:
   registry_server: docker://cnv-qe-server.scl.lab.tlv.redhat.com
   https_cert: emea_https.crt
   registry_cert: emea_registry.crt
+
+bridge_devices:
+  - linux-bridge
+  - ovs

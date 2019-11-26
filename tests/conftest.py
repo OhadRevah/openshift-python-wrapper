@@ -110,6 +110,18 @@ def pytest_generate_tests(metafunc):
             )
         metafunc.parametrize("storage_class_matrix", storages)
 
+    if "bridge_device_matrix" in metafunc.fixturenames:
+        _bridge_devices = py_config.get("bridge_devices")
+        if not _bridge_devices:
+            bridges = ["linux-bridge"]
+        else:
+            bridges = (
+                _bridge_devices
+                if isinstance(_bridge_devices, list)
+                else [_bridge_devices]
+            )
+        metafunc.parametrize("bridge_device_matrix", bridges)
+
 
 def login_to_account(api_address, user, password=None):
     """
