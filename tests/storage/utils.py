@@ -53,7 +53,7 @@ def create_dv(
         url=url,
         content_type=content_type,
         size=size,
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
         cert_configmap=cert_configmap,
         volume_mode=volume_mode,
         **kwargs,

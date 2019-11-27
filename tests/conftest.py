@@ -101,7 +101,7 @@ def pytest_generate_tests(metafunc):
     if "storage_class_matrix" in metafunc.fixturenames:
         _storage_classes = py_config.get("storage_classes")
         if not _storage_classes:
-            storages = [py_config["storage_defaults"]["storage_class"]]
+            storages = [py_config["default_storage_class"]]
         else:
             storages = (
                 _storage_classes

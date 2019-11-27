@@ -25,14 +25,14 @@ def test_successful_clone_of_large_image(storage_ns):
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_external_http_server()}{WIN_IMAGES_DIR}/{WIN10_QCOW2}",
         size="30Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait(timeout=300)
         with CloneDataVolume(
             name="dv-target",
             namespace=storage_ns.name,
             size="30Gi",
-            storage_class=py_config["storage_defaults"]["storage_class"],
+            storage_class=py_config["default_storage_class"],
         ) as cdv:
             cdv.wait(timeout=1500)
             pvc = cdv.pvc
@@ -47,14 +47,14 @@ def test_successful_vm_restart_with_cloned_dv(storage_ns):
         content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_external_http_server()}{CDI_IMAGES_DIR}/{QCOW2_IMG}",
         size="10Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait(timeout=300)
         with CloneDataVolume(
             name="dv-target",
             namespace=storage_ns.name,
             size="10Gi",
-            storage_class=py_config["storage_defaults"]["storage_class"],
+            storage_class=py_config["default_storage_class"],
         ) as cdv:
             cdv.wait(timeout=600)
             with utils.create_vm_from_dv(dv=cdv) as vm_dv:

@@ -314,7 +314,7 @@ def test_certconfigmap(storage_ns, images_https_server, https_config_map):
         name="cnv-2811",
         namespace=storage_ns.name,
         size="1Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
@@ -396,7 +396,7 @@ def blank_disk_import(storage_ns, dv_name):
         name=dv_name,
         namespace=storage_ns.name,
         size="500Mi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait(timeout=180)
         with utils.create_vm_from_dv(
@@ -411,7 +411,7 @@ def test_successful_blank_disk_import(storage_ns):
         name="cnv-2151",
         namespace=storage_ns.name,
         size="500Mi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
@@ -449,7 +449,7 @@ def test_vmi_image_size(
         name="cnv-1404",
         namespace=storage_ns.name,
         size=f"{size}{unit}",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
@@ -480,7 +480,7 @@ def test_disk_falloc(storage_ns, images_https_server, https_config_map):
         name="cnv-3065",
         namespace=storage_ns.name,
         size="100Mi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),

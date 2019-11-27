@@ -8,8 +8,7 @@ template_defaults:
   linux_bridge_cni_name: bridge
   bridge_tuning_name: tuning
 
-storage_defaults:
-  storage_class: local
+default_storage_class: local
 
 bare_metal_cluster: False
 

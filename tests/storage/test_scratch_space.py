@@ -274,7 +274,7 @@ def test_scratch_space_upload_data_volume(
         name=dv_name,
         namespace=storage_ns.name,
         size="3Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(name="cnv-2315", namespace=storage_ns.name) as utr:

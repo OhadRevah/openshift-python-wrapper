@@ -83,7 +83,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
                 url=DOCKERHUB_IMAGE,
                 content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
                 size="5Gi",
-                storage_class=py_config["storage_defaults"]["storage_class"],
+                storage_class=py_config["default_storage_class"],
             )
 
             dv_process = multiprocessing.Process(target=rdv.create)

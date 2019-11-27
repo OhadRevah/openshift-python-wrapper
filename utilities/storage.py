@@ -16,7 +16,7 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
         access_modes=ImportFromHttpDataVolume.AccessMode.RWO,
         volume_mode=None,
     ):
-        storage_class = storage_class or py_config["storage_defaults"]["storage_class"]
+        storage_class = storage_class or py_config["default_storage_class"]
         super().__init__(
             name=name,
             namespace=namespace,

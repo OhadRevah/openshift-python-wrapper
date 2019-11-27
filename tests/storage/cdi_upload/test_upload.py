@@ -130,7 +130,7 @@ def test_successful_upload_with_supported_formats(
         name=dv_name,
         namespace=storage_ns.name,
         size="3Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
@@ -164,7 +164,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
         name=dv_name,
         namespace=storage_ns.name,
         size="3Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
@@ -208,7 +208,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
         name=dv_name,
         namespace=storage_ns.name,
         size="3Gi",
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=120)
@@ -239,7 +239,7 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
         name=dv_name,
         namespace=storage_ns.name,
         size=size,
-        storage_class=py_config["storage_defaults"]["storage_class"],
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=300)
