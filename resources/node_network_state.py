@@ -67,7 +67,7 @@ class NodeNetworkState(Resource):
 
     def wait_until_up(self, name):
         def _find_up_interface():
-            for interface in self.instance.status.currentState.interfaces:
+            for interface in self.interfaces:
                 if interface["name"] == name and interface["state"] == "up":
                     return interface
             return None
@@ -80,7 +80,7 @@ class NodeNetworkState(Resource):
 
     def wait_until_deleted(self, name):
         def _find_deleted_interface():
-            for interface in self.instance.status.currentState.interfaces:
+            for interface in self.interfaces:
                 if interface["name"] == name:
                     return interface
             return None
@@ -92,3 +92,11 @@ class NodeNetworkState(Resource):
         for sample in samples:
             if not sample:
                 return
+
+    @property
+    def interfaces(self):
+        return self.instance.status.currentState.interfaces
+
+    @property
+    def routes(self):
+        return self.instance.status.currentState.routes

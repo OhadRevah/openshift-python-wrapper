@@ -17,6 +17,7 @@ from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
 from resources.daemonset import DaemonSet
 from resources.node import Node
+from resources.node_network_state import NodeNetworkState
 from resources.oauth import OAuth
 from resources.pod import Pod
 from resources.secret import Secret
@@ -324,38 +325,32 @@ def network_utility_pods(net_utility_daemonset, default_client):
 
 
 @pytest.fixture(scope="session")
-def nodes_active_nics(network_utility_pods):
+def nodes_active_nics(nodes):
     """
-    Get nodes active NICs. (Only NICs that are in UP state)
+    Get nodes active NICs.
     First NIC is management NIC
     """
     nodes_nics = {}
-    for pod in network_utility_pods:
-        pod_container = pod.containers[0].name
-        nodes_nics[pod.node.name] = []
-        nics = pod.execute(
-            command=[
-                "bash",
-                "-c",
-                "ls -l /sys/class/net/ | grep -v virtual | grep net | rev | cut -d '/' -f 1 | rev",
-            ],
-            container=pod_container,
-        )
-        nics = nics.splitlines()
-        default_gw = pod.execute(
-            command=["ip", "route", "show", "default"], container=pod_container
-        )
-        for nic in nics:
-            nic_state = pod.execute(
-                command=["cat", f"/sys/class/net/{nic}/operstate"],
-                container=pod_container,
-            )
-            if nic_state.strip() == "up":
-                if nic in [i for i in default_gw.splitlines() if "default" in i][0]:
-                    nodes_nics[pod.node.name].insert(0, nic)
-                    continue
-
-                nodes_nics[pod.node.name].append(nic)
+    for node in nodes:
+        nns = NodeNetworkState(name=node.name)
+        ifaces = [iface.name for iface in nns.interfaces if iface.type == "ethernet"]
+        default_routes = [
+            route for route in nns.routes.running if route.destination == "0.0.0.0/0"
+        ]
+        lowest_metric = min([route.metric for route in default_routes])
+        primary_iface_name = [
+            route["next-hop-interface"]
+            for route in default_routes
+            if route.metric == lowest_metric
+        ]
+        primary_iface = [iface for iface in ifaces if iface == primary_iface_name[0]]
+        primary_iface_idx = ifaces.index(primary_iface[0])
+        if primary_iface_idx == 0:
+            nodes_nics[node.name] = ifaces
+        else:
+            ifaces.pop(primary_iface_idx)
+            nodes_nics[node.name] = primary_iface
+            nodes_nics[node.name].append(ifaces)
 
     return nodes_nics
 
