@@ -26,6 +26,7 @@ class Images:
         QCOW2_IMG = "cirros-0.4.0-x86_64-disk.qcow2"
         QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
         QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
+        DISK_DEMO = "cirros-registry-disk-demo"
 
     class Rhel:
         RHEL6_IMG = "rhel-images/rhel-610/rhel-610.qcow2"
@@ -41,6 +42,7 @@ class Images:
 
     class Fedora:
         FEDORA29_IMG = "fedora-images/Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
+        DISK_DEMO = "fedora-cloud-registry-disk-demo"
 
 
 def get_images_external_http_server():
