@@ -43,7 +43,7 @@ class DataVolume(NamespacedResource):
         """
 
         BLOCK = "Block"
-        FILE = "File"
+        FILE = "Filesystem"
 
     def wait_deleted(self, timeout=TIMEOUT):
         """
@@ -66,8 +66,6 @@ class DataVolume(NamespacedResource):
     def pvc(self):
         return PersistentVolumeClaim(name=self.name, namespace=self.namespace)
 
-
-class DataVolumeTemplate(DataVolume):
     def __init__(
         self,
         name,
@@ -76,12 +74,12 @@ class DataVolumeTemplate(DataVolume):
         size,
         storage_class,
         url=None,
-        content_type=None,
-        access_modes=DataVolume.AccessMode.RWO,
+        content_type=ContentType.KUBEVIRT,
+        access_modes=AccessMode.RWO,
         cert_configmap=None,
         secret=None,
         client=None,
-        volume_mode=None,
+        volume_mode=VolumeMode.FILE,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
@@ -129,74 +127,3 @@ class DataVolumeTemplate(DataVolume):
         elif self.source == "blank":
             res["spec"]["source"][self.source] = {}
         return res
-
-
-class ImportFromHttpDataVolume(DataVolumeTemplate):
-    def __init__(
-        self,
-        name,
-        namespace,
-        size,
-        storage_class,
-        url,
-        content_type,
-        access_modes=DataVolume.AccessMode.RWO,
-        cert_configmap=None,
-        secret=None,
-        volume_mode=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            source="http",
-            size=size,
-            storage_class=storage_class,
-            url=url,
-            content_type=content_type,
-            access_modes=access_modes,
-            cert_configmap=cert_configmap,
-            secret=secret,
-            volume_mode=volume_mode,
-        )
-
-
-class ImportFromRegistryDataVolume(DataVolumeTemplate):
-    def __init__(
-        self,
-        name,
-        namespace,
-        size,
-        storage_class,
-        url,
-        content_type,
-        access_modes=DataVolume.AccessMode.RWO,
-        cert_configmap=None,
-        volume_mode=None,
-    ):
-        super().__init__(
-            name,
-            namespace,
-            "registry",
-            size,
-            storage_class,
-            url,
-            content_type,
-            access_modes,
-            cert_configmap,
-            volume_mode,
-        )
-
-
-class UploadDataVolume(DataVolumeTemplate):
-    def __init__(self, name, namespace, size, storage_class):
-        super().__init__(name, namespace, "upload", size, storage_class)
-
-
-class BlankDataVolume(DataVolumeTemplate):
-    def __init__(self, name, namespace, size, storage_class):
-        super().__init__(name, namespace, "blank", size, storage_class)
-
-
-class CloneDataVolume(DataVolumeTemplate):
-    def __init__(self, name, namespace, size, storage_class):
-        super().__init__(name, namespace, "pvc", size, storage_class)

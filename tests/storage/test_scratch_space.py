@@ -6,11 +6,7 @@ import threading
 import pytest
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
-from resources.datavolume import (
-    ImportFromHttpDataVolume,
-    ImportFromRegistryDataVolume,
-    UploadDataVolume,
-)
+from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
@@ -31,28 +27,28 @@ PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
         pytest.param(
             "no-scratch-space-import-raw-https",
             Images.Cirros.RAW_IMG,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-gz-https",
             Images.Cirros.RAW_IMG_GZ,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-xz-https",
             Images.Cirros.RAW_IMG_XZ,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-qcow2-https",
             Images.Cirros.QCOW2_IMG,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2324")),
         ),
@@ -110,13 +106,12 @@ def test_scratch_space_import_https_data_volume(
 ):
     url = get_file_url_https_server(images_https_server, file_name)
     with storage_utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name=dv_name,
         namespace=storage_ns.name,
         url=url,
         cert_configmap=https_config_map.name,
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
@@ -131,28 +126,28 @@ def test_scratch_space_import_https_data_volume(
         pytest.param(
             "no-scratch-space-import-raw-http-basic-auth",
             Images.Cirros.RAW_IMG,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-gz-http-basic-auth",
             Images.Cirros.RAW_IMG_GZ,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-xz-http-basic-auth",
             Images.Cirros.RAW_IMG_XZ,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-qcow2-http-basic-auth",
             Images.Cirros.QCOW2_IMG,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2324")),
         ),
@@ -191,21 +186,21 @@ def test_no_scratch_space_import_http_basic_auth(
         pytest.param(
             "no-scratch-space-import-raw-http",
             Images.Cirros.RAW_IMG,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-gz-http",
             Images.Cirros.RAW_IMG_GZ,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
         pytest.param(
             "no-scratch-space-import-raw-xz-http",
             Images.Cirros.RAW_IMG_XZ,
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2321")),
         ),
@@ -270,13 +265,14 @@ def test_scratch_space_upload_data_volume(
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{CDI_IMAGES_DIR}{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
-    with UploadDataVolume(
-        name=dv_name,
+    with storage_utils.create_dv(
+        source="upload",
+        dv_name=dv_name,
         namespace=storage_ns.name,
         size="3Gi",
         storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(status=UploadDataVolume.Status.UPLOAD_READY, timeout=180)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(name="cnv-2315", namespace=storage_ns.name) as utr:
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
@@ -306,13 +302,12 @@ def test_scratch_space_import_registry_data_volume(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     with storage_utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="scratch-space-import-registry",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
         cert_configmap=registry_config_map.name,
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
@@ -333,7 +328,7 @@ def create_dv_and_vm_no_scratch_space(
     dv_name, namespace, url, cert_configmap, secret, content_type, size
 ):
     with storage_utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name=dv_name,
         namespace=namespace,
         content_type=content_type,
@@ -341,6 +336,7 @@ def create_dv_and_vm_no_scratch_space(
         cert_configmap=cert_configmap,
         size=size,
         secret=secret,
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         thread = threading.Thread(target=dv.wait())
         thread.daemon = True

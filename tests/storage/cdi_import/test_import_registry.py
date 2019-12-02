@@ -5,7 +5,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
-from resources.datavolume import ImportFromRegistryDataVolume
+from resources.datavolume import DataVolume
 from tests.storage import utils
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import VirtualMachineForTests
@@ -41,13 +41,12 @@ def test_private_registry_cirros(
     file_name,
 ):
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="import-private-registry-cirros-image",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{file_name}",
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
         cert_configmap=registry_config_map.name,
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -57,16 +56,13 @@ def test_private_registry_cirros(
 @pytest.mark.polarion("CNV-2198")
 def test_disk_image_not_conform_to_registy_disk(storage_ns):
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="image-registry-not-conform-registrydisk",
         namespace=storage_ns.name,
         url="docker://docker.io/cirros",
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(
-            status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
-        )
+        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
 
 @pytest.mark.polarion("CNV-2028")
@@ -77,13 +73,14 @@ def test_public_registry_multiple_data_volume(storage_ns):
     vms_processes = []
     try:
         for dv in ("dv1", "dv2", "dv3"):
-            rdv = ImportFromRegistryDataVolume(
+            rdv = DataVolume(
+                source="registry",
                 name=f"import-registry-dockerhub-{dv}",
                 namespace=storage_ns.name,
                 url=DOCKERHUB_IMAGE,
-                content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-                size="5Gi",
                 storage_class=py_config["default_storage_class"],
+                size="5Gi",
+                content_type=DataVolume.ContentType.KUBEVIRT,
             )
 
             dv_process = multiprocessing.Process(target=rdv.create)
@@ -135,12 +132,11 @@ def test_private_registry_insecured_configmap(
         }
     )
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="import-private-insecured-registry",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -153,17 +149,14 @@ def test_private_registry_recover_after_missing_configmap(
 ):
     # creating DV before configmap with certificate is created
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="import-private-registry-with-no-configmap",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(
-            ImportFromRegistryDataVolume.Status.IMPORT_SCHEDULED, timeout=300
-        )
+        dv.wait_for_status(DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
@@ -174,13 +167,12 @@ def test_private_registry_with_untrusted_certificate(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -194,17 +186,15 @@ def test_private_registry_with_untrusted_certificate(
             }
         )
         with utils.create_dv(
-            source_type="registry",
+            source="registry",
             dv_name="import-private-registry-no-certificate",
             namespace=storage_ns.name,
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
-            size="5Gi",
+            storage_class=py_config["default_storage_class"],
         ) as dv:
-            dv.wait_for_status(
-                status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
-            )
+            dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
 
 @pytest.mark.parametrize(
@@ -214,7 +204,7 @@ def test_private_registry_with_untrusted_certificate(
             "import-registry-dockerhub-dv",
             DOCKERHUB_IMAGE,
             None,
-            ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2041")),
         ),
@@ -238,7 +228,7 @@ def test_private_registry_with_untrusted_certificate(
             "import-registry-quay-dv",
             QUAY_IMAGE,
             None,
-            ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2026")),
         ),
@@ -254,13 +244,14 @@ def test_public_registry_data_volume(
     storage_ns, dv_name, url, cert_configmap, content_type, size
 ):
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name=dv_name,
         namespace=storage_ns.name,
         url=url,
         cert_configmap=cert_configmap,
         content_type=content_type,
         size=size,
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -273,25 +264,23 @@ def test_public_registry_data_volume(
 def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     # negative flow - low capacity volume
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
         content_type="",
         size="16Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(
-            status=ImportFromRegistryDataVolume.Status.FAILED, timeout=300
-        )
+        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
     # positive flow
     with utils.create_dv(
-        source_type="registry",
+        source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
-        content_type=ImportFromRegistryDataVolume.ContentType.KUBEVIRT,
-        size="5Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -307,11 +296,11 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
         with utils.create_dv(
-            source_type="registry",
+            source="registry",
             dv_name="import-registry-archive",
             namespace=storage_ns.name,
             url=DOCKERHUB_IMAGE,
-            content_type=ImportFromRegistryDataVolume.ContentType.ARCHIVE,
-            size="5Gi",
+            content_type=DataVolume.ContentType.ARCHIVE,
+            storage_class=py_config["default_storage_class"],
         ):
             return

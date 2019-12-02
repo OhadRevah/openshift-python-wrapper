@@ -1,8 +1,8 @@
 from pytest_testconfig import config as py_config
-from resources.datavolume import ImportFromHttpDataVolume
+from resources.datavolume import DataVolume
 
 
-class DataVolumeTestResource(ImportFromHttpDataVolume):
+class DataVolumeTestResource(DataVolume):
     def __init__(
         self,
         name,
@@ -12,8 +12,8 @@ class DataVolumeTestResource(ImportFromHttpDataVolume):
         template_labels=None,
         size="25Gi",
         storage_class=None,
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-        access_modes=ImportFromHttpDataVolume.AccessMode.RWO,
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        access_modes=DataVolume.AccessMode.RWO,
         volume_mode=None,
     ):
         storage_class = storage_class or py_config["default_storage_class"]

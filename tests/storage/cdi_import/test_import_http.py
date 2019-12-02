@@ -11,7 +11,7 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
-from resources.datavolume import BlankDataVolume, ImportFromHttpDataVolume
+from resources.datavolume import DataVolume
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
@@ -35,12 +35,12 @@ def get_file_url(url, file_name):
 def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_server):
     url = get_file_url(images_internal_http_server["http"], QCOW_IMG)
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED)
         pvc = dv.pvc
@@ -59,26 +59,26 @@ def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_ser
 def test_invalid_url(storage_ns):
     # negative flow - invalid url
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-http-dv-negative",
         namespace=storage_ns.name,
         url="https://noneexist.com",
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
 
 @pytest.mark.polarion("CNV-674")
 def test_empty_url(storage_ns):
     with pytest.raises(UnprocessibleEntityError):
         with utils.create_dv(
-            source_type="http",
+            source="http",
             dv_name="import-http-dv",
             namespace=storage_ns.name,
             url="",
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             size="500Mi",
+            storage_class=py_config["default_storage_class"],
         ):
             pass
 
@@ -87,12 +87,12 @@ def test_empty_url(storage_ns):
 def test_successful_import_archive(storage_ns, images_internal_http_server):
     url = get_file_url(images_internal_http_server["http"], TAR_IMG)
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
-        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -115,12 +115,12 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
 def test_successful_import_image(storage_ns, images_internal_http_server, file_name):
     url = get_file_url(images_internal_http_server["http"], file_name)
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -138,13 +138,14 @@ def test_successful_import_secure_archive(
 ):
     url = get_file_url(images_internal_http_server["https"], TAR_IMG)
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-https-dv",
         namespace=storage_ns.name,
         url=url,
         cert_configmap=internal_http_configmap.name,
-        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
+        content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
@@ -162,13 +163,13 @@ def test_successful_import_secure_image(
 ):
     url = get_file_url(images_internal_http_server["https"], QCOW_IMG)
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-https-dv",
         namespace=storage_ns.name,
         url=url,
         cert_configmap=internal_http_configmap.name,
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
@@ -184,12 +185,12 @@ def test_successful_import_secure_image(
     ("content_type", "file_name"),
     [
         pytest.param(
-            ImportFromHttpDataVolume.ContentType.ARCHIVE,
+            DataVolume.ContentType.ARCHIVE,
             TAR_IMG,
             marks=(pytest.mark.polarion("CNV-2339")),
         ),
         pytest.param(
-            ImportFromHttpDataVolume.ContentType.KUBEVIRT,
+            DataVolume.ContentType.KUBEVIRT,
             Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-784")),
         ),
@@ -204,13 +205,14 @@ def test_successful_import_basic_auth(
     file_name,
 ):
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http_auth"], file_name),
         content_type=content_type,
         size="500Mi",
         secret=internal_http_secret.name,
+        storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -223,14 +225,15 @@ def test_successful_import_basic_auth(
 @pytest.mark.polarion("CNV-2144")
 def test_wrong_content_type(storage_ns, images_internal_http_server):
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], QCOW_IMG),
-        content_type=ImportFromHttpDataVolume.ContentType.ARCHIVE,
+        content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
 
 @pytest.mark.parametrize(
@@ -267,26 +270,25 @@ def test_import_invalid_qcow(
     storage_ns, images_internal_http_server, dv_name, file_name
 ):
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name=dv_name,
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
-        size="1Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=90)
+        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=90)
 
 
 @pytest.mark.parametrize(
     ("content_type", "file_name"),
     [
         pytest.param(
-            ImportFromHttpDataVolume.ContentType.ARCHIVE,
+            DataVolume.ContentType.ARCHIVE,
             Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2220")),
         ),
         pytest.param(
-            ImportFromHttpDataVolume.ContentType.ARCHIVE,
+            DataVolume.ContentType.ARCHIVE,
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2701")),
         ),
@@ -298,27 +300,28 @@ def test_unpack_compressed(
     storage_ns, images_internal_http_server, file_name, content_type
 ):
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="unpack-compressed-dv",
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
         content_type=content_type,
         size="200Mi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
 
 @pytest.mark.polarion("CNV-2811")
 def test_certconfigmap(storage_ns, images_https_server, https_config_map):
-    with ImportFromHttpDataVolume(
-        name="cnv-2811",
+    with utils.create_dv(
+        source="http",
+        dv_name="cnv-2811",
         namespace=storage_ns.name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         cert_configmap=https_config_map.name,
     ) as dv:
         dv.wait()
@@ -346,53 +349,51 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
         name="https-cert", namespace=storage_ns.name, cert_name="ca.pem", data=data
     ) as configmap:
         with utils.create_dv(
-            source_type="http",
+            source="http",
             dv_name=name,
             namespace=storage_ns.name,
             url=get_file_url(
                 url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
             ),
             cert_configmap=configmap.name,
-            content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
             size="1Gi",
+            storage_class=py_config["default_storage_class"],
         ) as dv:
-            dv.wait_for_status(
-                status=ImportFromHttpDataVolume.Status.FAILED, timeout=300
-            )
+            dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
 
 @pytest.mark.polarion("CNV-2815")
 def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_https_server):
     with utils.create_dv(
-        source_type="http",
+        source="http",
         dv_name="cnv-2815",
         namespace=storage_ns.name,
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
         cert_configmap="wrong_name",
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         size="1Gi",
+        storage_class=py_config["default_storage_class"],
     ) as dv:
-        dv.wait_for_status(status=ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED)
+        dv.wait_for_status(status=DataVolume.Status.IMPORT_SCHEDULED)
         with pytest.raises(TimeoutExpiredError):
             samples = TimeoutSampler(
                 timeout=30,
                 sleep=30,
-                func=lambda: dv.status
-                != ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED,
+                func=lambda: dv.status != DataVolume.Status.IMPORT_SCHEDULED,
             )
             for sample in samples:
                 if sample:
                     LOGGER.error(
                         f"DV status is not as expected. \
-                        Expected: {ImportFromHttpDataVolume.Status.IMPORT_SCHEDULED}. Found: {dv.status}"
+                        Expected: {DataVolume.Status.IMPORT_SCHEDULED}. Found: {dv.status}"
                     )
                     raise AssertionError()
 
 
 def blank_disk_import(storage_ns, dv_name):
-    with BlankDataVolume(
+    with utils.create_dv(
+        source="blank",
         name=dv_name,
         namespace=storage_ns.name,
         size="500Mi",
@@ -407,8 +408,9 @@ def blank_disk_import(storage_ns, dv_name):
 
 @pytest.mark.polarion("CNV-2151")
 def test_successful_blank_disk_import(storage_ns):
-    with BlankDataVolume(
-        name="cnv-2151",
+    with utils.create_dv(
+        source="blank",
+        dv_name="cnv-2151",
         namespace=storage_ns.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
@@ -445,20 +447,18 @@ def test_successful_concurrent_blank_disk_import(storage_ns):
 def test_vmi_image_size(
     storage_ns, images_https_server, https_config_map, size, unit, expected_size
 ):
-    with ImportFromHttpDataVolume(
-        name="cnv-1404",
+    with utils.create_dv(
+        source="http",
+        dv_name="cnv-1404",
         namespace=storage_ns.name,
         size=f"{size}{unit}",
         storage_class=py_config["default_storage_class"],
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         cert_configmap=https_config_map.name,
     ) as dv:
-        dv.wait_for_status(
-            status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
-        )
+        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
         with utils.create_vm_from_dv(dv, image=CIRROS_IMAGE, start=False):
             with utils.PodWithPVC(
                 namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
@@ -476,15 +476,15 @@ def test_vmi_image_size(
 
 @pytest.mark.polarion("CNV-3065")
 def test_disk_falloc(storage_ns, images_https_server, https_config_map):
-    with ImportFromHttpDataVolume(
-        name="cnv-3065",
+    with utils.create_dv(
+        source="http",
+        dv_name="cnv-3065",
         namespace=storage_ns.name,
         size="100Mi",
         storage_class=py_config["default_storage_class"],
         url=get_file_url(
             url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
         ),
-        content_type=ImportFromHttpDataVolume.ContentType.KUBEVIRT,
         cert_configmap=https_config_map.name,
     ) as dv:
         dv.wait()
