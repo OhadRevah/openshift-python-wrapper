@@ -459,7 +459,7 @@ def test_vmi_image_size(
         dv.wait_for_status(
             status=ImportFromHttpDataVolume.Status.SUCCEEDED, timeout=120
         )
-        with utils.create_vm_from_dv(dv, CIRROS_IMAGE, start=False):
+        with utils.create_vm_from_dv(dv, image=CIRROS_IMAGE, start=False):
             with utils.PodWithPVC(
                 namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
             ) as pod:
