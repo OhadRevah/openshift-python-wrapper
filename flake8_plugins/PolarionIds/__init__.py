@@ -179,6 +179,9 @@ class PolarionIds(object):
                                     continue
 
                                 for elt in arg.elts:
+                                    if isinstance(elt, ast.Dict):
+                                        continue
+
                                     if not isinstance(elt, ast.Call):
                                         yield from self._non_decorated_elt(
                                             f, elt, elt.s
