@@ -145,6 +145,12 @@ def test_namespace(cnv_must_gather, namespace):
             marks=(pytest.mark.polarion("CNV-2709")),
             id="test_sriov_cni_pods",
         ),
+        pytest.param(
+            "app=containerized-data-importer",
+            py_config["hco_namespace"],
+            marks=(pytest.mark.polarion("CNV-3369")),
+            id="test_cdi_deployment_pods",
+        ),
     ],
 )
 def test_pods(cnv_must_gather, default_client, label_selector, resource_namespace):
