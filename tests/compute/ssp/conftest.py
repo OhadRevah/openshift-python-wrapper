@@ -154,7 +154,7 @@ def winrmcli_pod(namespace, sa_ready):
     """
 
     with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name) as pod:
-        pod.wait_for_status(status=pod.Status.RUNNING, timeout=60)
+        pod.wait_for_status(status=pod.Status.RUNNING, timeout=90)
         yield pod
 
 

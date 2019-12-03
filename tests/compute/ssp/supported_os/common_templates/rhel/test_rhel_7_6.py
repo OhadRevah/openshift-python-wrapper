@@ -59,7 +59,7 @@ class TestCommonTemplatesRhel76:
         utils.vm_started(vm=vm_object_from_template)
 
     @pytest.mark.run(after="test_start_vm")
-    @pytest.mark.polarionclass("CNV-3259")
+    @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
         self, namespace, data_volume_scope_class, vm_object_from_template
     ):

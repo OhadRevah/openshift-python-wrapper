@@ -13,6 +13,7 @@ from utilities.infra import BUG_STATUS_CLOSED, Images
 
 LOGGER = logging.getLogger(__name__)
 VM_NAME = "win-10"
+WIN10_LICENSE_KEY = "TFNPT-4HYRB-JMJW3-6JDYQ-JTYP6"
 
 
 @pytest.mark.parametrize(
@@ -98,6 +99,46 @@ class TestCommonTemplatesWin10:
         LOGGER.info("Verify VM HyperV values.")
         utils.check_vm_xml_hyperv(vm_object_from_template)
         utils.check_windows_vm_hvinfo(vm_object_from_template, winrmcli_pod_scope_class)
+
+    @pytest.mark.parametrize(
+        "activated_vm", [{"license_key": WIN10_LICENSE_KEY}], indirect=True
+    )
+    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.polarion("CNV-2177")
+    def test_vm_license_state_after_stop_start(
+        self,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template,
+        winrmcli_pod_scope_class,
+        activated_vm,
+    ):
+
+        LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
+        utils.check_windows_activated_license(
+            vm_object_from_template,
+            winrmcli_pod_scope_class,
+            reset_action="stop_start",
+        )
+
+    @pytest.mark.parametrize(
+        "activated_vm", [{"license_key": WIN10_LICENSE_KEY}], indirect=True,
+    )
+    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.polarion("CNV-3415")
+    def test_vm_license_state_after_reboot(
+        self,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template,
+        winrmcli_pod_scope_class,
+        activated_vm,
+    ):
+
+        LOGGER.info("Verify VM activation mode is not changed after reboot.")
+        utils.check_windows_activated_license(
+            vm_object_from_template, winrmcli_pod_scope_class, reset_action="reboot",
+        )
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3289")

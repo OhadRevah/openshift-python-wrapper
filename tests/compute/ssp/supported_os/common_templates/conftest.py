@@ -6,6 +6,8 @@ import pytest
 from utilities import console
 from utilities.virt import vm_console_run_commands
 
+from .utils import activate_windows_online, add_windows_license, is_windows_activated
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,3 +39,19 @@ def vm_ssh_service(vm_object_from_template):
     vm_object_from_template.ssh_enable()
     yield
     vm_object_from_template.ssh_service.delete(wait=True)
+
+
+@pytest.fixture(scope="class")
+def activated_vm(request, vm_object_from_template, winrmcli_pod_scope_class):
+
+    add_windows_license(
+        vm_object_from_template,
+        winrmcli_pod_scope_class,
+        windows_license=request.param["license_key"],
+    )
+    activate_windows_online(
+        vm_object_from_template, winrmcli_pod_scope_class,
+    )
+    assert is_windows_activated(
+        vm_object_from_template, winrmcli_pod_scope_class
+    ), "VM license is not activated."
