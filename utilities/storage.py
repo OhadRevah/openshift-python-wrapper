@@ -18,6 +18,7 @@ class DataVolumeTestResource(DataVolume):
     ):
         storage_class = storage_class or py_config["default_storage_class"]
         super().__init__(
+            source="http",
             name=name,
             namespace=namespace,
             size=size,
