@@ -22,11 +22,15 @@ def network_init(
 
 
 @pytest.fixture(scope="session")
-def bond_supported(network_utility_pods, nodes_active_nics):
+def bond_supported(network_utility_pods, multi_nics_nodes, nodes_active_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
-    return max([len(nodes_active_nics[i.node.name]) for i in network_utility_pods]) > 3
+    return (
+        max([len(nodes_active_nics[i.node.name]) for i in network_utility_pods]) > 3
+        if multi_nics_nodes
+        else False
+    )
 
 
 @pytest.fixture(scope="session")
