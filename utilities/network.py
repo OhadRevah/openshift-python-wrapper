@@ -122,6 +122,11 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self._ipv4_dhcp = ipv4_dhcp
         self.mtu_dict = {}
         self.ipv4_iface_state = {}
+        if self.node_selector:
+            for pod in self._worker_pods:
+                if pod.node.name == self.node_selector:
+                    self._worker_pods = [pod]
+                    break
 
     def _to_dict(self):
         # At the first time, it creates the dict.
