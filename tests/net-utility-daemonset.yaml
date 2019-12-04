@@ -40,7 +40,16 @@ spec:
         volumeMounts:
           - name: ovs-run
             mountPath: /host/run/openvswitch
+          - name: dbus-socket
+            mountPath: /run/dbus/system_bus_socket
+            securityContext:
+              privileged: true
+
       volumes:
         - name: ovs-run
           hostPath:
             path: /run/openvswitch
+        - name: dbus-socket
+          hostPath:
+            path: /run/dbus/system_bus_socket
+            type: Socket
