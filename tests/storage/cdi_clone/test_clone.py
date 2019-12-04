@@ -23,7 +23,7 @@ def test_successful_clone_of_large_image(storage_ns):
         dv_name="dv-source",
         namespace=storage_ns.name,
         url=f"{get_images_external_http_server()}{WIN_IMAGES_DIR}/{WIN10_QCOW2}",
-        size="30Gi",
+        size="35Gi",
         storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait(timeout=300)
@@ -31,7 +31,7 @@ def test_successful_clone_of_large_image(storage_ns):
             source="pvc",
             dv_name="dv-target",
             namespace=storage_ns.name,
-            size="30Gi",
+            size="35Gi",
             storage_class=py_config["default_storage_class"],
         ) as cdv:
             cdv.wait(timeout=1500)
