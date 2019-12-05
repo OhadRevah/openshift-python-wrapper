@@ -64,6 +64,27 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
                     return True
 
 
+@pytest.mark.polarion("CNV-2328")
+def test_import_https_scratch_space_delete_pvc(
+    skip_upstream, storage_ns, images_https_server, https_config_map
+):
+    url = get_file_url_https_server(images_https_server, Images.Cirros.QCOW2_IMG,)
+    with storage_utils.create_dv(
+        source="http",
+        dv_name="scratch-space-import-qcow2-https",
+        namespace=storage_ns.name,
+        url=url,
+        cert_configmap=https_config_map.name,
+        storage_class=py_config["default_storage_class"],
+    ) as dv:
+        pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
+        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        pvc.delete()
+        dv.wait()
+        with storage_utils.create_vm_from_dv(dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm_dv)
+
+
 @pytest.mark.parametrize(
     ("dv_name", "file_name", "content_type", "size"),
     [
