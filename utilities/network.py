@@ -295,6 +295,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         ports=None,
         mtu=None,
         node_selector=None,
+        ipv4_dhcp=None,
     ):
         super().__init__(
             name,
@@ -305,6 +306,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             ports=ports,
             mtu=mtu,
             node_selector=node_selector,
+            ipv4_dhcp=ipv4_dhcp,
         )
 
 
@@ -318,6 +320,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         stp_config=True,
         mtu=None,
         node_selector=None,
+        ipv4_dhcp=None,
     ):
         super().__init__(
             name,
@@ -328,12 +331,13 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             ports=ports,
             mtu=mtu,
             node_selector=node_selector,
+            ipv4_dhcp=ipv4_dhcp,
         )
 
     def _to_dict(self):
         res = super()._to_dict()
 
-        if self.ports is None:
+        if not self.ports:
             # If no ports were specified - should add:
             # 1. an internal port entry
             # 2. an interface entry (of type "ovs-interface")
