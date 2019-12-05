@@ -224,11 +224,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def _ipv4_state_backup(self):
         # Backup current state of dhcp for the interfaces which arent veth or current bridge
         for pod in self._worker_pods:
-            if (
-                self.node_selector
-                and self.node_selector["kubernetes.io/hostname"] != pod.node.name
-            ):
-                continue
             node_network_state = NodeNetworkState(name=pod.node.name)
             self.ipv4_iface_state[pod.node.name] = {}
             for interface in node_network_state.instance.status.currentState.interfaces:
@@ -246,16 +241,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.set_interface(self.bridge)
 
         if self._ipv4_dhcp:
-            previous_state = None
             temp_ipv4_iface_state = {}
             for pod in self._worker_pods:
-                if self.node_selector:
-                    # Assume node selector is of type hostname
-                    if self.node_selector["kubernetes.io/hostname"] != pod.node.name:
-                        continue
-                    previous_state = temp_ipv4_iface_state[
-                        self.node_selector["kubernetes.io/hostname"]
-                    ]
                 node_network_state = NodeNetworkState(name=pod.node.name)
                 temp_ipv4_iface_state[pod.node.name] = {}
                 # Find which interfaces got changed (of those that are connected to bridge)
@@ -273,9 +260,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                                 }
                             )
 
-            # Assuming all nodes have same interfaces, and that if node selector exists it is from type hostname
-            if previous_state is None:
-                previous_state = next(iter(temp_ipv4_iface_state.values()))
+            previous_state = next(iter(temp_ipv4_iface_state.values()))
 
             # Restore DHCP state of the changed bridge connected ports
             for iface_name, ipv4 in previous_state.items():
