@@ -209,11 +209,11 @@ def unprivileged_client(default_client, unprivileged_secret):
     """
     Provides none privilege API client
     """
-    #  We fail to login with unprivileged user on OCP 4.3
-    #  Disable for now
-    # return
+    # To disable unprivileged_client pass --tc=no_unprivileged_client:True to pytest commandline.
 
-    if py_config["distribution"] == "upstream":
+    if py_config["distribution"] == "upstream" or py_config.get(
+        "no_unprivileged_client"
+    ):
         return
 
     # Update identity provider
