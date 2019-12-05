@@ -80,6 +80,7 @@ class DataVolume(NamespacedResource):
         secret=None,
         client=None,
         volume_mode=VolumeMode.FILE,
+        hostpath_node=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.source = source
@@ -91,6 +92,7 @@ class DataVolume(NamespacedResource):
         self.access_modes = access_modes
         self.storage_class = storage_class
         self.volume_mode = volume_mode
+        self.hostpath_node = hostpath_node
 
     def _to_dict(self):
         res = super()._base_body()
@@ -126,4 +128,8 @@ class DataVolume(NamespacedResource):
             res["spec"]["source"]["pvc"]["namespace"] = self.namespace
         elif self.source == "blank":
             res["spec"]["source"][self.source] = {}
+        if self.hostpath_node:
+            res["metadata"]["annotations"] = {
+                "kubevirt.io/provisionOnNode": self.hostpath_node
+            }
         return res
