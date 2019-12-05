@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 
@@ -30,3 +32,33 @@ class DataVolumeTestResource(DataVolume):
         )
         self.os_release = os_release
         self.template_labels = template_labels
+
+
+@contextmanager
+def create_dv(
+    dv_name,
+    namespace,
+    storage_class,
+    url=None,
+    source="http",
+    content_type=DataVolume.ContentType.KUBEVIRT,
+    size="5Gi",
+    secret=None,
+    cert_configmap=None,
+    volume_mode=DataVolume.VolumeMode.FILE,
+    hostpath_node=None,
+):
+    with DataVolume(
+        source=source,
+        name=dv_name,
+        namespace=namespace,
+        url=url,
+        content_type=content_type,
+        size=size,
+        storage_class=storage_class,
+        cert_configmap=cert_configmap,
+        volume_mode=volume_mode,
+        hostpath_node=hostpath_node,
+        secret={"secret": secret} if secret else {},
+    ) as dv:
+        yield dv

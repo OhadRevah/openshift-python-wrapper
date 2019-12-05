@@ -12,6 +12,7 @@ from time import sleep
 import pytest
 import sh
 import tests.storage.utils as storage_utils
+import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.persistent_volume import PersistentVolume
@@ -126,7 +127,7 @@ def test_successful_upload_with_supported_formats(
 ):
     local_name = f"{tmpdir}/{local_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=storage_ns.name,
@@ -161,7 +162,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
     storage_utils.downloaded_image(
         remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
     )
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=storage_ns.name,
@@ -206,7 +207,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
     storage_utils.downloaded_image(
         remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
     )
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=storage_ns.name,
@@ -238,7 +239,7 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
     Upload test that is executed in parallel in with other tasks.
     """
     size = size or "3Gi"
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=storage_ns.name,

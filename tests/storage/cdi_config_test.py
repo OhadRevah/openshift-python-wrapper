@@ -4,6 +4,7 @@
 import logging
 
 import pytest
+import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
@@ -193,7 +194,7 @@ def test_cdiconfig_changing_storage_class_default(
             namespace=storage_ns.name,
             data=get_cert("https_cert"),
         ) as configmap:
-            with utils.create_dv(
+            with utilities.storage.create_dv(
                 source="http",
                 dv_name="import-cdiconfig-scratch-space-not-default",
                 namespace=configmap.namespace,

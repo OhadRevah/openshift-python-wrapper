@@ -2,6 +2,7 @@
 import multiprocessing
 
 import pytest
+import utilities.storage
 from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
@@ -40,7 +41,7 @@ def test_private_registry_cirros(
     registry_config_map,
     file_name,
 ):
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-cirros-image",
         namespace=storage_ns.name,
@@ -55,7 +56,7 @@ def test_private_registry_cirros(
 
 @pytest.mark.polarion("CNV-2198")
 def test_disk_image_not_conform_to_registy_disk(storage_ns):
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="image-registry-not-conform-registrydisk",
         namespace=storage_ns.name,
@@ -131,7 +132,7 @@ def test_private_registry_insecured_configmap(
             "metadata": {"name": "cdi-insecure-registries"},
         }
     )
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-insecured-registry",
         namespace=storage_ns.name,
@@ -148,7 +149,7 @@ def test_private_registry_recover_after_missing_configmap(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
     # creating DV before configmap with certificate is created
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-with-no-configmap",
         namespace=storage_ns.name,
@@ -166,7 +167,7 @@ def test_private_registry_recover_after_missing_configmap(
 def test_private_registry_with_untrusted_certificate(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=storage_ns.name,
@@ -185,7 +186,7 @@ def test_private_registry_with_untrusted_certificate(
                 "metadata": {"name": registry_config_map.name},
             }
         )
-        with utils.create_dv(
+        with utilities.storage.create_dv(
             source="registry",
             dv_name="import-private-registry-no-certificate",
             namespace=storage_ns.name,
@@ -243,7 +244,7 @@ def test_private_registry_with_untrusted_certificate(
 def test_public_registry_data_volume(
     storage_ns, dv_name, url, cert_configmap, content_type, size
 ):
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name=dv_name,
         namespace=storage_ns.name,
@@ -263,7 +264,7 @@ def test_public_registry_data_volume(
 @pytest.mark.polarion("CNV-2024")
 def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     # negative flow - low capacity volume
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
@@ -275,7 +276,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
     # positive flow
-    with utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=storage_ns.name,
@@ -295,7 +296,7 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
     with pytest.raises(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
-        with utils.create_dv(
+        with utilities.storage.create_dv(
             source="registry",
             dv_name="import-registry-archive",
             namespace=storage_ns.name,

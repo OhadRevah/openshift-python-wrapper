@@ -4,6 +4,7 @@ import logging
 import threading
 
 import pytest
+import utilities.storage
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
@@ -29,7 +30,7 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="upload",
         dv_name="scratch-space-upload-qcow2-https",
         namespace=storage_ns.name,
@@ -169,7 +170,7 @@ def test_scratch_space_import_https_data_volume(
     skip_upstream, storage_ns, images_https_server, https_config_map, dv_name, file_name
 ):
     url = get_file_url_https_server(images_https_server, file_name)
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
         namespace=storage_ns.name,
@@ -329,7 +330,7 @@ def test_scratch_space_upload_data_volume(
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=storage_ns.name,
@@ -365,7 +366,7 @@ def test_scratch_space_upload_data_volume(
 def test_scratch_space_import_registry_data_volume(
     skip_upstream, storage_ns, images_private_registry_server, registry_config_map
 ):
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="registry",
         dv_name="scratch-space-import-registry",
         namespace=storage_ns.name,
@@ -391,7 +392,7 @@ def get_file_url_http_server_basic_auth(get_images_external_http_server, file_na
 def create_dv_and_vm_no_scratch_space(
     dv_name, namespace, url, cert_configmap, secret, content_type, size
 ):
-    with storage_utils.create_dv(
+    with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
         namespace=namespace,
