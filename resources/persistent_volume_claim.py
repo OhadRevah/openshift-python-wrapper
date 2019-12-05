@@ -18,10 +18,13 @@ class PersistentVolumeClaim(NamespacedResource):
     class Status(NamespacedResource.Status):
         BOUND = "Bound"
 
-    def __init__(self, name, namespace, accessmodes=None, size=None):
+    def __init__(
+        self, name, namespace, accessmodes=None, size=None, hostpath_node=None
+    ):
         super().__init__(name=name, namespace=namespace)
         self.accessmodes = accessmodes
         self.size = size
+        self.hostpath_node = hostpath_node
 
     def _to_dict(self):
         res = super()._base_body()
@@ -33,6 +36,17 @@ class PersistentVolumeClaim(NamespacedResource):
                 }
             }
         )
+        """
+        Hostpath-provisioner is "node aware", when using it,
+        a node attribute on the claim must be introduced as follows.
+        annotations:
+          kubevirt.io/provisionOnNode: <specified_node_name>
+        """
+        if self.hostpath_node:
+            res["metadata"]["annotations"] = {
+                "kubevirt.io/provisionOnNode": self.hostpath_node
+            }
+
         return res
 
     def bound(self):
