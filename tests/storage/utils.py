@@ -83,6 +83,7 @@ def create_dv(
     secret=None,
     cert_configmap=None,
     volume_mode=DataVolume.VolumeMode.FILE,
+    hostpath_node=None,
 ):
     kwargs = {"secret": secret} if secret else {}
     with DataVolume(
@@ -95,6 +96,7 @@ def create_dv(
         storage_class=storage_class,
         cert_configmap=cert_configmap,
         volume_mode=volume_mode,
+        hostpath_node=hostpath_node,
         **kwargs,
     ) as dv:
         yield dv
