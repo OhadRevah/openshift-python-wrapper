@@ -21,8 +21,47 @@ from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
-
 PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
+
+
+@pytest.mark.polarion("CNV-2327")
+def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir):
+    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
+    remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
+    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    with storage_utils.create_dv(
+        source="upload",
+        dv_name="scratch-space-upload-qcow2-https",
+        namespace=storage_ns.name,
+        size="3Gi",
+        storage_class=py_config["default_storage_class"],
+    ) as dv:
+        scratch_pvc = PersistentVolumeClaim(
+            name=f"{dv.name}-scratch", namespace=dv.namespace
+        )
+        scratch_pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+        )
+        scratch_pvc.delete()
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        with UploadTokenRequest(
+            name="scratch-space-upload-qcow2-https", namespace=storage_ns.name
+        ) as utr:
+            token = utr.create().status.token
+            LOGGER.info("Ensure upload was successful")
+            sampler = TimeoutSampler(
+                timeout=120,
+                sleep=5,
+                func=storage_utils.upload_image,
+                token=token,
+                data=local_name,
+            )
+            for sample in sampler:
+                if sample == 200:
+                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+                    with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+                        storage_utils.check_disk_count_in_vm(vm_dv)
+                    return True
 
 
 @pytest.mark.parametrize(
