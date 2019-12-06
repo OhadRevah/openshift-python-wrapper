@@ -18,7 +18,7 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def br1test_nad(namespace):
     with linux_bridge_nad(
         namespace=namespace,
