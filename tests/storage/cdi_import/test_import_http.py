@@ -91,6 +91,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         dv_name="import-http-dv",
         namespace=storage_ns.name,
         url=url,
+        content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
     ) as dv:
