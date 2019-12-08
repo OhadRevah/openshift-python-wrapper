@@ -121,7 +121,7 @@ def pytest_generate_tests(metafunc):
                 if isinstance(_bridge_devices, list)
                 else [_bridge_devices]
             )
-        metafunc.parametrize("bridge_device_matrix", bridges)
+        metafunc.parametrize("bridge_device_matrix", bridges, scope="module")
 
 
 def login_to_account(api_address, user, password=None):
