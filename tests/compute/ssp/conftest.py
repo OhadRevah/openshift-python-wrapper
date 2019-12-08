@@ -3,12 +3,13 @@
 import logging
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from tests.compute.utils import WinRMcliPod
 from utilities.infra import get_images_external_http_server
-from utilities.storage import DataVolumeTestResource
+from utilities.storage import DataVolume
 from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_vm_interfaces
 
 
@@ -31,19 +32,20 @@ def data_volume(request, namespace):
     dv_kwargs = {
         "name": request.param["dv_name"].replace(".", "-").lower(),
         "namespace": namespace.name,
+        "source": "http",
         "url": f"{get_images_external_http_server()}{request.param['image']}",
         "size": request.param.get(
-            "dv_size", "35Gi" if "win" in request.param["dv_name"] else None
+            "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
         ),
         "access_modes": request.param.get("access_modes", None),
         "volume_mode": request.param.get("volume_mode", None),
-        "storage_class": request.param.get("storage_class", None),
+        "storage_class": request.param.get(
+            "storage_class", py_config["default_storage_class"]
+        ),
     }
 
     # Create dv
-    with DataVolumeTestResource(
-        **{k: v for k, v in dv_kwargs.items() if v is not None}
-    ) as dv:
+    with DataVolume(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
         dv.wait(timeout=1200 if "win" in request.param["dv_name"] else 900)
         yield dv
 

@@ -31,9 +31,8 @@ common_templates_latest_windows_version: {
   'image': 'windows-images/window_qcow2_images/win_19.qcow2',
 }
 
-# os label should be 'fedora29, currently set to 'fedora28' because of bug 1766069
 common_templates_latest_fedora_version: {
-  'os_label': 'fedora28',
+  'os_label': 'fedora29',
   'image': 'fedora-images/Fedora-Cloud-Base-29-1.2.x86_64.qcow2',
 }
 

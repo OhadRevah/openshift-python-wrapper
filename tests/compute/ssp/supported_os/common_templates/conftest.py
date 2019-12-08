@@ -3,7 +3,6 @@
 import logging
 
 import pytest
-from utilities import console
 from utilities.virt import vm_console_run_commands
 
 from .utils import activate_windows_online, add_windows_license, is_windows_activated
@@ -13,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def enabled_ssh_service_in_vm(vm_object_from_template):
+def enabled_ssh_service_in_vm(request, vm_object_from_template):
     """ Enable SSH in VM using console """
 
     LOGGER.info("Enable SSH in VM.")
@@ -28,7 +27,9 @@ def enabled_ssh_service_in_vm(vm_object_from_template):
     ]
 
     vm_console_run_commands(
-        console_impl=console.RHEL, vm=vm_object_from_template, commands=commands
+        console_impl=request.param["console_impl"],
+        vm=vm_object_from_template,
+        commands=commands,
     )
 
 

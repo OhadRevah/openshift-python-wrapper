@@ -10,7 +10,6 @@ import pytest
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
@@ -124,15 +123,12 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3348")
-    @pytest.mark.bugzilla(
-        1766069, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_os_version(
         self, namespace, data_volume_scope_class, vm_object_from_template
     ):
         """ Test CNV common templates OS version """
 
-        utils.vm_os_version(vm=vm_object_from_template)
+        utils.vm_os_version(vm=vm_object_from_template, console_impl=console.Fedora)
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3347")
@@ -150,6 +146,9 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3349")
+    @pytest.mark.parametrize(
+        "enabled_ssh_service_in_vm", [{"console_impl": console.Fedora}], indirect=True
+    )
     def test_expose_ssh(
         self,
         namespace,
@@ -164,6 +163,7 @@ class TestCommonTemplatesFedora:
         assert utils.check_ssh_connection(
             ip=list(schedulable_node_ips.values())[0],
             port=vm_object_from_template.ssh_node_port,
+            console_impl=console.Fedora,
         ), "Failed to login via SSH"
 
     @pytest.mark.run("last")

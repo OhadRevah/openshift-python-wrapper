@@ -79,7 +79,7 @@ class TestCommonTemplatesRhel81:
     ):
         """ Test CNV common templates OS version """
 
-        utils.vm_os_version(vm=vm_object_from_template)
+        utils.vm_os_version(vm=vm_object_from_template, console_impl=console.RHEL)
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3304")
@@ -97,6 +97,9 @@ class TestCommonTemplatesRhel81:
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3322")
+    @pytest.mark.parametrize(
+        "enabled_ssh_service_in_vm", [{"console_impl": console.RHEL}], indirect=True
+    )
     def test_expose_ssh(
         self,
         namespace,
@@ -111,6 +114,7 @@ class TestCommonTemplatesRhel81:
         assert utils.check_ssh_connection(
             ip=list(schedulable_node_ips.values())[0],
             port=vm_object_from_template.ssh_node_port,
+            console_impl=console.RHEL,
         ), "Failed to login via SSH"
 
     @pytest.mark.run("last")

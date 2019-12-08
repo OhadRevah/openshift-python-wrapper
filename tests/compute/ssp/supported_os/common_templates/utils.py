@@ -9,7 +9,6 @@ from pytest_testconfig import config as py_config
 from resources import pod
 from resources.utils import TimeoutSampler
 from rrmngmnt import ssh, user
-from utilities import console
 from utilities.virt import vm_console_run_commands, wait_for_vm_interfaces
 
 
@@ -86,7 +85,7 @@ def wait_for_windows_vm(vm, version, winrmcli_pod):
             return True
 
 
-def vm_os_version(vm):
+def vm_os_version(vm, console_impl):
     """ Verify VM os version using console """
 
     # vm.name format is <os type>-<os major version>-<minor version>
@@ -96,7 +95,7 @@ def vm_os_version(vm):
     os = re.search(r"(\w+-)?(\d+(-\d+)?)", vm.name).group(2)
     command = [f"cat /etc/redhat-release | grep {os.replace('-', '.')} | wc -l"]
 
-    vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=command)
+    vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
 
 
 def vm_deleted(vm):
@@ -107,7 +106,7 @@ def vm_deleted(vm):
         return False
 
 
-def check_ssh_connection(ip, port):
+def check_ssh_connection(ip, port, console_impl):
     """ Verifies successful SSH connection
     Args:
         ip (str): host IP
@@ -118,7 +117,7 @@ def check_ssh_connection(ip, port):
     """
 
     LOGGER.info("Check SSH connection to VM.")
-    ssh_user = user.User(name=console.RHEL._USERNAME, password=console.RHEL._PASSWORD)
+    ssh_user = user.User(name=console_impl._USERNAME, password=console_impl._PASSWORD,)
     return ssh.RemoteExecutor(
         user=ssh_user, address=ip, port=port
     ).wait_for_connectivity_state(positive=True, timeout=120)
