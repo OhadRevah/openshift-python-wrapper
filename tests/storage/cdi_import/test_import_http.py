@@ -396,7 +396,7 @@ def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_https_server):
 def blank_disk_import(storage_ns, dv_name):
     with utilities.storage.create_dv(
         source="blank",
-        name=dv_name,
+        dv_name=dv_name,
         namespace=storage_ns.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
