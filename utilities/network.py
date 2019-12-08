@@ -212,8 +212,11 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 for port in self.ports:
                     _set_iface_mtu(pod, port, self.mtu_dict[pod.node.name + port])
 
-        self._absent_interface()
-        self.wait_for_bridge_deleted()
+        try:
+            self._absent_interface()
+            self.wait_for_bridge_deleted()
+        except TimeoutExpiredError as e:
+            LOGGER.error(e)
 
         self.delete()
 
