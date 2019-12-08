@@ -358,18 +358,18 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
                 "OvsBridgeNetworkAttachmentDefinition are allowed."
             )
 
-        self._bridge_name = bridge_name
-        self._cni_type = cni_type
-        self._vlan = vlan
-        self._mtu = mtu
+        self.bridge_name = bridge_name
+        self.cni_type = cni_type
+        self.vlan = vlan
+        self.mtu = mtu
 
     def _to_dict(self):
         res = super()._to_dict()
-        spec_config = {"cniVersion": "0.3.1", "name": self._bridge_name}
-        bridge_dict = {"type": self._cni_type, "bridge": self._bridge_name}
+        spec_config = {"cniVersion": "0.3.1", "name": self.bridge_name}
+        bridge_dict = {"type": self.cni_type, "bridge": self.bridge_name}
         spec_config["plugins"] = [bridge_dict]
-        if self._vlan:
-            spec_config["vlan"] = self._vlan
+        if self.vlan:
+            spec_config["vlan"] = self.vlan
 
         res["spec"]["config"] = spec_config
         return res
@@ -388,16 +388,16 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         tuning_type=None,
     ):
         super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
-        self._tuning_type = tuning_type
+        self.tuning_type = tuning_type
 
     def _to_dict(self):
         res = super()._to_dict()
         config_plugins = res["spec"]["config"]["plugins"]
 
-        if self._tuning_type:
-            tuning_dict = {"type": self._tuning_type}
-            if self._mtu:
-                tuning_dict["mtu"] = self._mtu
+        if self.tuning_type:
+            tuning_dict = {"type": self.tuning_type}
+            if self.mtu:
+                tuning_dict["mtu"] = self.mtu
 
             config_plugins.append(tuning_dict)
 
@@ -406,7 +406,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
     @property
     def resource_name(self):
-        return f"bridge.network.kubevirt.io/{self._bridge_name}"
+        return f"bridge.network.kubevirt.io/{self.bridge_name}"
 
 
 class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
@@ -429,7 +429,7 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
     @property
     def resource_name(self):
-        return f"ovs-cni.network.kubevirt.io/{self._bridge_name}"
+        return f"ovs-cni.network.kubevirt.io/{self.bridge_name}"
 
 
 class OvsBridgeOverVxlan(object):
