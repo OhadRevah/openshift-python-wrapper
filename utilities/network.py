@@ -5,6 +5,7 @@ import logging
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
+from resources.pod import ExecOnPodError
 from resources.resource import sub_resource_level
 from resources.utils import TimeoutExpiredError
 
@@ -174,9 +175,10 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 if self.mtu:
                     for port in self.ports:
                         _set_iface_mtu(pod, port, self.mtu)
-                    _set_iface_mtu(pod, self.bridge_name, self.mtu)
+
             return self
-        except TimeoutExpiredError:
+        except Exception as e:
+            LOGGER.error(e)
             self.clean_up()
             raise
 
@@ -293,6 +295,16 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             node_selector=node_selector,
             ipv4_dhcp=ipv4_dhcp,
         )
+
+    def __enter__(self):
+        super().__enter__()
+        for pod in self._worker_pods:
+            try:
+                if self.mtu:
+                    _set_iface_mtu(pod, self.bridge_name, self.mtu)
+            except (TimeoutExpiredError, ExecOnPodError):
+                self.clean_up()
+                raise
 
 
 class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPolicy):
