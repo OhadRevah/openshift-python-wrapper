@@ -2,10 +2,68 @@ import json
 import logging
 
 import bitmath
+from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
+from resources.node_network_state import NodeNetworkState
+from resources.utils import TimeoutExpiredError
 from utilities import console
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+    def __init__(self, name, bond_name, nics, nodes):
+        super().__init__(name=name)
+        self.bond_name = bond_name
+        self.nodes = nodes
+        self.nics = nics
+        self.bond = None
+
+    def _to_dict(self):
+        if not self.bond:
+            self.bond = {
+                "name": self.bond_name,
+                "type": "bond",
+                "state": "up",
+                "link-aggregation": {
+                    "mode": "active-backup",
+                    "slaves": self.nics,
+                    "options": {"miimon": "120"},
+                },
+            }
+
+        self.set_interface(self.bond)
+        res = super()._to_dict()
+        return res
+
+    def __enter__(self):
+        super().__enter__()
+        for node in self.nodes:
+            try:
+                node_network_state = NodeNetworkState(name=node)
+                node_network_state.wait_until_up(self.bond_name)
+            except TimeoutExpiredError:
+                self.clean_up()
+                raise
+        return self
+
+    def clean_up(self):
+        self._absent_interface()
+        self.wait_for_bond_deleted()
+        self.delete()
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.clean_up()
+
+    def _absent_interface(self):
+        self.bond["state"] = "absent"
+        self.set_interface(self.bond)
+        self.apply()
+
+    def wait_for_bond_deleted(self):
+        for node in self.nodes:
+            node_network_state = NodeNetworkState(name=node)
+            node_network_state.wait_until_deleted(self.bond_name)
 
 
 def run_test_guest_performance(server_vm, client_vm, listen_ip):

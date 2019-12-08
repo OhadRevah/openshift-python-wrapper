@@ -4,29 +4,26 @@ VM to VM connectivity
 
 import pytest
 from pytest_testconfig import config as py_config
-from tests.network.connectivity.utils import run_test_guest_performance
+from tests.network.connectivity.utils import (
+    BondNodeNetworkConfigurationPolicy,
+    run_test_guest_performance,
+)
 from tests.network.utils import (
     assert_no_ping,
     assert_ping_successful,
+    bridge_device,
+    bridge_nad,
     get_vmi_ip_v4_by_name,
-    linux_bridge_nad,
     nmcli_add_con_cmds,
 )
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
-
-
-BR1TEST = "br1test"
-BR1BOND = "br1bond"
-BR1VLAN100 = "br1vlan100"
-BR1VLAN200 = "br1vlan200"
-BR1VLAN300 = "br1vlan300"
 
 
 def _masquerade_vmib_ip(vmib, bridge):
@@ -43,15 +40,106 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="module")
-def attach_linux_bridge_to_bond(bond1, network_utility_pods):
+def nad(bridge_device_matrix, namespace):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="br1test-nad",
+        bridge_name="br1test",
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def br1test(
+    bridge_device_matrix,
+    multi_nics_nodes,
+    ovs_worker_pods,
+    schedulable_node_ips,
+    namespace,
+    network_utility_pods,
+    nodes_active_nics,
+    nad,
+):
+    ports = (
+        [nodes_active_nics[network_utility_pods[0].node.name][1]]
+        if multi_nics_nodes
+        else []
+    )
+    with bridge_device(
+        bridge_type=bridge_device_matrix,
+        nncp_name=f"{nad.bridge_name}-nncp",
+        bridge_name=nad.bridge_name,
+        network_utility_pods=network_utility_pods,
+        ports=ports,
+        ovs_worker_pods=ovs_worker_pods,
+        nodes_active_nics=nodes_active_nics,
+        schedulable_node_ips=schedulable_node_ips,
+        idx=100,
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="module")
+def br1vlan100_nad(bridge_device_matrix, namespace, br1test):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="br1vlan100-nad",
+        bridge_name=br1test.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def br1vlan200_nad(bridge_device_matrix, namespace, br1test):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="br1vlan200-nad",
+        bridge_name=br1test.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def br1vlan300_nad(bridge_device_matrix, namespace, br1test):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="br1vlan300-nad",
+        bridge_name=br1test.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
+def bond1(network_utility_pods, bond_supported, nodes_active_nics):
+    """
+    Create BOND if setup support BOND
+    """
+    bond_name = "bond1"
+    if bond_supported:
+        with BondNodeNetworkConfigurationPolicy(
+            name="bond1nncp",
+            bond_name=bond_name,
+            nodes=[i.node.name for i in network_utility_pods],
+            nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        ):
+            yield bond_name
+    else:
+        yield None
+
+
+@pytest.fixture(scope="module")
+def bridge_on_bond(bond1, network_utility_pods):
     """
     Create bridge and attach the BOND to it
     """
     if bond1:
-        bond_bridge = "br1bond"
         with LinuxBridgeNodeNetworkConfigurationPolicy(
-            name="bridge-to-bond",
-            bridge_name=bond_bridge,
+            name="bridge-no-bond",
+            bridge_name="br1bond",
             worker_pods=network_utility_pods,
             ports=[bond1],
         ) as br:
@@ -60,80 +148,29 @@ def attach_linux_bridge_to_bond(bond1, network_utility_pods):
         yield
 
 
-@pytest.fixture(scope="module", autouse=True)
-def br1test_nad(namespace):
-    with linux_bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def brbond_nad(namespace):
-    with linux_bridge_nad(namespace=namespace, name=BR1BOND, bridge=BR1BOND) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1vlan100_nad(namespace):
-    with linux_bridge_nad(
-        namespace=namespace, name=BR1VLAN100, bridge=BR1TEST, vlan=100
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1vlan200_nad(namespace):
-    with linux_bridge_nad(
-        namespace=namespace, name=BR1VLAN200, bridge=BR1TEST, vlan=200
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1vlan300_nad(namespace):
-    with linux_bridge_nad(
-        namespace=namespace, name=BR1VLAN300, bridge=BR1TEST, vlan=300
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module", autouse=True)
-def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_nodes):
-    ports = (
-        [nodes_active_nics[network_utility_pods[0].node.name][1]]
-        if multi_nics_nodes
-        else []
-    )
-
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="linux-bridge-test-connectivity",
-        bridge_name=BR1TEST,
-        worker_pods=network_utility_pods,
-        ports=ports,
-    ) as br:
-        if not multi_nics_nodes:
-            with VXLANTunnel(
-                name="vxlan_lb_99",
-                worker_pods=network_utility_pods,
-                vxlan_id=99,
-                master_bridge=br.bridge_name,
-                nodes_nics=nodes_active_nics,
-            ):
-                yield br
-        else:
-            yield br
-
-
 @pytest.fixture(scope="module")
-def bridge_attached_vma(nodes, bond_supported, namespace, unprivileged_client):
+def bridge_attached_vma(
+    nodes,
+    bridge_on_bond,
+    namespace,
+    unprivileged_client,
+    nad,
+    br1vlan100_nad,
+    br1vlan200_nad,
+):
     name = "vma"
-    networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN200: BR1VLAN200}
+    networks = {
+        nad.name: nad.name,
+        br1vlan100_nad.name: br1vlan100_nad.name,
+        br1vlan200_nad.name: br1vlan200_nad.name,
+    }
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.1"))
-    if bond_supported:
+    if bridge_on_bond:
         bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.1"))
-        networks[BR1BOND] = BR1BOND
+        networks[bridge_on_bond.bridge_name] = bridge_on_bond.bridge_name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
@@ -153,16 +190,28 @@ def bridge_attached_vma(nodes, bond_supported, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vmb(nodes, bond_supported, namespace, unprivileged_client):
+def bridge_attached_vmb(
+    nodes,
+    bridge_on_bond,
+    namespace,
+    unprivileged_client,
+    nad,
+    br1vlan100_nad,
+    br1vlan300_nad,
+):
     name = "vmb"
-    networks = {BR1TEST: BR1TEST, BR1VLAN100: BR1VLAN100, BR1VLAN300: BR1VLAN300}
+    networks = {
+        nad.name: nad.name,
+        br1vlan100_nad.name: br1vlan100_nad.name,
+        br1vlan300_nad.name: br1vlan300_nad.name,
+    }
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.2"))
-    if bond_supported:
+    if bridge_on_bond:
         bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.2"))
-        networks[BR1BOND] = BR1BOND
+        networks[bridge_on_bond.bridge_name] = bridge_on_bond.bridge_name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
@@ -206,17 +255,17 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
             id="Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists",
         ),
         pytest.param(
-            BR1TEST,
+            "br1test-nad",
             marks=(pytest.mark.polarion("CNV-2080")),
-            id="Connectivity_between_VM_to_VM_over_L2_Linux_bridge_network",
+            id="Connectivity_between_VM_to_VM_over_L2_bridge_network",
         ),
     ],
 )
-def test_connectivity_over_linux_bridge(
+def test_connectivity(
     bridge,
     skip_when_one_node,
     namespace,
-    attach_linux_bridge_to_bond,
+    br1test,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -229,31 +278,34 @@ def test_connectivity_over_linux_bridge(
 
 
 @pytest.mark.polarion("CNV-2141")
-def test_connectivity_bond_over_linux_bridge(
+def test_connectivity_bond(
     skip_when_one_node,
     namespace,
-    attach_linux_bridge_to_bond,
-    bond_supported,
+    br1test,
+    bridge_on_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
     running_bridge_attached_vmib,
 ):
-    if not bond_supported:
+    if not bridge_on_bond:
         pytest.skip(msg="No BOND support")
 
     assert_ping_successful(
         src_vm=running_bridge_attached_vmia,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1BOND),
+        dst_ip=get_vmi_ip_v4_by_name(
+            vmi=running_bridge_attached_vmib, name=bridge_on_bond.bridge_name
+        ),
     )
 
 
 @pytest.mark.polarion("CNV-2072")
-def test_connectivity_positive_vlan_over_linux_bridge(
+def test_connectivity_positive_vlan(
     skip_not_bare_metal,
     skip_when_one_node,
     namespace,
-    attach_linux_bridge_to_bond,
+    br1test,
+    br1vlan100_nad,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -261,7 +313,9 @@ def test_connectivity_positive_vlan_over_linux_bridge(
 ):
     assert_ping_successful(
         src_vm=running_bridge_attached_vmia,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1VLAN100),
+        dst_ip=get_vmi_ip_v4_by_name(
+            vmi=running_bridge_attached_vmib, name=br1vlan100_nad.name
+        ),
     )
 
 
@@ -269,11 +323,12 @@ def test_connectivity_positive_vlan_over_linux_bridge(
     1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-2075")
-def test_connectivity_negative_vlan_over_linux_bridge(
+def test_connectivity_negative_vlan(
     skip_not_bare_metal,
     skip_when_one_node,
     namespace,
-    attach_linux_bridge_to_bond,
+    br1test,
+    br1vlan300_nad,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -281,29 +336,34 @@ def test_connectivity_negative_vlan_over_linux_bridge(
 ):
     assert_no_ping(
         src_vm=running_bridge_attached_vmia,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=BR1VLAN300),
+        dst_ip=get_vmi_ip_v4_by_name(
+            vmi=running_bridge_attached_vmib, name=br1vlan300_nad.name
+        ),
     )
 
 
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2335")
-def test_guest_performance_over_linux_bridge(
+def test_guest_performance(
     skip_not_bare_metal,
     skip_when_one_node,
     namespace,
-    attach_linux_bridge_to_bond,
+    br1test,
+    nad,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
     running_bridge_attached_vmib,
 ):
     """
-    In-guest performance bandwidth passthrough over Linux bridge
+    In-guest performance bandwidth passthrough.
     """
     expected_res = py_config["test_guest_performance"]["bandwidth"]
     bits_per_second = run_test_guest_performance(
         server_vm=bridge_attached_vma,
         client_vm=bridge_attached_vmb,
-        listen_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmia, name=BR1TEST),
+        listen_ip=get_vmi_ip_v4_by_name(
+            vmi=running_bridge_attached_vmia, name=nad.name
+        ),
     )
     assert bits_per_second >= expected_res
