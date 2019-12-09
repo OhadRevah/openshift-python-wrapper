@@ -315,6 +315,8 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             try:
                 if self.mtu:
                     _set_iface_mtu(pod, self.bridge_name, self.mtu)
+                return self
+
             except (TimeoutExpiredError, ExecOnPodError):
                 self.clean_up()
                 raise
