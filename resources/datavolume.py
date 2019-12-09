@@ -17,8 +17,19 @@ class DataVolume(NamespacedResource):
     api_group = "cdi.kubevirt.io"
 
     class Status(NamespacedResource.Status):
+        BLANK = "Blank"
+        PENDING = "Pending"
+        PVC_BOUND = "PVCBound"
         IMPORT_SCHEDULED = "ImportScheduled"
+        ClONE_SCHEDULED = "CloneScheduled"
+        UPLOAD_SCHEDULED = "UploadScheduled"
+        IMPORT_IN_PROGRESS = "ImportInProgress"
+        CLONE_IN_PROGRESS = "CloneInProgress"
+        UPLOAD_IN_PROGRESS = "UploadInProgress"
+        SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS = "SnapshotForSmartCloneInProgress"
+        SMART_CLONE_PVC_IN_PROGRESS = "SmartClonePVCInProgress"
         UPLOAD_READY = "UploadReady"
+        UNKNOWN = "Unknown"
 
     class AccessMode:
         """

@@ -4,6 +4,7 @@
 Pytest conftest file for CNV CDI tests
 """
 
+import logging
 import os
 
 import pytest
@@ -20,6 +21,9 @@ from resources.storage_class import StorageClass
 from tests.storage import utils
 from tests.storage.utils import HttpService
 from utilities.infra import get_cert
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -131,6 +135,7 @@ def hpp_storage_class(default_client):
 
 @pytest.fixture(scope="session")
 def skip_test_if_no_hpp_sc(hpp_storage_class):
+    LOGGER.debug("Use 'skip_test_if_no_hpp_sc' fixture...")
     if not hpp_storage_class:
         pytest.skip("Skipping test, HostPath storage class is not deployed")
 

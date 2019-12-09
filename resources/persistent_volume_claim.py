@@ -17,6 +17,8 @@ class PersistentVolumeClaim(NamespacedResource):
 
     class Status(NamespacedResource.Status):
         BOUND = "Bound"
+        PENDING = "Pending"
+        TERMINATING = "Terminating"
 
     def __init__(
         self, name, namespace, accessmodes=None, size=None, hostpath_node=None
