@@ -40,7 +40,7 @@ def test_vm_with_rng(rng_vm):
      - check random device should be present
      - create random data with each device
     """
-    with console.Console(vm=rng_vm) as vm_console:
+    with console.Fedora(vm=rng_vm) as vm_console:
         vm_console.sendline("cat /sys/devices/virtual/misc/hw_random/rng_current")
         vm_console.expect("virtio_rng.0", timeout=20)
         for device in ["random", "hwrng"]:

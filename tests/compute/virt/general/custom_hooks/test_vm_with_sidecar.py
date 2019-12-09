@@ -77,6 +77,6 @@ def test_vm_with_sidecar_hook(running_sidecar_vm):
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
     And check that package includes manufacturer: "Radical Edward"
     """
-    with console.Console(vm=running_sidecar_vm) as vm_console:
+    with console.Fedora(vm=running_sidecar_vm) as vm_console:
         vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
         vm_console.expect("1", timeout=20)
