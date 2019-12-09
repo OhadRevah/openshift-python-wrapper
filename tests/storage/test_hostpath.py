@@ -3,15 +3,20 @@
 """
 Hostpath Provisioner test suite
 """
-
 import logging
 
 import pytest
 import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
+from resources.cluster_role import ClusterRole
+from resources.cluster_role_binding import ClusterRoleBinding
+from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
+from resources.hostpath_provisioner import HostPathProvisioner
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
+from resources.security_context_constraints import SecurityContextConstraints
+from resources.service_account import ServiceAccount
 from resources.storage_class import StorageClass
 from utilities.infra import Images, get_images_external_http_server
 from utilities.storage import create_dv
@@ -48,6 +53,47 @@ def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
         == StorageClass.Types.HOSTPATH
     ):
         pytest.skip(msg="scratchSpaceStorageClass of cdiconfig is not HPP")
+
+
+@pytest.fixture(scope="module")
+def hostpath_provisioner():
+    LOGGER.debug("Use 'hostpath_provisioner' fixture...")
+    yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+
+
+@pytest.fixture(scope="module")
+def hpp_serviceaccount():
+    LOGGER.debug("Use 'hpp_serviceaccount' fixture...")
+    yield ServiceAccount(
+        name="hostpath-provisioner-admin", namespace=py_config["hco_namespace"]
+    )
+
+
+@pytest.fixture(scope="module")
+def hpp_scc():
+    LOGGER.debug("Use 'hpp_scc' fixture...")
+    yield SecurityContextConstraints(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+
+
+@pytest.fixture(scope="module")
+def hpp_clusterrole():
+    LOGGER.debug("Use 'hpp_clusterrole' fixture...")
+    yield ClusterRole(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+
+
+@pytest.fixture(scope="module")
+def hpp_clusterrolebinding():
+    LOGGER.debug("Use 'hpp_clusterrolebinding' fixture...")
+    yield ClusterRoleBinding(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+
+
+@pytest.fixture(scope="module")
+def hpp_daemonset():
+    LOGGER.debug("Use 'hpp_daemonset' fixture...")
+    yield DaemonSet(
+        name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
+        namespace=py_config["hco_namespace"],
+    )
 
 
 def verify_image_location_via_dv_pod_with_pvc(dv, schedulable_nodes):
@@ -526,3 +572,59 @@ def test_hostpath_clone_dv_with_annotation(
             )
             with storage_utils.create_vm_from_dv(dv=target_dv) as vm:
                 storage_utils.check_disk_count_in_vm(vm=vm)
+
+
+@pytest.mark.polarion("CNV-3279")
+def test_hpp_cr(skip_test_if_no_hpp_sc, hostpath_provisioner):
+    assert hostpath_provisioner.exists
+    assert hostpath_provisioner.volume_path == "/var/hpvolumes"
+
+
+@pytest.mark.polarion("CNV-3279")
+def test_hpp_serviceaccount(skip_test_if_no_hpp_sc, hpp_serviceaccount):
+    assert hpp_serviceaccount.exists
+
+
+@pytest.mark.polarion("CNV-3279")
+def test_hpp_scc(skip_test_if_no_hpp_sc, hpp_scc):
+    assert hpp_scc.exists
+    assert (
+        hpp_scc.instance.users[0]
+        == "system:serviceaccount:openshift-cnv:hostpath-provisioner-admin"
+    ), "No 'hostpath-provisioner-admin' SA attached to 'hostpath-provisioner' SCC"
+
+
+@pytest.mark.polarion("CNV-3279")
+def test_hpp_clusterrole_and_clusterrolebinding(
+    skip_test_if_no_hpp_sc, hpp_clusterrole, hpp_clusterrolebinding
+):
+    assert hpp_clusterrole.exists
+    assert (
+        hpp_clusterrole.instance["metadata"]["ownerReferences"][0]["kind"]
+        == "HostPathProvisioner"
+    )
+
+    assert hpp_clusterrolebinding.exists
+    assert (
+        hpp_clusterrolebinding.instance["subjects"][0]["name"]
+        == "hostpath-provisioner-admin"
+    )
+
+
+@pytest.mark.polarion("CNV-3279")
+def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
+    assert hpp_daemonset.exists
+    assert (
+        hpp_daemonset.instance.status.numberReady
+        == hpp_daemonset.instance.status.desiredNumberScheduled
+    )
+
+
+@pytest.mark.polarion("CNV-3279")
+def test_hpp_operator_pod(skip_test_if_no_hpp_sc, default_client):
+    hpp_operator_pod = get_pod_by_name_prefix(
+        default_client=default_client,
+        pod_prefix="hostpath-provisioner-operator",
+        namespace=py_config["hco_namespace"],
+    )
+    assert hpp_operator_pod.status == Pod.Status.RUNNING
