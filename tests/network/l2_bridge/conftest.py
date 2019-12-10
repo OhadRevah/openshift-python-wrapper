@@ -2,7 +2,7 @@
 from ipaddress import ip_interface
 
 import pytest
-from tests.network.utils import nmcli_add_con_cmds
+from tests.network.utils import bridge_nad, nmcli_add_con_cmds
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -27,6 +27,55 @@ VMB_MPLS_LOOPBACK_IP = "192.168.200.1/32"
 VMB_MPLS_ROUTE_TAG = 200
 VMB_DHCP_ADDRESS = "192.168.3.3"
 DOT1Q_VLAN_ID = 10
+
+
+@pytest.fixture(scope="class")
+def dot1q_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="br1test-nad",
+        bridge_name=ovs_lb_bridge.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def dhcp_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="dhcp-broadcast",
+        bridge_name=ovs_lb_bridge.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def custom_eth_type_llpd_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="custom-eth-type-icmp",
+        bridge_name=ovs_lb_bridge.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def mpls_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="mpls",
+        bridge_name=ovs_lb_bridge.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def all_nads(namespace, dot1q_nad, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad):
+    return [dot1q_nad.name, custom_eth_type_llpd_nad.name, dhcp_nad.name, mpls_nad.name]
 
 
 def _cloud_init_data(

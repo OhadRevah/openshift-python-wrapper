@@ -6,11 +6,10 @@ Pytest conftest file for CNV network tests
 
 import pytest
 from resources.pod import Pod
+from tests.network.utils import bridge_device
 from utilities.network import (
-    LinuxBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeOverVxlan,
-    VXLANTunnel,
 )
 
 
@@ -110,29 +109,32 @@ def ovs_worker_pods(nodes, default_client):
 
 
 @pytest.fixture(scope="module")
-def linux_bridge_on_all_nodes(
-    network_utility_pods, multi_nics_nodes, nodes_active_nics, index_number
+def ovs_lb_bridge(
+    bridge_device_matrix,
+    index_number,
+    ovs_worker_pods,
+    schedulable_node_ips,
+    multi_nics_nodes,
+    network_utility_pods,
+    nodes_active_nics,
 ):
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
         if multi_nics_nodes
         else []
     )
+
     unique_index = next(index_number)
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name=f"linux-br{unique_index}",
-        bridge_name=f"br{unique_index}test",
-        worker_pods=network_utility_pods,
+    bridge_name = f"br{unique_index}test"
+    with bridge_device(
+        bridge_type=bridge_device_matrix,
+        nncp_name=f"{bridge_name}-nncp",
+        bridge_name=bridge_name,
+        network_utility_pods=network_utility_pods,
         ports=ports,
+        ovs_worker_pods=ovs_worker_pods,
+        nodes_active_nics=nodes_active_nics,
+        schedulable_node_ips=schedulable_node_ips,
+        idx=100 + unique_index,
     ) as br:
-        if not multi_nics_nodes:
-            with VXLANTunnel(
-                name=f"vxlan-{unique_index}",
-                worker_pods=network_utility_pods,
-                vxlan_id=10 + unique_index,
-                master_bridge=br.bridge_name,
-                nodes_nics=nodes_active_nics,
-            ):
-                yield br
-        else:
-            yield br
+        yield br
