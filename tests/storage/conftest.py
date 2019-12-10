@@ -26,6 +26,14 @@ from utilities.infra import get_cert
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.fixture()
+def cdi_resources(request, default_client):
+    rcs_object = request.param["resource"]
+    LOGGER.info(f"Get all resources with kind: {rcs_object.kind}")
+    resource_list = list(rcs_object.get(dyn_client=default_client))
+    return [rcs for rcs in resource_list if rcs.name.startswith("cdi-")]
+
+
 @pytest.fixture(scope="session", autouse=True)
 def storage_ns():
     with Namespace(name="cnv-cdi-ns") as ns:
