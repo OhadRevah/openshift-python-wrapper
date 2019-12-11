@@ -10,10 +10,6 @@ template_defaults:
 
 default_storage_class: rook-ceph-block
 
-storage_classes:
-  - rook-ceph-block
-  - kubevirt-hostpath-provisioner
-
 bare_metal_cluster: False
 
 distribution: downstream
@@ -58,6 +54,10 @@ EMEA:
   https_cert: emea_https.crt
   registry_cert: emea_registry.crt
 
-bridge_devices:
+storage_class_matrix:
+  - rook-ceph-block
+  - kubevirt-hostpath-provisioner
+
+bridge_device_matrix:
   - linux-bridge
   - ovs

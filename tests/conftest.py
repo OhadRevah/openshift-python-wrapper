@@ -99,29 +99,21 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    if "storage_class_matrix" in metafunc.fixturenames:
-        _storage_classes = py_config.get("storage_classes")
-        if not _storage_classes:
-            storages = [py_config["default_storage_class"]]
-        else:
-            storages = (
-                _storage_classes
-                if isinstance(_storage_classes, list)
-                else [_storage_classes]
-            )
-        metafunc.parametrize("storage_class_matrix", storages)
-
-    if "bridge_device_matrix" in metafunc.fixturenames:
-        _bridge_devices = py_config.get("bridge_devices")
-        if not _bridge_devices:
-            bridges = ["linux-bridge"]
-        else:
-            bridges = (
-                _bridge_devices
-                if isinstance(_bridge_devices, list)
-                else [_bridge_devices]
-            )
-        metafunc.parametrize("bridge_device_matrix", bridges, scope="module")
+    matrix_list = [
+        fixture_name
+        for fixture_name in metafunc.fixturenames
+        if "_matrix" in fixture_name
+    ]
+    for matrix in matrix_list:
+        _matrix_params = py_config[matrix]
+        matrix_params = (
+            _matrix_params if isinstance(_matrix_params, list) else [_matrix_params]
+        )
+        metafunc.parametrize(
+            matrix,
+            matrix_params,
+            ids=[f"<{matrix_param}>" for matrix_param in matrix_params],
+        )
 
 
 def login_to_account(api_address, user, password=None):
