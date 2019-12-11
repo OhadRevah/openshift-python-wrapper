@@ -7,6 +7,7 @@ import base64
 import logging
 import os
 import os.path
+import re
 import urllib.request
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -51,6 +52,21 @@ def pytest_collection_modifyitems(session, config, items):
     Add polarion test case it from tests to junit xml
     """
     for item in items:
+        if [
+            fixture_name
+            for fixture_name in item.fixturenames
+            if "_matrix" in fixture_name
+        ]:
+            values = re.findall("(<.*?>)", item.name)
+            for value in values:
+                value = value.strip("<").strip(">")
+                for k, v in py_config.items():
+                    if isinstance(v, list):
+                        if value in v:
+                            item.user_properties.append(
+                                (f"polarion-parameter-{k}", value)
+                            )
+
         for marker in item.iter_markers(name="polarion"):
             test_id = marker.args[0]
             item.user_properties.append(("polarion-testcase-id", test_id))
