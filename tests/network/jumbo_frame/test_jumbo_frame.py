@@ -5,7 +5,6 @@ VM to VM connectivity with  custom MTU (jumbo frame)
 import pytest
 from tests.network.utils import (
     assert_ping_successful,
-    bridge_device,
     bridge_nad,
     get_vmi_ip_v4_by_name,
     nmcli_add_con_cmds,
@@ -19,30 +18,22 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="module")
-def nad(bridge_device_matrix, namespace, network_utility_pods, nodes_active_nics):
+def nad(
+    bridge_device_matrix,
+    namespace,
+    network_utility_pods,
+    nodes_active_nics,
+    ovs_lb_bridge,
+):
     with bridge_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix,
         nad_name="br1test-nad",
-        bridge_name="br1test",
+        bridge_name=ovs_lb_bridge.bridge_name,
         tuning=True,
         mtu=9000,
     ) as nad:
         yield nad
-
-
-@pytest.fixture(scope="module")
-def bridge(bridge_device_matrix, network_utility_pods, nodes_active_nics, nad):
-    ports = [nodes_active_nics[network_utility_pods[0].node.name][1]]
-    with bridge_device(
-        bridge_type=bridge_device_matrix,
-        nncp_name=f"{nad.bridge_name}-nncp",
-        bridge_name=nad.bridge_name,
-        network_utility_pods=network_utility_pods,
-        ports=ports,
-        mtu=nad.mtu,
-    ) as br:
-        yield br
 
 
 @pytest.fixture(scope="module")
@@ -108,7 +99,7 @@ def test_connectivity_over_linux_bridge_large_mtu(
     skip_if_no_multinic_nodes,
     skip_when_one_node,
     namespace,
-    bridge,
+    ovs_lb_bridge,
     nad,
     bridge_attached_vma,
     bridge_attached_vmb,

@@ -11,7 +11,6 @@ from tests.network.connectivity.utils import (
 from tests.network.utils import (
     assert_no_ping,
     assert_ping_successful,
-    bridge_device,
     bridge_nad,
     get_vmi_ip_v4_by_name,
     nmcli_add_con_cmds,
@@ -40,75 +39,45 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="module")
-def nad(bridge_device_matrix, namespace):
+def nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix,
         nad_name="br1test-nad",
-        bridge_name="br1test",
+        bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module")
-def br1test(
-    bridge_device_matrix,
-    multi_nics_nodes,
-    ovs_worker_pods,
-    schedulable_node_ips,
-    namespace,
-    network_utility_pods,
-    nodes_active_nics,
-    nad,
-):
-    ports = (
-        [nodes_active_nics[network_utility_pods[0].node.name][1]]
-        if multi_nics_nodes
-        else []
-    )
-    with bridge_device(
-        bridge_type=bridge_device_matrix,
-        nncp_name=f"{nad.bridge_name}-nncp",
-        bridge_name=nad.bridge_name,
-        network_utility_pods=network_utility_pods,
-        ports=ports,
-        ovs_worker_pods=ovs_worker_pods,
-        nodes_active_nics=nodes_active_nics,
-        schedulable_node_ips=schedulable_node_ips,
-        idx=100,
-    ) as br:
-        yield br
-
-
-@pytest.fixture(scope="module")
-def br1vlan100_nad(bridge_device_matrix, namespace, br1test):
+def br1vlan100_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix,
         nad_name="br1vlan100-nad",
-        bridge_name=br1test.bridge_name,
+        bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module")
-def br1vlan200_nad(bridge_device_matrix, namespace, br1test):
+def br1vlan200_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix,
         nad_name="br1vlan200-nad",
-        bridge_name=br1test.bridge_name,
+        bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module")
-def br1vlan300_nad(bridge_device_matrix, namespace, br1test):
+def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix,
         nad_name="br1vlan300-nad",
-        bridge_name=br1test.bridge_name,
+        bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
         yield nad
 
@@ -265,7 +234,7 @@ def test_connectivity(
     bridge,
     skip_when_one_node,
     namespace,
-    br1test,
+    ovs_lb_bridge,
     bridge_attached_vma,
     bridge_attached_vmb,
     running_bridge_attached_vmia,
@@ -281,7 +250,7 @@ def test_connectivity(
 def test_connectivity_bond(
     skip_when_one_node,
     namespace,
-    br1test,
+    ovs_lb_bridge,
     bridge_on_bond,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -304,7 +273,7 @@ def test_connectivity_positive_vlan(
     skip_not_bare_metal,
     skip_when_one_node,
     namespace,
-    br1test,
+    ovs_lb_bridge,
     br1vlan100_nad,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -327,7 +296,7 @@ def test_connectivity_negative_vlan(
     skip_not_bare_metal,
     skip_when_one_node,
     namespace,
-    br1test,
+    ovs_lb_bridge,
     br1vlan300_nad,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -348,7 +317,7 @@ def test_guest_performance(
     skip_not_bare_metal,
     skip_when_one_node,
     namespace,
-    br1test,
+    ovs_lb_bridge,
     nad,
     bridge_attached_vma,
     bridge_attached_vmb,
