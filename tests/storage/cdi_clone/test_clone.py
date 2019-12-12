@@ -18,7 +18,7 @@ WIN10_QCOW2 = "win_10.qcow2"
 
 
 @pytest.mark.polarion("CNV-1892")
-def test_successful_clone_of_large_image(storage_ns):
+def test_successful_clone_of_large_image(skip_upstream, storage_ns):
     with utilities.storage.create_dv(
         source="http",
         dv_name="dv-source",
@@ -41,7 +41,7 @@ def test_successful_clone_of_large_image(storage_ns):
 
 
 @pytest.mark.polarion("CNV-2148")
-def test_successful_vm_restart_with_cloned_dv(storage_ns):
+def test_successful_vm_restart_with_cloned_dv(skip_upstream, storage_ns):
     with utilities.storage.create_dv(
         source="http",
         dv_name="dv-source",
