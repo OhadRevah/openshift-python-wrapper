@@ -6,20 +6,19 @@ HCO_NS='kubevirt-hyperconverged'
 HCO_VERSION='master'
 HCO_SOURCES="https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/${HCO_VERSION}"
 HCO_RESOURCES='crds/hco.crd.yaml
-crds/kubevirt.crd.yaml
-crds/cdi.crd.yaml
-crds/cna.crd.yaml
-crds/common-template-bundles.crd.yaml
-crds/node-labeller-bundles.crd.yaml
-crds/template-validator.crd.yaml
-crds/nodemaintenance.crd.yaml
-crds/metrics-aggregation.crd.yaml
+crds/kubevirt00.crd.yaml
+crds/containerized-data-importer00.crd.yaml
+crds/cluster-network-addons00.crd.yaml
+crds/scheduling-scale-performance00.crd.yaml
+crds/scheduling-scale-performance02.crd.yaml
+crds/scheduling-scale-performance03.crd.yaml
+crds/node-maintenance00.crd.yaml
+crds/scheduling-scale-performance01.crd.yaml
 cluster_role.yaml
 service_account.yaml
 cluster_role_binding.yaml
 operator.yaml
 hco.cr.yaml
-crds/mro.crd.yaml
 '
 
 # Create the namespaces for the HCO
