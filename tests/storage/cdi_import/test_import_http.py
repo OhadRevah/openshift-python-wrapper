@@ -314,17 +314,17 @@ def test_unpack_compressed(
 
 
 @pytest.mark.polarion("CNV-2811")
-def test_certconfigmap(storage_ns, images_https_server, https_config_map):
+def test_certconfigmap(
+    storage_ns, images_internal_http_server, internal_http_configmap
+):
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-2811",
         namespace=storage_ns.name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
-        url=get_file_url(
-            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-        ),
-        cert_configmap=https_config_map.name,
+        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -346,7 +346,9 @@ def test_certconfigmap(storage_ns, images_https_server, https_config_map):
         pytest.param("cnv-2813", None, marks=(pytest.mark.polarion("CNV-2813"))),
     ],
 )
-def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, data):
+def test_certconfigmap_incorrect_cert(
+    storage_ns, images_internal_http_server, name, data
+):
     with ConfigMap(
         name="https-cert", namespace=storage_ns.name, cert_name="ca.pem", data=data
     ) as configmap:
@@ -355,7 +357,7 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
             dv_name=name,
             namespace=storage_ns.name,
             url=get_file_url(
-                url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
+                url=images_internal_http_server["https"], file_name=QCOW_IMG
             ),
             cert_configmap=configmap.name,
             size="1Gi",
@@ -365,14 +367,12 @@ def test_certconfigmap_incorrect_cert(storage_ns, images_https_server, name, dat
 
 
 @pytest.mark.polarion("CNV-2815")
-def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_https_server):
+def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_internal_http_server):
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-2815",
         namespace=storage_ns.name,
-        url=get_file_url(
-            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-        ),
+        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
         cert_configmap="wrong_name",
         size="1Gi",
         storage_class=py_config["default_storage_class"],
@@ -447,7 +447,12 @@ def test_successful_concurrent_blank_disk_import(storage_ns):
     ],
 )
 def test_vmi_image_size(
-    storage_ns, images_https_server, https_config_map, size, unit, expected_size
+    storage_ns,
+    images_internal_http_server,
+    internal_http_configmap,
+    size,
+    unit,
+    expected_size,
 ):
     with utilities.storage.create_dv(
         source="http",
@@ -455,10 +460,8 @@ def test_vmi_image_size(
         namespace=storage_ns.name,
         size=f"{size}{unit}",
         storage_class=py_config["default_storage_class"],
-        url=get_file_url(
-            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-        ),
-        cert_configmap=https_config_map.name,
+        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
         with utils.create_vm_from_dv(dv, image=CIRROS_IMAGE, start=False):
@@ -477,17 +480,15 @@ def test_vmi_image_size(
 
 
 @pytest.mark.polarion("CNV-3065")
-def test_disk_falloc(storage_ns, images_https_server, https_config_map):
+def test_disk_falloc(storage_ns, images_internal_http_server, internal_http_configmap):
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-3065",
         namespace=storage_ns.name,
         size="100Mi",
         storage_class=py_config["default_storage_class"],
-        url=get_file_url(
-            url=f"{images_https_server}{TEST_IMG_LOCATION}/", file_name=QCOW_IMG
-        ),
-        cert_configmap=https_config_map.name,
+        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
