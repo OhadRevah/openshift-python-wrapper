@@ -16,7 +16,7 @@ def create_dv(
     cert_configmap=None,
     volume_mode=DataVolume.VolumeMode.FILE,
     hostpath_node=None,
-    access_modes=DataVolume.AccessMode.RWX,
+    access_modes=DataVolume.AccessMode.RWO,
 ):
     with DataVolume(
         source=source,
