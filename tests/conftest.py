@@ -43,10 +43,6 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
-    config.addinivalue_line("markers", "upgrade: Upgrade tests")
-
-
 def pytest_collection_modifyitems(session, config, items):
     """
     Add polarion test case it from tests to junit xml
