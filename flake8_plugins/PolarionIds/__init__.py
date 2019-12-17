@@ -115,8 +115,10 @@ class PolarionIds(object):
         if isinstance(polarion_id, ast.Call):
             if isinstance(polarion_id.args[0], ast.Str):
                 param = polarion_id.args[0].s
-            else:
-                param = polarion_id.args[0].elts[0].s
+            if isinstance(polarion_id.args[0], ast.List):
+                for parg in polarion_id.args[0].elts:
+                    if isinstance(parg, ast.Str):
+                        param = parg.s
 
         yield (
             polarion_id.lineno,
@@ -135,28 +137,26 @@ class PolarionIds(object):
             )
 
     def _check_pytest_fixture_polarion_ids(self, f):
-        has_polarion_id = False
         for f_arg in f.args.args:
             for polarion_id in iter_polarion_ids_from_pytest_fixture(
                 self.tree, f_arg.arg
             ):
                 if isinstance(polarion_id, ast.Str):
-                    has_polarion_id = True
                     yield from self._if_bad_pid_fixture(f, polarion_id)
                 else:
                     yield from self._non_decorated_fixture(f, polarion_id)
-        if not has_polarion_id:
-            yield from self._non_decorated(f, "")
 
     def run(self):
         """
         Check that every test has a Polarion ID
         """
         for f in iter_test_functions(self.tree):
+            polarion_mark_exists = False
             if not f.decorator_list:
                 # Test is missing Polarion ID, check if test use parametrize fixture
                 # with Polarion ID.
                 yield from self._check_pytest_fixture_polarion_ids(f)
+                break
 
             for deco in f.decorator_list:
                 if not hasattr(deco, "func"):
@@ -167,6 +167,7 @@ class PolarionIds(object):
                     and deco.func.value.attr == "mark"
                 ):
                     if deco.func.attr == "polarion":
+                        polarion_mark_exists = True
                         if deco.args:
                             yield from self._if_bad_pid(f, deco.args[0].s)
                         else:
@@ -200,6 +201,7 @@ class PolarionIds(object):
                                         if isinstance(pk.value, ast.Tuple):
                                             for elt_val in pk.value.elts:
                                                 if elt_val.func.attr == "polarion":
+                                                    polarion_mark_exists = True
                                                     yield from self._if_bad_pid(
                                                         f, elt_val.args[0].s
                                                     )
@@ -209,6 +211,7 @@ class PolarionIds(object):
                                             pk.arg == "marks"
                                             and pk.value.func.attr == "polarion"
                                         ):
+                                            polarion_mark_exists = True
                                             yield from self._if_bad_pid(
                                                 f, pk.value.args[0].s
                                             )
@@ -220,3 +223,6 @@ class PolarionIds(object):
                                             )
                 else:
                     yield from self._non_decorated(f, "")
+
+            if not polarion_mark_exists:
+                yield from self._non_decorated(f, "")
