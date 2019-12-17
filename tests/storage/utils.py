@@ -73,12 +73,24 @@ def upload_image_to_dv(tmpdir, volume_mode, storage_ns_name):
 
 
 class PodWithPVC(Pod):
-    def __init__(self, name, namespace, pvc_name):
+    def __init__(self, name, namespace, pvc_name, volume_mode):
         super().__init__(name=name, namespace=namespace)
         self._pvc_name = pvc_name
+        self._volume_mode = volume_mode
 
     def _to_dict(self):
         res = super()._to_dict()
+
+        if self._volume_mode == DataVolume.VolumeMode.BLOCK:
+            volume_path = {
+                "volumeDevices": [
+                    {"devicePath": "/pvc/disk.img", "name": self._pvc_name}
+                ]
+            }
+        else:
+            volume_path = {
+                "volumeMounts": [{"mountPath": "/pvc", "name": self._pvc_name}]
+            }
 
         res.update(
             {
@@ -92,9 +104,7 @@ class PodWithPVC(Pod):
                                 "-c",
                                 "echo ok > /tmp/healthy && sleep INF",
                             ],
-                            "volumeMounts": [
-                                {"mountPath": "/pvc", "name": self._pvc_name}
-                            ],
+                            **volume_path,
                         }
                     ],
                     "volumes": [

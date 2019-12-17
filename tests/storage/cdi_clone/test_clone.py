@@ -26,6 +26,7 @@ def test_successful_clone_of_large_image(skip_upstream, storage_ns):
         url=f"{get_images_external_http_server()}{WIN_IMAGES_DIR}/{WIN10_QCOW2}",
         size="35Gi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait(timeout=300)
         with utilities.storage.create_dv(
@@ -34,6 +35,7 @@ def test_successful_clone_of_large_image(skip_upstream, storage_ns):
             namespace=storage_ns.name,
             size="35Gi",
             storage_class=py_config["default_storage_class"],
+            volume_mode=py_config["default_volume_mode"],
         ) as cdv:
             cdv.wait(timeout=1500)
             pvc = cdv.pvc
@@ -49,6 +51,7 @@ def test_successful_vm_restart_with_cloned_dv(skip_upstream, storage_ns):
         url=f"{get_images_external_http_server()}{CDI_IMAGES_DIR}/{QCOW2_IMG}",
         size="10Gi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait(timeout=300)
         with utilities.storage.create_dv(
@@ -57,6 +60,7 @@ def test_successful_vm_restart_with_cloned_dv(skip_upstream, storage_ns):
             namespace=storage_ns.name,
             size="10Gi",
             storage_class=py_config["default_storage_class"],
+            volume_mode=py_config["default_volume_mode"],
         ) as cdv:
             cdv.wait(timeout=600)
             with utils.create_vm_from_dv(dv=cdv) as vm_dv:

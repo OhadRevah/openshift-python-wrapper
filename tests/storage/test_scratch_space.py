@@ -36,6 +36,7 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
         namespace=storage_ns.name,
         size="3Gi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         scratch_pvc = PersistentVolumeClaim(
             name=f"{dv.name}-scratch", namespace=dv.namespace
@@ -77,6 +78,7 @@ def test_import_https_scratch_space_delete_pvc(
         url=url,
         cert_configmap=https_config_map.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
@@ -177,6 +179,7 @@ def test_scratch_space_import_https_data_volume(
         url=url,
         cert_configmap=https_config_map.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
@@ -336,6 +339,7 @@ def test_scratch_space_upload_data_volume(
         namespace=storage_ns.name,
         size="3Gi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(name="cnv-2315", namespace=storage_ns.name) as utr:
@@ -373,6 +377,7 @@ def test_scratch_space_import_registry_data_volume(
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
@@ -402,6 +407,7 @@ def create_dv_and_vm_no_scratch_space(
         size=size,
         secret=secret,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         thread = threading.Thread(target=dv.wait())
         thread.daemon = True

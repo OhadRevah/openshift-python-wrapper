@@ -42,6 +42,7 @@ def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_ser
         url=url,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED)
         pvc = dv.pvc
@@ -50,7 +51,10 @@ def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_ser
         dv.wait_for_status(status=dv.Status.IMPORT_SCHEDULED)
         dv.wait_for_status(status=dv.Status.SUCCEEDED)
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
+            namespace=pvc.namespace,
+            name=f"{dv.name}-pod",
+            pvc_name=dv.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
@@ -66,6 +70,7 @@ def test_invalid_url(storage_ns):
         url="https://noneexist.com",
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -80,6 +85,7 @@ def test_empty_url(storage_ns):
             url="",
             size="500Mi",
             storage_class=py_config["default_storage_class"],
+            volume_mode=py_config["default_volume_mode"],
         ):
             pass
 
@@ -95,12 +101,16 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -123,12 +133,16 @@ def test_successful_import_image(storage_ns, images_internal_http_server, file_n
         url=url,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
@@ -148,12 +162,16 @@ def test_successful_import_secure_archive(
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -172,12 +190,16 @@ def test_successful_import_secure_image(
         cert_configmap=internal_http_configmap.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
         assert pvc.bound()
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
@@ -215,11 +237,15 @@ def test_successful_import_basic_auth(
         size="500Mi",
         secret=internal_http_secret.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
 
@@ -234,6 +260,7 @@ def test_wrong_content_type(storage_ns, images_internal_http_server):
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -277,6 +304,7 @@ def test_import_invalid_qcow(
         namespace=storage_ns.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=90)
 
@@ -309,6 +337,7 @@ def test_unpack_compressed(
         content_type=content_type,
         size="200Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -323,13 +352,17 @@ def test_certconfigmap(
         namespace=storage_ns.name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
         url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait()
         pvc = dv.pvc
         with utils.PodWithPVC(
-            namespace=pvc.namespace, name=f"{pvc.name}-pod", pvc_name=pvc.name
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=py_config["default_volume_mode"],
         ) as pod:
             pod.wait_for_status(status="Running")
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 1
@@ -362,6 +395,7 @@ def test_certconfigmap_incorrect_cert(
             cert_configmap=configmap.name,
             size="1Gi",
             storage_class=py_config["default_storage_class"],
+            volume_mode=py_config["default_volume_mode"],
         ) as dv:
             dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -376,6 +410,7 @@ def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_internal_http_serv
         cert_configmap="wrong_name",
         size="1Gi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.IMPORT_SCHEDULED)
         with pytest.raises(TimeoutExpiredError):
@@ -400,6 +435,7 @@ def blank_disk_import(storage_ns, dv_name):
         namespace=storage_ns.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait(timeout=180)
         with utils.create_vm_from_dv(
@@ -416,6 +452,7 @@ def test_successful_blank_disk_import(storage_ns):
         namespace=storage_ns.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
@@ -460,13 +497,17 @@ def test_vmi_image_size(
         namespace=storage_ns.name,
         size=f"{size}{unit}",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
         url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
         with utils.create_vm_from_dv(dv, image=CIRROS_IMAGE, start=False):
             with utils.PodWithPVC(
-                namespace=dv.namespace, name=f"{dv.name}-pod", pvc_name=dv.name
+                namespace=dv.namespace,
+                name=f"{dv.name}-pod",
+                pvc_name=dv.name,
+                volume_mode=py_config["default_volume_mode"],
             ) as pod:
                 pod.wait_for_status(status=pod.Status.RUNNING)
                 assert f"{expected_size}" <= pod.execute(
@@ -487,6 +528,7 @@ def test_disk_falloc(storage_ns, images_internal_http_server, internal_http_conf
         namespace=storage_ns.name,
         size="100Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
         url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
         cert_configmap=internal_http_configmap.name,
     ) as dv:

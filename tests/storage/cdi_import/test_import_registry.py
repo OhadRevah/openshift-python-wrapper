@@ -48,6 +48,7 @@ def test_private_registry_cirros(
         url=f"{images_private_registry_server}:8443/{file_name}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -62,6 +63,7 @@ def test_disk_image_not_conform_to_registy_disk(storage_ns):
         namespace=storage_ns.name,
         url="docker://docker.io/cirros",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -80,6 +82,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
                 namespace=storage_ns.name,
                 url=DOCKERHUB_IMAGE,
                 storage_class=py_config["default_storage_class"],
+                volume_mode=py_config["default_volume_mode"],
                 size="5Gi",
                 content_type=DataVolume.ContentType.KUBEVIRT,
             )
@@ -138,6 +141,7 @@ def test_private_registry_insecured_configmap(
         namespace=storage_ns.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -156,6 +160,7 @@ def test_private_registry_recover_after_missing_configmap(
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
         dv.wait()
@@ -174,6 +179,7 @@ def test_private_registry_with_untrusted_certificate(
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -194,6 +200,7 @@ def test_private_registry_with_untrusted_certificate(
             cert_configmap=registry_config_map.name,
             content_type="",
             storage_class=py_config["default_storage_class"],
+            volume_mode=py_config["default_volume_mode"],
         ) as dv:
             dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -253,6 +260,7 @@ def test_public_registry_data_volume(
         content_type=content_type,
         size=size,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -272,6 +280,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         content_type="",
         size="16Mi",
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -282,6 +291,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
         namespace=storage_ns.name,
         url=DOCKERHUB_IMAGE,
         storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -303,5 +313,6 @@ def test_public_registry_data_volume_dockerhub_archive(storage_ns):
             url=DOCKERHUB_IMAGE,
             content_type=DataVolume.ContentType.ARCHIVE,
             storage_class=py_config["default_storage_class"],
+            volume_mode=py_config["default_volume_mode"],
         ):
             return

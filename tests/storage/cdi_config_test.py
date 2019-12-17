@@ -5,6 +5,7 @@ import logging
 
 import pytest
 import utilities.storage
+from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.resource import ResourceEditor
@@ -204,6 +205,7 @@ def test_cdiconfig_changing_storage_class_default(
                     namespace=configmap.namespace,
                     url=url,
                     storage_class=default_sc.name,
+                    volume_mode=py_config["default_volume_mode"],
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()
