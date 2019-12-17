@@ -5,7 +5,6 @@ import logging
 
 import pytest
 import utilities.storage
-from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.resource import ResourceEditor
@@ -57,16 +56,17 @@ def cdiconfig_update(
                             with utils.create_vm_from_dv(dv=dv) as vm_dv:
                                 utils.check_disk_count_in_vm(vm_dv)
                                 break
+                break
 
 
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
-    tmpdir, skip_no_local_storage_class, cdi_config, storage_ns, images_https_server,
+    skip_test_if_no_hpp_sc, tmpdir, cdi_config, storage_ns, images_https_server,
 ):
     cdiconfig_update(
         source="upload",
         cdiconfig=cdi_config,
-        storage_class_type=StorageClass.Types.LOCAL,
+        storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=images_https_server,
         storage_ns_name=storage_ns.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
@@ -77,12 +77,12 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
 
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
-    skip_no_local_storage_class, cdi_config, storage_ns, images_https_server
+    skip_test_if_no_hpp_sc, cdi_config, storage_ns, images_https_server,
 ):
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
-        storage_class_type=StorageClass.Types.LOCAL,
+        storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=storage_ns.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
         images_https_server_name=images_https_server,
@@ -91,23 +91,25 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
 
 
 @pytest.mark.polarion("CNV-2214")
-def test_cdiconfig_status_scratchspace_update_with_spec(cdi_config, storage_ns):
+def test_cdiconfig_status_scratchspace_update_with_spec(
+    skip_test_if_no_hpp_sc, cdi_config, storage_ns
+):
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
-        storage_class_type=StorageClass.Types.LOCAL,
+        storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=storage_ns.name,
     )
 
 
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_no_local_storage_class, cdi_config, storage_ns, images_https_server
+    skip_test_if_no_hpp_sc, cdi_config, storage_ns, images_https_server,
 ):
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
-        storage_class_type=StorageClass.Types.LOCAL,
+        storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=images_https_server,
         storage_ns_name=storage_ns.name,
         run_vm=True,
@@ -157,73 +159,53 @@ def test_upload_proxy_url_overridden(
 
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
-    skip_no_local_storage_class,
+    skip_test_if_no_hpp_sc,
     cdi_config,
     storage_ns,
     images_https_server,
-    local_storage_class,
+    hpp_storage_class,
     default_sc,
 ):
-    try:
-        default_sc.update(
-            resource_dict={
-                "metadata": {
-                    "annotations": {
-                        "storageclass.kubernetes.io/is-default-class": "false"
-                    },
-                    "name": StorageClass.Types.ROOK,
+    def _get_update_dict(default, storage_class):
+        return {
+            "metadata": {
+                "annotations": {
+                    "storageclass.kubernetes.io/is-default-class": str(default).lower()
                 },
-            }
-        )
+                "name": storage_class,
+            },
+        }
 
-        local_storage_class.update(
-            resource_dict={
-                "metadata": {
-                    "annotations": {
-                        "storageclass.kubernetes.io/is-default-class": "true"
-                    },
-                    "name": StorageClass.Types.LOCAL,
-                },
+    with ResourceEditor(
+        {
+            default_sc: _get_update_dict(
+                default=False, storage_class=StorageClass.Types.ROOK
+            )
+        }
+    ):
+        with ResourceEditor(
+            {
+                hpp_storage_class: _get_update_dict(
+                    default=True, storage_class=StorageClass.Types.HOSTPATH
+                )
             }
-        )
-        url = utils.get_file_url_https_server(
-            images_https_server, Images.Cirros.QCOW2_IMG
-        )
-        with ConfigMap(
-            name="https-cert-configmap",
-            namespace=storage_ns.name,
-            data=get_cert("https_cert"),
-        ) as configmap:
-            with utilities.storage.create_dv(
-                source="http",
-                dv_name="import-cdiconfig-scratch-space-not-default",
-                namespace=configmap.namespace,
-                url=url,
-                storage_class=py_config["default_storage_class"],
-                cert_configmap=configmap.name,
-            ) as dv:
-                dv.wait()
-                with utils.create_vm_from_dv(dv) as vm_dv:
-                    utils.check_disk_count_in_vm(vm_dv)
-
-    finally:
-        local_storage_class.update(
-            resource_dict={
-                "metadata": {
-                    "annotations": {
-                        "storageclass.kubernetes.io/is-default-class": "false"
-                    },
-                    "name": StorageClass.Types.LOCAL,
-                },
-            }
-        )
-        default_sc.update(
-            resource_dict={
-                "metadata": {
-                    "annotations": {
-                        "storageclass.kubernetes.io/is-default-class": "true"
-                    },
-                    "name": StorageClass.Types.ROOK,
-                },
-            }
-        )
+        ):
+            url = utils.get_file_url_https_server(
+                images_https_server, Images.Cirros.QCOW2_IMG
+            )
+            with ConfigMap(
+                name="https-cert-configmap",
+                namespace=storage_ns.name,
+                data=get_cert("https_cert"),
+            ) as configmap:
+                with utilities.storage.create_dv(
+                    source="http",
+                    dv_name="import-cdiconfig-scratch-space-not-default",
+                    namespace=configmap.namespace,
+                    url=url,
+                    storage_class=default_sc.name,
+                    cert_configmap=configmap.name,
+                ) as dv:
+                    dv.wait()
+                    with utils.create_vm_from_dv(dv) as vm_dv:
+                        utils.check_disk_count_in_vm(vm_dv)

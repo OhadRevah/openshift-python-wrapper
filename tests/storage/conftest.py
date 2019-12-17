@@ -120,22 +120,19 @@ def skip_no_default_sc(default_sc):
 
 
 @pytest.fixture(scope="session")
-def local_storage_class(default_client):
+def hpp_storage_class(default_client):
     """
-    Get the local storage class if configured
+    Get the HPP storage class if configured
     """
     for sc in StorageClass.get(default_client):
-        if sc.instance.metadata.get("name") == StorageClass.Types.LOCAL:
+        if sc.instance.metadata.get("name") == StorageClass.Types.HOSTPATH:
             return sc
 
 
 @pytest.fixture(scope="session")
-def skip_no_local_storage_class(default_sc):
-    """
-    Skip test if local storage Class is not configured
-    """
-    if not local_storage_class:
-        pytest.skip("Skipping test, local storage class is not configured")
+def skip_test_if_no_hpp_sc(hpp_storage_class):
+    if not hpp_storage_class:
+        pytest.skip("Skipping test, HostPath storage class is not deployed")
 
 
 @pytest.fixture(scope="session")
