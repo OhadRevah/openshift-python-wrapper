@@ -76,6 +76,7 @@ HYPERV_DICT = {
     indirect=True,
 )
 @pytest.mark.usefixtures("skip_upstream")
+@pytest.mark.smoke
 class TestCommonTemplatesFedora:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3351")
