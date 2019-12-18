@@ -47,17 +47,6 @@ def linux_bridge_nad(namespace, name, bridge, vlan=None, tuning=None, mtu=None):
         yield nad
 
 
-@contextlib.contextmanager
-def ovs_bridge_nad(namespace, name, bridge, vlan=None, mtu=None):
-    # No need to extract the configuration for CNI type like in linux_bridge_nad, because the OVS CNI name is similar
-    # in both upstream and downstream.
-
-    with OvsBridgeNetworkAttachmentDefinition(
-        namespace=namespace.name, name=name, bridge_name=bridge, vlan=vlan, mtu=mtu
-    ) as nad:
-        yield nad
-
-
 class IpNotFound(Exception):
     def __init__(self, name):
         self.name = name
