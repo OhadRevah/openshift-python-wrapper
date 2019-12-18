@@ -2,12 +2,13 @@
 VM to VM connectivity
 """
 import pytest
+import tests.network.utils as network_utils
 from pytest_testconfig import py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
-from tests.network.utils import linux_bridge_nad, nmcli_add_con_cmds
+from tests.network.utils import nmcli_add_con_cmds
 from utilities.infra import create_ns, get_images_external_http_server
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.storage import create_dv
@@ -65,11 +66,11 @@ def bridge_on_one_node(network_utility_pods):
 
 @pytest.fixture(scope="module")
 def upgrade_bridge_marker_nad(bridge_on_one_node, upgrade_namespace):
-    with linux_bridge_nad(
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=bridge_on_one_node.bridge_name,
+        bridge_name=bridge_on_one_node.bridge_name,
         namespace=upgrade_namespace,
-        name=bridge_on_one_node.bridge_name,
-        bridge=bridge_on_one_node.bridge_name,
-        tuning=True,
     ) as nad:
         yield nad
 
@@ -139,10 +140,11 @@ def kubemacpool_configmap(upgrade_namespace):
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(upgrade_namespace, bridge_on_all_nodes):
-    with linux_bridge_nad(
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=bridge_on_all_nodes.bridge_name,
+        bridge_name=bridge_on_all_nodes.bridge_name,
         namespace=upgrade_namespace,
-        name=bridge_on_all_nodes.bridge_name,
-        bridge=bridge_on_all_nodes.bridge_name,
     ) as nad:
         yield nad
 

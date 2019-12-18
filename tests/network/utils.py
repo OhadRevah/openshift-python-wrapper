@@ -29,24 +29,6 @@ BRIDGE_NAD_TYPE = {
 }
 
 
-@contextlib.contextmanager
-def linux_bridge_nad(namespace, name, bridge, vlan=None, tuning=None, mtu=None):
-    cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
-    tuning_type = (
-        py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
-    )
-    with LinuxBridgeNetworkAttachmentDefinition(
-        namespace=namespace.name,
-        name=name,
-        bridge_name=bridge,
-        cni_type=cni_type,
-        vlan=vlan,
-        tuning_type=tuning_type,
-        mtu=mtu,
-    ) as nad:
-        yield nad
-
-
 class IpNotFound(Exception):
     def __init__(self, name):
         self.name = name

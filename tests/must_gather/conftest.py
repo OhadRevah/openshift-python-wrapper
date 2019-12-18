@@ -10,6 +10,7 @@ import shutil
 from subprocess import check_output
 
 import pytest
+import tests.network.utils as network_utils
 import yaml
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
@@ -19,10 +20,7 @@ from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns, generate_yaml_from_template
-from utilities.network import (
-    LinuxBridgeNetworkAttachmentDefinition,
-    LinuxBridgeNodeNetworkConfigurationPolicy,
-)
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -112,12 +110,11 @@ def node_gather_pods(default_client, node_gather_daemonset):
 
 @pytest.fixture(scope="module")
 def network_attachment_definition():
-    cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
-    with LinuxBridgeNetworkAttachmentDefinition(
-        namespace=py_config["hco_namespace"],
-        name="mgnad",
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name="mgnad",
         bridge_name="mgbr",
-        cni_type=cni_type,
+        namespace=py_config["hco_namespace"],
     ) as network_attachment_definition:
         yield network_attachment_definition
 

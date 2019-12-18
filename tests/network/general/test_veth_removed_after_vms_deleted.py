@@ -7,7 +7,7 @@ Veth interfaces deleted after VMs are removed
 import logging
 
 import pytest
-import tests.network.utils as net_utils
+import tests.network.utils as network_utils
 from resources.utils import TimeoutSampler
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -36,16 +36,22 @@ def count_veth_devices_on_host(pod):
 
 @pytest.fixture()
 def br1test_nad(namespace):
-    with net_utils.linux_bridge_nad(
-        namespace=namespace, name=BR1TEST, bridge=BR1TEST
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=BR1TEST,
+        bridge_name=BR1TEST,
+        namespace=namespace,
     ) as nad:
         yield nad
 
 
 @pytest.fixture()
 def br1vlan100_nad(namespace):
-    with net_utils.linux_bridge_nad(
-        namespace=namespace, name=BR1VLAN100, bridge=BR1TEST
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=BR1VLAN100,
+        bridge_name=BR1TEST,
+        namespace=namespace,
     ) as nad:
         yield nad
 

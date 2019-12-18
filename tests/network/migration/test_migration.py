@@ -6,13 +6,10 @@ Network Migration test
 import logging
 
 import pytest
+import tests.network.utils as network_utils
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from tests.network.utils import (
-    get_vmi_ip_v4_by_name,
-    linux_bridge_nad,
-    nmcli_add_con_cmds,
-)
+from tests.network.utils import get_vmi_ip_v4_by_name, nmcli_add_con_cmds
 from utilities import console
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
@@ -173,7 +170,12 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
-    with linux_bridge_nad(namespace=namespace, name=BR1TEST, bridge=BR1TEST) as nad:
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=BR1TEST,
+        bridge_name=BR1TEST,
+        namespace=namespace,
+    ) as nad:
         yield nad
 
 

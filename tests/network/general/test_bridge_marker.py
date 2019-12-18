@@ -2,13 +2,9 @@
 import time
 
 import pytest
-from pytest_testconfig import config as py_config
 from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
-from utilities.network import (
-    LinuxBridgeNetworkAttachmentDefinition,
-    LinuxBridgeNodeNetworkConfigurationPolicy,
-)
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -27,23 +23,28 @@ def _get_name(suffix):
 
 @pytest.fixture()
 def bridge_network(namespace):
-    cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
-    with LinuxBridgeNetworkAttachmentDefinition(
-        namespace=namespace.name,
-        name=BRIDGEMARKER1,
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=BRIDGEMARKER1,
         bridge_name=BRIDGEMARKER1,
-        cni_type=cni_type,
+        namespace=namespace,
     ) as attachdef:
         yield attachdef
 
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with network_utils.linux_bridge_nad(
-        namespace=namespace, name=BRIDGEMARKER2, bridge=BRIDGEMARKER2
+    with network_utils.bridge_nad(
+        nad_type=network_utils.LINUX_BRIDGE,
+        nad_name=BRIDGEMARKER2,
+        bridge_name=BRIDGEMARKER2,
+        namespace=namespace,
     ) as bridgemarker2_nad:
-        with network_utils.linux_bridge_nad(
-            namespace=namespace, name=BRIDGEMARKER3, bridge=BRIDGEMARKER3
+        with network_utils.bridge_nad(
+            nad_type=network_utils.LINUX_BRIDGE,
+            nad_name=BRIDGEMARKER3,
+            bridge_name=BRIDGEMARKER3,
+            namespace=namespace,
         ) as bridgemarker3_nad:
             yield (bridgemarker2_nad, bridgemarker3_nad)
 
