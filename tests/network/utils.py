@@ -12,7 +12,7 @@ from utilities.network import (
     OvsBridgeNetworkAttachmentDefinition,
     OvsBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeOverVxlan,
-    VXLANTunnel,
+    linux_bridge_over_vxlan,
 )
 
 
@@ -114,25 +114,28 @@ def bridge_device(
             yield br
 
     else:
-        with BRIDGE_DEVICE_TYPE[bridge_type](
-            name=nncp_name,
-            bridge_name=bridge_name,
-            worker_pods=network_utility_pods,
-            ports=ports,
-            mtu=mtu,
-            node_selector=node_selector,
-            ipv4_dhcp=ipv4_dhcp,
-        ) as br:
-            if not ports and vxlan:
-                with VXLANTunnel(
-                    name=f"vxlan{idx}",
-                    worker_pods=network_utility_pods,
-                    vxlan_id=idx,
-                    master_bridge=br.bridge_name,
-                    nodes_nics=nodes_active_nics,
-                ):
-                    yield br
-            else:
+        if not ports and vxlan:
+            yield from linux_bridge_over_vxlan(
+                nncp_name=nncp_name,
+                bridge_name=bridge_name,
+                idx=idx,
+                nodes_active_nics=nodes_active_nics,
+                network_utility_pods=network_utility_pods,
+                mtu=mtu,
+                node_selector=node_selector,
+                ipv4_dhcp=ipv4_dhcp,
+            )
+
+        else:
+            with BRIDGE_DEVICE_TYPE[bridge_type](
+                name=nncp_name,
+                bridge_name=bridge_name,
+                worker_pods=network_utility_pods,
+                ports=ports,
+                mtu=mtu,
+                node_selector=node_selector,
+                ipv4_dhcp=ipv4_dhcp,
+            ) as br:
                 yield br
 
 

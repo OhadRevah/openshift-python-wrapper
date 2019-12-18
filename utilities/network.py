@@ -1,94 +1,103 @@
-import contextlib
 import json
 import logging
 
+from openshift.dynamic.exceptions import ConflictError
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
 from resources.pod import ExecOnPodError
 from resources.resource import sub_resource_level
-from resources.utils import TimeoutExpiredError
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
-def _vxlan(pod, name, vxlan_id, interface_name, dst_port, master_bridge):
-    # group 226.100.100.100 is part of RESERVED (225.0.0.0-231.255.255.255) range and applications can not use it
-    # Usage of this group eliminates the risk of overlap
-    create_vxlan_cmd = [
-        "ip",
-        "link",
-        "add",
-        name,
-        "type",
-        "vxlan",
-        "id",
-        vxlan_id,
-        "group",
-        "226.100.100.100",
-        "dev",
-        interface_name,
-        "dstport",
-        dst_port,
-    ]
-    # vid(vlan id) 1-4094 allows all vlan range to forward traffic via vxlan tunnel. It makes tunnel generic
-    config_vxlan_cmd = [
-        ["ip", "link", "set", name, "master", master_bridge],
-        ["bridge", "vlan", "add", "dev", name, "vid", "1-4094"],
-        ["ip", "link", "set", "up", name],
-    ]
-
-    LOGGER.info(f"Adding vxlan {name} using {pod.name}")
-    pod.execute(command=create_vxlan_cmd)
-    try:
-        for cmd in config_vxlan_cmd:
-            pod.execute(command=cmd)
-        yield
-    finally:
-        LOGGER.info(f"Deleting vxlan {name} using {pod.name}")
-        pod.execute(command=["ip", "link", "del", name])
-
-
-class VXLANTunnel:
-    # destination port 4790 parameter can be any free port in order to avoid overlap with the existing applications
-    def __init__(
-        self, name, vxlan_id, master_bridge, worker_pods, nodes_nics, dst_port="4790"
-    ):
-        self.name = name
-        self.vxlan_id = vxlan_id
-        self.master_bridge = master_bridge
-        self.nodes_nics = nodes_nics
-        self.dst_port = dst_port
-        self._worker_pods = worker_pods
-        self._stack = None
-
-    def __enter__(self):
-        # use ExitStack to guarantee cleanup even when some nodes fail to
-        # create the vxlan
-        with contextlib.ExitStack() as stack:
-            for pod in self._worker_pods:
-                stack.enter_context(
-                    _vxlan(
-                        pod=pod,
-                        name=self.name,
-                        vxlan_id=self.vxlan_id,
-                        interface_name=self.nodes_nics[pod.node.name][0],
-                        dst_port=self.dst_port,
-                        master_bridge=self.master_bridge,
-                    )
-                )
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(self, *args):
-        if self._stack is not None:
-            self._stack.__exit__(*args)
-
-
 def _set_iface_mtu(pod, port, mtu):
     pod.execute(command=["ip", "link", "set", port, "mtu", mtu])
+
+
+class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        vxlan_name,
+        vxlan_id,
+        base_interface,
+        worker_pods,
+        dst_port=4790,
+        remote="226.100.100.100",
+    ):
+        super().__init__(name=name)
+        self.vxlan_name = vxlan_name
+        self.vxlan_id = vxlan_id
+        self.base_interface = base_interface
+        self._worker_pods = worker_pods
+        self.dst_port = dst_port
+        self.remote = remote
+
+    def __enter__(self):
+        super().__enter__()
+
+        try:
+            self.validate_create()
+            return self
+        except Exception as e:
+            LOGGER.error(e)
+            self.clean_up()
+            raise
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.clean_up()
+
+    def _to_dict(self):
+        res = super()._to_dict()
+        res["spec"]["desiredState"]["interfaces"] = [
+            {
+                "name": self.vxlan_name,
+                "type": "vxlan",
+                "state": "up",
+                "vxlan": {
+                    "id": self.vxlan_id,
+                    "base-iface": self.base_interface,
+                    "remote": self.remote,
+                    "destination-port": self.dst_port,
+                },
+            }
+        ]
+        return res
+
+    def clean_up(self):
+        try:
+            self._absent_vxlan()
+            self.wait_for_vxlan_deleted()
+        except TimeoutExpiredError as e:
+            LOGGER.error(e)
+
+        self.delete()
+
+    def validate_create(self):
+        for pod in self._worker_pods:
+            node_network_state = NodeNetworkState(name=pod.node.name)
+            node_network_state.wait_until_up(self.vxlan_name)
+
+    def _absent_vxlan(self):
+        res = self._to_dict()
+        res["spec"]["desiredState"]["interfaces"][0]["state"] = "absent"
+        samples = TimeoutSampler(
+            timeout=3,
+            sleep=1,
+            exceptions=ConflictError,
+            func=self.update,
+            resource_dict=res,
+        )
+        for _ in samples:
+            return
+
+    def wait_for_vxlan_deleted(self):
+        for pod in self._worker_pods:
+            node_network_state = NodeNetworkState(name=pod.node.name)
+            node_network_state.wait_until_deleted(self.vxlan_name)
 
 
 class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
@@ -523,3 +532,38 @@ class OvsBridgeOverVxlan(object):
         for bridge_pod in self.successfully_bridged_pods:
             bridge_pod.execute(["ovs-vsctl", "del-br", self.bridge_name])
         self.successfully_bridged_pods.clear()
+
+
+def linux_bridge_over_vxlan(
+    nncp_name,
+    bridge_name,
+    idx,
+    nodes_active_nics,
+    network_utility_pods,
+    base_interface=None,
+    mtu=None,
+    node_selector=None,
+    ipv4_dhcp=None,
+    dst_port=4790,
+    remote="226.100.100.100",
+):
+    with VXLANTunnelNNCP(
+        name="vxlan-nncp",
+        vxlan_name=f"vxlan{idx}",
+        vxlan_id=idx,
+        base_interface=base_interface
+        or nodes_active_nics[network_utility_pods[0].node.name][0],
+        worker_pods=network_utility_pods,
+        dst_port=dst_port,
+        remote=remote,
+    ) as vxlan_device:
+        with LinuxBridgeNodeNetworkConfigurationPolicy(
+            name=nncp_name,
+            bridge_name=bridge_name,
+            worker_pods=network_utility_pods,
+            ports=[vxlan_device.vxlan_name],
+            mtu=mtu,
+            node_selector=node_selector,
+            ipv4_dhcp=ipv4_dhcp,
+        ) as br:
+            yield br
