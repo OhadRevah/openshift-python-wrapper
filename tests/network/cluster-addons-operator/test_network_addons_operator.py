@@ -1,16 +1,17 @@
 import pytest
 import tests.network.utils as network_utils
 from resources.network_addons_config import NetworkAddonsConfig
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module", autouse="True")
 def bridge_device(network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="test-network-operator",
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="test-network-operator",
         bridge_name="br1test",
-        worker_pods=network_utility_pods,
+        network_utility_pods=network_utility_pods,
+        vxlan=False,
     ) as br_dev:
         yield br_dev
 

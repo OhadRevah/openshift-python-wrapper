@@ -11,7 +11,6 @@ from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import get_vmi_ip_v4_by_name, nmcli_add_con_cmds
 from utilities import console
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -149,23 +148,15 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
         else []
     )
 
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="migration",
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="migration",
         bridge_name=BR1TEST,
-        worker_pods=network_utility_pods,
+        network_utility_pods=network_utility_pods,
         ports=ports,
+        nodes_active_nics=nodes_active_nics,
     ) as br:
-        if not multi_nics_nodes:
-            with VXLANTunnel(
-                name="vxlan_mig_10",
-                worker_pods=network_utility_pods,
-                vxlan_id=10,
-                master_bridge=br.bridge_name,
-                nodes_nics=nodes_active_nics,
-            ):
-                yield br
-        else:
-            yield br
+        yield br
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -100,9 +100,11 @@ def bridge_device(
     node_selector=None,
     schedulable_node_ips=None,
     ovs_worker_pods=None,
-    idx=None,
+    idx=100,
+    vxlan=True,
+    ipv4_dhcp=None,
 ):
-    if bridge_type == OVS and not ports:
+    if bridge_type == OVS and not ports and vxlan:
         with OvsBridgeOverVxlan(
             bridge_name=bridge_name,
             vxlan_iface_name=f"vxlan-ovs{idx}",
@@ -119,8 +121,9 @@ def bridge_device(
             ports=ports,
             mtu=mtu,
             node_selector=node_selector,
+            ipv4_dhcp=ipv4_dhcp,
         ) as br:
-            if not ports:
+            if not ports and vxlan:
                 with VXLANTunnel(
                     name=f"vxlan{idx}",
                     worker_pods=network_utility_pods,

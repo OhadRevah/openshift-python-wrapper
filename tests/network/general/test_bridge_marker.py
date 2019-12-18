@@ -4,7 +4,6 @@ import time
 import pytest
 from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -82,27 +81,33 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="bridge-marker1",
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="bridge-marker1",
         bridge_name=BRIDGEMARKER1,
-        worker_pods=network_utility_pods,
+        network_utility_pods=network_utility_pods,
+        vxlan=False,
     ) as dev:
         yield dev
 
 
 @pytest.fixture()
 def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="bridge-marker2",
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="bridge-marker2",
         bridge_name=BRIDGEMARKER2,
-        worker_pods=[network_utility_pods[0]],
+        network_utility_pods=[network_utility_pods[0]],
         node_selector=network_utility_pods[0].node.name,
+        vxlan=False,
     ) as bridgemarker2_ncp:
-        with LinuxBridgeNodeNetworkConfigurationPolicy(
-            name="bridge-marker3",
+        with network_utils.bridge_device(
+            bridge_type=network_utils.LINUX_BRIDGE,
+            nncp_name="bridge-marker3",
             bridge_name=BRIDGEMARKER3,
-            worker_pods=[network_utility_pods[1]],
+            network_utility_pods=[network_utility_pods[1]],
             node_selector=network_utility_pods[1].node.name,
+            vxlan=False,
         ) as bridgemarker3_ncp:
             yield (bridgemarker2_ncp, bridgemarker3_ncp)
 

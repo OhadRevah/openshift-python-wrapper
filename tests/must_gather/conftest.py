@@ -20,7 +20,6 @@ from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns, generate_yaml_from_template
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -121,8 +120,12 @@ def network_attachment_definition():
 
 @pytest.fixture(scope="module")
 def nodenetworkstate_with_bridge(network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="must-gather-br", bridge_name="mgbr", worker_pods=network_utility_pods
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="must-gather-br",
+        bridge_name="mgbr",
+        network_utility_pods=network_utility_pods,
+        vxlan=False,
     ) as br:
         yield br
 

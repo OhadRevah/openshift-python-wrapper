@@ -3,6 +3,7 @@ VM to VM connectivity
 """
 
 import pytest
+import tests.network.utils as network_utils
 from pytest_testconfig import config as py_config
 from tests.network.connectivity.utils import (
     BondNodeNetworkConfigurationPolicy,
@@ -16,7 +17,6 @@ from tests.network.utils import (
     nmcli_add_con_cmds,
 )
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -106,10 +106,11 @@ def bridge_on_bond(bond1, network_utility_pods):
     Create bridge and attach the BOND to it
     """
     if bond1:
-        with LinuxBridgeNodeNetworkConfigurationPolicy(
-            name="bridge-no-bond",
+        with network_utils.bridge_device(
+            bridge_type=network_utils.LINUX_BRIDGE,
+            nncp_name="bridge-no-bond",
             bridge_name="br1bond",
-            worker_pods=network_utility_pods,
+            network_utility_pods=network_utility_pods,
             ports=[bond1],
         ) as br:
             yield br

@@ -9,7 +9,6 @@ import logging
 import pytest
 import tests.network.utils as network_utils
 from resources.utils import TimeoutSampler
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -58,8 +57,12 @@ def br1vlan100_nad(namespace):
 
 @pytest.fixture()
 def bridge_device(network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="veth-removed", bridge_name=BR1TEST, worker_pods=network_utility_pods
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="veth-removed",
+        bridge_name=BR1TEST,
+        network_utility_pods=network_utility_pods,
+        vxlan=False,
     ) as dev:
         yield dev
 

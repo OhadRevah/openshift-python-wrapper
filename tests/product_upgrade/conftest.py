@@ -10,7 +10,6 @@ from resources.template import Template
 from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
 from tests.network.utils import nmcli_add_con_cmds
 from utilities.infra import create_ns, get_images_external_http_server
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -33,33 +32,27 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
         if multi_nics_nodes
         else []
     )
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="upgrade-bridge",
-        worker_pods=network_utility_pods,
-        ports=ports,
+
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="upgrade-bridge",
         bridge_name="br1upgrade",
+        network_utility_pods=network_utility_pods,
+        ports=ports,
+        nodes_active_nics=nodes_active_nics,
     ) as br:
-        if not multi_nics_nodes:
-            with VXLANTunnel(
-                name="vxlan_upg_9",
-                worker_pods=network_utility_pods,
-                vxlan_id=9,
-                master_bridge=br.bridge_name,
-                nodes_nics=nodes_active_nics,
-            ):
-                yield br
-        else:
-            yield br
+        yield br
 
 
 @pytest.fixture(scope="module")
 def bridge_on_one_node(network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="upgrade-br-marker",
-        worker_pods=[network_utility_pods[0]],
-        ports=[],
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="upgrade-br-marker",
         bridge_name="upg-br-mark",
+        network_utility_pods=[network_utility_pods[0]],
         node_selector=network_utility_pods[0].node.name,
+        vxlan=False,
     ) as br:
         yield br
 

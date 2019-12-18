@@ -13,7 +13,6 @@ from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.pod import Pod
 from tests.network.utils import nmcli_add_con_cmds, running_vmi
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, VXLANTunnel
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -233,9 +232,19 @@ def automatic_mac_tuning_net_nad(namespace):
 
 
 @pytest.fixture(scope="module")
-def bridge_device(network_utility_pods):
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="kubemacpool", bridge_name=BRIDGE_BR1, worker_pods=network_utility_pods
+def bridge_device(multi_nics_nodes, nodes_active_nics, network_utility_pods):
+    ports = (
+        [nodes_active_nics[network_utility_pods[0].node.name][1]]
+        if multi_nics_nodes
+        else []
+    )
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="kubemacpool",
+        bridge_name=BRIDGE_BR1,
+        network_utility_pods=network_utility_pods,
+        ports=ports,
+        nodes_active_nics=nodes_active_nics,
     ) as dev:
         yield dev
 
@@ -256,31 +265,8 @@ def all_nads(
 
 
 @pytest.fixture(scope="module")
-def vxlan(network_utility_pods, bridge_device, multi_nics_nodes, nodes_active_nics):
-
-    # There is no need to build vxlan tunnel on bare metal because
-    # it has enough physical interfaces for direct connection
-    if multi_nics_nodes:
-        yield
-    else:
-        with VXLANTunnel(
-            name="kubemactest",
-            worker_pods=network_utility_pods,
-            vxlan_id=100,
-            master_bridge=bridge_device.bridge_name,
-            nodes_nics=nodes_active_nics,
-        ) as vxlan:
-            yield vxlan
-
-
-@pytest.fixture(scope="module")
 def vm_a(
-    namespace,
-    all_nads,
-    bridge_device,
-    vxlan,
-    kubemacpool_first_scope,
-    unprivileged_client,
+    namespace, all_nads, bridge_device, kubemacpool_first_scope, unprivileged_client,
 ):
     requested_network_config = {
         "eth1": IfaceTuple(
@@ -306,12 +292,7 @@ def vm_a(
 
 @pytest.fixture(scope="module")
 def vm_b(
-    namespace,
-    all_nads,
-    bridge_device,
-    vxlan,
-    kubemacpool_first_scope,
-    unprivileged_client,
+    namespace, all_nads, bridge_device, kubemacpool_first_scope, unprivileged_client,
 ):
     requested_network_config = {
         "eth1": IfaceTuple(

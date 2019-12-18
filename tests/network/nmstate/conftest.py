@@ -3,9 +3,9 @@
 import logging
 
 import pytest
+import tests.network.utils as network_utils
 from resources.node_network_state import NodeNetworkState
 from resources.utils import TimeoutSampler
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -130,10 +130,12 @@ def bridges_on_management_ifaces(
     management_iface = node_management_iface_stats[network_utility_pods[0].node.name][
         "iface_name"
     ]
-    with LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="brext-default-net",
+
+    with network_utils.bridge_device(
+        bridge_type=network_utils.LINUX_BRIDGE,
+        nncp_name="brext-default-net",
         bridge_name="brext",
-        worker_pods=network_utility_pods,
+        network_utility_pods=network_utility_pods,
         ports=[management_iface],
         ipv4_dhcp=True,
     ) as br_dev:
