@@ -81,6 +81,18 @@ def vm_with_cpu_support(request, namespace, unprivileged_client):
         yield vm
 
 
+def test_vm_with_cpu_support(vm_with_cpu_support):
+    """
+    Test VM with cpu support
+    """
+    check_vm_dumpxml(
+        vm=vm_with_cpu_support,
+        sockets=vm_with_cpu_support.cpu_sockets,
+        cores=vm_with_cpu_support.cpu_cores,
+        threads=vm_with_cpu_support.cpu_threads,
+    )
+
+
 @pytest.fixture()
 def no_cpu_settings_vm(namespace, unprivileged_client):
     """
@@ -147,15 +159,3 @@ def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
             client=unprivileged_client,
         ):
             pass
-
-
-def test_vm_with_cpu_support(vm_with_cpu_support):
-    """
-    Test VM with cpu support
-    """
-    check_vm_dumpxml(
-        vm=vm_with_cpu_support,
-        sockets=vm_with_cpu_support.cpu_sockets,
-        cores=vm_with_cpu_support.cpu_cores,
-        threads=vm_with_cpu_support.cpu_threads,
-    )

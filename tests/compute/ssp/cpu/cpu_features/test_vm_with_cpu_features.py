@@ -45,6 +45,21 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
         yield vm
 
 
+@pytest.mark.polarion("CNV-3473")
+def test_vm_with_cpu_feature_required_not_schedulable(
+    nodes_with_no_pciid_label,
+    config_map_with_cpu_discovery,
+    cpu_features_vm_require_pcid,
+):
+    """
+    Negative test:
+    Test VM with required cpu type, no node available.
+    VM should not be able to get scheduled in this case.
+    """
+    with pytest.raises(TimeoutExpiredError):
+        cpu_features_vm_require_pcid.vmi.wait_until_running(timeout=120)
+
+
 @pytest.fixture(
     params=[
         pytest.param(
@@ -70,6 +85,20 @@ def cpu_features_vm_negative(request, unprivileged_client, namespace):
     ) as vm:
         vm.start()
         yield vm
+
+
+def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
+    """
+    Test VM with cpu flag, test the VM started and enter the console
+    """
+    assert cpu_features_vm_positive.cpu_flags["features"][0]["name"] == (
+        cpu_features_vm_positive.instance["spec"]["template"]["spec"]["domain"]["cpu"][
+            "features"
+        ][0]["name"]
+    )
+    with console.Fedora(vm=cpu_features_vm_positive) as vm_console:
+        vm_console.sendline("cat /etc/redhat-release | wc -l\n")
+        vm_console.expect("1", timeout=20)
 
 
 @pytest.mark.polarion("CNV-1832")
@@ -155,42 +184,3 @@ def nodes_with_no_pciid_label(default_client):
                 "feature.node.kubernetes.io/cpu-feature-pcid"
             ] = "true"
             node.update(to_restore)
-
-
-def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
-    """
-    Test VM with cpu flag, test the VM started and enter the console
-    """
-    assert cpu_features_vm_positive.cpu_flags["features"][0]["name"] == (
-        cpu_features_vm_positive.instance["spec"]["template"]["spec"]["domain"]["cpu"][
-            "features"
-        ][0]["name"]
-    )
-    with console.Fedora(vm=cpu_features_vm_positive) as vm_console:
-        vm_console.sendline("cat /etc/redhat-release | wc -l\n")
-        vm_console.expect("1", timeout=20)
-
-
-def test_vm_with_cpu_feature_negative(cpu_features_vm_negative):
-    """
-    Negative test:
-    Test VM with wrong/unsupported cpu feature policy,
-    VM should not run in this case.
-    """
-    with pytest.raises(TimeoutExpiredError):
-        cpu_features_vm_negative.vmi.wait_until_running(timeout=60)
-
-
-@pytest.mark.polarion("CNV-1834")
-def test_vm_with_cpu_feature_required_not_schedulable(
-    nodes_with_no_pciid_label,
-    config_map_with_cpu_discovery,
-    cpu_features_vm_require_pcid,
-):
-    """
-    Negative test:
-    Test VM with required cpu type, no node available.
-    VM should not be able to get scheduled in this case.
-    """
-    with pytest.raises(TimeoutExpiredError):
-        cpu_features_vm_require_pcid.vmi.wait_until_running(timeout=120)

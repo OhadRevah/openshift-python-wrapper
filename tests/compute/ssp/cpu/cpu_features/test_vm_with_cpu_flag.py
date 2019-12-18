@@ -75,6 +75,16 @@ def cpu_flag_vm_negative(request, unprivileged_client, namespace):
         yield vm
 
 
+def test_vm_with_cpu_flag_negative(cpu_flag_vm_negative):
+    """
+    Negative test:
+    Test VM with wrong cpu model,
+    VM should not run in this case since cpu model not exists on host
+    """
+    with pytest.raises(TimeoutExpiredError):
+        cpu_flag_vm_negative.vmi.wait_until_running(timeout=60)
+
+
 @pytest.mark.polarion("CNV-1269")
 def test_vm_with_cpu_flag_positive_case(cpu_flag_vm_positive):
     """
@@ -88,13 +98,3 @@ def test_vm_with_cpu_flag_positive_case(cpu_flag_vm_positive):
     with console.Fedora(vm=cpu_flag_vm_positive) as vm_console:
         vm_console.sendline("cat /etc/redhat-release | wc -l\n")
         vm_console.expect("1", timeout=20)
-
-
-def test_vm_with_cpu_flag_negative(cpu_flag_vm_negative):
-    """
-    Negative test:
-    Test VM with wrong cpu model,
-    VM should not run in this case since cpu model not exists on host
-    """
-    with pytest.raises(TimeoutExpiredError):
-        cpu_flag_vm_negative.vmi.wait_until_running(timeout=60)
