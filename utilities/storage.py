@@ -33,7 +33,7 @@ def create_dv(
         volume_mode=volume_mode,
         hostpath_node=hostpath_node,
         access_modes=access_modes,
-        secret={"secret": secret} if secret else {},
+        secret=secret,
         client=client,
         source_pvc=source_pvc,
         source_namespace=source_namespace,

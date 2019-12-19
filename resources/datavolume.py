@@ -127,7 +127,7 @@ class DataVolume(NamespacedResource):
         if self.storage_class:
             res["spec"]["pvc"]["storageClassName"] = self.storage_class
         if self.secret:
-            res["spec"]["source"][self.source]["secretRef"] = self.secret
+            res["spec"]["source"][self.source]["secretRef"] = self.secret.name
         if self.volume_mode:
             res["spec"]["pvc"]["volumeMode"] = self.volume_mode
         if self.source == "http" or "registry":

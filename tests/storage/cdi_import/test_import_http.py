@@ -235,7 +235,7 @@ def test_successful_import_basic_auth(
         url=get_file_url(images_internal_http_server["http_auth"], file_name),
         content_type=content_type,
         size="500Mi",
-        secret=internal_http_secret.name,
+        secret=internal_http_secret,
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
     ) as dv:

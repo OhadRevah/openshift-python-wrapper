@@ -244,7 +244,7 @@ def test_no_scratch_space_import_http_basic_auth(
         secretkey="MTIz",
     ) as secret:
         create_dv_and_vm_no_scratch_space(
-            dv_name, storage_ns.name, url, None, secret.name, content_type, size
+            dv_name, storage_ns.name, url, None, secret, content_type, size
         )
 
 
