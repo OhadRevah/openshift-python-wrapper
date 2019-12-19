@@ -192,7 +192,9 @@ def test_hostpath_http_import_dv(
         volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=schedulable_nodes[0].name,
     ) as dv:
-        verify_image_location_via_dv_virt_launcher_pod(dv, schedulable_nodes)
+        verify_image_location_via_dv_virt_launcher_pod(
+            dv=dv, schedulable_nodes=schedulable_nodes
+        )
 
 
 @pytest.mark.polarion("CNV-3227")
@@ -289,5 +291,59 @@ def test_hostpath_upload_dv_with_token(
         )
         dv.wait()
         verify_image_location_via_dv_pod_with_pvc(
+            dv=dv, schedulable_nodes=schedulable_nodes
+        )
+
+
+@pytest.mark.parametrize(
+    ("dv_name", "url"),
+    [
+        pytest.param(
+            "cnv-3326-docker",
+            f"docker://docker.io/kubevirt/{Images.Cirros.DISK_DEMO}",
+            marks=(pytest.mark.polarion("CNV-3326")),
+        ),
+        pytest.param(
+            "cnv-3326-quay",
+            f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
+            marks=(pytest.mark.polarion("CNV-3326")),
+        ),
+    ],
+)
+def test_hostpath_registry_import_dv(
+    skip_when_hpp_no_waitforfirstconsumer,
+    hpp_storage_class,
+    storage_ns,
+    dv_name,
+    url,
+    schedulable_nodes,
+):
+    """
+    Check that when importing image from public registry with kubevirt.io/provisionOnNode annotation works well.
+    On WaitForFirstConsumer Mode, the 'volume.kubernetes.io/selected-node' annotation will be added to scratch PVC.
+    """
+    with create_dv(
+        source="registry",
+        dv_name=dv_name,
+        namespace=storage_ns.name,
+        url=url,
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        size="1Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+        hostpath_node=schedulable_nodes[0].name,
+        volume_mode=DataVolume.VolumeMode.FILE,
+    ) as dv:
+        dv.scratch_pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+        )
+        dv.importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
+        assert_selected_node_annotation(
+            pvc=dv.scratch_pvc, pod=dv.importer_pod, type_="scratch"
+        )
+        assert_provision_on_node_annotation(
+            pvc=dv.pvc, node_name=schedulable_nodes[0].name, type_="import"
+        )
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+        verify_image_location_via_dv_virt_launcher_pod(
             dv=dv, schedulable_nodes=schedulable_nodes
         )
