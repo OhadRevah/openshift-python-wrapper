@@ -38,7 +38,7 @@ def _masquerade_vmib_ip(vmib, bridge):
     return get_vmi_ip_v4_by_name(vmi=vmib, name=bridge)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
@@ -49,7 +49,7 @@ def nad(bridge_device_matrix, namespace, ovs_lb_bridge):
         yield nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def br1vlan100_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
@@ -60,7 +60,7 @@ def br1vlan100_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
         yield nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def br1vlan200_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
@@ -71,7 +71,7 @@ def br1vlan200_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
         yield nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
@@ -82,7 +82,7 @@ def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
         yield nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def bond1(network_utility_pods, bond_supported, nodes_active_nics):
     """
     Create BOND if setup support BOND
@@ -100,7 +100,7 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
         yield None
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def bridge_on_bond(bond1, network_utility_pods):
     """
     Create bridge and attach the BOND to it
@@ -118,7 +118,7 @@ def bridge_on_bond(bond1, network_utility_pods):
         yield
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def bridge_attached_vma(
     nodes,
     bridge_on_bond,
@@ -159,7 +159,7 @@ def bridge_attached_vma(
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def bridge_attached_vmb(
     nodes,
     bridge_on_bond,
@@ -200,7 +200,7 @@ def bridge_attached_vmb(
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
     vmi.wait_until_running()
@@ -208,7 +208,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
     return vmi
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
     vmi.wait_until_running()
@@ -216,124 +216,126 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     return vmi
 
 
-@pytest.mark.parametrize(
-    "bridge",
-    [
-        pytest.param(
-            "default",
-            marks=(pytest.mark.polarion("CNV-2350")),
-            id="Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists",
-        ),
-        pytest.param(
-            "br1test-nad",
-            marks=(pytest.mark.polarion("CNV-2080")),
-            id="Connectivity_between_VM_to_VM_over_L2_bridge_network",
-        ),
-    ],
-)
-def test_connectivity(
-    bridge,
-    skip_when_one_node,
-    namespace,
-    ovs_lb_bridge,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
-):
-    assert_ping_successful(
-        src_vm=running_bridge_attached_vmia,
-        dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
+class TestConnectivity:
+    @pytest.mark.parametrize(
+        "bridge",
+        [
+            pytest.param(
+                "default",
+                marks=(pytest.mark.polarion("CNV-2350")),
+                id="Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists",
+            ),
+            pytest.param(
+                "br1test-nad",
+                marks=(pytest.mark.polarion("CNV-2080")),
+                id="Connectivity_between_VM_to_VM_over_L2_bridge_network",
+            ),
+        ],
     )
+    def test_connectivity(
+        self,
+        bridge,
+        skip_when_one_node,
+        namespace,
+        ovs_lb_bridge,
+        bridge_attached_vma,
+        bridge_attached_vmb,
+        running_bridge_attached_vmia,
+        running_bridge_attached_vmib,
+    ):
+        assert_ping_successful(
+            src_vm=running_bridge_attached_vmia,
+            dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
+        )
 
+    @pytest.mark.polarion("CNV-2141")
+    def test_connectivity_bond(
+        self,
+        skip_when_one_node,
+        namespace,
+        ovs_lb_bridge,
+        bridge_on_bond,
+        bridge_attached_vma,
+        bridge_attached_vmb,
+        running_bridge_attached_vmia,
+        running_bridge_attached_vmib,
+    ):
+        if not bridge_on_bond:
+            pytest.skip(msg="No BOND support")
 
-@pytest.mark.polarion("CNV-2141")
-def test_connectivity_bond(
-    skip_when_one_node,
-    namespace,
-    ovs_lb_bridge,
-    bridge_on_bond,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
-):
-    if not bridge_on_bond:
-        pytest.skip(msg="No BOND support")
+        assert_ping_successful(
+            src_vm=running_bridge_attached_vmia,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vmi=running_bridge_attached_vmib, name=bridge_on_bond.bridge_name
+            ),
+        )
 
-    assert_ping_successful(
-        src_vm=running_bridge_attached_vmia,
-        dst_ip=get_vmi_ip_v4_by_name(
-            vmi=running_bridge_attached_vmib, name=bridge_on_bond.bridge_name
-        ),
+    @pytest.mark.polarion("CNV-2072")
+    def test_connectivity_positive_vlan(
+        self,
+        skip_not_bare_metal,
+        skip_when_one_node,
+        namespace,
+        ovs_lb_bridge,
+        br1vlan100_nad,
+        bridge_attached_vma,
+        bridge_attached_vmb,
+        running_bridge_attached_vmia,
+        running_bridge_attached_vmib,
+    ):
+        assert_ping_successful(
+            src_vm=running_bridge_attached_vmia,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vmi=running_bridge_attached_vmib, name=br1vlan100_nad.name
+            ),
+        )
+
+    @pytest.mark.bugzilla(
+        1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
+    @pytest.mark.polarion("CNV-2075")
+    def test_connectivity_negative_vlan(
+        self,
+        skip_not_bare_metal,
+        skip_when_one_node,
+        namespace,
+        ovs_lb_bridge,
+        br1vlan300_nad,
+        bridge_attached_vma,
+        bridge_attached_vmb,
+        running_bridge_attached_vmia,
+        running_bridge_attached_vmib,
+    ):
+        assert_no_ping(
+            src_vm=running_bridge_attached_vmia,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vmi=running_bridge_attached_vmib, name=br1vlan300_nad.name
+            ),
+        )
 
-
-@pytest.mark.polarion("CNV-2072")
-def test_connectivity_positive_vlan(
-    skip_not_bare_metal,
-    skip_when_one_node,
-    namespace,
-    ovs_lb_bridge,
-    br1vlan100_nad,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
-):
-    assert_ping_successful(
-        src_vm=running_bridge_attached_vmia,
-        dst_ip=get_vmi_ip_v4_by_name(
-            vmi=running_bridge_attached_vmib, name=br1vlan100_nad.name
-        ),
-    )
-
-
-@pytest.mark.bugzilla(
-    1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-@pytest.mark.polarion("CNV-2075")
-def test_connectivity_negative_vlan(
-    skip_not_bare_metal,
-    skip_when_one_node,
-    namespace,
-    ovs_lb_bridge,
-    br1vlan300_nad,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
-):
-    assert_no_ping(
-        src_vm=running_bridge_attached_vmia,
-        dst_ip=get_vmi_ip_v4_by_name(
-            vmi=running_bridge_attached_vmib, name=br1vlan300_nad.name
-        ),
-    )
-
-
-@pytest.mark.xfail(reason="Slow performance on BM, need investigation")
-@pytest.mark.polarion("CNV-2335")
-def test_guest_performance(
-    skip_not_bare_metal,
-    skip_when_one_node,
-    namespace,
-    ovs_lb_bridge,
-    nad,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
-):
-    """
-    In-guest performance bandwidth passthrough.
-    """
-    expected_res = py_config["test_guest_performance"]["bandwidth"]
-    bits_per_second = run_test_guest_performance(
-        server_vm=bridge_attached_vma,
-        client_vm=bridge_attached_vmb,
-        listen_ip=get_vmi_ip_v4_by_name(
-            vmi=running_bridge_attached_vmia, name=nad.name
-        ),
-    )
-    assert bits_per_second >= expected_res
+    @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
+    @pytest.mark.polarion("CNV-2335")
+    def test_guest_performance(
+        self,
+        skip_not_bare_metal,
+        skip_when_one_node,
+        namespace,
+        ovs_lb_bridge,
+        nad,
+        bridge_attached_vma,
+        bridge_attached_vmb,
+        running_bridge_attached_vmia,
+        running_bridge_attached_vmib,
+    ):
+        """
+        In-guest performance bandwidth passthrough.
+        """
+        expected_res = py_config["test_guest_performance"]["bandwidth"]
+        bits_per_second = run_test_guest_performance(
+            server_vm=bridge_attached_vma,
+            client_vm=bridge_attached_vmb,
+            listen_ip=get_vmi_ip_v4_by_name(
+                vmi=running_bridge_attached_vmia, name=nad.name
+            ),
+        )
+        assert bits_per_second >= expected_res

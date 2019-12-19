@@ -125,7 +125,7 @@ def pytest_generate_tests(metafunc):
             matrix,
             matrix_params,
             ids=[f"<{matrix_param}>" for matrix_param in matrix_params],
-            scope="module",
+            scope="class",
         )
 
 

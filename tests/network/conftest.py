@@ -73,7 +73,7 @@ def ovs_worker_pods(nodes, default_client):
     return worker_pods
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def ovs_lb_bridge(
     bridge_device_matrix,
     index_number,

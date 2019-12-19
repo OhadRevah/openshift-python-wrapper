@@ -17,7 +17,7 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def nad(
     bridge_device_matrix,
     namespace,
@@ -36,7 +36,7 @@ def nad(
         yield nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def bridge_attached_vma(nodes, namespace, unprivileged_client, nad):
     name = "vma"
     networks = {nad.name: nad.name}
@@ -57,7 +57,7 @@ def bridge_attached_vma(nodes, namespace, unprivileged_client, nad):
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def bridge_attached_vmb(nodes, namespace, unprivileged_client, nad):
     name = "vmb"
     networks = {nad.name: nad.name}
@@ -78,7 +78,7 @@ def bridge_attached_vmb(nodes, namespace, unprivileged_client, nad):
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def running_bridge_attached_vmia(bridge_attached_vma):
     vmi = bridge_attached_vma.vmi
     vmi.wait_until_running()
@@ -86,7 +86,7 @@ def running_bridge_attached_vmia(bridge_attached_vma):
     return vmi
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def running_bridge_attached_vmib(bridge_attached_vmb):
     vmi = bridge_attached_vmb.vmi
     vmi.wait_until_running()
@@ -95,24 +95,28 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
 
 
 @pytest.mark.polarion("CNV-2685")
-def test_connectivity_over_linux_bridge_large_mtu(
-    skip_if_no_multinic_nodes,
-    skip_when_one_node,
-    namespace,
-    ovs_lb_bridge,
-    nad,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
-):
-    """
-    Check connectivity over linux bridge with custom MTU
-    """
-    icmp_header = 8
-    ip_header = 20
-    assert_ping_successful(
-        src_vm=bridge_attached_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_bridge_attached_vmib, name=nad.name),
-        packetsize=nad.mtu - ip_header - icmp_header,
-    )
+class TestJumboFrame:
+    def test_connectivity_over_linux_bridge_large_mtu(
+        self,
+        skip_if_no_multinic_nodes,
+        skip_when_one_node,
+        namespace,
+        ovs_lb_bridge,
+        nad,
+        bridge_attached_vma,
+        bridge_attached_vmb,
+        running_bridge_attached_vmia,
+        running_bridge_attached_vmib,
+    ):
+        """
+        Check connectivity over linux bridge with custom MTU
+        """
+        icmp_header = 8
+        ip_header = 20
+        assert_ping_successful(
+            src_vm=bridge_attached_vma,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vmi=running_bridge_attached_vmib, name=nad.name
+            ),
+            packetsize=nad.mtu - ip_header - icmp_header,
+        )
