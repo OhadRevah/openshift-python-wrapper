@@ -24,7 +24,7 @@ def cdiconfig_update(
     cdiconfig,
     storage_class_type,
     storage_ns_name,
-    volume_mode=DataVolume.VolumeMode.FILE,
+    volume_mode=py_config["default_volume_mode"],
     images_https_server_name="",
     run_vm=False,
     tmpdir=None,
@@ -50,9 +50,15 @@ def cdiconfig_update(
                                 utils.check_disk_count_in_vm(vm_dv)
                                 break
                     elif source == "upload":
+                        local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
+                        remote_name = f"{utils.CDI_IMAGES_DIR}/{utils.CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
+                        utils.downloaded_image(
+                            remote_name=remote_name, local_name=local_name
+                        )
                         with utils.upload_image_to_dv(
-                            tmpdir, volume_mode, storage_ns_name,
+                            volume_mode, storage_ns_name
                         ) as dv:
+                            utils.upload_token_request(storage_ns_name, local_name)
                             dv.wait()
                             with utils.create_vm_from_dv(dv=dv) as vm_dv:
                                 utils.check_disk_count_in_vm(vm_dv)

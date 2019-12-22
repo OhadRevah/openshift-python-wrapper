@@ -47,29 +47,30 @@ def import_image_to_dv(images_https_server_name, volume_mode, storage_ns_name):
 
 
 @contextmanager
-def upload_image_to_dv(tmpdir, volume_mode, storage_ns_name):
-    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-    remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
-    downloaded_image(remote_name=remote_name, local_name=local_name)
+def upload_image_to_dv(volume_mode, storage_ns_name):
     with create_dv(
         source="upload",
         dv_name="upload-image",
         namespace=storage_ns_name,
         size="3Gi",
-        volume_mode=volume_mode,
         storage_class=py_config["default_storage_class"],
+        volume_mode=volume_mode,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
-        with UploadTokenRequest(name="upload-image", namespace=storage_ns_name) as utr:
-            token = utr.create().status.token
-            LOGGER.info("Ensure upload was successful")
-            sampler = TimeoutSampler(
-                timeout=120, sleep=5, func=upload_image, token=token, data=local_name,
-            )
-            for sample in sampler:
-                if sample == 200:
-                    break
-            yield dv
+        yield dv
+
+
+@contextmanager
+def upload_token_request(storage_ns_name, data):
+    with UploadTokenRequest(name="upload-image", namespace=storage_ns_name) as utr:
+        token = utr.create().status.token
+        LOGGER.info("Ensure upload was successful")
+        sampler = TimeoutSampler(
+            timeout=120, sleep=5, func=upload_image, token=token, data=data,
+        )
+        for sample in sampler:
+            if sample == 200:
+                break
 
 
 class PodWithPVC(Pod):

@@ -24,11 +24,10 @@ from tests.storage.utils import CDI_IMAGES_DIR, CIRROS_IMAGES_DIR
 from utilities.infra import Images
 
 
-LOGGER = logging.getLogger(__name__)
 RHEL8_IMAGES = "rhel-images/rhel-8"
-QCOW2_IMG = "cirros-qcow2.img"
-RAW_IMG = "cirros.raw"
 RHEL8_QCOW2 = "rhel-8.qcow2"
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.polarion("CNV-2318")
@@ -44,8 +43,8 @@ def test_cdi_uploadproxy_route_owner_references():
     [
         pytest.param(
             "cnv-875",
-            f"{CDI_IMAGES_DIR}/{QCOW2_IMG}",
-            QCOW2_IMG,
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+            Images.Cirros.QCOW2_IMG,
             marks=(pytest.mark.polarion("CNV-875")),
         ),
         pytest.param(
@@ -62,8 +61,8 @@ def test_cdi_uploadproxy_route_owner_references():
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/{RAW_IMG}",
-            RAW_IMG,
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
+            Images.Cirros.RAW_IMG,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
@@ -80,31 +79,31 @@ def test_cdi_uploadproxy_route_owner_references():
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{RAW_IMG}",
-            QCOW2_IMG,
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
+            Images.Cirros.QCOW2_IMG,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{QCOW2_IMG}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
             Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{QCOW2_IMG}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
             Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{RAW_IMG}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
             Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{RAW_IMG}",
+            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
@@ -123,45 +122,26 @@ def test_cdi_uploadproxy_route_owner_references():
     ],
 )
 def test_successful_upload_with_supported_formats(
-    storage_ns, tmpdir, dv_name, remote_name, local_name, default_client
+    storage_ns, tmpdir, dv_name, remote_name, local_name
 ):
     local_name = f"{tmpdir}/{local_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
-    with utilities.storage.create_dv(
-        source="upload",
-        dv_name=dv_name,
-        namespace=storage_ns.name,
-        size="3Gi",
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+    with storage_utils.upload_image_to_dv(
+        volume_mode=py_config["default_volume_mode"], storage_ns_name=storage_ns.name
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
-        with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, client=default_client
-        ) as utr:
-            token = utr.create().status.token
-            LOGGER.info("Ensure upload was successful")
-            sampler = TimeoutSampler(
-                timeout=60,
-                sleep=5,
-                func=storage_utils.upload_image,
-                token=token,
-                data=local_name,
-            )
-            for sample in sampler:
-                if sample == 200:
-                    return True
-            dv.wait()
-            with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-                storage_utils.check_disk_count_in_vm(vm_dv)
+        storage_utils.upload_token_request(storage_ns.name, local_name)
+        dv.wait()
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm_dv)
 
 
 @pytest.mark.polarion("CNV-2018")
 def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
     dv_name = "cnv-2018"
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
+    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
+        remote_name=f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        local_name=local_name,
     )
     with utilities.storage.create_dv(
         source="upload",
@@ -205,9 +185,10 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
 @pytest.mark.polarion("CNV-2011")
 def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
     dv_name = "cnv-2011"
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
+    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
+        remote_name=f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        local_name=local_name,
     )
     with utilities.storage.create_dv(
         source="upload",
@@ -273,9 +254,10 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
 @pytest.mark.polarion("CNV-2015")
 def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
     dvs_processes = []
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
+    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
+        remote_name=f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        local_name=local_name,
     )
     available_pv = PersistentVolume(storage_ns).max_available_pvs
     for dv in range(available_pv):
@@ -293,7 +275,7 @@ def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
 
 
 @pytest.mark.polarion("CNV-2017")
-def test_successful_upload_missing_file_in_transit(storage_ns, tmpdir, default_client):
+def test_successful_upload_missing_file_in_transit(tmpdir, storage_ns, default_client):
     dv_name = "cnv-2017"
     local_name = f"{tmpdir}/{RHEL8_QCOW2}"
     storage_utils.downloaded_image(
