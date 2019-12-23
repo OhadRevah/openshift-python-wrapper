@@ -79,6 +79,8 @@ def vm_instance_from_template(request, unprivileged_client, namespace, data_volu
         client=unprivileged_client,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         template_dv=data_volume.name,
+        vm_dict=request.param.get("vm_dict"),
+        cpu_threads=request.param.get("cpu_threads"),
     ) as vm:
         if request.param.get("start_vm", True):
             vm.start(wait=True)
@@ -131,8 +133,8 @@ def vm_object_from_template(
         client=unprivileged_client,
         template_dv=data_volume_scope_class.name,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
-        vm_dict=request.param.get("vm_dict", None),
-        cpu_threads=request.param.get("cpu_threads", None),
+        vm_dict=request.param.get("vm_dict"),
+        cpu_threads=request.param.get("cpu_threads"),
     )
 
 

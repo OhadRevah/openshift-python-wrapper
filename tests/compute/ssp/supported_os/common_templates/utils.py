@@ -190,6 +190,58 @@ def check_windows_vm_hvinfo(vm, winrmcli_pod):
     assert int(recommendations["SpinlockRetries"]) == 8191
 
 
+def set_vm_tablet_device_dict(tablet_params):
+    """  Generates VM tablet device dict """
+
+    return {
+        "spec": {
+            "template": {"spec": {"domain": {"devices": {"inputs": [tablet_params]}}}}
+        }
+    }
+
+
+def check_vm_system_tablet_device(vm, console_impl, expected_device):
+    """ Verify tablet device parameters in VMI /sys/devices file """
+
+    with console_impl(vm=vm, timeout=1500) as vm_console:
+        vm_console.sendline(r"grep -rs '^QEMU *.* Tablet' /sys/devices ")
+        vm_console.expect(
+            f"/sys/devices/pci(.*)QEMU {expected_device} Tablet", timeout=240
+        )
+
+
+def check_vm_xml_tablet_device(vm):
+    """ Verifies vm tablet device info in VM XML vs VM instance attributes
+    values.
+    """
+
+    LOGGER.info("Verify VM XML - tablet device values.")
+
+    vm_instance_tablet_device_dict = vm.instance["spec"]["template"]["spec"]["domain"][
+        "devices"
+    ]["inputs"][0]
+
+    tablet_dict_from_xml = [
+        i
+        for i in vm.vmi.xml_dict["domain"]["devices"]["input"]
+        if i["@type"] == "tablet"
+    ][0]
+
+    assert (
+        tablet_dict_from_xml["@type"] == vm_instance_tablet_device_dict["type"]
+    ), "Wrong device type"
+
+    # Default bus type is usb; not added to the VM instance if it was not
+    # specified during VM creation.
+    assert tablet_dict_from_xml["@bus"] == vm_instance_tablet_device_dict.get(
+        "bus", "usb"
+    ), "Wrong bus type"
+    assert (
+        tablet_dict_from_xml["alias"]["@name"]
+        == f"ua-{vm_instance_tablet_device_dict['name']}"
+    ), "Wrong device name"
+
+
 def add_windows_license(vm, winrmcli_pod, windows_license):
 
     LOGGER.info("Add Windows license.")

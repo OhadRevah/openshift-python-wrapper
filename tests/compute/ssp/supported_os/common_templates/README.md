@@ -2,7 +2,7 @@
 This repository contains CNV VM tests.
 VM creation is done using CNV common templates.
 
-- Current tests cover RHEL and Windows.
+- Current tests cover RHEL, Fedora and Windows.
 - The tests can only be executed on downstream as http_server is not available for upstream.
 - Windows tests can be executed on bare metal only, as Windows VMs
 run slow on nested visualization.
@@ -14,8 +14,9 @@ run slow on nested visualization.
 * VM OS validation
 * Domain label validation
 * SSH connection to VM (including service creation)
-* VM migration
 * VM deletion
+* VM migration
+* VM tablet input device
 
 ## Windows Tests
 * Create VM
@@ -24,6 +25,7 @@ run slow on nested visualization.
 * Domain label validation
 * VM migration
 * VM deletion
+* VM tablet input device
 
 ## Fedora Tests (on latest OS supported by common templates)
 * Create VM
