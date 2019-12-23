@@ -49,7 +49,7 @@ HYPERV_DICT = {
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_object_from_template",
+    "data_volume_scope_class, vm_object_from_template_scope_class",
     [
         (
             {
@@ -85,63 +85,69 @@ class TestCommonTemplatesFedora:
         unprivileged_client,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV VM creation from template """
 
         LOGGER.info(
             f'Create VM from template - {py_config["common_templates_latest_fedora_version"]["os_label"]}'
         )
-        vm_object_from_template.create(wait=True)
+        vm_object_from_template_scope_class.create(wait=True)
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3345")
     def test_start_vm(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ Test CNV common templates VM initiation """
 
-        utils.vm_started(vm=vm_object_from_template, wait_for_interfaces=False)
+        utils.vm_started(
+            vm=vm_object_from_template_scope_class, wait_for_interfaces=False
+        )
 
     @pytest.mark.run("test_start_vm")
     @pytest.mark.polarion("CNV-2651")
     def test_vm_hyperv(
-        self, namespace, data_volume_scope_class, vm_object_from_template,
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class,
     ):
         LOGGER.info("Verify VMI HyperV values.")
-        utils.check_vm_xml_hyperv(vm_object_from_template)
+        utils.check_vm_xml_hyperv(vm_object_from_template_scope_class)
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3344")
     def test_vm_console(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        utils.wait_for_console(vm_object_from_template, console.Fedora)
+        utils.wait_for_console(vm_object_from_template_scope_class, console.Fedora)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3348")
     def test_os_version(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ Test CNV common templates OS version """
 
-        utils.vm_os_version(vm=vm_object_from_template, console_impl=console.Fedora)
+        utils.vm_os_version(
+            vm=vm_object_from_template_scope_class, console_impl=console.Fedora
+        )
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3347")
     def test_domain_label(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ CNV common templates 'domain' label contains vm name """
 
-        domain_label = vm_object_from_template.instance.spec.template.metadata[
+        domain_label = vm_object_from_template_scope_class.instance.spec.template.metadata[
             "labels"
-        ]["kubevirt.io/domain"]
+        ][
+            "kubevirt.io/domain"
+        ]
         assert (
-            domain_label == vm_object_from_template.name
+            domain_label == vm_object_from_template_scope_class.name
         ), f"Wrong domain label: {domain_label}"
 
     @pytest.mark.run(after="test_start_vm")
@@ -155,7 +161,7 @@ class TestCommonTemplatesFedora:
         self,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
         enabled_ssh_service_in_vm_scope_class,
         vm_ssh_service_scope_class,
         schedulable_node_ips,
@@ -164,16 +170,16 @@ class TestCommonTemplatesFedora:
 
         assert utils.check_ssh_connection(
             ip=list(schedulable_node_ips.values())[0],
-            port=vm_object_from_template.ssh_node_port,
+            port=vm_object_from_template_scope_class.ssh_node_port,
             console_impl=console.Fedora,
         ), "Failed to login via SSH"
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3346")
     def test_vm_deletion(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ Test CNV common templates VM deletion """
 
-        if not utils.vm_deleted(vm=vm_object_from_template):
+        if not utils.vm_deleted(vm=vm_object_from_template_scope_class):
             pytest.xfail("VM was not created, nothing to delete.")

@@ -27,6 +27,7 @@ def data_volume(request, namespace):
     The call to this function is triggered by calling either
     data_volume_scope_function or data_volume_scope_class.
     """
+
     # Set dv attributes
     dv_kwargs = {
         "dv_name": request.param["dv_name"].replace(".", "-").lower(),
@@ -115,11 +116,14 @@ def vm_instance_from_template_scope_class(
     )
 
 
-@pytest.fixture(scope="class")
 def vm_object_from_template(
     request, unprivileged_client, namespace, data_volume_scope_class
 ):
-    """ Instantiate a VM object """
+    """ Instantiate a VM object
+
+    The call to this function is triggered by calling either
+    vm_object_from_template_scope_function or vm_object_from_template_scope_class.
+    """
 
     return VirtualMachineForTestsFromTemplate(
         name=request.param["vm_name"].replace(".", "-").lower(),
@@ -129,6 +133,24 @@ def vm_object_from_template(
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         vm_dict=request.param.get("vm_dict", None),
         cpu_threads=request.param.get("cpu_threads", None),
+    )
+
+
+@pytest.fixture()
+def vm_object_from_template_scope_function(
+    request, unprivileged_client, namespace, data_volume_scope_function
+):
+    return vm_object_from_template(
+        request, unprivileged_client, namespace, data_volume_scope_function
+    )
+
+
+@pytest.fixture(scope="class")
+def vm_object_from_template_scope_class(
+    request, unprivileged_client, namespace, data_volume_scope_class
+):
+    return vm_object_from_template(
+        request, unprivileged_client, namespace, data_volume_scope_class
     )
 
 

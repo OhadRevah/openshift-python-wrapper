@@ -17,7 +17,7 @@ WIN19_LICENSE_KEY = "N8BP4-3RHM3-YQWTF-MBJC3-YBKQ3"
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_object_from_template",
+    "data_volume_scope_class, vm_object_from_template_scope_class",
     [
         (
             {"image": Images.Windows.WIN19_IMG, "dv_name": f"dv-{VM_NAME}"},
@@ -43,12 +43,12 @@ class TestCommonTemplatesWin10:
         unprivileged_client,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
-        vm_object_from_template.create(wait=True)
+        vm_object_from_template_scope_class.create(wait=True)
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3268")
@@ -57,14 +57,16 @@ class TestCommonTemplatesWin10:
         unprivileged_client,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
     ):
         """ Test CNV common templates VM initiation """
 
-        utils.vm_started(vm=vm_object_from_template, wait_for_interfaces=False)
+        utils.vm_started(
+            vm=vm_object_from_template_scope_class, wait_for_interfaces=False
+        )
         utils.wait_for_windows_vm(
-            vm=vm_object_from_template,
+            vm=vm_object_from_template_scope_class,
             version=VM_NAME.split("-")[-1],
             winrmcli_pod=winrmcli_pod_scope_class,
         )
@@ -75,15 +77,15 @@ class TestCommonTemplatesWin10:
         1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     def test_domain_label(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ CNV common templates 'domain' label contains vm name """
 
-        domain_label = vm_object_from_template.body["spec"]["template"]["metadata"][
-            "labels"
-        ]["kubevirt.io/domain"]
+        domain_label = vm_object_from_template_scope_class.body["spec"]["template"][
+            "metadata"
+        ]["labels"]["kubevirt.io/domain"]
         assert (
-            domain_label == vm_object_from_template.name
+            domain_label == vm_object_from_template_scope_class.name
         ), f"Wrong domain label: {domain_label}"
 
     @pytest.mark.run(after="test_create_vm")
@@ -92,13 +94,15 @@ class TestCommonTemplatesWin10:
         self,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
     ):
 
         LOGGER.info("Verify VM HyperV values.")
-        utils.check_vm_xml_hyperv(vm_object_from_template)
-        utils.check_windows_vm_hvinfo(vm_object_from_template, winrmcli_pod_scope_class)
+        utils.check_vm_xml_hyperv(vm_object_from_template_scope_class)
+        utils.check_windows_vm_hvinfo(
+            vm_object_from_template_scope_class, winrmcli_pod_scope_class
+        )
 
     @pytest.mark.parametrize(
         "activated_vm", [{"license_key": WIN19_LICENSE_KEY}], indirect=True
@@ -109,14 +113,14 @@ class TestCommonTemplatesWin10:
         self,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
         activated_vm,
     ):
 
         LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
         utils.check_windows_activated_license(
-            vm_object_from_template,
+            vm_object_from_template_scope_class,
             winrmcli_pod_scope_class,
             reset_action="stop_start",
         )
@@ -130,22 +134,24 @@ class TestCommonTemplatesWin10:
         self,
         namespace,
         data_volume_scope_class,
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
         activated_vm,
     ):
 
         LOGGER.info("Verify VM activation mode is not changed after reboot.")
         utils.check_windows_activated_license(
-            vm_object_from_template, winrmcli_pod_scope_class, reset_action="reboot",
+            vm_object_from_template_scope_class,
+            winrmcli_pod_scope_class,
+            reset_action="reboot",
         )
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3291")
     def test_vm_deletion(
-        self, namespace, data_volume_scope_class, vm_object_from_template
+        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
     ):
         """ Test CNV common templates VM deletion """
 
-        if not utils.vm_deleted(vm=vm_object_from_template):
+        if not utils.vm_deleted(vm=vm_object_from_template_scope_class):
             pytest.xfail("VM was not created, nothing to delete.")

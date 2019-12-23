@@ -45,8 +45,8 @@ def enabled_ssh_service_in_vm_scope_function(
 
 
 @pytest.fixture(scope="class")
-def enabled_ssh_service_in_vm_scope_class(request, vm_object_from_template):
-    enabled_ssh_service_in_vm(request, vm_object_from_template)
+def enabled_ssh_service_in_vm_scope_class(request, vm_object_from_template_scope_class):
+    enabled_ssh_service_in_vm(request, vm_object_from_template_scope_class)
 
 
 def vm_ssh_service(vm_object_from_template):
@@ -68,8 +68,8 @@ def vm_ssh_service_scope_function(vm_instance_from_template_scope_function):
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_scope_class(vm_object_from_template):
-    yield from vm_ssh_service(vm_object_from_template)
+def vm_ssh_service_scope_class(vm_object_from_template_scope_class):
+    yield from vm_ssh_service(vm_object_from_template_scope_class)
 
 
 @pytest.fixture()
@@ -80,16 +80,18 @@ def exposed_vm_service(request, vm_instance_from_template_scope_function):
 
 
 @pytest.fixture(scope="class")
-def activated_vm(request, vm_object_from_template, winrmcli_pod_scope_class):
+def activated_vm(
+    request, vm_object_from_template_scope_class, winrmcli_pod_scope_class
+):
 
     add_windows_license(
-        vm_object_from_template,
+        vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
         windows_license=request.param["license_key"],
     )
     activate_windows_online(
-        vm_object_from_template, winrmcli_pod_scope_class,
+        vm_object_from_template_scope_class, winrmcli_pod_scope_class,
     )
     assert is_windows_activated(
-        vm_object_from_template, winrmcli_pod_scope_class
+        vm_object_from_template_scope_class, winrmcli_pod_scope_class
     ), "VM license is not activated."

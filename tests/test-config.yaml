@@ -17,9 +17,8 @@ distribution: downstream
 
 hco_namespace: openshift-cnv
 
-# os label should be '8.1, currently set to '8.0' because of bug 1766070
 common_templates_latest_rhel_version: {
-  'os_label': 'rhel8.0',
+  'os_label': 'rhel8.1',
   'image': 'rhel-images/rhel-81/rhel-81.qcow2',
 }
 
