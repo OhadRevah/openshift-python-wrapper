@@ -5,7 +5,12 @@ import logging
 import pytest
 from utilities.virt import vm_console_run_commands
 
-from .utils import activate_windows_online, add_windows_license, is_windows_activated
+from .utils import (
+    activate_windows_online,
+    add_windows_license,
+    is_windows_activated,
+    wait_for_windows_vm,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -95,3 +100,15 @@ def activated_vm(
     assert is_windows_activated(
         vm_object_from_template_scope_class, winrmcli_pod_scope_class
     ), "VM license is not activated."
+
+
+@pytest.fixture()
+def started_windows_vm(
+    request, vm_instance_from_template_scope_function, winrmcli_pod_scope_function
+):
+    wait_for_windows_vm(
+        vm=vm_instance_from_template_scope_function,
+        version=request.param["os_version"],
+        winrmcli_pod=winrmcli_pod_scope_function,
+        timeout=1800,
+    )

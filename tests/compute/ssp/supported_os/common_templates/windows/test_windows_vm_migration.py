@@ -11,7 +11,8 @@ from tests.compute.ssp.supported_os.common_templates import utils
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function, exposed_vm_service",
+    "data_volume_scope_function, vm_instance_from_template_scope_function, "
+    "started_windows_vm, exposed_vm_service",
     [
         pytest.param(
             {
@@ -33,6 +34,12 @@ from tests.compute.ssp.supported_os.common_templates import utils
                     "workload": "server",
                     "flavor": "medium",
                 },
+                "cpu_threads": 2,
+            },
+            {
+                "os_version": py_config.get(
+                    "common_templates_latest_windows_version", {}
+                ).get("os_label")[-2:],
             },
             {"service_name": "telnet", "service_port": 5985},
             marks=pytest.mark.polarion("CNV-3335"),
@@ -46,6 +53,7 @@ def test_migrate_vm_windows(
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod_scope_function,
+    started_windows_vm,
     exposed_vm_service,
     schedulable_node_ips,
 ):
@@ -54,14 +62,6 @@ def test_migrate_vm_windows(
     Verify VM is migrated and previously-created expose service (winrm)
     can be accessed.
     """
-
-    os_version = py_config["common_templates_latest_windows_version"]["os_label"][-2:]
-    utils.wait_for_windows_vm(
-        vm=vm_instance_from_template_scope_function,
-        version=os_version,
-        winrmcli_pod=winrmcli_pod_scope_function,
-        timeout=1800,
-    )
 
     assert utils.check_telnet_connection(
         ip=list(schedulable_node_ips.values())[0],
@@ -72,7 +72,7 @@ def test_migrate_vm_windows(
 
     utils.wait_for_windows_vm(
         vm=vm_instance_from_template_scope_function,
-        version=os_version,
+        version=py_config["common_templates_latest_windows_version"]["os_label"][-2:],
         winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,
     )
