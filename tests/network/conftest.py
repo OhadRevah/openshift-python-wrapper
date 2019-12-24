@@ -82,6 +82,7 @@ def ovs_lb_bridge(
     multi_nics_nodes,
     network_utility_pods,
     nodes_active_nics,
+    nodes,
 ):
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
@@ -96,6 +97,7 @@ def ovs_lb_bridge(
         nncp_name=f"{bridge_name}-nncp",
         bridge_name=bridge_name,
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         ports=ports,
         ovs_worker_pods=ovs_worker_pods,
         nodes_active_nics=nodes_active_nics,

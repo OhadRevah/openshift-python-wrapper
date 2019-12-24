@@ -94,6 +94,7 @@ def bridge_device(
     nncp_name,
     bridge_name,
     network_utility_pods,
+    nodes,
     ports=None,
     nodes_active_nics=None,
     mtu=None,
@@ -114,13 +115,18 @@ def bridge_device(
             yield br
 
     else:
+        schedulable_worker_pods = [
+            pod
+            for pod in network_utility_pods
+            if pod.node.name in [node.name for node in nodes]
+        ]
         if not ports and vxlan:
             yield from linux_bridge_over_vxlan(
                 nncp_name=nncp_name,
                 bridge_name=bridge_name,
                 idx=idx,
                 nodes_active_nics=nodes_active_nics,
-                network_utility_pods=network_utility_pods,
+                network_utility_pods=schedulable_worker_pods,
                 mtu=mtu,
                 node_selector=node_selector,
                 ipv4_dhcp=ipv4_dhcp,
@@ -130,7 +136,7 @@ def bridge_device(
             with BRIDGE_DEVICE_TYPE[bridge_type](
                 name=nncp_name,
                 bridge_name=bridge_name,
-                worker_pods=network_utility_pods,
+                worker_pods=schedulable_worker_pods,
                 ports=ports,
                 mtu=mtu,
                 node_selector=node_selector,

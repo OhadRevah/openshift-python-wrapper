@@ -232,7 +232,7 @@ def automatic_mac_tuning_net_nad(namespace):
 
 
 @pytest.fixture(scope="module")
-def bridge_device(multi_nics_nodes, nodes_active_nics, network_utility_pods):
+def bridge_device(multi_nics_nodes, nodes_active_nics, network_utility_pods, nodes):
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
         if multi_nics_nodes
@@ -243,6 +243,7 @@ def bridge_device(multi_nics_nodes, nodes_active_nics, network_utility_pods):
         nncp_name="kubemacpool",
         bridge_name=BRIDGE_BR1,
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         ports=ports,
         nodes_active_nics=nodes_active_nics,
     ) as dev:

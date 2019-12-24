@@ -56,12 +56,13 @@ def br1vlan100_nad(namespace):
 
 
 @pytest.fixture()
-def bridge_device(network_utility_pods):
+def bridge_device(network_utility_pods, nodes):
     with network_utils.bridge_device(
         bridge_type=network_utils.LINUX_BRIDGE,
         nncp_name="veth-removed",
         bridge_name=BR1TEST,
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         vxlan=False,
     ) as dev:
         yield dev

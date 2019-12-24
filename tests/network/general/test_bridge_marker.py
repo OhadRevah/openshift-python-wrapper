@@ -80,24 +80,26 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 
 
 @pytest.fixture()
-def bridge_device_on_all_nodes(network_utility_pods):
+def bridge_device_on_all_nodes(network_utility_pods, nodes):
     with network_utils.bridge_device(
         bridge_type=network_utils.LINUX_BRIDGE,
         nncp_name="bridge-marker1",
         bridge_name=BRIDGEMARKER1,
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         vxlan=False,
     ) as dev:
         yield dev
 
 
 @pytest.fixture()
-def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
+def non_homogenous_bridges(skip_when_one_node, network_utility_pods, nodes):
     with network_utils.bridge_device(
         bridge_type=network_utils.LINUX_BRIDGE,
         nncp_name="bridge-marker2",
         bridge_name=BRIDGEMARKER2,
         network_utility_pods=[network_utility_pods[0]],
+        nodes=nodes,
         node_selector=network_utility_pods[0].node.name,
         vxlan=False,
     ) as bridgemarker2_ncp:
@@ -106,6 +108,7 @@ def non_homogenous_bridges(skip_when_one_node, network_utility_pods):
             nncp_name="bridge-marker3",
             bridge_name=BRIDGEMARKER3,
             network_utility_pods=[network_utility_pods[1]],
+            nodes=nodes,
             node_selector=network_utility_pods[1].node.name,
             vxlan=False,
         ) as bridgemarker3_ncp:

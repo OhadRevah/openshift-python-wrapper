@@ -101,7 +101,7 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
 
 
 @pytest.fixture(scope="class")
-def bridge_on_bond(bond1, network_utility_pods):
+def bridge_on_bond(bond1, network_utility_pods, nodes):
     """
     Create bridge and attach the BOND to it
     """
@@ -111,6 +111,7 @@ def bridge_on_bond(bond1, network_utility_pods):
             nncp_name="bridge-no-bond",
             bridge_name="br1bond",
             network_utility_pods=network_utility_pods,
+            nodes=nodes,
             ports=[bond1],
         ) as br:
             yield br

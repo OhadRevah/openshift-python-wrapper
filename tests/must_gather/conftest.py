@@ -133,12 +133,13 @@ def network_attachment_definition():
 
 
 @pytest.fixture(scope="module")
-def nodenetworkstate_with_bridge(network_utility_pods):
+def nodenetworkstate_with_bridge(network_utility_pods, nodes):
     with network_utils.bridge_device(
         bridge_type=network_utils.LINUX_BRIDGE,
         nncp_name="must-gather-br",
         bridge_name="mgbr",
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         vxlan=False,
     ) as br:
         yield br

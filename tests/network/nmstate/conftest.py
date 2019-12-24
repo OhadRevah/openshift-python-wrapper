@@ -124,7 +124,7 @@ def running_vmb(vmb):
 
 @pytest.fixture(scope="class")
 def bridges_on_management_ifaces(
-    network_utility_pods, nodes_active_nics, node_management_iface_stats
+    network_utility_pods, nodes_active_nics, node_management_iface_stats, nodes
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats[network_utility_pods[0].node.name][
@@ -136,6 +136,7 @@ def bridges_on_management_ifaces(
         nncp_name="brext-default-net",
         bridge_name="brext",
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         ports=[management_iface],
         ipv4_dhcp=True,
     ) as br_dev:

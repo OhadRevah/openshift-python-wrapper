@@ -141,7 +141,9 @@ def running_vmb(vmb):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_nodes):
+def bridge_on_all_nodes(
+    network_utility_pods, nodes_active_nics, multi_nics_nodes, nodes
+):
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
         if multi_nics_nodes
@@ -153,6 +155,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
         nncp_name="migration",
         bridge_name=BR1TEST,
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         ports=ports,
         nodes_active_nics=nodes_active_nics,
     ) as br:

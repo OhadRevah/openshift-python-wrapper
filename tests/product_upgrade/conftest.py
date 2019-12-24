@@ -26,7 +26,9 @@ def upgrade_namespace(unprivileged_client):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_nodes):
+def bridge_on_all_nodes(
+    network_utility_pods, nodes_active_nics, multi_nics_nodes, nodes
+):
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
         if multi_nics_nodes
@@ -38,6 +40,7 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
         nncp_name="upgrade-bridge",
         bridge_name="br1upgrade",
         network_utility_pods=network_utility_pods,
+        nodes=nodes,
         ports=ports,
         nodes_active_nics=nodes_active_nics,
     ) as br:
@@ -45,12 +48,13 @@ def bridge_on_all_nodes(network_utility_pods, nodes_active_nics, multi_nics_node
 
 
 @pytest.fixture(scope="module")
-def bridge_on_one_node(network_utility_pods):
+def bridge_on_one_node(network_utility_pods, nodes):
     with network_utils.bridge_device(
         bridge_type=network_utils.LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         bridge_name="upg-br-mark",
         network_utility_pods=[network_utility_pods[0]],
+        nodes=nodes,
         node_selector=network_utility_pods[0].node.name,
         vxlan=False,
     ) as br:
