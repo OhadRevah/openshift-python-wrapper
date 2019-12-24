@@ -28,8 +28,8 @@ common_templates_latest_windows_version: {
 }
 
 common_templates_latest_fedora_version: {
-  'os_label': 'fedora29',
-  'image': 'fedora-images/Fedora-Cloud-Base-29-1.2.x86_64.qcow2',
+  'os_label': 'fedora31',
+  'image': 'fedora-images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2',
 }
 
 windows_username: Administrator

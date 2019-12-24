@@ -42,6 +42,7 @@ class Images:
 
     class Fedora:
         FEDORA29_IMG = "fedora-images/Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
+        FEDORA31_IMG = "fedora-images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2"
         DISK_DEMO = "fedora-cloud-registry-disk-demo"
 
 
