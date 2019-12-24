@@ -101,7 +101,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -110,7 +110,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
-            volume_mode=py_config["default_volume_mode"],
+            volume_mode=DataVolume.VolumeMode.FILE,
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -162,7 +162,7 @@ def test_successful_import_secure_archive(
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
@@ -171,7 +171,7 @@ def test_successful_import_secure_archive(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
-            volume_mode=py_config["default_volume_mode"],
+            volume_mode=DataVolume.VolumeMode.FILE,
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -228,6 +228,12 @@ def test_successful_import_basic_auth(
     content_type,
     file_name,
 ):
+    if (
+        content_type == DataVolume.ContentType.ARCHIVE
+        and py_config["default_volume_mode"] == "Block"
+    ):
+        pytest.skip("Skipping test, can't use archives with volumeMode block")
+
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
@@ -337,7 +343,7 @@ def test_unpack_compressed(
         content_type=content_type,
         size="200Mi",
         storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
 
@@ -482,6 +488,10 @@ def test_successful_concurrent_blank_disk_import(storage_ns):
         pytest.param("1", "Gi", "950", marks=(pytest.mark.polarion("CNV-1404"))),
         pytest.param("13", "Gi", "13", marks=(pytest.mark.polarion("CNV-1404"))),
     ],
+)
+@pytest.mark.skipif(
+    py_config["default_volume_mode"] == "Block",
+    reason="qemu-img reports 0 disk size for block",
 )
 def test_vmi_image_size(
     storage_ns,
