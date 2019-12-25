@@ -16,7 +16,7 @@ class StorageClass(Resource):
         """
 
         LOCAL = "local-sc"
-        HOSTPATH = "kubevirt-hostpath-provisioner"
+        HOSTPATH = "hostpath-provisioner"
         ROOK = "rook-ceph-block"
 
     class Provisioner:

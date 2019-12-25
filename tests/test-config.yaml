@@ -56,7 +56,7 @@ EMEA:
 
 storage_class_matrix:
   - rook-ceph-block
-  - kubevirt-hostpath-provisioner
+  - hostpath-provisioner
 
 bridge_device_matrix:
   - linux-bridge
