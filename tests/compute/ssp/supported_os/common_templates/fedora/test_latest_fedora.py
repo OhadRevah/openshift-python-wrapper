@@ -53,19 +53,13 @@ HYPERV_DICT = {
     [
         (
             {
-                "dv_name": f'dv-{py_config.get("common_templates_latest_fedora_version", {}).get("os_label")}',
-                "image": py_config.get(
-                    "common_templates_latest_fedora_version", {}
-                ).get("image"),
+                "dv_name": f'dv-{py_config.get("latest_fedora_version", {}).get("os_label")}',
+                "image": py_config.get("latest_fedora_version", {}).get("image"),
             },
             {
-                "vm_name": py_config.get(
-                    "common_templates_latest_fedora_version", {}
-                ).get("os_label"),
+                "vm_name": py_config.get("latest_fedora_version", {}).get("os_label"),
                 "template_labels": {
-                    "os": py_config.get(
-                        "common_templates_latest_fedora_version", {}
-                    ).get("os_label"),
+                    "os": py_config.get("latest_fedora_version", {}).get("os_label"),
                     "workload": "desktop",
                     "flavor": "tiny",
                 },
@@ -90,7 +84,7 @@ class TestCommonTemplatesFedora:
         """ Test CNV VM creation from template """
 
         LOGGER.info(
-            f'Create VM from template - {py_config["common_templates_latest_fedora_version"]["os_label"]}'
+            f'Create VM from template - {py_config["latest_fedora_version"]["os_label"]}'
         )
         vm_object_from_template_scope_class.create(wait=True)
 

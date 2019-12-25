@@ -17,17 +17,17 @@ distribution: downstream
 
 hco_namespace: openshift-cnv
 
-common_templates_latest_rhel_version: {
+latest_rhel_version: {
   'os_label': 'rhel8.1',
   'image': 'rhel-images/rhel-81/rhel-81.qcow2',
 }
 
-common_templates_latest_windows_version: {
+latest_windows_version: {
   'os_label': 'win2k19',
   'image': 'windows-images/window_qcow2_images/win_19.qcow2',
 }
 
-common_templates_latest_fedora_version: {
+latest_fedora_version: {
   'os_label': 'fedora31',
   'image': 'fedora-images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2',
 }

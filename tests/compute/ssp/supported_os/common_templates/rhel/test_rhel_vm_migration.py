@@ -17,9 +17,7 @@ from utilities import console
         pytest.param(
             {
                 "dv_name": "dv-rhel-migrate-vm",
-                "image": py_config.get("common_templates_latest_rhel_version", {}).get(
-                    "image"
-                ),
+                "image": py_config.get("latest_rhel_version", {}).get("image"),
                 "access_modes": DataVolume.AccessMode.RWX,
                 "volume_mode": DataVolume.VolumeMode.BLOCK,
             },
@@ -27,9 +25,7 @@ from utilities import console
                 "vm_name": "rhel-migrate-vm",
                 "start_vm": True,
                 "template_labels": {
-                    "os": py_config.get("common_templates_latest_rhel_version", {}).get(
-                        "os_label"
-                    ),
+                    "os": py_config.get("latest_rhel_version", {}).get("os_label"),
                     "workload": "server",
                     "flavor": "tiny",
                 },

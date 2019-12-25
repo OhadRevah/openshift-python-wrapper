@@ -17,9 +17,7 @@ from tests.compute.ssp.supported_os.common_templates import utils
         pytest.param(
             {
                 "dv_name": "dv-windows-migrate-vm",
-                "image": py_config.get(
-                    "common_templates_latest_windows_version", {}
-                ).get("image"),
+                "image": py_config.get("latest_windows_version", {}).get("image"),
                 "access_modes": DataVolume.AccessMode.RWX,
                 "volume_mode": DataVolume.VolumeMode.BLOCK,
             },
@@ -28,18 +26,16 @@ from tests.compute.ssp.supported_os.common_templates import utils
                 "start_vm": True,
                 "guest_agent": False,
                 "template_labels": {
-                    "os": py_config.get(
-                        "common_templates_latest_windows_version", {}
-                    ).get("os_label"),
+                    "os": py_config.get("latest_windows_version", {}).get("os_label"),
                     "workload": "server",
                     "flavor": "medium",
                 },
                 "cpu_threads": 2,
             },
             {
-                "os_version": py_config.get(
-                    "common_templates_latest_windows_version", {}
-                ).get("os_label")[-2:],
+                "os_version": py_config.get("latest_windows_version", {}).get(
+                    "os_label"
+                )[-2:],
             },
             {"service_name": "telnet", "service_port": 5985},
             marks=pytest.mark.polarion("CNV-3335"),
@@ -72,7 +68,7 @@ def test_migrate_vm_windows(
 
     utils.wait_for_windows_vm(
         vm=vm_instance_from_template_scope_function,
-        version=py_config["common_templates_latest_windows_version"]["os_label"][-2:],
+        version=py_config["latest_windows_version"]["os_label"][-2:],
         winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,
     )
