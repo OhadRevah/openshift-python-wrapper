@@ -20,13 +20,29 @@ class PersistentVolumeClaim(NamespacedResource):
         PENDING = "Pending"
         TERMINATING = "Terminating"
 
+    class AccessMode:
+        """
+        AccessMode object.
+        """
+
+        RWO = "ReadWriteOnce"
+        ROX = "ReadOnlyMany"
+        RWX = "ReadWriteMany"
+
     def __init__(
-        self, name, namespace, accessmodes=None, size=None, hostpath_node=None
+        self,
+        name,
+        namespace,
+        storage_class=None,
+        accessmodes=None,
+        size=None,
+        hostpath_node=None,
     ):
         super().__init__(name=name, namespace=namespace)
         self.accessmodes = accessmodes
         self.size = size
         self.hostpath_node = hostpath_node
+        self.storage_class = storage_class
 
     def _to_dict(self):
         res = super()._base_body()
@@ -48,6 +64,8 @@ class PersistentVolumeClaim(NamespacedResource):
             res["metadata"]["annotations"] = {
                 "kubevirt.io/provisionOnNode": self.hostpath_node
             }
+        if self.storage_class:
+            res["spec"]["storageClassName"] = self.storage_class
 
         return res
 

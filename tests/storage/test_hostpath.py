@@ -10,6 +10,7 @@ import pytest
 import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
+from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.storage_class import StorageClass
 from utilities.infra import Images, get_images_external_http_server
 from utilities.storage import create_dv
@@ -171,3 +172,38 @@ def test_hostpath_http_import_dv(
         hostpath_node=nodes[0].name,
     ) as dv:
         verify_image_location_via_dv_virt_launcher_pod(dv, nodes)
+
+
+@pytest.mark.polarion("CNV-3227")
+def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
+    storage_ns, skip_test_if_no_hpp_sc, skip_when_hpp_no_waitforfirstconsumer
+):
+    """
+    Check that in the condition of the volumeBindingMode of hostpath-provisioner StorageClass is 'WaitForFirstConsumer',
+    if you do not specify the node on the PVC, it will remain Pending.
+    The PV will be created only and PVC get bound when the first Pod using this PVC is scheduled.
+    """
+    with PersistentVolumeClaim(
+        name="cnv-3227",
+        namespace=storage_ns.name,
+        accessmodes=PersistentVolumeClaim.AccessMode.RWO,
+        size="1Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+    ) as pvc:
+        pvc.wait_for_status(
+            pvc.Status.PENDING, timeout=60, stop_status=pvc.Status.BOUND
+        )
+        with storage_utils.PodWithPVC(
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=DataVolume.VolumeMode.FILE,
+        ) as pod:
+            pod.wait_for_status(status=pod.Status.RUNNING, timeout=180)
+            pvc.wait_for_status(status=pvc.Status.BOUND, timeout=60)
+            assert (
+                pod.instance.spec.nodeName
+                == pvc.instance.metadata.annotations[
+                    "volume.kubernetes.io/selected-node"
+                ]
+            )
