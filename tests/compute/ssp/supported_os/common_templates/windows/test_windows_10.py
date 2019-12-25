@@ -34,12 +34,12 @@ WIN10_LICENSE_KEY = "TFNPT-4HYRB-JMJW3-6JDYQ-JTYP6"
     ],
     indirect=True,
 )
-@pytest.mark.usefixtures("skip_upstream", "skip_not_bare_metal")
 class TestCommonTemplatesWin10:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-2174")
     def test_create_vm(
         self,
+        skip_upstream,
         unprivileged_client,
         namespace,
         data_volume_scope_class,
@@ -54,6 +54,7 @@ class TestCommonTemplatesWin10:
     @pytest.mark.polarion("CNV-2196")
     def test_start_vm(
         self,
+        skip_upstream,
         unprivileged_client,
         namespace,
         data_volume_scope_class,
@@ -77,7 +78,11 @@ class TestCommonTemplatesWin10:
         1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     def test_domain_label(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
 
@@ -92,6 +97,7 @@ class TestCommonTemplatesWin10:
     @pytest.mark.polarion("CNV-2776")
     def test_hyperv(
         self,
+        skip_upstream,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,
@@ -111,6 +117,7 @@ class TestCommonTemplatesWin10:
     @pytest.mark.polarion("CNV-2177")
     def test_vm_license_state_after_stop_start(
         self,
+        skip_upstream,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,
@@ -132,6 +139,7 @@ class TestCommonTemplatesWin10:
     @pytest.mark.polarion("CNV-3415")
     def test_vm_license_state_after_reboot(
         self,
+        skip_upstream,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,
@@ -149,7 +157,11 @@ class TestCommonTemplatesWin10:
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3289")
     def test_vm_deletion(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM deletion """
 

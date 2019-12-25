@@ -47,8 +47,8 @@ from tests.compute.ssp.supported_os.common_templates import utils
     ],
     indirect=True,
 )
-@pytest.mark.usefixtures("skip_upstream", "skip_not_bare_metal")
 def test_migrate_vm_windows(
+    skip_upstream,
     namespace,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,

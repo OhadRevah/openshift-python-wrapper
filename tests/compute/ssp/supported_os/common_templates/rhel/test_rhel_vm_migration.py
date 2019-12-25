@@ -39,13 +39,13 @@ from utilities import console
     ],
     indirect=True,
 )
-@pytest.mark.usefixtures("skip_upstream")
 @pytest.mark.parametrize(
     "enabled_ssh_service_in_vm_scope_function",
     [{"console_impl": console.RHEL}],
     indirect=True,
 )
 def test_migrate_vm_rhel(
+    skip_upstream,
     namespace,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,

@@ -33,12 +33,12 @@ VM_NAME = "rhel-7.6"
     ],
     indirect=True,
 )
-@pytest.mark.usefixtures("skip_upstream")
 class TestCommonTemplatesRhel76:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-2210")
     def test_create_vm(
         self,
+        skip_upstream,
         unprivileged_client,
         namespace,
         data_volume_scope_class,
@@ -52,7 +52,11 @@ class TestCommonTemplatesRhel76:
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3266")
     def test_start_vm(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM initiation """
 
@@ -61,7 +65,11 @@ class TestCommonTemplatesRhel76:
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM console """
 
@@ -71,7 +79,11 @@ class TestCommonTemplatesRhel76:
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3318")
     def test_os_version(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates OS version """
 
@@ -82,7 +94,11 @@ class TestCommonTemplatesRhel76:
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3306")
     def test_domain_label(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
 
@@ -104,6 +120,7 @@ class TestCommonTemplatesRhel76:
     )
     def test_expose_ssh(
         self,
+        skip_upstream,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,
@@ -122,7 +139,11 @@ class TestCommonTemplatesRhel76:
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3269")
     def test_vm_deletion(
-        self, namespace, data_volume_scope_class, vm_object_from_template_scope_class
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM deletion """
 
