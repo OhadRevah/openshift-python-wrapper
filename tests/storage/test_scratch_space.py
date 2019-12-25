@@ -38,13 +38,10 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
     ) as dv:
-        scratch_pvc = PersistentVolumeClaim(
-            name=f"{dv.name}-scratch", namespace=dv.namespace
-        )
-        scratch_pvc.wait_for_status(
+        dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
-        scratch_pvc.delete()
+        dv.scratch_pvc.delete()
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
             name="scratch-space-upload-qcow2-https", namespace=storage_ns.name
@@ -80,9 +77,10 @@ def test_import_https_scratch_space_delete_pvc(
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
     ) as dv:
-        pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
-        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
-        pvc.delete()
+        dv.scratch_pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+        )
+        dv.scratch_pvc.delete()
         dv.wait()
         with storage_utils.create_vm_from_dv(dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm_dv)
@@ -181,8 +179,9 @@ def test_scratch_space_import_https_data_volume(
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
     ) as dv:
-        pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
-        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        dv.scratch_pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+        )
         dv.wait()
         with storage_utils.create_vm_from_dv(dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm_dv)
@@ -354,10 +353,7 @@ def test_scratch_space_upload_data_volume(
             )
             for sample in sampler:
                 if sample == 200:
-                    scratch_pvc = PersistentVolumeClaim(
-                        name=f"{dv.name}-scratch", namespace=dv.namespace
-                    )
-                    scratch_pvc.wait_for_status(
+                    dv.scratch_pvc.wait_for_status(
                         status=PersistentVolumeClaim.Status.BOUND, timeout=300
                     )
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
@@ -379,8 +375,9 @@ def test_scratch_space_import_registry_data_volume(
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
     ) as dv:
-        pvc = PersistentVolumeClaim(name=f"{dv.name}-scratch", namespace=dv.namespace)
-        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        dv.scratch_pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+        )
         dv.wait()
         with storage_utils.create_vm_from_dv(dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm_dv)
@@ -412,9 +409,8 @@ def create_dv_and_vm_no_scratch_space(
         thread = threading.Thread(target=dv.wait())
         thread.daemon = True
         thread.start()
-        pvc = PersistentVolumeClaim(name=f"{dv_name}-scratch", namespace=namespace)
         try:
-            assert pvc.instance()
+            assert dv.scratch_pvc.instance()
         except NotFoundError:
             pass
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
