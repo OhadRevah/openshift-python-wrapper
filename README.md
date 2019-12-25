@@ -231,3 +231,9 @@ make html
 ```
 The HTML file location is:
 docs/build/html/index.html
+
+
+### Tweaks
+##### unprivileged_client
+To skip 'unprivileged_client' creation pass to pytest command:
+--tc=no_unprivileged_client:True
