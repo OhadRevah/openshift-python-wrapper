@@ -20,7 +20,10 @@ WIN19_LICENSE_KEY = "N8BP4-3RHM3-YQWTF-MBJC3-YBKQ3"
     "data_volume_scope_class, vm_object_from_template_scope_class",
     [
         (
-            {"image": Images.Windows.WIN19_IMG, "dv_name": f"dv-{VM_NAME}"},
+            {
+                "image": f"{Images.Windows.DIR}/{Images.Windows.WIN19_IMG}",
+                "dv_name": f"dv-{VM_NAME}",
+            },
             {
                 "vm_name": VM_NAME,
                 "template_labels": {

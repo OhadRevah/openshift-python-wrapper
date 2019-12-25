@@ -12,14 +12,13 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
-from tests.storage.utils import CDI_IMAGES_DIR, CIRROS_IMAGES_DIR
 from utilities import console
 from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
 # Negative tests require a DV, however its content is not important (VM will not be created).
-FAILED_VM_IMAGE = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
+FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
 @pytest.mark.parametrize(

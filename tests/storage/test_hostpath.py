@@ -11,7 +11,6 @@ import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.storage_class import StorageClass
-from tests.storage.utils import CDI_IMAGES_DIR, CIRROS_IMAGES_DIR
 from utilities.infra import Images, get_images_external_http_server
 from utilities.storage import create_dv
 
@@ -77,7 +76,7 @@ def test_hostpath_pod_reference_pvc(storage_ns, nodes, skip_test_if_no_hpp_sc):
         source="http",
         dv_name="cnv-2817",
         namespace=storage_ns.name,
-        url=f"{get_images_external_http_server()}{Images.Fedora.FEDORA29_IMG}",
+        url=f"{get_images_external_http_server()}{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="20Gi",
         storage_class=StorageClass.Types.HOSTPATH,
@@ -165,7 +164,7 @@ def test_hostpath_http_import_dv(
         dv_name=dv_name,
         namespace=storage_ns.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
-        url=f"{get_images_external_http_server()}{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{image_name}",
+        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{image_name}",
         size="500Mi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=py_config["default_volume_mode"],

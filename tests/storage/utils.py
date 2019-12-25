@@ -20,9 +20,6 @@ from utilities.storage import create_dv
 from utilities.virt import VirtualMachineForTests, run_virtctl_command
 
 
-CDI_IMAGES_DIR = "cdi-test-images"
-CIRROS_IMAGES_DIR = "cirros_images"
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -207,4 +204,4 @@ class HttpService(Service):
 
 
 def get_file_url_https_server(images_https_server, file_name):
-    return f"{images_https_server}{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{file_name}"
+    return f"{images_https_server}{Images.Cirros.DIR}/{file_name}"

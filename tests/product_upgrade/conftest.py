@@ -9,7 +9,7 @@ from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
 from tests.network.utils import nmcli_add_con_cmds
-from utilities.infra import create_ns, get_images_external_http_server
+from utilities.infra import Images, create_ns, get_images_external_http_server
 from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -153,7 +153,7 @@ def data_volume(upgrade_namespace):
         dv_name="dv-rhel8-server-tiny",
         size="25Gi",
         namespace=upgrade_namespace.name,
-        url=f"{get_images_external_http_server()}rhel-images/rhel-8/rhel-8.qcow2",
+        url=f"{get_images_external_http_server()}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
         volume_mode=DataVolume.VolumeMode.BLOCK,
         access_modes=DataVolume.AccessMode.RWX,
         content_type=DataVolume.ContentType.KUBEVIRT,

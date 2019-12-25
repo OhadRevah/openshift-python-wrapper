@@ -20,7 +20,10 @@ WIN12_LICENSE_KEY = "CKWJN-48TW8-V7CVV-RQCFY-R6XCB"
     "data_volume_scope_class, vm_object_from_template_scope_class",
     [
         (
-            {"image": Images.Windows.WIN12_IMG, "dv_name": f"dv-{VM_NAME}"},
+            {
+                "image": f"{Images.Windows.DIR}/{Images.Windows.WIN12_IMG}",
+                "dv_name": f"dv-{VM_NAME}",
+            },
             {
                 "vm_name": VM_NAME,
                 "template_labels": {

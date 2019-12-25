@@ -20,7 +20,10 @@ VM_NAME = "rhel-8-1"
     "data_volume_scope_class, vm_object_from_template_scope_class",
     [
         (
-            {"image": Images.Rhel.RHEL8_1_IMG, "dv_name": f"dv-{VM_NAME}"},
+            {
+                "image": f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_1_IMG}",
+                "dv_name": f"dv-{VM_NAME}",
+            },
             {
                 "vm_name": VM_NAME,
                 "template_labels": {

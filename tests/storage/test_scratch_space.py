@@ -13,11 +13,7 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
-from tests.storage.utils import (
-    CDI_IMAGES_DIR,
-    CIRROS_IMAGES_DIR,
-    get_file_url_https_server,
-)
+from tests.storage.utils import get_file_url_https_server
 from utilities.infra import Images
 
 
@@ -28,7 +24,7 @@ PRIVATE_REGISTRY_IMAGE = "cirros-registry-disk-demo:latest"
 @pytest.mark.polarion("CNV-2327")
 def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir):
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-    remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
+    remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with utilities.storage.create_dv(
         source="upload",
@@ -330,7 +326,7 @@ def test_scratch_space_upload_data_volume(
     skip_upstream, storage_ns, tmpdir, file_name, dv_name
 ):
     local_name = f"{tmpdir}/{file_name}"
-    remote_name = f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{file_name}"
+    remote_name = f"{Images.Cirros.DIR}/{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with utilities.storage.create_dv(
         source="upload",
@@ -384,11 +380,11 @@ def test_scratch_space_import_registry_data_volume(
 
 
 def get_file_url_http_server(get_images_external_http_server, file_name):
-    return f"{get_images_external_http_server}cdi-test-images/cirros_images/{file_name}"
+    return f"{get_images_external_http_server}{Images.Cirros.DIR}/{file_name}"
 
 
 def get_file_url_http_server_basic_auth(get_images_external_http_server, file_name):
-    return f"{get_images_external_http_server}mod-auth-basic/cirros_images/{file_name}"
+    return f"{get_images_external_http_server}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}"
 
 
 def create_dv_and_vm_no_scratch_space(

@@ -21,7 +21,7 @@ from resources.virtual_machine import (
 from tests.compute.utils import WinRMcliPod
 from tests.compute.virt import utils as virt_utils
 from utilities import console
-from utilities.infra import create_ns
+from utilities.infra import Images, create_ns
 from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -90,7 +90,7 @@ def vm_template_dv_rhel8(
     node_maintenance_ns, unprivileged_client, images_external_http_server,
 ):
     vm_dv_name = "rhel8-template-node-maintenance"
-    url = f"{images_external_http_server}rhel-images/rhel-81/rhel-81.qcow2"
+    url = f"{images_external_http_server}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
     template_labels_dict = {
         "os": "rhel8.0",
         "workload": "server",
@@ -151,7 +151,7 @@ def winrmcli_pod(vm_win10, nodes):
 def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_server):
     vm_dv_name = "windows-template-node-maintenance"
     url = (
-        f"{images_external_http_server}windows-images/window_qcow2_images/win_10.qcow2"
+        f"{images_external_http_server}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
     )
     template_labels_dict = {
         "os": "win10",

@@ -22,8 +22,6 @@ from utilities.virt import CIRROS_IMAGE
 
 LOGGER = logging.getLogger(__name__)
 
-TEST_IMG_LOCATION = "cdi-test-images"
-QCOW_IMG = "cirros-qcow2.img"
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
 
@@ -34,7 +32,7 @@ def get_file_url(url, file_name):
 
 @pytest.mark.polarion("CNV-675")
 def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_server):
-    url = get_file_url(images_internal_http_server["http"], QCOW_IMG)
+    url = get_file_url(images_internal_http_server["http"], Images.Cdi.QCOW2_IMG)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
@@ -119,7 +117,7 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
 @pytest.mark.parametrize(
     "file_name",
     [
-        pytest.param(QCOW_IMG, marks=(pytest.mark.polarion("CNV-2143"))),
+        pytest.param(Images.Cdi.QCOW2_IMG, marks=(pytest.mark.polarion("CNV-2143"))),
         pytest.param(ISO_IMG, marks=(pytest.mark.polarion("CNV-377"))),
     ],
     ids=["import_qcow_image", "import_iso_image"],
@@ -181,7 +179,7 @@ def test_successful_import_secure_archive(
 def test_successful_import_secure_image(
     storage_ns, images_internal_http_server, internal_http_configmap
 ):
-    url = get_file_url(images_internal_http_server["https"], QCOW_IMG)
+    url = get_file_url(images_internal_http_server["https"], Images.Cdi.QCOW2_IMG)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-https-dv",
@@ -262,7 +260,7 @@ def test_wrong_content_type(storage_ns, images_internal_http_server):
         source="http",
         dv_name="import-http-dv",
         namespace=storage_ns.name,
-        url=get_file_url(images_internal_http_server["http"], QCOW_IMG),
+        url=get_file_url(images_internal_http_server["http"], Images.Cdi.QCOW2_IMG),
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
@@ -359,7 +357,9 @@ def test_certconfigmap(
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
-        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        url=get_file_url(
+            url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
+        ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait()
@@ -396,7 +396,7 @@ def test_certconfigmap_incorrect_cert(
             dv_name=name,
             namespace=storage_ns.name,
             url=get_file_url(
-                url=images_internal_http_server["https"], file_name=QCOW_IMG
+                url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
             ),
             cert_configmap=configmap.name,
             size="1Gi",
@@ -412,7 +412,9 @@ def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_internal_http_serv
         source="http",
         dv_name="cnv-2815",
         namespace=storage_ns.name,
-        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        url=get_file_url(
+            url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
+        ),
         cert_configmap="wrong_name",
         size="1Gi",
         storage_class=py_config["default_storage_class"],
@@ -508,7 +510,9 @@ def test_vmi_image_size(
         size=f"{size}{unit}",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
-        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        url=get_file_url(
+            url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
+        ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
@@ -539,7 +543,9 @@ def test_disk_falloc(storage_ns, images_internal_http_server, internal_http_conf
         size="100Mi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
-        url=get_file_url(url=images_internal_http_server["https"], file_name=QCOW_IMG),
+        url=get_file_url(
+            url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
+        ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait()

@@ -8,7 +8,6 @@ import pytest
 import utilities.storage
 from pytest_testconfig import config as py_config
 from tests.storage import utils
-from tests.storage.utils import CDI_IMAGES_DIR, CIRROS_IMAGES_DIR
 from utilities.infra import Images, get_images_external_http_server
 
 
@@ -18,7 +17,7 @@ def test_successful_clone_of_large_image(skip_upstream, storage_ns):
         source="http",
         dv_name="dv-source",
         namespace=storage_ns.name,
-        url=f"{get_images_external_http_server()}{Images.Windows.WIM10_IMG}",
+        url=f"{get_images_external_http_server()}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}",
         size="35Gi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -43,7 +42,7 @@ def test_successful_vm_restart_with_cloned_dv(skip_upstream, storage_ns):
         source="http",
         dv_name="dv-source",
         namespace=storage_ns.name,
-        url=f"{get_images_external_http_server()}{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="10Gi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],

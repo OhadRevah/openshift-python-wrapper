@@ -12,18 +12,17 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
-from tests.storage.utils import CDI_IMAGES_DIR
+from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
-QCOW2_IMG = "cirros-qcow2.img"
 
 
 @pytest.mark.polarion("CNV-2192")
 def test_successful_virtctl_upload_no_url(storage_ns, tmpdir):
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
+    local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
+        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2192"
     virtctl_upload = storage_utils.virtctl_upload(
@@ -45,9 +44,9 @@ def test_successful_virtctl_upload_no_route(
     with pytest.raises(NotFoundError):
         route.instance
 
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
+    local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
+        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2191"
     virtctl_upload, virtctl_upload_out = storage_utils.virtctl_upload(
@@ -67,9 +66,9 @@ def test_image_upload_with_overridden_url(
     storage_ns, tmpdir, new_route_created, cdi_config_upload_proxy_overridden
 ):
     pvc_name = "cnv-2217"
-    local_name = f"{tmpdir}/{QCOW2_IMG}"
+    local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{QCOW2_IMG}", local_name=local_name
+        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     virtctl_upload = storage_utils.virtctl_upload(
         namespace=storage_ns.name,

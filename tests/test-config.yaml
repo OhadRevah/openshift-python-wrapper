@@ -19,12 +19,12 @@ hco_namespace: openshift-cnv
 
 latest_rhel_version: {
   'os_label': 'rhel8.1',
-  'image': 'rhel-images/rhel-81/rhel-81.qcow2',
+  'image': 'rhel-images/rhel-81.qcow2',
 }
 
 latest_windows_version: {
   'os_label': 'win2k19',
-  'image': 'windows-images/window_qcow2_images/win_19.qcow2',
+  'image': 'windows-images/win_19.qcow2',
 }
 
 latest_fedora_version: {

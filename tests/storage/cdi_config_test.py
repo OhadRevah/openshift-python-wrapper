@@ -51,7 +51,7 @@ def cdiconfig_update(
                                 break
                     elif source == "upload":
                         local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-                        remote_name = f"{utils.CDI_IMAGES_DIR}/{utils.CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
+                        remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
                         utils.downloaded_image(
                             remote_name=remote_name, local_name=local_name
                         )

@@ -20,12 +20,8 @@ from resources.route import Route
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from string_utils import shuffle
-from tests.storage.utils import CDI_IMAGES_DIR, CIRROS_IMAGES_DIR
 from utilities.infra import Images
 
-
-RHEL8_IMAGES = "rhel-images/rhel-8"
-RHEL8_QCOW2 = "rhel-8.qcow2"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,79 +39,79 @@ def test_cdi_uploadproxy_route_owner_references():
     [
         pytest.param(
             "cnv-875",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
             Images.Cirros.QCOW2_IMG,
             marks=(pytest.mark.polarion("CNV-875")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG_GZ}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG_GZ}",
             Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG_XZ}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG_XZ}",
             Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG}",
             Images.Cirros.RAW_IMG,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_GZ}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG_GZ}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2007",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_XZ}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG_XZ}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG}",
             Images.Cirros.QCOW2_IMG,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
             Images.Cirros.QCOW2_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
             Images.Cirros.QCOW2_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG}",
             Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_GZ}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG_GZ}",
             Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
         pytest.param(
             "cnv-2008",
-            f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.RAW_IMG_XZ}",
+            f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG_XZ}",
             Images.Cirros.RAW_IMG_GZ,
             marks=(pytest.mark.polarion("CNV-2008")),
         ),
@@ -140,7 +136,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
     dv_name = "cnv-2018"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         local_name=local_name,
     )
     with utilities.storage.create_dv(
@@ -187,7 +183,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
     dv_name = "cnv-2011"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         local_name=local_name,
     )
     with utilities.storage.create_dv(
@@ -256,7 +252,7 @@ def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
     dvs_processes = []
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{CDI_IMAGES_DIR}/{CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}",
+        remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         local_name=local_name,
     )
     available_pv = PersistentVolume(storage_ns).max_available_pvs
@@ -277,9 +273,10 @@ def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
 @pytest.mark.polarion("CNV-2017")
 def test_successful_upload_missing_file_in_transit(tmpdir, storage_ns, default_client):
     dv_name = "cnv-2017"
-    local_name = f"{tmpdir}/{RHEL8_QCOW2}"
+    local_name = f"{tmpdir}/{Images.Rhel.RHEL8_0_IMG}"
     storage_utils.downloaded_image(
-        remote_name=f"{RHEL8_IMAGES}/{RHEL8_QCOW2}", local_name=local_name
+        remote_name=f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
+        local_name=local_name,
     )
     upload_process = multiprocessing.Process(
         target=upload_test,

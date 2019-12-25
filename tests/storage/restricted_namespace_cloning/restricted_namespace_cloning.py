@@ -18,9 +18,7 @@ from utilities.storage import create_dv
 
 LOGGER = logging.getLogger(__name__)
 UNPRIVILEGED_USER = "unprivileged-user"
-CIRROS_IMAGE_PATH = (
-    f"{utils.CDI_IMAGES_DIR}/{utils.CIRROS_IMAGES_DIR}/{Images.Cirros.QCOW2_IMG}"
-)
+CIRROS_IMAGE_PATH = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
 @contextmanager
