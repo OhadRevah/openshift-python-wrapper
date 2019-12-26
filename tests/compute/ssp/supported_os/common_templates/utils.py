@@ -141,13 +141,17 @@ def check_telnet_connection(ip, port):
     """
 
     LOGGER.info("Check telnet connection to VM.")
-    s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s1.connect((ip, int(port)))
-        s1.close()
-        return True
-    except ConnectionRefusedError:
-        return False
+    sampler = TimeoutSampler(
+        timeout=120,
+        sleep=15,
+        exceptions=ConnectionRefusedError,
+        func=socket.create_connection,
+        address=(ip, int(port)),
+    )
+    for sample in sampler:
+        if sample:
+            socket.close(sample.fileno())
+            return True
 
 
 def migrate_vm(vm):
