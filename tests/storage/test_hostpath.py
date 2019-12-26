@@ -232,6 +232,36 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
             )
 
 
+@pytest.mark.polarion("CNV-3280")
+def test_hpp_pvc_specify_node_waitforfirstconsumer(
+    skip_when_hpp_no_waitforfirstconsumer, storage_ns, schedulable_nodes,
+):
+    """
+    Check that kubevirt.io/provisionOnNode annotation works in WaitForFirstConsumer mode.
+    Even in this mode, the annotation still causes an immediate bind on the specified node.
+    """
+    with PersistentVolumeClaim(
+        name="cnv-3280",
+        namespace=storage_ns.name,
+        accessmodes=PersistentVolumeClaim.AccessMode.RWO,
+        size="1Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+        hostpath_node=schedulable_nodes[0].name,
+    ) as pvc:
+        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=60)
+        assert_provision_on_node_annotation(
+            pvc=pvc, node_name=schedulable_nodes[0].name, type_="regular"
+        )
+        with storage_utils.PodWithPVC(
+            namespace=pvc.namespace,
+            name=f"{pvc.name}-pod",
+            pvc_name=pvc.name,
+            volume_mode=DataVolume.VolumeMode.FILE,
+        ) as pod:
+            pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
+            assert pod.instance.spec.nodeName == schedulable_nodes[0].name
+
+
 @pytest.mark.polarion("CNV-2771")
 def test_hpp_upload_virtctl(skip_when_hpp_no_waitforfirstconsumer, storage_ns, tmpdir):
     """
