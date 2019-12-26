@@ -13,7 +13,9 @@ class RoleBinding(NamespacedResource):
 
     api_group = API_GROUP
 
-    def __init__(self, name, namespace, username, role_ref_kind, role_ref_name):
+    def __init__(
+        self, name, namespace, username=None, role_ref_kind=None, role_ref_name=None
+    ):
         super().__init__(name=name, namespace=namespace)
         self.username = username
         self.role_ref_kind = role_ref_kind
@@ -21,16 +23,20 @@ class RoleBinding(NamespacedResource):
 
     def _to_dict(self):
         res = super()._to_dict()
-        res.update(
-            {
-                "subjects": [
-                    {"kind": "User", "name": self.username, "apiGroup": API_GROUP}
-                ],
-                "roleRef": {
-                    "kind": self.role_ref_kind,
-                    "name": self.role_ref_name,
-                    "apiGroup": API_GROUP,
-                },
-            }
-        )
+
+        subjects = {}
+        subjects["kind"] = ("User",)
+        subjects["apiGroup"] = API_GROUP
+        if self.username:
+            subjects["name"] = self.username
+        res["subjects"] = [subjects]
+
+        roleref = {}
+        roleref["apiGroup"] = API_GROUP
+        if self.role_ref_kind:
+            roleref["role_ref_kind"] = self.role_ref_kind
+        if self.role_ref_name:
+            roleref["role_ref_name"] = self.role_ref_name
+        res["roleRef"] = [roleref]
+
         return res

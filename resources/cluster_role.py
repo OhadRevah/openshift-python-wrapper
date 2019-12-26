@@ -10,7 +10,9 @@ class ClusterRole(Resource):
 
     api_group = "rbac.authorization.k8s.io"
 
-    def __init__(self, name, api_groups, permissions_to_resources, verbs):
+    def __init__(
+        self, name, api_groups=None, permissions_to_resources=None, verbs=None
+    ):
         super().__init__(name=name)
         self.api_groups = api_groups
         self.permissions_to_resources = permissions_to_resources
@@ -18,15 +20,13 @@ class ClusterRole(Resource):
 
     def _to_dict(self):
         res = super()._base_body()
-        res.update(
-            {
-                "rules": [
-                    {
-                        "apiGroups": self.api_groups,
-                        "resources": self.permissions_to_resources,
-                        "verbs": self.verbs,
-                    }
-                ]
-            }
-        )
+        rules = {}
+        if self.api_groups:
+            rules["apiGroups"] = self.api_groups
+        if self.permissions_to_resources:
+            rules["resources"] = self.permissions_to_resources
+        if self.verbs:
+            rules["verbs"] = self.verbs
+        if rules:
+            res["rules"] = [rules]
         return res
