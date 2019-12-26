@@ -8,8 +8,9 @@ from contextlib import contextmanager
 import pytest
 from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
+from resources.cluster_role import ClusterRole
 from resources.namespace import Namespace
-from resources.roles import ClusterRole, RoleBinding
+from resources.role_binding import RoleBinding
 from tests.storage import utils
 from utilities.infra import Images, get_images_external_http_server
 from utilities.storage import create_dv
