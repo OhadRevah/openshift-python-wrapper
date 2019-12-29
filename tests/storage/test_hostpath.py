@@ -12,6 +12,7 @@ from resources.cluster_role import ClusterRole
 from resources.cluster_role_binding import ClusterRoleBinding
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
+from resources.deployment import Deployment
 from resources.hostpath_provisioner import HostPathProvisioner
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
@@ -43,6 +44,16 @@ def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc, hpp_storage_cl
         == StorageClass.VolumeBindingMode.WaitForFirstConsumer
     ):
         pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
+
+
+@pytest.fixture(scope="module")
+def hpp_operator_deployment():
+    LOGGER.debug("Use 'hpp_operator_deployment' fixture...")
+    hpp_operator_deployment = Deployment(
+        name="hostpath-provisioner-operator", namespace=py_config["hco_namespace"]
+    )
+    assert hpp_operator_deployment.exists
+    return hpp_operator_deployment
 
 
 @pytest.fixture(scope="module")
@@ -628,3 +639,16 @@ def test_hpp_operator_pod(skip_test_if_no_hpp_sc, default_client):
         namespace=py_config["hco_namespace"],
     )
     assert hpp_operator_pod.status == Pod.Status.RUNNING
+
+
+@pytest.mark.desctructive
+@pytest.mark.polarion("CNV-3277")
+def test_hpp_operator_recreate_after_deletion(
+    skip_test_if_no_hpp_sc, hpp_operator_deployment
+):
+    """
+    Check that Hostpath-provisioner operator will be created again by HCO after its deletion.
+    The Deployment is deleted, then its RepliceSet and Pod will be deleted and created again.
+    """
+    hpp_operator_deployment.delete()
+    hpp_operator_deployment.wait_until_avail_replicas(timeout=300)
