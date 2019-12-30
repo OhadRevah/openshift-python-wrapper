@@ -237,3 +237,30 @@ def test_hpp_upload_virtctl(skip_when_hpp_no_waitforfirstconsumer, storage_ns, t
         )
         == pod.instance.spec.nodeName
     ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC"
+
+
+@pytest.mark.polarion("CNV-2769")
+def test_hostpath_upload_dv_with_token(
+    skip_test_if_no_hpp_sc, storage_ns, tmpdir, schedulable_nodes,
+):
+    dv_name = "cnv-2769"
+    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
+    remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
+    storage_utils.downloaded_image(
+        remote_name=remote_name, local_name=local_name,
+    )
+    with create_dv(
+        source="upload",
+        dv_name=dv_name,
+        namespace=storage_ns.name,
+        size="1Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+        hostpath_node=schedulable_nodes[0].name,
+        volume_mode=DataVolume.VolumeMode.FILE,
+    ) as dv:
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        storage_utils.upload_token_request(
+            storage_ns_name=dv.namespace, pvc_name=dv.pvc.name, data=local_name
+        )
+        dv.wait()
+        verify_image_location_via_dv_pod_with_pvc(dv=dv, nodes=schedulable_nodes)
