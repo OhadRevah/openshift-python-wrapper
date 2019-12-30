@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import logging
 
 from .resource import NamespacedResource
@@ -13,7 +15,11 @@ class UploadTokenRequest(NamespacedResource):
 
     api_group = "upload.cdi.kubevirt.io"
 
+    def __init__(self, name, namespace, pvc_name):
+        super().__init__(name=name, namespace=namespace)
+        self.pvc_name = pvc_name
+
     def _to_dict(self):
         res = super()._base_body()
-        res.update({"spec": {"pvcName": self.name}})
+        res.update({"spec": {"pvcName": self.pvc_name}})
         return res

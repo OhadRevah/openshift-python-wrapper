@@ -24,6 +24,7 @@ def cdiconfig_update(
     cdiconfig,
     storage_class_type,
     storage_ns_name,
+    dv_name,
     volume_mode=py_config["default_volume_mode"],
     images_https_server_name="",
     run_vm=False,
@@ -43,7 +44,10 @@ def cdiconfig_update(
                 if run_vm:
                     if source == "http":
                         with utils.import_image_to_dv(
-                            images_https_server_name, volume_mode, storage_ns_name,
+                            dv_name,
+                            images_https_server_name,
+                            volume_mode,
+                            storage_ns_name,
                         ) as dv:
                             dv.wait()
                             with utils.create_vm_from_dv(dv) as vm_dv:
@@ -56,9 +60,11 @@ def cdiconfig_update(
                             remote_name=remote_name, local_name=local_name
                         )
                         with utils.upload_image_to_dv(
-                            volume_mode, storage_ns_name
+                            dv_name, volume_mode, storage_ns_name
                         ) as dv:
-                            utils.upload_token_request(storage_ns_name, local_name)
+                            utils.upload_token_request(
+                                storage_ns_name, pvc_name=dv.pvc.name, data=local_name
+                            )
                             dv.wait()
                             with utils.create_vm_from_dv(dv=dv) as vm_dv:
                                 utils.check_disk_count_in_vm(vm_dv)
@@ -73,6 +79,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
     cdiconfig_update(
         source="upload",
         cdiconfig=cdi_config,
+        dv_name="cnv-2451",
         storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=images_https_server,
         storage_ns_name=storage_ns.name,
@@ -89,6 +96,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
+        dv_name="cnv-2478",
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=storage_ns.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
@@ -104,6 +112,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
+        dv_name="cnv-2214",
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=storage_ns.name,
     )
@@ -116,6 +125,7 @@ def test_cdiconfig_scratch_space_not_default(
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
+        dv_name="cnv-2440",
         storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=images_https_server,
         storage_ns_name=storage_ns.name,

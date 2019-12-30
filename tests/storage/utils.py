@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @contextmanager
-def import_image_to_dv(images_https_server_name, volume_mode, storage_ns_name):
+def import_image_to_dv(dv_name, images_https_server_name, volume_mode, storage_ns_name):
     url = get_file_url_https_server(images_https_server_name, Images.Cirros.QCOW2_IMG)
     with ConfigMap(
         name="https-cert-configmap",
@@ -33,7 +33,7 @@ def import_image_to_dv(images_https_server_name, volume_mode, storage_ns_name):
     ) as configmap:
         with create_dv(
             source="http",
-            dv_name="import-image",
+            dv_name=dv_name,
             namespace=configmap.namespace,
             url=url,
             cert_configmap=configmap.name,
@@ -44,10 +44,10 @@ def import_image_to_dv(images_https_server_name, volume_mode, storage_ns_name):
 
 
 @contextmanager
-def upload_image_to_dv(volume_mode, storage_ns_name):
+def upload_image_to_dv(dv_name, volume_mode, storage_ns_name):
     with create_dv(
         source="upload",
-        dv_name="upload-image",
+        dv_name=dv_name,
         namespace=storage_ns_name,
         size="3Gi",
         storage_class=py_config["default_storage_class"],
@@ -58,8 +58,10 @@ def upload_image_to_dv(volume_mode, storage_ns_name):
 
 
 @contextmanager
-def upload_token_request(storage_ns_name, data):
-    with UploadTokenRequest(name="upload-image", namespace=storage_ns_name) as utr:
+def upload_token_request(storage_ns_name, pvc_name, data):
+    with UploadTokenRequest(
+        name="upload-image", namespace=storage_ns_name, pvc_name=pvc_name
+    ) as utr:
         token = utr.create().status.token
         LOGGER.info("Ensure upload was successful")
         sampler = TimeoutSampler(
