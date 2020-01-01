@@ -14,10 +14,20 @@ class RoleBinding(NamespacedResource):
     api_group = API_GROUP
 
     def __init__(
-        self, name, namespace, username=None, role_ref_kind=None, role_ref_name=None
+        self,
+        name,
+        namespace,
+        subjects_kind=None,
+        subjects_name=None,
+        subjects_namespace=None,
+        role_ref_kind=None,
+        role_ref_name=None,
     ):
+
         super().__init__(name=name, namespace=namespace)
-        self.username = username
+        self.subjects_kind = subjects_kind
+        self.subjects_name = subjects_name
+        self.subjects_namespace = subjects_namespace
         self.role_ref_kind = role_ref_kind
         self.role_ref_name = role_ref_name
 
@@ -25,18 +35,22 @@ class RoleBinding(NamespacedResource):
         res = super()._to_dict()
 
         subjects = {}
-        subjects["kind"] = ("User",)
-        subjects["apiGroup"] = API_GROUP
-        if self.username:
-            subjects["name"] = self.username
-        res["subjects"] = [subjects]
+        if self.subjects_kind:
+            subjects["kind"] = self.subjects_kind
+        if self.subjects_name:
+            subjects["name"] = self.subjects_name
+        if self.subjects_namespace:
+            subjects["namespace"] = self.subjects_namespace
+        if subjects:
+            subjects["apiGroup"] = API_GROUP
+            res["subjects"] = [subjects]
 
         roleref = {}
-        roleref["apiGroup"] = API_GROUP
         if self.role_ref_kind:
-            roleref["role_ref_kind"] = self.role_ref_kind
+            roleref["kind"] = self.role_ref_kind
         if self.role_ref_name:
-            roleref["role_ref_name"] = self.role_ref_name
-        res["roleRef"] = [roleref]
-
+            roleref["name"] = self.role_ref_name
+        if roleref:
+            roleref["apiGroup"] = API_GROUP
+            res["roleRef"] = roleref
         return res

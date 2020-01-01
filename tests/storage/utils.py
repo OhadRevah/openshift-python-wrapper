@@ -7,9 +7,11 @@ from contextlib import contextmanager
 
 import requests
 from pytest_testconfig import config as py_config
+from resources.cluster_role import ClusterRole
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.pod import Pod
+from resources.role_binding import RoleBinding
 from resources.route import Route
 from resources.service import Service
 from resources.upload_token_request import UploadTokenRequest
@@ -209,3 +211,35 @@ class HttpService(Service):
 
 def get_file_url_https_server(images_https_server, file_name):
     return f"{images_https_server}{Images.Cirros.DIR}/{file_name}"
+
+
+@contextmanager
+def create_cluster_role(name, api_groups, verbs, permissions_to_resources):
+    """
+    Create cluster role
+    """
+    with ClusterRole(
+        name=name,
+        api_groups=api_groups,
+        permissions_to_resources=permissions_to_resources,
+        verbs=verbs,
+    ) as cluster_role:
+        yield cluster_role
+
+
+@contextmanager
+def create_role_binding(
+    name, namespace, subjects_kind, subjects_name, role_ref_kind, role_ref_name
+):
+    """
+    Create role binding
+    """
+    with RoleBinding(
+        name=name,
+        namespace=namespace,
+        subjects_kind=subjects_kind,
+        subjects_name=subjects_name,
+        role_ref_kind=role_ref_kind,
+        role_ref_name=role_ref_name,
+    ) as role_binding:
+        yield role_binding
