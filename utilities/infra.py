@@ -16,6 +16,7 @@ from resources.project import Project, ProjectRequest
 
 LOGGER = logging.getLogger(__name__)
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
+BASE_IMAGES_DIR = "cnv-tests"
 
 
 class Images:
@@ -27,32 +28,32 @@ class Images:
         QCOW2_IMG_GZ = "cirros-0.4.0-x86_64-disk.qcow2.gz"
         QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
         DISK_DEMO = "cirros-registry-disk-demo"
-        DIR = "cirros-images"
-        MOD_AUTH_BASIC_DIR = f"mod-auth-basic/{DIR}"
+        DIR = f"{BASE_IMAGES_DIR}/cirros-images"
+        MOD_AUTH_BASIC_DIR = f"{BASE_IMAGES_DIR}/mod-auth-basic/cirros-images"
 
     class Rhel:
         RHEL6_IMG = "rhel-610.qcow2"
         RHEL7_6_IMG = "rhel-76.qcow2"
         RHEL8_0_IMG = "rhel-8.qcow2"
         RHEL8_1_IMG = "rhel-81.qcow2"
-        DIR = "rhel-images"
+        DIR = f"{BASE_IMAGES_DIR}/rhel-images"
 
     class Windows:
         WIM10_IMG = "win_10.qcow2"
         WIN12_IMG = "win_12.qcow2"
         WIN16_IMG = "win_16.qcow2"
         WIN19_IMG = "win_19.qcow2"
-        DIR = "windows-images"
+        DIR = f"{BASE_IMAGES_DIR}/windows-images"
 
     class Fedora:
         FEDORA29_IMG = "Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
         FEDORA31_IMG = "Fedora-Cloud-Base-31-1.9.x86_64.qcow2"
         DISK_DEMO = "fedora-cloud-registry-disk-demo"
-        DIR = "fedora-images"
+        DIR = f"{BASE_IMAGES_DIR}/fedora-images"
 
     class Cdi:
         QCOW2_IMG = "cirros-qcow2.img"
-        DIR = "cdi-test-images"
+        DIR = f"{BASE_IMAGES_DIR}/cdi-test-images"
 
 
 def get_images_external_http_server():
