@@ -16,6 +16,7 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
 from resources.daemonset import DaemonSet
+from resources.namespace import Namespace
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
@@ -122,12 +123,12 @@ def kubevirt_crd_resources(default_client, custom_resource_definitions):
 
 
 @pytest.fixture(scope="module")
-def network_attachment_definition():
+def network_attachment_definition(hco_namespace):
     with network_utils.bridge_nad(
         nad_type=network_utils.LINUX_BRIDGE,
         nad_name="mgnad",
         bridge_name="mgbr",
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace,
     ) as network_attachment_definition:
         yield network_attachment_definition
 
@@ -146,15 +147,13 @@ def nodenetworkstate_with_bridge(network_utility_pods, nodes):
 
 
 @pytest.fixture(scope="module")
-def running_hco_containers(default_client):
+def running_hco_containers(default_client, hco_namespace):
     pods = []
     for pod in Pod.get(default_client, namespace=py_config["hco_namespace"]):
         for container in pod.instance["status"].get("containerStatuses", []):
             if container["ready"]:
                 pods.append((pod, container))
-    assert (
-        pods
-    ), f"No running pods in the {py_config['hco_namespace']} namespace were found."
+    assert pods, f"No running pods in the {hco_namespace.name} namespace were found."
     return pods
 
 
@@ -217,9 +216,18 @@ def config_map_by_name(request, default_client):
 
 
 @pytest.fixture(scope="module")
-def config_maps_file(cnv_must_gather):
+def config_maps_file(hco_namespace, cnv_must_gather):
     with open(
-        f"{cnv_must_gather}/namespaces/{py_config['hco_namespace']}/core/configmaps.yaml",
-        "r",
+        f"{cnv_must_gather}/namespaces/{hco_namespace.name}/core/configmaps.yaml", "r",
     ) as config_map_file:
         return yaml.safe_load(config_map_file)
+
+
+@pytest.fixture(scope="module")
+def hco_namespace(default_client):
+    return list(
+        Namespace.get(
+            dyn_client=default_client,
+            field_selector=f"metadata.name=={py_config['hco_namespace']}",
+        )
+    )[0]
