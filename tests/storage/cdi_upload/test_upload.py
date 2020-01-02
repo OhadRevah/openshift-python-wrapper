@@ -153,7 +153,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, client=default_client
+            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sampler = TimeoutSampler(
@@ -167,7 +167,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
                 if sample == 401:
                     return True
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, client=default_client
+            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sampler = TimeoutSampler(
@@ -201,7 +201,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, client=default_client
+            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             LOGGER.info("Wait until token expires ...")
@@ -234,7 +234,7 @@ def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=300)
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, client=default_client
+            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sleep(5)

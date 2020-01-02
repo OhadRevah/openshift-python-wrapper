@@ -40,7 +40,9 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
         dv.scratch_pvc.delete()
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
-            name="scratch-space-upload-qcow2-https", namespace=storage_ns.name
+            name="scratch-space-upload-qcow2-https",
+            namespace=storage_ns.name,
+            pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
@@ -337,7 +339,9 @@ def test_scratch_space_upload_data_volume(
         volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
-        with UploadTokenRequest(name="cnv-2315", namespace=storage_ns.name) as utr:
+        with UploadTokenRequest(
+            name="cnv-2315", namespace=storage_ns.name, pvc_name=dv.pvc.name
+        ) as utr:
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
