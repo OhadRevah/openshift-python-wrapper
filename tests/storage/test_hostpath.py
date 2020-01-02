@@ -11,6 +11,7 @@ import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.pod import Pod
 from resources.storage_class import StorageClass
 from utilities.infra import Images, get_images_external_http_server
 from utilities.storage import create_dv
@@ -207,3 +208,39 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
                     "volume.kubernetes.io/selected-node"
                 ]
             )
+
+
+@pytest.mark.polarion("CNV-2771")
+def test_hpp_upload_virtctl(
+    storage_ns, tmpdir, skip_test_if_no_hpp_sc, skip_when_hpp_no_waitforfirstconsumer
+):
+    """
+    Check that upload disk image via virtcl tool works
+    """
+    local_name = f"{tmpdir}/{Images.Fedora.FEDORA29_IMG}"
+    remote_name = f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}"
+    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    pvc_name = "cnv-2771"
+    virtctl_upload = storage_utils.virtctl_upload(
+        namespace=storage_ns.name,
+        image_path=local_name,
+        pvc_size="25Gi",
+        pvc_name=pvc_name,
+        storage_class=StorageClass.Types.HOSTPATH,
+    )
+    LOGGER.debug(virtctl_upload)
+    assert virtctl_upload
+    pvc = PersistentVolumeClaim(namespace=storage_ns.name, name=pvc_name)
+    assert pvc.bound()
+    scratch_pvc = PersistentVolumeClaim(
+        namespace=storage_ns.name, name=f"{pvc_name}-scratch"
+    )
+    pod = Pod(namespace=storage_ns.name, name=f"cdi-upload-{pvc.name}")
+    assert (
+        pvc.instance.metadata.annotations.get("volume.kubernetes.io/selected-node")
+        == pod.instance.spec.nodeName
+        and scratch_pvc.instance.metadata.annotations.get(
+            "volume.kubernetes.io/selected-node"
+        )
+        == pod.instance.spec.nodeName
+    ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC"
