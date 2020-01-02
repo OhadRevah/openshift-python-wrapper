@@ -218,7 +218,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
                     return True
 
 
-def upload_test(dv_name, storage_ns, local_name, default_client, size=None):
+def _upload_image(dv_name, storage_ns, local_name, size=None):
     """
     Upload test that is executed in parallel in with other tasks.
     """
@@ -262,8 +262,7 @@ def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
     available_pv = PersistentVolume(storage_ns).max_available_pvs
     for dv in range(available_pv):
         dv_process = multiprocessing.Process(
-            target=upload_test,
-            args=(f"dv-{dv}", storage_ns, local_name, default_client),
+            target=_upload_image, args=(f"dv-{dv}", storage_ns, local_name),
         )
         dv_process.start()
         dvs_processes.append(dv_process)
@@ -283,8 +282,7 @@ def test_successful_upload_missing_file_in_transit(tmpdir, storage_ns, default_c
         local_name=local_name,
     )
     upload_process = multiprocessing.Process(
-        target=upload_test,
-        args=(dv_name, storage_ns, local_name, default_client, "10Gi"),
+        target=_upload_image, args=(dv_name, storage_ns, local_name, "10Gi"),
     )
 
     # Run process in parallel
