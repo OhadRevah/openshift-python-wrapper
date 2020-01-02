@@ -139,17 +139,19 @@ def create_vm_from_dv(dv, vm_name="cirros-vm", image=None, start=True):
         yield vm
 
 
-def virtctl_upload(namespace, pvc_name, pvc_size, image_path):
-    return run_virtctl_command(
-        command=[
-            "image-upload",
-            f"--image-path={image_path}",
-            f"--pvc-size={pvc_size}",
-            f"--pvc-name={pvc_name}",
-            "--insecure",
-        ],
-        namespace=namespace,
-    )
+def virtctl_upload(
+    namespace, pvc_name, pvc_size, image_path, storage_class=None,
+):
+    command = [
+        "image-upload",
+        f"--image-path={image_path}",
+        f"--pvc-size={pvc_size}",
+        f"--pvc-name={pvc_name}",
+        "--insecure",
+    ]
+    if storage_class:
+        command.append(f"--storage-class={storage_class}")
+    return run_virtctl_command(command=command, namespace=namespace)
 
 
 def downloaded_image(remote_name, local_name):
