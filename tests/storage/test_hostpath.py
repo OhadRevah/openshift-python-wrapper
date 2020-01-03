@@ -400,7 +400,7 @@ def test_hostpath_registry_import_dv(
 
 
 @pytest.mark.polarion("CNV-3516")
-def test_hostpath_clone_dv_wffc(
+def test_hostpath_clone_dv_without_annotation_wffc(
     skip_when_hpp_no_waitforfirstconsumer, default_client, storage_ns,
 ):
     """
@@ -414,7 +414,7 @@ def test_hostpath_clone_dv_wffc(
         namespace=storage_ns.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        size="6Gi",
+        size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as source_dv:
@@ -433,7 +433,7 @@ def test_hostpath_clone_dv_wffc(
             namespace=storage_ns.name,
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
-            size="20Gi",
+            size="1Gi",
             storage_class=StorageClass.Types.HOSTPATH,
             volume_mode=DataVolume.VolumeMode.FILE,
         ) as target_dv:
@@ -482,3 +482,47 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
             pvc=dv.scratch_pvc, pod=dv.importer_pod, type_="scratch"
         )
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+
+
+@pytest.mark.polarion("CNV-2770")
+def test_hostpath_clone_dv_with_annotation(
+    skip_test_if_no_hpp_sc, storage_ns, schedulable_nodes
+):
+    """
+    Check that on WaitForFirstConsumer or Immediate binding mode,
+    if the source/target DV is annotated to a specified node, CDI clone function works well.
+    The PVCs will have an annotation 'kubevirt.io/provisionOnNode: <specified_node_name>'
+    and bound immediately.
+    """
+    with create_dv(
+        source="http",
+        dv_name="cnv-2770-source-dv",
+        namespace=storage_ns.name,
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        size="1Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+        volume_mode=DataVolume.VolumeMode.FILE,
+        hostpath_node=schedulable_nodes[0].name,
+    ) as source_dv:
+        source_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=300)
+        assert_provision_on_node_annotation(
+            pvc=source_dv.pvc, node_name=schedulable_nodes[0].name, type_="import"
+        )
+        with create_dv(
+            source="pvc",
+            dv_name="cnv-2770-target-dv",
+            namespace=storage_ns.name,
+            size="1Gi",
+            storage_class=StorageClass.Types.HOSTPATH,
+            hostpath_node=schedulable_nodes[0].name,
+            volume_mode=DataVolume.VolumeMode.FILE,
+            source_namespace=source_dv.namespace,
+            source_pvc=source_dv.pvc.name,
+        ) as target_dv:
+            target_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=600)
+            assert_provision_on_node_annotation(
+                pvc=target_dv.pvc, node_name=schedulable_nodes[0].name, type_="target"
+            )
+            with storage_utils.create_vm_from_dv(dv=target_dv) as vm:
+                storage_utils.check_disk_count_in_vm(vm=vm)

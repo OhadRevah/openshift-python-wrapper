@@ -164,7 +164,7 @@ class DataVolume(NamespacedResource):
             res["metadata"]["annotations"] = {
                 "kubevirt.io/provisionOnNode": self.hostpath_node
             }
-        elif self.source == "pvc":
+        if self.source == "pvc":
             res["spec"]["source"]["pvc"] = {
                 "name": self.source_pvc or "dv-source",
                 "namespace": self.source_namespace or self.namespace,
