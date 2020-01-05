@@ -87,6 +87,7 @@ make tests UPSTREAM=1
 ## Other parameters
 
 ### Logging
+Log file 'pytest-tests.log' is generated with the full pytest output in cnv-tests root directory.
 
 To see verbose logging of a test run, add the following parameter:
 

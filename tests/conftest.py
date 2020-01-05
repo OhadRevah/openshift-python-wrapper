@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import shutil
 import urllib.request
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -35,6 +36,16 @@ from utilities.virt import kubernetes_taint_exists
 LOGGER = logging.getLogger(__name__)
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
+TEST_LOG_FILE = "pytest-tests.log"
+
+
+def _separator(symbol_, val=None):
+    terminal_width = shutil.get_terminal_size(fallback=(120, 40))[0]
+    if not val:
+        return f"{symbol_ * terminal_width}"
+
+    sepa = int((terminal_width - len(val) - 2) // 2)
+    return f"{symbol_ * sepa} {val} {symbol_ * sepa}"
 
 
 def pytest_addoption(parser):
@@ -127,6 +138,59 @@ def pytest_generate_tests(metafunc):
             ids=[f"<{matrix_param}>" for matrix_param in matrix_params],
             scope="class",
         )
+
+
+def pytest_runtest_logreport(report):
+    is_setup = report.when == "setup"
+    is_test = report.when == "call"
+    scope_section_separator = f"\n{_separator(symbol_='-', val=report.when.upper())}\n"
+    test_status_str = f"\nSTATUS: {report.outcome.upper()}\n"
+
+    with open(TEST_LOG_FILE, "a", buffering=1) as fd:
+        if is_setup:
+            fd.write(f"\n{_separator(val=report.nodeid, symbol_='#')}\n")
+
+        log_section = [
+            section[1] for section in report.sections if report.when in section[0]
+        ]
+
+        if log_section:
+            fd.write(scope_section_separator)
+            fd.write(f"{log_section[0]}")
+        else:
+            if is_test:
+                fd.write(scope_section_separator)
+
+        if is_test and not report.failed:
+            fd.write(test_status_str)
+
+        if report.failed:
+            if not log_section and not is_test:
+                fd.write(scope_section_separator)
+
+            fd.write(test_status_str)
+            fd.write(f"{report.longreprtext}\n")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    passed_str = "passed"
+    skipped_str = "skipped"
+    failed_str = "failed"
+
+    passed = len(reporter.stats.get(passed_str, []))
+    skipped = len(reporter.stats.get(skipped_str, []))
+    failed = len(reporter.stats.get(failed_str, []))
+    summary = f"{passed} {passed_str}, {skipped} {skipped_str}, {failed} {failed_str}"
+
+    with open(TEST_LOG_FILE, "a", buffering=1) as fd:
+        fd.write(f"\n{_separator(symbol_='-', val=summary)}")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def tests_log_file():
+    with open(TEST_LOG_FILE, "w"):
+        pass
 
 
 def login_to_account(api_address, user, password=None):
