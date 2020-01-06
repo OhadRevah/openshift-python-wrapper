@@ -124,9 +124,9 @@ def vm_template_dv_rhel8(
 @pytest.fixture()
 def windows_initial_boot_time(vm_win10, winrmcli_pod):
     LOGGER.info(
-        f"Windows VM {vm_win10.vmi.name} is booting up, it may take up to 10 mins."
+        f"Windows VM {vm_win10.vmi.name} is booting up, it may take up to 20 minutess."
     )
-    boot_time = check_windows_boot_time(vm_win10, winrmcli_pod, timeout=600)
+    boot_time = check_windows_boot_time(vm_win10, winrmcli_pod)
     yield boot_time
 
 
@@ -156,7 +156,7 @@ def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_serv
     template_labels_dict = {
         "os": "win10",
         "workload": "desktop",
-        "flavor": "large",
+        "flavor": "medium",
     }
     with create_dv(
         source="http",
@@ -169,6 +169,7 @@ def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_serv
         volume_mode=DataVolume.VolumeMode.BLOCK,
         storage_class=py_config["default_storage_class"],
     ) as dv:
+        dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(
             name=vm_dv_name,
             namespace=node_maintenance_ns.name,
@@ -181,7 +182,7 @@ def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_serv
             yield vm
 
 
-def check_windows_boot_time(vm, winrmcli_pod, timeout=120):
+def check_windows_boot_time(vm, winrmcli_pod, timeout=1200):
     command = [
         "bash",
         "-c",
