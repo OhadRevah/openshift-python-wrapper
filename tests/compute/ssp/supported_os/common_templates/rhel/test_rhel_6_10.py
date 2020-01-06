@@ -5,6 +5,7 @@ Common templates test RHEL 6.10
 """
 
 import logging
+import time
 
 import pytest
 from tests.compute.ssp.supported_os.common_templates import utils
@@ -79,6 +80,9 @@ class TestCommonTemplatesRhel6:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
+        # As guest agent is not available, need to add sleep before trying
+        # to connect to console. Otherwise, EOF is received.
+        time.sleep(600)
         utils.wait_for_console(vm_object_from_template_scope_class, console.RHEL)
 
     @pytest.mark.run(after="test_vm_console")
@@ -120,7 +124,7 @@ class TestCommonTemplatesRhel6:
     @pytest.mark.polarion("CNV-3219")
     @pytest.mark.parametrize(
         "enabled_ssh_service_in_vm_scope_class",
-        [{"console_impl": console.RHEL}],
+        [{"systemctl_support": False, "console_impl": console.RHEL}],
         indirect=True,
     )
     def test_expose_ssh(

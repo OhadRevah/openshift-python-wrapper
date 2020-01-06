@@ -26,14 +26,21 @@ def enabled_ssh_service_in_vm(request, vm_object_from_template):
 
     LOGGER.info("Enable SSH in VM.")
 
+    if request.param.get("systemctl_support", True):
+        ssh_service_restart_cmd = [
+            "sudo systemctl enable sshd",
+            "sudo systemctl restart sshd",
+        ]
+    # For older linux versions which do not support systemctl
+    else:
+        ssh_service_restart_cmd = ["sudo /etc/init.d/sshd restart"]
+
     commands = [
         r"sudo sed -iE "
         r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
         r" /etc/ssh/sshd_config",
         "",
-        "sudo systemctl enable sshd",
-        "sudo systemctl restart sshd",
-    ]
+    ] + ssh_service_restart_cmd
 
     vm_console_run_commands(
         console_impl=request.param["console_impl"],
