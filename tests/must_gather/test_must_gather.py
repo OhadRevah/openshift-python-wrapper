@@ -7,6 +7,7 @@ import pytest
 import yaml
 from pytest_testconfig import config as py_config
 from resources.api_service import APIService
+from resources.cdi_config import CDIConfig
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
@@ -52,6 +53,18 @@ from utilities.infra import BUG_STATUS_CLOSED
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-3043")),
             id="test_virtualmachine_resources",
+        ),
+        pytest.param(
+            CDIConfig,
+            "cluster-scoped-resources/cdiconfigs.cdi.kubevirt.io/{name}.yaml",
+            (
+                ("spec",),
+                ("metadata", "uid"),
+                ("metadata", "name"),
+                ("metadata", "selfLink"),
+            ),
+            marks=(pytest.mark.polarion("CNV-3373")),
+            id="test_cdi_config_resources",
         ),
     ],
     indirect=["resource_type"],
