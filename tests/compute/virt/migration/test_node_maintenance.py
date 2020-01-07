@@ -108,7 +108,6 @@ def vm_template_dv_rhel8(
         storage_class=py_config["default_storage_class"],
     ) as dv:
         dv.wait(timeout=1200)
-        yield dv
         with VirtualMachineForTestsFromTemplate(
             name="dv-rhel8-node-maintenance",
             namespace=node_maintenance_ns.name,
