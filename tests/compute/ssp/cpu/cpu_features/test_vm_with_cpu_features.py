@@ -101,15 +101,32 @@ def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
         vm_console.expect("1", timeout=20)
 
 
-@pytest.mark.polarion("CNV-1832")
-def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace):
+@pytest.mark.parametrize(
+    "features",
+    [
+        pytest.param(
+            [{"name": "pcid", "policy": "nomatch"}],
+            id="1 invalid policy",
+            marks=pytest.mark.polarion("CNV-1832"),
+        ),
+        pytest.param(
+            [
+                {"name": "pcid", "policy": "require"},
+                {"name": "pclmuldq", "policy": "nomatch"},
+            ],
+            id="1 valid, 1 invalid policy",
+            marks=pytest.mark.polarion("CNV-3056"),
+        ),
+    ],
+)
+def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace, features):
     """VM should not be created successfully"""
     vm_name = "invalid-cpu-feature-policy-vm"
     with pytest.raises(UnprocessibleEntityError):
         with VirtualMachineForTests(
             name=vm_name,
             namespace=namespace.name,
-            cpu_flags={"features": [{"name": "pcid", "policy": "invalid_policy"}]},
+            cpu_flags={"features": features},
             body=fedora_vm_body(vm_name),
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
