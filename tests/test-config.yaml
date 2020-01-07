@@ -19,17 +19,17 @@ hco_namespace: openshift-cnv
 
 latest_rhel_version: {
   'os_label': 'rhel8.1',
-  'image': 'rhel-images/rhel-81.qcow2',
+  'image': 'cnv-tests/rhel-images/rhel-81.qcow2',
 }
 
 latest_windows_version: {
   'os_label': 'win2k19',
-  'image': 'windows-images/win_19.qcow2',
+  'image': 'cnv-tests/windows-images/win_19.qcow2',
 }
 
 latest_fedora_version: {
   'os_label': 'fedora30',
-  'image': 'fedora-images/Fedora-Cloud-Base-30-1.2.x86_64.qcow2',
+  'image': 'cnv-tests/fedora-images/Fedora-Cloud-Base-30-1.2.x86_64.qcow2',
 }
 
 windows_username: Administrator
