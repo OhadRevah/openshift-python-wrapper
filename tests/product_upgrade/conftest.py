@@ -6,6 +6,7 @@ from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
 from tests.product_upgrade.utils import (
+    UpgradeUtils,
     wait_for_dvs_import_completed,
     wait_for_vms_interfaces,
 )
@@ -185,3 +186,23 @@ def vms_for_upgrade(unprivileged_client, bridge_on_all_nodes, dvs_for_upgrade):
 
     for vm in vms_list:
         vm.clean_up()
+
+
+@pytest.fixture(scope="session")
+def cnv_versions(default_client, pytestconfig):
+    cnv_current_version = UpgradeUtils.get_current_cnv_version(
+        dyn_client=default_client, hco_namespace=py_config["hco_namespace"]
+    )
+    cnv_target_version = pytestconfig.option.cnv_version
+    # Upgrade only if a newer CNV version is requested
+    if int(cnv_target_version.replace(".", "")) <= int(
+        cnv_current_version.replace(".", "")
+    ):
+        raise ValueError(
+            f"Cannot upgrade to older/identical versions, current: {cnv_current_version} target: {cnv_target_version}"
+        )
+
+    return {
+        "current_version": cnv_current_version,
+        "target_version": cnv_target_version,
+    }

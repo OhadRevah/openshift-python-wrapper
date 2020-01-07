@@ -114,8 +114,8 @@ def pytest_addoption(parser):
 
 def pytest_cmdline_main(config):
     if config.getoption("upgrade") == "ocp":
-        if not config.getoption("ocp_image"):
-            raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
+        # TODO: OCP upgrade is in progress; exception should be removed when done
+        raise NotImplementedError("OCP upgrade is not implemented.")
 
     if config.getoption("upgrade") == "cnv":
         if not config.getoption("cnv_version"):

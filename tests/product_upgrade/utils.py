@@ -1,7 +1,10 @@
 import logging
 
-from resources.clusterserviceversion import ClusterServiceVersion
+from pytest_testconfig import py_config
+from resources.cluster_service_version import ClusterServiceVersion
 from resources.datavolume import DataVolume
+from resources.deployment import Deployment
+from resources.hyperconverged import HyperConverged
 from resources.installplan import InstallPlan
 from resources.pod import Pod
 from resources.utils import TimeoutSampler
@@ -75,6 +78,13 @@ class UpgradeUtils:
             assert vm.vmi.instance.status.migrationState.completed
 
     @staticmethod
+    def get_current_cnv_version(dyn_client, hco_namespace):
+        for csv in ClusterServiceVersion.get(
+            dyn_client=dyn_client, namespace=hco_namespace
+        ):
+            return csv.instance.spec.version
+
+    @staticmethod
     def get_new_csv(default_client, hco_namespace, new_hco_version):
         for csv in ClusterServiceVersion.get(
             dyn_client=default_client, namespace=hco_namespace
@@ -129,3 +139,68 @@ class UpgradeUtils:
         for bridge_annotation in bridge_nad.instance.metadata.annotations.values():
             assert bridge_annotation in vm.vmi.node.instance.status.capacity.keys()
             assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
+
+    @staticmethod
+    def upgrade_cnv(default_client, cnv_target_version):
+        new_hco_version = f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
+        hco_namespace = py_config["hco_namespace"]
+        LOGGER.info("Get all operators PODs before upgrade")
+        old_pods = UpgradeUtils.get_all_operators_pods(default_client, hco_namespace)
+        old_pods_names = [pod.name for pod in old_pods]
+
+        LOGGER.info("Approve the install plan to trigger the upgrade.")
+        UpgradeUtils.approve_install_plan(
+            default_client, hco_namespace, new_hco_version
+        )
+
+        LOGGER.info("Wait for the new CSV")
+        new_csv = UpgradeUtils.wait_for_csv(
+            default_client=default_client,
+            hco_namespace=hco_namespace,
+            new_hco_version=new_hco_version,
+            get_new_csv=UpgradeUtils.get_new_csv,
+        )
+
+        LOGGER.info("Check that CSV status is Installing")
+        new_csv.wait_for_status(
+            new_csv.Status.INSTALLING, timeout=TIMEOUT_10MIN, stop_status=None
+        )
+
+        LOGGER.info("Get all operators PODs names and images version from the new CSV")
+        operators_versions = UpgradeUtils.get_operators_names_and_images(new_csv)
+
+        LOGGER.info("Wait for old operators PODs to disappear")
+        UpgradeUtils.wait_pods_deleted(old_pods_names=old_pods_names, pods=old_pods)
+
+        LOGGER.info("Get all operators PODs after upgrade")
+        new_pods = UpgradeUtils.get_all_operators_pods(
+            default_client=default_client, hco_namespace=hco_namespace
+        )
+
+        LOGGER.info(
+            "Check that all operators PODs have the new images version and have status ready"
+        )
+        UpgradeUtils.check_pods_status_and_images(
+            pods=new_pods, operators_versions=operators_versions
+        )
+
+        LOGGER.info("Wait for HCO operator to be ready")
+        hco_operator_pod = UpgradeUtils.get_hco_operator(
+            default_client=default_client, hco_namespace=hco_namespace
+        )
+        hco_operator_pod.wait_for_condition(condition="Ready", status="True")
+
+        LOGGER.info("Wait for number of replicas = number of updated replicas")
+        for deploy in Deployment.get(default_client, namespace=hco_namespace):
+            deploy.wait_until_avail_replicas(timeout=TIMEOUT_10MIN)
+
+        LOGGER.info("Wait for the new HCO to be available.")
+        for hco in HyperConverged.get(
+            dyn_client=default_client, namespace=hco_namespace
+        ):
+            hco.wait_for_condition(condition="Available", status="True")
+
+        LOGGER.info("Check that CSV status is Succeeded")
+        new_csv.wait_for_status(
+            new_csv.Status.SUCCEEDED, timeout=TIMEOUT_10MIN, stop_status=None
+        )
