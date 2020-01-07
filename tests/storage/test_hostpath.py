@@ -89,9 +89,7 @@ def test_hostpath_pod_reference_pvc(storage_ns, nodes, skip_test_if_no_hpp_sc):
 
 
 @pytest.mark.polarion("CNV-3354")
-def test_hpp_not_specify_node_immediate(
-    storage_ns, skip_test_if_no_hpp_sc, skip_when_hpp_no_immediate
-):
+def test_hpp_not_specify_node_immediate(storage_ns, skip_when_hpp_no_immediate):
     """
     Negative case
     Check that PVC should remain Pending when hostpath node was not specified
@@ -113,9 +111,7 @@ def test_hpp_not_specify_node_immediate(
 
 
 @pytest.mark.polarion("CNV-3228")
-def test_hpp_specify_node_immediate(
-    storage_ns, nodes, skip_test_if_no_hpp_sc, skip_when_hpp_no_immediate
-):
+def test_hpp_specify_node_immediate(storage_ns, nodes, skip_when_hpp_no_immediate):
     """
     Check that the PVC will bound PV and DataVolume status becomes Succeeded once importer Pod finished importing
     when PVC is annotated to a specified node and the volumeBindingMode of hostpath-provisioner StorageClass is
@@ -151,12 +147,7 @@ def test_hpp_specify_node_immediate(
     ],
 )
 def test_hostpath_http_import_dv(
-    storage_ns,
-    dv_name,
-    image_name,
-    nodes,
-    skip_test_if_no_hpp_sc,
-    skip_when_hpp_no_immediate,
+    storage_ns, dv_name, image_name, nodes, skip_when_hpp_no_immediate,
 ):
     """
     Check that CDI importing from HTTP endpoint works well with hostpath-provisioner
@@ -177,7 +168,7 @@ def test_hostpath_http_import_dv(
 
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
-    storage_ns, skip_test_if_no_hpp_sc, skip_when_hpp_no_waitforfirstconsumer
+    storage_ns, skip_when_hpp_no_waitforfirstconsumer
 ):
     """
     Check that in the condition of the volumeBindingMode of hostpath-provisioner StorageClass is 'WaitForFirstConsumer',
@@ -211,9 +202,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 
 
 @pytest.mark.polarion("CNV-2771")
-def test_hpp_upload_virtctl(
-    storage_ns, tmpdir, skip_test_if_no_hpp_sc, skip_when_hpp_no_waitforfirstconsumer
-):
+def test_hpp_upload_virtctl(storage_ns, tmpdir, skip_when_hpp_no_waitforfirstconsumer):
     """
     Check that upload disk image via virtcl tool works
     """
