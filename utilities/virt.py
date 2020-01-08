@@ -1,10 +1,15 @@
+import json
 import logging
 import os
 import subprocess
 
 import pexpect
+import requests
 from autologs.autologs import generate_logs
+from resources.route import Route
+from resources.secret import Secret
 from resources.service import Service
+from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -523,3 +528,64 @@ class CustomServiceForVirtualMachineForTests(Service):
             "type": "NodePort",
         }
         return res
+
+
+class Prometheus(object):
+    """
+    For accessing Prometheus cluster metrics
+
+    Prometheus HTTP API doc:
+    https://prometheus.io/docs/prometheus/latest/querying/api/
+
+    Argument for query method should be the entire string following the server address
+        e.g.
+        prometheus = Prometheus()
+        up = prometheus.query("/api/v1/query?query=up")
+    """
+
+    def __init__(self):
+        self.namespace = "openshift-monitoring"
+        self.resource_name = "prometheus-k8s"
+
+        # get route to prometheus HTTP api
+        self.api_url = self._get_route()
+
+        # get prometheus ServiceAccount token
+        self.headers = self._get_headers()
+
+    def _get_route(self):
+        # get route to prometheus HTTP api
+        LOGGER.info("Prometheus: Obtaining route")
+        route = Route(
+            namespace=self.namespace, name=self.resource_name
+        ).instance.spec.host
+
+        return f"https://{route}"
+
+    def _get_headers(self):
+        """Uses the Prometheus serviceaccount to get an access token for OAuth"""
+        LOGGER.info("Prometheus: Setting headers")
+
+        LOGGER.info("Prometheus headers: Obtaining OAuth token")
+
+        # get SA
+        prometheus_sa = ServiceAccount(
+            namespace=self.namespace, name=self.resource_name
+        )
+
+        # get secret
+        secret_name = prometheus_sa.instance.imagePullSecrets[0].name
+        secret = Secret(namespace=self.namespace, name=secret_name)
+
+        # get token value
+        token = secret.instance.metadata.annotations["openshift.io/token-secret.value"]
+
+        return {"Authorization": f"Bearer {token}"}
+
+    def query(self, query):
+        response = requests.get(
+            f"{self.api_url}/{query}", headers=self.headers, verify=False,
+        )
+
+        # parse json response and return as dict
+        return json.loads(response.content)
