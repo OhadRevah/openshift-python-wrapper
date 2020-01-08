@@ -49,7 +49,7 @@ def data_volume(request, namespace):
 
     # Create dv
     with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
-        dv.wait(timeout=1200 if "win" in request.param["dv_name"] else 900)
+        dv.wait(timeout=1800 if "win" in request.param["dv_name"] else 1200)
         yield dv
 
 
