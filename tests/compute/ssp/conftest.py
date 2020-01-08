@@ -37,7 +37,7 @@ def data_volume(request, namespace):
         "size": request.param.get(
             "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
         ),
-        "access_modes": request.param.get("access_modes", DataVolume.AccessMode.RWO),
+        "access_modes": request.param.get("access_modes", DataVolume.AccessMode.RWX),
         "volume_mode": request.param.get(
             "volume_mode", py_config["default_volume_mode"],
         ),
