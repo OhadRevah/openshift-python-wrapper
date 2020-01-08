@@ -5,9 +5,10 @@ Common templates test RHEL 6.10
 """
 
 import logging
-import time
 
+import pexpect
 import pytest
+from resources.utils import TimeoutSampler
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
 from utilities.infra import Images
@@ -15,6 +16,20 @@ from utilities.infra import Images
 
 LOGGER = logging.getLogger(__name__)
 VM_NAME = "rhel-6.10"
+
+
+def console_eof_sampler(vm):
+
+    sampler = TimeoutSampler(
+        timeout=600,
+        sleep=15,
+        func=console.RHEL,
+        vm=vm,
+        exceptions=pexpect.exceptions.EOF,
+    )
+    for sample in sampler:
+        if sample:
+            return True
 
 
 @pytest.mark.parametrize(
@@ -32,6 +47,11 @@ VM_NAME = "rhel-6.10"
                     "workload": "server",
                     "flavor": "tiny",
                 },
+                # A nic is not created with the default virtio nic model.
+                # Need to use 1000e.
+                # https://bugzilla.redhat.com/show_bug.cgi?id=1788923
+                "network_model": "e1000",
+                "network_multiqueue": False,
             },
         )
     ],
@@ -80,10 +100,7 @@ class TestCommonTemplatesRhel6:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        # As guest agent is not available, need to add sleep before trying
-        # to connect to console. Otherwise, EOF is received.
-        time.sleep(600)
-        utils.wait_for_console(vm_object_from_template_scope_class, console.RHEL)
+        console_eof_sampler(vm_object_from_template_scope_class)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3319")

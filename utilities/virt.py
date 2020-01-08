@@ -114,6 +114,8 @@ class VirtualMachineForTests(VirtualMachine):
         machine_type=None,
         image=None,
         ssh=False,
+        network_model=None,
+        network_multiqueue=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.body = body
@@ -139,6 +141,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.ssh_node_port = None
         self.custom_service = None
         self.custom_service_port = None
+        self.network_model = network_model
+        self.network_multiqueue = network_multiqueue
 
     def __enter__(self):
         super().__enter__()
@@ -177,6 +181,16 @@ class VirtualMachineForTests(VirtualMachine):
         for iface_name, network in self.networks.items():
             spec.setdefault("networks", []).append(
                 {"name": iface_name, "multus": {"networkName": network}}
+            )
+
+        if self.network_model:
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "interfaces", [{}]
+            )[0]["model"] = self.network_model
+
+        if self.network_multiqueue is not None:
+            spec.setdefault("domain", {}).setdefault("devices", {}).update(
+                {"networkInterfaceMultiqueue": self.network_multiqueue}
             )
 
         if self.cloud_init_data:
@@ -323,6 +337,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         ssh=False,
         vm_dict=None,
         cpu_threads=None,
+        network_model=None,
+        network_multiqueue=None,
     ):
         super().__init__(
             name=name,
@@ -331,6 +347,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             networks=networks,
             interfaces=interfaces,
             ssh=ssh,
+            network_model=network_model,
+            network_multiqueue=network_multiqueue,
         )
         self.template_labels = labels
         self.template_dv = template_dv

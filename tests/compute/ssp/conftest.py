@@ -81,6 +81,8 @@ def vm_instance_from_template(request, unprivileged_client, namespace, data_volu
         template_dv=data_volume.name,
         vm_dict=request.param.get("vm_dict"),
         cpu_threads=request.param.get("cpu_threads"),
+        network_model=request.param.get("network_model"),
+        network_multiqueue=request.param.get("network_multiqueue"),
     ) as vm:
         if request.param.get("start_vm", True):
             vm.start(wait=True)
@@ -135,6 +137,8 @@ def vm_object_from_template(
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         vm_dict=request.param.get("vm_dict"),
         cpu_threads=request.param.get("cpu_threads"),
+        network_model=request.param.get("network_model"),
+        network_multiqueue=request.param.get("network_multiqueue"),
     )
 
 
