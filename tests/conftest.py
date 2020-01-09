@@ -52,6 +52,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--upgrade", action="store_true", default=False, help="Run upgrade tests"
     )
+    parser.addoption("--upgrade-channel", help="CNV channel version to upgrade to")
 
 
 def pytest_collection_modifyitems(session, config, items):
