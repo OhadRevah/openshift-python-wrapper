@@ -16,12 +16,12 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="module")
-def vma(nodes, namespace, unprivileged_client):
+def vma(schedulable_nodes, namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=nodes[0].name,
+        node_selector=schedulable_nodes[0].name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -31,12 +31,12 @@ def vma(nodes, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(nodes, namespace, unprivileged_client):
+def vmb(schedulable_nodes, namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=nodes[1].name,
+        node_selector=schedulable_nodes[1].name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,

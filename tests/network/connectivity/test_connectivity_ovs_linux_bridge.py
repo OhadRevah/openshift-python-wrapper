@@ -101,7 +101,7 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
 
 
 @pytest.fixture(scope="class")
-def bridge_on_bond(bond1, network_utility_pods, nodes):
+def bridge_on_bond(bond1, network_utility_pods, schedulable_nodes):
     """
     Create bridge and attach the BOND to it
     """
@@ -111,7 +111,7 @@ def bridge_on_bond(bond1, network_utility_pods, nodes):
             nncp_name="bridge-no-bond",
             bridge_name="br1bond",
             network_utility_pods=network_utility_pods,
-            nodes=nodes,
+            nodes=schedulable_nodes,
             ports=[bond1],
         ) as br:
             yield br
@@ -121,7 +121,7 @@ def bridge_on_bond(bond1, network_utility_pods, nodes):
 
 @pytest.fixture(scope="class")
 def bridge_attached_vma(
-    nodes,
+    schedulable_nodes,
     bridge_on_bond,
     namespace,
     unprivileged_client,
@@ -152,7 +152,7 @@ def bridge_attached_vma(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=nodes[0].name,
+        node_selector=schedulable_nodes[0].name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -162,7 +162,7 @@ def bridge_attached_vma(
 
 @pytest.fixture(scope="class")
 def bridge_attached_vmb(
-    nodes,
+    schedulable_nodes,
     bridge_on_bond,
     namespace,
     unprivileged_client,
@@ -193,7 +193,7 @@ def bridge_attached_vmb(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=nodes[1].name,
+        node_selector=schedulable_nodes[1].name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:

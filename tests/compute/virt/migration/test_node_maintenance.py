@@ -130,10 +130,13 @@ def windows_initial_boot_time(vm_win10, winrmcli_pod):
 
 
 @pytest.fixture()
-def winrmcli_pod(vm_win10, nodes):
+def winrmcli_pod(vm_win10, schedulable_nodes):
     # For node maintenance tests winrmcli-pod and VMI should be located on different nodes
     node_for_winrmcli = list(
-        filter(lambda n: n.name != vm_win10.vmi.virt_launcher_pod.node.name, nodes)
+        filter(
+            lambda n: n.name != vm_win10.vmi.virt_launcher_pod.node.name,
+            schedulable_nodes,
+        )
     )
     assert len(node_for_winrmcli) > 0, "No available nodes for winrmcli pod"
 

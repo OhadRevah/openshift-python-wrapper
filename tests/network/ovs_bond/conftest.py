@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def vma(nodes, namespace, unprivileged_client, node_with_bond):
+def vma(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -28,13 +28,13 @@ def vma(nodes, namespace, unprivileged_client, node_with_bond):
 
 
 @pytest.fixture(scope="module")
-def vmb(nodes, namespace, unprivileged_client, node_with_bond):
+def vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         node_selector=next(
-            filter(lambda node: node.name != node_with_bond, nodes)
+            filter(lambda node: node.name != node_with_bond, schedulable_nodes)
         ).name,
         client=unprivileged_client,
         body=fedora_vm_body(name),

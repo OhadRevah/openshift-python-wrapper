@@ -54,7 +54,7 @@ def index_number():
 
 
 @pytest.fixture(scope="session")
-def ovs_worker_pods(nodes, default_client):
+def ovs_worker_pods(schedulable_nodes, default_client):
     """
     Get ovs-* pods, of worker (schedulable) nodes only, from openshift-sdn namespace.
    """
@@ -66,7 +66,7 @@ def ovs_worker_pods(nodes, default_client):
     # Now filter only the pods that run on worker nodes.
     worker_pods = []
     for pod in ovs_pods:
-        for node in nodes:
+        for node in schedulable_nodes:
             if node.name == pod.node.name:
                 worker_pods.append(pod)
 
@@ -82,7 +82,7 @@ def ovs_lb_bridge(
     multi_nics_nodes,
     network_utility_pods,
     nodes_active_nics,
-    nodes,
+    schedulable_nodes,
 ):
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
@@ -97,7 +97,7 @@ def ovs_lb_bridge(
         nncp_name=f"{bridge_name}-nncp",
         bridge_name=bridge_name,
         network_utility_pods=network_utility_pods,
-        nodes=nodes,
+        nodes=schedulable_nodes,
         ports=ports,
         ovs_worker_pods=ovs_worker_pods,
         nodes_active_nics=nodes_active_nics,

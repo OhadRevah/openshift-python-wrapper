@@ -37,7 +37,7 @@ def nad(
 
 
 @pytest.fixture(scope="class")
-def bridge_attached_vma(nodes, namespace, unprivileged_client, nad):
+def bridge_attached_vma(schedulable_nodes, namespace, unprivileged_client, nad):
     name = "vma"
     networks = {nad.name: nad.name}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
@@ -49,7 +49,7 @@ def bridge_attached_vma(nodes, namespace, unprivileged_client, nad):
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=nodes[0].name,
+        node_selector=schedulable_nodes[0].name,
         client=unprivileged_client,
         cloud_init_data=cloud_init_data,
     ) as vm:
@@ -58,7 +58,7 @@ def bridge_attached_vma(nodes, namespace, unprivileged_client, nad):
 
 
 @pytest.fixture(scope="class")
-def bridge_attached_vmb(nodes, namespace, unprivileged_client, nad):
+def bridge_attached_vmb(schedulable_nodes, namespace, unprivileged_client, nad):
     name = "vmb"
     networks = {nad.name: nad.name}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
@@ -70,7 +70,7 @@ def bridge_attached_vmb(nodes, namespace, unprivileged_client, nad):
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=sorted(networks.keys()),
-        node_selector=nodes[1].name,
+        node_selector=schedulable_nodes[1].name,
         client=unprivileged_client,
         cloud_init_data=cloud_init_data,
     ) as vm:

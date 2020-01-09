@@ -329,12 +329,12 @@ def unprivileged_client(default_client, unprivileged_secret):
 
 
 @pytest.fixture(scope="session")
-def schedulable_node_ips(nodes):
+def schedulable_node_ips(schedulable_nodes):
     """
     Store all kubevirt.io/schedulable=true IPs
     """
     node_ips = {}
-    for node in nodes:
+    for node in schedulable_nodes:
         for addr in node.instance.status.addresses:
             if addr.type == "InternalIP":
                 node_ips[node.name] = addr.address
@@ -342,21 +342,33 @@ def schedulable_node_ips(nodes):
 
 
 @pytest.fixture(scope="session")
-def skip_when_one_node(nodes):
-    if len(nodes) < 2:
+def skip_when_one_node(schedulable_nodes):
+    if len(schedulable_nodes) < 2:
         pytest.skip(msg="Test requires at least 2 nodes")
 
 
 @pytest.fixture(scope="session")
 def nodes(default_client):
+    yield list(Node.get(dyn_client=default_client))
+
+
+@pytest.fixture(scope="session")
+def schedulable_nodes(nodes):
+    schedulable_label = "kubevirt.io/schedulable"
     yield [
         node
-        for node in list(
-            Node.get(
-                dyn_client=default_client, label_selector="kubevirt.io/schedulable=true"
-            )
-        )
-        if not node.instance.spec.unschedulable and not kubernetes_taint_exists(node)
+        for node in nodes
+        if schedulable_label in node.labels.keys()
+        and node.labels[schedulable_label] == "true"
+        and not node.instance.spec.unschedulable
+        and not kubernetes_taint_exists(node)
+    ]
+
+
+@pytest.fixture(scope="session")
+def masters(nodes):
+    yield [
+        node for node in nodes if "node-role.kubernetes.io/master" in node.labels.keys()
     ]
 
 
@@ -394,13 +406,13 @@ def network_utility_pods(net_utility_daemonset, default_client):
 
 
 @pytest.fixture(scope="session")
-def nodes_active_nics(nodes):
+def nodes_active_nics(schedulable_nodes):
     """
     Get nodes active NICs.
     First NIC is management NIC
     """
     nodes_nics = {}
-    for node in nodes:
+    for node in schedulable_nodes:
         nns = NodeNetworkState(name=node.name)
         ifaces = [iface.name for iface in nns.interfaces if iface.type == "ethernet"]
         default_routes = [
