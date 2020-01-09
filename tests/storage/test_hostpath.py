@@ -69,7 +69,7 @@ def verify_image_location_via_dv_virt_launcher_pod(dv, nodes):
 
 
 @pytest.mark.polarion("CNV-2817")
-def test_hostpath_pod_reference_pvc(storage_ns, nodes, skip_test_if_no_hpp_sc):
+def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, storage_ns, nodes):
     """
     Check that after disk image is written to the PVC which has been provisioned on the specified node,
     Pod can use this image.
@@ -85,11 +85,11 @@ def test_hostpath_pod_reference_pvc(storage_ns, nodes, skip_test_if_no_hpp_sc):
         volume_mode=py_config["default_volume_mode"],
         hostpath_node=nodes[0].name,
     ) as dv:
-        verify_image_location_via_dv_pod_with_pvc(dv, nodes)
+        verify_image_location_via_dv_pod_with_pvc(dv=dv, nodes=nodes)
 
 
 @pytest.mark.polarion("CNV-3354")
-def test_hpp_not_specify_node_immediate(storage_ns, skip_when_hpp_no_immediate):
+def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, storage_ns):
     """
     Negative case
     Check that PVC should remain Pending when hostpath node was not specified
@@ -111,7 +111,7 @@ def test_hpp_not_specify_node_immediate(storage_ns, skip_when_hpp_no_immediate):
 
 
 @pytest.mark.polarion("CNV-3228")
-def test_hpp_specify_node_immediate(storage_ns, nodes, skip_when_hpp_no_immediate):
+def test_hpp_specify_node_immediate(skip_when_hpp_no_immediate, storage_ns, nodes):
     """
     Check that the PVC will bound PV and DataVolume status becomes Succeeded once importer Pod finished importing
     when PVC is annotated to a specified node and the volumeBindingMode of hostpath-provisioner StorageClass is
@@ -147,7 +147,7 @@ def test_hpp_specify_node_immediate(storage_ns, nodes, skip_when_hpp_no_immediat
     ],
 )
 def test_hostpath_http_import_dv(
-    storage_ns, dv_name, image_name, nodes, skip_when_hpp_no_immediate,
+    skip_when_hpp_no_immediate, storage_ns, dv_name, image_name, nodes,
 ):
     """
     Check that CDI importing from HTTP endpoint works well with hostpath-provisioner
@@ -163,12 +163,12 @@ def test_hostpath_http_import_dv(
         volume_mode=py_config["default_volume_mode"],
         hostpath_node=nodes[0].name,
     ) as dv:
-        verify_image_location_via_dv_virt_launcher_pod(dv, nodes)
+        verify_image_location_via_dv_virt_launcher_pod(dv=dv, nodes=nodes)
 
 
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
-    storage_ns, skip_when_hpp_no_waitforfirstconsumer
+    skip_when_hpp_no_waitforfirstconsumer, storage_ns,
 ):
     """
     Check that in the condition of the volumeBindingMode of hostpath-provisioner StorageClass is 'WaitForFirstConsumer',
@@ -202,7 +202,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 
 
 @pytest.mark.polarion("CNV-2771")
-def test_hpp_upload_virtctl(storage_ns, tmpdir, skip_when_hpp_no_waitforfirstconsumer):
+def test_hpp_upload_virtctl(skip_when_hpp_no_waitforfirstconsumer, storage_ns, tmpdir):
     """
     Check that upload disk image via virtcl tool works
     """
