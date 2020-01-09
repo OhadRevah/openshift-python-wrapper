@@ -40,7 +40,7 @@ def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc, hpp_storage_cl
         pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
-def verify_image_location_via_dv_pod_with_pvc(dv, nodes):
+def verify_image_location_via_dv_pod_with_pvc(dv, schedulable_nodes):
     dv.wait()
     with storage_utils.PodWithPVC(
         namespace=dv.namespace,
@@ -50,22 +50,45 @@ def verify_image_location_via_dv_pod_with_pvc(dv, nodes):
     ) as pod:
         pod.wait_for_status(status="Running")
         LOGGER.debug("Check pod location...")
-        assert pod.instance["spec"]["nodeName"] == nodes[0].name
+        assert pod.instance["spec"]["nodeName"] == schedulable_nodes[0].name
         LOGGER.debug("Check image location...")
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
-def verify_image_location_via_dv_virt_launcher_pod(dv, nodes):
+def verify_image_location_via_dv_virt_launcher_pod(dv, schedulable_nodes):
     dv.wait()
     with storage_utils.create_vm_from_dv(dv) as vm:
         vm.vmi.wait_until_running()
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check pod location...")
-        assert v_pod.instance["spec"]["nodeName"] == nodes[0].name
+        assert v_pod.instance["spec"]["nodeName"] == schedulable_nodes[0].name
         LOGGER.debug("Check image location...")
         assert "disk.img" in v_pod.execute(
             command=["ls", "-1", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
         )
+
+
+def assert_provision_on_node_annotation(pvc, node_name, type_):
+    provision_on_node = "kubevirt.io/provisionOnNode"
+    assert pvc.instance.metadata.annotations.get(provision_on_node) == node_name
+    f"No '{provision_on_node}' annotation found on {type_} PVC"
+
+
+def assert_selected_node_annotation(pvc, pod, type_):
+    selected_node = "volume.kubernetes.io/selected-node"
+    assert (
+        pvc.instance.metadata.annotations.get(selected_node)
+        == pod.instance.spec.nodeName
+    ), f"No '{selected_node}' annotation found on {type_} PVC"
+
+
+def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
+    pods = [
+        pod
+        for pod in Pod.get(dyn_client=default_client, namespace=namespace)
+        if pod.name.startswith(pod_prefix)
+    ]
+    return pods[0]
 
 
 @pytest.mark.polarion("CNV-2817")
@@ -87,7 +110,9 @@ def test_hostpath_pod_reference_pvc(
         volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=schedulable_nodes[0].name,
     ) as dv:
-        verify_image_location_via_dv_pod_with_pvc(dv=dv, nodes=schedulable_nodes)
+        verify_image_location_via_dv_pod_with_pvc(
+            dv=dv, schedulable_nodes=schedulable_nodes
+        )
 
 
 @pytest.mark.polarion("CNV-3354")
@@ -263,4 +288,6 @@ def test_hostpath_upload_dv_with_token(
             storage_ns_name=dv.namespace, pvc_name=dv.pvc.name, data=local_name
         )
         dv.wait()
-        verify_image_location_via_dv_pod_with_pvc(dv=dv, nodes=schedulable_nodes)
+        verify_image_location_via_dv_pod_with_pvc(
+            dv=dv, schedulable_nodes=schedulable_nodes
+        )
