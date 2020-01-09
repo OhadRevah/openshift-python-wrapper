@@ -320,13 +320,13 @@ def test_sriov_logs_gathering(
         pytest.param(
             "qemu.log",
             None,
-            "^/usr/libexec/qemu-kvm \\\\$",
+            "-name guest={namespace}_{name},debug-threads=on \\\\$",
             marks=(pytest.mark.polarion("CNV-2725")),
         ),
         pytest.param(
             "dumpxml.xml",
             None,
-            "^<domain type='kvm' id='1'>$",
+            "^ +<name>{namespace}_{name}</name>$",
             marks=(pytest.mark.polarion("CNV-3477")),
         ),
     ],
@@ -365,6 +365,11 @@ def test_data_collected_from_virt_launcher(
             f"Gathered data: {gathered_data}"
         )
         gathered_data = matches[0]
+
+    if "name" in format_regex and "namespace" in format_regex:
+        format_regex = format_regex.format(
+            namespace=running_vm.namespace, name=running_vm.name
+        )
 
     # Make sure that gathered data roughly matches expected format.
     assert re.search(format_regex, gathered_data, re.MULTILINE), (
