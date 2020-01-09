@@ -347,3 +347,54 @@ def test_hostpath_registry_import_dv(
         verify_image_location_via_dv_virt_launcher_pod(
             dv=dv, schedulable_nodes=schedulable_nodes
         )
+
+
+@pytest.mark.polarion("CNV-3516")
+def test_hostpath_clone_dv_wffc(
+    skip_when_hpp_no_waitforfirstconsumer, default_client, storage_ns,
+):
+    """
+    Check that in case of WaitForFirstConsumer binding mode, without annotating the source/target DV to a node,
+    CDI clone function works well. The PVCs will have an annotation 'volume.kubernetes.io/selected-node' containing
+    the node name where the pod is scheduled on.
+    """
+    with create_dv(
+        source="http",
+        dv_name="cnv-3516-source-dv",
+        namespace=storage_ns.name,
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        size="6Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+        volume_mode=DataVolume.VolumeMode.FILE,
+    ) as source_dv:
+        source_dv.pvc.wait(timeout=300)
+        importer_pod = get_pod_by_name_prefix(
+            default_client, pod_prefix="importer", namespace=source_dv.namespace,
+        )
+        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
+        assert_selected_node_annotation(
+            pvc=source_dv.pvc, pod=importer_pod, type_="source"
+        )
+        source_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=300)
+        with create_dv(
+            source="pvc",
+            dv_name="cnv-3516-target-dv",
+            namespace=storage_ns.name,
+            source_namespace=source_dv.namespace,
+            source_pvc=source_dv.pvc.name,
+            size="20Gi",
+            storage_class=StorageClass.Types.HOSTPATH,
+            volume_mode=DataVolume.VolumeMode.FILE,
+        ) as target_dv:
+            target_dv.pvc.wait(timeout=300)
+            upload_target_pod = get_pod_by_name_prefix(
+                default_client, pod_prefix="cdi-upload", namespace=storage_ns.name
+            )
+            upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
+            assert_selected_node_annotation(
+                pvc=target_dv.pvc, pod=upload_target_pod, type_="target"
+            )
+            target_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=600)
+            with storage_utils.create_vm_from_dv(dv=target_dv) as vm:
+                storage_utils.check_disk_count_in_vm(vm=vm)
