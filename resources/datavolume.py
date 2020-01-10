@@ -2,6 +2,9 @@
 
 import logging
 
+from openshift.dynamic.exceptions import ResourceNotFoundError
+from resources.pod import Pod
+
 from .persistent_volume_claim import PersistentVolumeClaim
 from .resource import TIMEOUT, NamespacedResource
 
@@ -83,6 +86,21 @@ class DataVolume(NamespacedResource):
             name=f"{self.name}-scratch", namespace=self.namespace
         )
 
+    def _get_pod_startswith(self, starts_with):
+        pods = list(Pod.get(dyn_client=self.client, namespace=self.namespace))
+        for pod in pods:
+            if pod.name.startswith(starts_with):
+                return pod
+        raise ResourceNotFoundError
+
+    @property
+    def importer_pod(self):
+        return self._get_pod_startswith("importer")
+
+    @property
+    def upload_target_pod(self):
+        return self._get_pod_startswith("cdi-upload")
+
     def __init__(
         self,
         name,
@@ -151,4 +169,5 @@ class DataVolume(NamespacedResource):
                 "name": self.source_pvc or "dv-source",
                 "namespace": self.source_namespace or self.namespace,
             }
+
         return res
