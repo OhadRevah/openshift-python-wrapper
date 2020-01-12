@@ -5,6 +5,7 @@ Pytest conftest file for CNV network tests
 """
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from tests.network.utils import bridge_device
 
@@ -57,18 +58,26 @@ def index_number():
 def ovs_worker_pods(schedulable_nodes, default_client):
     """
     Get ovs-* pods, of worker (schedulable) nodes only, from openshift-sdn namespace.
-   """
-    # First get all ovs-* pods.
-    ovs_pods = list(
-        Pod.get(default_client, namespace="openshift-sdn", label_selector="app=ovs")
-    )
+    """
 
-    # Now filter only the pods that run on worker nodes.
-    worker_pods = []
-    for pod in ovs_pods:
-        for node in schedulable_nodes:
-            if node.name == pod.node.name:
-                worker_pods.append(pod)
+    def _ovs_pods(namespace, label):
+        # First get all ovs-* pods.
+        return list(Pod.get(default_client, namespace=namespace, label_selector=label))
+
+    def _worker_pods(pods):
+        # Now filter only the pods that run on worker nodes.
+        worker_pods = []
+        for pod in pods:
+            for node in schedulable_nodes:
+                if node.name == pod.node.name:
+                    worker_pods.append(pod)
+        return worker_pods
+
+    ovs_pods = _ovs_pods(namespace="openshift-sdn", label="app=ovs")
+    worker_pods = _worker_pods(pods=ovs_pods)
+    if not worker_pods:
+        ovs_pods = _ovs_pods(namespace=py_config["hco_namespace"], label="app=ovs-cni")
+        worker_pods = _worker_pods(pods=ovs_pods)
 
     return worker_pods
 
