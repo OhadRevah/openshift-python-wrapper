@@ -236,6 +236,7 @@ class TestConnectivity:
     def test_connectivity(
         self,
         bridge,
+        rhel7_workers,
         skip_when_one_node,
         namespace,
         ovs_lb_bridge,
@@ -244,6 +245,10 @@ class TestConnectivity:
         running_bridge_attached_vmia,
         running_bridge_attached_vmib,
     ):
+        if bridge == "default" and rhel7_workers:
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1787576
+            pytest.skip(msg="Masquerade not working on RHEL7 workers.")
+
         assert_ping_successful(
             src_vm=running_bridge_attached_vmia,
             dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
