@@ -412,10 +412,17 @@ def nodes_active_nics(schedulable_nodes):
     Get nodes active NICs.
     First NIC is management NIC
     """
+
+    def _insert_first(ifaces, primary, iface):
+        if primary:
+            ifaces.insert(0, iface.name)
+        else:
+            ifaces.append(iface.name)
+
     nodes_nics = {}
     for node in schedulable_nodes:
+        ifaces = []
         nns = NodeNetworkState(name=node.name)
-        ifaces = [iface.name for iface in nns.interfaces if iface.type == "ethernet"]
         default_routes = [
             route for route in nns.routes.running if route.destination == "0.0.0.0/0"
         ]
@@ -425,14 +432,17 @@ def nodes_active_nics(schedulable_nodes):
             for route in default_routes
             if route.metric == lowest_metric
         ]
-        primary_iface = [iface for iface in ifaces if iface == primary_iface_name[0]]
-        primary_iface_idx = ifaces.index(primary_iface[0])
-        if primary_iface_idx == 0:
-            nodes_nics[node.name] = ifaces
-        else:
-            ifaces.pop(primary_iface_idx)
-            nodes_nics[node.name] = primary_iface
-            nodes_nics[node.name].append(ifaces)
+
+        for iface in nns.interfaces:
+            primary = primary_iface_name == iface.name
+            if iface.type == "ethernet":
+                _insert_first(ifaces=ifaces, primary=primary, iface=iface)
+
+            if iface.type == "ovs-bridge":
+                if iface.state == "up":
+                    _insert_first(ifaces=ifaces, primary=primary, iface=iface)
+
+        nodes_nics[node.name] = ifaces
 
     return nodes_nics
 
