@@ -150,7 +150,7 @@ def check_telnet_connection(ip, port):
     )
     for sample in sampler:
         if sample:
-            socket.close(sample.fileno())
+            sample.close()
             return True
 
 
