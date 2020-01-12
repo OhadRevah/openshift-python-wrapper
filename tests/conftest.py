@@ -511,3 +511,12 @@ def skip_upstream():
 def skip_not_bare_metal():
     if not py_config["bare_metal_cluster"]:
         pytest.skip(msg="Test should run only BM",)
+
+
+@pytest.fixture(scope="session")
+def rhel7_workers(schedulable_nodes):
+    # Check only the first Node since mixed rchos and RHEL7 workers in cluster is not supported.
+    return (
+        schedulable_nodes[0].instance.status.nodeInfo.osImage
+        == "Red Hat Enterprise Linux Server 7.7 (Maipo)"
+    )
