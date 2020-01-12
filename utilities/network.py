@@ -477,6 +477,10 @@ class OvsBridgeOverVxlan(object):
         self.ovs_worker_pods = ovs_worker_pods
         self.remote_ips = remote_ips
         self.successfully_bridged_pods = []
+        self.ovs_container = None
+        self.ovs_vsctl = ["ovs-vsctl"]
+        self._get_ovs_container()
+        self._get_ovs_command()
 
     def __enter__(self):
         self.setup_ovs_br()
@@ -484,6 +488,23 @@ class OvsBridgeOverVxlan(object):
 
     def __exit__(self, excpt_type, excpt_value, excpt_traceback):
         self.clean_up_ovs_br()
+
+    def _get_ovs_container(self):
+        # Check only first Pod since we don't have mixed rchos and RHEL workers cluster
+        ovs_container = [
+            container
+            for container in self.ovs_worker_pods[0].containers
+            if container.name == "ovs-cni-marker"
+        ]
+        if ovs_container:
+            self.ovs_container = ovs_container[0].name
+
+    def _get_ovs_command(self):
+        if self.ovs_container:
+            self.ovs_vsctl = self.ovs_vsctl + [
+                "--db",
+                "unix:///host/var/run/openvswitch/db.sock",
+            ]
 
     def setup_ovs_br(self):
         LOGGER.info(
@@ -493,7 +514,10 @@ class OvsBridgeOverVxlan(object):
         br_idx = 0
         base_port = 4795
         for pod in self.ovs_worker_pods:
-            pod.execute(command=["ovs-vsctl", "add-br", self.bridge_name])
+            pod.execute(
+                command=self.ovs_vsctl + ["add-br", self.bridge_name],
+                container=self.ovs_container,
+            )
             self.successfully_bridged_pods.append(pod)
 
             ovs_br_cmds = []
@@ -502,8 +526,8 @@ class OvsBridgeOverVxlan(object):
                 if node_name != pod.node.name:
                     iface_name = f"{self.vxlan_iface_name}{idx}"
                     ovs_br_cmds.append(
-                        [
-                            "ovs-vsctl",
+                        self.ovs_vsctl
+                        + [
                             "add-port",
                             self.bridge_name,
                             iface_name,  # OVS port name
@@ -518,10 +542,10 @@ class OvsBridgeOverVxlan(object):
                     )
                     idx += 1
 
-            ovs_br_cmds.append(["ip", "link", "set", "up", f"{self.bridge_name}"])
+            ovs_br_cmds.append(["ip", "link", "set", "up", self.bridge_name])
 
             for cmd in ovs_br_cmds:
-                pod.execute(command=cmd)
+                pod.execute(command=cmd, container=self.ovs_container)
 
             br_idx += 1
 
@@ -530,7 +554,10 @@ class OvsBridgeOverVxlan(object):
             f"Removing OVS bridge {self.bridge_name} with its new VXLAN interface {self.vxlan_iface_name}."
         )
         for bridge_pod in self.successfully_bridged_pods:
-            bridge_pod.execute(["ovs-vsctl", "del-br", self.bridge_name])
+            bridge_pod.execute(
+                self.ovs_vsctl + ["del-br", self.bridge_name],
+                container=self.ovs_container,
+            )
         self.successfully_bridged_pods.clear()
 
 
