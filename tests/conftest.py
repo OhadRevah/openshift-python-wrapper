@@ -79,9 +79,20 @@ def _separator(symbol_, val=None):
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--upgrade", action="store_true", default=False, help="Run upgrade tests"
+        "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
     )
-    parser.addoption("--upgrade-channel", help="CNV channel version to upgrade to")
+    parser.addoption("--cnv-version", help="CNV version to upgrade to")
+    parser.addoption("--ocp-image", help="OCP image to upgrade to")
+
+
+def pytest_cmdline_main(config):
+    if config.getoption("upgrade") == "ocp":
+        if not config.getoption("ocp_image"):
+            raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
+
+    if config.getoption("upgrade") == "cnv":
+        if not config.getoption("cnv_version"):
+            raise ValueError("Running with --upgrade cnv: Missing --cnv-version")
 
 
 def pytest_collection_modifyitems(session, config, items):
