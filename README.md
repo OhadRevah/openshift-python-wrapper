@@ -135,6 +135,24 @@ namespaces created by the suite are left stuck in Terminating state forever. In
 this case, you may want to use the `clean-namespace.sh` script located in the
 root directory of this repository.
 
+### Using pytest_jira
+
+pytest_jira plugin allows you to link tests to existing tickets.
+jira.cfg contains the default connection settings as well as a list
+of "resolved_statuses".
+To use the plugin during a test run, use '--jira'.
+Issues are considered as resolved if their status appears in resolved_statuses.
+You can mark a test to be skipped if a Jira issue is not resolved.
+Example:
+```
+@pytest.mark.jira("CNV-1234", run=False)
+```
+You can mark a test to be marked as xfail if a Jira issue is not resolved.
+Example:
+```
+@pytest.mark.jira("CNV-1234")
+```
+
 # Network utility container
 
 Dockerfile is under `tests/manifests/network/privileged_container`
