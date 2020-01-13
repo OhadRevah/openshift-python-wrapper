@@ -118,6 +118,7 @@ class TestCommonTemplatesWin10:
     )
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3378")
+    @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_stop_start(
         self,
         skip_upstream,
@@ -140,6 +141,7 @@ class TestCommonTemplatesWin10:
     )
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3416")
+    @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_reboot(
         self,
         skip_upstream,
