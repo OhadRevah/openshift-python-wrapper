@@ -349,6 +349,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             ssh=ssh,
             network_model=network_model,
             network_multiqueue=network_multiqueue,
+            cpu_threads=cpu_threads,
         )
         self.template_labels = labels
         self.template_dv = template_dv
