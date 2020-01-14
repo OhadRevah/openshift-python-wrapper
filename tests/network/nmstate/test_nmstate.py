@@ -9,6 +9,7 @@ LOGGER = logging.getLogger(__name__)
 REMOTE_IP = "8.8.8.8"
 
 
+@pytest.mark.destructive
 class TestWithDhcpOverBridge:
     @pytest.mark.polarion("CNV-3002")
     def test_ping_between_vms_through_brext(
@@ -42,6 +43,7 @@ class TestWithDhcpOverBridge:
 
 # Test class should be run as last, because it should check connectivity after,
 # bridge was created, got dhcp of management and release it back to the port
+@pytest.mark.destructive
 @pytest.mark.last
 class TestAfterBridgeTeardown:
     @pytest.mark.polarion("CNV-3028")
