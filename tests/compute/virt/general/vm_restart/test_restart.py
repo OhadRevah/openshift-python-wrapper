@@ -5,7 +5,6 @@ import logging
 
 import pytest
 from utilities import console
-from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -18,18 +17,13 @@ from utilities.virt import (
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def restart_test_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="restart-test")
-
-
 @pytest.fixture()
-def vm_to_restart(unprivileged_client, restart_test_namespace):
+def vm_to_restart(unprivileged_client, namespace):
     name = "vmi-to-restart"
     with VirtualMachineForTests(
         client=unprivileged_client,
         name=name,
-        namespace=restart_test_namespace.name,
+        namespace=namespace.name,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:

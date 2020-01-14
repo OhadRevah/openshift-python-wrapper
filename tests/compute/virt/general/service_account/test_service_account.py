@@ -6,7 +6,6 @@ import pytest
 from kubernetes.client.rest import ApiException
 from resources.service_account import ServiceAccount
 from utilities import console
-from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -14,23 +13,18 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def sa_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="service-account-test-ns")
-
-
 @pytest.fixture(scope="module")
-def service_account(sa_namespace):
-    with ServiceAccount(name="sa-test", namespace=sa_namespace.name) as sa:
+def service_account(namespace):
+    with ServiceAccount(name="sa-test", namespace=namespace.name) as sa:
         yield sa
 
 
 @pytest.fixture()
-def vm_vmi(sa_namespace, service_account, unprivileged_client):
+def vm_vmi(namespace, service_account, unprivileged_client):
     name = "service-account-vm"
     with VirtualMachineForTests(
         name=name,
-        namespace=sa_namespace.name,
+        namespace=namespace.name,
         service_accounts=[service_account.name],
         body=fedora_vm_body(name),
         client=unprivileged_client,
@@ -67,7 +61,7 @@ def test_vm_with_specified_service_account(vm_vmi):
 
 
 @pytest.mark.polarion("CNV-1001")
-def test_vm_with_2_service_accounts(sa_namespace):
+def test_vm_with_2_service_accounts(namespace):
     """
     Negative: Verifies that VM with 2 ServiceAccounts can't be created
     """
@@ -75,7 +69,7 @@ def test_vm_with_2_service_accounts(sa_namespace):
     with pytest.raises(ApiException, match=r".* must have max one serviceAccount .*"):
         with VirtualMachineForTests(
             name=name,
-            namespace=sa_namespace.name,
+            namespace=namespace.name,
             service_accounts=["sa-1", "sa-2"],
             body=fedora_vm_body(name),
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,

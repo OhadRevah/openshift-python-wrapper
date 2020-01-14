@@ -4,7 +4,6 @@ VM with sidecar
 
 import pytest
 from utilities import console
-from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -47,17 +46,12 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
         return res
 
 
-@pytest.fixture(scope="module", autouse=True)
-def sidecar_ns(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="sidecar-ns")
-
-
 @pytest.fixture()
-def sidecar_vm(sidecar_ns, unprivileged_client):
+def sidecar_vm(namespace, unprivileged_client):
     """ Test VM with sidecar hook """
     name = "vmi-with-sidecar-hook"
     with FedoraVirtualMachineWithSideCar(
-        name=name, namespace=sidecar_ns.name, client=unprivileged_client
+        name=name, namespace=namespace.name, client=unprivileged_client
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

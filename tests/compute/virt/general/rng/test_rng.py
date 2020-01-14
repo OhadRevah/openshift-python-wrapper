@@ -4,7 +4,6 @@ Test VM with RNG
 
 import pytest
 from utilities import console
-from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -13,17 +12,12 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def rng_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="rng-test-ns")
-
-
 @pytest.fixture()
-def rng_vm(unprivileged_client, rng_namespace):
+def rng_vm(unprivileged_client, namespace):
     name = "vmi-with-rng"
     with VirtualMachineForTests(
         name=name,
-        namespace=rng_namespace.name,
+        namespace=namespace.name,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:

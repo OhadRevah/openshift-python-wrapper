@@ -21,7 +21,7 @@ from resources.virtual_machine import (
 from tests.compute.utils import WinRMcliPod
 from tests.compute.virt import utils as virt_utils
 from utilities import console
-from utilities.infra import Images, create_ns
+from utilities.infra import Images
 from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -32,11 +32,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def node_maintenance_ns(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="node-maintenance-ns")
 
 
 @contextmanager
@@ -70,11 +65,11 @@ def skip_when_other_vmi_present(default_client):
 
 
 @pytest.fixture()
-def vm_container_disk_fedora(node_maintenance_ns, unprivileged_client):
+def vm_container_disk_fedora(maintenance, unprivileged_client):
     name = f"vm-nodemaintenance-{random.randrange(99999)}"
     with VirtualMachineForTests(
         name=name,
-        namespace=node_maintenance_ns.name,
+        namespace=maintenance.name,
         eviction=True,
         body=fedora_vm_body(name),
         client=unprivileged_client,
@@ -87,7 +82,7 @@ def vm_container_disk_fedora(node_maintenance_ns, unprivileged_client):
 
 @pytest.fixture()
 def vm_template_dv_rhel8(
-    node_maintenance_ns, unprivileged_client, images_external_http_server,
+    maintenance, unprivileged_client, images_external_http_server,
 ):
     vm_dv_name = "rhel8-template-node-maintenance"
     url = f"{images_external_http_server}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
@@ -99,7 +94,7 @@ def vm_template_dv_rhel8(
     with create_dv(
         source="http",
         dv_name=vm_dv_name,
-        namespace=node_maintenance_ns.name,
+        namespace=maintenance.name,
         url=url,
         size="30Gi",
         content_type=DataVolume.ContentType.KUBEVIRT,
@@ -110,7 +105,7 @@ def vm_template_dv_rhel8(
         dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(
             name="dv-rhel8-node-maintenance",
-            namespace=node_maintenance_ns.name,
+            namespace=maintenance.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,
@@ -150,7 +145,7 @@ def winrmcli_pod(vm_win10, schedulable_nodes):
 
 
 @pytest.fixture()
-def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_server):
+def vm_win10(maintenance, unprivileged_client, images_external_http_server):
     vm_dv_name = "windows-template-node-maintenance"
     url = (
         f"{images_external_http_server}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
@@ -163,7 +158,7 @@ def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_serv
     with create_dv(
         source="http",
         dv_name=vm_dv_name,
-        namespace=node_maintenance_ns.name,
+        namespace=maintenance.name,
         url=url,
         size="30Gi",
         content_type=DataVolume.ContentType.KUBEVIRT,
@@ -174,7 +169,7 @@ def vm_win10(node_maintenance_ns, unprivileged_client, images_external_http_serv
         dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(
             name=vm_dv_name,
-            namespace=node_maintenance_ns.name,
+            namespace=maintenance.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,
