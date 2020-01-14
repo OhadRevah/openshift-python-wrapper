@@ -145,7 +145,7 @@ def pytest_runtest_logreport(report):
     is_setup = report.when == "setup"
     is_test = report.when == "call"
     scope_section_separator = f"\n{_separator(symbol_='-', val=report.when.upper())}\n"
-    test_status_str = f"\nSTATUS: {report.outcome.upper()}\n"
+    test_status_str = f"\n\nSTATUS: {report.outcome.upper()}\n"
 
     with open(TEST_LOG_FILE, "a", buffering=1) as fd:
         if is_setup:
