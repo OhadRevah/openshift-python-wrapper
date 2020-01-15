@@ -18,12 +18,22 @@ import pytest
 from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
 from resources.daemonset import DaemonSet
+from resources.datavolume import DataVolume
+from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node import Node
+from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
 from resources.oauth import OAuth
+from resources.persistent_volume import PersistentVolume
+from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.secret import Secret
 from resources.utils import TimeoutSampler
+from resources.virtual_machine import (
+    VirtualMachine,
+    VirtualMachineInstance,
+    VirtualMachineInstanceMigration,
+)
 from utilities.infra import create_ns, generate_yaml_from_template
 from utilities.virt import kubernetes_taint_exists
 
@@ -32,6 +42,30 @@ LOGGER = logging.getLogger(__name__)
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
 TEST_LOG_FILE = "pytest-tests.log"
+TEST_COLLECT_INFO_DIR = "tests-collected-info"
+RESOURCES_TO_COLLECT_INFO = [
+    DataVolume,
+    PersistentVolume,
+    PersistentVolumeClaim,
+    VirtualMachine,
+    VirtualMachineInstance,
+    VirtualMachineInstanceMigration,
+    NetworkAttachmentDefinition,
+    NodeNetworkConfigurationPolicy,
+]
+
+PODS_TO_COLLECT_INFO = [
+    "virt-launcher",
+    "virt-api",
+    "virt-controller",
+    "virt-handler",
+    "virt-template-validator",
+    "cdi-importer",
+]
+
+
+def _get_client():
+    return DynamicClient(kubernetes.config.new_client_from_config())
 
 
 def _separator(symbol_, val=None):
@@ -183,10 +217,46 @@ def pytest_sessionfinish(session, exitstatus):
         fd.write(f"\n{_separator(symbol_='-', val=summary)}")
 
 
+def pytest_exception_interact(node, call, report):
+    dyn_client = _get_client()
+    test_dir = os.path.join(TEST_COLLECT_INFO_DIR, node.name, call.when)
+    pods_dir = os.path.join(test_dir, "Pods")
+    os.makedirs(test_dir, exist_ok=True)
+    os.makedirs(pods_dir, exist_ok=True)
+
+    for resource in RESOURCES_TO_COLLECT_INFO:
+        resource_dir = os.path.join(test_dir, resource.__name__)
+        for rcs in resource.get(dyn_client=dyn_client):
+            if not os.path.isdir(resource_dir):
+                os.makedirs(resource_dir, exist_ok=True)
+
+            with open(os.path.join(resource_dir, f"{rcs.name}.yaml"), "w") as fd:
+                fd.write(rcs.instance.to_str())
+
+    for pod in Pod.get(dyn_client=dyn_client):
+        kwargs = {}
+        for pod_prefix in PODS_TO_COLLECT_INFO:
+            if pod.name.startswith(pod_prefix):
+                if pod_prefix == "virt-launcher":
+                    kwargs = {"container": "compute"}
+
+                with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
+                    fd.write(pod.log(**kwargs))
+
+                with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
+                    fd.write(pod.instance.to_str())
+
+
 @pytest.fixture(scope="session", autouse=True)
 def tests_log_file():
     with open(TEST_LOG_FILE, "w"):
         pass
+
+
+@pytest.fixture(scope="session", autouse=True)
+def tests_collect_info_dir():
+    shutil.rmtree(TEST_COLLECT_INFO_DIR, ignore_errors=True)
+    os.makedirs(TEST_COLLECT_INFO_DIR)
 
 
 def login_to_account(api_address, user, password=None):
@@ -249,7 +319,7 @@ def default_client():
     """
     Get DynamicClient
     """
-    return DynamicClient(kubernetes.config.new_client_from_config())
+    return _get_client()
 
 
 @pytest.fixture(scope="session")

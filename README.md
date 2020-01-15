@@ -88,6 +88,7 @@ make tests UPSTREAM=1
 
 ### Logging
 Log file 'pytest-tests.log' is generated with the full pytest output in cnv-tests root directory.
+For each test failure cluster logs are collected and stored under 'tests-collected-info'.
 
 To see verbose logging of a test run, add the following parameter:
 
