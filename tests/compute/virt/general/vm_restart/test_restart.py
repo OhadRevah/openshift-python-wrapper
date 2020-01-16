@@ -36,7 +36,6 @@ def vm_to_restart(unprivileged_client, namespace):
 def test_vm_restart(vm_to_restart):
     LOGGER.info("VM is running: Restarting VM")
     vm_to_restart.restart(wait=True)
-    vm_to_restart.vmi.wait_until_running()
     LOGGER.info("VM is running: Stopping VM")
     vm_to_restart.stop(wait=True)
     LOGGER.info("VM is stopped: Starting VM")

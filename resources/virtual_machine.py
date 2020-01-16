@@ -98,7 +98,7 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
             headers=self.client.configuration.api_key,
         )
         if wait:
-            return self.wait_for_status(timeout=timeout, status=True)
+            return self.vmi.wait_until_running(timeout=timeout)
 
     def stop(self, timeout=TIMEOUT, wait=False):
         self.client.client.request(
