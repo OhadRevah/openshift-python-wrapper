@@ -115,6 +115,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
         dv_name="cnv-2214",
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=storage_ns.name,
+        volume_mode=DataVolume.VolumeMode.FILE,
     )
 
 
@@ -130,6 +131,7 @@ def test_cdiconfig_scratch_space_not_default(
         images_https_server_name=get_images_https_server(),
         storage_ns_name=storage_ns.name,
         run_vm=True,
+        volume_mode=DataVolume.VolumeMode.FILE,
     )
 
 
@@ -216,7 +218,7 @@ def test_cdiconfig_changing_storage_class_default(
                     namespace=configmap.namespace,
                     url=url,
                     storage_class=default_sc.name,
-                    volume_mode=py_config["default_volume_mode"],
+                    volume_mode=DataVolume.VolumeMode.FILE,
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()

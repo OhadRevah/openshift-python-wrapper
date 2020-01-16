@@ -9,7 +9,7 @@ template_defaults:
   bridge_tuning_name: cnv-tuning
 
 default_storage_class: rook-ceph-block
-default_volume_mode: Filesystem
+default_volume_mode: Block
 
 bare_metal_cluster: False
 
