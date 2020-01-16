@@ -16,7 +16,7 @@ from resources.service_account import ServiceAccount
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
 from utilities import storage as utils
-from utilities.infra import Images
+from utilities.infra import Images, get_images_https_server
 
 
 LOGGER = logging.getLogger(__name__)
@@ -109,11 +109,11 @@ def get_cdi_worker_pods(default_client, pod_prefix, storage_ns_name):
 
 
 @pytest.mark.polarion("CNV-3475")
-def test_importer_pod_cdi_label(default_client, storage_ns, images_https_server):
+def test_importer_pod_cdi_label(default_client, storage_ns):
     # verify "cdi.kubevirt.io" label is included in importer pod
     with storage_utils.import_image_to_dv(
         dv_name="cnv-3475",
-        images_https_server_name=images_https_server,
+        images_https_server_name=get_images_https_server(),
         volume_mode=py_config["default_volume_mode"],
         storage_ns_name=storage_ns.name,
     ):
@@ -136,12 +136,10 @@ def test_uploader_pod_cdi_label(default_client, storage_ns):
 
 
 @pytest.mark.polarion("CNV-3476")
-def test_cloner_pods_cdi_label(
-    default_client, storage_ns, images_https_server, https_config_map
-):
+def test_cloner_pods_cdi_label(default_client, storage_ns, https_config_map):
     # verify "cdi.kubevirt.io" label is included in cloning pods
     url = storage_utils.get_file_url_https_server(
-        images_https_server, Images.Cirros.QCOW2_IMG,
+        get_images_https_server(), Images.Cirros.QCOW2_IMG,
     )
     with utils.create_dv(
         source="http",

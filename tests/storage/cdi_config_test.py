@@ -13,7 +13,7 @@ from resources.route import Route
 from resources.storage_class import StorageClass
 from resources.utils import TimeoutSampler
 from tests.storage import utils
-from utilities.infra import Images, get_cert
+from utilities.infra import Images, get_cert, get_images_https_server
 
 
 LOGGER = logging.getLogger(__name__)
@@ -74,14 +74,14 @@ def cdiconfig_update(
 
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
-    skip_test_if_no_hpp_sc, tmpdir, cdi_config, storage_ns, images_https_server,
+    skip_test_if_no_hpp_sc, tmpdir, cdi_config, storage_ns,
 ):
     cdiconfig_update(
         source="upload",
         cdiconfig=cdi_config,
         dv_name="cnv-2451",
         storage_class_type=StorageClass.Types.HOSTPATH,
-        images_https_server_name=images_https_server,
+        images_https_server_name=get_images_https_server(),
         storage_ns_name=storage_ns.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
         run_vm=True,
@@ -91,7 +91,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
 
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
-    skip_test_if_no_hpp_sc, cdi_config, storage_ns, images_https_server,
+    skip_test_if_no_hpp_sc, cdi_config, storage_ns,
 ):
     cdiconfig_update(
         source="http",
@@ -100,7 +100,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=storage_ns.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
-        images_https_server_name=images_https_server,
+        images_https_server_name=get_images_https_server(),
         run_vm=True,
     )
 
@@ -120,14 +120,14 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
 
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_test_if_no_hpp_sc, cdi_config, storage_ns, images_https_server,
+    skip_test_if_no_hpp_sc, cdi_config, storage_ns,
 ):
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
         dv_name="cnv-2440",
         storage_class_type=StorageClass.Types.HOSTPATH,
-        images_https_server_name=images_https_server,
+        images_https_server_name=get_images_https_server(),
         storage_ns_name=storage_ns.name,
         run_vm=True,
     )
@@ -176,12 +176,7 @@ def test_upload_proxy_url_overridden(
 
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
-    skip_test_if_no_hpp_sc,
-    cdi_config,
-    storage_ns,
-    images_https_server,
-    hpp_storage_class,
-    default_sc,
+    skip_test_if_no_hpp_sc, cdi_config, storage_ns, hpp_storage_class, default_sc,
 ):
     def _get_update_dict(default, storage_class):
         return {
@@ -208,7 +203,7 @@ def test_cdiconfig_changing_storage_class_default(
             }
         ):
             url = utils.get_file_url_https_server(
-                images_https_server, Images.Cirros.QCOW2_IMG
+                get_images_https_server(), Images.Cirros.QCOW2_IMG
             )
             with ConfigMap(
                 name="https-cert-configmap",

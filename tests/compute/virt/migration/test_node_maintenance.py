@@ -21,7 +21,7 @@ from resources.virtual_machine import (
 from tests.compute.utils import WinRMcliPod
 from tests.compute.virt import utils as virt_utils
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import Images, get_images_external_http_server
 from utilities.storage import create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -65,11 +65,11 @@ def skip_when_other_vmi_present(default_client):
 
 
 @pytest.fixture()
-def vm_container_disk_fedora(maintenance, unprivileged_client):
+def vm_container_disk_fedora(namespace, unprivileged_client):
     name = f"vm-nodemaintenance-{random.randrange(99999)}"
     with VirtualMachineForTests(
         name=name,
-        namespace=maintenance.name,
+        namespace=namespace.name,
         eviction=True,
         body=fedora_vm_body(name),
         client=unprivileged_client,
@@ -81,11 +81,9 @@ def vm_container_disk_fedora(maintenance, unprivileged_client):
 
 
 @pytest.fixture()
-def vm_template_dv_rhel8(
-    maintenance, unprivileged_client, images_external_http_server,
-):
+def vm_template_dv_rhel8(namespace, unprivileged_client):
     vm_dv_name = "rhel8-template-node-maintenance"
-    url = f"{images_external_http_server}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
+    url = f"{get_images_external_http_server()}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
     template_labels_dict = {
         "os": "rhel8.0",
         "workload": "server",
@@ -94,7 +92,7 @@ def vm_template_dv_rhel8(
     with create_dv(
         source="http",
         dv_name=vm_dv_name,
-        namespace=maintenance.name,
+        namespace=namespace.name,
         url=url,
         size="30Gi",
         content_type=DataVolume.ContentType.KUBEVIRT,
@@ -105,7 +103,7 @@ def vm_template_dv_rhel8(
         dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(
             name="dv-rhel8-node-maintenance",
-            namespace=maintenance.name,
+            namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,
@@ -145,11 +143,9 @@ def winrmcli_pod(vm_win10, schedulable_nodes):
 
 
 @pytest.fixture()
-def vm_win10(maintenance, unprivileged_client, images_external_http_server):
+def vm_win10(namespace, unprivileged_client):
     vm_dv_name = "windows-template-node-maintenance"
-    url = (
-        f"{images_external_http_server}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
-    )
+    url = f"{get_images_external_http_server()}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
     template_labels_dict = {
         "os": "win10",
         "workload": "desktop",
@@ -158,7 +154,7 @@ def vm_win10(maintenance, unprivileged_client, images_external_http_server):
     with create_dv(
         source="http",
         dv_name=vm_dv_name,
-        namespace=maintenance.name,
+        namespace=namespace.name,
         url=url,
         size="30Gi",
         content_type=DataVolume.ContentType.KUBEVIRT,
@@ -169,7 +165,7 @@ def vm_win10(maintenance, unprivileged_client, images_external_http_server):
         dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(
             name=vm_dv_name,
-            namespace=maintenance.name,
+            namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,

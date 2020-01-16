@@ -24,12 +24,7 @@ from resources.oauth import OAuth
 from resources.pod import Pod
 from resources.secret import Secret
 from resources.utils import TimeoutSampler
-from utilities.infra import (
-    create_ns,
-    generate_yaml_from_template,
-    get_images_external_http_server,
-    get_images_https_server,
-)
+from utilities.infra import create_ns, generate_yaml_from_template
 from utilities.virt import kubernetes_taint_exists
 
 
@@ -371,16 +366,6 @@ def masters(nodes):
     yield [
         node for node in nodes if "node-role.kubernetes.io/master" in node.labels.keys()
     ]
-
-
-@pytest.fixture()
-def images_external_http_server():
-    return get_images_external_http_server()
-
-
-@pytest.fixture()
-def images_https_server():
-    return get_images_https_server()
 
 
 @pytest.fixture(scope="session")
