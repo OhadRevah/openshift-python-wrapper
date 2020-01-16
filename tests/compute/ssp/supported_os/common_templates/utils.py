@@ -127,7 +127,9 @@ def check_ssh_connection(ip, port, console_impl):
     ssh_user = user.User(name=console_impl._USERNAME, password=console_impl._PASSWORD,)
     return ssh.RemoteExecutor(
         user=ssh_user, address=ip, port=port
-    ).wait_for_connectivity_state(positive=True, timeout=120)
+    ).wait_for_connectivity_state(
+        positive=True, timeout=120, tcp_connection_timeout=90,
+    )
 
 
 def check_telnet_connection(ip, port):
