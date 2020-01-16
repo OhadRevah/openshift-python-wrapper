@@ -15,7 +15,7 @@ class UploadTokenRequest(NamespacedResource):
 
     api_group = "upload.cdi.kubevirt.io"
 
-    def __init__(self, name, namespace, pvc_name):
+    def __init__(self, name, namespace, pvc_name=None):
         super().__init__(name=name, namespace=namespace)
         self.pvc_name = pvc_name
 

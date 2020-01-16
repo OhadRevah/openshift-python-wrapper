@@ -224,14 +224,16 @@ def pytest_exception_interact(node, call, report):
     os.makedirs(test_dir, exist_ok=True)
     os.makedirs(pods_dir, exist_ok=True)
 
-    for resource in RESOURCES_TO_COLLECT_INFO:
-        resource_dir = os.path.join(test_dir, resource.__name__)
-        for rcs in resource.get(dyn_client=dyn_client):
+    for _resources in RESOURCES_TO_COLLECT_INFO:
+        resource_dir = os.path.join(test_dir, _resources.__name__)
+        for resource_obj in _resources.get(dyn_client=dyn_client):
             if not os.path.isdir(resource_dir):
                 os.makedirs(resource_dir, exist_ok=True)
 
-            with open(os.path.join(resource_dir, f"{rcs.name}.yaml"), "w") as fd:
-                fd.write(rcs.instance.to_str())
+            with open(
+                os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
+            ) as fd:
+                fd.write(resource_obj.instance.to_str())
 
     for pod in Pod.get(dyn_client=dyn_client):
         kwargs = {}
