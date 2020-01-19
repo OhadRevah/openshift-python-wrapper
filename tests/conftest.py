@@ -218,35 +218,38 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def pytest_exception_interact(node, call, report):
-    dyn_client = _get_client()
-    test_dir = os.path.join(TEST_COLLECT_INFO_DIR, node.name, call.when)
-    pods_dir = os.path.join(test_dir, "Pods")
-    os.makedirs(test_dir, exist_ok=True)
-    os.makedirs(pods_dir, exist_ok=True)
+    try:
+        dyn_client = _get_client()
+        test_dir = os.path.join(TEST_COLLECT_INFO_DIR, node.name, call.when)
+        pods_dir = os.path.join(test_dir, "Pods")
+        os.makedirs(test_dir, exist_ok=True)
+        os.makedirs(pods_dir, exist_ok=True)
 
-    for _resources in RESOURCES_TO_COLLECT_INFO:
-        resource_dir = os.path.join(test_dir, _resources.__name__)
-        for resource_obj in _resources.get(dyn_client=dyn_client):
-            if not os.path.isdir(resource_dir):
-                os.makedirs(resource_dir, exist_ok=True)
+        for _resources in RESOURCES_TO_COLLECT_INFO:
+            resource_dir = os.path.join(test_dir, _resources.__name__)
+            for resource_obj in _resources.get(dyn_client=dyn_client):
+                if not os.path.isdir(resource_dir):
+                    os.makedirs(resource_dir, exist_ok=True)
 
-            with open(
-                os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
-            ) as fd:
-                fd.write(resource_obj.instance.to_str())
+                with open(
+                    os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
+                ) as fd:
+                    fd.write(resource_obj.instance.to_str())
 
-    for pod in Pod.get(dyn_client=dyn_client):
-        kwargs = {}
-        for pod_prefix in PODS_TO_COLLECT_INFO:
-            if pod.name.startswith(pod_prefix):
-                if pod_prefix == "virt-launcher":
-                    kwargs = {"container": "compute"}
+        for pod in Pod.get(dyn_client=dyn_client):
+            kwargs = {}
+            for pod_prefix in PODS_TO_COLLECT_INFO:
+                if pod.name.startswith(pod_prefix):
+                    if pod_prefix == "virt-launcher":
+                        kwargs = {"container": "compute"}
 
-                with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
-                    fd.write(pod.log(**kwargs))
+                    with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
+                        fd.write(pod.log(**kwargs))
 
-                with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
-                    fd.write(pod.instance.to_str())
+                    with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
+                        fd.write(pod.instance.to_str())
+    except Exception as exception_:
+        LOGGER.warning(f"Collecting 'failed tests log' failed {exception_} ")
 
 
 @pytest.fixture(scope="session", autouse=True)
