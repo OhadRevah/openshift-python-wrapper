@@ -202,7 +202,7 @@ def test_tablet_default_bus_tablet_device(
                     {"name": "tablet1", "type": "tablet", "bus": "virtio-transitional"}
                 ),
             },
-            marks=pytest.mark.polarion("CNV-3077"),
+            marks=pytest.mark.polarion("CNV-3442"),
         ),
     ],
     indirect=True,
