@@ -113,6 +113,31 @@ def wait_for_console(vm, console_impl):
         pass
 
 
+def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
+
+    LOGGER.info("Enable SSH in VM.")
+
+    if systemctl_support:
+        ssh_service_restart_cmd = [
+            "sudo systemctl enable sshd",
+            "sudo systemctl restart sshd",
+        ]
+    # For older linux versions which do not support systemctl
+    else:
+        ssh_service_restart_cmd = ["sudo /etc/init.d/sshd restart"]
+
+    commands = [
+        r"sudo sed -iE "
+        r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
+        r" /etc/ssh/sshd_config",
+        "",
+    ] + ssh_service_restart_cmd
+
+    vm_console_run_commands(
+        console_impl=console_impl, vm=vm, commands=commands,
+    )
+
+
 def check_ssh_connection(ip, port, console_impl):
     """ Verifies successful SSH connection
     Args:
@@ -300,3 +325,17 @@ def check_windows_activated_license(vm, winrmcli_pod, reset_action):
     assert is_windows_activated(
         vm, winrmcli_pod
     ), "VM license is not activated after restart."
+
+
+def add_activate_windows_license(vm, winrm_pod, license_key):
+    """ Add Windows license to the VM, activate it online and verify that
+    the activation was successful.
+    """
+
+    add_windows_license(
+        vm, winrm_pod, windows_license=license_key,
+    )
+    activate_windows_online(
+        vm, winrm_pod,
+    )
+    assert is_windows_activated(vm, winrm_pod), "VM license is not activated."

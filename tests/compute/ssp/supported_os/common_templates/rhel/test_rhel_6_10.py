@@ -139,22 +139,22 @@ class TestCommonTemplatesRhel6:
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3219")
-    @pytest.mark.parametrize(
-        "enabled_ssh_service_in_vm_scope_class",
-        [{"systemctl_support": False, "console_impl": console.RHEL}],
-        indirect=True,
-    )
     def test_expose_ssh(
         self,
         skip_upstream,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,
-        enabled_ssh_service_in_vm_scope_class,
         vm_ssh_service_scope_class,
         schedulable_node_ips,
     ):
         """ CNV common templates access VM via SSH """
+
+        utils.enable_ssh_service_in_vm(
+            vm=vm_object_from_template_scope_class,
+            console_impl=console.RHEL,
+            systemctl_support=False,
+        )
 
         assert utils.check_ssh_connection(
             ip=list(schedulable_node_ips.values())[0],

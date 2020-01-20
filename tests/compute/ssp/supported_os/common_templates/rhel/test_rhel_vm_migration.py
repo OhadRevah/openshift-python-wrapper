@@ -35,17 +35,11 @@ from utilities import console
     ],
     indirect=True,
 )
-@pytest.mark.parametrize(
-    "enabled_ssh_service_in_vm_scope_function",
-    [{"console_impl": console.RHEL}],
-    indirect=True,
-)
 def test_migrate_vm_rhel(
     skip_upstream,
     namespace,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
-    enabled_ssh_service_in_vm_scope_function,
     vm_ssh_service_scope_function,
     schedulable_node_ips,
 ):
@@ -56,6 +50,10 @@ def test_migrate_vm_rhel(
     """
 
     utils.wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
+
+    utils.enable_ssh_service_in_vm(
+        vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
+    )
 
     assert utils.check_ssh_connection(
         ip=list(schedulable_node_ips.values())[0],

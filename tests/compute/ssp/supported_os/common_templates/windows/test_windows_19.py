@@ -113,9 +113,6 @@ class TestCommonTemplatesWin10:
             vm_object_from_template_scope_class, winrmcli_pod_scope_class
         )
 
-    @pytest.mark.parametrize(
-        "activated_vm", [{"license_key": WIN19_LICENSE_KEY}], indirect=True
-    )
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3379")
     @pytest.mark.jira("CNV-3771", run=False)
@@ -126,8 +123,13 @@ class TestCommonTemplatesWin10:
         data_volume_scope_class,
         vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
-        activated_vm,
     ):
+
+        utils.add_activate_windows_license(
+            vm_object_from_template_scope_class,
+            winrmcli_pod_scope_class,
+            WIN19_LICENSE_KEY,
+        )
 
         LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
         utils.check_windows_activated_license(
@@ -136,9 +138,6 @@ class TestCommonTemplatesWin10:
             reset_action="stop_start",
         )
 
-    @pytest.mark.parametrize(
-        "activated_vm", [{"license_key": WIN19_LICENSE_KEY}], indirect=True,
-    )
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3417")
     @pytest.mark.jira("CNV-3771", run=False)
@@ -149,8 +148,13 @@ class TestCommonTemplatesWin10:
         data_volume_scope_class,
         vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
-        activated_vm,
     ):
+
+        utils.add_activate_windows_license(
+            vm_object_from_template_scope_class,
+            winrmcli_pod_scope_class,
+            WIN19_LICENSE_KEY,
+        )
 
         LOGGER.info("Verify VM activation mode is not changed after reboot.")
         utils.check_windows_activated_license(
