@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "14ccfc6c8ed297afa5e29de2a11d11defe00b1cf2572006031f0a1af22a45ffe"
+            "sha256": "44e510038af24bd06e67eedff79920e7f3ea0503dc9efc56baf59d6e08678dec"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -19,7 +19,7 @@
         "ansible": {
             "editable": true,
             "git": "https://github.com/ansible/ansible.git",
-            "ref": "f9bc53e23df8542ce44af49aa543ce87e7fc0aa7"
+            "ref": "e38217f7fde3968b2a4e7b519750ef4bda248e69"
         },
         "attrs": {
             "hashes": [
@@ -427,11 +427,11 @@
         },
         "pytest": {
             "hashes": [
-                "sha256:9f8d44f4722b3d06b41afaeb8d177cfbe0700f8351b1fc755dd27eedaa3eb9e0",
-                "sha256:f5d3d0e07333119fe7d4af4ce122362dc4053cdd34a71d2766290cf5369c64ad"
+                "sha256:1d122e8be54d1a709e56f82e2d85dcba3018313d64647f38a91aec88c239b600",
+                "sha256:c13d1943c63e599b98cf118fcb9703e4d7bde7caa9a432567bcdcae4bf512d20"
             ],
             "index": "pypi",
-            "version": "==5.3.3"
+            "version": "==5.3.4"
         },
         "pytest-ansible": {
             "git": "https://github.com/ansible/pytest-ansible.git",
@@ -443,14 +443,6 @@
             ],
             "index": "pypi",
             "version": "==0.3.11"
-        },
-        "pytest-lazy-fixture": {
-            "hashes": [
-                "sha256:bcdc184ef988abbde2d906330a7f681595c8e9753a5ff07c5a9860389aa3b766",
-                "sha256:eb2f4573b371c690b91e637d09dfa30e2d6ba1234833df1920fc8b7b0d0fcebb"
-            ],
-            "index": "pypi",
-            "version": "==0.6.2"
         },
         "pytest-marker-bugzilla": {
             "hashes": [
@@ -559,10 +551,9 @@
         },
         "ruamel.yaml": {
             "hashes": [
-                "sha256:0db639b1b2742dae666c6fc009b8d1931ef15c9276ef31c0673cc6dcf766cf40",
-                "sha256:412a6f5cfdc0525dee6a27c08f5415c7fd832a7afcb7a0ed7319628aed23d408"
+                "sha256:966e5a049eebf011c90424b9ec7dab6358cee8de0907354b27a27f20a8c4c2ec"
             ],
-            "version": "==0.16.5"
+            "version": "==0.16.6"
         },
         "ruamel.yaml.clib": {
             "hashes": [
@@ -586,7 +577,6 @@
                 "sha256:ed5b3698a2bb241b7f5cbbe277eaa7fe48b07a58784fba4f75224fd066d253ad",
                 "sha256:f9dcc1ae73f36e8059589b601e8e4776b9976effd76c21ad6a855a74318efd6e"
             ],
-            "markers": "platform_python_implementation == 'CPython' and python_version < '3.8'",
             "version": "==0.2.0"
         },
         "sh": {
@@ -738,11 +728,11 @@
         },
         "pytest": {
             "hashes": [
-                "sha256:9f8d44f4722b3d06b41afaeb8d177cfbe0700f8351b1fc755dd27eedaa3eb9e0",
-                "sha256:f5d3d0e07333119fe7d4af4ce122362dc4053cdd34a71d2766290cf5369c64ad"
+                "sha256:1d122e8be54d1a709e56f82e2d85dcba3018313d64647f38a91aec88c239b600",
+                "sha256:c13d1943c63e599b98cf118fcb9703e4d7bde7caa9a432567bcdcae4bf512d20"
             ],
             "index": "pypi",
-            "version": "==5.3.3"
+            "version": "==5.3.4"
         },
         "six": {
             "hashes": [
