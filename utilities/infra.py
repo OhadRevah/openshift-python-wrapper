@@ -8,7 +8,6 @@ import urllib.request
 
 import jinja2
 import yaml
-from autologs.autologs import generate_logs
 from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from resources.project import Project, ProjectRequest
@@ -113,7 +112,6 @@ class MissingTemplateVariables(Exception):
         return f"Missing variables {self.var} for template {self.template}"
 
 
-@generate_logs()
 def generate_yaml_from_template(file_, **kwargs):
     """
     Generate JSON from yaml file_

@@ -5,7 +5,6 @@ import subprocess
 
 import pexpect
 import requests
-from autologs.autologs import generate_logs
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -434,7 +433,6 @@ class CommandExecFailed(Exception):
         return f"Command: {self.name} - exec failed."
 
 
-@generate_logs()
 def _run_command(command):
     """
     Run command locally.
