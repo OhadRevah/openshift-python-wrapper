@@ -1,20 +1,107 @@
+import datetime
 import logging
+import os
 import re
+import shutil
 from distutils.version import Version
 
 import kubernetes
 import urllib3
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
-from resources.utils import TimeoutExpiredError, nudge_delete
+from resources.utils import TimeoutExpiredError, TimeoutSampler, nudge_delete
 from urllib3.exceptions import ProtocolError
-
-from . import utils
 
 
 LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240
 MAX_SUPPORTED_API_VERSION = "v1"
+
+
+def _prepare_collect_data_directory(resource_object):
+    dump_dir = "tests-collected-info"
+    if not os.path.isdir(dump_dir):
+        # pytest fixture create the directory, if it is not exists we probably not called from pytest.
+        return
+
+    directory = os.path.join(
+        dump_dir,
+        f"{'NamespaceResources/Namespaces' if resource_object.namespace else 'NotNamespaceResources'}",
+        f"{resource_object.namespace if resource_object.namespace else ''}",
+        resource_object.kind,
+        f"{datetime.datetime.now().strftime('%H:%M:%S')}-{resource_object.name}",
+    )
+    if os.path.exists(directory):
+        shutil.rmtree(directory, ignore_errors=True)
+
+    os.makedirs(directory)
+    return directory
+
+
+def _collect_instance_data(directory, resource_object):
+    with open(os.path.join(directory, f"{resource_object.name}.yaml"), "w") as fd:
+        fd.write(resource_object.instance.to_str())
+
+
+def _collect_pod_logs(dyn_client, resource_item, **kwargs):
+    kube_v1_api = kubernetes.client.CoreV1Api(api_client=dyn_client.client)
+    return kube_v1_api.read_namespaced_pod_log(
+        resource_item.metadata.name, resource_item.metadata.namespace, **kwargs
+    )
+
+
+def _collect_virt_launcher_data(dyn_client, directory, resource_object):
+    if resource_object.kind == "VirtualMachineInstance":
+        for pod in dyn_client.resources.get(kind="Pod").get().items:
+            pod_name = pod.metadata.name
+            pod_instance = dyn_client.resources.get(
+                api_version=pod.apiVersion, kind=pod.kind
+            ).get(name=pod_name, namespace=pod.metadata.namespace)
+            if pod_name.startswith("virt-launcher"):
+                with open(os.path.join(directory, f"{pod_name}.log"), "w") as fd:
+                    fd.write(
+                        _collect_pod_logs(
+                            dyn_client=dyn_client,
+                            resource_item=pod,
+                            container="compute",
+                        )
+                    )
+
+                with open(os.path.join(directory, f"{pod_name}.yaml"), "w") as fd:
+                    fd.write(pod_instance.to_str())
+
+
+def _collect_data_volume_data(dyn_client, directory, resource_object):
+    if resource_object.kind == "DataVolume":
+        for pod in dyn_client.resources.get(kind="DataVolume").get().items:
+            pod_name = pod.metadata.name
+            pod_instance = dyn_client.resources.get(
+                api_version=pod.apiVersion, kind=pod.kind
+            ).get(name=pod_name, namespace=pod.metadata.namespace)
+            if pod_name.startswith("cdi-importer"):
+                with open(os.path.join(directory, f"{pod_name}.log"), "w") as fd:
+                    fd.write(
+                        _collect_pod_logs(dyn_client=dyn_client, resource_item=pod)
+                    )
+
+                with open(os.path.join(directory, f"{pod_name}.yaml"), "w") as fd:
+                    fd.write(pod_instance.to_str())
+
+
+def _collect_data(resource_object, dyn_client=None):
+    dyn_client = (
+        dyn_client
+        if dyn_client
+        else DynamicClient(kubernetes.config.new_client_from_config())
+    )
+    directory = _prepare_collect_data_directory(resource_object=resource_object)
+    _collect_instance_data(directory=directory, resource_object=resource_object)
+    _collect_virt_launcher_data(
+        dyn_client=dyn_client, directory=directory, resource_object=resource_object
+    )
+    _collect_data_volume_data(
+        dyn_client=dyn_client, directory=directory, resource_object=resource_object
+    )
 
 
 def _find_supported_resource(dyn_client, api_group, kind):
@@ -204,6 +291,11 @@ class Resource(object):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
+        try:
+            _collect_data(resource_object=self)
+        except Exception as exception_:
+            LOGGER.warning(exception_)
+
         data = self._to_dict()
         LOGGER.info(f"Deleting {data}")
         self.delete(wait=True)
@@ -248,7 +340,7 @@ class Resource(object):
             return self.instance
 
         LOGGER.info(f"Wait until {self.kind} {self.name} is created")
-        samples = utils.TimeoutSampler(
+        samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=(ProtocolError, NotFoundError),
@@ -297,7 +389,7 @@ class Resource(object):
             except NotFoundError:
                 return None
 
-        samples = utils.TimeoutSampler(timeout=timeout, sleep=1, func=_exists)
+        samples = TimeoutSampler(timeout=timeout, sleep=1, func=_exists)
         for sample in samples:
             self.nudge_delete()
             if not sample:
@@ -317,7 +409,7 @@ class Resource(object):
         """
         stop_status = stop_status if stop_status else self.Status.FAILED
         LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
-        samples = utils.TimeoutSampler(
+        samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=ProtocolError,
@@ -419,7 +511,7 @@ class Resource(object):
                 return
 
         def _sampler(name, namespace, force=False):
-            samples = utils.TimeoutSampler(
+            samples = TimeoutSampler(
                 timeout=TIMEOUT, sleep=1, func=_exists, name=name, namespace=namespace
             )
             for sample in samples:
@@ -535,7 +627,7 @@ class Resource(object):
             TimeoutExpiredError: If Pod condition in not in desire status.
         """
         LOGGER.info(f"Wait for {self.kind} {self.name} condition to be {condition}")
-        samples = utils.TimeoutSampler(
+        samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=ProtocolError,
