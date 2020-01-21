@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from subprocess import run
 
 import pytest
-from pytest_lazyfixture import lazy_fixture
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.node_maintenance import NodeMaintenance
@@ -56,6 +55,15 @@ def drain_node_console(node):
         yield
     finally:
         run(f"oc adm uncordon {node.name}", shell=True)
+
+
+def drain_using_console(default_client, source_node, source_pod, vm, vm_cli):
+    with running_sleep_in_linux(vm_cli):
+        with drain_node_console(node=source_node):
+            check_draining_process(
+                default_client=default_client, source_pod=source_pod, vm=vm
+            )
+        virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
 
 
 @pytest.fixture(scope="module")
@@ -227,35 +235,38 @@ def test_node_maintenance_job(
         virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
 
 
-@pytest.mark.parametrize(
-    "vm, os",
-    [
-        pytest.param(
-            lazy_fixture("vm_container_disk_fedora"),
-            "Fedora",
-            marks=(pytest.mark.polarion("CNV-3006")),
-        ),
-        pytest.param(
-            lazy_fixture("vm_template_dv_rhel8"),
-            "RHEL",
-            marks=(pytest.mark.polarion("CNV-2292")),
-        ),
-    ],
-)
-def test_node_drain_using_console(
-    skip_when_other_vmi_present, skip_when_one_node, default_client, vm, os
+@pytest.mark.polarion("CNV-3006")
+def test_node_drain_using_console_fedora(
+    skip_when_other_vmi_present,
+    skip_when_one_node,
+    default_client,
+    vm_container_disk_fedora,
 ):
-    source_pod = vm.vmi.virt_launcher_pod
-    source_node = source_pod.node
 
-    vm_cli = console.Fedora(vm) if os == "Fedora" else console.RHEL(vm)
+    drain_using_console(
+        default_client,
+        source_node=vm_container_disk_fedora.vmi.virt_launcher_pod.node,
+        source_pod=vm_container_disk_fedora.vmi.virt_launcher_pod,
+        vm=vm_container_disk_fedora,
+        vm_cli=console.Fedora(vm_container_disk_fedora),
+    )
 
-    with running_sleep_in_linux(vm_cli):
-        with drain_node_console(node=source_node):
-            check_draining_process(
-                default_client=default_client, source_pod=source_pod, vm=vm
-            )
-        virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
+
+@pytest.mark.polarion("CNV-2292")
+def test_node_drain_using_console_rhel(
+    skip_when_other_vmi_present,
+    skip_when_one_node,
+    default_client,
+    vm_template_dv_rhel8,
+):
+
+    drain_using_console(
+        default_client,
+        source_node=vm_template_dv_rhel8.vmi.virt_launcher_pod.node,
+        source_pod=vm_template_dv_rhel8.vmi.virt_launcher_pod,
+        vm=vm_template_dv_rhel8,
+        vm_cli=console.RHEL(vm_template_dv_rhel8),
+    )
 
 
 @pytest.mark.polarion("CNV-2048")
