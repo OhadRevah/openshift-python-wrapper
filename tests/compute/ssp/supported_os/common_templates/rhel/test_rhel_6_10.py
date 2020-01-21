@@ -7,6 +7,7 @@ Common templates test RHEL 6.10
 import logging
 
 import pytest
+import tests.compute.utils
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
 from utilities.infra import Images
@@ -68,7 +69,7 @@ class TestCommonTemplatesRhel6:
     ):
         """ Test CNV common templates VM initiation """
 
-        utils.vm_started(
+        tests.compute.utils.vm_started(
             vm=vm_object_from_template_scope_class, wait_for_interfaces=False
         )
 

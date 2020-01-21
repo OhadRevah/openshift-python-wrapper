@@ -7,6 +7,7 @@ Common templates test RHEL 8.0
 import logging
 
 import pytest
+import tests.compute.utils
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
 from utilities.infra import Images
@@ -63,7 +64,7 @@ class TestCommonTemplatesRhel8:
     ):
         """ Test CNV common templates VM initiation """
 
-        utils.vm_started(vm=vm_object_from_template_scope_class)
+        tests.compute.utils.vm_started(vm=vm_object_from_template_scope_class)
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3258")

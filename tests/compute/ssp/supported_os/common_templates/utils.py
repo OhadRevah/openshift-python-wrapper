@@ -12,22 +12,11 @@ from resources import pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from rrmngmnt import ssh, user
-from utilities.virt import vm_console_run_commands, wait_for_vm_interfaces
+from tests.compute.utils import vm_started
+from utilities.virt import vm_console_run_commands
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def vm_started(vm, wait_for_interfaces=True):
-    """ Start a VM and wait for its status to be 'Running'
-
-    If wait_for_interfaces - wait for interfaces to be up.
-    """
-
-    vm.start(wait=True)
-    vm.vmi.wait_until_running()
-    if wait_for_interfaces:
-        wait_for_vm_interfaces(vm.vmi)
 
 
 def stop_start_vm(vm, wait_for_interfaces=True):

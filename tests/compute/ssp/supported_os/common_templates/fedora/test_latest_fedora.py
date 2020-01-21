@@ -7,6 +7,7 @@ Common templates test latest Fedora
 import logging
 
 import pytest
+import tests.compute.utils
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
@@ -99,7 +100,7 @@ class TestCommonTemplatesFedora:
     ):
         """ Test CNV common templates VM initiation """
 
-        utils.vm_started(
+        tests.compute.utils.vm_started(
             vm=vm_object_from_template_scope_class, wait_for_interfaces=False
         )
 
