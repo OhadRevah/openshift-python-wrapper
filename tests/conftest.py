@@ -597,7 +597,7 @@ def skip_not_bare_metal():
 @pytest.fixture(scope="session")
 def rhel7_workers(schedulable_nodes):
     # Check only the first Node since mixed rchos and RHEL7 workers in cluster is not supported.
-    return (
-        schedulable_nodes[0].instance.status.nodeInfo.osImage
-        == "Red Hat Enterprise Linux Server 7.7 (Maipo)"
+    return re.search(
+        r"^Red Hat Enterprise Linux Server 7\.\d",
+        schedulable_nodes[0].instance.status.nodeInfo.osImage,
     )
