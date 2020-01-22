@@ -3,7 +3,6 @@
 import logging
 
 import pytest
-from pytest_testconfig import config as py_config
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
@@ -21,12 +20,15 @@ General tests fixtures
 """
 
 
-def data_volume(request, namespace):
+def data_volume(request, namespace, storage_class_matrix):
     """ DV creation.
 
     The call to this function is triggered by calling either
     data_volume_scope_function or data_volume_scope_class.
     """
+
+    # Extract the kye from storage_class_matrix (dict)
+    storage_class = [*storage_class_matrix][0]
 
     # Set dv attributes
     dv_kwargs = {
@@ -37,12 +39,12 @@ def data_volume(request, namespace):
         "size": request.param.get(
             "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
         ),
-        "access_modes": request.param.get("access_modes", DataVolume.AccessMode.RWX),
-        "volume_mode": request.param.get(
-            "volume_mode", py_config["default_volume_mode"],
+        "storage_class": request.param.get("storage_class", storage_class),
+        "access_modes": request.param.get(
+            "access_modes", storage_class_matrix[storage_class]["access_mode"]
         ),
-        "storage_class": request.param.get(
-            "storage_class", py_config["default_storage_class"]
+        "volume_mode": request.param.get(
+            "volume_mode", storage_class_matrix[storage_class]["volume_mode"],
         ),
         "content_type": DataVolume.ContentType.KUBEVIRT,
     }
@@ -54,13 +56,13 @@ def data_volume(request, namespace):
 
 
 @pytest.fixture()
-def data_volume_scope_function(request, namespace):
-    yield from data_volume(request, namespace)
+def data_volume_scope_function(request, namespace, storage_class_matrix):
+    yield from data_volume(request, namespace, storage_class_matrix)
 
 
 @pytest.fixture(scope="class")
-def data_volume_scope_class(request, namespace):
-    yield from data_volume(request, namespace)
+def data_volume_scope_class(request, namespace, storage_class_matrix):
+    yield from data_volume(request, namespace, storage_class_matrix)
 
 
 def vm_instance_from_template(request, unprivileged_client, namespace, data_volume):

@@ -89,7 +89,7 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
 
 
 @pytest.fixture()
-def vm_template_dv_rhel8(namespace, unprivileged_client):
+def vm_template_dv_rhel8(namespace, unprivileged_client, storage_class_matrix):
     vm_dv_name = "rhel8-template-node-maintenance"
     url = f"{get_images_external_http_server()}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
     template_labels_dict = {
@@ -97,6 +97,8 @@ def vm_template_dv_rhel8(namespace, unprivileged_client):
         "workload": "server",
         "flavor": "tiny",
     }
+    # Extract the kye from storage_class_matrix (dict)
+    storage_class = [*storage_class_matrix][0]
     with create_dv(
         source="http",
         dv_name=vm_dv_name,
@@ -104,9 +106,9 @@ def vm_template_dv_rhel8(namespace, unprivileged_client):
         url=url,
         size="30Gi",
         content_type=DataVolume.ContentType.KUBEVIRT,
-        access_modes=DataVolume.AccessMode.RWX,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        storage_class=py_config["default_storage_class"],
+        storage_class=storage_class,
+        access_modes=storage_class_matrix[storage_class]["access_mode"],
+        volume_mode=storage_class_matrix[storage_class]["volume_mode"],
     ) as dv:
         dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(
@@ -151,7 +153,7 @@ def winrmcli_pod(vm_win10, schedulable_nodes):
 
 
 @pytest.fixture()
-def vm_win10(namespace, unprivileged_client):
+def vm_win10(namespace, unprivileged_client, storage_class_matrix):
     vm_dv_name = "windows-template-node-maintenance"
     url = f"{get_images_external_http_server()}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
     template_labels_dict = {
@@ -159,6 +161,8 @@ def vm_win10(namespace, unprivileged_client):
         "workload": "desktop",
         "flavor": "medium",
     }
+    # Extract the kye from storage_class_matrix (dict)
+    storage_class = [*storage_class_matrix][0]
     with create_dv(
         source="http",
         dv_name=vm_dv_name,
@@ -166,9 +170,9 @@ def vm_win10(namespace, unprivileged_client):
         url=url,
         size="30Gi",
         content_type=DataVolume.ContentType.KUBEVIRT,
-        access_modes=DataVolume.AccessMode.RWX,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        storage_class=py_config["default_storage_class"],
+        storage_class=storage_class,
+        access_modes=storage_class_matrix[storage_class]["access_mode"],
+        volume_mode=storage_class_matrix[storage_class]["volume_mode"],
     ) as dv:
         dv.wait(timeout=1200)
         with VirtualMachineForTestsFromTemplate(

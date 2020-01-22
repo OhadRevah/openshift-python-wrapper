@@ -54,10 +54,14 @@ EMEA:
   https_cert: emea_https.crt
   registry_cert: emea_registry.crt
 
-storage_class_matrix:
-  - rook-ceph-block
-  - hostpath-provisioner
-
 bridge_device_matrix:
   - linux-bridge
   - ovs
+
+storage_class_matrix:
+  - rook-ceph-block:
+      volume_mode: Block
+      access_mode: ReadWriteMany
+  - hostpath-provisioner:
+      volume_mode: Filesystem
+      access_mode: ReadWriteOnce

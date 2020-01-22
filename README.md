@@ -154,6 +154,24 @@ Example:
 @pytest.mark.jira("CNV-1234")
 ```
 
+### Running tests using matrix fixtures
+
+Matrix fixtures can be added in test-config.yaml.
+You can run a test using a subset of a simple matrix (i.e flat list), example:
+```bash
+--tc-exact --tc=bridge_devices:ovs
+```
+
+To run a test using a subset of a complex matrix (e.g list of dicts), you'll also need to add
+the following to tests/conftest.py
+- Add parser.addoption under pytest_addoption
+- Parsing logic under pytest_sessionstart
+
+Example:
+```bash
+--storage-class-matrix rook-ceph-block
+```
+
 # Network utility container
 
 Dockerfile is under `tests/manifests/network/privileged_container`

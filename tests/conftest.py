@@ -83,6 +83,7 @@ def pytest_addoption(parser):
     )
     parser.addoption("--cnv-version", help="CNV version to upgrade to")
     parser.addoption("--ocp-image", help="OCP image to upgrade to")
+    parser.addoption("--storage-class-matrix", help="Storage class matrix to use")
 
 
 def pytest_cmdline_main(config):
@@ -211,6 +212,18 @@ def pytest_runtest_logreport(report):
 
             fd.write(test_status_str)
             fd.write(f"{report.longreprtext}\n")
+
+
+def pytest_sessionstart(session):
+    if session.config.getoption("storage_class_matrix"):
+        # Extract only the dict item which has the requested key from
+        # --storage-class-matrix
+        py_config["storage_class_matrix"] = {
+            k: v
+            for i in py_config["storage_class_matrix"]
+            for k, v in i.items()
+            if k == session.config.getoption("storage_class_matrix")
+        }
 
 
 def pytest_sessionfinish(session, exitstatus):
