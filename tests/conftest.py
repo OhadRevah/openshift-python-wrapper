@@ -614,3 +614,9 @@ def rhel7_workers(schedulable_nodes):
         r"^Red Hat Enterprise Linux Server 7\.\d",
         schedulable_nodes[0].instance.status.nodeInfo.osImage,
     )
+
+
+@pytest.fixture(scope="class", autouse=True)
+def skip_rhel7_workers_ceph_storage_class(rhel7_workers, storage_class_matrix):
+    if rhel7_workers and storage_class_matrix.get("rook-ceph-block"):
+        pytest.skip(msg="Rook-ceph configuration is not supported on RHEL7 workers",)
