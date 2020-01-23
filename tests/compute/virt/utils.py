@@ -12,7 +12,7 @@ class NodeMaintenanceException(Exception):
         return f"{self.action} node maintenance failed: {self.node.name} - {self.error}"
 
 
-def wait_for_node_unschedulable_status(node, status, timeout=30):
+def wait_for_node_unschedulable_status(node, status, timeout=60):
     sampler = TimeoutSampler(
         timeout=timeout,
         sleep=1,
