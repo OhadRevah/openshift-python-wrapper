@@ -1,3 +1,9 @@
+# Prerequisite
+Export the relevant Fedora version, fore example:
+```bash
+export FEDORA_VERSION=31
+```
+
 # Fedora VM container
 
 Image can be download from https://alt.fedoraproject.org/cloud/
@@ -12,7 +18,7 @@ To execute the build script the following packages needed:
 
 build.sh get Fedora image as parameter, for example:
 ```bash
-./build.sh Fedora-Cloud-Base-30-1.2.x86_64.qcow2 <version>
+./build.sh Fedora-Cloud-Base-30-1.2.x86_64.qcow2 $FEDORA_VERSION
 ```
 
 This will install:
@@ -27,6 +33,8 @@ This will install:
     nmap
     dhcp
     stress
+    sshpass
+    podman
 
 enable qemu-guest-agent and sshd services in the VM.
 If extra packages needed add them in user-data file.
@@ -44,9 +52,9 @@ The tar container will be located under "fedora_build" folder.
 ### push container
 ```bash
 cd fedora_build
-docker load -i fedora-<version>.tar
-docker tag fedora:<version> quay.io/redhat/cnv-tests-fedora-staging:<version>
-docker push quay.io/redhat/cnv-tests-fedora-staging:<version>
+docker load -i fedora-$FEDORA_VERSION.tar
+docker tag fedora:$FEDORA_VERSION quay.io/redhat/cnv-tests-fedora-staging:$FEDORA_VERSION
+docker push quay.io/redhat/cnv-tests-fedora-staging:$FEDORA_VERSION
 ```
 
 30 tag should changed based on the Fedora version.
@@ -58,6 +66,6 @@ Run the tests (cnv-tests).
 
 Once verified push the image to quay.io/redhat/cnv-tests-fedora
 ```bash
-docker tag fedora:<version> quay.io/redhat/cnv-tests-fedora:<version>
-docker push quay.io/redhat/cnv-tests-fedora:<version>
+docker tag fedora:$FEDORA_VERSION quay.io/redhat/cnv-tests-fedora:$FEDORA_VERSION
+docker push quay.io/redhat/cnv-tests-fedora:$FEDORA_VERSION
 ```
