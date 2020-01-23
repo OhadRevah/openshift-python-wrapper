@@ -27,7 +27,7 @@ def data_volume(request, namespace, storage_class_matrix):
     data_volume_scope_function or data_volume_scope_class.
     """
 
-    # Extract the kye from storage_class_matrix (dict)
+    # Extract the key from storage_class_matrix (dict)
     storage_class = [*storage_class_matrix][0]
 
     # Set dv attributes

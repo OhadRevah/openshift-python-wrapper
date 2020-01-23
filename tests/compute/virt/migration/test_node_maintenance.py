@@ -64,6 +64,22 @@ def drain_using_console(default_client, source_node, source_pod, vm, vm_cli):
                 default_client=default_client, source_pod=source_pod, vm=vm
             )
         virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
+    yield
+
+
+def drain_using_console_windows(
+    default_client, source_node, source_pod, vm, windows_initial_boot_time
+):
+
+    with drain_node_console(node=source_node):
+        check_draining_process(
+            default_client=default_client, source_pod=source_pod, vm=vm
+        )
+        boot_time_after_migration = check_windows_boot_time(vm, winrmcli_pod)
+        assert (
+            boot_time_after_migration == windows_initial_boot_time
+        ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
+    yield
 
 
 @pytest.fixture(scope="module")
@@ -97,7 +113,7 @@ def vm_template_dv_rhel8(namespace, unprivileged_client, storage_class_matrix):
         "workload": "server",
         "flavor": "tiny",
     }
-    # Extract the kye from storage_class_matrix (dict)
+    # Extract the key from storage_class_matrix (dict)
     storage_class = [*storage_class_matrix][0]
     with create_dv(
         source="http",
@@ -161,7 +177,7 @@ def vm_win10(namespace, unprivileged_client, storage_class_matrix):
         "workload": "desktop",
         "flavor": "medium",
     }
-    # Extract the kye from storage_class_matrix (dict)
+    # Extract the key from storage_class_matrix (dict)
     storage_class = [*storage_class_matrix][0]
     with create_dv(
         source="http",
@@ -282,16 +298,15 @@ def test_node_drain_template_windows(
     windows_initial_boot_time,
     default_client,
 ):
-    source_pod = vm_win10.vmi.virt_launcher_pod
-    source_node = source_pod.node
 
-    with drain_node_console(node=source_node):
-        check_draining_process(
-            default_client=default_client, source_pod=source_pod, vm=vm_win10
-        )
-        boot_time_after_migration = check_windows_boot_time(vm_win10, winrmcli_pod)
-        assert (
-            boot_time_after_migration == windows_initial_boot_time
-        ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
+    drain_using_console_windows(
+        default_client,
+        source_node=vm_win10.vmi.virt_launcher_pod.node,
+        source_pod=vm_win10.vmi.virt_launcher_pod,
+        vm=vm_win10,
+        windows_initial_boot_time=windows_initial_boot_time,
+    )
 
-    virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
+    virt_utils.wait_for_node_unschedulable_status(
+        node=vm_win10.vmi.virt_launcher_pod.node, status=False
+    )
