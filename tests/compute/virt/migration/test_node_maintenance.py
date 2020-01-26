@@ -105,7 +105,15 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
 
 
 @pytest.fixture()
-def vm_template_dv_rhel8(namespace, unprivileged_client, storage_class_matrix):
+def vm_template_dv_rhel8(
+    rhel7_workers, namespace, unprivileged_client, storage_class_matrix
+):
+    if storage_class_matrix.get("rook-ceph-block"):
+        if rhel7_workers:
+            pytest.skip(
+                msg="Rook-ceph configuration is not supported on RHEL7 workers",
+            )
+
     vm_dv_name = "rhel8-template-node-maintenance"
     url = f"{get_images_external_http_server()}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
     template_labels_dict = {
@@ -169,7 +177,13 @@ def winrmcli_pod(vm_win10, schedulable_nodes):
 
 
 @pytest.fixture()
-def vm_win10(namespace, unprivileged_client, storage_class_matrix):
+def vm_win10(rhel7_workers, namespace, unprivileged_client, storage_class_matrix):
+    if storage_class_matrix.get("rook-ceph-block"):
+        if rhel7_workers:
+            pytest.skip(
+                msg="Rook-ceph configuration is not supported on RHEL7 workers",
+            )
+
     vm_dv_name = "windows-template-node-maintenance"
     url = f"{get_images_external_http_server()}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
     template_labels_dict = {

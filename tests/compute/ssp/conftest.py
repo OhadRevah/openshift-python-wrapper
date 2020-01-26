@@ -20,12 +20,17 @@ General tests fixtures
 """
 
 
-def data_volume(request, namespace, storage_class_matrix):
+def data_volume(request, rhel7_workers, namespace, storage_class_matrix):
     """ DV creation.
 
     The call to this function is triggered by calling either
     data_volume_scope_function or data_volume_scope_class.
     """
+    if storage_class_matrix.get("rook-ceph-block"):
+        if rhel7_workers:
+            pytest.skip(
+                msg="Rook-ceph configuration is not supported on RHEL7 workers",
+            )
 
     # Extract the key from storage_class_matrix (dict)
     storage_class = [*storage_class_matrix][0]
