@@ -61,13 +61,23 @@ def data_volume(request, rhel7_workers, namespace, storage_class_matrix):
 
 
 @pytest.fixture()
-def data_volume_scope_function(request, namespace, storage_class_matrix):
-    yield from data_volume(request, namespace, storage_class_matrix)
+def data_volume_scope_function(request, rhel7_workers, namespace, storage_class_matrix):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix,
+        rhel7_workers=rhel7_workers,
+    )
 
 
 @pytest.fixture(scope="class")
-def data_volume_scope_class(request, namespace, storage_class_matrix):
-    yield from data_volume(request, namespace, storage_class_matrix)
+def data_volume_scope_class(request, rhel7_workers, namespace, storage_class_matrix):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix,
+        rhel7_workers=rhel7_workers,
+    )
 
 
 def vm_instance_from_template(request, unprivileged_client, namespace, data_volume):
