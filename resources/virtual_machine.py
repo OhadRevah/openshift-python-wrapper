@@ -98,7 +98,8 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
             headers=self.client.configuration.api_key,
         )
         if wait:
-            return self.vmi.wait_until_running(timeout=timeout)
+            # stop_status="dummy" used to ignore FAILED status of vmi during restart
+            return self.vmi.wait_until_running(timeout=timeout, stop_status="dummy")
 
     def stop(self, timeout=TIMEOUT, wait=False):
         self.client.client.request(
@@ -206,19 +207,22 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
         raise ResourceNotFoundError
 
-    def wait_until_running(self, timeout=TIMEOUT, logs=True):
+    def wait_until_running(self, timeout=TIMEOUT, logs=True, stop_status=None):
         """
         Wait until VMI is running
 
         Args:
             timeout (int): Time to wait for VMI.
             logs (bool): True to extract logs from the VMI pod and from the VMI.
+            stop_status (str): Status which should stop the wait and failed.
 
         Raises:
             TimeoutExpiredError: If VMI failed to run.
         """
         try:
-            self.wait_for_status(status=self.Status.RUNNING, timeout=timeout)
+            self.wait_for_status(
+                status=self.Status.RUNNING, timeout=timeout, stop_status=stop_status
+            )
         except TimeoutExpiredError:
             if not logs:
                 raise
