@@ -16,6 +16,7 @@ import bcrypt
 import kubernetes
 import pytest
 from openshift.dynamic import DynamicClient
+from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
@@ -614,3 +615,15 @@ def rhel7_workers(schedulable_nodes):
         r"^Red Hat Enterprise Linux Server 7\.\d",
         schedulable_nodes[0].instance.status.nodeInfo.osImage,
     )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def leftovers():
+    secret = Secret(name="htpass-secret", namespace="openshift-config")
+    ds = NetUtilityDaemonSet(name="net-utility", namespace="kube-system")
+    for resource_ in (secret, ds):
+        try:
+            if resource_.instance:
+                resource_.delete(wait=True)
+        except NotFoundError:
+            continue
