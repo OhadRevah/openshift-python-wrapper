@@ -1,55 +1,75 @@
----
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  annotations:
+    deprecated.daemonset.template.generation: "0"
+  creationTimestamp: null
+  labels:
+    cnv-test: net-utility
+    tier: node
   name: net-utility
   namespace: kube-system
-  labels:
-    tier: node
-    cnv-test: net-utility
 spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      cnv-test: net-utility
+      tier: node
   template:
     metadata:
+      creationTimestamp: null
       labels:
-        tier: node
         cnv-test: net-utility
+        tier: node
     spec:
-      terminationGracePeriodSeconds: 0
-      hostNetwork: true
       containers:
-      - name: utility
+      - command:
+        - /bin/bash
+        - -c
+        - echo ok > /tmp/healthy && sleep INF
         image: quay.io/redhat/cnv-tests-net-util-container
-        command: ["/bin/bash", "-c", "echo ok > /tmp/healthy && sleep INF"]
         imagePullPolicy: IfNotPresent
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "50Mi"
-          limits:
-            cpu: "100m"
-            memory: "50Mi"
+        name: utility
         readinessProbe:
           exec:
             command:
-              - cat
-              - /tmp/healthy
+            - cat
+            - /tmp/healthy
+          failureThreshold: 3
           initialDelaySeconds: 5
           periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 50Mi
+          requests:
+            cpu: 100m
+            memory: 50Mi
         securityContext:
           privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
         volumeMounts:
-          - name: ovs-run
-            mountPath: /host/run/openvswitch
-          - name: dbus-socket
-            mountPath: /run/dbus/system_bus_socket
-            securityContext:
-              privileged: true
-
+        - mountPath: /host/run/openvswitch
+          name: ovs-run
+        - mountPath: /run/dbus/system_bus_socket
+          name: dbus-socket
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 0
       volumes:
-        - name: ovs-run
-          hostPath:
-            path: /run/openvswitch
-        - name: dbus-socket
-          hostPath:
-            path: /run/dbus/system_bus_socket
-            type: Socket
+      - hostPath:
+          path: /run/openvswitch
+          type: ""
+        name: ovs-run
+      - hostPath:
+          path: /run/dbus/system_bus_socket
+          type: Socket
+        name: dbus-socket
+  updateStrategy:
+    type: OnDelete
