@@ -233,7 +233,13 @@ def assert_ssh_alive(ssh_vm):
 
 @pytest.mark.polarion("CNV-2060")
 def test_ping_vm_migration(
-    skip_when_one_node, vma, vmb, running_vma, running_vmb, ping_in_background
+    skip_rhel7_workers,
+    skip_when_one_node,
+    vma,
+    vmb,
+    running_vma,
+    running_vmb,
+    ping_in_background,
 ):
     src_node = running_vmb.vmi.instance.status.nodeName
     with VirtualMachineInstanceMigration(
@@ -247,7 +253,14 @@ def test_ping_vm_migration(
 
 @pytest.mark.polarion("CNV-2063")
 def test_ssh_vm_migration(
-    skip_when_one_node, namespace, vma, vmb, running_vma, running_vmb, ssh_in_background
+    skip_rhel7_workers,
+    skip_when_one_node,
+    namespace,
+    vma,
+    vmb,
+    running_vma,
+    running_vmb,
+    ssh_in_background,
 ):
     src_node = running_vmb.vmi.instance.status.nodeName
     with VirtualMachineInstanceMigration(
@@ -262,6 +275,7 @@ def test_ssh_vm_migration(
 @pytest.mark.polarion("CNV-2061")
 def test_migration_with_masquerade(
     default_client,
+    skip_rhel7_workers,
     skip_when_one_node,
     network_utility_pods,
     vma,

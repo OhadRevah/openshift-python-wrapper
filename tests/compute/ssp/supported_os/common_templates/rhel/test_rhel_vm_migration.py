@@ -36,6 +36,7 @@ from utilities import console
     indirect=True,
 )
 def test_migrate_vm_rhel(
+    skip_rhel7_workers,
     skip_upstream,
     namespace,
     data_volume_scope_function,

@@ -44,6 +44,7 @@ from tests.compute.ssp.supported_os.common_templates import utils
     indirect=True,
 )
 def test_migrate_vm_windows(
+    skip_rhel7_workers,
     skip_upstream,
     namespace,
     data_volume_scope_function,

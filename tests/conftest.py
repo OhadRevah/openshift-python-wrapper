@@ -617,6 +617,12 @@ def rhel7_workers(schedulable_nodes):
     )
 
 
+@pytest.fixture(scope="session")
+def skip_rhel7_workers(rhel7_workers):
+    if rhel7_workers:
+        pytest.skip(msg="Test should skip on RTHEL7 workers")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def leftovers():
     secret = Secret(name="htpass-secret", namespace="openshift-config")
