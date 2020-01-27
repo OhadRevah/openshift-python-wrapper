@@ -29,7 +29,7 @@ from resources.persistent_volume import PersistentVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.secret import Secret
-from resources.utils import TimeoutSampler
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import (
     VirtualMachine,
     VirtualMachineInstance,
@@ -402,11 +402,15 @@ def unprivileged_client(default_client, unprivileged_secret):
     current_user = (
         check_output("oc whoami", shell=True).decode().strip()
     )  # Get current admin account
-    login_to_account(
-        api_address=default_client.configuration.host,
-        user=UNPRIVILEGED_USER,
-        password=UNPRIVILEGED_PASSWORD,
-    )  # Login to unprivileged account
+    try:
+        login_to_account(
+            api_address=default_client.configuration.host,
+            user=UNPRIVILEGED_USER,
+            password=UNPRIVILEGED_PASSWORD,
+        )  # Login to unprivileged account
+    except TimeoutExpiredError:
+        return
+
     token = check_output("oc whoami -t", shell=True).decode().strip()  # Get token
     login_to_account(
         api_address=default_client.configuration.host, user=current_user.strip()
