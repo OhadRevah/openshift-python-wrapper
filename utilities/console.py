@@ -2,6 +2,7 @@ import json
 import logging
 
 import pexpect
+from resources.utils import TimeoutSampler
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,6 +31,8 @@ class Console(object):
         self.password = password or self._PASSWORD
         self.timeout = timeout
         self.child = None
+        self.prompt = "#" if self.username == "root" else "$"
+        self.cmd = self._generate_cmd()
 
     def connect(self):
         # No login credentials provided, attempt autodetection
@@ -46,12 +49,17 @@ class Console(object):
                 f"Login autodetection for {self.vm.name} - {self.username}:{self.password}"
             )
 
-        return self._connect(
+        LOGGER.info(f"Connect to {self.vm.name} console")
+        self._console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+
+        self._connect(
             login_prompt="login:",
             username=self.username,
             password=self.password,
-            prompt="#" if self.username == "root" else "$",
+            prompt=self.prompt,
         )
+
+        return self.child
 
     def _connect(self, login_prompt, username, password, prompt):
         self.child.send("\n\n")
@@ -69,28 +77,40 @@ class Console(object):
                 f"Failed to open console to {self.vm.name}. error: {self.child.after}"
             )
 
-        return self.child
+    def disconnect(self):
+        if self.child.terminated:
+            self._console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+        self.child.send("\n\n")
+        self.child.expect(self.prompt)
+        self.child.send("exit")
+        self.child.send("\n\n")
+        self.child.expect("login:")
+        self.child.close()
+
+    def _console_eof_sampler(self, func, *func_args):
+        sampler = TimeoutSampler(300, 5, func, pexpect.exceptions.EOF, *func_args)
+        for sample in sampler:
+            if sample:
+                self.child = sample
+                break
+
+    def _generate_cmd(self):
+        cmd = f"virtctl console {self.vm.name}"
+        if self.vm.namespace:
+            cmd += f" -n {self.vm.namespace}"
+        return cmd
 
     def __enter__(self):
         """
         Connect to console
         """
-        LOGGER.info(f"Connect to {self.vm.name} console")
-        cmd = "virtctl console {vm}".format(vm=self.vm.name)
-        if self.vm.namespace:
-            cmd += " -n {namespace}".format(namespace=self.vm.namespace)
-
-        self.child = pexpect.spawn(cmd, timeout=self.timeout)
         return self.connect()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Logout from shell
         """
-        self.child.send("exit")
-        self.child.send("\n\n")
-        self.child.expect("login:")
-        self.child.close()
+        self.disconnect()
 
 
 class Fedora(Console):

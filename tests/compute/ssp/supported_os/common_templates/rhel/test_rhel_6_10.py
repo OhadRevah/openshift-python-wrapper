@@ -6,9 +6,7 @@ Common templates test RHEL 6.10
 
 import logging
 
-import pexpect
 import pytest
-from resources.utils import TimeoutSampler
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
 from utilities.infra import Images
@@ -16,20 +14,6 @@ from utilities.infra import Images
 
 LOGGER = logging.getLogger(__name__)
 VM_NAME = "rhel-6.10"
-
-
-def console_eof_sampler(vm):
-
-    sampler = TimeoutSampler(
-        timeout=600,
-        sleep=15,
-        func=console.RHEL,
-        vm=vm,
-        exceptions=pexpect.exceptions.EOF,
-    )
-    for sample in sampler:
-        if sample:
-            return True
 
 
 @pytest.mark.parametrize(
@@ -100,7 +84,7 @@ class TestCommonTemplatesRhel6:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        console_eof_sampler(vm_object_from_template_scope_class)
+        utils.wait_for_console(vm_object_from_template_scope_class, console.RHEL)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3319")
