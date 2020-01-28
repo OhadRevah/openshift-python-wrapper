@@ -556,7 +556,7 @@ class NetUtilityDaemonSet(DaemonSet):
         return res
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def cnv_containers():
     res = {}
     if py_config["distribution"] == "upstream":
