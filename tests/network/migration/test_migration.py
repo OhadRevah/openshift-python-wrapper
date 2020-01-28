@@ -38,8 +38,8 @@ class HTTPService(Service):
         super().__init__(name=name, namespace=namespace)
         self._vmi = vmi
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"] = {
             "ports": [{"port": 80, "protocol": "TCP", "targetPort": 80}],
             "selector": {"special": self._vmi.name},
@@ -70,9 +70,9 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
             cloud_init_data=cloud_init_data,
         )
 
-    def _to_dict(self):
+    def to_dict(self):
         self.body = fedora_vm_body(self.name)
-        res = super()._to_dict()
+        res = super().to_dict()
         vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
             "interfaces"
         ]

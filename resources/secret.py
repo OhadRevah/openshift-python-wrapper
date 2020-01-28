@@ -16,7 +16,7 @@ class Secret(NamespacedResource):
         self.secretkey = secretkey
         self.htpasswd = htpasswd
 
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         if self.accesskeyid:
             res.update(

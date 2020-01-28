@@ -32,8 +32,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class NodeGatherDaemonSet(DaemonSet):
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res.update(
             generate_yaml_from_template(
                 file_=os.path.join(os.path.dirname(__file__), "node-gather-ds.yaml")

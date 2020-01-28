@@ -121,6 +121,7 @@ class VirtualMachineForTests(VirtualMachine):
         ssh=False,
         network_model=None,
         network_multiqueue=None,
+        data_volume_template=None,
     ):
         super().__init__(name=name, namespace=namespace, client=client)
         self.body = body
@@ -148,6 +149,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.custom_service_port = None
         self.network_model = network_model
         self.network_multiqueue = network_multiqueue
+        self.data_volume_template = data_volume_template
 
     def __enter__(self):
         super().__enter__()
@@ -162,8 +164,8 @@ class VirtualMachineForTests(VirtualMachine):
         if self.custom_service:
             self.custom_service.delete(wait=True)
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         if self.body:
             if self.body.get("metadata"):
                 res["metadata"] = self.body["metadata"]
@@ -310,6 +312,10 @@ class VirtualMachineForTests(VirtualMachine):
                 "type"
             ] = self.machine_type
 
+        if self.data_volume_template:
+            res["spec"].setdefault("dataVolumeTemplates", []).append(
+                self.data_volume_template
+            )
         return res
 
     def ssh_enable(self):
@@ -370,9 +376,9 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.vm_dict = vm_dict
         self.cpu_threads = cpu_threads
 
-    def _to_dict(self):
+    def to_dict(self):
         self.body = self.process_template()
-        res = super()._to_dict()
+        res = super().to_dict()
         if self.vm_dict:
             res = merge_dicts(self.vm_dict, res)
         return res
@@ -510,8 +516,8 @@ class SSHServiceForVirtualMachineForTests(Service):
         super().__init__(name=name, namespace=namespace)
         self._vm_name = vm_name
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"] = {
             "ports": [{"port": 22, "protocol": "TCP"}],
             "selector": {"kubevirt.io/domain": self._vm_name},
@@ -527,8 +533,8 @@ class CustomServiceForVirtualMachineForTests(Service):
         self._vm_name = vm_name
         self.port = port
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"] = {
             "ports": [{"port": self.port, "protocol": "TCP"}],
             "selector": {"kubevirt.io/domain": self._vm_name},

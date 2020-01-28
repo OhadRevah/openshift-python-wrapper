@@ -76,8 +76,8 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
             f"namespaces/{self.namespace}/virtualmachines/{self.name}"
         )
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"] = {"template": {"spec": {}}}
         self._add_login_annotation(vmi=res["spec"]["template"])
         return res
@@ -177,8 +177,8 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
         super().__init__(name=name, namespace=namespace, client=client)
         self._store_login_information(username, password)
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         self._add_login_annotation(vmi=res)
 
         return res
@@ -271,12 +271,12 @@ class VirtualMachineInstanceMigration(NamespacedResource):
         super().__init__(name=name, namespace=namespace, client=client)
         self._vmi = vmi
 
-    def _to_dict(self):
+    def to_dict(self):
         # When creating VirtualMachineInstanceMigration vmi is mandatory but when calling get()
         # we cannot pass vmi.
         assert self._vmi, "vmi is mandatory for create"
 
-        res = super()._to_dict()
+        res = super().to_dict()
         res["spec"] = {"vmiName": self._vmi.name}
         return res
 

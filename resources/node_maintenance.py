@@ -16,8 +16,8 @@ class NodeMaintenance(Resource):
         self.node = node
         self.reason = reason
 
-    def _to_dict(self):
+    def to_dict(self):
         assert self.node, "node is mandatory for create"
-        res = super()._to_dict()
+        res = super().to_dict()
         res["spec"] = {"nodeName": self.node.name, "reason": self.reason}
         return res

@@ -18,8 +18,8 @@ class WinRMcliPod(Pod):
         super().__init__(name=name, namespace=namespace)
         self.node_selector = node_selector
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"] = {
             "containers": [
                 {

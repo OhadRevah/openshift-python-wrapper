@@ -80,8 +80,8 @@ class PodWithPVC(Pod):
         self._pvc_name = pvc_name
         self._volume_mode = volume_mode
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
 
         if self._volume_mode == DataVolume.VolumeMode.BLOCK:
             volume_path = {
@@ -191,7 +191,7 @@ def get_images_private_registry_server():
 
 
 class HttpService(Service):
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         res.update(
             {
@@ -229,7 +229,14 @@ def create_cluster_role(name, api_groups, verbs, permissions_to_resources):
 
 @contextmanager
 def create_role_binding(
-    name, namespace, subjects_kind, subjects_name, role_ref_kind, role_ref_name
+    name,
+    namespace,
+    subjects_kind,
+    subjects_name,
+    role_ref_kind,
+    role_ref_name,
+    subjects_namespace=None,
+    subjects_api_group=None,
 ):
     """
     Create role binding
@@ -239,7 +246,40 @@ def create_role_binding(
         namespace=namespace,
         subjects_kind=subjects_kind,
         subjects_name=subjects_name,
+        subjects_api_group=subjects_api_group,
+        subjects_namespace=subjects_namespace,
         role_ref_kind=role_ref_kind,
         role_ref_name=role_ref_name,
     ) as role_binding:
         yield role_binding
+
+
+@contextmanager
+def set_permissions(
+    role_name,
+    verbs,
+    permissions_to_resources,
+    binding_name,
+    namespace,
+    subjects_kind,
+    subjects_name,
+    subjects_api_group=None,
+    subjects_namespace=None,
+):
+    with create_cluster_role(
+        name=role_name,
+        api_groups=["cdi.kubevirt.io"],
+        permissions_to_resources=permissions_to_resources,
+        verbs=verbs,
+    ) as cluster_role:
+        with create_role_binding(
+            name=binding_name,
+            namespace=namespace,
+            subjects_kind=subjects_kind,
+            subjects_name=subjects_name,
+            subjects_api_group=subjects_api_group,
+            subjects_namespace=subjects_namespace,
+            role_ref_kind=cluster_role.kind,
+            role_ref_name=cluster_role.name,
+        ) as role_binding:
+            yield [cluster_role, role_binding]

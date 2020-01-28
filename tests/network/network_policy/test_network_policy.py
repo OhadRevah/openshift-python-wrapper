@@ -26,9 +26,9 @@ class VirtualMachineMasquerade(VirtualMachineForTests):
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         )
 
-    def _to_dict(self):
+    def to_dict(self):
         self.body = fedora_vm_body(self.name)
-        res = super()._to_dict()
+        res = super().to_dict()
         vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
             "interfaces"
         ]
@@ -46,8 +46,8 @@ class ApplyNetworkPolicy(NetworkPolicy):
         super().__init__(name, namespace)
         self.ports = ports
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         _ports = []
         if self.ports:
             for port in self.ports:

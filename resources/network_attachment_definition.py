@@ -14,8 +14,8 @@ class NetworkAttachmentDefinition(NamespacedResource):
     ):
         raise NotImplementedError(f"{self.kind} does not have status")
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         if self.resource_name is not None:
             res["metadata"]["annotations"] = {
                 "k8s.v1.cni.cncf.io/resourceName": self.resource_name

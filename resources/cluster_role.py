@@ -18,7 +18,7 @@ class ClusterRole(Resource):
         self.permissions_to_resources = permissions_to_resources
         self.verbs = verbs
 
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         rules = {}
         if self.api_groups:

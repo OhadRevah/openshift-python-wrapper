@@ -52,8 +52,8 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
     def __exit__(self, exception_type, exception_value, traceback):
         self.clean_up()
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"]["desiredState"]["interfaces"] = [
             {
                 "name": self.vxlan_name,
@@ -84,7 +84,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
             node_network_state.wait_until_up(self.vxlan_name)
 
     def _absent_vxlan(self):
-        res = self._to_dict()
+        res = self.to_dict()
         res["spec"]["desiredState"]["interfaces"][0]["state"] = "absent"
         samples = TimeoutSampler(
             timeout=3,
@@ -142,7 +142,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.mtu_dict = {}
         self.ipv4_iface_state = {}
 
-    def _to_dict(self):
+    def to_dict(self):
         # At the first time, it creates the dict.
         # When calling update, the caller updates the dict and this function
         # will not init it anymore
@@ -162,7 +162,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         if self.bridge not in self.bridges:
             self.bridges.append(self.bridge)
 
-        res = super()._to_dict()
+        res = super().to_dict()
 
         return res
 
@@ -352,8 +352,8 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             ipv4_dhcp=ipv4_dhcp,
         )
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
 
         if not self.ports:
             # If no ports were specified - should add:
@@ -398,8 +398,8 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         self.vlan = vlan
         self.mtu = mtu
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         spec_config = {"cniVersion": "0.3.1", "name": self.bridge_name}
         bridge_dict = {"type": self.cni_type, "bridge": self.bridge_name}
         spec_config["plugins"] = [bridge_dict]
@@ -425,8 +425,8 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
         self.tuning_type = tuning_type
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         config_plugins = res["spec"]["config"]["plugins"]
 
         if self.tuning_type:
@@ -457,8 +457,8 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
     ):
         super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res["spec"]["config"] = json.dumps(res["spec"]["config"])
         return res
 

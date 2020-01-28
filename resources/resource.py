@@ -276,14 +276,14 @@ class Resource(object):
             "metadata": {"name": self.name},
         }
 
-    def _to_dict(self):
+    def to_dict(self):
         """
         Generate intended dict representation of the resource.
         """
         return self._base_body()
 
     def __enter__(self):
-        data = self._to_dict()
+        data = self.to_dict()
         LOGGER.info(f"Posting {data}")
         self.create_from_dict(
             dyn_client=self.client, data=data, namespace=self.namespace
@@ -297,7 +297,7 @@ class Resource(object):
             except Exception as exception_:
                 LOGGER.warning(exception_)
 
-        data = self._to_dict()
+        data = self.to_dict()
         LOGGER.info(f"Deleting {data}")
         self.delete(wait=True)
 
@@ -465,7 +465,7 @@ class Resource(object):
         Raises:
             ValueMismatch: When body value doesn't match class value
         """
-        data = self._to_dict()
+        data = self.to_dict()
         if body:
             kind = body["kind"]
             name = body.get("name")

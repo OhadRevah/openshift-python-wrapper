@@ -27,7 +27,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.mtu = mtu
         self.mtu_dict = {}
 
-    def _to_dict(self):
+    def to_dict(self):
         if not self.bond:
             self.bond = {
                 "name": self.bond_name,
@@ -42,7 +42,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             }
 
         self.set_interface(self.bond)
-        res = super()._to_dict()
+        res = super().to_dict()
         return res
 
     def __enter__(self):

@@ -163,9 +163,9 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
             cloud_init_data=cloud_init_data,
         )
 
-    def _to_dict(self):
+    def to_dict(self):
         self.body = fedora_vm_body(self.name)
-        res = super()._to_dict()
+        res = super().to_dict()
         return res
 
     @property

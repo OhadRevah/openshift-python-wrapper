@@ -28,9 +28,9 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         )
 
-    def _to_dict(self):
+    def to_dict(self):
         self.body = fedora_vm_body(self.name)
-        res = super()._to_dict()
+        res = super().to_dict()
 
         res["spec"]["template"]["metadata"].setdefault("annotations", {})
         res["spec"]["template"]["metadata"]["annotations"].update(

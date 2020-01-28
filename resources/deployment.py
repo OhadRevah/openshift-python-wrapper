@@ -27,7 +27,7 @@ class Deployment(NamespacedResource):
         Returns:
             Deployment is updated successfully
         """
-        body = super()._to_dict()
+        body = super().to_dict()
         body.update({"spec": {"replicas": replica_count}})
 
         LOGGER.info(f"Set deployment replicas: {replica_count}")
@@ -88,7 +88,7 @@ class Deployment(NamespacedResource):
 
 
 class HttpDeployment(Deployment):
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         res.update(
             {

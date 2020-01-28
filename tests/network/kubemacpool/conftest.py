@@ -137,9 +137,9 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
     def auto_mac_tuning_iface_config(self):
         return self.iface_config["eth4"]
 
-    def _to_dict(self):
+    def to_dict(self):
         self.body = fedora_vm_body(self.name)
-        res = super()._to_dict()
+        res = super().to_dict()
         for mac, iface in zip(
             self.iface_config.values(),
             res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"][1:],

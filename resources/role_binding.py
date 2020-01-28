@@ -20,6 +20,7 @@ class RoleBinding(NamespacedResource):
         subjects_kind=None,
         subjects_name=None,
         subjects_namespace=None,
+        subjects_api_group=None,
         role_ref_kind=None,
         role_ref_name=None,
     ):
@@ -28,11 +29,12 @@ class RoleBinding(NamespacedResource):
         self.subjects_kind = subjects_kind
         self.subjects_name = subjects_name
         self.subjects_namespace = subjects_namespace
+        self.subjects_api_group = subjects_api_group
         self.role_ref_kind = role_ref_kind
         self.role_ref_name = role_ref_name
 
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
 
         subjects = {}
         if self.subjects_kind:
@@ -41,8 +43,9 @@ class RoleBinding(NamespacedResource):
             subjects["name"] = self.subjects_name
         if self.subjects_namespace:
             subjects["namespace"] = self.subjects_namespace
+        if self.subjects_api_group:
+            subjects["apiGroup"] = self.subjects_api_group
         if subjects:
-            subjects["apiGroup"] = API_GROUP
             res["subjects"] = [subjects]
 
         roleref = {}
@@ -51,6 +54,6 @@ class RoleBinding(NamespacedResource):
         if self.role_ref_name:
             roleref["name"] = self.role_ref_name
         if roleref:
-            roleref["apiGroup"] = API_GROUP
+            roleref["apiGroup"] = self.api_group
             res["roleRef"] = roleref
         return res

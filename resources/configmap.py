@@ -13,7 +13,7 @@ class ConfigMap(NamespacedResource):
         self.cert_name = cert_name
         self.data = data
 
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         if self.cert_name is None:
             res.update({"data": {"tlsregistry.crt": self.data}})

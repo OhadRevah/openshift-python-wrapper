@@ -38,7 +38,7 @@ class NodeNetworkState(Resource):
         interfaces.append(interface)
         self.desired_state["interfaces"] = interfaces
 
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         res.update(
             {
@@ -52,7 +52,7 @@ class NodeNetworkState(Resource):
         return res
 
     def apply(self):
-        resource = self._to_dict()
+        resource = self.to_dict()
         retries_on_conflict = 3
         while True:
             try:

@@ -19,7 +19,7 @@ class Route(NamespacedResource):
         self.service = service
         self.destination_ca_cert = destination_ca_cert
 
-    def _to_dict(self):
+    def to_dict(self):
         body = super()._base_body()
         if self.service:
             body.update({"spec": {"to": {"kind": "Service", "name": self.service}}})

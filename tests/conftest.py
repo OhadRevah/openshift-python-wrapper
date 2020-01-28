@@ -555,8 +555,8 @@ def multi_nics_nodes(nodes_active_nics):
 
 
 class NetUtilityDaemonSet(DaemonSet):
-    def _to_dict(self):
-        res = super()._to_dict()
+    def to_dict(self):
+        res = super().to_dict()
         res.update(
             generate_yaml_from_template(
                 file_=os.path.join(

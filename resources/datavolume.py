@@ -133,7 +133,7 @@ class DataVolume(NamespacedResource):
         self.source_pvc = source_pvc
         self.source_namespace = source_namespace
 
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         res.update(
             {

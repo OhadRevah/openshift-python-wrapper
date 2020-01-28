@@ -44,7 +44,7 @@ class PersistentVolumeClaim(NamespacedResource):
         self.hostpath_node = hostpath_node
         self.storage_class = storage_class
 
-    def _to_dict(self):
+    def to_dict(self):
         res = super()._base_body()
         res.update(
             {
