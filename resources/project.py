@@ -1,11 +1,8 @@
-import logging
-
 from resources.utils import nudge_delete
 
-from .resource import Resource, _collect_data
+from .resource import Resource
 
 
-LOGGER = logging.getLogger(__name__)
 API_GROUP = "project.openshift.io"
 
 
@@ -34,8 +31,4 @@ class ProjectRequest(Resource):
     api_group = API_GROUP
 
     def __exit__(self, exception_type, exception_value, traceback):
-        try:
-            _collect_data(resource_object=self, dyn_client=self.client)
-        except Exception as exception_:
-            LOGGER.warning(exception_)
         Project(name=self.name).delete(wait=True)
