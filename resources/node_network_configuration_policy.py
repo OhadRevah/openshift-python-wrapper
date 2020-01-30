@@ -13,10 +13,16 @@ class NodeNetworkConfigurationPolicy(Resource):
 
     api_group = "nmstate.io"
 
-    def __init__(self, name, node_selector=None):
+    def __init__(self, name, worker_pods, node_selector=None):
         super().__init__(name=name)
         self.desired_state = {"interfaces": []}
         self.node_selector = node_selector
+        self.worker_pods = worker_pods
+        if self.node_selector:
+            for pod in self.worker_pods:
+                if pod.node.name == self.node_selector:
+                    self.worker_pods = [pod]
+                    break
 
     def set_interface(self, interface):
         # First drop the interface if it's already in the list

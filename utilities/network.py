@@ -27,12 +27,14 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
         worker_pods,
         dst_port=4790,
         remote="226.100.100.100",
+        node_selector=None,
     ):
-        super().__init__(name=name)
+        super().__init__(
+            name=name, worker_pods=worker_pods, node_selector=node_selector
+        )
         self.vxlan_name = vxlan_name
         self.vxlan_id = vxlan_id
         self.base_interface = base_interface
-        self._worker_pods = worker_pods
         self.dst_port = dst_port
         self.remote = remote
 
@@ -77,7 +79,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
         self.delete()
 
     def validate_create(self):
-        for pod in self._worker_pods:
+        for pod in self.worker_pods:
             node_network_state = NodeNetworkState(name=pod.node.name)
             node_network_state.wait_until_up(self.vxlan_name)
 
@@ -95,7 +97,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
             return
 
     def wait_for_vxlan_deleted(self):
-        for pod in self._worker_pods:
+        for pod in self.worker_pods:
             node_network_state = NodeNetworkState(name=pod.node.name)
             node_network_state.wait_until_deleted(self.vxlan_name)
 
@@ -126,8 +128,9 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             mtu (int): MTU size
             ipv4_dhcp: determines if ipv4_dhcp should be used
         """
-        super().__init__(name=name)
-        self._worker_pods = worker_pods
+        super().__init__(
+            name=name, worker_pods=worker_pods, node_selector=node_selector
+        )
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
         self.stp_config = stp_config
@@ -135,15 +138,9 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.mtu = mtu
         self.bridge = None
         self.bridges = []
-        self.node_selector = node_selector
         self._ipv4_dhcp = ipv4_dhcp
         self.mtu_dict = {}
         self.ipv4_iface_state = {}
-        if self.node_selector:
-            for pod in self._worker_pods:
-                if pod.node.name == self.node_selector:
-                    self._worker_pods = [pod]
-                    break
 
     def _to_dict(self):
         # At the first time, it creates the dict.
@@ -174,7 +171,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             self._ipv4_state_backup()
 
         if self.mtu:
-            for pod in self._worker_pods:
+            for pod in self.worker_pods:
                 for port in self.ports:
                     self.mtu_dict[pod.node.name + port] = pod.execute(
                         command=["cat", f"/sys/class/net/{port}/mtu"]
@@ -184,7 +181,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
         try:
             self.validate_create()
-            for pod in self._worker_pods:
+            for pod in self.worker_pods:
                 if self.mtu:
                     for port in self.ports:
                         _set_iface_mtu(pod, port, self.mtu)
@@ -216,7 +213,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
     def clean_up(self):
         if self.mtu:
-            for pod in self._worker_pods:
+            for pod in self.worker_pods:
                 # Restore MTU
                 for port in self.ports:
                     _set_iface_mtu(pod, port, self.mtu_dict[pod.node.name + port])
@@ -230,20 +227,20 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.delete()
 
     def wait_for_bridge_deleted(self):
-        for pod in self._worker_pods:
+        for pod in self.worker_pods:
             for bridge in self.bridges:
                 node_network_state = NodeNetworkState(name=pod.node.name)
                 node_network_state.wait_until_deleted(bridge["name"])
 
     def validate_create(self):
-        for pod in self._worker_pods:
+        for pod in self.worker_pods:
             for bridge in self.bridges:
                 node_network_state = NodeNetworkState(name=pod.node.name)
                 node_network_state.wait_until_up(bridge["name"])
 
     def _ipv4_state_backup(self):
         # Backup current state of dhcp for the interfaces which arent veth or current bridge
-        for pod in self._worker_pods:
+        for pod in self.worker_pods:
             node_network_state = NodeNetworkState(name=pod.node.name)
             self.ipv4_iface_state[pod.node.name] = {}
             for interface in node_network_state.instance.status.currentState.interfaces:
@@ -263,7 +260,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
             if self._ipv4_dhcp:
                 temp_ipv4_iface_state = {}
-                for pod in self._worker_pods:
+                for pod in self.worker_pods:
                     node_network_state = NodeNetworkState(name=pod.node.name)
                     temp_ipv4_iface_state[pod.node.name] = {}
                     # Find which interfaces got changed (of those that are connected to bridge)
@@ -320,7 +317,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
 
     def __enter__(self):
         super().__enter__()
-        for pod in self._worker_pods:
+        for pod in self.worker_pods:
             try:
                 if self.mtu:
                     _set_iface_mtu(pod, self.bridge_name, self.mtu)

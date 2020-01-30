@@ -12,8 +12,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
-    def __init__(self, name, bond_name, nics, nodes):
-        super().__init__(name=name)
+    def __init__(self, name, bond_name, nics, nodes, worker_pods, node_selector=None):
+        super().__init__(
+            name=name, worker_pods=worker_pods, node_selector=node_selector
+        )
         self.bond_name = bond_name
         self.nodes = nodes
         self.nics = nics

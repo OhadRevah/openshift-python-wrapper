@@ -94,6 +94,7 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
             bond_name=bond_name,
             nodes=[i.node.name for i in network_utility_pods],
             nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+            worker_pods=network_utility_pods,
         ):
             yield bond_name
     else:
