@@ -96,13 +96,13 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
 
 @pytest.mark.polarion("CNV-2685")
 @pytest.mark.usefixtures("skip_rhel7_workers")
+@pytest.mark.parametrize("ovs_lb_bridge", [{"mtu": 9000}], indirect=True)
 class TestJumboFrame:
     def test_connectivity_over_linux_bridge_large_mtu(
         self,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
         namespace,
-        ovs_lb_bridge,
         nad,
         bridge_attached_vma,
         bridge_attached_vmb,

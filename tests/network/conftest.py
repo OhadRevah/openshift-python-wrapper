@@ -84,6 +84,7 @@ def ovs_worker_pods(schedulable_nodes, default_client):
 
 @pytest.fixture(scope="class")
 def ovs_lb_bridge(
+    request,
     bridge_device_matrix,
     index_number,
     ovs_worker_pods,
@@ -93,6 +94,7 @@ def ovs_lb_bridge(
     nodes_active_nics,
     schedulable_nodes,
 ):
+    mtu = request.param.get("mtu")
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
         if multi_nics_nodes
@@ -112,5 +114,6 @@ def ovs_lb_bridge(
         nodes_active_nics=nodes_active_nics,
         schedulable_node_ips=schedulable_node_ips,
         idx=100 + unique_index,
+        mtu=mtu,
     ) as br:
         yield br
