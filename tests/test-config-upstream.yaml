@@ -16,3 +16,7 @@ bare_metal_cluster: False
 distribution: upstream
 
 hco_namespace: kubevirt-hyperconverged
+
+bridge_device_matrix:
+  - ovs
+  - linux-bridge
