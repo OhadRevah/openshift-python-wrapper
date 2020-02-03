@@ -612,6 +612,19 @@ def skip_not_bare_metal():
         pytest.skip(msg="Test should run only BM",)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def leftovers():
+    secret = Secret(name="htpass-secret", namespace="openshift-config")
+    ds = NetUtilityDaemonSet(name="net-utility", namespace="kube-system")
+    for resource_ in (secret, ds):
+        try:
+            if resource_.instance:
+                resource_.delete(wait=True)
+        except NotFoundError:
+            continue
+
+
+# RHEL 7 specific fixtures
 @pytest.fixture(scope="session")
 def rhel7_workers(schedulable_nodes):
     # Check only the first Node since mixed rchos and RHEL7 workers in cluster is not supported.
@@ -627,13 +640,10 @@ def skip_rhel7_workers(rhel7_workers):
         pytest.skip(msg="Test should skip on RTHEL7 workers")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def leftovers():
-    secret = Secret(name="htpass-secret", namespace="openshift-config")
-    ds = NetUtilityDaemonSet(name="net-utility", namespace="kube-system")
-    for resource_ in (secret, ds):
-        try:
-            if resource_.instance:
-                resource_.delete(wait=True)
-        except NotFoundError:
-            continue
+@pytest.fixture(scope="class")
+def skip_ceph_on_rhel7(storage_class_matrix, rhel7_workers):
+    if storage_class_matrix.get("rook-ceph-block"):
+        if rhel7_workers:
+            pytest.skip(
+                msg="Rook-ceph configuration is not supported on RHEL7 workers",
+            )
