@@ -567,7 +567,7 @@ def cnv_containers():
         return res
 
     data = urllib.request.urlopen(
-        "http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/CNV/latest-CNV-2-RHEL-8/containers.list",
+        "http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/CNV/latest-CNV-2.3-RHEL-8/containers.list",
         timeout=60,
     )
     if data.getcode() != 200:
