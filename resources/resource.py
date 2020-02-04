@@ -335,16 +335,12 @@ class Resource(object):
         Raises:
             TimeoutExpiredError: If resource not exists.
         """
-
-        def _exists():
-            return self.instance
-
         LOGGER.info(f"Wait until {self.kind} {self.name} is created")
         samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
             exceptions=(ProtocolError, NotFoundError),
-            func=_exists,
+            func=self.exists,
         )
         for sample in samples:
             if sample:
@@ -369,6 +365,15 @@ class Resource(object):
         complete its cleanup. Needed by some resources.
         """
 
+    def exists(self):
+        """
+        Whether self exists on the server
+        """
+        try:
+            return self.instance
+        except NotFoundError:
+            return None
+
     def _client_wait_deleted(self, timeout):
         """
         client-side Wait until resource is deleted
@@ -379,17 +384,7 @@ class Resource(object):
         Raises:
             TimeoutExpiredError: If resource still exists.
         """
-
-        def _exists():
-            """
-            Whether self exists on the server
-            """
-            try:
-                return self.instance
-            except NotFoundError:
-                return None
-
-        samples = TimeoutSampler(timeout=timeout, sleep=1, func=_exists)
+        samples = TimeoutSampler(timeout=timeout, sleep=1, func=self.exists)
         for sample in samples:
             self.nudge_delete()
             if not sample:
