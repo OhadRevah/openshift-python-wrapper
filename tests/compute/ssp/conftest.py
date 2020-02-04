@@ -73,8 +73,8 @@ def data_volume_scope_class(
 
 
 def vm_instance_from_template(request, unprivileged_client, namespace, data_volume):
-    """ Create a VM from template and start it (if explicitly requested in
-    request.param['start_vm'].
+    """ Create a VM from template and start it (start step could be skipped by setting
+    request.param['start_vm'] to False.
 
     The call to this function is triggered by calling either
     vm_instance_from_template_scope_function or vm_instance_from_template_scope_class.
@@ -125,7 +125,7 @@ def vm_instance_from_template_scope_class(
     """
 
     yield from vm_instance_from_template(
-        request, unprivileged_client, namespace, data_volume_scope_function
+        request, unprivileged_client, namespace, data_volume_scope_class
     )
 
 
