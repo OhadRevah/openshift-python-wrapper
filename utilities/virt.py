@@ -343,6 +343,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cpu_threads=None,
         network_model=None,
         network_multiqueue=None,
+        cloud_init_data=None,
+        node_selector=None,
     ):
         super().__init__(
             name=name,
@@ -354,6 +356,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             network_model=network_model,
             network_multiqueue=network_multiqueue,
             cpu_threads=cpu_threads,
+            cloud_init_data=cloud_init_data,
+            node_selector=node_selector,
         )
         self.template_labels = labels
         self.template_dv = template_dv
