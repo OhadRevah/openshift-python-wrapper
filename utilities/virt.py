@@ -21,6 +21,7 @@ K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"
 CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
 FEDORA_CLOUD_INIT_PASSWORD = {"password": "fedora", "chpasswd": "{ expire: False }"}
+RHEL_CLOUD_INIT_PASSWORD = {"password": "redhat", "chpasswd": "{ expire: " "False }"}
 
 
 def wait_for_vm_interfaces(vmi, timeout=720):
