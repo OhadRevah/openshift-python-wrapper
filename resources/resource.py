@@ -291,10 +291,11 @@ class Resource(object):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        try:
-            _collect_data(resource_object=self)
-        except Exception as exception_:
-            LOGGER.warning(exception_)
+        if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") == "1":
+            try:
+                _collect_data(resource_object=self)
+            except Exception as exception_:
+                LOGGER.warning(exception_)
 
         data = self._to_dict()
         LOGGER.info(f"Deleting {data}")

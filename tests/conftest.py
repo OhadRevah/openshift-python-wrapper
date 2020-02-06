@@ -243,6 +243,9 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def pytest_exception_interact(node, call, report):
+    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "1":
+        return
+
     try:
         dyn_client = _get_client()
         test_dir = os.path.join(TEST_COLLECT_INFO_DIR, node.name, call.when)
