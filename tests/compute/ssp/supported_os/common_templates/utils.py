@@ -4,7 +4,11 @@ import json
 import logging
 import re
 import socket
+import tarfile
+import urllib.request
+import xml.etree.ElementTree as EleTree
 
+import bitmath
 import pexpect
 from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
@@ -346,3 +350,67 @@ def add_activate_windows_license(vm, winrm_pod, license_key):
         vm, winrm_pod,
     )
     assert is_windows_activated(vm, winrm_pod), "VM license is not activated."
+
+
+def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):
+    """ Fetch memory min and max values from the osinfo files. """
+
+    xml_doc = EleTree.parse(osinfo_file_path)
+    root = xml_doc.getroot()
+    resources = root.findall("./os/resources")
+    return [
+        int(resource.findtext(f"./{memory_test}/ram"))
+        for resource in resources
+        if resources_arch == resource.attrib["arch"]
+    ]
+
+
+def validate_memory(memory_test, template_memory_value, osinfo_memory_value):
+    """ Validate the minimum and maximum memory values."""
+    if memory_test == "minimum":
+        return bitmath.parse_string_unsafe(template_memory_value) >= bitmath.Byte(
+            osinfo_memory_value
+        )
+    elif memory_test == "maximum":
+        return bitmath.parse_string_unsafe(template_memory_value) < bitmath.Byte(
+            osinfo_memory_value
+        )
+
+
+def download_and_extract_tar(tarfile_url):
+    """ Download and Extract the tar file. """
+
+    tar_data = urllib.request.urlopen(tarfile_url)
+    thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
+    thetarfile.extractall()
+
+
+def check_default_and_validation_memory(
+    get_base_templates, osinfo_memory_value, os_type, memory_test, osinfo_filename
+):
+    for template in [
+        template for template in get_base_templates if os_type in template.name
+    ]:
+        LOGGER.info(
+            f"Currently validating template {template.name} against osinfo file {osinfo_filename}.xml"
+        )
+        requests_memory_value = template.instance.objects[
+            0
+        ].spec.template.spec.domain.resources.requests.memory
+
+        validation_map = json.loads(template.instance.metadata.annotations.validations)
+        min_validation_memory_value = validation_map[0]["min"]
+
+        LOGGER.info(
+            f"Checking default requests.memory value against osinfo file {osinfo_filename}.xml"
+        )
+        assert validate_memory(
+            memory_test, requests_memory_value, osinfo_memory_value[0]
+        )
+
+        LOGGER.info(
+            f"Checking validations minimal-required-memory value against osinfo file {osinfo_filename}.xml"
+        )
+        assert validate_memory(
+            memory_test, min_validation_memory_value, osinfo_memory_value[0]
+        )

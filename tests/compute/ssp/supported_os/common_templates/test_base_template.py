@@ -4,9 +4,16 @@
 Base templates test
 """
 
+import logging
+import os
+
 import pytest
 from resources.template import Template
+from tests.compute.ssp.supported_os.common_templates import utils
+from utilities.infra import BUG_STATUS_CLOSED
 
+
+LOGGER = logging.getLogger(__name__)
 
 CNV_TEMPLATES_NAME = [
     "centos6-server-large",
@@ -88,11 +95,11 @@ CNV_TEMPLATES_NAME = [
 ]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def base_templates(default_client):
     """ Return templates list by label """
     yield [
-        template.name
+        template
         for template in list(
             Template.get(
                 default_client,
@@ -108,7 +115,156 @@ def test_base_templates_annotations(base_templates):
     """
     Check all CNV templates exists, by label: template.kubevirt.io/type=base
     """
+    base_templates = [template.name for template in base_templates]
     assert len(base_templates) == len(CNV_TEMPLATES_NAME), (
         f"Not all base CNV templates exists\n exist templates:\n "
         f"{base_templates} expected:\n {CNV_TEMPLATES_NAME}",
+    )
+
+
+@pytest.mark.parametrize(
+    ("os_type", "osinfo_filename", "memory_test"),
+    [
+        pytest.param(
+            "rhel6",
+            "rhel-6.10",
+            "minimum",
+            marks=(pytest.mark.polarion("CNV-3618")),
+            id="test_rhel6_minimum_memory",
+        ),
+        pytest.param(
+            "rhel7",
+            "rhel-7.7",
+            "minimum",
+            marks=(pytest.mark.polarion("CNV-3619")),
+            id="test_rhel7_minimum_memory",
+        ),
+        pytest.param(
+            "rhel8",
+            "rhel-8.1",
+            "minimum",
+            marks=(
+                pytest.mark.polarion("CNV-3620"),
+                pytest.mark.bugzilla(
+                    1800714, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
+            id="test_rhel8_minimum_memory",
+        ),
+        pytest.param(
+            "rhel6",
+            "rhel-6.10",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3621")),
+            id="test_rhel6_maximum_memory",
+        ),
+        pytest.param(
+            "rhel7",
+            "rhel-7.7",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3622")),
+            id="test_rhel7_maximum_memory",
+        ),
+        pytest.param(
+            "rhel8",
+            "rhel-8.1",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3623")),
+            id="test_rhel8_maximum_memory",
+        ),
+    ],
+)
+def test_validate_rhel_min_max_memory(
+    base_templates, fetch_osinfo_path, os_type, osinfo_filename, memory_test
+):
+    """
+    Validate CNV RHEL templates for minimum and maximum memory, against osinfo db files.
+    """
+
+    osinfo_file_path = os.path.join(
+        f"{fetch_osinfo_path}/os/redhat.com/{osinfo_filename}.xml"
+    )
+    osinfo_memory_value = utils.fetch_osinfo_memory(
+        osinfo_file_path, memory_test, "all"
+    )
+
+    utils.check_default_and_validation_memory(
+        base_templates, osinfo_memory_value, os_type, memory_test, osinfo_filename
+    )
+
+
+@pytest.mark.parametrize(
+    ("osinfo_filename", "memory_test"),
+    [
+        pytest.param(
+            "win-2k12r2",
+            "minimum",
+            marks=(pytest.mark.polarion("CNV-3624")),
+            id="test_win2kr2_minimum_memory",
+        ),
+        pytest.param(
+            "win-2k16",
+            "minimum",
+            marks=(pytest.mark.polarion("CNV-3625")),
+            id="test_win2k16_minimum_memory",
+        ),
+        pytest.param(
+            "win-2k19",
+            "minimum",
+            marks=(pytest.mark.polarion("CNV-3626")),
+            id="test_win2k19_minimum_memory",
+        ),
+        pytest.param(
+            "win-10",
+            "minimum",
+            marks=(
+                pytest.mark.polarion("CNV-3627"),
+                pytest.mark.bugzilla(
+                    1801297, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
+            id="test_win10_minimum_memory",
+        ),
+        pytest.param(
+            "win-2k12r2",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3628")),
+            id="test_win2k12r2_maximum_memory",
+        ),
+        pytest.param(
+            "win-2k16",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3629")),
+            id="test_win2k16_maximum_memory",
+        ),
+        pytest.param(
+            "win-2k19",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3630")),
+            id="test_win2k19_maximum_memory",
+        ),
+        pytest.param(
+            "win-10",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-3631")),
+            id="test_win10_maximum_memory",
+        ),
+    ],
+)
+def test_validate_windows_min_max_memory(
+    base_templates, fetch_osinfo_path, osinfo_filename, memory_test
+):
+    """
+    Validate CNV Windows templates for minimum and maximum memory, against osinfo db files.
+    """
+
+    osinfo_file_path = os.path.join(
+        f"{fetch_osinfo_path}/os/microsoft.com/{osinfo_filename}.xml"
+    )
+    osinfo_memory_value = utils.fetch_osinfo_memory(
+        osinfo_file_path, memory_test, "x86_64"
+    )
+
+    utils.check_default_and_validation_memory(
+        base_templates, osinfo_memory_value, "win2k12r2", memory_test, osinfo_filename,
     )
