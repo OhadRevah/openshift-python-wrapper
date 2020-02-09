@@ -4,15 +4,19 @@ import logging
 import bitmath
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
+from resources.pod import ExecOnPodError
 from resources.utils import TimeoutExpiredError
 from utilities import console
+from utilities.network import set_iface_mtu
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
-    def __init__(self, name, bond_name, nics, nodes, worker_pods, node_selector=None):
+    def __init__(
+        self, name, bond_name, nics, nodes, worker_pods, node_selector=None, mtu=None
+    ):
         super().__init__(
             name=name, worker_pods=worker_pods, node_selector=node_selector
         )
@@ -20,6 +24,8 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.nodes = nodes
         self.nics = nics
         self.bond = None
+        self.mtu = mtu
+        self.mtu_dict = {}
 
     def _to_dict(self):
         if not self.bond:
@@ -27,6 +33,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "name": self.bond_name,
                 "type": "bond",
                 "state": "up",
+                "mtu": self.mtu,
                 "link-aggregation": {
                     "mode": "active-backup",
                     "slaves": self.nics,
@@ -39,6 +46,14 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         return res
 
     def __enter__(self):
+        if self.mtu:
+            for pod in self.worker_pods:
+                for nic in self.nics:
+                    self.mtu_dict[f"{pod.node.name}{nic}"] = pod.execute(
+                        command=["cat", f"/sys/class/net/{nic}/mtu"]
+                    ).strip()
+                    set_iface_mtu(pod=pod, port=nic, mtu=self.mtu)
+
         super().__enter__()
         for node in self.nodes:
             try:
@@ -56,6 +71,17 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.clean_up()
+        if self.mtu:
+            for pod in self.worker_pods:
+                # Restore MTU
+                for nic in self.nics:
+                    mtu = self.mtu_dict[f"{pod.node.name}{nic}"]
+                    try:
+                        set_iface_mtu(pod=pod, port=nic, mtu=self.mtu)
+                    except ExecOnPodError:
+                        LOGGER.error(
+                            f"Failed to restore MTU to {mtu} on {pod.node.name}"
+                        )
 
     def _absent_interface(self):
         self.bond["state"] = "absent"

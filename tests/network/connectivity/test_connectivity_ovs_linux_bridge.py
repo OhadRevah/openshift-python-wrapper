@@ -1,6 +1,7 @@
 """
 VM to VM connectivity
 """
+from collections import OrderedDict
 
 import pytest
 import tests.network.utils as network_utils
@@ -83,6 +84,20 @@ def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
 
 
 @pytest.fixture(scope="class")
+def br1bond_nad(bond_supported, bridge_device_matrix, namespace):
+    if bond_supported:
+        with bridge_nad(
+            namespace=namespace,
+            nad_type=bridge_device_matrix,
+            nad_name="br1bond-nad",
+            bridge_name="br1bond",
+        ) as nad:
+            yield nad
+    else:
+        yield None
+
+
+@pytest.fixture(scope="class")
 def bond1(network_utility_pods, bond_supported, nodes_active_nics):
     """
     Create BOND if setup support BOND
@@ -95,6 +110,7 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
             nodes=[i.node.name for i in network_utility_pods],
             nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
             worker_pods=network_utility_pods,
+            mtu=1450,
         ):
             yield bond_name
     else:
@@ -102,14 +118,16 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
 
 
 @pytest.fixture(scope="class")
-def bridge_on_bond(bond1, network_utility_pods, schedulable_nodes):
+def bridge_on_bond(
+    bridge_device_matrix, bond1, network_utility_pods, schedulable_nodes
+):
     """
     Create bridge and attach the BOND to it
     """
     if bond1:
         with network_utils.bridge_device(
-            bridge_type=network_utils.LINUX_BRIDGE,
-            nncp_name="bridge-no-bond",
+            bridge_type=bridge_device_matrix,
+            nncp_name="bridge-on-bond",
             bridge_name="br1bond",
             network_utility_pods=network_utility_pods,
             nodes=schedulable_nodes,
@@ -129,20 +147,20 @@ def bridge_attached_vma(
     nad,
     br1vlan100_nad,
     br1vlan200_nad,
+    br1bond_nad,
 ):
     name = "vma"
-    networks = {
-        nad.name: nad.name,
-        br1vlan100_nad.name: br1vlan100_nad.name,
-        br1vlan200_nad.name: br1vlan200_nad.name,
-    }
+    networks = OrderedDict()
+    networks[nad.name] = nad.name
+    networks[br1vlan100_nad.name] = br1vlan100_nad.name
+    networks[br1vlan200_nad.name] = br1vlan200_nad.name
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.1"))
     if bridge_on_bond:
         bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.1"))
-        networks[bridge_on_bond.bridge_name] = bridge_on_bond.bridge_name
+        networks[br1bond_nad.name] = br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
@@ -152,8 +170,8 @@ def bridge_attached_vma(
         name=name,
         body=fedora_vm_body(name),
         networks=networks,
-        interfaces=sorted(networks.keys()),
-        node_selector=schedulable_nodes[0].name,
+        interfaces=networks.keys(),
+        node_selector=schedulable_nodes[2].name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -170,20 +188,20 @@ def bridge_attached_vmb(
     nad,
     br1vlan100_nad,
     br1vlan300_nad,
+    br1bond_nad,
 ):
     name = "vmb"
-    networks = {
-        nad.name: nad.name,
-        br1vlan100_nad.name: br1vlan100_nad.name,
-        br1vlan300_nad.name: br1vlan300_nad.name,
-    }
+    networks = OrderedDict()
+    networks[nad.name] = nad.name
+    networks[br1vlan100_nad.name] = br1vlan100_nad.name
+    networks[br1vlan300_nad.name] = br1vlan300_nad.name
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.2"))
     if bridge_on_bond:
         bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.2"))
-        networks[bridge_on_bond.bridge_name] = bridge_on_bond.bridge_name
+        networks[br1bond_nad.name] = br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
@@ -193,7 +211,7 @@ def bridge_attached_vmb(
         name=name,
         body=fedora_vm_body(name),
         networks=networks,
-        interfaces=sorted(networks.keys()),
+        interfaces=networks.keys(),
         node_selector=schedulable_nodes[1].name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
@@ -234,7 +252,7 @@ class TestConnectivity:
             ),
         ],
     )
-    def test_connectivity(
+    def test_bridge(
         self,
         bridge,
         rhel7_workers,
@@ -256,7 +274,7 @@ class TestConnectivity:
         )
 
     @pytest.mark.polarion("CNV-2141")
-    def test_connectivity_bond(
+    def test_bond(
         self,
         skip_when_one_node,
         namespace,
@@ -266,6 +284,7 @@ class TestConnectivity:
         bridge_attached_vmb,
         running_bridge_attached_vmia,
         running_bridge_attached_vmib,
+        br1bond_nad,
     ):
         if not bridge_on_bond:
             pytest.skip(msg="No BOND support")
@@ -273,12 +292,12 @@ class TestConnectivity:
         assert_ping_successful(
             src_vm=running_bridge_attached_vmia,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmib, name=bridge_on_bond.bridge_name
+                vmi=running_bridge_attached_vmib, name=br1bond_nad.name
             ),
         )
 
     @pytest.mark.polarion("CNV-2072")
-    def test_connectivity_positive_vlan(
+    def test_positive_vlan(
         self,
         skip_not_bare_metal,
         skip_when_one_node,
@@ -301,7 +320,7 @@ class TestConnectivity:
         1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.polarion("CNV-2075")
-    def test_connectivity_negative_vlan(
+    def test_negative_vlan(
         self,
         skip_not_bare_metal,
         skip_when_one_node,

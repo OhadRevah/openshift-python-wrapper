@@ -1,10 +1,14 @@
 import json
+import logging
 
 import kubernetes
 
 from . import utils
 from .node import Node
 from .resource import NamespacedResource
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ExecOnPodError(Exception):
@@ -63,6 +67,7 @@ class Pod(NamespacedResource):
         Raises:
             ExecOnPodError: If the command failed.
         """
+        LOGGER.info(f"Execute {command} on {self.name} ({self.node.name})")
         resp = kubernetes.stream.stream(
             func=self._kube_api.connect_get_namespaced_pod_exec,
             name=self.name,

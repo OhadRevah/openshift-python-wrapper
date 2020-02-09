@@ -13,7 +13,7 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 LOGGER = logging.getLogger(__name__)
 
 
-def _set_iface_mtu(pod, port, mtu):
+def set_iface_mtu(pod, port, mtu):
     pod.execute(command=["ip", "link", "set", port, "mtu", mtu])
 
 
@@ -184,7 +184,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             for pod in self.worker_pods:
                 if self.mtu:
                     for port in self.ports:
-                        _set_iface_mtu(pod, port, self.mtu)
+                        set_iface_mtu(pod, port, self.mtu)
 
             return self
         except Exception as e:
@@ -216,7 +216,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             for pod in self.worker_pods:
                 # Restore MTU
                 for port in self.ports:
-                    _set_iface_mtu(pod, port, self.mtu_dict[pod.node.name + port])
+                    set_iface_mtu(pod, port, self.mtu_dict[pod.node.name + port])
 
         try:
             self._absent_interface()
@@ -320,7 +320,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         for pod in self.worker_pods:
             try:
                 if self.mtu:
-                    _set_iface_mtu(pod, self.bridge_name, self.mtu)
+                    set_iface_mtu(pod, self.bridge_name, self.mtu)
                 return self
 
             except (TimeoutExpiredError, ExecOnPodError):
@@ -504,13 +504,10 @@ class OvsBridgeOverVxlan(object):
             ]
 
     def setup_ovs_br(self):
-        LOGGER.info(
-            f"Creating OVS bridge {self.bridge_name} over new VXLAN interface {self.vxlan_iface_name}."
-        )
-
         br_idx = 0
         base_port = 4795
         for pod in self.ovs_worker_pods:
+            LOGGER.info(f"Creating OVS bridge {self.bridge_name} on {pod.node.name}.")
             pod.execute(
                 command=self.ovs_vsctl + ["add-br", self.bridge_name],
                 container=self.ovs_container,
@@ -521,6 +518,9 @@ class OvsBridgeOverVxlan(object):
             idx = 0
             for node_name, node_ip in self.remote_ips.items():
                 if node_name != pod.node.name:
+                    LOGGER.info(
+                        f"Create VXLAN interface {self.vxlan_iface_name} on {pod.node.name}"
+                    )
                     iface_name = f"{self.vxlan_iface_name}{idx}"
                     ovs_br_cmds.append(
                         self.ovs_vsctl
