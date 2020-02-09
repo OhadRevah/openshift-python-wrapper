@@ -489,13 +489,19 @@ def net_utility_daemonset(default_client):
 
 
 @pytest.fixture(scope="session")
-def network_utility_pods(net_utility_daemonset, default_client):
+def network_utility_pods(schedulable_nodes, net_utility_daemonset, default_client):
     """
     Get network utility pods.
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
     These pods have a label of cnv-test=net-utility and they are privileged pods with hostnetwork=true
     """
-    return list(Pod.get(default_client, label_selector="cnv-test=net-utility"))
+    # get only pods that running on schedulable_nodes.
+    pods = list(Pod.get(default_client, label_selector="cnv-test=net-utility"))
+    return [
+        pod
+        for pod in pods
+        if pod.node.name in [node.name for node in schedulable_nodes]
+    ]
 
 
 @pytest.fixture(scope="session")
