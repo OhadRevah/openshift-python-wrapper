@@ -53,6 +53,7 @@ RESOURCES_TO_COLLECT_INFO = [
     VirtualMachineInstanceMigration,
     NetworkAttachmentDefinition,
     NodeNetworkConfigurationPolicy,
+    NodeNetworkState,
 ]
 
 PODS_TO_COLLECT_INFO = [
