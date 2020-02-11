@@ -12,6 +12,7 @@ import re
 import pytest
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
+from tests.compute.utils import execute_winrm_cmd
 
 
 LOGGER = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state):
     """ Verify tablet device values in Windows VMI using driverquery """
 
-    windows_driver_query = utils.execute_winrm_cmd(
+    windows_driver_query = execute_winrm_cmd(
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
         cmd="%systemroot%\\\\system32\\\\driverquery /fo list /v",

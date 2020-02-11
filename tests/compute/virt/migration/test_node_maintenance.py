@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from subprocess import run
 
 import pytest
-from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.node_maintenance import NodeMaintenance
 from resources.template import Template
@@ -17,7 +16,7 @@ from resources.virtual_machine import (
     VirtualMachineInstance,
     VirtualMachineInstanceMigration,
 )
-from tests.compute.utils import WinRMcliPod
+from tests.compute.utils import WinRMcliPod, execute_winrm_cmd
 from tests.compute.virt import utils as virt_utils
 from utilities import console
 from utilities.infra import Images, get_images_external_http_server
@@ -206,16 +205,15 @@ def vm_win10(skip_ceph_on_rhel7, namespace, unprivileged_client, storage_class_m
 
 
 def check_windows_boot_time(vm, winrmcli_pod, timeout=1200):
-    command = [
-        "bash",
-        "-c",
-        f"/bin/winrm-cli -hostname {vm.vmi.virt_launcher_pod.instance.status.podIP} \
-        -username {py_config['windows_username']} -password {py_config['windows_password']} \
-        'wmic os get lastbootuptime'",
-    ]
     pod_output_samples = TimeoutSampler(
-        timeout=timeout, sleep=15, func=winrmcli_pod.execute, command=command
+        timeout=timeout,
+        sleep=15,
+        func=execute_winrm_cmd,
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        cmd="wmic os get lastbootuptime",
     )
+
     for pod_output in pod_output_samples:
         if "LastBootUpTime" in str(pod_output):
             return str(pod_output)

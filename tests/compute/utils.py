@@ -1,5 +1,11 @@
+import logging
+
+from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from utilities.virt import wait_for_vm_interfaces
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class WinRMcliPod(Pod):
@@ -34,3 +40,18 @@ def vm_started(vm, wait_for_interfaces=True):
     vm.vmi.wait_until_running()
     if wait_for_interfaces:
         wait_for_vm_interfaces(vm.vmi)
+
+
+def execute_winrm_cmd(vmi_ip, winrmcli_pod, cmd, timeout=20):
+
+    LOGGER.info(f"Running {cmd} via winrm pod.")
+
+    winrmcli_cmd = [
+        "bash",
+        "-c",
+        f"/bin/winrm-cli -hostname {vmi_ip} \
+        -username {py_config['windows_username']} -password {py_config['windows_password']} \
+        '{cmd}'",
+    ]
+
+    return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)

@@ -7,12 +7,11 @@ import socket
 
 import pexpect
 from openshift.dynamic.exceptions import NotFoundError
-from pytest_testconfig import config as py_config
 from resources import pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from rrmngmnt import ssh, user
-from tests.compute.utils import vm_started
+from tests.compute.utils import execute_winrm_cmd, vm_started
 from utilities.virt import vm_console_run_commands
 
 
@@ -37,21 +36,6 @@ def reboot_vm(vm, winrmcli_pod):
     except pod.ExecOnPodError as e:
         if "connection reset by peer" in e.out:
             pass
-
-
-def execute_winrm_cmd(vmi_ip, winrmcli_pod, cmd, timeout=20):
-
-    LOGGER.info(f"Running {cmd} via winrm pod.")
-
-    winrmcli_cmd = [
-        "bash",
-        "-c",
-        f"/bin/winrm-cli -hostname {vmi_ip} \
-        -username {py_config['windows_username']} -password {py_config['windows_password']} \
-        '{cmd}'",
-    ]
-
-    return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)
 
 
 def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500):
