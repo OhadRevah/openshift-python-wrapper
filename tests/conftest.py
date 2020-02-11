@@ -551,10 +551,7 @@ def multi_nics_nodes(nodes_active_nics):
     """
     Check if nodes has more then 1 active NIC
     """
-    # Set multi NICs to False since we have issues with multi NICs in PSI
-    # https://jira.coreos.com/browse/CNV-3456
-    return False
-    # return min(len(nics) for nics in nodes_active_nics.values()) > 2
+    return min(len(nics) for nics in nodes_active_nics.values()) > 2
 
 
 class NetUtilityDaemonSet(DaemonSet):
