@@ -127,6 +127,7 @@ class TestCommonTemplatesRhel6:
     def test_expose_ssh(
         self,
         skip_upstream,
+        skip_rhel7_workers,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,

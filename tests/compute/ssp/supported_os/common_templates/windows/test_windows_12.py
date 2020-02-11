@@ -64,6 +64,7 @@ class TestCommonTemplatesWin10:
         data_volume_scope_class,
         vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
     ):
         """ Test CNV common templates VM initiation """
 
@@ -74,6 +75,7 @@ class TestCommonTemplatesWin10:
             vm=vm_object_from_template_scope_class,
             version=VM_NAME.split("-")[-1],
             winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_create_vm")
@@ -106,12 +108,15 @@ class TestCommonTemplatesWin10:
         data_volume_scope_class,
         vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
     ):
 
         LOGGER.info("Verify VM HyperV values.")
         utils.check_vm_xml_hyperv(vm_object_from_template_scope_class)
         utils.check_windows_vm_hvinfo(
-            vm_object_from_template_scope_class, winrmcli_pod_scope_class
+            vm=vm_object_from_template_scope_class,
+            winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_create_vm")
@@ -124,19 +129,22 @@ class TestCommonTemplatesWin10:
         data_volume_scope_class,
         vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
     ):
 
         utils.add_activate_windows_license(
-            vm_object_from_template_scope_class,
-            winrmcli_pod_scope_class,
-            WIN12_LICENSE_KEY,
+            vm=vm_object_from_template_scope_class,
+            winrm_pod=winrmcli_pod_scope_class,
+            license_key=WIN12_LICENSE_KEY,
+            helper_vm=bridge_attached_helper_vm,
         )
 
         LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
         utils.check_windows_activated_license(
-            vm_object_from_template_scope_class,
-            winrmcli_pod_scope_class,
+            vm=vm_object_from_template_scope_class,
+            winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="stop_start",
+            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_create_vm")
@@ -149,19 +157,22 @@ class TestCommonTemplatesWin10:
         data_volume_scope_class,
         vm_object_from_template_scope_class,
         winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
     ):
 
         utils.add_activate_windows_license(
-            vm_object_from_template_scope_class,
-            winrmcli_pod_scope_class,
-            WIN12_LICENSE_KEY,
+            vm=vm_object_from_template_scope_class,
+            winrm_pod=winrmcli_pod_scope_class,
+            license_key=WIN12_LICENSE_KEY,
+            helper_vm=bridge_attached_helper_vm,
         )
 
         LOGGER.info("Verify VM activation mode is not changed after reboot.")
         utils.check_windows_activated_license(
-            vm_object_from_template_scope_class,
-            winrmcli_pod_scope_class,
+            vm=vm_object_from_template_scope_class,
+            winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="reboot",
+            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run("last")

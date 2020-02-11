@@ -10,6 +10,7 @@ import xml.etree.ElementTree as EleTree
 
 import bitmath
 import pexpect
+import tests.network.utils as network_utils
 from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
 from resources.utils import TimeoutSampler
@@ -27,12 +28,14 @@ def stop_start_vm(vm, wait_for_interfaces=True):
     vm_started(vm, wait_for_interfaces)
 
 
-def reboot_vm(vm, winrmcli_pod):
+def reboot_vm(vm, winrmcli_pod, helper_vm=False):
     try:
         execute_winrm_cmd(
             vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
             winrmcli_pod=winrmcli_pod,
             cmd="powershell restart-computer -force",
+            target_vm=vm,
+            helper_vm=helper_vm,
             timeout=60,
         )
     # When a reboot command is executed, a resources.pod.ExecOnPodError exception is raised:
@@ -42,7 +45,7 @@ def reboot_vm(vm, winrmcli_pod):
             pass
 
 
-def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500):
+def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500, helper_vm=False):
     """
     Samples Windows VM; wait for it to complete the boot process.
     """
@@ -58,6 +61,8 @@ def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500):
         func=execute_winrm_cmd,
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
+        target_vm=vm,
+        helper_vm=helper_vm,
         cmd="wmic os get Caption /value",
     )
     for sample in sampler:
@@ -123,7 +128,6 @@ def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
 
 
 def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
-
     LOGGER.info("Enable SSH in VM.")
 
     if systemctl_support:
@@ -149,6 +153,18 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
     wait_for_ssh_service(vm, console_impl, systemctl_support=systemctl_support)
 
 
+def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):
+    return (
+        network_utils.get_vmi_ip_v4_by_name(vmi=vm.vmi, name=[*vm.networks][0])
+        if rhel7_workers
+        else list(schedulable_node_ips.values())[0]
+    )
+
+
+def get_vm_ssh_port(rhel7_workers, vm):
+    return 22 if rhel7_workers else vm.ssh_node_port
+
+
 def check_ssh_connection(ip, port, console_impl):
     """ Verifies successful SSH connection
     Args:
@@ -160,11 +176,12 @@ def check_ssh_connection(ip, port, console_impl):
     """
 
     LOGGER.info("Check SSH connection to VM.")
+
     ssh_user = user.User(name=console_impl._USERNAME, password=console_impl._PASSWORD,)
     return ssh.RemoteExecutor(
-        user=ssh_user, address=ip, port=port
+        user=ssh_user, address=str(ip), port=port
     ).wait_for_connectivity_state(
-        positive=True, timeout=120, tcp_connection_timeout=90,
+        positive=True, timeout=120, tcp_connection_timeout=120,
     )
 
 
@@ -209,17 +226,25 @@ def check_vm_xml_hyperv(vm):
     assert int(hyperv_features["spinlocks"]["@retries"]) == 8191
 
 
-def check_windows_vm_hvinfo(vm, winrmcli_pod):
+def check_windows_vm_hvinfo(vm, winrmcli_pod, helper_vm=False):
     """ Verify HyperV values in Windows VMI using hvinfo """
 
-    hvinfo_dict = json.loads(
-        execute_winrm_cmd(
-            vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-            winrmcli_pod=winrmcli_pod,
-            cmd="C:\\\\hvinfo\\\\hvinfo.exe",
-            timeout=90,
-        )
+    hvinfo_dict = None
+
+    sampler = TimeoutSampler(
+        timeout=90,
+        sleep=15,
+        func=execute_winrm_cmd,
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        target_vm=vm,
+        helper_vm=helper_vm,
+        cmd="C:\\\\hvinfo\\\\hvinfo.exe",
     )
+    for sample in sampler:
+        if sample and "connect: connection refused" not in sample:
+            hvinfo_dict = json.loads(sample)
+            break
 
     assert hvinfo_dict["HyperVsupport"]
     recommendations = hvinfo_dict["Recommendations"]
@@ -280,13 +305,14 @@ def check_vm_xml_tablet_device(vm):
     ), "Wrong device name"
 
 
-def add_windows_license(vm, winrmcli_pod, windows_license):
-
+def add_windows_license(vm, winrmcli_pod, windows_license, helper_vm=False):
     LOGGER.info("Add Windows license.")
     addition_status = execute_winrm_cmd(
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
         cmd=f"cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ipk {windows_license}",
+        target_vm=vm,
+        helper_vm=helper_vm,
         timeout=90,
     )
     assert re.match(
@@ -296,13 +322,14 @@ def add_windows_license(vm, winrmcli_pod, windows_license):
     ), "Failed to add license."
 
 
-def activate_windows_online(vm, winrmcli_pod):
-
+def activate_windows_online(vm, winrmcli_pod, helper_vm=False):
     LOGGER.info("Activate Windows license online.")
     online_activation_status = execute_winrm_cmd(
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
         cmd="cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato",
+        target_vm=vm,
+        helper_vm=helper_vm,
         timeout=240,
     )
     assert re.match(
@@ -313,43 +340,48 @@ def activate_windows_online(vm, winrmcli_pod):
     ), "Failed to activate Windows online."
 
 
-def is_windows_activated(vm, winrmcli_pod):
+def is_windows_activated(vm, winrmcli_pod, helper_vm=False):
     """ Returns True if license is active else False """
 
     return "The machine is permanently activated" in execute_winrm_cmd(
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
         cmd="cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr",
+        target_vm=vm,
+        helper_vm=helper_vm,
     )
 
 
-def check_windows_activated_license(vm, winrmcli_pod, reset_action):
+def check_windows_activated_license(vm, winrmcli_pod, reset_action, helper_vm=False):
     """ Verify VM activation mode after VM reset (reboot / stop and start) """
 
     if "stop_start" in reset_action:
         stop_start_vm(vm=vm, wait_for_interfaces=False)
     if "reboot" in reset_action:
-        reboot_vm(vm, winrmcli_pod)
+        reboot_vm(vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm)
     wait_for_windows_vm(
-        vm=vm, version=vm.name.split("-")[-1], winrmcli_pod=winrmcli_pod
+        vm=vm,
+        version=vm.name.split("-")[-1],
+        winrmcli_pod=winrmcli_pod,
+        helper_vm=helper_vm,
     )
     assert is_windows_activated(
-        vm, winrmcli_pod
+        vm, winrmcli_pod, helper_vm
     ), "VM license is not activated after restart."
 
 
-def add_activate_windows_license(vm, winrm_pod, license_key):
+def add_activate_windows_license(vm, winrm_pod, license_key, helper_vm=False):
     """ Add Windows license to the VM, activate it online and verify that
     the activation was successful.
     """
 
-    add_windows_license(
-        vm, winrm_pod, windows_license=license_key,
-    )
+    add_windows_license(vm, winrm_pod, windows_license=license_key, helper_vm=helper_vm)
     activate_windows_online(
-        vm, winrm_pod,
+        vm, winrm_pod, helper_vm,
     )
-    assert is_windows_activated(vm, winrm_pod), "VM license is not activated."
+    assert is_windows_activated(vm=vm, winrmcli_pod=winrm_pod, helper_vm=helper_vm), (
+        "VM license is not " "activated."
+    )
 
 
 def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):

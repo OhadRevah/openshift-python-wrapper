@@ -214,9 +214,14 @@ class VirtualMachineForTests(VirtualMachine):
             cloud_init_volume["cloudInitNoCloud"][
                 "userData"
             ] = _generate_cloud_init_user_data(self.cloud_init_data)
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "disks", []
-            ).append({"disk": {"bus": "virtio"}, "name": "cloudinitdisk"})
+            disks_spec = (
+                spec.setdefault("domain", {})
+                .setdefault("devices", {})
+                .setdefault("disks", [])
+            )
+
+            if not [disk for disk in disks_spec if disk["name"] == "cloudinitdisk"]:
+                disks_spec.append({"disk": {"bus": "virtio"}, "name": "cloudinitdisk"})
 
         for sa in self.service_accounts:
             spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(

@@ -166,7 +166,10 @@ class TestLatestWindows:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
-        self, vm_instance_from_template_scope_class, winrmcli_pod_scope_class
+        self,
+        vm_instance_from_template_scope_class,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
     ):
         # Temp WA for VM boot bug BZ 1796342.
         # TODO: When fixed, remove sleep(), vm_started()
@@ -176,11 +179,15 @@ class TestLatestWindows:
             vm=vm_instance_from_template_scope_class,
             version=self.WIN_VER,
             winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_four_cores_two_sockets_two_threads(
-        self, vm_instance_from_template_scope_class, winrmcli_pod_scope_class
+        self,
+        vm_instance_from_template_scope_class,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
     ):
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_scope_class, cores=4, sockets=2, threads=2,
@@ -189,4 +196,5 @@ class TestLatestWindows:
             vm=vm_instance_from_template_scope_class,
             version=self.WIN_VER,
             winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
         )

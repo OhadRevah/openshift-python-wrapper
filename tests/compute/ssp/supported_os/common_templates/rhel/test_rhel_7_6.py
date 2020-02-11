@@ -120,6 +120,7 @@ class TestCommonTemplatesRhel76:
     def test_expose_ssh(
         self,
         skip_upstream,
+        rhel7_workers,
         namespace,
         data_volume_scope_class,
         vm_object_from_template_scope_class,
@@ -133,8 +134,14 @@ class TestCommonTemplatesRhel76:
         )
 
         assert utils.check_ssh_connection(
-            ip=list(schedulable_node_ips.values())[0],
-            port=vm_object_from_template_scope_class.ssh_node_port,
+            ip=utils.get_vm_accessible_ip(
+                rhel7_workers=rhel7_workers,
+                schedulable_node_ips=schedulable_node_ips,
+                vm=vm_object_from_template_scope_class,
+            ),
+            port=utils.get_vm_ssh_port(
+                rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
+            ),
             console_impl=console.RHEL,
         ), "Failed to login via SSH"
 

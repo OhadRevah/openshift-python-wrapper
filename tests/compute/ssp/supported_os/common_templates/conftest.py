@@ -26,13 +26,23 @@ def vm_ssh_service(vm_object_from_template):
 
 
 @pytest.fixture()
-def vm_ssh_service_scope_function(vm_instance_from_template_scope_function):
-    yield from vm_ssh_service(vm_instance_from_template_scope_function)
+def vm_ssh_service_scope_function(
+    rhel7_workers, vm_instance_from_template_scope_function
+):
+    # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
+    if rhel7_workers:
+        yield
+    else:
+        yield from vm_ssh_service(vm_instance_from_template_scope_function)
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_scope_class(vm_object_from_template_scope_class):
-    yield from vm_ssh_service(vm_object_from_template_scope_class)
+def vm_ssh_service_scope_class(rhel7_workers, vm_object_from_template_scope_class):
+    # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
+    if rhel7_workers:
+        yield
+    else:
+        yield from vm_ssh_service(vm_object_from_template_scope_class)
 
 
 @pytest.fixture()
@@ -44,13 +54,17 @@ def exposed_vm_service(request, vm_instance_from_template_scope_function):
 
 @pytest.fixture()
 def started_windows_vm(
-    request, vm_instance_from_template_scope_function, winrmcli_pod_scope_function
+    request,
+    vm_instance_from_template_scope_function,
+    winrmcli_pod_scope_function,
+    bridge_attached_helper_vm,
 ):
     wait_for_windows_vm(
         vm=vm_instance_from_template_scope_function,
         version=request.param["os_version"],
         winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,
+        helper_vm=bridge_attached_helper_vm,
     )
 
 

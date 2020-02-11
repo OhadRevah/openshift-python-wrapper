@@ -18,7 +18,7 @@ from tests.compute.utils import execute_winrm_cmd
 LOGGER = logging.getLogger(__name__)
 
 
-def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state):
+def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=False):
     """ Verify tablet device values in Windows VMI using driverquery """
 
     windows_driver_query = execute_winrm_cmd(
@@ -26,6 +26,8 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state):
         winrmcli_pod=winrmcli_pod,
         cmd="%systemroot%\\\\system32\\\\driverquery /fo list /v",
         timeout=180,
+        target_vm=vm,
+        helper_vm=helper_vm,
     )
 
     assert re.search(
@@ -77,15 +79,17 @@ def test_tablet_usb_tablet_device(
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod_scope_function,
+    bridge_attached_helper_vm,
     started_windows_vm,
 ):
 
     LOGGER.info("Test tablet device - USB bus.")
 
     check_windows_vm_tablet_device(
-        vm_instance_from_template_scope_function,
-        winrmcli_pod_scope_function,
+        vm=vm_instance_from_template_scope_function,
+        winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
+        helper_vm=bridge_attached_helper_vm,
     )
     utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
 
@@ -129,6 +133,7 @@ def test_tablet_virtio_tablet_device(
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod_scope_function,
+    bridge_attached_helper_vm,
     started_windows_vm,
 ):
     """ Verify that when a Windows VM is configured with virtio tablet input
@@ -138,9 +143,10 @@ def test_tablet_virtio_tablet_device(
     LOGGER.info("Test tablet device - virtio bus.")
 
     check_windows_vm_tablet_device(
-        vm_instance_from_template_scope_function,
-        winrmcli_pod_scope_function,
+        vm=vm_instance_from_template_scope_function,
+        winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Stopped",
+        helper_vm=bridge_attached_helper_vm,
     )
 
     utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)

@@ -67,14 +67,21 @@ def drain_using_console(default_client, source_node, source_pod, vm, vm_cli):
 
 
 def drain_using_console_windows(
-    default_client, source_node, source_pod, vm, windows_initial_boot_time
+    default_client,
+    source_node,
+    source_pod,
+    vm,
+    windows_initial_boot_time,
+    helper_vm=False,
 ):
 
     with drain_node_console(node=source_node):
         check_draining_process(
             default_client=default_client, source_pod=source_pod, vm=vm
         )
-        boot_time_after_migration = check_windows_boot_time(vm, winrmcli_pod)
+        boot_time_after_migration = check_windows_boot_time(
+            vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+        )
         assert (
             boot_time_after_migration == windows_initial_boot_time
         ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
@@ -141,36 +148,49 @@ def vm_template_dv_rhel8(
 
 
 @pytest.fixture()
-def windows_initial_boot_time(vm_win10, winrmcli_pod):
+def windows_initial_boot_time(vm_win10, winrmcli_pod, bridge_attached_helper_vm):
     LOGGER.info(
         f"Windows VM {vm_win10.vmi.name} is booting up, it may take up to 20 minutess."
     )
-    boot_time = check_windows_boot_time(vm_win10, winrmcli_pod)
+    boot_time = check_windows_boot_time(
+        vm=vm_win10, winrmcli_pod=winrmcli_pod, helper_vm=bridge_attached_helper_vm
+    )
     yield boot_time
 
 
 @pytest.fixture()
-def winrmcli_pod(vm_win10, schedulable_nodes):
-    # For node maintenance tests winrmcli-pod and VMI should be located on different nodes
-    node_for_winrmcli = list(
-        filter(
-            lambda n: n.name != vm_win10.vmi.virt_launcher_pod.node.name,
-            schedulable_nodes,
+def winrmcli_pod(rhel7_workers, vm_win10, schedulable_nodes):
+    # For RHEL7 workers, helper_vm is used
+    if rhel7_workers:
+        yield
+    else:
+        # For node maintenance tests winrmcli-pod and VMI should be located on different nodes
+        node_for_winrmcli = list(
+            filter(
+                lambda n: n.name != vm_win10.vmi.virt_launcher_pod.node.name,
+                schedulable_nodes,
+            )
         )
-    )
-    assert len(node_for_winrmcli) > 0, "No available nodes for winrmcli pod"
+        assert len(node_for_winrmcli) > 0, "No available nodes for winrmcli pod"
 
-    with WinRMcliPod(
-        name="winrmcli-pod",
-        namespace=vm_win10.namespace,
-        node_selector=node_for_winrmcli[0].name,
-    ) as winrm_pod:
-        winrm_pod.wait_for_status(status=winrm_pod.Status.RUNNING, timeout=60)
-        yield winrm_pod
+        with WinRMcliPod(
+            name="winrmcli-pod",
+            namespace=vm_win10.namespace,
+            node_selector=node_for_winrmcli[0].name,
+        ) as winrm_pod:
+            winrm_pod.wait_for_status(status=winrm_pod.Status.RUNNING, timeout=60)
+            yield winrm_pod
 
 
 @pytest.fixture()
-def vm_win10(skip_ceph_on_rhel7, namespace, unprivileged_client, storage_class_matrix):
+def vm_win10(
+    skip_ceph_on_rhel7,
+    namespace,
+    unprivileged_client,
+    storage_class_matrix,
+    network_configuration,
+    cloud_init_data,
+):
     vm_dv_name = "windows-template-node-maintenance"
     url = f"{get_images_external_http_server()}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
     template_labels_dict = {
@@ -198,19 +218,26 @@ def vm_win10(skip_ceph_on_rhel7, namespace, unprivileged_client, storage_class_m
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
             template_dv=dv.name,
+            networks=network_configuration if network_configuration else None,
+            interfaces=sorted(network_configuration.keys())
+            if network_configuration
+            else None,
+            cloud_init_data=cloud_init_data if cloud_init_data else None,
         ) as vm:
             vm.start(wait=True)
             vm.vmi.wait_until_running()
             yield vm
 
 
-def check_windows_boot_time(vm, winrmcli_pod, timeout=1200):
+def check_windows_boot_time(vm, winrmcli_pod, timeout=1200, helper_vm=False):
     pod_output_samples = TimeoutSampler(
         timeout=timeout,
         sleep=15,
         func=execute_winrm_cmd,
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
+        target_vm=vm,
+        helper_vm=helper_vm,
         cmd="wmic os get lastbootuptime",
     )
 
@@ -295,6 +322,7 @@ def test_node_drain_template_windows(
     skip_when_one_node,
     vm_win10,
     winrmcli_pod,
+    bridge_attached_helper_vm,
     windows_initial_boot_time,
     default_client,
 ):
@@ -305,6 +333,7 @@ def test_node_drain_template_windows(
         source_pod=vm_win10.vmi.virt_launcher_pod,
         vm=vm_win10,
         windows_initial_boot_time=windows_initial_boot_time,
+        helper_vm=bridge_attached_helper_vm,
     )
 
     virt_utils.wait_for_node_unschedulable_status(
