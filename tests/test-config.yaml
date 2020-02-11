@@ -56,7 +56,6 @@ EMEA:
 
 bridge_device_matrix:
   - linux-bridge
-  - ovs
 
 storage_class_matrix:
   - rook-ceph-block:
