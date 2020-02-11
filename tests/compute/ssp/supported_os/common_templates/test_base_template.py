@@ -89,7 +89,7 @@ CNV_TEMPLATES_NAME = [
 
 
 @pytest.fixture()
-def get_base_templates(default_client):
+def base_templates(default_client):
     """ Return templates list by label """
     yield [
         template.name
@@ -104,11 +104,11 @@ def get_base_templates(default_client):
 
 
 @pytest.mark.polarion("CNV-1069")
-def test_base_templates_annotations(get_base_templates):
+def test_base_templates_annotations(base_templates):
     """
     Check all CNV templates exists, by label: template.kubevirt.io/type=base
     """
-    assert len(get_base_templates) == len(CNV_TEMPLATES_NAME), (
+    assert len(base_templates) == len(CNV_TEMPLATES_NAME), (
         f"Not all base CNV templates exists\n exist templates:\n "
-        f"{get_base_templates} expected:\n {CNV_TEMPLATES_NAME}",
+        f"{base_templates} expected:\n {CNV_TEMPLATES_NAME}",
     )
