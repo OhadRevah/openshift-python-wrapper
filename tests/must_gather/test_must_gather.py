@@ -8,6 +8,7 @@ import yaml
 from pytest_testconfig import config as py_config
 from resources.api_service import APIService
 from resources.cdi_config import CDIConfig
+from resources.imagestreamtag import ImageStreamTag
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network_addons_config import NetworkAddonsConfig
@@ -487,3 +488,26 @@ def test_crd_resources(default_client, cnv_must_gather, kubevirt_crd_resources):
                 file_content = yaml.load(resource_file.read(), Loader=yaml.FullLoader)
             assert resource_item["metadata"]["name"] == file_content["metadata"]["name"]
             assert resource_item["metadata"]["uid"] == file_content["metadata"]["uid"]
+
+
+@pytest.mark.polarion("CNV-2939")
+def test_imagestreamtag_resources(default_client, cnv_must_gather):
+    namespace = "openshift"
+    istag_dir = os.path.join(
+        cnv_must_gather, f"namespaces/{namespace}/image.openshift.io/imagestreamtags/",
+    )
+
+    assert len(os.listdir(istag_dir)) == len(
+        list(ImageStreamTag.get(default_client, namespace=namespace))
+    )
+    checks = (("metadata", "name"), ("metadata", "uid"))
+
+    utils.check_list_of_resources(
+        default_client=default_client,
+        resource_type=ImageStreamTag,
+        temp_dir=cnv_must_gather,
+        resource_path="namespaces/{namespace}/image.openshift.io/imagestreamtags/{name}.yaml",
+        checks=checks,
+        namespace=namespace,
+        filter_resource="redhat",
+    )
