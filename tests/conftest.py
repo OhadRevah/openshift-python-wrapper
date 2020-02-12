@@ -665,6 +665,4 @@ def rhel_ovs_bridge(rhel7_workers, network_utility_pods):
         )
         for connection in connections.splitlines():
             if "ovs-bridge" in connection:
-                yield connection.split(":")[-1]
-    else:
-        yield
+                return connection.split(":")[-1]
