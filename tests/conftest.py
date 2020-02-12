@@ -654,3 +654,17 @@ def skip_ceph_on_rhel7(storage_class_matrix, rhel7_workers):
             pytest.skip(
                 msg="Rook-ceph configuration is not supported on RHEL7 workers",
             )
+
+
+@pytest.fixture(scope="session")
+def rhel_ovs_bridge(rhel7_workers, network_utility_pods):
+    if rhel7_workers:
+        # All RHEL workers should be with the same configuration, gating info from the first worker.
+        connections = network_utility_pods[0].execute(
+            command=["nmcli", "-t", "connection", "show"]
+        )
+        for connection in connections.splitlines():
+            if "ovs-bridge" in connection:
+                yield connection.split(":")[-1]
+    else:
+        yield
