@@ -45,8 +45,16 @@ def get_vmi_ip_v4_by_name(vmi, name):
                 if iface.name == name:
                     for ipaddr in iface.ipAddresses:
                         ip = ipaddress.ip_interface(ipaddr)
-                        if ip.version == 4:
-                            return ip.ip
+                        try:
+                            if ip.version == 4:
+                                return ip.ip
+                        # ipaddress module fails to identify IPv6 with % as a valid IP
+                        except ValueError as e:
+                            if (
+                                "does not appear to be an IPv4 or IPv6 "
+                                "interface" in str(e)
+                            ):
+                                continue
     except TimeoutExpiredError:
         raise IpNotFound(name)
 
