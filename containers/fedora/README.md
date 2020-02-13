@@ -69,3 +69,10 @@ Once verified push the image to quay.io/redhat/cnv-tests-fedora
 docker tag fedora:$FEDORA_VERSION quay.io/redhat/cnv-tests-fedora:$FEDORA_VERSION
 docker push quay.io/redhat/cnv-tests-fedora:$FEDORA_VERSION
 ```
+
+### Push qcow image to HTTP servers
+Push qcow2 image to EMEA and USA HTTP servers
+```bash
+scp fedora_build/Fedora-Cloud-Base-30-1.2.x86_64.qcow2 root@cnv-qe-server.scl.lab.tlv.redhat.com:/var/www/files/cnv-tests/fedora/
+scp fedora_build/Fedora-Cloud-Base-30-1.2.x86_64.qcow2 root@cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com:/var/www/files/cnv-tests/fedora/
+```

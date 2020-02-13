@@ -28,8 +28,8 @@ latest_windows_version: {
 }
 
 latest_fedora_version: {
-  'os_label': 'fedora30',
-  'image': 'cnv-tests/fedora-images/Fedora-Cloud-Base-30-1.2.x86_64.qcow2',
+  'os_label': 'fedora31',
+  'image': 'cnv-tests/fedora-images/Fedora-Cloud-Base-31-1.9.x86_64.qcow2',
 }
 
 windows_username: Administrator
