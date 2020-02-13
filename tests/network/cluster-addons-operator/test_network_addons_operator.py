@@ -51,7 +51,7 @@ def bridge_attached_vm(namespace, br1test_nad):
 
 
 @pytest.mark.polarion("CNV-2520")
-def test_component_installed_by_operator(network_addons_config_cr):
+def test_component_installed_by_operator(skip_rhel7_workers, network_addons_config_cr):
     """
     Verify that the network addons operator is supposed to install Linux-Bridge
     (a mandatory default component), by checking if the component appears in
@@ -64,7 +64,7 @@ def test_component_installed_by_operator(network_addons_config_cr):
 
 
 @pytest.mark.polarion("CNV-2296")
-def test_linux_bridge_functionality(bridge_attached_vm):
+def test_linux_bridge_functionality(skip_rhel7_workers, bridge_attached_vm):
     """
     Verify the linux-bridge component valid functionality.
     Start a VM and verify it starts successfully, as an indication of successful

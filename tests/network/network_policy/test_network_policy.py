@@ -137,7 +137,7 @@ def running_vmb(vmb):
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_deny_all_http(
-    deny_all_http_ports, vma, vmb, running_vma, running_vmb
+    skip_rhel7_workers, deny_all_http_ports, vma, vmb, running_vma, running_vmb
 ):
     dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
     with pytest.raises(CommandExecFailed):
@@ -153,7 +153,7 @@ def test_network_policy_deny_all_http(
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_allow_all_http(
-    allow_all_http_ports, vma, vmb, running_vma, running_vmb
+    skip_rhel7_workers, allow_all_http_ports, vma, vmb, running_vma, running_vmb
 ):
     dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
     vm_console_run_commands(
@@ -168,7 +168,7 @@ def test_network_policy_allow_all_http(
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_allow_http80(
-    allow_http80_port, vma, vmb, running_vma, running_vmb
+    skip_rhel7_workers, allow_http80_port, vma, vmb, running_vma, running_vmb
 ):
     dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
     vm_console_run_commands(

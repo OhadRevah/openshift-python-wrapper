@@ -76,6 +76,7 @@ def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, kubem
     assert_ping_successful(src_vm=vm_a, dst_ip=dst_ip_address)
 
 
+@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestConnectivity:
     #: TestConnectivity setup
     # .........                                                                      ..........
@@ -150,6 +151,7 @@ class TestConnectivity:
         assert ifaces_config_same(vm=configured_vm_b, vmi=restarted_vmi_b)
 
 
+@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestKubemacpoolChanged:
     #: TestKubemacpoolChanged setup
     # .........                                                                      ..........
@@ -211,6 +213,7 @@ class TestKubemacpoolChanged:
         )
 
 
+@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestMacFromNewKubemacpoolRange:
     #: TestMacFromNewKubemacpoolRange setup
     # .........                                                               ..........

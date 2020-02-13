@@ -17,6 +17,7 @@ def _open_console(vm):
         yield vm_console
 
 
+@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestL2LinuxBridge:
     """
     Test L2 connectivity via linux bridge CNI plugin.

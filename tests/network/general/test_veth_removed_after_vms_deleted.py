@@ -114,6 +114,7 @@ def running_bridge_attached_vmb(bridge_attached_vmb):
 
 @pytest.mark.polarion("CNV-681")
 def test_veth_removed_from_host_after_vm_deleted(
+    skip_rhel7_workers,
     network_utility_pods,
     br1test_nad,
     br1vlan100_nad,

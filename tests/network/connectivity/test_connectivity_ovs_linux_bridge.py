@@ -236,6 +236,7 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     return vmi
 
 
+@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestConnectivity:
     @pytest.mark.parametrize(
         "bridge",

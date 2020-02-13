@@ -62,7 +62,7 @@ def running_vmb(vmb):
 @pytest.mark.polarion("CNV-2332")
 def test_connectivity_over_pod_network(
     skip_when_one_node,
-    skip_rhel7_workers_masquerade,
+    skip_rhel7_workers,
     vma,
     vmb,
     running_vma,
@@ -83,7 +83,7 @@ def test_connectivity_over_pod_network(
 def test_guest_performance_over_pod_network(
     skip_not_bare_metal,
     skip_when_one_node,
-    skip_rhel7_workers_masquerade,
+    skip_rhel7_workers,
     vma,
     vmb,
     running_vma,
