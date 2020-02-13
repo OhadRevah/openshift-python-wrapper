@@ -44,8 +44,8 @@ def get_vmi_ip_v4_by_name(vmi, name):
             for iface in sample:
                 if iface.name == name:
                     for ipaddr in iface.ipAddresses:
-                        ip = ipaddress.ip_interface(ipaddr)
                         try:
+                            ip = ipaddress.ip_interface(ipaddr)
                             if ip.version == 4:
                                 return ip.ip
                         # ipaddress module fails to identify IPv6 with % as a valid IP
