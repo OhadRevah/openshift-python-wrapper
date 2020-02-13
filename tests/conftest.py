@@ -657,7 +657,7 @@ def skip_ceph_on_rhel7(storage_class_matrix, rhel7_workers):
 
 
 @pytest.fixture(scope="session")
-def rhel_ovs_bridge(rhel7_workers, network_utility_pods):
+def rhel7_ovs_bridge(rhel7_workers, network_utility_pods):
     if rhel7_workers:
         # All RHEL workers should be with the same configuration, gating info from the first worker.
         connections = network_utility_pods[0].execute(
@@ -666,3 +666,5 @@ def rhel_ovs_bridge(rhel7_workers, network_utility_pods):
         for connection in connections.splitlines():
             if "ovs-bridge" in connection:
                 return connection.split(":")[-1]
+    else:
+        pytest.skip("No RHEL7 workers on the cluster")

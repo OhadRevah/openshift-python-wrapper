@@ -34,12 +34,12 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="class")
-def nad(rhel_ovs_bridge, namespace):
+def nad(rhel7_ovs_bridge, namespace):
     with bridge_nad(
         namespace=namespace,
         nad_type=network_utils.OVS,
         nad_name="br1test-nad",
-        bridge_name=rhel_ovs_bridge,
+        bridge_name=rhel7_ovs_bridge,
     ) as nad:
         yield nad
 
