@@ -98,6 +98,7 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
             headers=self.client.configuration.api_key,
         )
         if wait:
+            self.vmi.wait_for_status(status="Failed", stop_status="dummy")
             # stop_status="dummy" used to ignore FAILED status of vmi during restart
             return self.vmi.wait_until_running(timeout=timeout, stop_status="dummy")
 
