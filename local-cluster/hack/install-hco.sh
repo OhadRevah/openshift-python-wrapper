@@ -43,7 +43,7 @@ for resource in ${HCO_RESOURCES}; do
 done
 
 function wait_until_available() {
-  ${KUBECTL} wait hyperconverged hyperconverged-cluster --for condition=Available --timeout=1m
+  ${KUBECTL} wait hyperconverged kubevirt-hyperconverged --for condition=Available --timeout=1m
   return $?
 }
 
