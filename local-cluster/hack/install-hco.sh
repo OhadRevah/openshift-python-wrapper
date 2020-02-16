@@ -57,7 +57,7 @@ done
 set -e
 
 
-${KUBECTL} get hyperconverged hyperconverged-cluster -o yaml
+${KUBECTL} get hyperconverged kubevirt-hyperconverged -o yaml
 # TODO WIP, checking why linux-bridge CNI doesn't get up withing the timeout
 ${KUBECTL} get ds --all-namespaces -o yaml | grep bridge
 ${KUBECTL} describe ds -n linux-bridge
