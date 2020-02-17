@@ -666,8 +666,6 @@ def rhel7_ovs_bridge(rhel7_workers, network_utility_pods):
         for connection in connections.splitlines():
             if "ovs-bridge" in connection:
                 return connection.split(":")[-1]
-    else:
-        pytest.skip("No RHEL7 workers on the cluster")
 
 
 @pytest.fixture(scope="session")
