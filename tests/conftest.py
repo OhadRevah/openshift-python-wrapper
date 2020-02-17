@@ -668,3 +668,9 @@ def rhel7_ovs_bridge(rhel7_workers, network_utility_pods):
                 return connection.split(":")[-1]
     else:
         pytest.skip("No RHEL7 workers on the cluster")
+
+
+@pytest.fixture(scope="session")
+def skip_no_rhel7_workers(rhel7_workers):
+    if not rhel7_workers:
+        pytest.skip(msg="Test should run only with cluster with RTHEL7 workers")

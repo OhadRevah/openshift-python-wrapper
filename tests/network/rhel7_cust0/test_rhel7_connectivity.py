@@ -133,6 +133,7 @@ class TestConnectivity:
     def test_bridge(
         self,
         bridge,
+        skip_no_rhel7_workers,
         rhel7_workers,
         skip_when_one_node,
         namespace,
@@ -141,9 +142,6 @@ class TestConnectivity:
         running_bridge_attached_vmia,
         running_bridge_attached_vmib,
     ):
-        if not rhel7_workers:
-            pytest.skip("Test should run only on RHEl7 workers")
-
         assert_ping_successful(
             src_vm=running_bridge_attached_vmia,
             dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
