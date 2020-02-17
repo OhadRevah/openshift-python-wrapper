@@ -145,6 +145,26 @@ class TestCommonTemplatesRhel81:
             console_impl=console.RHEL,
         ), "Failed to login via SSH"
 
+    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.polarion("CNV-3513")
+    def test_guest_agent_info(
+        self, vm_object_from_template_scope_class, schedulable_node_ips, rhel7_workers
+    ):
+        """ Test Guest OS agent info. """
+        utils.validate_linux_guest_agent_info(
+            vm=vm_object_from_template_scope_class,
+            ip=utils.get_vm_accessible_ip(
+                rhel7_workers=rhel7_workers,
+                schedulable_node_ips=schedulable_node_ips,
+                vm=vm_object_from_template_scope_class,
+            ),
+            ssh_port=utils.get_vm_ssh_port(
+                rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
+            ),
+            username=console.RHEL.USERNAME,
+            passwd=console.RHEL.PASSWORD,
+        )
+
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3270")
     def test_vm_deletion(

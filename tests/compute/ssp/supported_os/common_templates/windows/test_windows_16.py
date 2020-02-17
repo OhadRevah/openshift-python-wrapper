@@ -38,7 +38,7 @@ WIN16_LICENSE_KEY = "MBHVF-NK7XF-C4YG9-8VBVP-Q3XQF"
     ],
     indirect=True,
 )
-class TestCommonTemplatesWin10:
+class TestCommonTemplatesWin16:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-2175")
     def test_create_vm(
@@ -72,6 +72,21 @@ class TestCommonTemplatesWin10:
         utils.wait_for_windows_vm(
             vm=vm_object_from_template_scope_class,
             version=VM_NAME.split("-")[-1],
+            winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
+        )
+
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3512")
+    def test_guest_agent_info(
+        self,
+        vm_object_from_template_scope_class,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
+    ):
+        """ Test Guest OS agent info. """
+        utils.validate_windows_guest_agent_info(
+            vm=vm_object_from_template_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )

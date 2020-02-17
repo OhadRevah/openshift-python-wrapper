@@ -446,3 +446,95 @@ def check_default_and_validation_memory(
         assert validate_memory(
             memory_test, min_validation_memory_value, osinfo_memory_value[0]
         )
+
+
+def os_info_parser(os_info_list, field_name):
+    return "".join(
+        [x.split("=")[1] for x in os_info_list if x.startswith(f"{field_name}=")]
+    )
+
+
+def execute_ssh_command(username, passwd, ip, port, cmd):
+    ssh_user = user.User(name=username, password=passwd)
+    rc, out, err = ssh.RemoteExecutor(user=ssh_user, address=ip, port=port).run_cmd(
+        cmd=cmd
+    )
+    assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
+    return out
+
+
+def validate_linux_guest_agent_info(vm, ip, ssh_port, username, passwd):
+    """ Compare guest OS info from VMI (reported by guest agent) and from OS itself. """
+    assert get_guest_os_info_from_vmi(vmi=vm.vmi) == get_linux_os_info_from_ssh(
+        ip=ip, port=ssh_port, username=username, passwd=passwd
+    )
+
+
+def validate_windows_guest_agent_info(vm, winrmcli_pod, helper_vm=False):
+    """ Compare guest OS info from VMI (reported by guest agent) and from OS itself. """
+    windown_os_info_from_rmcli = get_windows_os_info_from_rmcli(
+        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+    for key, val in get_guest_os_info_from_vmi(vmi=vm.vmi).items():
+        if key != "id":
+            assert (
+                val.split("r")[0]
+                if "version" in key
+                else val in windown_os_info_from_rmcli
+            )
+
+
+def get_guest_os_info_from_vmi(vmi):
+    """ Gets guest OS info from VMI. """
+    guest_os_info_dict = dict(vmi.instance.status.guestOSInfo)
+    assert guest_os_info_dict, "Guest agent not installed/active."
+    return guest_os_info_dict
+
+
+def get_linux_os_info_from_ssh(ip, port, username, passwd):
+    """
+    Gets Linux OS info via SSH from etc/os-release and uname -r -v.
+    Return dict (should be same format as dict from "get_guest_os_info_from_vmi") keys:
+    'id', 'kernelRelease', 'kernelVersion', 'name', 'prettyName', 'version', 'versionId'
+    """
+    os_release_output_list = (
+        execute_ssh_command(
+            username=username,
+            passwd=passwd,
+            ip=ip,
+            port=port,
+            cmd=["cat", "/etc/os-release"],
+        )
+        .replace('"', "")
+        .split("\n")
+    )
+    kernel_info_output_list = execute_ssh_command(
+        username=username,
+        passwd=passwd,
+        ip=ip,
+        port=port,
+        cmd=["uname", "-r", ";", "uname", "-v"],
+    ).split("\n")
+
+    return {
+        "id": os_info_parser(os_release_output_list, "ID"),
+        "kernelRelease": kernel_info_output_list[0],
+        "kernelVersion": kernel_info_output_list[1],
+        "name": os_info_parser(os_release_output_list, "NAME"),
+        "prettyName": os_info_parser(os_release_output_list, "PRETTY_NAME"),
+        "version": os_info_parser(os_release_output_list, "VERSION").split(" ")[0],
+        "versionId": os_info_parser(os_release_output_list, "VERSION_ID"),
+    }
+
+
+def get_windows_os_info_from_rmcli(vm, winrmcli_pod, helper_vm=False):
+    """
+    Gets Windows OS info via remote cli tool from systeminfo.
+    Return string of OS Name and OS Version output of systeminfo.
+    """
+    return execute_winrm_cmd(
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        cmd='systeminfo | findstr /B /C:"OS Name" /C:"OS Version"',
+        helper_vm=helper_vm,
+    )

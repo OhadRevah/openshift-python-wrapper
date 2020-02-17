@@ -75,6 +75,21 @@ class TestCommonTemplatesWin10:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3512")
+    def test_guest_agent_info(
+        self,
+        vm_object_from_template_scope_class,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
+    ):
+        """ Test Guest OS agent info. """
+        utils.validate_windows_guest_agent_info(
+            vm=vm_object_from_template_scope_class,
+            winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
+        )
+
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3303")
     @pytest.mark.bugzilla(

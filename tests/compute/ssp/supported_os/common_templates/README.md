@@ -12,6 +12,7 @@ run slow on nested visualization.
 * Start VM
 * Console connection to VM
 * VM OS validation
+* Guest agent info check
 * Domain label validation
 * SSH connection to VM (including service creation)
 * VM deletion
@@ -21,6 +22,7 @@ run slow on nested visualization.
 ## Windows Tests
 * Create VM
 * Start VM
+* Guest agent info check
 * HyperV
 * Domain label validation
 * VM migration
@@ -32,6 +34,7 @@ run slow on nested visualization.
 * Start VM
 * Console connection to VM
 * VM OS validation
+* Guest agent info check
 * HyperV
 * Domain label validation
 * SSH connection to VM (including service creation)
