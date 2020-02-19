@@ -58,9 +58,6 @@ bridge_device_matrix:
   - linux-bridge
 
 storage_class_matrix:
-  - rook-ceph-block:
-      volume_mode: Block
-      access_mode: ReadWriteMany
   - hostpath-provisioner:
       volume_mode: Filesystem
       access_mode: ReadWriteOnce
