@@ -57,6 +57,15 @@ EMEA:
 bridge_device_matrix:
   - linux-bridge
 
+link_aggregation_mode_matrix:
+  - balance-rr
+  - active-backup
+  - balance-xor
+  - broadcast
+  - 802.3ad
+  - balance-tlb
+  - balance-alb
+
 storage_class_matrix:
   - hostpath-provisioner:
       volume_mode: Filesystem

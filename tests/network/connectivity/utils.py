@@ -21,6 +21,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         nics,
         nodes,
         worker_pods,
+        mode,
         node_selector=None,
         mtu=None,
         teardown=True,
@@ -35,6 +36,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.nodes = nodes
         self.nics = nics
         self.bond = None
+        self.mode = mode
         self.mtu = mtu
         self.mtu_dict = {}
 
@@ -46,7 +48,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
                 "mtu": self.mtu,
                 "link-aggregation": {
-                    "mode": "active-backup",
+                    "mode": self.mode,
                     "slaves": self.nics,
                     "options": {"miimon": "120"},
                 },

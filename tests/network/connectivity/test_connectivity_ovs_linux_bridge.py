@@ -98,7 +98,24 @@ def br1bond_nad(bond_supported, bridge_device_matrix, namespace):
 
 
 @pytest.fixture(scope="class")
-def bond1(network_utility_pods, bond_supported, nodes_active_nics):
+def skip_link_mode_balance_rr(link_aggregation_mode_matrix):
+    """
+    https://issues.redhat.com/browse/CNV-4058
+    """
+    if link_aggregation_mode_matrix == "balance-rr":
+        pytest.skip(
+            msg="Skip the link_aggregation_mode balance-rr due to the packet loss"
+        )
+
+
+@pytest.fixture(scope="class")
+def bond1(
+    network_utility_pods,
+    bond_supported,
+    nodes_active_nics,
+    link_aggregation_mode_matrix,
+    skip_link_mode_balance_rr,
+):
     """
     Create BOND if setup support BOND
     """
@@ -110,6 +127,7 @@ def bond1(network_utility_pods, bond_supported, nodes_active_nics):
             nodes=[i.node.name for i in network_utility_pods],
             nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
             worker_pods=network_utility_pods,
+            mode=link_aggregation_mode_matrix,
             mtu=1450,
         ):
             yield bond_name
@@ -274,7 +292,7 @@ class TestConnectivity:
             dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
         )
 
-    @pytest.mark.polarion("CNV-2141")
+    @pytest.mark.polarion("CNV-3366")
     def test_bond(
         self,
         skip_when_one_node,
