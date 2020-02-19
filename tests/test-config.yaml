@@ -8,8 +8,8 @@ template_defaults:
   linux_bridge_cni_name: cnv-bridge
   bridge_tuning_name: cnv-tuning
 
-default_storage_class: rook-ceph-block
-default_volume_mode: Block
+default_storage_class: nfs
+default_volume_mode: Filesystem
 
 bare_metal_cluster: False
 
