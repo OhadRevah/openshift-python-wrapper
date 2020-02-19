@@ -19,9 +19,9 @@ class NodeNetworkState(Resource):
 
     def __init__(self, name):
         super().__init__(name=name)
-        spec = self.instance.to_dict()["spec"]
-        if "desiredState" in spec:
-            self.desired_state = spec["desiredState"]
+        status = self.instance.to_dict()["status"]
+        if "desiredState" in status:
+            self.desired_state = status["desiredState"]
         else:
             self.desired_state = {"interfaces": []}
 
