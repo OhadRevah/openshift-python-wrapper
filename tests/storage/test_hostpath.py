@@ -40,6 +40,16 @@ def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc, hpp_storage_cl
         pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
+@pytest.fixture(scope="module")
+def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
+    LOGGER.debug("Use 'skip_when_cdiconfig_scratch_no_hpp' fixture...")
+    if not (
+        cdi_config.scratch_space_storage_class_from_status
+        == StorageClass.Types.HOSTPATH
+    ):
+        pytest.skip(msg="scratchSpaceStorageClass of cdiconfig is not HPP")
+
+
 def verify_image_location_via_dv_pod_with_pvc(dv, schedulable_nodes):
     dv.wait()
     with storage_utils.PodWithPVC(
@@ -263,7 +273,12 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
 
 
 @pytest.mark.polarion("CNV-2771")
-def test_hpp_upload_virtctl(skip_when_hpp_no_waitforfirstconsumer, storage_ns, tmpdir):
+def test_hpp_upload_virtctl(
+    skip_when_hpp_no_waitforfirstconsumer,
+    skip_when_cdiconfig_scratch_no_hpp,
+    storage_ns,
+    tmpdir,
+):
     """
     Check that upload disk image via virtcl tool works
     """
@@ -298,7 +313,11 @@ def test_hpp_upload_virtctl(skip_when_hpp_no_waitforfirstconsumer, storage_ns, t
 
 @pytest.mark.polarion("CNV-2769")
 def test_hostpath_upload_dv_with_token(
-    skip_test_if_no_hpp_sc, storage_ns, tmpdir, schedulable_nodes,
+    skip_test_if_no_hpp_sc,
+    skip_when_cdiconfig_scratch_no_hpp,
+    storage_ns,
+    tmpdir,
+    schedulable_nodes,
 ):
     dv_name = "cnv-2769"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
@@ -342,6 +361,7 @@ def test_hostpath_upload_dv_with_token(
 )
 def test_hostpath_registry_import_dv(
     skip_when_hpp_no_waitforfirstconsumer,
+    skip_when_cdiconfig_scratch_no_hpp,
     hpp_storage_class,
     storage_ns,
     dv_name,
@@ -432,7 +452,9 @@ def test_hostpath_clone_dv_wffc(
 
 @pytest.mark.polarion("CNV-3328")
 def test_hostpath_import_scratch_dv_without_specify_node_wffc(
-    skip_when_hpp_no_waitforfirstconsumer, storage_ns,
+    skip_when_hpp_no_waitforfirstconsumer,
+    skip_when_cdiconfig_scratch_no_hpp,
+    storage_ns,
 ):
     """
     Check that in case of WaitForFirstConsumer binding mode, without annotating DV to a node,
