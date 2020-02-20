@@ -428,3 +428,35 @@ def test_hostpath_clone_dv_wffc(
             target_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=600)
             with storage_utils.create_vm_from_dv(dv=target_dv) as vm:
                 storage_utils.check_disk_count_in_vm(vm=vm)
+
+
+@pytest.mark.polarion("CNV-3328")
+def test_hostpath_import_scratch_dv_without_specify_node_wffc(
+    skip_when_hpp_no_waitforfirstconsumer, storage_ns,
+):
+    """
+    Check that in case of WaitForFirstConsumer binding mode, without annotating DV to a node,
+    CDI import function needs scratch space works well.
+    The PVC will have an annotation 'volume.kubernetes.io/selected-node' containing the node name
+    where the pod is scheduled on.
+    """
+    with create_dv(
+        source="http",
+        dv_name="cnv-3328-dv",
+        namespace=storage_ns.name,
+        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG_XZ}",
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        size="1Gi",
+        storage_class=StorageClass.Types.HOSTPATH,
+        volume_mode=DataVolume.VolumeMode.FILE,
+    ) as dv:
+        dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        dv.importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
+        assert_selected_node_annotation(pvc=dv.pvc, pod=dv.importer_pod, type_="target")
+        dv.scratch_pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+        )
+        assert_selected_node_annotation(
+            pvc=dv.scratch_pvc, pod=dv.importer_pod, type_="scratch"
+        )
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
