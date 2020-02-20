@@ -68,9 +68,7 @@ class TestCommonTemplatesWin10:
     ):
         """ Test CNV common templates VM initiation """
 
-        tests.compute.utils.vm_started(
-            vm=vm_object_from_template_scope_class, wait_for_interfaces=False
-        )
+        tests.compute.utils.vm_started(vm=vm_object_from_template_scope_class)
         utils.wait_for_windows_vm(
             vm=vm_object_from_template_scope_class,
             version=VM_NAME.split("-")[-1],
