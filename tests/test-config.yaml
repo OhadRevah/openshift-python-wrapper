@@ -61,3 +61,6 @@ storage_class_matrix:
   - hostpath-provisioner:
       volume_mode: Filesystem
       access_mode: ReadWriteOnce
+  - nfs:
+      volume_mode: Filesystem
+      access_mode: ReadWriteMany
