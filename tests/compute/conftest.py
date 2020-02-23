@@ -13,8 +13,6 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
 )
 from tests.compute.utils import WinRMcliPod, nmcli_add_con_cmds
 from utilities import console
-from utilities.infra import get_images_external_http_server
-from utilities.storage import DataVolume, create_dv
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     RHEL_CLOUD_INIT_PASSWORD,
@@ -155,68 +153,6 @@ def bridge_attached_helper_vm(
 """
 General tests fixtures
 """
-
-
-def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None):
-    """ DV creation.
-
-    The call to this function is triggered by calling either
-    data_volume_scope_function or data_volume_scope_class.
-    """
-    # Extract the key from storage_class_matrix (dict)
-    storage_class = [*storage_class_matrix][0]
-
-    # Set dv attributes
-    dv_kwargs = {
-        "dv_name": request.param["dv_name"].replace(".", "-").lower(),
-        "namespace": namespace.name,
-        "source": "http",
-        "url": f"{get_images_external_http_server()}{request.param['image']}",
-        "size": request.param.get(
-            "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
-        ),
-        "storage_class": request.param.get("storage_class", storage_class),
-        "access_modes": request.param.get(
-            "access_modes", storage_class_matrix[storage_class]["access_mode"]
-        ),
-        "volume_mode": request.param.get(
-            "volume_mode", storage_class_matrix[storage_class]["volume_mode"],
-        ),
-        "content_type": DataVolume.ContentType.KUBEVIRT,
-        # In hpp, volume must reside on the same worker as the VM
-        "hostpath_node": schedulable_nodes[HPP_NODE_INDEX].name
-        if storage_class == "hostpath-provisioner"
-        else None,
-    }
-
-    # Create dv
-    with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
-        dv.wait(timeout=1800 if "win" in request.param["dv_name"] else 1200)
-        yield dv
-
-
-@pytest.fixture()
-def data_volume_scope_function(
-    request, skip_ceph_on_rhel7, namespace, storage_class_matrix, schedulable_nodes
-):
-    yield from data_volume(
-        request=request,
-        namespace=namespace,
-        storage_class_matrix=storage_class_matrix,
-        schedulable_nodes=schedulable_nodes,
-    )
-
-
-@pytest.fixture(scope="class")
-def data_volume_scope_class(
-    request, skip_ceph_on_rhel7, namespace, storage_class_matrix, schedulable_nodes
-):
-    yield from data_volume(
-        request=request,
-        namespace=namespace,
-        storage_class_matrix=storage_class_matrix,
-        schedulable_nodes=schedulable_nodes,
-    )
 
 
 def vm_instance_from_template(

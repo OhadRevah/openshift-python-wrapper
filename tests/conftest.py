@@ -36,6 +36,7 @@ from resources.virtual_machine import (
     VirtualMachineInstanceMigration,
 )
 from utilities.infra import create_ns, generate_yaml_from_template
+from utilities.storage import data_volume
 from utilities.virt import kubernetes_taint_exists
 
 
@@ -672,3 +673,27 @@ def rhel7_ovs_bridge(rhel7_workers, network_utility_pods):
 def skip_no_rhel7_workers(rhel7_workers):
     if not rhel7_workers:
         pytest.skip(msg="Test should run only with cluster with RTHEL7 workers")
+
+
+@pytest.fixture()
+def data_volume_scope_function(
+    request, skip_ceph_on_rhel7, namespace, storage_class_matrix, schedulable_nodes
+):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix,
+        schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture(scope="class")
+def data_volume_scope_class(
+    request, skip_ceph_on_rhel7, namespace, storage_class_matrix, schedulable_nodes
+):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix,
+        schedulable_nodes=schedulable_nodes,
+    )
