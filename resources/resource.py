@@ -229,6 +229,8 @@ class Resource(object):
     class Status:
         SUCCEEDED = "Succeeded"
         FAILED = "Failed"
+        DELETING = "Deleting"
+        DEPLOYED = "Deployed"
 
     def __init__(self, name, client=None, teardown=True):
         """

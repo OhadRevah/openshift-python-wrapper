@@ -1,0 +1,96 @@
+import time
+
+import pytest
+from openshift.dynamic.exceptions import BadRequestError
+from resources.kubevirt import KubeVirt
+from resources.resource import ResourceEditor
+from resources.utils import TimeoutSampler
+from resources.virtual_machine import VirtualMachine
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
+
+
+@pytest.fixture()
+def kubevirt_resource(default_client):
+    for kv in KubeVirt.get(dyn_client=default_client):
+        return kv
+
+
+@pytest.fixture()
+def set_uninstall_strategy_remove_workloads(kubevirt_resource):
+    with ResourceEditor(
+        {kubevirt_resource: {"spec": {"uninstallStrategy": "RemoveWorkloads"}}}
+    ) as edits:
+        yield edits
+
+
+@pytest.fixture()
+def vm(unprivileged_client, namespace):
+    name = f"remove-kubevirt-vm-{time.time()}"
+    with VirtualMachineForTests(
+        name=name,
+        namespace=namespace.name,
+        body=fedora_vm_body(name),
+        client=unprivileged_client,
+    ) as vm:
+        vm.start()
+        vm.vmi.wait_until_running()
+        yield vm
+
+
+@pytest.mark.polarion("CNV-3738")
+def test_validate_default_uninstall_strategy(kubevirt_resource):
+    strategy = kubevirt_resource.instance.spec.uninstallStrategy
+    assert strategy == "BlockUninstallIfWorkloadsExist", (
+        f"Default uninstall strategy is incorrect."
+        f"Expected 'BlockUninstallIfWorkloadsExist', found '{strategy}'"
+    )
+
+
+@pytest.mark.run(after="test_validate_default_install_strategy")
+@pytest.mark.polarion("CNV-3718")
+@pytest.mark.destructive
+def test_block_removal(kubevirt_resource, vm):
+    with pytest.raises(BadRequestError):
+        kubevirt_resource.delete()
+
+    assert (
+        kubevirt_resource.status == KubeVirt.Status.DEPLOYED
+        and vm.exists
+        and vm.vmi.status == vm.vmi.Status.RUNNING
+    )
+
+
+@pytest.mark.destructive
+@pytest.mark.polarion("CNV-3684")
+def test_remove_workloads(
+    set_uninstall_strategy_remove_workloads, kubevirt_resource, vm, default_client
+):
+    """WARNING: DESTRUCTIVE; DELETES ALL RUNNING CNV WORKLOADS"""
+
+    # deletion is hard to catch with this resource because HCO re-raises it instantly
+    # so we'll validate its deletion by comparing the uid before and after the
+    # deletion command is sent
+    old_uid = kubevirt_resource.instance.metadata.uid
+
+    kubevirt_resource.delete()
+
+    # ensure deletion instruction to KubeVirt resource resulted in deletion of the
+    # kubevirt cr AND all vms in the cluster
+    for sample in TimeoutSampler(
+        timeout=60,
+        sleep=5,
+        func=lambda: list(VirtualMachine.get(dyn_client=default_client))
+        or kubevirt_resource.instance.uid == old_uid,
+    ):
+        if not sample:
+            break
+
+    # HCO should redeploy the kubevirt cr; wait for this to finish
+    kubevirt_resource.wait_for_status(status=KubeVirt.Status.DEPLOYED, timeout=240)
+
+
+@pytest.mark.run(after="test_remove_workloads")
+@pytest.mark.polarion("CNV-3739")
+@pytest.mark.destructive
+def test_raise_vm_after_removal(vm):
+    assert vm.exists and vm.vmi.status == vm.vmi.Status.RUNNING
