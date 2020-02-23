@@ -11,6 +11,8 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 
 LOGGER = logging.getLogger(__name__)
+IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
+IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
 
 
 def set_iface_mtu(pod, port, mtu):
@@ -58,7 +60,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
             {
                 "name": self.vxlan_name,
                 "type": "vxlan",
-                "state": "up",
+                "state": IFACE_UP_STATE,
                 "vxlan": {
                     "id": self.vxlan_id,
                     "base-iface": self.base_interface,
@@ -85,7 +87,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
 
     def _absent_vxlan(self):
         res = self.to_dict()
-        res["spec"]["desiredState"]["interfaces"][0]["state"] = "absent"
+        res["spec"]["desiredState"]["interfaces"][0]["state"] = IFACE_ABSENT_STATE
         samples = TimeoutSampler(
             timeout=3,
             sleep=1,
@@ -151,7 +153,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             self.bridge = {
                 "name": self.bridge_name,
                 "type": self.bridge_type,
-                "state": "up",
+                "state": IFACE_UP_STATE,
                 "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
             }
 
@@ -255,7 +257,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
     def _absent_interface(self):
         for bridge in self.bridges:
-            bridge["state"] = "absent"
+            bridge["state"] = IFACE_ABSENT_STATE
             self.set_interface(bridge)
 
             if self._ipv4_dhcp:
@@ -367,7 +369,11 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
                     self.ports = {"name": ovs_iface_name}
                     break
 
-            ovs_iface = {"name": ovs_iface_name, "type": "ovs-interface", "state": "up"}
+            ovs_iface = {
+                "name": ovs_iface_name,
+                "type": "ovs-interface",
+                "state": IFACE_UP_STATE,
+            }
             res["spec"]["desiredState"]["interfaces"].append(ovs_iface)
             self.bridges.append(ovs_iface)
 

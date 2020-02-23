@@ -32,7 +32,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             self.bond = {
                 "name": self.bond_name,
                 "type": "bond",
-                "state": "up",
+                "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
                 "mtu": self.mtu,
                 "link-aggregation": {
                     "mode": "active-backup",
@@ -84,7 +84,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                         )
 
     def _absent_interface(self):
-        self.bond["state"] = "absent"
+        self.bond["state"] = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
         self.set_interface(self.bond)
         self.apply()
 

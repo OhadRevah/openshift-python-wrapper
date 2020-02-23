@@ -13,6 +13,12 @@ class NodeNetworkConfigurationPolicy(Resource):
 
     api_group = "nmstate.io"
 
+    class Interface:
+        class State:
+            UP = "up"
+            DOWN = "down"
+            ABSENT = "absent"
+
     def __init__(self, name, worker_pods, node_selector=None):
         super().__init__(name=name)
         self.desired_state = {"interfaces": []}
