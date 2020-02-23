@@ -107,7 +107,7 @@ def test_create_vm_with_cloned_data_volume_positive(
                     "metadata": dv_clone_dict["metadata"],
                     "spec": dv_clone_dict["spec"],
                 },
-                dv="dv",
+                dv=data_volume_clone_settings,
             ) as vm:
                 vm.start(wait=True)
 
@@ -158,7 +158,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
                         "metadata": dv_clone_dict["metadata"],
                         "spec": dv_clone_dict["spec"],
                     },
-                    dv="dv",
+                    dv=data_volume_clone_settings,
                 ):
                     return
 
@@ -206,7 +206,7 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
                         "metadata": dv_clone_dict["metadata"],
                         "spec": dv_clone_dict["spec"],
                     },
-                    dv="dv",
+                    dv=data_volume_clone_settings,
                 ):
                     return
 
@@ -251,6 +251,6 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
                     "metadata": dv_clone_dict["metadata"],
                     "spec": dv_clone_dict["spec"],
                 },
-                dv="dv",
+                dv=data_volume_clone_settings,
             ) as vm:
                 vm.start(wait=True)

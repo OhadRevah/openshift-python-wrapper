@@ -140,7 +140,7 @@ def vm_template_dv_rhel8(
             namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
-            template_dv=dv.name,
+            template_dv=dv,
         ) as vm:
             vm.start(wait=True)
             vm.vmi.wait_until_running()
@@ -217,7 +217,7 @@ def vm_win10(
             namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels_dict),
-            template_dv=dv.name,
+            template_dv=dv,
             networks=network_configuration if network_configuration else None,
             interfaces=sorted(network_configuration.keys())
             if network_configuration

@@ -183,7 +183,7 @@ def vm_for_upgrade(
         namespace=upgrade_namespace.name,
         client=default_client,
         labels=Template.generate_template_labels(**template_labels_dict),
-        template_dv=data_volume.name,
+        template_dv=data_volume,
         networks=networks,
         interfaces=sorted(networks.keys()),
     ) as vm:

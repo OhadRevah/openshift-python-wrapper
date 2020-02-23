@@ -304,8 +304,14 @@ class VirtualMachineForTests(VirtualMachine):
                 "disks", []
             ).append({"disk": {"bus": "virtio"}, "name": "dv-disk"})
             spec.setdefault("volumes", []).append(
-                {"name": "dv-disk", "dataVolume": {"name": self.dv}}
+                {"name": "dv-disk", "dataVolume": {"name": self.dv.name}}
             )
+            # For hpp - DV and VM must reside on the same node
+            if (
+                self.dv.storage_class == "hostpath-provisioner"
+                and not self.node_selector
+            ):
+                spec["nodeSelector"] = {"kubernetes.io/hostname": self.dv.hostpath_node}
 
         if self.machine_type:
             spec.setdefault("domain", {}).setdefault("machine", {})[
@@ -375,18 +381,27 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.template_dv = template_dv
         self.vm_dict = vm_dict
         self.cpu_threads = cpu_threads
+        self.node_selector = node_selector
 
     def to_dict(self):
         self.body = self.process_template()
         res = super().to_dict()
         if self.vm_dict:
             res = merge_dicts(self.vm_dict, res)
+        # For hpp, DV and VM must reside on the same node
+        if (
+            self.template_dv.storage_class == "hostpath-provisioner"
+            and not self.node_selector
+        ):
+            res["spec"]["template"]["spec"]["nodeSelector"] = {
+                "kubernetes.io/hostname": self.template_dv.hostpath_node
+            }
         return res
 
     def process_template(self):
         template_instance = self.get_template_by_labels()
         resources_list = template_instance.process(
-            **{"NAME": self.name, "PVCNAME": self.template_dv}
+            **{"NAME": self.name, "PVCNAME": self.template_dv.name}
         )
         for resource in resources_list:
             if (

@@ -24,7 +24,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-HPP_NODE_INDEX = 0
 
 """
 RHEL7 fixtures and network configuration
@@ -162,8 +161,6 @@ def vm_instance_from_template(
     data_volume,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes,
-    storage_class_matrix,
 ):
     """ Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
@@ -179,7 +176,7 @@ def vm_instance_from_template(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
-        template_dv=data_volume.name,
+        template_dv=data_volume,
         vm_dict=request.param.get("vm_dict"),
         cpu_threads=request.param.get("cpu_threads"),
         network_model=request.param.get("network_model"),
@@ -189,10 +186,6 @@ def vm_instance_from_template(
         if network_configuration
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
-        # In hpp, volume must reside on the same worker as the VM
-        node_selector=schedulable_nodes[HPP_NODE_INDEX].name
-        if [*storage_class_matrix][0] == "hostpath-provisioner"
-        else None,
     ) as vm:
         if request.param.get("start_vm", True):
             vm.start(wait=True)
@@ -210,8 +203,6 @@ def vm_instance_from_template_scope_function(
     data_volume_scope_function,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes,
-    storage_class_matrix,
 ):
     """ Calls vm_instance_from_template contextmanager
 
@@ -225,8 +216,6 @@ def vm_instance_from_template_scope_function(
         data_volume=data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-        schedulable_nodes=schedulable_nodes,
-        storage_class_matrix=storage_class_matrix,
     )
 
 
@@ -238,8 +227,6 @@ def vm_instance_from_template_scope_class(
     data_volume_scope_class,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes,
-    storage_class_matrix,
 ):
     """ Calls vm_instance_from_template contextmanager
 
@@ -253,8 +240,6 @@ def vm_instance_from_template_scope_class(
         data_volume=data_volume_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-        schedulable_nodes=schedulable_nodes,
-        storage_class_matrix=storage_class_matrix,
     )
 
 
@@ -265,8 +250,6 @@ def vm_object_from_template(
     data_volume_scope_class,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes,
-    storage_class_matrix,
 ):
     """ Instantiate a VM object
 
@@ -278,7 +261,7 @@ def vm_object_from_template(
         name=request.param["vm_name"].replace(".", "-").lower(),
         namespace=namespace.name,
         client=unprivileged_client,
-        template_dv=data_volume_scope_class.name,
+        template_dv=data_volume_scope_class,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         vm_dict=request.param.get("vm_dict"),
         cpu_threads=request.param.get("cpu_threads"),
@@ -289,10 +272,6 @@ def vm_object_from_template(
         if network_configuration
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
-        # In hpp, volume must reside on the same worker as the VM
-        node_selector=schedulable_nodes[HPP_NODE_INDEX].name
-        if [*storage_class_matrix][0] == "hostpath-provisioner"
-        else None,
     )
 
 
@@ -304,8 +283,6 @@ def vm_object_from_template_scope_function(
     data_volume_scope_function,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes,
-    storage_class_matrix,
 ):
     return vm_object_from_template(
         request,
@@ -314,8 +291,6 @@ def vm_object_from_template_scope_function(
         data_volume_scope_class=data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-        schedulable_nodes=schedulable_nodes,
-        storage_class_matrix=storage_class_matrix,
     )
 
 
@@ -327,8 +302,6 @@ def vm_object_from_template_scope_class(
     data_volume_scope_class,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes,
-    storage_class_matrix,
 ):
     return vm_object_from_template(
         request,
@@ -337,8 +310,6 @@ def vm_object_from_template_scope_class(
         data_volume_scope_class=data_volume_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-        schedulable_nodes=schedulable_nodes,
-        storage_class_matrix=storage_class_matrix,
     )
 
 

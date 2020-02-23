@@ -98,8 +98,8 @@ def test_public_registry_multiple_data_volume(storage_ns):
         for dv in dvs:
             dv.wait_for_status(status=rdv.Status.SUCCEEDED, timeout=300)
 
-        for vm in [vm.name for vm in dvs]:
-            rvm = VirtualMachineForTests(name=vm, namespace=storage_ns.name, dv=vm)
+        for vm in [vm for vm in dvs]:
+            rvm = VirtualMachineForTests(name=vm.name, namespace=storage_ns.name, dv=vm)
             rvm.create(wait=True)
             vms.append(rvm)
 
