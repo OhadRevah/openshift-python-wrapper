@@ -28,7 +28,7 @@ VM_NAME = "rhel-7.6"
             {
                 "vm_name": VM_NAME,
                 "template_labels": {
-                    "os": "rhel7.0",
+                    "os": "rhel7.6",
                     "workload": "server",
                     "flavor": "tiny",
                 },
