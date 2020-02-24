@@ -36,6 +36,7 @@ class Images:
         RHEL7_8_IMG = "rhel-78.qcow2"
         RHEL8_0_IMG = "rhel-8.qcow2"
         RHEL8_1_IMG = "rhel-81.qcow2"
+        RHEL8_2_IMG = "rhel-82.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/rhel-images"
 
     class Windows:
