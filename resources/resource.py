@@ -354,8 +354,8 @@ class Resource(object):
         Args:
             timeout (int): Time to wait for the resource.
 
-        Returns:
-            bool: True if resource is gone, False if timeout reached.
+        Raises:
+            TimeoutExpiredError: If resource still exists.
         """
         LOGGER.info(f"Wait until {self.kind} {self.name} is deleted")
         return self._client_wait_deleted(timeout)

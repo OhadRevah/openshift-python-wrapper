@@ -177,11 +177,36 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
         super().__init__(name=name, namespace=namespace, client=client)
         self._store_login_information(username, password)
 
+    @property
+    def _subresource_api_url(self):
+        return (
+            f"{self.client.configuration.host}/"
+            f"apis/subresources.kubevirt.io/{self.api().api_version}/"
+            f"namespaces/{self.namespace}/virtualmachineinstances/{self.name}"
+        )
+
     def to_dict(self):
         res = super().to_dict()
         self._add_login_annotation(vmi=res)
-
         return res
+
+    def pause(self, timeout=TIMEOUT, wait=False):
+        self.client.client.request(
+            "PUT",
+            f"{self._subresource_api_url}/pause",
+            headers=self.client.configuration.api_key,
+        )
+        if wait:
+            return self.wait_until_paused(timeout=timeout)
+
+    def unpause(self, timeout=TIMEOUT, wait=False):
+        self.client.client.request(
+            "PUT",
+            f"{self._subresource_api_url}/unpause",
+            headers=self.client.configuration.api_key,
+        )
+        if wait:
+            return self.wait_until_running()
 
     @property
     def interfaces(self):
@@ -235,6 +260,27 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
             raise
 
+    def wait_until_paused(self, timeout=TIMEOUT):
+        """
+        Wait for Virtual Machine Instance to be Paused.
+
+        Args:
+            timeout (int): Time to wait for the resource.
+
+        Raises:
+            TimeoutExpiredError: If resource not exists.
+        """
+        LOGGER.info(f"Wait until {self.kind} {self.name} is paused")
+        samples = TimeoutSampler(
+            timeout=timeout,
+            sleep=1,
+            exceptions=(ProtocolError),
+            func=self.get_domstate,
+        )
+        for sample in samples:
+            if "paused" in sample:
+                return
+
     @property
     def node(self):
         """
@@ -254,6 +300,21 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
         """
         return self.virt_launcher_pod.execute(
             command=["virsh", "dumpxml", f"{self.namespace}_{self.name}"],
+            container="compute",
+        )
+
+    def get_domstate(self):
+        """
+        Get virtual machine instance Status.
+
+        Current workaround, as VM/VMI shows no status/phase == Paused yet.
+        Bug: https://bugzilla.redhat.com/show_bug.cgi?id=1805178
+
+        Returns:
+            String: VMI Status as string
+        """
+        return self.virt_launcher_pod.execute(
+            command=["virsh", "domstate", f"{self.namespace}_{self.name}"],
             container="compute",
         )
 
