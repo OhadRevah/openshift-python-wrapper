@@ -558,7 +558,7 @@ class Resource(object):
         Args:
             resource_dict: Resource dictionary
         """
-        LOGGER.info(f"Update {self.kind} {self.name}")
+        LOGGER.info(f"Update {self.kind} {self.name}: {resource_dict}")
         self.api().patch(
             body=resource_dict,
             namespace=self.namespace,
