@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from .resource import NamespacedResource
+from .resource import Resource
 
 
-class ClusterRoleBinding(NamespacedResource):
+class ClusterRoleBinding(Resource):
     """
     ClusterRoleBinding object.
     """
