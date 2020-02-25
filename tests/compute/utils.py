@@ -79,7 +79,7 @@ def execute_winrm_in_vm(target_vm, helper_vm, cmd):
     ).split(" ")
 
     ssh_user = user.User(
-        name=console.Fedora._USERNAME, password=console.Fedora._PASSWORD,
+        name=console.Fedora.USERNAME, password=console.Fedora.PASSWORD,
     )
 
     return ssh.RemoteExecutor(

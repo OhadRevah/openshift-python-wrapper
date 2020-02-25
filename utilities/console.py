@@ -9,7 +9,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Console(object):
-    _USERNAME = _PASSWORD = None
+    USERNAME = PASSWORD = None
 
     def __init__(self, vm, username=None, password=None, timeout=30):
         """
@@ -27,8 +27,8 @@ class Console(object):
                 vmc.expect('some output')
         """
         self.vm = vm
-        self.username = username or self._USERNAME
-        self.password = password or self._PASSWORD
+        self.username = username or self.USERNAME
+        self.password = password or self.PASSWORD
         self.timeout = timeout
         self.child = None
         self.prompt = "#" if self.username == "root" else "$"
@@ -114,20 +114,20 @@ class Console(object):
 
 
 class Fedora(Console):
-    _USERNAME = "fedora"
-    _PASSWORD = "fedora"
+    USERNAME = "fedora"
+    PASSWORD = "fedora"
 
 
 class Cirros(Console):
-    _USERNAME = "cirros"
-    _PASSWORD = "gocubsgo"
+    USERNAME = "cirros"
+    PASSWORD = "gocubsgo"
 
 
 class Alpine(Console):
-    _USERNAME = "root"
-    _PASSWORD = None
+    USERNAME = "root"
+    PASSWORD = None
 
 
 class RHEL(Console):
-    _USERNAME = "cloud-user"
-    _PASSWORD = "redhat"
+    USERNAME = "cloud-user"
+    PASSWORD = "redhat"

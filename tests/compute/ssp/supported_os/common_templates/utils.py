@@ -177,7 +177,7 @@ def check_ssh_connection(ip, port, console_impl):
 
     LOGGER.info("Check SSH connection to VM.")
 
-    ssh_user = user.User(name=console_impl._USERNAME, password=console_impl._PASSWORD,)
+    ssh_user = user.User(name=console_impl.USERNAME, password=console_impl.PASSWORD,)
     return ssh.RemoteExecutor(
         user=ssh_user, address=str(ip), port=port
     ).wait_for_connectivity_state(
