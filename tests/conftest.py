@@ -359,8 +359,10 @@ def default_client():
 
 @pytest.fixture(scope="session")
 def unprivileged_secret(default_client):
-    if py_config["distribution"] == "upstream":
-        yield
+    if py_config["distribution"] == "upstream" or py_config.get(
+        "no_unprivileged_client"
+    ):
+        return False
 
     else:
         password = UNPRIVILEGED_PASSWORD.encode()
@@ -371,7 +373,7 @@ def unprivileged_secret(default_client):
             namespace="openshift-config",
             htpasswd=base64.b64encode(crypto_credentials).decode(),
         ):
-            yield
+            return True
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -381,9 +383,7 @@ def unprivileged_client(default_client, unprivileged_secret):
     """
     # To disable unprivileged_client pass --tc=no_unprivileged_client:True to pytest commandline.
 
-    if py_config["distribution"] == "upstream" or py_config.get(
-        "no_unprivileged_client"
-    ):
+    if not unprivileged_secret:
         return
 
     # Update identity provider
