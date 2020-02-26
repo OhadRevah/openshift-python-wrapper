@@ -122,8 +122,11 @@ class VirtualMachineForTests(VirtualMachine):
         network_model=None,
         network_multiqueue=None,
         data_volume_template=None,
+        teardown=True,
     ):
-        super().__init__(name=name, namespace=namespace, client=client)
+        super().__init__(
+            name=name, namespace=namespace, client=client, teardown=teardown
+        )
         self.body = body
         self.interfaces = interfaces or []
         self.service_accounts = service_accounts or []
@@ -326,7 +329,7 @@ class VirtualMachineForTests(VirtualMachine):
 
     def ssh_enable(self):
         self.ssh_service = SSHServiceForVirtualMachineForTests(
-            name=f"ssh-{self.name}", namespace=self.namespace, vm_name=self.name,
+            name=f"ssh-{self.name}", namespace=self.namespace, vm_name=self.name
         )
         self.ssh_service.create(wait=True)
         self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
@@ -527,8 +530,8 @@ def kubernetes_taint_exists(node):
 
 
 class SSHServiceForVirtualMachineForTests(Service):
-    def __init__(self, name, namespace, vm_name):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, vm_name, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self._vm_name = vm_name
 
     def to_dict(self):
@@ -543,8 +546,8 @@ class SSHServiceForVirtualMachineForTests(Service):
 
 
 class CustomServiceForVirtualMachineForTests(Service):
-    def __init__(self, name, namespace, vm_name, port):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, vm_name, port, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self._vm_name = vm_name
         self.port = port
 
@@ -613,7 +616,7 @@ class Prometheus(object):
 
     def query(self, query):
         response = requests.get(
-            f"{self.api_url}/{query}", headers=self.headers, verify=False,
+            f"{self.api_url}/{query}", headers=self.headers, verify=False
         )
 
         # parse json response and return as dict

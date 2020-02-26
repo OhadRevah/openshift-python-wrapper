@@ -118,8 +118,11 @@ class DataVolume(NamespacedResource):
         hostpath_node=None,
         source_pvc=None,
         source_namespace=None,
+        teardown=True,
     ):
-        super().__init__(name=name, namespace=namespace, client=client)
+        super().__init__(
+            name=name, namespace=namespace, client=client, teardown=teardown
+        )
         self.source = source
         self.url = url
         self.cert_configmap = cert_configmap

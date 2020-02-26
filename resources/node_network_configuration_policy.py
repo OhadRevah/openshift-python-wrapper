@@ -19,8 +19,8 @@ class NodeNetworkConfigurationPolicy(Resource):
             DOWN = "down"
             ABSENT = "absent"
 
-    def __init__(self, name, worker_pods, node_selector=None):
-        super().__init__(name=name)
+    def __init__(self, name, worker_pods, node_selector=None, teardown=True):
+        super().__init__(name=name, teardown=teardown)
         self.desired_state = {"interfaces": []}
         self.node_selector = node_selector
         self.worker_pods = worker_pods

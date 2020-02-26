@@ -11,8 +11,8 @@ class NodeMaintenance(Resource):
     class Status(Resource.Status):
         RUNNING = "Running"
 
-    def __init__(self, name, node=None, reason="TEST Reason"):
-        super().__init__(name)
+    def __init__(self, name, node=None, reason="TEST Reason", teardown=True):
+        super().__init__(name, teardown=teardown)
         self.node = node
         self.reason = reason
 

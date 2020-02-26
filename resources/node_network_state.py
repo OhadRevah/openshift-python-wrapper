@@ -17,8 +17,8 @@ class NodeNetworkState(Resource):
 
     api_group = "nmstate.io"
 
-    def __init__(self, name):
-        super().__init__(name=name)
+    def __init__(self, name, teardown=True):
+        super().__init__(name=name, teardown=teardown)
         status = self.instance.to_dict()["status"]
         if "desiredState" in status:
             self.desired_state = status["desiredState"]

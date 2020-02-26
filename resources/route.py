@@ -14,8 +14,10 @@ class Route(NamespacedResource):
 
     api_group = "route.openshift.io"
 
-    def __init__(self, name, namespace, service=None, destination_ca_cert=None):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(
+        self, name, namespace, service=None, destination_ca_cert=None, teardown=True
+    ):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.service = service
         self.destination_ca_cert = destination_ca_cert
 

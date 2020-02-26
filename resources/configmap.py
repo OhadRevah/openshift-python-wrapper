@@ -8,8 +8,8 @@ class ConfigMap(NamespacedResource):
 
     api_version = "v1"
 
-    def __init__(self, name, namespace, cert_name=None, data=None):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, cert_name=None, data=None, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.cert_name = cert_name
         self.data = data
 

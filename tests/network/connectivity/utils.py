@@ -15,10 +15,21 @@ LOGGER = logging.getLogger(__name__)
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
-        self, name, bond_name, nics, nodes, worker_pods, node_selector=None, mtu=None
+        self,
+        name,
+        bond_name,
+        nics,
+        nodes,
+        worker_pods,
+        node_selector=None,
+        mtu=None,
+        teardown=True,
     ):
         super().__init__(
-            name=name, worker_pods=worker_pods, node_selector=node_selector
+            name=name,
+            worker_pods=worker_pods,
+            node_selector=node_selector,
+            teardown=teardown,
         )
         self.bond_name = bond_name
         self.nodes = nodes
@@ -68,9 +79,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self._absent_interface()
         self.wait_for_bond_deleted()
         self.delete()
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        self.clean_up()
         if self.mtu:
             for pod in self.worker_pods:
                 # Restore MTU
@@ -82,6 +90,11 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                         LOGGER.error(
                             f"Failed to restore MTU to {mtu} on {pod.node.name}"
                         )
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        if not self.teardown:
+            return
+        self.clean_up()
 
     def _absent_interface(self):
         self.bond["state"] = NodeNetworkConfigurationPolicy.Interface.State.ABSENT

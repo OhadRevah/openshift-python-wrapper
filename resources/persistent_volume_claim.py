@@ -37,8 +37,9 @@ class PersistentVolumeClaim(NamespacedResource):
         accessmodes=None,
         size=None,
         hostpath_node=None,
+        teardown=True,
     ):
-        super().__init__(name=name, namespace=namespace)
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.accessmodes = accessmodes
         self.size = size
         self.hostpath_node = hostpath_node

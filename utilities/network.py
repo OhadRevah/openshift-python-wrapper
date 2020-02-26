@@ -30,9 +30,13 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
         dst_port=4790,
         remote="226.100.100.100",
         node_selector=None,
+        teardown=True,
     ):
         super().__init__(
-            name=name, worker_pods=worker_pods, node_selector=node_selector
+            name=name,
+            worker_pods=worker_pods,
+            node_selector=node_selector,
+            teardown=teardown,
         )
         self.vxlan_name = vxlan_name
         self.vxlan_id = vxlan_id
@@ -52,6 +56,8 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
             raise
 
     def __exit__(self, exception_type, exception_value, traceback):
+        if not self.teardown:
+            return
         self.clean_up()
 
     def to_dict(self):
@@ -116,6 +122,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         mtu=None,
         node_selector=None,
         ipv4_dhcp=False,
+        teardown=True,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -131,7 +138,10 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv4_dhcp: determines if ipv4_dhcp should be used
         """
         super().__init__(
-            name=name, worker_pods=worker_pods, node_selector=node_selector
+            name=name,
+            worker_pods=worker_pods,
+            node_selector=node_selector,
+            teardown=teardown,
         )
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
@@ -195,6 +205,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             raise
 
     def __exit__(self, exception_type, exception_value, traceback):
+        if not self.teardown:
+            return
         self.clean_up()
 
     @property
@@ -304,6 +316,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         mtu=None,
         node_selector=None,
         ipv4_dhcp=None,
+        teardown=True,
     ):
         super().__init__(
             name,
@@ -315,6 +328,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             mtu=mtu,
             node_selector=node_selector,
             ipv4_dhcp=ipv4_dhcp,
+            teardown=teardown,
         )
 
     def __enter__(self):
@@ -341,6 +355,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         mtu=None,
         node_selector=None,
         ipv4_dhcp=None,
+        teardown=True,
     ):
         super().__init__(
             name,
@@ -352,6 +367,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             mtu=mtu,
             node_selector=node_selector,
             ipv4_dhcp=ipv4_dhcp,
+            teardown=teardown,
         )
 
     def to_dict(self):
@@ -382,9 +398,19 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 
 class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
     def __init__(
-        self, name, namespace, bridge_name, cni_type, vlan=None, client=None, mtu=None
+        self,
+        name,
+        namespace,
+        bridge_name,
+        cni_type,
+        vlan=None,
+        client=None,
+        mtu=None,
+        teardown=True,
     ):
-        super().__init__(name=name, namespace=namespace, client=client)
+        super().__init__(
+            name=name, namespace=namespace, client=client, teardown=teardown
+        )
 
         # An object must not be created as type BridgeNetworkAttachmentDefinition, but only as one of its successors.
         sub_lvl = sub_resource_level(
@@ -427,8 +453,11 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         client=None,
         mtu=None,
         tuning_type=None,
+        teardown=True,
     ):
-        super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
+        super().__init__(
+            name, namespace, bridge_name, cni_type, vlan, client, mtu, teardown=teardown
+        )
         self.tuning_type = tuning_type
 
     def to_dict(self):
@@ -460,8 +489,11 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         vlan=None,
         client=None,
         mtu=None,
+        teardown=True,
     ):
-        super().__init__(name, namespace, bridge_name, cni_type, vlan, client, mtu)
+        super().__init__(
+            name, namespace, bridge_name, cni_type, vlan, client, mtu, teardown=teardown
+        )
 
     def to_dict(self):
         res = super().to_dict()

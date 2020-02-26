@@ -9,9 +9,15 @@ class Secret(NamespacedResource):
     api_version = "v1"
 
     def __init__(
-        self, name, namespace, accesskeyid=None, secretkey=None, htpasswd=None
+        self,
+        name,
+        namespace,
+        accesskeyid=None,
+        secretkey=None,
+        htpasswd=None,
+        teardown=True,
     ):
-        super().__init__(name=name, namespace=namespace)
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.accesskeyid = accesskeyid
         self.secretkey = secretkey
         self.htpasswd = htpasswd

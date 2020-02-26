@@ -17,13 +17,14 @@ from utilities.virt import (
 
 
 class VirtualMachineMasquerade(VirtualMachineForTests):
-    def __init__(self, name, namespace, node_selector, client=None):
+    def __init__(self, name, namespace, node_selector, client=None, teardown=True):
         super().__init__(
             name=name,
             namespace=namespace,
             node_selector=node_selector,
             client=client,
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+            teardown=teardown,
         )
 
     def to_dict(self):
@@ -42,8 +43,8 @@ class VirtualMachineMasquerade(VirtualMachineForTests):
 
 
 class ApplyNetworkPolicy(NetworkPolicy):
-    def __init__(self, name, namespace, ports=None):
-        super().__init__(name, namespace)
+    def __init__(self, name, namespace, ports=None, teardown=True):
+        super().__init__(name, namespace, teardown=teardown)
         self.ports = ports
 
     def to_dict(self):

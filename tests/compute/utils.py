@@ -14,8 +14,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class WinRMcliPod(Pod):
-    def __init__(self, name, namespace, node_selector=None):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, node_selector=None, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.node_selector = node_selector
 
     def to_dict(self):
@@ -48,7 +48,7 @@ def vm_started(vm, wait_for_interfaces=True):
 
 
 def execute_winrm_cmd(
-    vmi_ip, winrmcli_pod, cmd, timeout=20, target_vm=False, helper_vm=False,
+    vmi_ip, winrmcli_pod, cmd, timeout=20, target_vm=False, helper_vm=False
 ):
     if helper_vm:
         LOGGER.info(f"Running {cmd} via helper VM.")
@@ -105,7 +105,7 @@ def nmcli_add_con_cmds(iface, ip, default_gw, dns_server):
     else:
         bootcmds += [
             f"nmcli con mod {iface} ipv4.addresses {ip}/24 "
-            f"ipv4.method manual connection.autoconnect-priority 1 ipv6.method ignore",
+            f"ipv4.method manual connection.autoconnect-priority 1 ipv6.method ignore"
         ]
     bootcmds += [f"nmcli con up {iface}"]
 

@@ -230,7 +230,7 @@ class Resource(object):
         SUCCEEDED = "Succeeded"
         FAILED = "Failed"
 
-    def __init__(self, name, client=None):
+    def __init__(self, name, client=None, teardown=True):
         """
         Create a API resource
 
@@ -257,6 +257,8 @@ class Resource(object):
                 raise
         if not self.api_version:
             self._get_api_version()
+
+        self.teardown = teardown
 
     def _get_api_version(self):
         res = _find_supported_resource(self.client, self.api_group, self.kind)
@@ -291,6 +293,11 @@ class Resource(object):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
+        if not self.teardown:
+            return
+        self.clean_up()
+
+    def clean_up(self):
         if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") == "1":
             try:
                 _collect_data(resource_object=self)
@@ -650,8 +657,8 @@ class NamespacedResource(Resource):
     Namespaced object, inherited from Resource.
     """
 
-    def __init__(self, name, namespace, client=None):
-        super().__init__(name=name, client=client)
+    def __init__(self, name, namespace, client=None, teardown=True):
+        super().__init__(name=name, client=client, teardown=teardown)
         self.namespace = namespace
 
     @classmethod

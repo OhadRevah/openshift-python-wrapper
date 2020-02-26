@@ -34,8 +34,8 @@ def http_port_accessible(vm, server_ip):
 
 
 class HTTPService(Service):
-    def __init__(self, name, namespace, vmi):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, vmi, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self._vmi = vmi
 
     def to_dict(self):

@@ -67,7 +67,7 @@ def upload_token_request(storage_ns_name, pvc_name, data):
         token = utr.create().status.token
         LOGGER.info("Ensure upload was successful")
         sampler = TimeoutSampler(
-            timeout=120, sleep=5, func=upload_image, token=token, data=data,
+            timeout=120, sleep=5, func=upload_image, token=token, data=data
         )
         for sample in sampler:
             if sample == 200:
@@ -75,8 +75,8 @@ def upload_token_request(storage_ns_name, pvc_name, data):
 
 
 class PodWithPVC(Pod):
-    def __init__(self, name, namespace, pvc_name, volume_mode):
-        super().__init__(name=name, namespace=namespace)
+    def __init__(self, name, namespace, pvc_name, volume_mode, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self._pvc_name = pvc_name
         self._volume_mode = volume_mode
 
@@ -141,9 +141,7 @@ def create_vm_from_dv(dv, vm_name="cirros-vm", image=None, start=True):
         yield vm
 
 
-def virtctl_upload(
-    namespace, pvc_name, pvc_size, image_path, storage_class=None,
-):
+def virtctl_upload(namespace, pvc_name, pvc_size, image_path, storage_class=None):
     command = [
         "image-upload",
         f"--image-path={image_path}",

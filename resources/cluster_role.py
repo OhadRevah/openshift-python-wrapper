@@ -11,9 +11,14 @@ class ClusterRole(Resource):
     api_group = "rbac.authorization.k8s.io"
 
     def __init__(
-        self, name, api_groups=None, permissions_to_resources=None, verbs=None
+        self,
+        name,
+        api_groups=None,
+        permissions_to_resources=None,
+        verbs=None,
+        teardown=True,
     ):
-        super().__init__(name=name)
+        super().__init__(name=name, teardown=teardown)
         self.api_groups = api_groups
         self.permissions_to_resources = permissions_to_resources
         self.verbs = verbs

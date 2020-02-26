@@ -64,8 +64,12 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     api_group = API_GROUP
 
-    def __init__(self, name, namespace, client=None, username=None, password=None):
-        super().__init__(name=name, namespace=namespace, client=client)
+    def __init__(
+        self, name, namespace, client=None, username=None, password=None, teardown=True
+    ):
+        super().__init__(
+            name=name, namespace=namespace, client=client, teardown=teardown
+        )
         self._store_login_information(username, password)
 
     @property
@@ -328,8 +332,10 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 class VirtualMachineInstanceMigration(NamespacedResource):
     api_group = API_GROUP
 
-    def __init__(self, name, namespace, vmi=None, client=None):
-        super().__init__(name=name, namespace=namespace, client=client)
+    def __init__(self, name, namespace, vmi=None, client=None, teardown=True):
+        super().__init__(
+            name=name, namespace=namespace, client=client, teardown=teardown
+        )
         self._vmi = vmi
 
     def to_dict(self):
