@@ -58,9 +58,7 @@ def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None
         "dv_name": request.param["dv_name"].replace(".", "-").lower(),
         "namespace": namespace.name,
         "source": source,
-        "size": request.param.get(
-            "dv_size", "38Gi" if "win" in request.param["dv_name"] else "25Gi"
-        ),
+        "size": request.param.get("dv_size", "38Gi" if "win" in image else "25Gi"),
         "storage_class": request.param.get("storage_class", storage_class),
         "access_modes": request.param.get(
             "access_modes", storage_class_matrix[storage_class]["access_mode"]
@@ -81,5 +79,5 @@ def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None
 
     # Create dv
     with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
-        dv.wait(timeout=1800 if "win" in request.param["dv_name"] else 1200)
+        dv.wait(timeout=1800 if "win" in image else 1200)
         yield dv

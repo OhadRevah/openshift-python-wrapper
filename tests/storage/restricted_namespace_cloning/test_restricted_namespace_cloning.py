@@ -6,7 +6,6 @@ import logging
 
 import pytest
 from kubernetes.client.rest import ApiException
-from pytest_testconfig import config as py_config
 from tests.storage import utils
 from tests.storage.utils import set_permissions
 from utilities.storage import create_dv
@@ -17,8 +16,9 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.polarion("CNV-2688")
 def test_unprivileged_user_clone_same_namespace_negative(
-    storage_ns, data_volume, unprivileged_client
+    storage_class_matrix, storage_ns, data_volume, unprivileged_client
 ):
+    storage_class = [*storage_class_matrix][0]
     with pytest.raises(
         ApiException,
         match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
@@ -28,8 +28,8 @@ def test_unprivileged_user_clone_same_namespace_negative(
             namespace=storage_ns.name,
             source="pvc",
             size="500Mi",
-            storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
+            storage_class=storage_class,
+            volume_mode=storage_class_matrix[storage_class]["volume_mode"],
             source_pvc=data_volume.pvc.name,
             source_namespace=storage_ns.name,
             client=unprivileged_client,
@@ -39,8 +39,14 @@ def test_unprivileged_user_clone_same_namespace_negative(
 
 @pytest.mark.polarion("CNV-2768")
 def test_unprivileged_user_clone_same_namespace_positive(
-    storage_ns, data_volume, unprivileged_client, unprivileged_user_username, api_group
+    storage_class_matrix,
+    storage_ns,
+    data_volume,
+    unprivileged_client,
+    unprivileged_user_username,
+    api_group,
 ):
+    storage_class = [*storage_class_matrix][0]
     with set_permissions(
         role_name="datavolume-cluster-role",
         verbs=["*"],
@@ -56,8 +62,8 @@ def test_unprivileged_user_clone_same_namespace_positive(
             namespace=storage_ns.name,
             source="pvc",
             size="500Mi",
-            storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
+            storage_class=storage_class,
+            volume_mode=storage_class_matrix[storage_class]["volume_mode"],
             source_pvc=data_volume.pvc.name,
             source_namespace=storage_ns.name,
             client=unprivileged_client,
@@ -69,8 +75,9 @@ def test_unprivileged_user_clone_same_namespace_positive(
 
 @pytest.mark.polarion("CNV-2690")
 def test_unprivileged_user_clone_different_namespaces_negative(
-    storage_ns, data_volume, unprivileged_client, dst_ns
+    storage_class_matrix, storage_ns, data_volume, unprivileged_client, dst_ns
 ):
+    storage_class = [*storage_class_matrix][0]
     with pytest.raises(
         ApiException,
         match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
@@ -80,8 +87,8 @@ def test_unprivileged_user_clone_different_namespaces_negative(
             namespace=dst_ns.name,
             source="pvc",
             size="500Mi",
-            storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
+            storage_class=storage_class,
+            volume_mode=storage_class_matrix[storage_class]["volume_mode"],
             source_pvc=data_volume.pvc.name,
             source_namespace=storage_ns.name,
             client=unprivileged_client,
@@ -128,6 +135,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
     ],
 )
 def test_user_permissions_positive(
+    storage_class_matrix,
     storage_ns,
     data_volume,
     dst_ns,
@@ -137,6 +145,7 @@ def test_user_permissions_positive(
     unprivileged_user_username,
     api_group,
 ):
+    storage_class = [*storage_class_matrix][0]
     with set_permissions(
         role_name="datavolume-cluster-role-src",
         verbs=permissions_src[1],
@@ -162,8 +171,8 @@ def test_user_permissions_positive(
                 namespace=dst_ns.name,
                 source="pvc",
                 size="500Mi",
-                storage_class=py_config["default_storage_class"],
-                volume_mode=py_config["default_volume_mode"],
+                storage_class=storage_class,
+                volume_mode=storage_class_matrix[storage_class]["volume_mode"],
                 source_pvc=data_volume.pvc.name,
                 source_namespace=storage_ns.name,
                 client=unprivileged_client,
@@ -197,6 +206,7 @@ def test_user_permissions_positive(
     ],
 )
 def test_user_permissions_negative(
+    storage_class_matrix,
     storage_ns,
     data_volume,
     dst_ns,
@@ -206,6 +216,7 @@ def test_user_permissions_negative(
     unprivileged_user_username,
     api_group,
 ):
+    storage_class = [*storage_class_matrix][0]
     with set_permissions(
         role_name="datavolume-cluster-role-src",
         verbs=permissions_src[1],
@@ -235,8 +246,8 @@ def test_user_permissions_negative(
                     namespace=dst_ns.name,
                     source="pvc",
                     size="500Mi",
-                    storage_class=py_config["default_storage_class"],
-                    volume_mode=py_config["default_volume_mode"],
+                    storage_class=storage_class,
+                    volume_mode=storage_class_matrix[storage_class]["volume_mode"],
                     source_pvc=data_volume.pvc.name,
                     source_namespace=storage_ns.name,
                     client=unprivileged_client,
@@ -246,6 +257,7 @@ def test_user_permissions_negative(
 
 @pytest.mark.polarion("CNV-2792")
 def test_user_permissions_only_for_dst_ns_negative(
+    storage_class_matrix,
     storage_ns,
     data_volume,
     dst_ns,
@@ -253,6 +265,7 @@ def test_user_permissions_only_for_dst_ns_negative(
     unprivileged_user_username,
     api_group,
 ):
+    storage_class = [*storage_class_matrix][0]
     with set_permissions(
         role_name="datavolume-cluster-role-dst",
         verbs=["*"],
@@ -272,8 +285,8 @@ def test_user_permissions_only_for_dst_ns_negative(
                 namespace=dst_ns.name,
                 source="pvc",
                 size="500Mi",
-                storage_class=py_config["default_storage_class"],
-                volume_mode=py_config["default_volume_mode"],
+                storage_class=storage_class,
+                volume_mode=storage_class_matrix[storage_class]["volume_mode"],
                 source_pvc=data_volume.pvc.name,
                 source_namespace=storage_ns.name,
                 client=unprivileged_client,
