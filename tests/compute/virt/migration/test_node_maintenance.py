@@ -75,6 +75,7 @@ def drain_using_console_windows(
         boot_time_after_migration = check_windows_boot_time(
             vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
         )
+        LOGGER.info(f"Windows boot time after migration: {boot_time_after_migration}")
         assert (
             boot_time_after_migration == windows_initial_boot_time
         ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
@@ -109,6 +110,7 @@ def windows_initial_boot_time(
         winrmcli_pod=winrmcli_pod,
         helper_vm=bridge_attached_helper_vm,
     )
+    LOGGER.info(f"VM initial boot time: {boot_time}")
     yield boot_time
 
 
@@ -170,25 +172,6 @@ def check_draining_process(default_client, source_pod, vm):
     assert target_node != source_node, "Source Node and Target Node should be different"
 
 
-@pytest.mark.polarion("CNV-2286")
-def test_node_maintenance_job(
-    skip_when_one_node, vm_container_disk_fedora, default_client,
-):
-    source_pod = vm_container_disk_fedora.vmi.virt_launcher_pod
-    source_node = source_pod.node
-
-    with running_sleep_in_linux(console.Fedora(vm_container_disk_fedora)):
-        with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
-            nm.wait_for_status(status=nm.Status.RUNNING)
-            check_draining_process(
-                default_client=default_client,
-                source_pod=source_pod,
-                vm=vm_container_disk_fedora,
-            )
-            nm.wait_for_status(status=nm.Status.SUCCEEDED)
-        virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
-
-
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
     skip_when_one_node, default_client, vm_container_disk_fedora,
@@ -204,7 +187,7 @@ def test_node_drain_using_console_fedora(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_scope_class, vm_instance_from_template_scope_class",
     [
         pytest.param(
             {
@@ -223,21 +206,43 @@ def test_node_drain_using_console_fedora(
     ],
     indirect=True,
 )
-@pytest.mark.polarion("CNV-2292")
-def test_node_drain_using_console_rhel(
-    skip_when_one_node,
-    skip_migration_access_mode_rwo,
-    data_volume_scope_function,
-    vm_instance_from_template_scope_function,
-    default_client,
-):
-    drain_using_console(
-        default_client,
-        source_node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
-        source_pod=vm_instance_from_template_scope_function.vmi.virt_launcher_pod,
-        vm=vm_instance_from_template_scope_function,
-        vm_cli=console.RHEL(vm_instance_from_template_scope_function),
-    )
+@pytest.mark.usefixtures(
+    "skip_when_one_node", "skip_migration_access_mode_rwo", "data_volume_scope_class"
+)
+class TestNodeMaintenanceRHEL:
+    @pytest.mark.polarion("CNV-2286")
+    def test_node_maintenance_job_rhel(
+        self, vm_instance_from_template_scope_class, default_client
+    ):
+        source_pod = vm_instance_from_template_scope_class.vmi.virt_launcher_pod
+        source_node = source_pod.node
+
+        with running_sleep_in_linux(
+            console.RHEL(vm_instance_from_template_scope_class)
+        ):
+            with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
+                nm.wait_for_status(status=nm.Status.RUNNING)
+                check_draining_process(
+                    default_client=default_client,
+                    source_pod=source_pod,
+                    vm=vm_instance_from_template_scope_class,
+                )
+                nm.wait_for_status(status=nm.Status.SUCCEEDED)
+            virt_utils.wait_for_node_unschedulable_status(
+                node=source_node, status=False
+            )
+
+    @pytest.mark.polarion("CNV-2292")
+    def test_node_drain_using_console_rhel(
+        self, vm_instance_from_template_scope_class, default_client
+    ):
+        drain_using_console(
+            default_client,
+            source_node=vm_instance_from_template_scope_class.vmi.virt_launcher_pod.node,
+            source_pod=vm_instance_from_template_scope_class.vmi.virt_launcher_pod,
+            vm=vm_instance_from_template_scope_class,
+            vm_cli=console.RHEL(vm=vm_instance_from_template_scope_class),
+        )
 
 
 @pytest.mark.parametrize(
