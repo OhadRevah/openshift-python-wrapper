@@ -77,7 +77,7 @@ class TestCommonTemplatesWin10:
         )
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-3283")
+    @pytest.mark.polarion("CNV-3302")
     @pytest.mark.bugzilla(
         1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
