@@ -151,6 +151,7 @@ class PolarionIds(object):
         Check that every test has a Polarion ID
         """
         for f in iter_test_functions(self.tree):
+            sorted_doce_list = []
             polarion_mark_exists = False
             if not f.decorator_list:
                 # Test is missing Polarion ID, check if test use parametrize fixture
@@ -167,60 +168,64 @@ class PolarionIds(object):
                     and deco.func.value.attr == "mark"
                 ):
                     if deco.func.attr == "polarion":
-                        polarion_mark_exists = True
-                        if deco.args:
-                            yield from self._if_bad_pid(f, deco.args[0].s)
-                        else:
-                            yield from self._non_decorated(f)
+                        sorted_doce_list.insert(0, deco)
 
                     elif deco.func.attr == "parametrize":
-                        if deco.args:
-                            for arg in deco.args:
-                                if not isinstance(arg, ast.List):
+                        sorted_doce_list.append(deco)
+
+            for deco in sorted_doce_list:
+                if deco.func.attr == "polarion":
+                    polarion_mark_exists = True
+                    if deco.args:
+                        yield from self._if_bad_pid(f, deco.args[0].s)
+                    else:
+                        yield from self._non_decorated(f)
+                    break
+
+                elif deco.func.attr == "parametrize":
+                    if deco.args:
+                        for arg in deco.args:
+                            if not isinstance(arg, ast.List):
+                                continue
+
+                            for elt in arg.elts:
+                                if isinstance(elt, ast.Dict):
                                     continue
 
-                                for elt in arg.elts:
-                                    if isinstance(elt, ast.Dict):
+                                if not isinstance(elt, ast.Call):
+                                    yield from self._non_decorated_elt(f, elt, elt.s)
+                                    continue
+
+                                if not elt.keywords:
+                                    yield from self._non_decorated_elt(f, elt)
+
+                                for pk in elt.keywords:
+                                    # In case parametrize have id=
+                                    if pk.arg == "id":
                                         continue
 
-                                    if not isinstance(elt, ast.Call):
-                                        yield from self._non_decorated_elt(
-                                            f, elt, elt.s
+                                    # In case of multiple marks on test param
+                                    if isinstance(pk.value, ast.Tuple):
+                                        for elt_val in pk.value.elts:
+                                            if elt_val.func.attr == "polarion":
+                                                polarion_mark_exists = True
+                                                yield from self._if_bad_pid(
+                                                    f, elt_val.args[0].s
+                                                )
+
+                                    # In case one mark on test param
+                                    elif (
+                                        pk.arg == "marks"
+                                        and pk.value.func.attr == "polarion"
+                                    ):
+                                        polarion_mark_exists = True
+                                        yield from self._if_bad_pid(
+                                            f, pk.value.args[0].s
                                         )
                                         continue
-
-                                    if not elt.keywords:
-                                        yield from self._non_decorated_elt(f, elt)
-
-                                    for pk in elt.keywords:
-                                        # In case parametrize have id=
-                                        if pk.arg == "id":
-                                            continue
-
-                                        # In case of multiple marks on test param
-                                        if isinstance(pk.value, ast.Tuple):
-                                            for elt_val in pk.value.elts:
-                                                if elt_val.func.attr == "polarion":
-                                                    polarion_mark_exists = True
-                                                    yield from self._if_bad_pid(
-                                                        f, elt_val.args[0].s
-                                                    )
-
-                                        # In case one mark on test param
-                                        elif (
-                                            pk.arg == "marks"
-                                            and pk.value.func.attr == "polarion"
-                                        ):
-                                            polarion_mark_exists = True
-                                            yield from self._if_bad_pid(
-                                                f, pk.value.args[0].s
-                                            )
-                                            continue
-                                        else:
-                                            # In case no mark on test param
-                                            yield from self._non_decorated(
-                                                f, elt.args[0].s
-                                            )
+                                    else:
+                                        # In case no mark on test param
+                                        yield from self._non_decorated(f, elt.args[0].s)
                 else:
                     yield from self._non_decorated(f, "")
 
