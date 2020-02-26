@@ -8,9 +8,7 @@ from contextlib import contextmanager
 from subprocess import run
 
 import pytest
-from resources.datavolume import DataVolume
 from resources.node_maintenance import NodeMaintenance
-from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import (
     VirtualMachineInstance,
@@ -19,12 +17,10 @@ from resources.virtual_machine import (
 from tests.compute.utils import WinRMcliPod, execute_winrm_cmd
 from tests.compute.virt import utils as virt_utils
 from utilities import console
-from utilities.infra import Images, get_images_external_http_server
-from utilities.storage import create_dv
+from utilities.infra import Images
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
-    VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
 )
 
@@ -111,55 +107,24 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
 
 
 @pytest.fixture()
-def vm_template_dv_rhel8(
-    skip_ceph_on_rhel7, namespace, unprivileged_client, storage_class_matrix
+def windows_initial_boot_time(
+    vm_instance_from_template_scope_function, winrmcli_pod, bridge_attached_helper_vm
 ):
-    vm_dv_name = "rhel8-template-node-maintenance"
-    url = f"{get_images_external_http_server()}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}"
-    template_labels_dict = {
-        "os": "rhel8.0",
-        "workload": "server",
-        "flavor": "tiny",
-    }
-    # Extract the key from storage_class_matrix (dict)
-    storage_class = [*storage_class_matrix][0]
-    with create_dv(
-        source="http",
-        dv_name=vm_dv_name,
-        namespace=namespace.name,
-        url=url,
-        size="30Gi",
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        storage_class=storage_class,
-        access_modes=storage_class_matrix[storage_class]["access_mode"],
-        volume_mode=storage_class_matrix[storage_class]["volume_mode"],
-    ) as dv:
-        dv.wait(timeout=1200)
-        with VirtualMachineForTestsFromTemplate(
-            name="dv-rhel8-node-maintenance",
-            namespace=namespace.name,
-            client=unprivileged_client,
-            labels=Template.generate_template_labels(**template_labels_dict),
-            template_dv=dv,
-        ) as vm:
-            vm.start(wait=True)
-            vm.vmi.wait_until_running()
-            yield vm
-
-
-@pytest.fixture()
-def windows_initial_boot_time(vm_win10, winrmcli_pod, bridge_attached_helper_vm):
     LOGGER.info(
-        f"Windows VM {vm_win10.vmi.name} is booting up, it may take up to 20 minutess."
+        f"Windows VM {vm_instance_from_template_scope_function.vmi.name} is booting up, it may take up to 20 minutess."
     )
     boot_time = check_windows_boot_time(
-        vm=vm_win10, winrmcli_pod=winrmcli_pod, helper_vm=bridge_attached_helper_vm
+        vm=vm_instance_from_template_scope_function,
+        winrmcli_pod=winrmcli_pod,
+        helper_vm=bridge_attached_helper_vm,
     )
     yield boot_time
 
 
 @pytest.fixture()
-def winrmcli_pod(rhel7_workers, vm_win10, schedulable_nodes):
+def winrmcli_pod(
+    rhel7_workers, vm_instance_from_template_scope_function, schedulable_nodes
+):
     # For RHEL7 workers, helper_vm is used
     if rhel7_workers:
         yield
@@ -167,7 +132,8 @@ def winrmcli_pod(rhel7_workers, vm_win10, schedulable_nodes):
         # For node maintenance tests winrmcli-pod and VMI should be located on different nodes
         node_for_winrmcli = list(
             filter(
-                lambda n: n.name != vm_win10.vmi.virt_launcher_pod.node.name,
+                lambda n: n.name
+                != vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node.name,
                 schedulable_nodes,
             )
         )
@@ -175,58 +141,11 @@ def winrmcli_pod(rhel7_workers, vm_win10, schedulable_nodes):
 
         with WinRMcliPod(
             name="winrmcli-pod",
-            namespace=vm_win10.namespace,
+            namespace=vm_instance_from_template_scope_function.namespace,
             node_selector=node_for_winrmcli[0].name,
         ) as winrm_pod:
             winrm_pod.wait_for_status(status=winrm_pod.Status.RUNNING, timeout=60)
             yield winrm_pod
-
-
-@pytest.fixture()
-def vm_win10(
-    skip_ceph_on_rhel7,
-    namespace,
-    unprivileged_client,
-    storage_class_matrix,
-    network_configuration,
-    cloud_init_data,
-):
-    vm_dv_name = "windows-template-node-maintenance"
-    url = f"{get_images_external_http_server()}{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}"
-    template_labels_dict = {
-        "os": "win10",
-        "workload": "desktop",
-        "flavor": "medium",
-    }
-    # Extract the key from storage_class_matrix (dict)
-    storage_class = [*storage_class_matrix][0]
-    with create_dv(
-        source="http",
-        dv_name=vm_dv_name,
-        namespace=namespace.name,
-        url=url,
-        size="30Gi",
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        storage_class=storage_class,
-        access_modes=storage_class_matrix[storage_class]["access_mode"],
-        volume_mode=storage_class_matrix[storage_class]["volume_mode"],
-    ) as dv:
-        dv.wait(timeout=1200)
-        with VirtualMachineForTestsFromTemplate(
-            name=vm_dv_name,
-            namespace=namespace.name,
-            client=unprivileged_client,
-            labels=Template.generate_template_labels(**template_labels_dict),
-            template_dv=dv,
-            networks=network_configuration if network_configuration else None,
-            interfaces=sorted(network_configuration.keys())
-            if network_configuration
-            else None,
-            cloud_init_data=cloud_init_data if cloud_init_data else None,
-        ) as vm:
-            vm.start(wait=True)
-            vm.vmi.wait_until_running()
-            yield vm
 
 
 def check_windows_boot_time(vm, winrmcli_pod, timeout=1200, helper_vm=False):
@@ -299,43 +218,84 @@ def test_node_drain_using_console_fedora(
     )
 
 
+@pytest.mark.parametrize(
+    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-rhel8-template-node-maintenance",
+                "image": f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
+            },
+            {
+                "vm_name": "rhel8-template-node-maintenance",
+                "template_labels": {
+                    "os": "rhel8.0",
+                    "workload": "server",
+                    "flavor": "tiny",
+                },
+            },
+        )
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-2292")
 def test_node_drain_using_console_rhel(
     skip_when_other_vmi_present,
     skip_when_one_node,
+    data_volume_scope_function,
+    vm_instance_from_template_scope_function,
     default_client,
-    vm_template_dv_rhel8,
 ):
-
     drain_using_console(
         default_client,
-        source_node=vm_template_dv_rhel8.vmi.virt_launcher_pod.node,
-        source_pod=vm_template_dv_rhel8.vmi.virt_launcher_pod,
-        vm=vm_template_dv_rhel8,
-        vm_cli=console.RHEL(vm_template_dv_rhel8),
+        source_node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
+        source_pod=vm_instance_from_template_scope_function.vmi.virt_launcher_pod,
+        vm=vm_instance_from_template_scope_function,
+        vm_cli=console.RHEL(vm_instance_from_template_scope_function),
     )
 
 
-@pytest.mark.polarion("CNV-2048")
+@pytest.mark.parametrize(
+    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-windows-template-node-maintenance",
+                "image": f"{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}",
+            },
+            {
+                "vm_name": "windows-template-node-maintenance",
+                "template_labels": {
+                    "os": "win10",
+                    "workload": "desktop",
+                    "flavor": "medium",
+                },
+            },
+            marks=pytest.mark.polarion("CNV-2048"),
+        ),
+    ],
+    indirect=True,
+)
 def test_node_drain_template_windows(
     skip_when_other_vmi_present,
     skip_when_one_node,
-    vm_win10,
+    data_volume_scope_function,
+    vm_instance_from_template_scope_function,
     winrmcli_pod,
     bridge_attached_helper_vm,
     windows_initial_boot_time,
     default_client,
 ):
-
     drain_using_console_windows(
         default_client,
-        source_node=vm_win10.vmi.virt_launcher_pod.node,
-        source_pod=vm_win10.vmi.virt_launcher_pod,
-        vm=vm_win10,
+        source_node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
+        source_pod=vm_instance_from_template_scope_function.vmi.virt_launcher_pod,
+        vm=vm_instance_from_template_scope_function,
         windows_initial_boot_time=windows_initial_boot_time,
         helper_vm=bridge_attached_helper_vm,
     )
 
     virt_utils.wait_for_node_unschedulable_status(
-        node=vm_win10.vmi.virt_launcher_pod.node, status=False
+        node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
+        status=False,
     )
