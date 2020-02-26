@@ -39,7 +39,7 @@ WIN10_LICENSE_KEY = "TFNPT-4HYRB-JMJW3-6JDYQ-JTYP6"
 )
 class TestCommonTemplatesWin10:
     @pytest.mark.run("first")
-    @pytest.mark.polarion("CNV-2174")
+    @pytest.mark.polarion("CNV-2196")
     def test_create_vm(
         self,
         skip_upstream,
@@ -54,7 +54,7 @@ class TestCommonTemplatesWin10:
         vm_object_from_template_scope_class.create(wait=True)
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-2196")
+    @pytest.mark.polarion("CNV-3785")
     def test_start_vm(
         self,
         skip_upstream,
