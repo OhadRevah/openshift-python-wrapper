@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from resources.datavolume import DataVolume
-from utilities.infra import get_images_external_http_server
+from utilities.infra import get_images_external_http_server, get_images_https_server
 
 
 @contextmanager
@@ -52,11 +52,12 @@ def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None
     storage_class = [*storage_class_matrix][0]
 
     # Set dv attributes
+    image = f"{request.param['image']}"
+    source = request.param.get("source", "http")
     dv_kwargs = {
         "dv_name": request.param["dv_name"].replace(".", "-").lower(),
         "namespace": namespace.name,
-        "source": request.param.get("source", "http"),
-        "url": f"{get_images_external_http_server()}{request.param['image']}",
+        "source": source,
         "size": request.param.get(
             "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
         ),
@@ -73,6 +74,10 @@ def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None
         if storage_class == "hostpath-provisioner"
         else None,
     }
+    if source == "http":
+        dv_kwargs["url"] = f"{get_images_external_http_server()}{image}"
+    elif source == "https":
+        dv_kwargs["url"] = f"{get_images_https_server()}{image}"
 
     # Create dv
     with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
