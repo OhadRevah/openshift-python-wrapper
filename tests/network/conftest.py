@@ -36,6 +36,12 @@ def bond_supported(network_utility_pods, multi_nics_nodes, nodes_active_nics):
     )
 
 
+@pytest.fixture(scope="class")
+def skip_no_bond_support(bond_supported):
+    if not bond_supported:
+        pytest.skip(msg="No BOND support")
+
+
 @pytest.fixture(scope="session")
 def skip_if_no_multinic_nodes(multi_nics_nodes):
     if not multi_nics_nodes:

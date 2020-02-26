@@ -95,12 +95,6 @@ def br1bond_nad(bridge_device_matrix__class__, namespace):
 
 
 @pytest.fixture(scope="class")
-def skip_no_bond_support(bond_supported):
-    if not bond_supported:
-        pytest.skip(msg="No BOND support")
-
-
-@pytest.fixture(scope="class")
 def bond1(
     network_utility_pods, nodes_active_nics, link_aggregation_mode_matrix__class__,
 ):
