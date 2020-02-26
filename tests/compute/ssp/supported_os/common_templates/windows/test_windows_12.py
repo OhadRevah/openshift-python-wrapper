@@ -188,6 +188,17 @@ class TestCommonTemplatesWin12:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3675")
+    def test_vm_machine_type(
+        self,
+        skip_upstream,
+        namespace,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
+    ):
+        utils.check_machine_type(vm=vm_object_from_template_scope_class)
+
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3288")
     def test_vm_deletion(

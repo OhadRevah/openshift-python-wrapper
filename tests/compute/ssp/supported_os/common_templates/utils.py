@@ -538,3 +538,18 @@ def get_windows_os_info_from_rmcli(vm, winrmcli_pod, helper_vm=False):
         cmd='systeminfo | findstr /B /C:"OS Name" /C:"OS Version"',
         helper_vm=helper_vm,
     )
+
+
+def check_machine_type(vm):
+    """ VM and VMI should have machine type; machine type cannot be empty """
+
+    vm_machine_type = vm.instance.spec.template.spec.domain.machine.type
+    vmi_machine_type = vm.vmi.instance.spec.domain.machine.type
+
+    assert (
+        vm_machine_type == vmi_machine_type
+    ), f"VM and VMI machine type do not match. VM: {vm_machine_type}, VMI: {vmi_machine_type}"
+
+    assert (
+        vm_machine_type != ""
+    ), f"Machine type does not exist in VM: {vm_machine_type}"

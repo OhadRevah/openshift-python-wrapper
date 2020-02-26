@@ -18,6 +18,7 @@ run slow on nested visualization.
 * VM deletion
 * VM migration
 * VM tablet input device
+* VM and VMI machine type
 
 ## Windows Tests
 * Create VM
@@ -28,6 +29,7 @@ run slow on nested visualization.
 * VM migration
 * VM deletion
 * VM tablet input device
+* VM and VMI machine type
 
 ## Fedora Tests (on latest OS supported by common templates)
 * Create VM
@@ -39,3 +41,4 @@ run slow on nested visualization.
 * Domain label validation
 * SSH connection to VM (including service creation)
 * VM deletion
+* VM and VMI machine type
