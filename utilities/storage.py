@@ -59,7 +59,7 @@ def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None
         "namespace": namespace.name,
         "source": source,
         "size": request.param.get(
-            "dv_size", "35Gi" if "win" in request.param["dv_name"] else "25Gi"
+            "dv_size", "38Gi" if "win" in request.param["dv_name"] else "25Gi"
         ),
         "storage_class": request.param.get("storage_class", storage_class),
         "access_modes": request.param.get(

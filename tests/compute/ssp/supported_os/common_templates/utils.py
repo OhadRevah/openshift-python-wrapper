@@ -367,6 +367,37 @@ def is_windows_activated(vm, winrmcli_pod, helper_vm=False):
     )
 
 
+def start_and_fetch_processid_on_windows_vm(
+    vm, winrmcli_pod, process_name=None, helper_vm=False
+):
+    """ Start a process and fetch processid from the Windows VM """
+
+    execute_winrm_cmd(
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        cmd=f"wmic process call create {process_name}",
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+    return fetch_processid_from_windows_vm(
+        vm, winrmcli_pod, process_name=process_name, helper_vm=helper_vm
+    )
+
+
+def fetch_processid_from_windows_vm(
+    vm, winrmcli_pod, process_name=None, helper_vm=False
+):
+    """ Fetch the processid from the Windows VM  """
+
+    return execute_winrm_cmd(
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        cmd=f"wmic process where (Name='{process_name}') get processid /value",
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
 def check_windows_activated_license(vm, winrmcli_pod, reset_action, helper_vm=False):
     """ Verify VM activation mode after VM reset (reboot / stop and start) """
 

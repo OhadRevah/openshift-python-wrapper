@@ -61,9 +61,8 @@ def execute_winrm_cmd(
             "-c",
             f"/bin/winrm-cli -hostname {vmi_ip} \
             -username {py_config['windows_username']} -password {py_config['windows_password']} \
-            '{cmd}'",
+            \"{cmd}\"",
         ]
-
         return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)
 
 
