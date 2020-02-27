@@ -10,10 +10,7 @@ from subprocess import run
 import pytest
 from resources.node_maintenance import NodeMaintenance
 from resources.utils import TimeoutSampler
-from resources.virtual_machine import (
-    VirtualMachineInstance,
-    VirtualMachineInstanceMigration,
-)
+from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.utils import WinRMcliPod, execute_winrm_cmd
 from tests.compute.virt import utils as virt_utils
 from utilities import console
@@ -82,12 +79,6 @@ def drain_using_console_windows(
             boot_time_after_migration == windows_initial_boot_time
         ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
     yield
-
-
-@pytest.fixture(scope="module")
-def skip_when_other_vmi_present(default_client):
-    if list(VirtualMachineInstance.get(default_client)):
-        pytest.skip(msg="Can't work when other VMI present")
 
 
 @pytest.fixture()
@@ -181,10 +172,7 @@ def check_draining_process(default_client, source_pod, vm):
 
 @pytest.mark.polarion("CNV-2286")
 def test_node_maintenance_job(
-    skip_when_other_vmi_present,
-    skip_when_one_node,
-    vm_container_disk_fedora,
-    default_client,
+    skip_when_one_node, vm_container_disk_fedora, default_client,
 ):
     source_pod = vm_container_disk_fedora.vmi.virt_launcher_pod
     source_node = source_pod.node
@@ -203,10 +191,7 @@ def test_node_maintenance_job(
 
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
-    skip_when_other_vmi_present,
-    skip_when_one_node,
-    default_client,
-    vm_container_disk_fedora,
+    skip_when_one_node, default_client, vm_container_disk_fedora,
 ):
 
     drain_using_console(
@@ -240,7 +225,6 @@ def test_node_drain_using_console_fedora(
 )
 @pytest.mark.polarion("CNV-2292")
 def test_node_drain_using_console_rhel(
-    skip_when_other_vmi_present,
     skip_when_one_node,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
@@ -277,7 +261,6 @@ def test_node_drain_using_console_rhel(
     indirect=True,
 )
 def test_node_drain_template_windows(
-    skip_when_other_vmi_present,
     skip_when_one_node,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
