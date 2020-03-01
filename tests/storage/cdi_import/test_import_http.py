@@ -482,6 +482,18 @@ def test_successful_concurrent_blank_disk_import(namespace):
 
 
 @pytest.mark.parametrize(
+    "data_volume_scope_function",
+    [{"dv_name": "cnv-2004", "source": "blank", "image": "", "dv_size": "500Mi"}],
+    indirect=True,
+)
+@pytest.mark.polarion("CNV-2004")
+def test_blank_disk_import_validate_status(data_volume_scope_function):
+    data_volume_scope_function.wait_for_status(
+        status=DataVolume.Status.SUCCEEDED, timeout=300
+    )
+
+
+@pytest.mark.parametrize(
     ("size", "unit", "expected_size"),
     [
         pytest.param("64", "Mi", "50", marks=(pytest.mark.polarion("CNV-1404"))),
