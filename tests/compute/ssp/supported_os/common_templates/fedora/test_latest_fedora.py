@@ -112,7 +112,8 @@ class TestCommonTemplatesFedora:
         vm_object_from_template_scope_class,
     ):
         LOGGER.info("Verify VMI HyperV values.")
-        utils.check_vm_xml_hyperv(vm_object_from_template_scope_class)
+        utils.check_vm_xml_hyperv(vm=vm_object_from_template_scope_class)
+        utils.check_vm_xml_clock(vm=vm_object_from_template_scope_class)
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3344")

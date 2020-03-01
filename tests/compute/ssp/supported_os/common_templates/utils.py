@@ -224,6 +224,21 @@ def check_vm_xml_hyperv(vm):
     assert hyperv_features["vapic"]["@state"] == "on"
     assert hyperv_features["spinlocks"]["@state"] == "on"
     assert int(hyperv_features["spinlocks"]["@retries"]) == 8191
+    # The below entries do not appear in Windows hyperV
+    if "Windows" not in vm.vmi.instance.status.guestOSInfo.name:
+        assert hyperv_features["stimer"]["@state"] == "on"
+        assert hyperv_features["vpindex"]["@state"] == "on"
+        assert hyperv_features["synic"]["@state"] == "on"
+
+
+def check_vm_xml_clock(vm):
+    """ Verify clock values in VMI """
+
+    clock_timer_list = vm.vmi.xml_dict["domain"]["clock"]["timer"]
+    assert [i for i in clock_timer_list if i["@name"] == "hpet"][0]["@present"] == "no"
+    assert [i for i in clock_timer_list if i["@name"] == "hypervclock"][0][
+        "@present"
+    ] == "yes"
 
 
 def check_windows_vm_hvinfo(vm, winrmcli_pod, helper_vm=False):

@@ -126,6 +126,7 @@ class TestCommonTemplatesWin19:
 
         LOGGER.info("Verify VM HyperV values.")
         utils.check_vm_xml_hyperv(vm_object_from_template_scope_class)
+        utils.check_vm_xml_clock(vm=vm_object_from_template_scope_class)
         utils.check_windows_vm_hvinfo(
             vm=vm_object_from_template_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
