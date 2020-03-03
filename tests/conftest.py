@@ -16,6 +16,7 @@ import bcrypt
 import kubernetes
 import pytest
 import rrmngmnt
+import tests.network.utils as network_utils
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
@@ -30,15 +31,23 @@ from resources.persistent_volume import PersistentVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.secret import Secret
+from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import (
     VirtualMachine,
     VirtualMachineInstance,
     VirtualMachineInstanceMigration,
 )
+from tests.compute.utils import nmcli_add_con_cmds
 from utilities.infra import create_ns, generate_yaml_from_template
 from utilities.storage import data_volume
-from utilities.virt import kubernetes_taint_exists
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    RHEL_CLOUD_INIT_PASSWORD,
+    VirtualMachineForTestsFromTemplate,
+    kubernetes_taint_exists,
+    wait_for_vm_interfaces,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -739,6 +748,43 @@ def skip_no_rhel7_workers(rhel7_workers):
         pytest.skip(msg="Test should run only with cluster with RTHEL7 workers")
 
 
+@pytest.fixture(scope="class")
+def rhel7_psi_network_config():
+    """ RHEL7 network configuration for PSI clusters """
+
+    return {
+        "vm_address": "172.16.0.90",
+        "helper_vm_address": "172.16.0.91",
+        "subnet": "172.16.0.0",
+        "default_gw": "172.16.0.1",
+        "dns_server": "172.16.0.16",
+    }
+
+
+@pytest.fixture(scope="class")
+def network_attachment_definition(
+    skip_ceph_on_rhel7, rhel7_ovs_bridge, namespace, rhel7_workers
+):
+    if rhel7_workers:
+        with network_utils.bridge_nad(
+            nad_type=network_utils.OVS,
+            nad_name="rhel7-nad",
+            bridge_name=rhel7_ovs_bridge,
+            namespace=namespace,
+        ) as network_attachment_definition:
+            yield network_attachment_definition
+    else:
+        yield
+
+
+@pytest.fixture(scope="class")
+def network_configuration(
+    skip_ceph_on_rhel7, rhel7_workers, network_attachment_definition,
+):
+    if rhel7_workers:
+        return {network_attachment_definition.name: network_attachment_definition.name}
+
+
 @pytest.fixture()
 def data_volume_scope_function(
     request,
@@ -768,4 +814,120 @@ def data_volume_scope_class(
         namespace=namespace,
         storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture(scope="class")
+def cloud_init_data(
+    request, skip_ceph_on_rhel7, rhel7_workers, rhel7_psi_network_config,
+):
+    if rhel7_workers:
+        bootcmds = nmcli_add_con_cmds(
+            iface="eth1",
+            ip=rhel7_psi_network_config["vm_address"],
+            default_gw=rhel7_psi_network_config["default_gw"],
+            dns_server=rhel7_psi_network_config["dns_server"],
+        )
+
+        cloud_init_data = (
+            RHEL_CLOUD_INIT_PASSWORD
+            if "rhel" in request.fspath.strpath
+            else FEDORA_CLOUD_INIT_PASSWORD
+        )
+        cloud_init_data["bootcmd"] = bootcmds
+
+        return cloud_init_data
+
+
+"""
+General tests fixtures
+"""
+
+
+def vm_instance_from_template(
+    request,
+    unprivileged_client,
+    namespace,
+    data_volume,
+    network_configuration,
+    cloud_init_data,
+):
+    """ Create a VM from template and start it (start step could be skipped by setting
+    request.param['start_vm'] to False.
+
+    The call to this function is triggered by calling either
+    vm_instance_from_template_scope_function or vm_instance_from_template_scope_class.
+
+    Prerequisite - a DV must be created prior to VM creation.
+    """
+
+    with VirtualMachineForTestsFromTemplate(
+        name=request.param["vm_name"].replace(".", "-").lower(),
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(**request.param["template_labels"]),
+        template_dv=data_volume,
+        vm_dict=request.param.get("vm_dict"),
+        cpu_threads=request.param.get("cpu_threads"),
+        network_model=request.param.get("network_model"),
+        network_multiqueue=request.param.get("network_multiqueue"),
+        networks=network_configuration if network_configuration else None,
+        interfaces=sorted(network_configuration.keys())
+        if network_configuration
+        else None,
+        cloud_init_data=cloud_init_data if cloud_init_data else None,
+    ) as vm:
+        if request.param.get("start_vm", True):
+            vm.start(wait=True)
+            vm.vmi.wait_until_running()
+            if request.param.get("guest_agent", True):
+                wait_for_vm_interfaces(vm.vmi)
+        yield vm
+
+
+@pytest.fixture()
+def vm_instance_from_template_scope_function(
+    request,
+    unprivileged_client,
+    namespace,
+    data_volume_scope_function,
+    network_configuration,
+    cloud_init_data,
+):
+    """ Calls vm_instance_from_template contextmanager
+
+    Creates a VM from template and starts it (if requested).
+    """
+
+    yield from vm_instance_from_template(
+        request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume=data_volume_scope_function,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+    )
+
+
+@pytest.fixture(scope="class")
+def vm_instance_from_template_scope_class(
+    request,
+    unprivileged_client,
+    namespace,
+    data_volume_scope_class,
+    network_configuration,
+    cloud_init_data,
+):
+    """ Calls vm_instance_from_template contextmanager
+
+    Creates a VM from template and starts it (if requested).
+    """
+
+    yield from vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume=data_volume_scope_class,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
     )

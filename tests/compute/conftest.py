@@ -257,11 +257,6 @@ def skip_migration_access_mode_rwo(storage_class_matrix__class__):
         )
 
 
-"""
-Windows-specific fixtures
-"""
-
-
 @pytest.fixture(scope="module")
 def sa_ready(namespace):
     #  Wait for 'default' service account secrets to be exists.
