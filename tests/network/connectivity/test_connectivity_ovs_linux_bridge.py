@@ -171,7 +171,7 @@ def bridge_attached_vma(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=schedulable_nodes[2].name,
+        node_selector=schedulable_nodes[0].name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
