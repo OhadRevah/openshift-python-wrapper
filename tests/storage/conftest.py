@@ -206,7 +206,7 @@ def new_route_created():
 
 @pytest.fixture(scope="session")
 def cdi():
-    cdi = CDI("cdi-hyperconverged-cluster", py_config["hco_namespace"])
+    cdi = CDI("cdi-kubevirt-hyperconverged", py_config["hco_namespace"])
     assert cdi.instance is not None
     yield cdi
 
