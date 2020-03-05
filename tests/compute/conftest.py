@@ -247,7 +247,7 @@ def vm_object_from_template(
     request,
     unprivileged_client,
     namespace,
-    data_volume_scope_class,
+    data_volume_object,
     network_configuration,
     cloud_init_data,
 ):
@@ -261,7 +261,7 @@ def vm_object_from_template(
         name=request.param["vm_name"].replace(".", "-").lower(),
         namespace=namespace.name,
         client=unprivileged_client,
-        template_dv=data_volume_scope_class,
+        template_dv=data_volume_object,
         labels=Template.generate_template_labels(**request.param["template_labels"]),
         vm_dict=request.param.get("vm_dict"),
         cpu_threads=request.param.get("cpu_threads"),
@@ -288,7 +288,7 @@ def vm_object_from_template_scope_function(
         request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume_scope_class=data_volume_scope_function,
+        data_volume_object=data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
@@ -307,7 +307,7 @@ def vm_object_from_template_scope_class(
         request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume_scope_class=data_volume_scope_class,
+        data_volume_object=data_volume_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
