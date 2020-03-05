@@ -30,7 +30,7 @@ from utilities import console
                     "flavor": "tiny",
                 },
             },
-            marks=pytest.mark.polarion("CNV-3091"),
+            marks=pytest.mark.polarion("CNV-3038"),
         ),
     ],
     indirect=True,
