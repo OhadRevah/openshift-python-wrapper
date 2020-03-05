@@ -87,6 +87,7 @@ def pytest_addoption(parser):
     parser.addoption("--cnv-version", help="CNV version to upgrade to")
     parser.addoption("--ocp-image", help="OCP image to upgrade to")
     parser.addoption("--storage-class-matrix", help="Storage class matrix to use")
+    parser.addoption("--bridge-device-matrix", help="Bridge device matrix to use")
 
 
 def pytest_cmdline_main(config):
@@ -218,15 +219,30 @@ def pytest_runtest_logreport(report):
 
 
 def pytest_sessionstart(session):
-    if session.config.getoption("storage_class_matrix"):
-        # Extract only the dict item which has the requested key from
-        # --storage-class-matrix
-        py_config["storage_class_matrix"] = {
-            k: v
-            for i in py_config["storage_class_matrix"]
-            for k, v in i.items()
-            if k == session.config.getoption("storage_class_matrix")
-        }
+    matrix_addoptions = [
+        matrix
+        for matrix in session.config.invocation_params.args
+        if matrix.endswith("_matrix")
+    ]
+    for matrix_addoption in matrix_addoptions:
+        items_dict = {}
+        items_list = []
+        key, vals = matrix_addoption.split("=")
+        key = key.strip("--").replace("-", "_")
+        vals = vals.split(",")
+
+        for val in vals:
+            for item in py_config[key]:
+                if isinstance(item, dict):
+                    # Extract only the dicts item which has the requested key from
+                    if [*item][0] == val:
+                        items_dict.update(item)
+
+                if isinstance(item, str):
+                    # Extract only the items item which has the requested key from
+                    items_list.append(val)
+
+        py_config[key] = items_dict if items_dict else items_list
 
 
 def pytest_sessionfinish(session, exitstatus):

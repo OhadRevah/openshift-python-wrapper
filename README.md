@@ -169,12 +169,15 @@ You can run a test using a subset of a simple matrix (i.e flat list), example:
 
 To run a test using a subset of a complex matrix (e.g list of dicts), you'll also need to add
 the following to tests/conftest.py
-- Add parser.addoption under pytest_addoption
-- Parsing logic under pytest_sessionstart
+- Add parser.addoption under pytest_addoption (the name must end with _matrix)
+
+Multiple keys can be selected by passing them with ','
 
 Example:
 ```bash
---storage-class-matrix rook-ceph-block
+--storage-class-matrix=rook-ceph-block
+--storage-class-matrix=rook-ceph-block,nfs
+--bridge_device_matrix=ovs
 ```
 
 # Network utility container
