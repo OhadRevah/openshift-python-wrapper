@@ -197,7 +197,11 @@ class TestCommonTemplatesFedora:
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3513")
     def test_guest_agent_info(
-        self, vm_object_from_template_scope_class, schedulable_node_ips, rhel7_workers
+        self,
+        data_volume_scope_class,
+        vm_object_from_template_scope_class,
+        schedulable_node_ips,
+        rhel7_workers,
     ):
         """ Test Guest OS agent info. """
         utils.validate_linux_guest_agent_info(

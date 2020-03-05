@@ -12,46 +12,6 @@ from .utils import download_and_extract_tar, wait_for_windows_vm
 LOGGER = logging.getLogger(__name__)
 
 
-def vm_ssh_service(vm_object_from_template):
-    """ Manages (creation and deletion) of a service to enable SSH access to the VM
-
-    The call to this function is triggered by calling either
-    vm_ssh_service_scope_function or
-    vm_ssh_service_scope_class.
-    """
-
-    vm_object_from_template.ssh_enable()
-    yield
-    vm_object_from_template.ssh_service.delete(wait=True)
-
-
-@pytest.fixture()
-def vm_ssh_service_scope_function(
-    rhel7_workers, vm_instance_from_template_scope_function
-):
-    # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
-    if rhel7_workers:
-        yield
-    else:
-        yield from vm_ssh_service(vm_instance_from_template_scope_function)
-
-
-@pytest.fixture(scope="class")
-def vm_ssh_service_scope_class(rhel7_workers, vm_object_from_template_scope_class):
-    # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
-    if rhel7_workers:
-        yield
-    else:
-        yield from vm_ssh_service(vm_object_from_template_scope_class)
-
-
-@pytest.fixture()
-def exposed_vm_service(request, vm_instance_from_template_scope_function):
-    vm_instance_from_template_scope_function.custom_service_enable(
-        service_name=request.param["service_name"], port=request.param["service_port"]
-    )
-
-
 @pytest.fixture()
 def started_windows_vm(
     request,

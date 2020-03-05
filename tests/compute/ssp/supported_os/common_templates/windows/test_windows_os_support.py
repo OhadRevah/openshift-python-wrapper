@@ -1,77 +1,48 @@
 # -*- coding: utf-8 -*-
 
 """
-Common templates test Windows 12
+Common templates test Windows OS support
 """
-
 import logging
 
 import pytest
 import tests.compute.utils
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
-VM_NAME = "win-12"
-WIN12_LICENSE_KEY = "CKWJN-48TW8-V7CVV-RQCFY-R6XCB"
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_object_from_template_scope_class",
-    [
-        (
-            {
-                "image": f"{Images.Windows.DIR}/{Images.Windows.WIN12_IMG}",
-                "dv_name": f"dv-{VM_NAME}",
-            },
-            {
-                "vm_name": VM_NAME,
-                "template_labels": {
-                    "os": "win2k12r2",
-                    "workload": "server",
-                    "flavor": "medium",
-                },
-                "cpu_threads": 2,
-            },
-        )
-    ],
-    indirect=True,
+    "vm_object_from_template_windows_os", [({"cpu_threads": 2})], indirect=True,
 )
-class TestCommonTemplatesWin12:
+@pytest.mark.usefixtures(
+    "skip_upstream", "unprivileged_client", "namespace", "data_volume_windows_os"
+)
+class TestCommonTemplatesWindows:
     @pytest.mark.run("first")
-    @pytest.mark.polarion("CNV-2228")
-    def test_create_vm(
-        self,
-        skip_upstream,
-        unprivileged_client,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
-    ):
+    @pytest.mark.polarion("CNV-2196")
+    def test_create_vm(self, vm_object_from_template_windows_os):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
-        vm_object_from_template_scope_class.create(wait=True)
+        vm_object_from_template_windows_os.create(wait=True)
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-3281")
+    @pytest.mark.polarion("CNV-3785")
     def test_start_vm(
         self,
-        skip_upstream,
-        unprivileged_client,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         """ Test CNV common templates VM initiation """
 
-        tests.compute.utils.vm_started(vm=vm_object_from_template_scope_class)
+        tests.compute.utils.vm_started(vm=vm_object_from_template_windows_os)
         utils.wait_for_windows_vm(
-            vm=vm_object_from_template_scope_class,
-            version=VM_NAME.split("-")[-1],
+            vm=vm_object_from_template_windows_os,
+            version=vm_object_from_template_windows_os.name.split("-")[-1],
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
@@ -80,136 +51,116 @@ class TestCommonTemplatesWin12:
     @pytest.mark.polarion("CNV-3512")
     def test_guest_agent_info(
         self,
-        vm_object_from_template_scope_class,
+        vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         """ Test Guest OS agent info. """
         utils.validate_windows_guest_agent_info(
-            vm=vm_object_from_template_scope_class,
+            vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-1745")
+    @pytest.mark.polarion("CNV-3303")
     @pytest.mark.bugzilla(
         1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     def test_domain_label(
-        self,
-        skip_upstream,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        self, vm_object_from_template_windows_os,
     ):
         """ CNV common templates 'domain' label contains vm name """
 
-        domain_label = vm_object_from_template_scope_class.body["spec"]["template"][
+        domain_label = vm_object_from_template_windows_os.body["spec"]["template"][
             "metadata"
         ]["labels"]["kubevirt.io/domain"]
         assert (
-            domain_label == vm_object_from_template_scope_class.name
+            domain_label == vm_object_from_template_windows_os.name
         ), f"Wrong domain label: {domain_label}"
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-2652")
+    @pytest.mark.polarion("CNV-2776")
     def test_hyperv(
         self,
-        skip_upstream,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
 
         LOGGER.info("Verify VM HyperV values.")
-        utils.check_vm_xml_hyperv(vm_object_from_template_scope_class)
-        utils.check_vm_xml_clock(vm=vm_object_from_template_scope_class)
+        utils.check_vm_xml_hyperv(vm_object_from_template_windows_os)
         utils.check_windows_vm_hvinfo(
-            vm=vm_object_from_template_scope_class,
+            vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-2176")
+    @pytest.mark.polarion("CNV-2177")
     @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_stop_start(
         self,
-        skip_upstream,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
+        windows_os_matrix,
     ):
 
         utils.add_activate_windows_license(
-            vm=vm_object_from_template_scope_class,
+            vm=vm_object_from_template_windows_os,
             winrm_pod=winrmcli_pod_scope_class,
-            license_key=WIN12_LICENSE_KEY,
+            license_key=windows_os_matrix[[*windows_os_matrix][0]]["license"],
             helper_vm=bridge_attached_helper_vm,
         )
 
         LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
         utils.check_windows_activated_license(
-            vm=vm_object_from_template_scope_class,
+            vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="stop_start",
             helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_create_vm")
-    @pytest.mark.polarion("CNV-3414")
+    @pytest.mark.polarion("CNV-3415")
     @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_reboot(
         self,
-        skip_upstream,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
+        windows_os_matrix,
     ):
 
         utils.add_activate_windows_license(
-            vm=vm_object_from_template_scope_class,
+            vm=vm_object_from_template_windows_os,
             winrm_pod=winrmcli_pod_scope_class,
-            license_key=WIN12_LICENSE_KEY,
+            license_key=windows_os_matrix[[*windows_os_matrix][0]]["license"],
             helper_vm=bridge_attached_helper_vm,
         )
 
         LOGGER.info("Verify VM activation mode is not changed after reboot.")
         utils.check_windows_activated_license(
-            vm=vm_object_from_template_scope_class,
+            vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="reboot",
             helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_start_vm")
-    @pytest.mark.polarion("CNV-3675")
+    @pytest.mark.polarion("CNV-3674")
     def test_vm_machine_type(
-        self,
-        skip_upstream,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        self, vm_object_from_template_windows_os,
     ):
-        utils.check_machine_type(vm=vm_object_from_template_scope_class)
+        utils.check_machine_type(vm=vm_object_from_template_windows_os)
 
     @pytest.mark.run("last")
-    @pytest.mark.polarion("CNV-3288")
+    @pytest.mark.polarion("CNV-3289")
     def test_vm_deletion(
-        self,
-        skip_upstream,
-        namespace,
-        data_volume_scope_class,
-        vm_object_from_template_scope_class,
+        self, vm_object_from_template_windows_os,
     ):
         """ Test CNV common templates VM deletion """
 
-        if not utils.vm_deleted(vm=vm_object_from_template_scope_class):
+        if not utils.vm_deleted(vm=vm_object_from_template_windows_os):
             pytest.xfail("VM was not created, nothing to delete.")

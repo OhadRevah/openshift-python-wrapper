@@ -42,7 +42,13 @@ def create_dv(
         yield dv
 
 
-def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None):
+def data_volume(
+    namespace,
+    storage_class_matrix,
+    schedulable_nodes=None,
+    request=None,
+    os_matrix=None,
+):
     """ DV creation using create_dv.
 
     The call to this function can be triggered by calling either
@@ -50,20 +56,31 @@ def data_volume(request, namespace, storage_class_matrix, schedulable_nodes=None
     """
     # Extract the key from storage_class_matrix (dict)
     storage_class = [*storage_class_matrix][0]
+    # DV name and image path are the only mandatory values
+    # Either use request.param or os_matrix
+    params_dict = request.param if request else {}
 
     # Set dv attributes
-    image = f"{request.param['image']}"
-    source = request.param.get("source", "http")
+    # Values can be extracted from request.param or from rhel_os_matrix /
+    # windows_os_matrix (passed as os_matrix)
+    if os_matrix:
+        os_matrix_key = [*os_matrix][0]
+        image = os_matrix[os_matrix_key]["image"]
+        dv_name = os_matrix_key
+    else:
+        image = f"{request.param['image']}"
+        dv_name = request.param["dv_name"].replace(".", "-").lower()
+    source = params_dict.get("source", "http")
     dv_kwargs = {
-        "dv_name": request.param["dv_name"].replace(".", "-").lower(),
+        "dv_name": dv_name,
         "namespace": namespace.name,
         "source": source,
-        "size": request.param.get("dv_size", "38Gi" if "win" in image else "25Gi"),
-        "storage_class": request.param.get("storage_class", storage_class),
-        "access_modes": request.param.get(
+        "size": params_dict.get("dv_size", "38Gi" if "win" in image else "25Gi"),
+        "storage_class": params_dict.get("storage_class", storage_class),
+        "access_modes": params_dict.get(
             "access_modes", storage_class_matrix[storage_class]["access_mode"]
         ),
-        "volume_mode": request.param.get(
+        "volume_mode": params_dict.get(
             "volume_mode", storage_class_matrix[storage_class]["volume_mode"],
         ),
         "content_type": DataVolume.ContentType.KUBEVIRT,

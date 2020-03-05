@@ -89,6 +89,8 @@ def pytest_addoption(parser):
     parser.addoption("--ocp-image", help="OCP image to upgrade to")
     parser.addoption("--storage-class-matrix", help="Storage class matrix to use")
     parser.addoption("--bridge-device-matrix", help="Bridge device matrix to use")
+    parser.addoption("--rhel-os-matrix", help="RHEL OS matrix to use")
+    parser.addoption("--windows-os-matrix", help="Windows OS matrix to use")
 
 
 def pytest_cmdline_main(config):

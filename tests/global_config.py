@@ -75,6 +75,118 @@ link_aggregation_mode_matrix = [
     "balance-alb",
 ]
 
+rhel_os_matrix = [
+    {
+        "rhel-6-10": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL6_IMG),
+            "template_labels": {
+                "os": "rhel6.0",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
+        "rhel-7-6": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_6_IMG),
+            "template_labels": {
+                "os": "rhel7.6",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
+        "rhel-7-8": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
+            # TODO: Modify to 7.8 once it is added to templates
+            "template_labels": {
+                "os": "rhel7.7",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
+        "rhel-8-0": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_0_IMG),
+            "template_labels": {
+                "os": "rhel8.0",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
+        "rhel-8-1": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_1_IMG),
+            "template_labels": {
+                "os": "rhel8.1",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
+        "rhel-8-2": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
+            # TODO: Modify to 8.2 once it is added to templates
+            "template_labels": {
+                "os": "rhel8.1",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+]
+
+windows_os_matrix = [
+    {
+        "win-10": {
+            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
+            "template_labels": {
+                "os": "win10",
+                "workload": "desktop",
+                "flavor": "medium",
+            },
+            "license": "TFNPT-4HYRB-JMJW3-6JDYQ-JTYP6",
+        }
+    },
+    {
+        "win-12": {
+            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
+            "template_labels": {
+                "os": "win2k12r2",
+                "workload": "server",
+                "flavor": "medium",
+            },
+            "license": "CKWJN-48TW8-V7CVV-RQCFY-R6XCB",
+        }
+    },
+    {
+        "win-16": {
+            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
+            "template_labels": {
+                "os": "win2k16",
+                "workload": "server",
+                "flavor": "medium",
+            },
+            "license": "MBHVF-NK7XF-C4YG9-8VBVP-Q3XQF",
+        }
+    },
+    {
+        "win-19": {
+            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
+            "template_labels": {
+                "os": "win2k19",
+                "workload": "server",
+                "flavor": "medium",
+            },
+            "license": "N8BP4-3RHM3-YQWTF-MBJC3-YBKQ3",
+        }
+    },
+]
+
 for _dir in dir():
     val = locals()[_dir]
     if not (
