@@ -331,7 +331,7 @@ def sa_ready(namespace):
             return
 
 
-def winrmcli_pod(namespace, sa_ready):
+def winrmcli_pod(namespace):
     """ Deploy winrm-cli Pod into the same namespace.
 
     The call to this function is triggered by calling either
@@ -349,7 +349,7 @@ def winrmcli_pod_scope_function(rhel7_workers, namespace, sa_ready):
     if rhel7_workers:
         yield
     else:
-        yield from winrmcli_pod(namespace=namespace, sa_ready=sa_ready)
+        yield from winrmcli_pod(namespace=namespace)
 
 
 @pytest.fixture(scope="module")
@@ -358,7 +358,7 @@ def winrmcli_pod_scope_module(rhel7_workers, namespace, sa_ready):
     if rhel7_workers:
         yield
     else:
-        yield from winrmcli_pod(namespace=namespace, sa_ready=sa_ready)
+        yield from winrmcli_pod(namespace=namespace)
 
 
 @pytest.fixture(scope="class")
@@ -367,4 +367,4 @@ def winrmcli_pod_scope_class(rhel7_workers, namespace, sa_ready):
     if rhel7_workers:
         yield
     else:
-        yield from winrmcli_pod(namespace=namespace, sa_ready=sa_ready)
+        yield from winrmcli_pod(namespace=namespace)
