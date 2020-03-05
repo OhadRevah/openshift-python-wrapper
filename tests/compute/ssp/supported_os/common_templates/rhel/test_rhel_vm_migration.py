@@ -9,6 +9,7 @@ from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 @pytest.mark.parametrize(
@@ -34,6 +35,9 @@ from utilities import console
         ),
     ],
     indirect=True,
+)
+@pytest.mark.bugzilla(
+    1810493, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 def test_migrate_vm_rhel(
     skip_rhel7_workers,

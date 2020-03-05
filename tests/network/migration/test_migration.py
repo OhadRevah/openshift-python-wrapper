@@ -11,6 +11,7 @@ from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import get_vmi_ip_v4_by_name, nmcli_add_con_cmds
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -232,6 +233,9 @@ def assert_ssh_alive(ssh_vm):
 
 
 @pytest.mark.polarion("CNV-2060")
+@pytest.mark.bugzilla(
+    1810493, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 def test_ping_vm_migration(
     skip_rhel7_workers,
     skip_when_one_node,
@@ -252,6 +256,9 @@ def test_ping_vm_migration(
 
 
 @pytest.mark.polarion("CNV-2063")
+@pytest.mark.bugzilla(
+    1810493, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 def test_ssh_vm_migration(
     skip_rhel7_workers,
     skip_when_one_node,
@@ -273,6 +280,9 @@ def test_ssh_vm_migration(
 
 
 @pytest.mark.polarion("CNV-2061")
+@pytest.mark.bugzilla(
+    1810493, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 def test_migration_with_masquerade(
     default_client,
     skip_rhel7_workers,
