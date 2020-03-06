@@ -157,6 +157,47 @@ def virtctl_upload(
     return run_virtctl_command(command=command, namespace=namespace)
 
 
+def virtctl_upload_dv(
+    namespace,
+    name,
+    image_path,
+    size,
+    pvc=False,
+    storage_class=None,
+    access_mode=None,
+    uploadproxy_url=None,
+    wait_secs=None,
+    insecure=False,
+    block_volume=False,
+    no_create=False,
+):
+    command = [
+        "image-upload",
+        "dv",
+        f"{name}",
+        f"--image-path={image_path}",
+        f"--size={size}",
+    ]
+    if pvc:
+        command[1] = "pvc"
+    if storage_class:
+        command.append(f"--storage-class={storage_class}")
+    if access_mode:
+        command.append(f"--access-mode={access_mode}")
+    if uploadproxy_url:
+        command.append(f"--uploadproxy-url={uploadproxy_url}")
+    if wait_secs:
+        command.append(f"--wait-secs={wait_secs}")
+    if insecure:
+        command.append("--insecure")
+    if block_volume:
+        command.append("--block-volume")
+    if no_create:
+        command.append("--no-create")
+
+    return run_virtctl_command(command=command, namespace=namespace)
+
+
 def downloaded_image(remote_name, local_name):
     """
     Download image to local tmpdir path
