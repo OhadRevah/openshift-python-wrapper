@@ -364,19 +364,18 @@ def unprivileged_secret(default_client):
     ):
         return False
 
-    else:
-        password = UNPRIVILEGED_PASSWORD.encode()
-        enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
-        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
-        with Secret(
-            name="htpass-secret",
-            namespace="openshift-config",
-            htpasswd=base64.b64encode(crypto_credentials).decode(),
-        ):
-            return True
+    password = UNPRIVILEGED_PASSWORD.encode()
+    enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
+    crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
+    with Secret(
+        name="htpass-secret",
+        namespace="openshift-config",
+        htpasswd=base64.b64encode(crypto_credentials).decode(),
+    ):
+        return True
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def unprivileged_client(default_client, unprivileged_secret):
     """
     Provides none privilege API client
@@ -384,7 +383,7 @@ def unprivileged_client(default_client, unprivileged_secret):
     # To disable unprivileged_client pass --tc=no_unprivileged_client:True to pytest commandline.
 
     if not unprivileged_secret:
-        return
+        return False
 
     # Update identity provider
     identity_provider_config = OAuth(name="cluster")
