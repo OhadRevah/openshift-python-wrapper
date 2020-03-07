@@ -348,7 +348,7 @@ class Resource(object):
             timeout=timeout,
             sleep=1,
             exceptions=(ProtocolError, NotFoundError),
-            func=self.exists,
+            func=lambda: self.exists,
         )
         for sample in samples:
             if sample:
@@ -373,6 +373,7 @@ class Resource(object):
         complete its cleanup. Needed by some resources.
         """
 
+    @property
     def exists(self):
         """
         Whether self exists on the server
@@ -392,7 +393,7 @@ class Resource(object):
         Raises:
             TimeoutExpiredError: If resource still exists.
         """
-        samples = TimeoutSampler(timeout=timeout, sleep=1, func=self.exists)
+        samples = TimeoutSampler(timeout=timeout, sleep=1, func=lambda: self.exists)
         for sample in samples:
             self.nudge_delete()
             if not sample:
