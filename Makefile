@@ -1,10 +1,10 @@
 # Pytest args handling
 pytest_args ?= $(PYTEST_ARGS)
 ifdef UPSTREAM
-	pytest_args += --tc-file=tests/test-config-upstream.yaml --tc-format=yaml
+	pytest_args += --tc-file=tests/global_config_upstream.py --tc-format=python
 endif
 ifndef UPSTREAM
-	pytest_args += --tc-file=tests/test-config.yaml --tc-format=yaml
+	pytest_args += --tc-file=tests/global_config.py --tc-format=python
 endif
 
 # Local cluster preparations

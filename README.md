@@ -121,8 +121,8 @@ To run upgrade test pass --upgrade to pytest command.
 There are other parameters that can be passed to the test suite if needed.
 
 ```bash
---tc-file=tests/test-config.yaml
---tc-format=yaml
+--tc-file=tests/global_config.py
+--tc-format=python
 --junitxml /tmp/xunit_results.xml
 --bugzilla
 --bugzilla-url=<url>
@@ -161,7 +161,7 @@ Example:
 
 ### Running tests using matrix fixtures
 
-Matrix fixtures can be added in test-config.yaml.
+Matrix fixtures can be added in global_config.py.
 You can run a test using a subset of a simple matrix (i.e flat list), example:
 ```bash
 --tc-exact --tc=bridge_devices:ovs
