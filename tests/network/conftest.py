@@ -94,7 +94,8 @@ def ovs_lb_bridge(
     nodes_active_nics,
     schedulable_nodes,
 ):
-    mtu = request.param.get("mtu")
+    params = request.param if hasattr(request, "param") else {}
+    mtu = params.get("mtu")
     ports = (
         [nodes_active_nics[network_utility_pods[0].node.name][1]]
         if multi_nics_nodes
