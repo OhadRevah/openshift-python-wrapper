@@ -222,7 +222,7 @@ def pytest_sessionstart(session):
     matrix_addoptions = [
         matrix
         for matrix in session.config.invocation_params.args
-        if matrix.endswith("_matrix")
+        if "-matrix=" in matrix
     ]
     for matrix_addoption in matrix_addoptions:
         items_dict = {}

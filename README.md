@@ -177,7 +177,7 @@ Example:
 ```bash
 --storage-class-matrix=rook-ceph-block
 --storage-class-matrix=rook-ceph-block,nfs
---bridge_device_matrix=ovs
+--bridge-device-matrix=ovs
 ```
 
 # Network utility container
