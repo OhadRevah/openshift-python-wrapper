@@ -317,6 +317,7 @@ def login_to_account(api_address, user, password=None):
     login_command = f"oc login {api_address} -u {user}"
     if password:
         login_command += f" -p {password}"
+
     samples = TimeoutSampler(
         timeout=120,
         sleep=3,
@@ -378,17 +379,18 @@ def unprivileged_secret(default_client):
     if py_config["distribution"] == "upstream" or py_config.get(
         "no_unprivileged_client"
     ):
-        return False
+        yield
 
-    password = UNPRIVILEGED_PASSWORD.encode()
-    enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
-    crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
-    with Secret(
-        name="htpass-secret",
-        namespace="openshift-config",
-        htpasswd=base64.b64encode(crypto_credentials).decode(),
-    ):
-        return True
+    else:
+        password = UNPRIVILEGED_PASSWORD.encode()
+        enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
+        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
+        with Secret(
+            name="htpass-secret",
+            namespace="openshift-config",
+            htpasswd=base64.b64encode(crypto_credentials).decode(),
+        ) as secret:
+            yield secret
 
 
 @pytest.fixture(scope="session")
