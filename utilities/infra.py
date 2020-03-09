@@ -44,7 +44,9 @@ class Images:
         WIN12_IMG = "win_12.qcow2"
         WIN16_IMG = "win_16.qcow2"
         WIN19_IMG = "win_19.qcow2"
+        WIN19_RAW = "win19.raw"
         DIR = f"{BASE_IMAGES_DIR}/windows-images"
+        RAW_DIR = f"{DIR}/raw_images"
 
     class Fedora:
         FEDORA29_IMG = "Fedora-Cloud-Base-29-1.2.x86_64.qcow2"

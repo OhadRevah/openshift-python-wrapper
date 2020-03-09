@@ -13,14 +13,23 @@ from utilities.infra import Images
 @pytest.mark.parametrize(
     "data_volume_scope_class",
     [
-        {
-            "dv_name": "dv-source",
-            "image": f"{Images.Windows.DIR}/{Images.Windows.WIN19_IMG}",
-        },
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Windows.DIR}/{Images.Windows.WIN19_IMG}",
+            },
+            marks=(pytest.mark.polarion("CNV-1892")),
+        ),
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+            },
+            marks=(pytest.mark.polarion("CNV-3409")),
+        ),
     ],
     indirect=True,
 )
-@pytest.mark.polarion("CNV-1892")
 def test_successful_clone_of_large_image(
     skip_upstream, storage_class_matrix__class__, namespace, data_volume_scope_class,
 ):
