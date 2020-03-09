@@ -84,17 +84,14 @@ def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
 
 
 @pytest.fixture(scope="class")
-def br1bond_nad(bond_supported, bridge_device_matrix, namespace):
-    if bond_supported:
-        with bridge_nad(
-            namespace=namespace,
-            nad_type=bridge_device_matrix,
-            nad_name="br1bond-nad",
-            bridge_name="br1bond",
-        ) as nad:
-            yield nad
-    else:
-        yield None
+def br1bond_nad(bridge_device_matrix, namespace):
+    with bridge_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix,
+        nad_name="br1bond-nad",
+        bridge_name="br1bond",
+    ) as nad:
+        yield nad
 
 
 @pytest.fixture(scope="class")
@@ -109,9 +106,14 @@ def skip_link_mode_balance_rr(link_aggregation_mode_matrix):
 
 
 @pytest.fixture(scope="class")
+def skip_no_bond_support(bond_supported):
+    if not bridge_on_bond:
+        pytest.skip(msg="No BOND support")
+
+
+@pytest.fixture(scope="class")
 def bond1(
     network_utility_pods,
-    bond_supported,
     nodes_active_nics,
     link_aggregation_mode_matrix,
     skip_link_mode_balance_rr,
@@ -119,53 +121,44 @@ def bond1(
     """
     Create BOND if setup support BOND
     """
-    bond_name = "bond1"
-    if bond_supported:
-        with BondNodeNetworkConfigurationPolicy(
-            name="bond1nncp",
-            bond_name=bond_name,
-            nodes=[i.node.name for i in network_utility_pods],
-            nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
-            worker_pods=network_utility_pods,
-            mode=link_aggregation_mode_matrix,
-            mtu=1450,
-        ):
-            yield bond_name
-    else:
-        yield None
+    with BondNodeNetworkConfigurationPolicy(
+        name="bond1nncp",
+        bond_name="bond1",
+        nodes=[i.node.name for i in network_utility_pods],
+        nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        worker_pods=network_utility_pods,
+        mode=link_aggregation_mode_matrix,
+        mtu=1450,
+    ) as bond:
+        yield bond
 
 
 @pytest.fixture(scope="class")
 def bridge_on_bond(
-    bridge_device_matrix, bond1, network_utility_pods, schedulable_nodes
+    bridge_device_matrix, network_utility_pods, schedulable_nodes, br1bond_nad, bond1,
 ):
     """
     Create bridge and attach the BOND to it
     """
-    if bond1:
-        with network_utils.bridge_device(
-            bridge_type=bridge_device_matrix,
-            nncp_name="bridge-on-bond",
-            bridge_name="br1bond",
-            network_utility_pods=network_utility_pods,
-            nodes=schedulable_nodes,
-            ports=[bond1],
-        ) as br:
-            yield br
-    else:
-        yield
+    with network_utils.bridge_device(
+        bridge_type=bridge_device_matrix,
+        nncp_name="bridge-on-bond",
+        bridge_name=br1bond_nad.bridge_name,
+        network_utility_pods=network_utility_pods,
+        nodes=schedulable_nodes,
+        ports=[bond1.bond_name],
+    ) as br:
+        yield br
 
 
 @pytest.fixture(scope="class")
 def bridge_attached_vma(
     schedulable_nodes,
-    bridge_on_bond,
     namespace,
     unprivileged_client,
     nad,
     br1vlan100_nad,
     br1vlan200_nad,
-    br1bond_nad,
 ):
     name = "vma"
     networks = OrderedDict()
@@ -176,10 +169,6 @@ def bridge_attached_vma(
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.1"))
-    if bridge_on_bond:
-        bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.1"))
-        networks[br1bond_nad.name] = br1bond_nad.name
-
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
 
@@ -200,13 +189,11 @@ def bridge_attached_vma(
 @pytest.fixture(scope="class")
 def bridge_attached_vmb(
     schedulable_nodes,
-    bridge_on_bond,
     namespace,
     unprivileged_client,
     nad,
     br1vlan100_nad,
     br1vlan300_nad,
-    br1bond_nad,
 ):
     name = "vmb"
     networks = OrderedDict()
@@ -217,12 +204,58 @@ def bridge_attached_vmb(
     bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.2"))
-    if bridge_on_bond:
-        bootcmds.extend(nmcli_add_con_cmds("eth4", "192.168.3.2"))
-        networks[br1bond_nad.name] = br1bond_nad.name
-
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
+
+    with VirtualMachineForTests(
+        namespace=namespace.name,
+        name=name,
+        body=fedora_vm_body(name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=schedulable_nodes[1].name,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="class")
+def bond_bridge_attached_vma(
+    schedulable_nodes, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
+):
+    name = "bond-vma"
+    networks = OrderedDict()
+    networks[br1bond_nad.name] = br1bond_nad.name
+
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.3.1")
+
+    with VirtualMachineForTests(
+        namespace=namespace.name,
+        name=name,
+        body=fedora_vm_body(name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=schedulable_nodes[0].name,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="class")
+def bond_bridge_attached_vmb(
+    schedulable_nodes, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
+):
+    name = "bond-vmb"
+    networks = OrderedDict()
+    networks[br1bond_nad.name] = br1bond_nad.name
+
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.3.2")
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -254,7 +287,23 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     return vmi
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers")
+@pytest.fixture(scope="class")
+def running_bond_bridge_attached_vmia(bond_bridge_attached_vma):
+    vmi = bond_bridge_attached_vma.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    return vmi
+
+
+@pytest.fixture(scope="class")
+def running_bond_bridge_attached_vmib(bond_bridge_attached_vmb):
+    vmi = bond_bridge_attached_vmb.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    return vmi
+
+
+@pytest.mark.usefixtures("skip_rhel7_workers", "skip_when_one_node")
 class TestConnectivity:
     @pytest.mark.parametrize(
         "bridge",
@@ -275,7 +324,6 @@ class TestConnectivity:
         self,
         bridge,
         rhel7_workers,
-        skip_when_one_node,
         namespace,
         ovs_lb_bridge,
         bridge_attached_vma,
@@ -292,34 +340,10 @@ class TestConnectivity:
             dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
         )
 
-    @pytest.mark.polarion("CNV-3366")
-    def test_bond(
-        self,
-        skip_when_one_node,
-        namespace,
-        ovs_lb_bridge,
-        bridge_on_bond,
-        bridge_attached_vma,
-        bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
-        br1bond_nad,
-    ):
-        if not bridge_on_bond:
-            pytest.skip(msg="No BOND support")
-
-        assert_ping_successful(
-            src_vm=running_bridge_attached_vmia,
-            dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmib, name=br1bond_nad.name
-            ),
-        )
-
     @pytest.mark.polarion("CNV-2072")
     def test_positive_vlan(
         self,
         skip_not_bare_metal,
-        skip_when_one_node,
         namespace,
         ovs_lb_bridge,
         br1vlan100_nad,
@@ -342,7 +366,6 @@ class TestConnectivity:
     def test_negative_vlan(
         self,
         skip_not_bare_metal,
-        skip_when_one_node,
         namespace,
         ovs_lb_bridge,
         br1vlan300_nad,
@@ -363,7 +386,6 @@ class TestConnectivity:
     def test_guest_performance(
         self,
         skip_not_bare_metal,
-        skip_when_one_node,
         namespace,
         ovs_lb_bridge,
         nad,
@@ -384,3 +406,24 @@ class TestConnectivity:
             ),
         )
         assert bits_per_second >= expected_res
+
+
+class TestBondConnectivity:
+    @pytest.mark.polarion("CNV-3366")
+    def test_bond(
+        self,
+        skip_no_bond_support,
+        namespace,
+        br1bond_nad,
+        bridge_on_bond,
+        bond_bridge_attached_vma,
+        bond_bridge_attached_vmb,
+        running_bond_bridge_attached_vmia,
+        running_bond_bridge_attached_vmib,
+    ):
+        assert_ping_successful(
+            src_vm=running_bond_bridge_attached_vmia,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vmi=running_bond_bridge_attached_vmib, name=br1bond_nad.name
+            ),
+        )
