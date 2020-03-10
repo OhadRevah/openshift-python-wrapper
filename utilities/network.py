@@ -5,7 +5,6 @@ from openshift.dynamic.exceptions import ConflictError
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
-from resources.pod import ExecOnPodError
 from resources.resource import sub_resource_level
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -13,10 +12,6 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 LOGGER = logging.getLogger(__name__)
 IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
 IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
-
-
-def set_iface_mtu(pod, port, mtu):
-    pod.execute(command=["ip", "link", "set", port, "mtu", mtu])
 
 
 class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
@@ -166,6 +161,16 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "state": IFACE_UP_STATE,
                 "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
             }
+            if self.mtu:
+                self.bridge["mtu"] = self.mtu
+                for port in bridge_ports:
+                    _port = {
+                        "name": port["name"],
+                        "type": "ethernet",
+                        "state": IFACE_UP_STATE,
+                        "mtu": self.mtu,
+                    }
+                    self.set_interface(_port)
 
         if self._ipv4_dhcp:
             self.bridge["ipv4"] = {"dhcp": True, "enabled": True}
@@ -185,7 +190,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         if self.mtu:
             for pod in self.worker_pods:
                 for port in self.ports:
-                    self.mtu_dict[pod.node.name + port] = pod.execute(
+                    self.mtu_dict[port] = pod.execute(
                         command=["cat", f"/sys/class/net/{port}/mtu"]
                     ).strip()
 
@@ -193,11 +198,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
         try:
             self.validate_create()
-            for pod in self.worker_pods:
-                if self.mtu:
-                    for port in self.ports:
-                        set_iface_mtu(pod, port, self.mtu)
-
             return self
         except Exception as e:
             LOGGER.error(e)
@@ -227,11 +227,15 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
     def clean_up(self):
         if self.mtu:
-            for pod in self.worker_pods:
-                # Restore MTU
-                for port in self.ports:
-                    set_iface_mtu(pod, port, self.mtu_dict[pod.node.name + port])
-
+            for port in self.ports:
+                _port = {
+                    "name": port,
+                    "type": "ethernet",
+                    "state": IFACE_UP_STATE,
+                    "mtu": self.mtu_dict[port],
+                }
+                self.set_interface(_port)
+                self.apply()
         try:
             self._absent_interface()
             self.wait_for_bridge_deleted()
@@ -330,18 +334,6 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
         )
-
-    def __enter__(self):
-        super().__enter__()
-        for pod in self.worker_pods:
-            try:
-                if self.mtu:
-                    set_iface_mtu(pod, self.bridge_name, self.mtu)
-                return self
-
-            except (TimeoutExpiredError, ExecOnPodError):
-                self.clean_up()
-                raise
 
 
 class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPolicy):

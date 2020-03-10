@@ -4,10 +4,8 @@ import logging
 import bitmath
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
-from resources.pod import ExecOnPodError
 from resources.utils import TimeoutExpiredError
 from utilities import console
-from utilities.network import set_iface_mtu
 
 
 LOGGER = logging.getLogger(__name__)
@@ -53,6 +51,15 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     "options": {"miimon": "120"},
                 },
             }
+            if self.mtu:
+                for port in self.nics:
+                    _port = {
+                        "name": port["name"],
+                        "type": "ethernet",
+                        "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
+                        "mtu": self.mtu,
+                    }
+                    self.set_interface(_port)
 
         self.set_interface(self.bond)
         res = super().to_dict()
@@ -62,10 +69,9 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         if self.mtu:
             for pod in self.worker_pods:
                 for nic in self.nics:
-                    self.mtu_dict[f"{pod.node.name}{nic}"] = pod.execute(
+                    self.mtu_dict[nic] = pod.execute(
                         command=["cat", f"/sys/class/net/{nic}/mtu"]
                     ).strip()
-                    set_iface_mtu(pod=pod, port=nic, mtu=self.mtu)
 
         super().__enter__()
         for node in self.nodes:
@@ -78,20 +84,19 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         return self
 
     def clean_up(self):
+        if self.mtu:
+            for port in self.nics:
+                _port = {
+                    "name": port,
+                    "type": "ethernet",
+                    "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
+                    "mtu": self.mtu_dict[port],
+                }
+                self.set_interface(_port)
+                self.apply()
         self._absent_interface()
         self.wait_for_bond_deleted()
         self.delete()
-        if self.mtu:
-            for pod in self.worker_pods:
-                # Restore MTU
-                for nic in self.nics:
-                    mtu = self.mtu_dict[f"{pod.node.name}{nic}"]
-                    try:
-                        set_iface_mtu(pod=pod, port=nic, mtu=self.mtu)
-                    except ExecOnPodError:
-                        LOGGER.error(
-                            f"Failed to restore MTU to {mtu} on {pod.node.name}"
-                        )
 
     def __exit__(self, exception_type, exception_value, traceback):
         if not self.teardown:
