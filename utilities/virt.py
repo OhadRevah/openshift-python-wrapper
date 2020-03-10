@@ -314,7 +314,12 @@ class VirtualMachineForTests(VirtualMachine):
                 self.dv.storage_class == "hostpath-provisioner"
                 and not self.node_selector
             ):
-                spec["nodeSelector"] = {"kubernetes.io/hostname": self.dv.hostpath_node}
+                spec["nodeSelector"] = {
+                    "kubernetes.io/hostname": self.dv.hostpath_node
+                    or self.dv.pvc.instance.metadata.annotations[
+                        "volume.kubernetes.io/selected-node"
+                    ]
+                }
 
         if self.machine_type:
             spec.setdefault("domain", {}).setdefault("machine", {})[
