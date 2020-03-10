@@ -30,6 +30,7 @@ def test_successful_virtctl_upload_no_url(storage_ns, tmpdir):
         pvc_name=pvc_name,
         pvc_size="1Gi",
         image_path=local_name,
+        insecure=True,
     )
     assert virtctl_upload
     LOGGER.info(f"{virtctl_upload}")
@@ -54,6 +55,7 @@ def test_successful_virtctl_upload_no_route(
         pvc_name=pvc_name,
         pvc_size="1Gi",
         image_path=local_name,
+        insecure=True,
     )
     LOGGER.info(f"{virtctl_upload_out}")
     assert (
@@ -75,6 +77,7 @@ def test_image_upload_with_overridden_url(
         pvc_name=pvc_name,
         pvc_size="1Gi",
         image_path=local_name,
+        insecure=True,
     )
     assert virtctl_upload
     LOGGER.info(f"{virtctl_upload}")

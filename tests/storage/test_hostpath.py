@@ -349,6 +349,7 @@ def test_hpp_upload_virtctl(
         pvc_size="25Gi",
         pvc_name=pvc_name,
         storage_class=StorageClass.Types.HOSTPATH,
+        insecure=True,
     )
     LOGGER.debug(virtctl_upload)
     assert virtctl_upload
