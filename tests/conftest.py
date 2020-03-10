@@ -668,6 +668,16 @@ def leftovers():
             continue
 
 
+@pytest.fixture(scope="session")
+def workers_type(network_utility_pods):
+    for pod in network_utility_pods:
+        out = pod.execute(command=["bash", "-c", "dmesg | grep 'Hypervisor detected'"])
+        if "Hypervisor detected: KVM" in out:
+            return "virtual"
+
+    return "physical"
+
+
 # RHEL 7 specific fixtures
 @pytest.fixture(scope="session")
 def rhel7_workers(schedulable_nodes):
