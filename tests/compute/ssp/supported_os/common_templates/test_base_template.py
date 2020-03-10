@@ -92,6 +92,10 @@ CNV_TEMPLATES_NAME = [
     "win2k12r2-desktop-medium",
     "win2k12r2-server-large",
     "win2k12r2-server-medium",
+    "windows-server-large",
+    "windows-server-medium",
+    "windows10-desktop-large",
+    "windows10-desktop-medium",
 ]
 
 
@@ -194,28 +198,32 @@ def test_validate_rhel_min_max_memory(
 
 
 @pytest.mark.parametrize(
-    ("osinfo_filename", "memory_test"),
+    ("osinfo_filename", "os_template", "memory_test"),
     [
         pytest.param(
             "win-2k12r2",
+            "windows-server",
             "minimum",
             marks=(pytest.mark.polarion("CNV-3624")),
             id="test_win2kr2_minimum_memory",
         ),
         pytest.param(
             "win-2k16",
+            "windows-server",
             "minimum",
             marks=(pytest.mark.polarion("CNV-3625")),
             id="test_win2k16_minimum_memory",
         ),
         pytest.param(
             "win-2k19",
+            "windows-server",
             "minimum",
             marks=(pytest.mark.polarion("CNV-3626")),
             id="test_win2k19_minimum_memory",
         ),
         pytest.param(
             "win-10",
+            "windows10",
             "minimum",
             marks=(
                 pytest.mark.polarion("CNV-3627"),
@@ -227,24 +235,28 @@ def test_validate_rhel_min_max_memory(
         ),
         pytest.param(
             "win-2k12r2",
+            "windows-server",
             "maximum",
             marks=(pytest.mark.polarion("CNV-3628")),
             id="test_win2k12r2_maximum_memory",
         ),
         pytest.param(
             "win-2k16",
+            "windows-server",
             "maximum",
             marks=(pytest.mark.polarion("CNV-3629")),
             id="test_win2k16_maximum_memory",
         ),
         pytest.param(
             "win-2k19",
+            "windows-server",
             "maximum",
             marks=(pytest.mark.polarion("CNV-3630")),
             id="test_win2k19_maximum_memory",
         ),
         pytest.param(
             "win-10",
+            "windows10",
             "maximum",
             marks=(pytest.mark.polarion("CNV-3631")),
             id="test_win10_maximum_memory",
@@ -252,7 +264,7 @@ def test_validate_rhel_min_max_memory(
     ],
 )
 def test_validate_windows_min_max_memory(
-    base_templates, fetch_osinfo_path, osinfo_filename, memory_test
+    base_templates, fetch_osinfo_path, osinfo_filename, os_template, memory_test
 ):
     """
     Validate CNV Windows templates for minimum and maximum memory, against osinfo db files.
@@ -266,5 +278,18 @@ def test_validate_windows_min_max_memory(
     )
 
     utils.check_default_and_validation_memory(
-        base_templates, osinfo_memory_value, "win2k12r2", memory_test, osinfo_filename,
+        get_base_templates=base_templates,
+        osinfo_memory_value=osinfo_memory_value,
+        os_type=os_template,
+        memory_test=memory_test,
+        osinfo_filename=osinfo_filename,
+    )
+
+    # Old template, saved for backward compatibility
+    utils.check_default_and_validation_memory(
+        get_base_templates=base_templates,
+        osinfo_memory_value=osinfo_memory_value,
+        os_type="win2k12r2",
+        memory_test=memory_test,
+        osinfo_filename=osinfo_filename,
     )
