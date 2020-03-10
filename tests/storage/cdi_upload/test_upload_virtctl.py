@@ -18,6 +18,13 @@ from utilities.infra import Images
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.fixture(scope="function")
+def skip_no_reencrypt_route(upload_proxy_route):
+    LOGGER.debug("Use 'skip_no_reencrypt_route' fixture...")
+    if not upload_proxy_route.termination == "reencrypt":
+        pytest.skip(msg="Skip testing. The upload proxy route is not re-encrypt.")
+
+
 @pytest.mark.polarion("CNV-2192")
 def test_successful_virtctl_upload_no_url(namespace, tmpdir):
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
@@ -82,3 +89,22 @@ def test_image_upload_with_overridden_url(
     assert virtctl_upload
     LOGGER.info(f"{virtctl_upload}")
     assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
+
+
+@pytest.mark.polarion("CNV-3031")
+def test_virtctl_image_upload_with_ca(skip_no_reencrypt_route, tmpdir, namespace):
+    local_path = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
+    storage_utils.downloaded_image(
+        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_path
+    )
+    pvc_name = "cnv-3031"
+    res, out = storage_utils.virtctl_upload(
+        namespace=namespace.name,
+        pvc_name=pvc_name,
+        pvc_size="1Gi",
+        image_path=local_path,
+    )
+    LOGGER.info(out)
+    assert res
+    pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
+    assert pvc.bound()

@@ -52,3 +52,10 @@ class Route(NamespacedResource):
         returns destinationCACertificate
         """
         return self.instance.spec.tls.destinationCACertificate
+
+    @property
+    def termination(self):
+        """
+        returns a secured route using re-encrypt termination
+        """
+        return self.instance.spec.tls.termination
