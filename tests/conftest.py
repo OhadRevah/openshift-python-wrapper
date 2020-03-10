@@ -15,6 +15,7 @@ from subprocess import PIPE, CalledProcessError, Popen, check_output
 import bcrypt
 import kubernetes
 import pytest
+import rrmngmnt
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
@@ -524,7 +525,20 @@ def network_utility_pods(schedulable_nodes, net_utility_daemonset, default_clien
 
 
 @pytest.fixture(scope="session")
-def nodes_active_nics(schedulable_nodes):
+def workers_ssh_executors(network_utility_pods):
+    executors = {}
+    for pod in network_utility_pods:
+        host = rrmngmnt.Host(pod.instance.status.podIP)
+        host_user = rrmngmnt.user.User(name="core", password=None)
+        host._set_executor_user(host_user)
+        host.add_user(host_user)
+        executors[pod.node.name] = host
+
+    return executors
+
+
+@pytest.fixture(scope="session")
+def nodes_active_nics(schedulable_nodes, workers_ssh_executors):
     """
     Get nodes active NICs.
     First NIC is management NIC
@@ -539,6 +553,7 @@ def nodes_active_nics(schedulable_nodes):
     nodes_nics = {}
     for node in schedulable_nodes:
         ifaces = []
+        node_physical_nics = workers_ssh_executors[node.name].network.all_interfaces()
         nns = NodeNetworkState(name=node.name)
         default_routes = [
             route for route in nns.routes.running if route.destination == "0.0.0.0/0"
@@ -553,6 +568,10 @@ def nodes_active_nics(schedulable_nodes):
         for iface in nns.interfaces:
             primary = primary_iface_name == iface.name
             if iface.type == "ethernet":
+                # In OVN deployment we get extra auto generated OVN interfaces so we need to exclude them
+                if iface.name not in node_physical_nics:
+                    continue
+
                 _insert_first(ifaces=ifaces, primary=primary, iface=iface)
 
             if iface.type == "ovs-bridge":
