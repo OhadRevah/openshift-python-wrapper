@@ -95,13 +95,14 @@ def br1bond_nad(bridge_device_matrix, namespace):
 
 
 @pytest.fixture(scope="class")
-def skip_link_mode_balance_rr(link_aggregation_mode_matrix):
+def skip_bond_modes_with_connectivity_issues(link_aggregation_mode_matrix):
     """
     https://issues.redhat.com/browse/CNV-4058
     """
-    if link_aggregation_mode_matrix == "balance-rr":
+    modes_to_skip = ["balance-rr", "balance-xor", "broadcast"]
+    if link_aggregation_mode_matrix in modes_to_skip:
         pytest.skip(
-            msg="Skip the link_aggregation_mode balance-rr due to the packet loss"
+            msg=f"Skip the link_aggregation_mode {link_aggregation_mode_matrix} due to packet loss"
         )
 
 
@@ -116,7 +117,7 @@ def bond1(
     network_utility_pods,
     nodes_active_nics,
     link_aggregation_mode_matrix,
-    skip_link_mode_balance_rr,
+    skip_bond_modes_with_connectivity_issues,
 ):
     """
     Create BOND if setup support BOND
