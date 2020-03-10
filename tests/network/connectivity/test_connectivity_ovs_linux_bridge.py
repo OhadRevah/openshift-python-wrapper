@@ -107,7 +107,7 @@ def skip_link_mode_balance_rr(link_aggregation_mode_matrix):
 
 @pytest.fixture(scope="class")
 def skip_no_bond_support(bond_supported):
-    if not bridge_on_bond:
+    if not bond_supported:
         pytest.skip(msg="No BOND support")
 
 
