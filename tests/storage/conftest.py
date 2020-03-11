@@ -18,7 +18,6 @@ from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.storage_class import StorageClass
-from tests.storage import utils
 from tests.storage.utils import HttpService
 from utilities.infra import Images, get_cert, get_images_external_http_server
 from utilities.storage import create_dv
@@ -94,7 +93,7 @@ def images_internal_http_server(internal_http_deployment, internal_http_service)
 
 @pytest.fixture(scope="session")
 def images_private_registry_server():
-    return utils.get_images_private_registry_server()
+    return py_config[py_config["region"]]["registry_server"]
 
 
 @pytest.fixture()

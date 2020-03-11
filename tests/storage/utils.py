@@ -184,13 +184,6 @@ def upload_image(token, data):
     ).status_code
 
 
-def get_images_private_registry_server():
-    """
-    Fetch url from config and return if available.
-    """
-    return py_config[py_config["region"]]["registry_server"]
-
-
 class HttpService(Service):
     def to_dict(self):
         res = super()._base_body()
