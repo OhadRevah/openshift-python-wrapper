@@ -54,7 +54,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             if self.mtu:
                 for port in self.nics:
                     _port = {
-                        "name": port["name"],
+                        "name": port,
                         "type": "ethernet",
                         "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
                         "mtu": self.mtu,
