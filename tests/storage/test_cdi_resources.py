@@ -109,34 +109,34 @@ def get_cdi_worker_pods(default_client, pod_prefix, storage_ns_name):
 
 
 @pytest.mark.polarion("CNV-3475")
-def test_importer_pod_cdi_label(default_client, storage_ns):
+def test_importer_pod_cdi_label(default_client, namespace):
     # verify "cdi.kubevirt.io" label is included in importer pod
     with storage_utils.import_image_to_dv(
         dv_name="cnv-3475",
         images_https_server_name=get_images_https_server(),
         volume_mode=py_config["default_volume_mode"],
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
     ):
         get_cdi_worker_pods(
-            default_client, pod_prefix="importer", storage_ns_name=storage_ns.name
+            default_client, pod_prefix="importer", storage_ns_name=namespace.name
         )
 
 
 @pytest.mark.polarion("CNV-3474")
-def test_uploader_pod_cdi_label(default_client, storage_ns):
+def test_uploader_pod_cdi_label(default_client, namespace):
     # verify "cdi.kubevirt.io" label is included in uploader pod
     with storage_utils.upload_image_to_dv(
         dv_name="cnv-3474",
         volume_mode=py_config["default_volume_mode"],
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
     ):
         get_cdi_worker_pods(
-            default_client, pod_prefix="cdi-upload", storage_ns_name=storage_ns.name
+            default_client, pod_prefix="cdi-upload", storage_ns_name=namespace.name
         )
 
 
 @pytest.mark.polarion("CNV-3476")
-def test_cloner_pods_cdi_label(default_client, storage_ns, https_config_map):
+def test_cloner_pods_cdi_label(default_client, namespace, https_config_map):
     # verify "cdi.kubevirt.io" label is included in cloning pods
     url = storage_utils.get_file_url_https_server(
         get_images_https_server(), Images.Cirros.QCOW2_IMG,
@@ -144,7 +144,7 @@ def test_cloner_pods_cdi_label(default_client, storage_ns, https_config_map):
     with utils.create_dv(
         source="http",
         dv_name="dv-source",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         cert_configmap=https_config_map.name,
         storage_class=py_config["default_storage_class"],

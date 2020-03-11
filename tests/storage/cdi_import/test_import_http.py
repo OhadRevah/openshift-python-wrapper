@@ -31,12 +31,12 @@ def get_file_url(url, file_name):
 
 
 @pytest.mark.polarion("CNV-675")
-def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_server):
+def test_delete_pvc_after_successful_import(namespace, images_internal_http_server):
     url = get_file_url(images_internal_http_server["http"], Images.Cdi.QCOW2_IMG)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
@@ -59,12 +59,12 @@ def test_delete_pvc_after_successful_import(storage_ns, images_internal_http_ser
 
 
 @pytest.mark.polarion("CNV-876")
-def test_invalid_url(storage_ns):
+def test_invalid_url(namespace):
     # negative flow - invalid url
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv-negative",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url="https://noneexist.com",
         size="500Mi",
         storage_class=py_config["default_storage_class"],
@@ -74,12 +74,12 @@ def test_invalid_url(storage_ns):
 
 
 @pytest.mark.polarion("CNV-674")
-def test_empty_url(storage_ns):
+def test_empty_url(namespace):
     with pytest.raises(UnprocessibleEntityError):
         with utilities.storage.create_dv(
             source="http",
             dv_name="import-http-dv",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             url="",
             size="500Mi",
             storage_class=py_config["default_storage_class"],
@@ -89,12 +89,12 @@ def test_empty_url(storage_ns):
 
 
 @pytest.mark.polarion("CNV-2145")
-def test_successful_import_archive(storage_ns, images_internal_http_server):
+def test_successful_import_archive(namespace, images_internal_http_server):
     url = get_file_url(images_internal_http_server["http"], TAR_IMG)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
@@ -122,12 +122,12 @@ def test_successful_import_archive(storage_ns, images_internal_http_server):
     ],
     ids=["import_qcow_image", "import_iso_image"],
 )
-def test_successful_import_image(storage_ns, images_internal_http_server, file_name):
+def test_successful_import_image(namespace, images_internal_http_server, file_name):
     url = get_file_url(images_internal_http_server["http"], file_name)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
@@ -148,13 +148,13 @@ def test_successful_import_image(storage_ns, images_internal_http_server, file_n
 
 @pytest.mark.polarion("CNV-2338")
 def test_successful_import_secure_archive(
-    storage_ns, images_internal_http_server, internal_http_configmap
+    namespace, images_internal_http_server, internal_http_configmap
 ):
     url = get_file_url(images_internal_http_server["https"], TAR_IMG)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-https-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         cert_configmap=internal_http_configmap.name,
         content_type=DataVolume.ContentType.ARCHIVE,
@@ -177,13 +177,13 @@ def test_successful_import_secure_archive(
 
 @pytest.mark.polarion("CNV-2719")
 def test_successful_import_secure_image(
-    storage_ns, images_internal_http_server, internal_http_configmap
+    namespace, images_internal_http_server, internal_http_configmap
 ):
     url = get_file_url(images_internal_http_server["https"], Images.Cdi.QCOW2_IMG)
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-https-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         cert_configmap=internal_http_configmap.name,
         size="500Mi",
@@ -220,7 +220,7 @@ def test_successful_import_secure_image(
     ids=["import_basic_auth_archive", "import_basic_auth_kubevirt"],
 )
 def test_successful_import_basic_auth(
-    storage_ns,
+    namespace,
     images_internal_http_server,
     internal_http_secret,
     content_type,
@@ -235,7 +235,7 @@ def test_successful_import_basic_auth(
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=get_file_url(images_internal_http_server["http_auth"], file_name),
         content_type=content_type,
         size="500Mi",
@@ -255,11 +255,11 @@ def test_successful_import_basic_auth(
 
 
 @pytest.mark.polarion("CNV-2144")
-def test_wrong_content_type(storage_ns, images_internal_http_server):
+def test_wrong_content_type(namespace, images_internal_http_server):
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=get_file_url(images_internal_http_server["http"], Images.Cdi.QCOW2_IMG),
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
@@ -300,12 +300,12 @@ def test_wrong_content_type(storage_ns, images_internal_http_server):
     ],
 )
 def test_import_invalid_qcow(
-    storage_ns, images_internal_http_server, dv_name, file_name
+    namespace, images_internal_http_server, dv_name, file_name
 ):
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -331,12 +331,12 @@ def test_import_invalid_qcow(
 )
 # TODO: It's now a negative test but once https://jira.coreos.com/browse/CNV-1553 implement, here needs to be changed.
 def test_unpack_compressed(
-    storage_ns, images_internal_http_server, file_name, content_type
+    namespace, images_internal_http_server, file_name, content_type
 ):
     with utilities.storage.create_dv(
         source="http",
         dv_name="unpack-compressed-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=get_file_url(images_internal_http_server["http"], file_name),
         content_type=content_type,
         size="200Mi",
@@ -347,13 +347,11 @@ def test_unpack_compressed(
 
 
 @pytest.mark.polarion("CNV-2811")
-def test_certconfigmap(
-    storage_ns, images_internal_http_server, internal_http_configmap
-):
+def test_certconfigmap(namespace, images_internal_http_server, internal_http_configmap):
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-2811",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -386,15 +384,15 @@ def test_certconfigmap(
     ],
 )
 def test_certconfigmap_incorrect_cert(
-    storage_ns, images_internal_http_server, name, data
+    namespace, images_internal_http_server, name, data
 ):
     with ConfigMap(
-        name="https-cert", namespace=storage_ns.name, cert_name="ca.pem", data=data
+        name="https-cert", namespace=namespace.name, cert_name="ca.pem", data=data
     ) as configmap:
         with utilities.storage.create_dv(
             source="http",
             dv_name=name,
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             url=get_file_url(
                 url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
             ),
@@ -407,11 +405,11 @@ def test_certconfigmap_incorrect_cert(
 
 
 @pytest.mark.polarion("CNV-2815")
-def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_internal_http_server):
+def test_certconfigmap_missing_or_wrong_cm(namespace, images_internal_http_server):
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-2815",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=get_file_url(
             url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
         ),
@@ -436,11 +434,11 @@ def test_certconfigmap_missing_or_wrong_cm(storage_ns, images_internal_http_serv
                     raise AssertionError()
 
 
-def blank_disk_import(storage_ns, dv_name):
+def blank_disk_import(namespace, dv_name):
     with utilities.storage.create_dv(
         source="blank",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -453,11 +451,11 @@ def blank_disk_import(storage_ns, dv_name):
 
 
 @pytest.mark.polarion("CNV-2151")
-def test_successful_blank_disk_import(storage_ns):
+def test_successful_blank_disk_import(namespace):
     with utilities.storage.create_dv(
         source="blank",
         dv_name="cnv-2151",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="500Mi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -468,11 +466,11 @@ def test_successful_blank_disk_import(storage_ns):
 
 
 @pytest.mark.polarion("CNV-2001")
-def test_successful_concurrent_blank_disk_import(storage_ns):
+def test_successful_concurrent_blank_disk_import(namespace):
     dv_processes = []
     for dv in range(4):
         dv_process = multiprocessing.Process(
-            target=blank_disk_import, args=(storage_ns, f"dv-{dv}")
+            target=blank_disk_import, args=(namespace, f"dv-{dv}")
         )
         dv_process.start()
         dv_processes.append(dv_process)
@@ -496,7 +494,7 @@ def test_successful_concurrent_blank_disk_import(storage_ns):
     reason="qemu-img reports 0 disk size for block",
 )
 def test_vmi_image_size(
-    storage_ns,
+    namespace,
     images_internal_http_server,
     internal_http_configmap,
     size,
@@ -506,7 +504,7 @@ def test_vmi_image_size(
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-1404",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size=f"{size}{unit}",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -535,11 +533,11 @@ def test_vmi_image_size(
 
 
 @pytest.mark.polarion("CNV-3065")
-def test_disk_falloc(storage_ns, images_internal_http_server, internal_http_configmap):
+def test_disk_falloc(namespace, images_internal_http_server, internal_http_configmap):
     with utilities.storage.create_dv(
         source="http",
         dv_name="cnv-3065",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="100Mi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],

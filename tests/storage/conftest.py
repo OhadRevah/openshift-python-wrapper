@@ -34,30 +34,23 @@ def cdi_resources(request, default_client):
     return [rcs for rcs in resource_list if rcs.name.startswith("cdi-")]
 
 
-@pytest.fixture(scope="session", autouse=True)
-def storage_ns():
-    with Namespace(name="cnv-cdi-ns") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE)
-        yield ns
-
-
 @pytest.fixture(scope="session")
-def internal_http_configmap(storage_ns):
+def internal_http_configmap(namespace):
     path = os.path.join("tests/storage/internal_http/certs", "tls.crt")
     with open(path, "r") as cert_content:
         with ConfigMap(
             name="internal-https-configmap",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             data=cert_content.read(),
         ) as configmap:
             yield configmap
 
 
 @pytest.fixture(scope="session")
-def internal_http_secret(storage_ns):
+def internal_http_secret(namespace):
     with Secret(
         name="internal-http-secret",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         accesskeyid="YWRtaW4=",
         secretkey="cGFzc3dvcmQ=",
     ) as secret:
@@ -211,10 +204,10 @@ def cdi():
 
 
 @pytest.fixture()
-def https_config_map(storage_ns):
+def https_config_map(namespace):
     with ConfigMap(
         name="https-cert",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         cert_name="ca.pem",
         data=get_cert("https_cert"),
     ) as configmap:
@@ -222,18 +215,18 @@ def https_config_map(storage_ns):
 
 
 @pytest.fixture()
-def registry_config_map(storage_ns):
+def registry_config_map(namespace):
     with ConfigMap(
-        name="registry-cert", namespace=storage_ns.name, data=get_cert("registry_cert")
+        name="registry-cert", namespace=namespace.name, data=get_cert("registry_cert")
     ) as configmap:
         yield configmap
 
 
 @pytest.fixture(scope="module")
-def data_volume(storage_ns):
+def data_volume(namespace):
     with create_dv(
         dv_name="source-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",

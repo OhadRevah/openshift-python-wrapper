@@ -27,10 +27,10 @@ SECRET_KEY = "MTIz"
 
 
 @pytest.fixture()
-def secret(storage_ns):
+def secret(namespace):
     with Secret(
         name="http-secret",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         accesskeyid=ACCESS_KEY_ID,
         secretkey=SECRET_KEY,
     ) as secret:
@@ -38,14 +38,14 @@ def secret(storage_ns):
 
 
 @pytest.mark.polarion("CNV-2327")
-def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir):
+def test_upload_https_scratch_space_delete_pvc(skip_upstream, namespace, tmpdir):
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with utilities.storage.create_dv(
         source="upload",
         dv_name="scratch-space-upload-qcow2-https",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="3Gi",
         storage_class=StorageClass.Types.ROOK,
         volume_mode=DataVolume.VolumeMode.BLOCK,
@@ -57,7 +57,7 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
             name="scratch-space-upload-qcow2-https",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
@@ -79,12 +79,12 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, storage_ns, tmpdir
 
 @pytest.mark.polarion("CNV-2328")
 def test_import_https_scratch_space_delete_pvc(
-    skip_upstream, storage_ns, https_config_map
+    skip_upstream, namespace, https_config_map
 ):
     with storage_utils.create_dv(
         source="http",
         dv_name="scratch-space-import-qcow2-https",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_https_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         cert_configmap=https_config_map.name,
         storage_class=StorageClass.Types.ROOK,
@@ -137,11 +137,11 @@ def test_import_https_scratch_space_delete_pvc(
     ],
 )
 def test_no_scratch_space_import_https_data_volume(
-    skip_upstream, storage_ns, https_config_map, dv_name, file_name, content_type, size,
+    skip_upstream, namespace, https_config_map, dv_name, file_name, content_type, size,
 ):
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_https_server()}{Images.Cirros.DIR}/{file_name}",
         cert_configmap=https_config_map.name,
         content_type=content_type,
@@ -173,12 +173,12 @@ def test_no_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_https_data_volume(
-    skip_upstream, storage_ns, https_config_map, dv_name, file_name
+    skip_upstream, namespace, https_config_map, dv_name, file_name
 ):
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_https_server()}{Images.Cirros.DIR}/{file_name}",
         cert_configmap=https_config_map.name,
         storage_class=StorageClass.Types.ROOK,
@@ -210,12 +210,12 @@ def test_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_http_data_volume(
-    skip_upstream, storage_ns, dv_name, file_name
+    skip_upstream, namespace, dv_name, file_name
 ):
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{file_name}",
         storage_class=StorageClass.Types.ROOK,
         volume_mode=DataVolume.VolumeMode.BLOCK,
@@ -246,12 +246,12 @@ def test_scratch_space_import_http_data_volume(
     ],
 )
 def test_scratch_space_import_http_basic_auth_data_volume(
-    skip_upstream, storage_ns, secret, dv_name, file_name
+    skip_upstream, namespace, secret, dv_name, file_name
 ):
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
         storage_class=StorageClass.Types.ROOK,
         volume_mode=DataVolume.VolumeMode.BLOCK,
@@ -295,11 +295,11 @@ def test_scratch_space_import_http_basic_auth_data_volume(
     ],
 )
 def test_no_scratch_space_import_http_basic_auth(
-    skip_upstream, storage_ns, secret, dv_name, file_name,
+    skip_upstream, namespace, secret, dv_name, file_name,
 ):
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
         secret=secret,
         content_type=DataVolume.ContentType.KUBEVIRT,
@@ -331,11 +331,11 @@ def test_no_scratch_space_import_http_basic_auth(
     ],
 )
 def test_no_scratch_space_import_http(
-    skip_upstream, storage_ns, dv_name, file_name,
+    skip_upstream, namespace, dv_name, file_name,
 ):
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{file_name}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="5Gi",
@@ -384,7 +384,7 @@ def test_no_scratch_space_import_http(
     ],
 )
 def test_scratch_space_upload_data_volume(
-    skip_upstream, storage_ns, tmpdir, file_name, dv_name
+    skip_upstream, namespace, tmpdir, file_name, dv_name
 ):
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{Images.Cirros.DIR}/{file_name}"
@@ -392,14 +392,14 @@ def test_scratch_space_upload_data_volume(
     with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="3Gi",
         storage_class=StorageClass.Types.ROOK,
         volume_mode=DataVolume.VolumeMode.BLOCK,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
-            name="cnv-2315", namespace=storage_ns.name, pvc_name=dv.pvc.name
+            name="cnv-2315", namespace=namespace.name, pvc_name=dv.pvc.name
         ) as utr:
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
@@ -423,12 +423,12 @@ def test_scratch_space_upload_data_volume(
 
 @pytest.mark.polarion("CNV-2319")
 def test_scratch_space_import_registry_data_volume(
-    skip_upstream, storage_ns, images_private_registry_server, registry_config_map
+    skip_upstream, namespace, images_private_registry_server, registry_config_map
 ):
     with utilities.storage.create_dv(
         source="registry",
         dv_name="scratch-space-import-registry",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=StorageClass.Types.ROOK,
@@ -448,7 +448,7 @@ def create_dv_and_vm_no_scratch_space(
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=namespace,
+        namespace=namespace.name,
         content_type=content_type,
         url=url,
         cert_configmap=cert_configmap,

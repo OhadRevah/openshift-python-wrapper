@@ -74,7 +74,7 @@ def cdiconfig_update(
 
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
-    skip_test_if_no_hpp_sc, tmpdir, cdi_config, storage_ns,
+    skip_test_if_no_hpp_sc, tmpdir, cdi_config, namespace,
 ):
     cdiconfig_update(
         source="upload",
@@ -82,7 +82,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         dv_name="cnv-2451",
         storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=get_images_https_server(),
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
         run_vm=True,
         tmpdir=tmpdir,
@@ -91,14 +91,14 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
 
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
-    skip_test_if_no_hpp_sc, cdi_config, storage_ns,
+    skip_test_if_no_hpp_sc, cdi_config, namespace,
 ):
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
         dv_name="cnv-2478",
         storage_class_type=StorageClass.Types.HOSTPATH,
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.BLOCK,
         images_https_server_name=get_images_https_server(),
         run_vm=True,
@@ -107,21 +107,21 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
 
 @pytest.mark.polarion("CNV-2214")
 def test_cdiconfig_status_scratchspace_update_with_spec(
-    skip_test_if_no_hpp_sc, cdi_config, storage_ns
+    skip_test_if_no_hpp_sc, cdi_config, namespace
 ):
     cdiconfig_update(
         source="http",
         cdiconfig=cdi_config,
         dv_name="cnv-2214",
         storage_class_type=StorageClass.Types.HOSTPATH,
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
     )
 
 
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_test_if_no_hpp_sc, cdi_config, storage_ns,
+    skip_test_if_no_hpp_sc, cdi_config, namespace,
 ):
     cdiconfig_update(
         source="http",
@@ -129,7 +129,7 @@ def test_cdiconfig_scratch_space_not_default(
         dv_name="cnv-2440",
         storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=get_images_https_server(),
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
         run_vm=True,
         volume_mode=DataVolume.VolumeMode.FILE,
     )
@@ -149,10 +149,10 @@ def test_cdi_config_exists(cdi_config, upload_proxy_route):
 
 @pytest.mark.polarion("CNV-2209")
 def test_different_route_for_upload_proxy(
-    cdi_config, storage_ns, uploadproxy_route_deleted
+    cdi_config, namespace, uploadproxy_route_deleted
 ):
     with Route(
-        namespace=storage_ns.name, name="my-route", service="cdi-uploadproxy"
+        namespace=namespace.name, name="my-route", service="cdi-uploadproxy"
     ) as new_route:
         cdi_config.wait_until_upload_url_changed(new_route.host)
 
@@ -168,17 +168,17 @@ def test_route_for_different_service(cdi_config, upload_proxy_route):
 
 @pytest.mark.polarion("CNV-2216")
 def test_upload_proxy_url_overridden(
-    cdi_config, storage_ns, cdi_config_upload_proxy_overridden
+    cdi_config, namespace, cdi_config_upload_proxy_overridden
 ):
     with Route(
-        namespace=storage_ns.name, name="my-route", service="cdi-uploadproxy"
+        namespace=namespace.name, name="my-route", service="cdi-uploadproxy"
     ) as new_route:
         assert cdi_config.upload_proxy_url != new_route.host
 
 
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
-    skip_test_if_no_hpp_sc, cdi_config, storage_ns, hpp_storage_class, default_sc,
+    skip_test_if_no_hpp_sc, cdi_config, namespace, hpp_storage_class, default_sc,
 ):
     def _get_update_dict(default, storage_class):
         return {
@@ -209,7 +209,7 @@ def test_cdiconfig_changing_storage_class_default(
             )
             with ConfigMap(
                 name="https-cert-configmap",
-                namespace=storage_ns.name,
+                namespace=namespace.name,
                 data=get_cert("https_cert"),
             ) as configmap:
                 with utilities.storage.create_dv(

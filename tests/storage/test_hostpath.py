@@ -160,7 +160,7 @@ def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
 
 @pytest.mark.polarion("CNV-2817")
 def test_hostpath_pod_reference_pvc(
-    skip_test_if_no_hpp_sc, storage_ns, schedulable_nodes
+    skip_test_if_no_hpp_sc, namespace, schedulable_nodes
 ):
     """
     Check that after disk image is written to the PVC which has been provisioned on the specified node,
@@ -169,7 +169,7 @@ def test_hostpath_pod_reference_pvc(
     with create_dv(
         source="http",
         dv_name="cnv-2817",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="20Gi",
@@ -183,7 +183,7 @@ def test_hostpath_pod_reference_pvc(
 
 
 @pytest.mark.polarion("CNV-3354")
-def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, storage_ns):
+def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
     """
     Negative case
     Check that PVC should remain Pending when hostpath node was not specified
@@ -192,7 +192,7 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, storage_ns):
     with create_dv(
         source="http",
         dv_name="cnv-3354",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Windows.WIN16_IMG}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="35Gi",
@@ -206,7 +206,7 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, storage_ns):
 
 @pytest.mark.polarion("CNV-3228")
 def test_hpp_specify_node_immediate(
-    skip_when_hpp_no_immediate, storage_ns, schedulable_nodes
+    skip_when_hpp_no_immediate, namespace, schedulable_nodes
 ):
     """
     Check that the PVC will bound PV and DataVolume status becomes Succeeded once importer Pod finished importing
@@ -216,7 +216,7 @@ def test_hpp_specify_node_immediate(
     with create_dv(
         source="http",
         dv_name="cnv-3228",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Rhel.RHEL8_0_IMG}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="35Gi",
@@ -243,7 +243,7 @@ def test_hpp_specify_node_immediate(
     ],
 )
 def test_hostpath_http_import_dv(
-    skip_when_hpp_no_immediate, storage_ns, dv_name, image_name, schedulable_nodes,
+    skip_when_hpp_no_immediate, namespace, dv_name, image_name, schedulable_nodes,
 ):
     """
     Check that CDI importing from HTTP endpoint works well with hostpath-provisioner
@@ -251,7 +251,7 @@ def test_hostpath_http_import_dv(
     with create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{image_name}",
         size="500Mi",
@@ -266,7 +266,7 @@ def test_hostpath_http_import_dv(
 
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
-    skip_when_hpp_no_waitforfirstconsumer, storage_ns,
+    skip_when_hpp_no_waitforfirstconsumer, namespace,
 ):
     """
     Check that in the condition of the volumeBindingMode of hostpath-provisioner StorageClass is 'WaitForFirstConsumer',
@@ -275,7 +275,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
     """
     with PersistentVolumeClaim(
         name="cnv-3227",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
@@ -301,7 +301,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 
 @pytest.mark.polarion("CNV-3280")
 def test_hpp_pvc_specify_node_waitforfirstconsumer(
-    skip_when_hpp_no_waitforfirstconsumer, storage_ns, schedulable_nodes,
+    skip_when_hpp_no_waitforfirstconsumer, namespace, schedulable_nodes,
 ):
     """
     Check that kubevirt.io/provisionOnNode annotation works in WaitForFirstConsumer mode.
@@ -309,7 +309,7 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
     """
     with PersistentVolumeClaim(
         name="cnv-3280",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
@@ -333,7 +333,7 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
 def test_hpp_upload_virtctl(
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
-    storage_ns,
+    namespace,
     tmpdir,
 ):
     """
@@ -344,7 +344,7 @@ def test_hpp_upload_virtctl(
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     pvc_name = "cnv-2771"
     virtctl_upload = storage_utils.virtctl_upload(
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         image_path=local_name,
         pvc_size="25Gi",
         pvc_name=pvc_name,
@@ -353,12 +353,12 @@ def test_hpp_upload_virtctl(
     )
     LOGGER.debug(virtctl_upload)
     assert virtctl_upload
-    pvc = PersistentVolumeClaim(namespace=storage_ns.name, name=pvc_name)
+    pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
     assert pvc.bound()
     scratch_pvc = PersistentVolumeClaim(
-        namespace=storage_ns.name, name=f"{pvc_name}-scratch"
+        namespace=namespace.name, name=f"{pvc_name}-scratch"
     )
-    pod = Pod(namespace=storage_ns.name, name=f"cdi-upload-{pvc.name}")
+    pod = Pod(namespace=namespace.name, name=f"cdi-upload-{pvc.name}")
     assert (
         pvc.instance.metadata.annotations.get("volume.kubernetes.io/selected-node")
         == pod.instance.spec.nodeName
@@ -373,7 +373,7 @@ def test_hpp_upload_virtctl(
 def test_hostpath_upload_dv_with_token(
     skip_test_if_no_hpp_sc,
     skip_when_cdiconfig_scratch_no_hpp,
-    storage_ns,
+    namespace,
     tmpdir,
     schedulable_nodes,
 ):
@@ -386,7 +386,7 @@ def test_hostpath_upload_dv_with_token(
     with create_dv(
         source="upload",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
         hostpath_node=schedulable_nodes[0].name,
@@ -421,7 +421,7 @@ def test_hostpath_registry_import_dv(
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
     hpp_storage_class,
-    storage_ns,
+    namespace,
     dv_name,
     url,
     schedulable_nodes,
@@ -433,7 +433,7 @@ def test_hostpath_registry_import_dv(
     with create_dv(
         source="registry",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="1Gi",
@@ -459,7 +459,7 @@ def test_hostpath_registry_import_dv(
 
 @pytest.mark.polarion("CNV-3516")
 def test_hostpath_clone_dv_without_annotation_wffc(
-    skip_when_hpp_no_waitforfirstconsumer, default_client, storage_ns,
+    skip_when_hpp_no_waitforfirstconsumer, default_client, namespace,
 ):
     """
     Check that in case of WaitForFirstConsumer binding mode, without annotating the source/target DV to a node,
@@ -469,7 +469,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     with create_dv(
         source="http",
         dv_name="cnv-3516-source-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="1Gi",
@@ -488,7 +488,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         with create_dv(
             source="pvc",
             dv_name="cnv-3516-target-dv",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
             size="1Gi",
@@ -497,7 +497,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         ) as target_dv:
             target_dv.pvc.wait(timeout=300)
             upload_target_pod = get_pod_by_name_prefix(
-                default_client, pod_prefix="cdi-upload", namespace=storage_ns.name
+                default_client, pod_prefix="cdi-upload", namespace=namespace.name
             )
             upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
             assert_selected_node_annotation(
@@ -512,7 +512,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
 def test_hostpath_import_scratch_dv_without_specify_node_wffc(
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
-    storage_ns,
+    namespace,
 ):
     """
     Check that in case of WaitForFirstConsumer binding mode, without annotating DV to a node,
@@ -523,7 +523,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
     with create_dv(
         source="http",
         dv_name="cnv-3328-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG_XZ}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="1Gi",
@@ -544,7 +544,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
 
 @pytest.mark.polarion("CNV-2770")
 def test_hostpath_clone_dv_with_annotation(
-    skip_test_if_no_hpp_sc, storage_ns, schedulable_nodes
+    skip_test_if_no_hpp_sc, namespace, schedulable_nodes
 ):
     """
     Check that on WaitForFirstConsumer or Immediate binding mode,
@@ -555,7 +555,7 @@ def test_hostpath_clone_dv_with_annotation(
     with create_dv(
         source="http",
         dv_name="cnv-2770-source-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="1Gi",
@@ -570,7 +570,7 @@ def test_hostpath_clone_dv_with_annotation(
         with create_dv(
             source="pvc",
             dv_name="cnv-2770-target-dv",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             size="1Gi",
             storage_class=StorageClass.Types.HOSTPATH,
             hostpath_node=schedulable_nodes[0].name,

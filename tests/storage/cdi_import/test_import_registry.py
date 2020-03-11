@@ -36,7 +36,7 @@ PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
 )
 def test_private_registry_cirros(
     skip_upstream,
-    storage_ns,
+    namespace,
     images_private_registry_server,
     registry_config_map,
     file_name,
@@ -44,7 +44,7 @@ def test_private_registry_cirros(
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-cirros-image",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{file_name}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
@@ -56,11 +56,11 @@ def test_private_registry_cirros(
 
 
 @pytest.mark.polarion("CNV-2198")
-def test_disk_image_not_conform_to_registy_disk(storage_ns):
+def test_disk_image_not_conform_to_registy_disk(namespace):
     with utilities.storage.create_dv(
         source="registry",
         dv_name="image-registry-not-conform-registrydisk",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url="docker://docker.io/cirros",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -69,7 +69,7 @@ def test_disk_image_not_conform_to_registy_disk(storage_ns):
 
 
 @pytest.mark.polarion("CNV-2028")
-def test_public_registry_multiple_data_volume(storage_ns):
+def test_public_registry_multiple_data_volume(namespace):
     dvs = []
     vms = []
     dvs_processes = []
@@ -79,7 +79,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
             rdv = DataVolume(
                 source="registry",
                 name=f"import-registry-dockerhub-{dv}",
-                namespace=storage_ns.name,
+                namespace=namespace.name,
                 url=DOCKERHUB_IMAGE,
                 storage_class=py_config["default_storage_class"],
                 volume_mode=py_config["default_volume_mode"],
@@ -99,7 +99,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
             dv.wait_for_status(status=rdv.Status.SUCCEEDED, timeout=300)
 
         for vm in [vm for vm in dvs]:
-            rvm = VirtualMachineForTests(name=vm.name, namespace=storage_ns.name, dv=vm)
+            rvm = VirtualMachineForTests(name=vm.name, namespace=namespace.name, dv=vm)
             rvm.create(wait=True)
             vms.append(rvm)
 
@@ -121,7 +121,7 @@ def test_public_registry_multiple_data_volume(storage_ns):
 
 @pytest.mark.polarion("CNV-2183")
 def test_private_registry_insecured_configmap(
-    skip_upstream, storage_ns, images_private_registry_server
+    skip_upstream, namespace, images_private_registry_server
 ):
 
     server = images_private_registry_server[9:]
@@ -138,7 +138,7 @@ def test_private_registry_insecured_configmap(
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-insecured-registry",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -150,13 +150,13 @@ def test_private_registry_insecured_configmap(
 
 @pytest.mark.polarion("CNV-2182")
 def test_private_registry_recover_after_missing_configmap(
-    skip_upstream, storage_ns, images_private_registry_server, registry_config_map
+    skip_upstream, namespace, images_private_registry_server, registry_config_map
 ):
     # creating DV before configmap with certificate is created
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-with-no-configmap",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
@@ -170,12 +170,12 @@ def test_private_registry_recover_after_missing_configmap(
 
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
-    skip_upstream, storage_ns, images_private_registry_server, registry_config_map
+    skip_upstream, namespace, images_private_registry_server, registry_config_map
 ):
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-with-untrusted-certificate",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=py_config["default_storage_class"],
@@ -195,7 +195,7 @@ def test_private_registry_with_untrusted_certificate(
         with utilities.storage.create_dv(
             source="registry",
             dv_name="import-private-registry-no-certificate",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
@@ -249,12 +249,12 @@ def test_private_registry_with_untrusted_certificate(
     ],
 )
 def test_public_registry_data_volume(
-    storage_ns, dv_name, url, cert_configmap, content_type, size
+    namespace, dv_name, url, cert_configmap, content_type, size
 ):
     with utilities.storage.create_dv(
         source="registry",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=url,
         cert_configmap=cert_configmap,
         content_type=content_type,
@@ -270,12 +270,12 @@ def test_public_registry_data_volume(
 # The following test is to show after imports fails because low capacity storage,
 # we can overcome by updaing to the right requested volume size and import successfully
 @pytest.mark.polarion("CNV-2024")
-def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
+def test_public_registry_data_volume_dockerhub_low_capacity(namespace):
     # negative flow - low capacity volume
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=DOCKERHUB_IMAGE,
         content_type="",
         size="16Mi",
@@ -288,7 +288,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         url=DOCKERHUB_IMAGE,
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -302,14 +302,14 @@ def test_public_registry_data_volume_dockerhub_low_capacity(storage_ns):
     1725372, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-2150")
-def test_public_registry_data_volume_dockerhub_archive(storage_ns):
+def test_public_registry_data_volume_dockerhub_archive(namespace):
     with pytest.raises(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
         with utilities.storage.create_dv(
             source="registry",
             dv_name="import-registry-archive",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             url=DOCKERHUB_IMAGE,
             content_type=DataVolume.ContentType.ARCHIVE,
             storage_class=py_config["default_storage_class"],

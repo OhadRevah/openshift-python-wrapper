@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.polarion("CNV-2688")
 def test_unprivileged_user_clone_same_namespace_negative(
-    storage_class_matrix, storage_ns, data_volume, unprivileged_client
+    storage_class_matrix, namespace, data_volume, unprivileged_client
 ):
     storage_class = [*storage_class_matrix][0]
     with pytest.raises(
@@ -25,13 +25,13 @@ def test_unprivileged_user_clone_same_namespace_negative(
     ):
         with create_dv(
             dv_name="target-dv-cnv-2688",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             source="pvc",
             size="500Mi",
             storage_class=storage_class,
             volume_mode=storage_class_matrix[storage_class]["volume_mode"],
             source_pvc=data_volume.pvc.name,
-            source_namespace=storage_ns.name,
+            source_namespace=namespace.name,
             client=unprivileged_client,
         ):
             return
@@ -40,7 +40,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
 @pytest.mark.polarion("CNV-2768")
 def test_unprivileged_user_clone_same_namespace_positive(
     storage_class_matrix,
-    storage_ns,
+    namespace,
     data_volume,
     unprivileged_client,
     unprivileged_user_username,
@@ -52,20 +52,20 @@ def test_unprivileged_user_clone_same_namespace_positive(
         verbs=["*"],
         permissions_to_resources=["datavolumes", "datavolumes/source"],
         binding_name="role-bind-data-volume",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind="User",
         subjects_name=unprivileged_user_username,
         subjects_api_group=api_group,
     ):
         with create_dv(
             dv_name="target-dv",
-            namespace=storage_ns.name,
+            namespace=namespace.name,
             source="pvc",
             size="500Mi",
             storage_class=storage_class,
             volume_mode=storage_class_matrix[storage_class]["volume_mode"],
             source_pvc=data_volume.pvc.name,
-            source_namespace=storage_ns.name,
+            source_namespace=namespace.name,
             client=unprivileged_client,
         ) as cdv:
             cdv.wait()
@@ -75,7 +75,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
 
 @pytest.mark.polarion("CNV-2690")
 def test_unprivileged_user_clone_different_namespaces_negative(
-    storage_class_matrix, storage_ns, data_volume, unprivileged_client, dst_ns
+    storage_class_matrix, namespace, data_volume, unprivileged_client, dst_ns
 ):
     storage_class = [*storage_class_matrix][0]
     with pytest.raises(
@@ -90,7 +90,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
             storage_class=storage_class,
             volume_mode=storage_class_matrix[storage_class]["volume_mode"],
             source_pvc=data_volume.pvc.name,
-            source_namespace=storage_ns.name,
+            source_namespace=namespace.name,
             client=unprivileged_client,
         ):
             return
@@ -136,7 +136,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
 )
 def test_user_permissions_positive(
     storage_class_matrix,
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     unprivileged_client,
@@ -151,7 +151,7 @@ def test_user_permissions_positive(
         verbs=permissions_src[1],
         permissions_to_resources=permissions_src[0],
         binding_name="role_bind_src",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind="User",
         subjects_name=unprivileged_user_username,
         subjects_api_group=api_group,
@@ -174,7 +174,7 @@ def test_user_permissions_positive(
                 storage_class=storage_class,
                 volume_mode=storage_class_matrix[storage_class]["volume_mode"],
                 source_pvc=data_volume.pvc.name,
-                source_namespace=storage_ns.name,
+                source_namespace=namespace.name,
                 client=unprivileged_client,
             ) as cdv:
                 cdv.wait()
@@ -207,7 +207,7 @@ def test_user_permissions_positive(
 )
 def test_user_permissions_negative(
     storage_class_matrix,
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     unprivileged_client,
@@ -222,7 +222,7 @@ def test_user_permissions_negative(
         verbs=permissions_src[1],
         permissions_to_resources=permissions_src[0],
         binding_name="role_bind_src",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind="User",
         subjects_name=unprivileged_user_username,
         subjects_api_group=api_group,
@@ -249,7 +249,7 @@ def test_user_permissions_negative(
                     storage_class=storage_class,
                     volume_mode=storage_class_matrix[storage_class]["volume_mode"],
                     source_pvc=data_volume.pvc.name,
-                    source_namespace=storage_ns.name,
+                    source_namespace=namespace.name,
                     client=unprivileged_client,
                 ):
                     return
@@ -258,7 +258,7 @@ def test_user_permissions_negative(
 @pytest.mark.polarion("CNV-2792")
 def test_user_permissions_only_for_dst_ns_negative(
     storage_class_matrix,
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     unprivileged_client,
@@ -288,7 +288,7 @@ def test_user_permissions_only_for_dst_ns_negative(
                 storage_class=storage_class,
                 volume_mode=storage_class_matrix[storage_class]["volume_mode"],
                 source_pvc=data_volume.pvc.name,
-                source_namespace=storage_ns.name,
+                source_namespace=namespace.name,
                 client=unprivileged_client,
             ):
                 return

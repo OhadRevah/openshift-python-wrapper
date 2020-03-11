@@ -37,13 +37,13 @@ def cluster_role_for_creating_pods():
 
 
 @pytest.fixture(scope="module")
-def data_volume_clone_settings(storage_ns, dst_ns, data_volume):
+def data_volume_clone_settings(namespace, dst_ns, data_volume):
     dv = DataVolume(
         name="dv",
         namespace=dst_ns.name,
         source="pvc",
         source_pvc=data_volume.name,
-        source_namespace=storage_ns.name,
+        source_namespace=namespace.name,
         volume_mode=data_volume.volume_mode,
         storage_class=data_volume.storage_class,
         size=data_volume.size,
@@ -69,7 +69,7 @@ def allow_unprivileged_client_to_manage_vms_on_dst_ns(
 
 @pytest.mark.polarion("CNV-2826")
 def test_create_vm_with_cloned_data_volume_positive(
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     service_account,
@@ -82,7 +82,7 @@ def test_create_vm_with_cloned_data_volume_positive(
         verbs=["*"],
         permissions_to_resources=["datavolumes", "datavolumes/source"],
         binding_name="role_bind_src",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind=service_account.kind,
         subjects_name=service_account.name,
         subjects_namespace=dst_ns.name,
@@ -114,7 +114,7 @@ def test_create_vm_with_cloned_data_volume_positive(
 
 @pytest.mark.polarion("CNV-2828")
 def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions_negative(
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     service_account,
@@ -129,7 +129,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
         verbs=["*"],
         permissions_to_resources=["datavolumes/source"],
         binding_name="role_bind_src",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind="User",
         subjects_name=unprivileged_user_username,
         subjects_api_group=api_group,
@@ -165,7 +165,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
 
 @pytest.mark.polarion("CNV-2827")
 def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permission_negative(
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     service_account,
@@ -177,7 +177,7 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
         verbs=["*"],
         permissions_to_resources=["datavolumes"],
         binding_name="role_bind_src",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind=service_account.kind,
         subjects_name=service_account.name,
         subjects_namespace=dst_ns.name,
@@ -213,7 +213,7 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
 
 @pytest.mark.polarion("CNV-2829")
 def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
-    storage_ns,
+    namespace,
     data_volume,
     dst_ns,
     service_account,
@@ -225,7 +225,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
 ):
     with create_role_binding(
         name="service-account-can-create-pods-on-src",
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         subjects_kind=service_account.kind,
         subjects_name=service_account.name,
         role_ref_kind=cluster_role_for_creating_pods.kind,

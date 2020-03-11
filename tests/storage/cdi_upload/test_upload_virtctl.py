@@ -19,14 +19,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.polarion("CNV-2192")
-def test_successful_virtctl_upload_no_url(storage_ns, tmpdir):
+def test_successful_virtctl_upload_no_url(namespace, tmpdir):
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
     storage_utils.downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2192"
     virtctl_upload = storage_utils.virtctl_upload(
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         pvc_name=pvc_name,
         pvc_size="1Gi",
         image_path=local_name,
@@ -34,12 +34,12 @@ def test_successful_virtctl_upload_no_url(storage_ns, tmpdir):
     )
     assert virtctl_upload
     LOGGER.info(f"{virtctl_upload}")
-    assert PersistentVolumeClaim(name=pvc_name, namespace=storage_ns.name).bound()
+    assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
 @pytest.mark.polarion("CNV-2191")
 def test_successful_virtctl_upload_no_route(
-    storage_ns, tmpdir, uploadproxy_route_deleted
+    namespace, tmpdir, uploadproxy_route_deleted
 ):
     route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
     with pytest.raises(NotFoundError):
@@ -51,7 +51,7 @@ def test_successful_virtctl_upload_no_route(
     )
     pvc_name = "cnv-2191"
     virtctl_upload, virtctl_upload_out = storage_utils.virtctl_upload(
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         pvc_name=pvc_name,
         pvc_size="1Gi",
         image_path=local_name,
@@ -65,7 +65,7 @@ def test_successful_virtctl_upload_no_route(
 
 @pytest.mark.polarion("CNV-2217")
 def test_image_upload_with_overridden_url(
-    storage_ns, tmpdir, new_route_created, cdi_config_upload_proxy_overridden
+    namespace, tmpdir, new_route_created, cdi_config_upload_proxy_overridden
 ):
     pvc_name = "cnv-2217"
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
@@ -73,7 +73,7 @@ def test_image_upload_with_overridden_url(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     virtctl_upload = storage_utils.virtctl_upload(
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         pvc_name=pvc_name,
         pvc_size="1Gi",
         image_path=local_name,
@@ -81,4 +81,4 @@ def test_image_upload_with_overridden_url(
     )
     assert virtctl_upload
     LOGGER.info(f"{virtctl_upload}")
-    assert PersistentVolumeClaim(name=pvc_name, namespace=storage_ns.name).bound()
+    assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()

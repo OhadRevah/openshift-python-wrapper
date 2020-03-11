@@ -118,17 +118,17 @@ def test_cdi_uploadproxy_route_owner_references():
     ],
 )
 def test_successful_upload_with_supported_formats(
-    storage_ns, tmpdir, dv_name, remote_name, local_name
+    namespace, tmpdir, dv_name, remote_name, local_name
 ):
     local_name = f"{tmpdir}/{local_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
         volume_mode=py_config["default_volume_mode"],
-        storage_ns_name=storage_ns.name,
+        storage_ns_name=namespace.name,
     ) as dv:
         storage_utils.upload_token_request(
-            storage_ns.name, pvc_name=dv.pvc.name, data=local_name
+            namespace.name, pvc_name=dv.pvc.name, data=local_name
         )
         dv.wait()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -136,7 +136,7 @@ def test_successful_upload_with_supported_formats(
 
 
 @pytest.mark.polarion("CNV-2018")
-def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
+def test_successful_upload_token_validity(namespace, tmpdir, default_client):
     dv_name = "cnv-2018"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
@@ -146,14 +146,14 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
     with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="3Gi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
+            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sampler = TimeoutSampler(
@@ -167,7 +167,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
                 if sample == 401:
                     return True
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
+            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sampler = TimeoutSampler(
@@ -183,7 +183,7 @@ def test_successful_upload_token_validity(storage_ns, tmpdir, default_client):
 
 
 @pytest.mark.polarion("CNV-2011")
-def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
+def test_successful_upload_token_expiry(namespace, tmpdir, default_client):
     dv_name = "cnv-2011"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
@@ -193,7 +193,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
     with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size="3Gi",
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -201,7 +201,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
+            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             LOGGER.info("Wait until token expires ...")
@@ -218,7 +218,7 @@ def test_successful_upload_token_expiry(storage_ns, tmpdir, default_client):
                     return True
 
 
-def _upload_image(dv_name, storage_ns, local_name, size=None):
+def _upload_image(dv_name, namespace, local_name, size=None):
     """
     Upload test that is executed in parallel in with other tasks.
     """
@@ -226,7 +226,7 @@ def _upload_image(dv_name, storage_ns, local_name, size=None):
     with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
-        namespace=storage_ns.name,
+        namespace=namespace.name,
         size=size,
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
@@ -234,7 +234,7 @@ def _upload_image(dv_name, storage_ns, local_name, size=None):
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=300)
         with UploadTokenRequest(
-            name=dv_name, namespace=storage_ns.name, pvc_name=dv.pvc.name,
+            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sleep(5)
@@ -252,17 +252,17 @@ def _upload_image(dv_name, storage_ns, local_name, size=None):
 
 
 @pytest.mark.polarion("CNV-2015")
-def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
+def test_successful_concurrent_uploads(namespace, tmpdir, default_client):
     dvs_processes = []
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
         remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         local_name=local_name,
     )
-    available_pv = PersistentVolume(storage_ns).max_available_pvs
+    available_pv = PersistentVolume(namespace).max_available_pvs
     for dv in range(available_pv):
         dv_process = multiprocessing.Process(
-            target=_upload_image, args=(f"dv-{dv}", storage_ns, local_name),
+            target=_upload_image, args=(f"dv-{dv}", namespace, local_name),
         )
         dv_process.start()
         dvs_processes.append(dv_process)
@@ -274,7 +274,7 @@ def test_successful_concurrent_uploads(storage_ns, tmpdir, default_client):
 
 
 @pytest.mark.polarion("CNV-2017")
-def test_successful_upload_missing_file_in_transit(tmpdir, storage_ns, default_client):
+def test_successful_upload_missing_file_in_transit(tmpdir, namespace, default_client):
     dv_name = "cnv-2017"
     local_name = f"{tmpdir}/{Images.Rhel.RHEL8_0_IMG}"
     storage_utils.downloaded_image(
@@ -282,7 +282,7 @@ def test_successful_upload_missing_file_in_transit(tmpdir, storage_ns, default_c
         local_name=local_name,
     )
     upload_process = multiprocessing.Process(
-        target=_upload_image, args=(dv_name, storage_ns, local_name, "10Gi"),
+        target=_upload_image, args=(dv_name, namespace, local_name, "10Gi"),
     )
 
     # Run process in parallel
@@ -292,7 +292,7 @@ def test_successful_upload_missing_file_in_transit(tmpdir, storage_ns, default_c
     # However, 'UploadInProgress' status phase is never set.
     # Sleep for 15 seconds until https://bugzilla.redhat.com/show_bug.cgi?id=1725934 is fixed.
     # Once the bug is fixed, the below line needs to be uncommented and sleep should be removed.
-    # DataVolume(dv_name, storage_ns).wait_for_status(status="UploadInProgress", timeout=300)
+    # DataVolume(dv_name, namespace).wait_for_status(status="UploadInProgress", timeout=300)
     time.sleep(15)
     sh.rm("-f", local_name)
 
