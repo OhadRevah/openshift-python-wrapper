@@ -123,6 +123,7 @@ class VirtualMachineForTests(VirtualMachine):
         network_multiqueue=None,
         data_volume_template=None,
         teardown=True,
+        cloud_init_type=None,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -153,6 +154,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.network_model = network_model
         self.network_multiqueue = network_multiqueue
         self.data_volume_template = data_volume_template
+        self.cloud_init_type = cloud_init_type
 
     def __enter__(self):
         super().__enter__()
@@ -210,13 +212,17 @@ class VirtualMachineForTests(VirtualMachine):
                     cloud_init_volume = vol
                     break
 
+            cloud_init_volume_type = self.cloud_init_type or "cloudInitNoCloud"
+
             if not cloud_init_volume:
                 spec["volumes"].append(
-                    {"name": "cloudinitdisk", "cloudInitNoCloud": {"userData": None}}
+                    {
+                        "name": "cloudinitdisk",
+                        cloud_init_volume_type: {"userData": None},
+                    }
                 )
                 cloud_init_volume = spec["volumes"][-1]
-
-            cloud_init_volume["cloudInitNoCloud"][
+            cloud_init_volume[cloud_init_volume_type][
                 "userData"
             ] = _generate_cloud_init_user_data(self.cloud_init_data)
             disks_spec = (
