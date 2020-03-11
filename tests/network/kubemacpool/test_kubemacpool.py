@@ -3,6 +3,9 @@ import pytest
 from tests.network.utils import assert_ping_successful
 
 
+pytestmark = pytest.mark.skip("kubemacpool removed in 2.3, should be in again in 2.4")
+
+
 def ifaces_config_same(vm, vmi):
     """Compares vm and vmi interface configuration"""
     vm_temp_spec = vm.instance["spec"]["template"]["spec"]
