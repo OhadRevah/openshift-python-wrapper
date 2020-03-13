@@ -66,11 +66,7 @@ storage_class_matrix = [
     {"nfs": {"volume_mode": "Filesystem", "access_mode": "ReadWriteMany"}},
 ]
 link_aggregation_mode_matrix = [
-    "balance-rr",
     "active-backup",
-    "balance-xor",
-    "broadcast",
-    "802.3ad",
     "balance-tlb",
     "balance-alb",
 ]
