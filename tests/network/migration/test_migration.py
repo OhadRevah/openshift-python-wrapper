@@ -15,6 +15,7 @@ from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
+    enable_ssh_service_in_vm,
     fedora_vm_body,
     vm_console_run_commands,
     wait_for_vm_interfaces,
@@ -130,6 +131,7 @@ def running_vma(vma):
     vmi = vma.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
+    enable_ssh_service_in_vm(vm=vma, console_impl=console.Fedora)
     yield vma
 
 
@@ -138,6 +140,7 @@ def running_vmb(vmb):
     vmi = vmb.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
+    enable_ssh_service_in_vm(vm=vmb, console_impl=console.Fedora)
     yield vmb
 
 

@@ -8,6 +8,7 @@ import logging
 
 import pytest
 import tests.compute.utils
+import utilities.virt
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
@@ -178,7 +179,7 @@ class TestCommonTemplatesFedora:
     ):
         """ CNV common templates access VM via SSH """
 
-        utils.enable_ssh_service_in_vm(
+        utilities.virt.enable_ssh_service_in_vm(
             vm=vm_object_from_template_scope_class, console_impl=console.Fedora
         )
 

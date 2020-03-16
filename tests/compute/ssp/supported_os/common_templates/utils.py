@@ -9,7 +9,6 @@ import urllib.request
 import xml.etree.ElementTree as EleTree
 
 import bitmath
-import pexpect
 import tests.network.utils as network_utils
 from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
@@ -94,63 +93,6 @@ def vm_deleted(vm):
 def wait_for_console(vm, console_impl):
     with console_impl(vm=vm, timeout=1500):
         pass
-
-
-def ssh_service_activated(vm, console_impl, systemctl_support=True):
-    if systemctl_support:
-        ssh_service_status_cmd = "sudo systemctl is-active sshd"
-        expected = "\r\nactive"
-    else:
-        ssh_service_status_cmd = "sudo /etc/init.d/sshd status"
-        expected = "is running"
-
-    with console_impl(vm=vm) as vm_console:
-        vm_console.sendline(ssh_service_status_cmd)
-        vm_console.expect(expected)
-        return True
-
-
-def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
-    LOGGER.info("Wait for SSH service to be active.")
-
-    sampler = TimeoutSampler(
-        timeout=30,
-        sleep=5,
-        func=ssh_service_activated,
-        exceptions=pexpect.exceptions.TIMEOUT,
-        vm=vm,
-        console_impl=console_impl,
-        systemctl_support=systemctl_support,
-    )
-    for sample in sampler:
-        if sample:
-            return
-
-
-def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
-    LOGGER.info("Enable SSH in VM.")
-
-    if systemctl_support:
-        ssh_service_restart_cmd = [
-            "sudo systemctl enable sshd",
-            "sudo systemctl restart sshd",
-        ]
-    # For older linux versions which do not support systemctl
-    else:
-        ssh_service_restart_cmd = ["sudo /etc/init.d/sshd restart"]
-
-    commands = [
-        r"sudo sed -iE "
-        r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
-        r" /etc/ssh/sshd_config",
-        "",
-    ] + ssh_service_restart_cmd
-
-    vm_console_run_commands(
-        console_impl=console_impl, vm=vm, commands=commands,
-    )
-
-    wait_for_ssh_service(vm, console_impl, systemctl_support=systemctl_support)
 
 
 def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):

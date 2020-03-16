@@ -8,6 +8,7 @@ import logging
 
 import pytest
 import tests.compute.utils
+import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
 
@@ -85,7 +86,7 @@ class TestCommonTemplatesRhel:
     ):
         """ CNV common templates access VM via SSH """
 
-        utils.enable_ssh_service_in_vm(
+        utilities.virt.enable_ssh_service_in_vm(
             vm=vm_object_from_template_rhel_os, console_impl=console.RHEL
         )
 

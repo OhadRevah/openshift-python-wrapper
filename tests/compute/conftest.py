@@ -9,9 +9,6 @@ from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
-from tests.compute.ssp.supported_os.common_templates.utils import (
-    enable_ssh_service_in_vm,
-)
 from tests.compute.utils import WinRMcliPod, nmcli_add_con_cmds
 from utilities import console
 from utilities.virt import (
@@ -19,6 +16,7 @@ from utilities.virt import (
     RHEL_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
+    enable_ssh_service_in_vm,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
