@@ -17,13 +17,18 @@ LOGGER = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     "vm_object_from_template_windows_os", [({"cpu_threads": 2})], indirect=True,
 )
-@pytest.mark.usefixtures(
-    "skip_upstream", "unprivileged_client", "namespace", "data_volume_windows_os"
-)
 class TestCommonTemplatesWindows:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-2196")
-    def test_create_vm(self, vm_object_from_template_windows_os):
+    def test_create_vm(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
+        vm_object_from_template_windows_os,
+    ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
@@ -33,6 +38,11 @@ class TestCommonTemplatesWindows:
     @pytest.mark.polarion("CNV-3785")
     def test_start_vm(
         self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
@@ -51,6 +61,11 @@ class TestCommonTemplatesWindows:
     @pytest.mark.polarion("CNV-3512")
     def test_guest_agent_info(
         self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
@@ -68,7 +83,13 @@ class TestCommonTemplatesWindows:
         1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     def test_domain_label(
-        self, vm_object_from_template_windows_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
+        vm_object_from_template_windows_os,
     ):
         """ CNV common templates 'domain' label contains vm name """
 
@@ -83,6 +104,11 @@ class TestCommonTemplatesWindows:
     @pytest.mark.polarion("CNV-2776")
     def test_hyperv(
         self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
@@ -101,10 +127,14 @@ class TestCommonTemplatesWindows:
     @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_stop_start(
         self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
-        windows_os_matrix,
     ):
 
         utils.add_activate_windows_license(
@@ -127,10 +157,14 @@ class TestCommonTemplatesWindows:
     @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_reboot(
         self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
-        windows_os_matrix,
     ):
 
         utils.add_activate_windows_license(
@@ -151,14 +185,26 @@ class TestCommonTemplatesWindows:
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3674")
     def test_vm_machine_type(
-        self, vm_object_from_template_windows_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
+        vm_object_from_template_windows_os,
     ):
         utils.check_machine_type(vm=vm_object_from_template_windows_os)
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3289")
     def test_vm_deletion(
-        self, vm_object_from_template_windows_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix,
+        data_volume_windows_os,
+        vm_object_from_template_windows_os,
     ):
         """ Test CNV common templates VM deletion """
 

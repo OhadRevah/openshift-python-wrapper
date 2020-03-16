@@ -16,13 +16,18 @@ from utilities import console
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.mark.usefixtures(
-    "skip_upstream", "unprivileged_client", "namespace", "data_volume_rhel_os"
-)
 class TestCommonTemplatesRhel:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3802")
-    def test_create_vm(self, vm_object_from_template_rhel_os):
+    def test_create_vm(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
+    ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
@@ -31,7 +36,13 @@ class TestCommonTemplatesRhel:
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3266")
     def test_start_vm(
-        self, rhel_os_matrix, vm_object_from_template_rhel_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
     ):
         """ Test CNV common templates VM initiation """
 
@@ -43,7 +54,13 @@ class TestCommonTemplatesRhel:
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
-        self, vm_object_from_template_rhel_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
     ):
         """ Test CNV common templates VM console """
 
@@ -53,7 +70,13 @@ class TestCommonTemplatesRhel:
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3318")
     def test_os_version(
-        self, vm_object_from_template_rhel_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
     ):
         """ Test CNV common templates OS version """
 
@@ -64,7 +87,13 @@ class TestCommonTemplatesRhel:
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3306")
     def test_domain_label(
-        self, vm_object_from_template_rhel_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
     ):
         """ CNV common templates 'domain' label contains vm name """
 
@@ -80,6 +109,11 @@ class TestCommonTemplatesRhel:
     def test_expose_ssh(
         self,
         rhel7_workers,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
         vm_object_from_template_rhel_os,
         vm_ssh_service_rhel_os,
         schedulable_node_ips,
@@ -87,7 +121,7 @@ class TestCommonTemplatesRhel:
         """ CNV common templates access VM via SSH """
 
         utilities.virt.enable_ssh_service_in_vm(
-            vm=vm_object_from_template_rhel_os, console_impl=console.RHEL
+            vm=vm_object_from_template_rhel_os, console_impl=console.RHEL,
         )
 
         assert utils.check_ssh_connection(
@@ -106,7 +140,11 @@ class TestCommonTemplatesRhel:
     @pytest.mark.polarion("CNV-3513")
     def test_guest_agent_info(
         self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
         rhel_os_matrix,
+        data_volume_rhel_os,
         vm_object_from_template_rhel_os,
         schedulable_node_ips,
         rhel7_workers,
@@ -133,14 +171,26 @@ class TestCommonTemplatesRhel:
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3671")
     def test_vm_machine_type(
-        self, vm_object_from_template_rhel_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
     ):
         utils.check_machine_type(vm=vm_object_from_template_rhel_os)
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3269")
     def test_vm_deletion(
-        self, vm_object_from_template_rhel_os,
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
     ):
         """ Test CNV common templates VM deletion """
 
