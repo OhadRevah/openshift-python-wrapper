@@ -6,7 +6,6 @@ Common templates Windows VM migration and SSH access after migration
 
 import pytest
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import BUG_STATUS_CLOSED
 
@@ -19,8 +18,6 @@ from utilities.infra import BUG_STATUS_CLOSED
             {
                 "dv_name": "dv-windows-migrate-vm",
                 "image": py_config.get("latest_windows_version", {}).get("image"),
-                "access_modes": DataVolume.AccessMode.RWX,
-                "volume_mode": DataVolume.VolumeMode.BLOCK,
             },
             {
                 "vm_name": "windows-migrate-vm",
