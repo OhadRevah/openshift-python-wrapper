@@ -634,13 +634,19 @@ def cnv_containers():
 @pytest.fixture(scope="module")
 def namespace(request, unprivileged_client):
     """ Generate namespace from the test's module name """
+    client = True
+    if hasattr(request, "param"):
+        client = request.param.get("unprivileged_client", True)
+
     name = (
         request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
         .strip(".py")
         .replace("/", "-")
         .replace("_", "-")
     )[-63:]
-    yield from create_ns(client=unprivileged_client, name=name.split("-", 1)[-1])
+    yield from create_ns(
+        client=unprivileged_client if client else None, name=name.split("-", 1)[-1]
+    )
 
 
 @pytest.fixture(scope="session")
