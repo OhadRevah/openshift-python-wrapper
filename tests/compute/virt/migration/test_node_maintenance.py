@@ -230,6 +230,7 @@ def test_node_drain_using_console_fedora(
 @pytest.mark.polarion("CNV-2292")
 def test_node_drain_using_console_rhel(
     skip_when_one_node,
+    skip_migration_access_mode_rwo,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
     default_client,
@@ -266,6 +267,7 @@ def test_node_drain_using_console_rhel(
 )
 def test_node_drain_template_windows(
     skip_when_one_node,
+    skip_migration_access_mode_rwo,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod,

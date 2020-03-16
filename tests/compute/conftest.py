@@ -5,6 +5,7 @@ import logging
 import pytest
 import tests.network.utils as network_utils
 from pytest_testconfig import config as py_config
+from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutSampler
@@ -241,6 +242,17 @@ def vm_instance_from_template_scope_class(
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
+
+
+@pytest.fixture()
+def skip_migration_access_mode_rwo(storage_class_matrix):
+    if (
+        storage_class_matrix[[*storage_class_matrix][0]]["access_mode"]
+        == PersistentVolumeClaim.AccessMode.RWO
+    ):
+        pytest.skip(
+            msg="Skipping migration when access_mode is RWO; cannot migrate VMI with non-shared PVCs"
+        )
 
 
 """

@@ -39,6 +39,7 @@ from utilities.infra import BUG_STATUS_CLOSED
 def test_migrate_vm_rhel(
     skip_rhel7_workers,
     skip_upstream,
+    skip_migration_access_mode_rwo,
     namespace,
     data_volume_scope_function,
     vm_instance_from_template_scope_function,
