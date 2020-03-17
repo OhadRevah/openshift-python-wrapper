@@ -527,11 +527,13 @@ def network_utility_pods(schedulable_nodes, net_utility_daemonset, default_clien
 
 
 @pytest.fixture(scope="session")
-def workers_ssh_executors(network_utility_pods):
+def workers_ssh_executors(rhel7_workers, network_utility_pods):
     executors = {}
     for pod in network_utility_pods:
         host = rrmngmnt.Host(pod.instance.status.podIP)
-        host_user = rrmngmnt.user.User(name="core", password=None)
+        host_user = rrmngmnt.user.User(
+            name="root" if rhel7_workers else "core", password=None
+        )
         host._set_executor_user(host_user)
         host.add_user(host_user)
         executors[pod.node.name] = host
