@@ -245,9 +245,11 @@ def vm_instance_from_template_scope_class(
 
 
 @pytest.fixture()
-def skip_migration_access_mode_rwo(storage_class_matrix):
+def skip_migration_access_mode_rwo(storage_class_matrix__class__):
     if (
-        storage_class_matrix[[*storage_class_matrix][0]]["access_mode"]
+        storage_class_matrix__class__[[*storage_class_matrix__class__][0]][
+            "access_mode"
+        ]
         == PersistentVolumeClaim.AccessMode.RWO
     ):
         pytest.skip(

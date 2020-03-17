@@ -25,7 +25,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
     ):
@@ -41,7 +41,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
@@ -64,7 +64,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
@@ -87,7 +87,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
     ):
@@ -107,7 +107,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
@@ -130,7 +130,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
@@ -140,7 +140,9 @@ class TestCommonTemplatesWindows:
         utils.add_activate_windows_license(
             vm=vm_object_from_template_windows_os,
             winrm_pod=winrmcli_pod_scope_class,
-            license_key=windows_os_matrix[[*windows_os_matrix][0]]["license"],
+            license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
+                "license"
+            ],
             helper_vm=bridge_attached_helper_vm,
         )
 
@@ -160,7 +162,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
         winrmcli_pod_scope_class,
@@ -170,7 +172,9 @@ class TestCommonTemplatesWindows:
         utils.add_activate_windows_license(
             vm=vm_object_from_template_windows_os,
             winrm_pod=winrmcli_pod_scope_class,
-            license_key=windows_os_matrix[[*windows_os_matrix][0]]["license"],
+            license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
+                "license"
+            ],
             helper_vm=bridge_attached_helper_vm,
         )
 
@@ -189,7 +193,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
     ):
@@ -202,7 +206,7 @@ class TestCommonTemplatesWindows:
         skip_upstream,
         unprivileged_client,
         namespace,
-        windows_os_matrix,
+        windows_os_matrix__class__,
         data_volume_windows_os,
         vm_object_from_template_windows_os,
     ):

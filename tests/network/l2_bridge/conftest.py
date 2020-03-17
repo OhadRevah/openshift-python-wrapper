@@ -30,10 +30,10 @@ DOT1Q_VLAN_ID = 10
 
 
 @pytest.fixture(scope="class")
-def dot1q_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+def dot1q_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -41,10 +41,10 @@ def dot1q_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
 
 
 @pytest.fixture(scope="class")
-def dhcp_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+def dhcp_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="dhcp-broadcast",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -52,10 +52,10 @@ def dhcp_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
 
 
 @pytest.fixture(scope="class")
-def custom_eth_type_llpd_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+def custom_eth_type_llpd_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="custom-eth-type-icmp",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -63,10 +63,10 @@ def custom_eth_type_llpd_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
 
 
 @pytest.fixture(scope="class")
-def mpls_nad(bridge_device_matrix, ovs_lb_bridge, namespace):
+def mpls_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="mpls",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:

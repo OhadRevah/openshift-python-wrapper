@@ -85,7 +85,7 @@ def ovs_worker_pods(schedulable_nodes, default_client):
 @pytest.fixture(scope="class")
 def ovs_lb_bridge(
     request,
-    bridge_device_matrix,
+    bridge_device_matrix__class__,
     index_number,
     ovs_worker_pods,
     schedulable_node_ips,
@@ -105,7 +105,7 @@ def ovs_lb_bridge(
     unique_index = next(index_number)
     bridge_name = f"br{unique_index}test"
     with bridge_device(
-        bridge_type=bridge_device_matrix,
+        bridge_type=bridge_device_matrix__class__,
         nncp_name=f"{bridge_name}-nncp",
         bridge_name=bridge_name,
         network_utility_pods=network_utility_pods,

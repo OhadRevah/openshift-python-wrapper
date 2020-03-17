@@ -24,7 +24,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
@@ -40,7 +40,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
@@ -48,7 +48,7 @@ class TestCommonTemplatesRhel:
 
         tests.compute.utils.vm_started(
             vm=vm_object_from_template_rhel_os,
-            wait_for_interfaces="rhel-6" not in [*rhel_os_matrix][0],
+            wait_for_interfaces="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
     @pytest.mark.run(after="test_start_vm")
@@ -58,7 +58,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
@@ -74,7 +74,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
@@ -91,7 +91,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
@@ -112,7 +112,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
         vm_ssh_service_rhel_os,
@@ -123,7 +123,7 @@ class TestCommonTemplatesRhel:
         utilities.virt.enable_ssh_service_in_vm(
             vm=vm_object_from_template_rhel_os,
             console_impl=console.RHEL,
-            systemctl_support="rhel-6" not in [*rhel_os_matrix][0],
+            systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
         assert utils.check_ssh_connection(
@@ -145,7 +145,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
         schedulable_node_ips,
@@ -153,7 +153,7 @@ class TestCommonTemplatesRhel:
     ):
         """ Test Guest OS agent info. """
 
-        if "rhel-6" in [*rhel_os_matrix][0]:
+        if "rhel-6" in [*rhel_os_matrix__class__][0]:
             pytest.skip("RHEL6 does not have guest agent")
 
         utils.validate_linux_guest_agent_info(
@@ -177,7 +177,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
@@ -190,7 +190,7 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         unprivileged_client,
         namespace,
-        rhel_os_matrix,
+        rhel_os_matrix__class__,
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):

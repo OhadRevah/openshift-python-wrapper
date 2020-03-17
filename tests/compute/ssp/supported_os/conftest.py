@@ -10,15 +10,15 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
 def data_volume_rhel_os(
     skip_ceph_on_rhel7,
     namespace,
-    storage_class_matrix,
+    storage_class_matrix__class__,
     schedulable_nodes,
-    rhel_os_matrix,
+    rhel_os_matrix__class__,
 ):
     yield from data_volume(
         namespace=namespace,
-        storage_class_matrix=storage_class_matrix,
+        storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
-        os_matrix=rhel_os_matrix,
+        os_matrix=rhel_os_matrix__class__,
     )
 
 
@@ -26,15 +26,15 @@ def data_volume_rhel_os(
 def data_volume_windows_os(
     skip_ceph_on_rhel7,
     namespace,
-    storage_class_matrix,
+    storage_class_matrix__class__,
     schedulable_nodes,
-    windows_os_matrix,
+    windows_os_matrix__class__,
 ):
     yield from data_volume(
         namespace=namespace,
-        storage_class_matrix=storage_class_matrix,
+        storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
-        os_matrix=windows_os_matrix,
+        os_matrix=windows_os_matrix__class__,
     )
 
 
@@ -132,7 +132,7 @@ def vm_object_from_template_scope_class(
 def vm_object_from_template_rhel_os(
     unprivileged_client,
     namespace,
-    rhel_os_matrix,
+    rhel_os_matrix__class__,
     data_volume_rhel_os,
     network_configuration,
     cloud_init_data,
@@ -140,7 +140,7 @@ def vm_object_from_template_rhel_os(
     return vm_object_from_template(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        os_matrix=rhel_os_matrix,
+        os_matrix=rhel_os_matrix__class__,
         data_volume_object=data_volume_rhel_os,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
@@ -152,7 +152,7 @@ def vm_object_from_template_windows_os(
     request,
     unprivileged_client,
     namespace,
-    windows_os_matrix,
+    windows_os_matrix__class__,
     data_volume_windows_os,
     network_configuration,
     cloud_init_data,
@@ -161,7 +161,7 @@ def vm_object_from_template_windows_os(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        os_matrix=windows_os_matrix,
+        os_matrix=windows_os_matrix__class__,
         data_volume_object=data_volume_windows_os,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,

@@ -180,6 +180,19 @@ Example:
 --bridge-device-matrix=ovs
 ```
 
+### Using matrix fixtures
+
+Using matrix fixtures requires providing a scope.
+Format:
+```
+<type>_matrix__<scope>__
+```
+Example:
+```
+storage_class_matrix__module__
+storage_class_matrix__class__
+```
+
 # Network utility container
 
 Dockerfile is under `tests/manifests/network/privileged_container`

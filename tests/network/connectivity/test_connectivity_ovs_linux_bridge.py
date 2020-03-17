@@ -40,10 +40,10 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="class")
-def nad(bridge_device_matrix, namespace, ovs_lb_bridge):
+def nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -51,10 +51,10 @@ def nad(bridge_device_matrix, namespace, ovs_lb_bridge):
 
 
 @pytest.fixture(scope="class")
-def br1vlan100_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
+def br1vlan100_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan100-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -62,10 +62,10 @@ def br1vlan100_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
 
 
 @pytest.fixture(scope="class")
-def br1vlan200_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
+def br1vlan200_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan200-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -73,10 +73,10 @@ def br1vlan200_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
 
 
 @pytest.fixture(scope="class")
-def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
+def br1vlan300_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan300-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
     ) as nad:
@@ -84,10 +84,10 @@ def br1vlan300_nad(bridge_device_matrix, namespace, ovs_lb_bridge):
 
 
 @pytest.fixture(scope="class")
-def br1bond_nad(bridge_device_matrix, namespace):
+def br1bond_nad(bridge_device_matrix__class__, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1bond-nad",
         bridge_name="br1bond",
     ) as nad:
@@ -102,7 +102,7 @@ def skip_no_bond_support(bond_supported):
 
 @pytest.fixture(scope="class")
 def bond1(
-    network_utility_pods, nodes_active_nics, link_aggregation_mode_matrix,
+    network_utility_pods, nodes_active_nics, link_aggregation_mode_matrix__class__,
 ):
     """
     Create BOND if setup support BOND
@@ -113,7 +113,7 @@ def bond1(
         nodes=[i.node.name for i in network_utility_pods],
         nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
         worker_pods=network_utility_pods,
-        mode=link_aggregation_mode_matrix,
+        mode=link_aggregation_mode_matrix__class__,
         mtu=1450,
     ) as bond:
         yield bond
@@ -121,13 +121,17 @@ def bond1(
 
 @pytest.fixture(scope="class")
 def bridge_on_bond(
-    bridge_device_matrix, network_utility_pods, schedulable_nodes, br1bond_nad, bond1,
+    bridge_device_matrix__class__,
+    network_utility_pods,
+    schedulable_nodes,
+    br1bond_nad,
+    bond1,
 ):
     """
     Create bridge and attach the BOND to it
     """
     with network_utils.bridge_device(
-        bridge_type=bridge_device_matrix,
+        bridge_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         bridge_name=br1bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,

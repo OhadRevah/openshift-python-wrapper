@@ -171,21 +171,27 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    matrix_list = [
-        fixture_name
-        for fixture_name in metafunc.fixturenames
-        if "_matrix" in fixture_name
-    ]
-    for matrix in matrix_list:
-        _matrix_params = py_config[matrix]
+    scope_match = re.compile(r"__(module|class|function)__$")
+    for fixture_name in [
+        fname for fname in metafunc.fixturenames if "_matrix" in fname
+    ]:
+        scope = scope_match.findall(fixture_name)
+        if not scope:
+            raise ValueError(f"{fixture_name} is missing scope (__<scope>__)")
+
+        matrix_name = scope_match.sub("", fixture_name)
+        _matrix_params = py_config.get(matrix_name)
+        if not _matrix_params:
+            raise ValueError(f"{matrix_name} is missing in config file")
+
         matrix_params = (
             _matrix_params if isinstance(_matrix_params, list) else [_matrix_params]
         )
         metafunc.parametrize(
-            matrix,
+            fixture_name,
             matrix_params,
             ids=[f"<{matrix_param}>" for matrix_param in matrix_params],
-            scope="class",
+            scope=scope[0],
         )
 
 
@@ -707,8 +713,8 @@ def skip_rhel7_workers(rhel7_workers):
 
 
 @pytest.fixture(scope="class")
-def skip_ceph_on_rhel7(storage_class_matrix, rhel7_workers):
-    if storage_class_matrix.get("rook-ceph-block"):
+def skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers):
+    if storage_class_matrix__class__.get("rook-ceph-block"):
         if rhel7_workers:
             pytest.skip(
                 msg="Rook-ceph configuration is not supported on RHEL7 workers",
@@ -735,23 +741,31 @@ def skip_no_rhel7_workers(rhel7_workers):
 
 @pytest.fixture()
 def data_volume_scope_function(
-    request, skip_ceph_on_rhel7, namespace, storage_class_matrix, schedulable_nodes
+    request,
+    skip_ceph_on_rhel7,
+    namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
         namespace=namespace,
-        storage_class_matrix=storage_class_matrix,
+        storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
     )
 
 
 @pytest.fixture(scope="class")
 def data_volume_scope_class(
-    request, skip_ceph_on_rhel7, namespace, storage_class_matrix, schedulable_nodes
+    request,
+    skip_ceph_on_rhel7,
+    namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
         namespace=namespace,
-        storage_class_matrix=storage_class_matrix,
+        storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
     )

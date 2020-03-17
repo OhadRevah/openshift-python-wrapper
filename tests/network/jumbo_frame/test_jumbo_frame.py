@@ -19,7 +19,7 @@ from utilities.virt import (
 
 @pytest.fixture(scope="class")
 def nad(
-    bridge_device_matrix,
+    bridge_device_matrix__class__,
     namespace,
     network_utility_pods,
     nodes_active_nics,
@@ -27,7 +27,7 @@ def nad(
 ):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
         tuning=True,

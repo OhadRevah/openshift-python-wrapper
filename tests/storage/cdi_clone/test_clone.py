@@ -22,16 +22,16 @@ from utilities.infra import Images
 )
 @pytest.mark.polarion("CNV-1892")
 def test_successful_clone_of_large_image(
-    skip_upstream, storage_class_matrix, namespace, data_volume_scope_class,
+    skip_upstream, storage_class_matrix__class__, namespace, data_volume_scope_class,
 ):
-    storage_class = [*storage_class_matrix][0]
+    storage_class = [*storage_class_matrix__class__][0]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
         size=data_volume_scope_class.size,
         storage_class=storage_class,
-        volume_mode=storage_class_matrix[storage_class]["volume_mode"],
+        volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
     ) as cdv:
         cdv.wait(timeout=1500)
         pvc = cdv.pvc
@@ -51,16 +51,16 @@ def test_successful_clone_of_large_image(
 )
 @pytest.mark.polarion("CNV-2148")
 def test_successful_vm_restart_with_cloned_dv(
-    skip_upstream, storage_class_matrix, namespace, data_volume_scope_class,
+    skip_upstream, storage_class_matrix__class__, namespace, data_volume_scope_class,
 ):
-    storage_class = [*storage_class_matrix][0]
+    storage_class = [*storage_class_matrix__class__][0]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
         size=data_volume_scope_class.size,
         storage_class=storage_class,
-        volume_mode=storage_class_matrix[storage_class]["volume_mode"],
+        volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
     ) as cdv:
         cdv.wait(timeout=600)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
