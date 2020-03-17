@@ -232,7 +232,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     "name": port,
                     "type": "ethernet",
                     "state": IFACE_UP_STATE,
-                    "mtu": self.mtu_dict[port],
+                    "mtu": int(self.mtu_dict[port]),
                 }
                 self.set_interface(_port)
                 self.apply()

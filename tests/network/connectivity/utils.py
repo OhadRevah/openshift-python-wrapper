@@ -90,7 +90,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     "name": port,
                     "type": "ethernet",
                     "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                    "mtu": self.mtu_dict[port],
+                    "mtu": int(self.mtu_dict[port]),
                 }
                 self.set_interface(_port)
                 self.apply()
