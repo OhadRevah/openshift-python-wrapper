@@ -679,8 +679,10 @@ def leftovers():
 @pytest.fixture(scope="session")
 def workers_type(network_utility_pods):
     for pod in network_utility_pods:
-        out = pod.execute(command=["bash", "-c", "dmesg | grep 'Hypervisor detected'"])
-        if "Hypervisor detected: KVM" in out:
+        out = pod.execute(
+            command=["bash", "-c", "dmesg | grep 'Hypervisor detected' | wc -l"]
+        )
+        if int(out) > 0:
             return "virtual"
 
     return "physical"
