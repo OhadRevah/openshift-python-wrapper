@@ -27,13 +27,14 @@ from utilities.virt import (
 )
 def vm_with_cloud_init_type(request, namespace):
     """VM with cloudInit disk."""
-    name = "vm-cloud-init-test"
+    cloud_init_type = request.param["cloud_init_type"]
+    name = f"vm-cloud-init-test{cloud_init_type}".lower()
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
-        cloud_init_type=request.param["cloud_init_type"],
+        cloud_init_type=cloud_init_type,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
