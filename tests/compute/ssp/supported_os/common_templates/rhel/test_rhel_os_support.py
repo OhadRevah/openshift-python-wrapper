@@ -121,7 +121,9 @@ class TestCommonTemplatesRhel:
         """ CNV common templates access VM via SSH """
 
         utilities.virt.enable_ssh_service_in_vm(
-            vm=vm_object_from_template_rhel_os, console_impl=console.RHEL,
+            vm=vm_object_from_template_rhel_os,
+            console_impl=console.RHEL,
+            systemctl_support="rhel-6" not in [*rhel_os_matrix][0],
         )
 
         assert utils.check_ssh_connection(

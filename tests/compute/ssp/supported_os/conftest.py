@@ -54,15 +54,23 @@ def vm_object_from_template(
     """
 
     param_dict = request.param if request else {}
+    rhel6 = False
+
     if os_matrix:
         os_matrix_key = [*os_matrix][0]
         vm_name = os_matrix_key
         labels = Template.generate_template_labels(
             **os_matrix[os_matrix_key]["template_labels"]
         )
+        rhel6 = "rhel-6" in os_matrix_key
     else:
         vm_name = request.param["vm_name"].replace(".", "-").lower()
         labels = Template.generate_template_labels(**request.param["template_labels"])
+
+    # RHEL 6 - default network does not work (used only in test_rhel_os_support)
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1794243
+    network_model = "e1000" if rhel6 else param_dict.get("network_model")
+    network_multiqueue = False if rhel6 else param_dict.get("network_multiqueue")
 
     return VirtualMachineForTestsFromTemplate(
         name=vm_name,
@@ -72,8 +80,8 @@ def vm_object_from_template(
         labels=labels,
         vm_dict=param_dict.get("vm_dict"),
         cpu_threads=param_dict.get("cpu_threads"),
-        network_model=param_dict.get("network_model"),
-        network_multiqueue=param_dict.get("network_multiqueue"),
+        network_model=network_model,
+        network_multiqueue=network_multiqueue,
         networks=network_configuration if network_configuration else None,
         interfaces=sorted(network_configuration.keys())
         if network_configuration
