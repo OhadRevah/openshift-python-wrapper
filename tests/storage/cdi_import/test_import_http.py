@@ -6,16 +6,21 @@ Import from HTTP server
 
 import logging
 import multiprocessing
+from contextlib import contextmanager
+from subprocess import run
 
 import pytest
 import utilities.storage
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.datavolume import DataVolume
+from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.pod import Pod
+from resources.storage_class import StorageClass
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, Images
-from utilities.virt import CIRROS_IMAGE
+from utilities.virt import CIRROS_IMAGE, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -651,3 +656,85 @@ def test_disk_falloc(
                 vm_console.expect(
                     "dd: writing 'file': No space left on device", timeout=60
                 )
+
+
+@pytest.fixture()
+def skip_access_mode_rwo(storage_class_matrix__class__):
+    LOGGER.debug("Use 'skip_access_mode_rwo' fixture...")
+    if (
+        storage_class_matrix__class__[[*storage_class_matrix__class__][0]][
+            "access_mode"
+        ]
+        == PersistentVolumeClaim.AccessMode.RWO
+    ):
+        pytest.skip(msg="Skipping when access_mode is RWO")
+
+
+@pytest.fixture()
+def skip_non_shared_storage(storage_class_matrix__class__):
+    LOGGER.debug("Use 'skip_non_shared_storage' fixture...")
+    if (
+        storage_class_matrix__class__[[*storage_class_matrix__class__][0]]
+        == StorageClass.Types.HOSTPATH
+    ):
+        pytest.skip(msg="Skipping when storage is non-shared")
+
+
+@contextmanager
+def cordon_node(node_name):
+    try:
+        run(
+            f"oc adm cordon {node_name}", shell=True,
+        )
+        yield
+    finally:
+        run(f"oc adm uncordon {node_name}", shell=True)
+
+
+@pytest.mark.destructive
+@pytest.mark.parametrize(
+    "data_volume_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "cnv-3362",
+                "source": "http",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": "1Gi",
+                "access_modes": DataVolume.AccessMode.RWX,
+                "wait": False,
+            },
+            marks=pytest.mark.polarion("cnv-3362"),
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.polarion("CNV-3362")
+def test_vm_from_dv_on_different_node(
+    skip_when_one_node,
+    skip_access_mode_rwo,
+    skip_non_shared_storage,
+    data_volume_scope_function,
+):
+    """
+    Test that create and run VM from DataVolume (only use RWX access mode) on different node.
+    It applies to shared storage like Ceph or NFS. It cannot be tested on local storage like HPP.
+    """
+    data_volume_scope_function.pvc.wait_for_status(
+        status=PersistentVolumeClaim.Status.BOUND, timeout=300
+    )
+    data_volume_scope_function.importer_pod.wait_for_status(
+        status=Pod.Status.RUNNING, timeout=300
+    )
+    node_res = data_volume_scope_function.importer_pod.instance.spec.nodeName
+    data_volume_scope_function.wait_for_status(
+        status=DataVolume.Status.SUCCEEDED, timeout=300
+    )
+    with cordon_node(node_name=node_res):
+        with utils.create_vm_from_dv(dv=data_volume_scope_function) as vm_dv:
+            assert (
+                vm_dv.instance.spec.template.spec.nodeSelector
+                != f"kubernetes.io/hostname: {node_res}"
+            )
+            LOGGER.debug("Verify VM console connection")
+            wait_for_console(vm=vm_dv, console_impl=console.Cirros)
