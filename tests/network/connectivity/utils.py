@@ -3,8 +3,6 @@ import logging
 
 import bitmath
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
-from resources.node_network_state import NodeNetworkState
-from resources.utils import TimeoutExpiredError
 from utilities import console
 
 
@@ -23,24 +21,24 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         node_selector=None,
         mtu=None,
         teardown=True,
+        ipv4_dhcp=False,
     ):
         super().__init__(
             name=name,
             worker_pods=worker_pods,
             node_selector=node_selector,
             teardown=teardown,
+            mtu=mtu,
+            ipv4_dhcp=ipv4_dhcp,
         )
         self.bond_name = bond_name
         self.nodes = nodes
         self.nics = nics
-        self.bond = None
         self.mode = mode
-        self.mtu = mtu
-        self.mtu_dict = {}
 
     def to_dict(self):
-        if not self.bond:
-            self.bond = {
+        if not self.iface:
+            self.iface = {
                 "name": self.bond_name,
                 "type": "bond",
                 "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
@@ -61,57 +59,12 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     }
                     self.set_interface(_port)
 
-        self.set_interface(self.bond)
+        self.set_interface(self.iface)
+        if self.iface not in self.ifaces:
+            self.ifaces.append(self.iface)
+
         res = super().to_dict()
         return res
-
-    def __enter__(self):
-        if self.mtu:
-            for pod in self.worker_pods:
-                for nic in self.nics:
-                    self.mtu_dict[nic] = pod.execute(
-                        command=["cat", f"/sys/class/net/{nic}/mtu"]
-                    ).strip()
-
-        super().__enter__()
-        for node in self.nodes:
-            try:
-                node_network_state = NodeNetworkState(name=node)
-                node_network_state.wait_until_up(self.bond_name)
-            except TimeoutExpiredError:
-                self.clean_up()
-                raise
-        return self
-
-    def clean_up(self):
-        if self.mtu:
-            for port in self.nics:
-                _port = {
-                    "name": port,
-                    "type": "ethernet",
-                    "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                    "mtu": int(self.mtu_dict[port]),
-                }
-                self.set_interface(_port)
-                self.apply()
-        self._absent_interface()
-        self.wait_for_bond_deleted()
-        self.delete()
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        if not self.teardown:
-            return
-        self.clean_up()
-
-    def _absent_interface(self):
-        self.bond["state"] = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
-        self.set_interface(self.bond)
-        self.apply()
-
-    def wait_for_bond_deleted(self):
-        for node in self.nodes:
-            node_network_state = NodeNetworkState(name=node)
-            node_network_state.wait_until_deleted(self.bond_name)
 
 
 def run_test_guest_performance(server_vm, client_vm, listen_ip):

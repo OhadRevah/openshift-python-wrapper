@@ -137,32 +137,28 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             worker_pods=worker_pods,
             node_selector=node_selector,
             teardown=teardown,
+            mtu=mtu,
+            ports=ports,
+            ipv4_dhcp=ipv4_dhcp,
         )
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
         self.stp_config = stp_config
-        self.ports = ports or []
-        self.mtu = mtu
-        self.bridge = None
-        self.bridges = []
-        self._ipv4_dhcp = ipv4_dhcp
-        self.mtu_dict = {}
-        self.ipv4_iface_state = {}
 
     def to_dict(self):
         # At the first time, it creates the dict.
         # When calling update, the caller updates the dict and this function
         # will not init it anymore
-        if not self.bridge:
+        if not self.iface:
             bridge_ports = [{"name": port} for port in self.ports]
-            self.bridge = {
+            self.iface = {
                 "name": self.bridge_name,
                 "type": self.bridge_type,
                 "state": IFACE_UP_STATE,
                 "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
             }
             if self.mtu:
-                self.bridge["mtu"] = self.mtu
+                self.iface["mtu"] = self.mtu
                 for port in bridge_ports:
                     _port = {
                         "name": port["name"],
@@ -172,141 +168,16 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     }
                     self.set_interface(_port)
 
-        if self._ipv4_dhcp:
-            self.bridge["ipv4"] = {"dhcp": True, "enabled": True}
+        if self.ipv4_dhcp:
+            self.iface["ipv4"] = {"dhcp": True, "enabled": True}
 
-        self.set_interface(self.bridge)
-        if self.bridge not in self.bridges:
-            self.bridges.append(self.bridge)
+        self.set_interface(self.iface)
+        if self.iface not in self.ifaces:
+            self.ifaces.append(self.iface)
 
         res = super().to_dict()
 
         return res
-
-    def __enter__(self):
-        if self._ipv4_dhcp:
-            self._ipv4_state_backup()
-
-        if self.mtu:
-            for pod in self.worker_pods:
-                for port in self.ports:
-                    self.mtu_dict[port] = pod.execute(
-                        command=["cat", f"/sys/class/net/{port}/mtu"]
-                    ).strip()
-
-        super().__enter__()
-
-        try:
-            self.validate_create()
-            return self
-        except Exception as e:
-            LOGGER.error(e)
-            self.clean_up()
-            raise
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        if not self.teardown:
-            return
-        self.clean_up()
-
-    @property
-    def ipv4_dhcp(self):
-        return self._ipv4_dhcp
-
-    @ipv4_dhcp.setter
-    def ipv4_dhcp(self, ipv4_dhcp):
-        if ipv4_dhcp != self._ipv4_dhcp:
-            self._ipv4_dhcp = ipv4_dhcp
-
-            if self._ipv4_dhcp:
-                self._ipv4_state_backup()
-                self.bridge["ipv4"] = {"dhcp": True, "enabled": True}
-
-            self.set_interface(self.bridge)
-            self.apply()
-
-    def clean_up(self):
-        if self.mtu:
-            for port in self.ports:
-                _port = {
-                    "name": port,
-                    "type": "ethernet",
-                    "state": IFACE_UP_STATE,
-                    "mtu": int(self.mtu_dict[port]),
-                }
-                self.set_interface(_port)
-                self.apply()
-        try:
-            self._absent_interface()
-            self.wait_for_bridge_deleted()
-        except TimeoutExpiredError as e:
-            LOGGER.error(e)
-
-        self.delete()
-
-    def wait_for_bridge_deleted(self):
-        for pod in self.worker_pods:
-            for bridge in self.bridges:
-                node_network_state = NodeNetworkState(name=pod.node.name)
-                node_network_state.wait_until_deleted(bridge["name"])
-
-    def validate_create(self):
-        for pod in self.worker_pods:
-            for bridge in self.bridges:
-                node_network_state = NodeNetworkState(name=pod.node.name)
-                node_network_state.wait_until_up(bridge["name"])
-
-    def _ipv4_state_backup(self):
-        # Backup current state of dhcp for the interfaces which arent veth or current bridge
-        for pod in self.worker_pods:
-            node_network_state = NodeNetworkState(name=pod.node.name)
-            self.ipv4_iface_state[pod.node.name] = {}
-            for interface in node_network_state.instance.status.currentState.interfaces:
-                if interface["name"] in self.ports:
-                    self.ipv4_iface_state[pod.node.name].update(
-                        {
-                            interface["name"]: {
-                                k: interface["ipv4"][k] for k in ("dhcp", "enabled")
-                            }
-                        }
-                    )
-
-    def _absent_interface(self):
-        for bridge in self.bridges:
-            bridge["state"] = IFACE_ABSENT_STATE
-            self.set_interface(bridge)
-
-            if self._ipv4_dhcp:
-                temp_ipv4_iface_state = {}
-                for pod in self.worker_pods:
-                    node_network_state = NodeNetworkState(name=pod.node.name)
-                    temp_ipv4_iface_state[pod.node.name] = {}
-                    # Find which interfaces got changed (of those that are connected to bridge)
-                    for (
-                        interface
-                    ) in node_network_state.instance.status.currentState.interfaces:
-                        if interface["name"] in self.ports:
-                            x = {k: interface["ipv4"][k] for k in ("dhcp", "enabled")}
-                            if (
-                                self.ipv4_iface_state[pod.node.name][interface["name"]]
-                                != x
-                            ):
-                                temp_ipv4_iface_state[pod.node.name].update(
-                                    {
-                                        interface["name"]: self.ipv4_iface_state[
-                                            pod.node.name
-                                        ][interface["name"]]
-                                    }
-                                )
-
-                previous_state = next(iter(temp_ipv4_iface_state.values()))
-
-                # Restore DHCP state of the changed bridge connected ports
-                for iface_name, ipv4 in previous_state.items():
-                    interface = {"name": iface_name, "ipv4": ipv4}
-                    self.set_interface(interface)
-
-        self.apply()
 
 
 class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPolicy):
@@ -383,7 +254,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
                 "state": IFACE_UP_STATE,
             }
             res["spec"]["desiredState"]["interfaces"].append(ovs_iface)
-            self.bridges.append(ovs_iface)
+            self.ifaces.append(ovs_iface)
 
         return res
 
