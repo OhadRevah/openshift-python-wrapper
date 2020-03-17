@@ -646,8 +646,8 @@ class Resource(object):
             for sample in samples:
                 sample_conditions = sample.items[0].status.conditions
                 for cond in sample_conditions:
-                    if cond.type == condition:
-                        return cond.status == status
+                    if cond.type == condition and cond.status == status:
+                        return
 
         except TimeoutExpiredError:
             if current_status:
