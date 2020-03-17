@@ -81,7 +81,7 @@ def test_connectivity_over_pod_network(
 @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2334")
 def test_guest_performance_over_pod_network(
-    skip_not_bare_metal,
+    skip_if_workers_vms,
     skip_when_one_node,
     skip_rhel7_workers,
     vma,

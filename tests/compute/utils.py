@@ -91,12 +91,12 @@ def execute_winrm_in_vm(target_vm, helper_vm, cmd):
     ).run_cmd(cmd=cmd, tcp_timeout=480, io_timeout=480)[1]
 
 
-def nmcli_add_con_cmds(iface, ip, default_gw, dns_server):
+def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
     bootcmds = [f"nmcli con add type ethernet con-name {iface} ifname {iface}"]
 
     # On bare metal cluster, address is acquired by DHCP
     # Default GW is set to eth1, thus should be removed from eth0
-    if py_config["bare_metal_cluster"]:
+    if workers_type == "physical":
         bootcmds += [
             "nmcli connection modify eth1 ipv4.method auto",
             "route del default gw  0.0.0.0 eth0",
@@ -109,7 +109,7 @@ def nmcli_add_con_cmds(iface, ip, default_gw, dns_server):
     bootcmds += [f"nmcli con up {iface}"]
 
     # On PSI, change default GW to brcnv network
-    if not py_config["bare_metal_cluster"]:
+    if workers_type == "virtual":
         bootcmds += [
             f"ip route replace default via " f"{default_gw}",
             "route del default gw  0.0.0.0 eth0",

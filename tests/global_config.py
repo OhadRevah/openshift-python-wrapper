@@ -6,7 +6,6 @@ from utilities.infra import Images
 global config
 
 no_unprivileged_client = False
-bare_metal_cluster = False
 distribution = "downstream"
 hco_namespace = "openshift-cnv"
 

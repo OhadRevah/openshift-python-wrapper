@@ -1,7 +1,6 @@
 import contextlib
 
 import pytest
-from pytest_testconfig import config as py_config
 from resources.utils import TimeoutSampler
 from tests.network.utils import assert_ping_successful, get_vmi_ip_v4_by_name
 from utilities.console import Fedora
@@ -32,10 +31,6 @@ class TestL2LinuxBridge:
                 "configured_vm_b.dot1q_ip",
                 marks=(
                     pytest.mark.polarion("CNV-2277"),
-                    pytest.mark.skipif(
-                        py_config["bare_metal_cluster"],
-                        reason="Missing VLAN config on the switch [Ticket PNT0584216]",
-                    ),
                     pytest.mark.bugzilla(
                         1754283,
                         skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,

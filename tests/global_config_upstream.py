@@ -6,7 +6,6 @@ from utilities.infra import Images
 global config
 
 no_unprivileged_client = True
-bare_metal_cluster = False
 distribution = "upstream"
 hco_namespace = "kubevirt-hyperconverged"
 

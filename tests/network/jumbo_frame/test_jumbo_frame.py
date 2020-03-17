@@ -17,14 +17,6 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="module")
-def skip_if_workers_vms(workers_type):
-    if workers_type == "virtual":
-        pytest.skip(
-            msg="Jumbo frame tests not working when workers are virtual machines"
-        )
-
-
 @pytest.fixture(scope="class")
 def nad(
     bridge_device_matrix,

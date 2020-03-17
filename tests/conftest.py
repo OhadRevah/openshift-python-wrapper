@@ -660,12 +660,6 @@ def skip_upstream():
         )
 
 
-@pytest.fixture(scope="session")
-def skip_not_bare_metal():
-    if not py_config["bare_metal_cluster"]:
-        pytest.skip(msg="Test should run only BM",)
-
-
 @pytest.fixture(scope="session", autouse=True)
 def leftovers():
     secret = Secret(name="htpass-secret", namespace="openshift-config")
@@ -688,6 +682,12 @@ def workers_type(network_utility_pods):
             return "virtual"
 
     return "physical"
+
+
+@pytest.fixture(scope="module")
+def skip_if_workers_vms(workers_type):
+    if workers_type == "virtual":
+        pytest.skip(msg="Test should run only BM cluster")
 
 
 # RHEL 7 specific fixtures

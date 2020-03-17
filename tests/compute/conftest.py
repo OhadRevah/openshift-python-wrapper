@@ -4,7 +4,6 @@ import logging
 
 import pytest
 import tests.network.utils as network_utils
-from pytest_testconfig import config as py_config
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.service_account import ServiceAccount
 from resources.template import Template
@@ -68,10 +67,11 @@ def network_configuration(
 
 @pytest.fixture(scope="class")
 def cloud_init_data(
-    request, skip_ceph_on_rhel7, rhel7_workers, rhel7_psi_network_config,
+    request, workers_type, skip_ceph_on_rhel7, rhel7_workers, rhel7_psi_network_config,
 ):
     if rhel7_workers:
         bootcmds = nmcli_add_con_cmds(
+            workers_type=workers_type,
             iface="eth1",
             ip=rhel7_psi_network_config["vm_address"],
             default_gw=rhel7_psi_network_config["default_gw"],
@@ -90,6 +90,7 @@ def cloud_init_data(
 
 @pytest.fixture(scope="class")
 def bridge_attached_helper_vm(
+    workers_type,
     skip_ceph_on_rhel7,
     rhel7_workers,
     schedulable_nodes,
@@ -105,6 +106,7 @@ def bridge_attached_helper_vm(
         }
 
         bootcmds = nmcli_add_con_cmds(
+            workers_type=workers_type,
             iface="eth1",
             ip=rhel7_psi_network_config["helper_vm_address"],
             default_gw=rhel7_psi_network_config["default_gw"],
@@ -115,7 +117,7 @@ def bridge_attached_helper_vm(
         cloud_init_data["bootcmd"] = bootcmds
 
         # On PSI, set DHCP server configuration
-        if not py_config["bare_metal_cluster"]:
+        if workers_type == "virtual":
             cloud_init_data["runcmd"] = [
                 "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
                 f"\\nauthoritative;\\nsubnet {rhel7_psi_network_config['subnet']} "
