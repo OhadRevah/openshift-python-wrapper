@@ -10,7 +10,6 @@ import os
 import pytest
 from resources.template import Template
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
@@ -147,12 +146,7 @@ def test_base_templates_annotations(base_templates):
             "rhel8",
             "rhel-8.1",
             "minimum",
-            marks=(
-                pytest.mark.polarion("CNV-3620"),
-                pytest.mark.bugzilla(
-                    1800714, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-3620")),
             id="test_rhel8_minimum_memory",
         ),
         pytest.param(
@@ -225,12 +219,7 @@ def test_validate_rhel_min_max_memory(
             "win-10",
             "windows10",
             "minimum",
-            marks=(
-                pytest.mark.polarion("CNV-3627"),
-                pytest.mark.bugzilla(
-                    1801297, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-3627"),
             id="test_win10_minimum_memory",
         ),
         pytest.param(
@@ -281,15 +270,6 @@ def test_validate_windows_min_max_memory(
         get_base_templates=base_templates,
         osinfo_memory_value=osinfo_memory_value,
         os_type=os_template,
-        memory_test=memory_test,
-        osinfo_filename=osinfo_filename,
-    )
-
-    # Old template, saved for backward compatibility
-    utils.check_default_and_validation_memory(
-        get_base_templates=base_templates,
-        osinfo_memory_value=osinfo_memory_value,
-        os_type="win2k12r2",
         memory_test=memory_test,
         osinfo_filename=osinfo_filename,
     )
