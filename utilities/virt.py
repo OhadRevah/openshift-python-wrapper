@@ -446,9 +446,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         return list(template)[0]
 
 
-def vm_console_run_commands(console_impl, vm, commands, timeout=60):
+def vm_console_run_commands(
+    console_impl, vm, commands, timeout=60, verify_commands_output=True
+):
     """
-    Run a list of commands inside VM and check all commands return 0.
+    Run a list of commands inside VM and (if verify_commands_output) check all commands return 0.
     If return code other than 0 then it will break execution and raise exception.
 
     Args:
@@ -456,18 +458,22 @@ def vm_console_run_commands(console_impl, vm, commands, timeout=60):
         vm (obj): VirtualMachine
         commands (list): List of commands
         timeout (int): Time to wait for the command output
+        verify_commands_output (book): Check commands return 0
     """
     with console_impl(vm=vm) as vmc:
         for command in commands:
             LOGGER.info(f"Execute {command} on {vm.name}")
             vmc.sendline(command)
-            vmc.sendline(
-                "echo rc==$?=="
-            )  # This construction rc==$?== is unique. Return code validation
-            try:
-                vmc.expect("rc==0==", timeout=timeout)  # Expected return code is 0
-            except pexpect.exceptions.TIMEOUT:
-                raise CommandExecFailed(command)
+            if verify_commands_output:
+                vmc.sendline(
+                    "echo rc==$?=="
+                )  # This construction rc==$?== is unique. Return code validation
+                try:
+                    vmc.expect("rc==0==", timeout=timeout)  # Expected return code is 0
+                except pexpect.exceptions.TIMEOUT:
+                    raise CommandExecFailed(command)
+            else:
+                vmc.expect(".*")
 
 
 class CommandExecFailed(Exception):
