@@ -650,7 +650,6 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
         r"sudo sed -iE "
         r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
         r" /etc/ssh/sshd_config",
-        "",
     ] + ssh_service_restart_cmd
 
     vm_console_run_commands(
