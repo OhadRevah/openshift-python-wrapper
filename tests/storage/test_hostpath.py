@@ -642,7 +642,7 @@ def test_hpp_operator_pod(skip_test_if_no_hpp_sc, default_client):
     assert hpp_operator_pod.status == Pod.Status.RUNNING
 
 
-@pytest.mark.desctructive
+@pytest.mark.destructive
 @pytest.mark.polarion("CNV-3277")
 def test_hpp_operator_recreate_after_deletion(
     skip_test_if_no_hpp_sc, hpp_operator_deployment
