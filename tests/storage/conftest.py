@@ -13,14 +13,12 @@ from resources.cdi import CDI
 from resources.cdi_config import CDIConfig
 from resources.configmap import ConfigMap
 from resources.deployment import Deployment, HttpDeployment
-from resources.namespace import Namespace
 from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.storage_class import StorageClass
 from tests.storage.utils import HttpService
-from utilities.infra import Images, get_cert, get_images_external_http_server
-from utilities.storage import create_dv
+from utilities.infra import get_cert
 
 
 LOGGER = logging.getLogger(__name__)
@@ -220,24 +218,3 @@ def registry_config_map(namespace):
         name="registry-cert", namespace=namespace.name, data=get_cert("registry_cert")
     ) as configmap:
         yield configmap
-
-
-@pytest.fixture(scope="module")
-def data_volume(namespace):
-    with create_dv(
-        dv_name="source-dv",
-        namespace=namespace.name,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
-        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        size="500Mi",
-    ) as dv:
-        dv.wait()
-        yield dv
-
-
-@pytest.fixture(scope="module")
-def dst_ns():
-    with Namespace(name="destination-namespace") as ns:
-        ns.wait_for_status(Namespace.Status.ACTIVE, timeout=120)
-        yield ns

@@ -8,6 +8,10 @@ import pytest
 from kubernetes.client.rest import ApiException
 from resources.datavolume import DataVolume
 from resources.service_account import ServiceAccount
+from tests.storage.restricted_namespace_cloning.conftest import (
+    DV_PARAMS,
+    NAMESPACE_PARAMS,
+)
 from tests.storage.utils import (
     create_cluster_role,
     create_role_binding,
@@ -37,16 +41,17 @@ def cluster_role_for_creating_pods():
 
 
 @pytest.fixture(scope="module")
-def data_volume_clone_settings(namespace, dst_ns, data_volume):
+def data_volume_clone_settings(namespace, dst_ns, data_volume_scope_module):
     dv = DataVolume(
         name="dv",
         namespace=dst_ns.name,
         source="pvc",
-        source_pvc=data_volume.name,
+        source_pvc=data_volume_scope_module.name,
         source_namespace=namespace.name,
-        volume_mode=data_volume.volume_mode,
-        storage_class=data_volume.storage_class,
-        size=data_volume.size,
+        volume_mode=data_volume_scope_module.volume_mode,
+        storage_class=data_volume_scope_module.storage_class,
+        size=data_volume_scope_module.size,
+        hostpath_node=data_volume_scope_module.hostpath_node,
     )
     return dv
 
@@ -67,10 +72,17 @@ def allow_unprivileged_client_to_manage_vms_on_dst_ns(
         yield role_binding_vm_admin_unprivileged_client
 
 
-@pytest.mark.polarion("CNV-2826")
+@pytest.mark.parametrize(
+    ("data_volume_scope_module", "namespace"),
+    [
+        pytest.param(
+            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2826")
+        ),
+    ],
+    indirect=True,
+)
 def test_create_vm_with_cloned_data_volume_positive(
     namespace,
-    data_volume,
     dst_ns,
     service_account,
     unprivileged_client,
@@ -112,10 +124,17 @@ def test_create_vm_with_cloned_data_volume_positive(
                 vm.start(wait=True)
 
 
-@pytest.mark.polarion("CNV-2828")
+@pytest.mark.parametrize(
+    ("data_volume_scope_module", "namespace"),
+    [
+        pytest.param(
+            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2828")
+        ),
+    ],
+    indirect=True,
+)
 def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions_negative(
     namespace,
-    data_volume,
     dst_ns,
     service_account,
     unprivileged_client,
@@ -163,14 +182,17 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
                     return
 
 
-@pytest.mark.polarion("CNV-2827")
+@pytest.mark.parametrize(
+    ("data_volume_scope_module", "namespace"),
+    [
+        pytest.param(
+            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2827")
+        ),
+    ],
+    indirect=True,
+)
 def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permission_negative(
-    namespace,
-    data_volume,
-    dst_ns,
-    service_account,
-    unprivileged_client,
-    data_volume_clone_settings,
+    namespace, dst_ns, service_account, unprivileged_client, data_volume_clone_settings,
 ):
     with set_permissions(
         role_name="datavolume-cluster-role-src",
@@ -211,10 +233,17 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
                     return
 
 
-@pytest.mark.polarion("CNV-2829")
+@pytest.mark.parametrize(
+    ("data_volume_scope_module", "namespace"),
+    [
+        pytest.param(
+            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2829")
+        ),
+    ],
+    indirect=True,
+)
 def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
     namespace,
-    data_volume,
     dst_ns,
     service_account,
     unprivileged_client,

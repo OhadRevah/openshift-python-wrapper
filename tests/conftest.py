@@ -728,16 +728,25 @@ def rhel7_workers(schedulable_nodes):
 @pytest.fixture(scope="session")
 def skip_rhel7_workers(rhel7_workers):
     if rhel7_workers:
-        pytest.skip(msg="Test should skip on RTHEL7 workers")
+        pytest.skip(msg="Test should skip on RHEL7 workers")
 
 
-@pytest.fixture(scope="class")
-def skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers):
-    if storage_class_matrix__class__.get("rook-ceph-block"):
+def _skip_ceph_on_rhel7(storage_class, rhel7_workers):
+    if storage_class.get("rook-ceph-block"):
         if rhel7_workers:
             pytest.skip(
                 msg="Rook-ceph configuration is not supported on RHEL7 workers",
             )
+
+
+@pytest.fixture(scope="class")
+def skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers):
+    _skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers)
+
+
+@pytest.fixture(scope="module")
+def skip_ceph_on_rhel7_scope_module(storage_class_matrix__module__, rhel7_workers):
+    _skip_ceph_on_rhel7(storage_class_matrix__module__, rhel7_workers)
 
 
 @pytest.fixture(scope="session")
@@ -823,6 +832,22 @@ def data_volume_scope_class(
         request=request,
         namespace=namespace,
         storage_class_matrix=storage_class_matrix__class__,
+        schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture(scope="module")
+def data_volume_scope_module(
+    request,
+    skip_ceph_on_rhel7_scope_module,
+    namespace,
+    storage_class_matrix__module__,
+    schedulable_nodes,
+):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix__module__,
         schedulable_nodes=schedulable_nodes,
     )
 
