@@ -9,7 +9,6 @@ from openshift.dynamic.exceptions import NotFoundError
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.secret import Secret
-from resources.storage_class import StorageClass
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
@@ -38,17 +37,20 @@ def secret(namespace):
 
 
 @pytest.mark.polarion("CNV-2327")
-def test_upload_https_scratch_space_delete_pvc(skip_upstream, namespace, tmpdir):
+def test_upload_https_scratch_space_delete_pvc(
+    skip_upstream, namespace, storage_class_matrix__module__, tmpdir
+):
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="upload",
         dv_name="scratch-space-upload-qcow2-https",
         namespace=namespace.name,
         size="3Gi",
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
@@ -79,16 +81,17 @@ def test_upload_https_scratch_space_delete_pvc(skip_upstream, namespace, tmpdir)
 
 @pytest.mark.polarion("CNV-2328")
 def test_import_https_scratch_space_delete_pvc(
-    skip_upstream, namespace, https_config_map
+    skip_upstream, namespace, storage_class_matrix__module__, https_config_map
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     with storage_utils.create_dv(
         source="http",
         dv_name="scratch-space-import-qcow2-https",
         namespace=namespace.name,
         url=f"{get_images_https_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         cert_configmap=https_config_map.name,
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
@@ -137,8 +140,16 @@ def test_import_https_scratch_space_delete_pvc(
     ],
 )
 def test_no_scratch_space_import_https_data_volume(
-    skip_upstream, namespace, https_config_map, dv_name, file_name, content_type, size,
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    https_config_map,
+    dv_name,
+    file_name,
+    content_type,
+    size,
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
         namespace=namespace.name,
@@ -146,6 +157,8 @@ def test_no_scratch_space_import_https_data_volume(
         cert_configmap=https_config_map.name,
         content_type=content_type,
         size=size,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     )
 
 
@@ -173,16 +186,22 @@ def test_no_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_https_data_volume(
-    skip_upstream, namespace, https_config_map, dv_name, file_name
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    https_config_map,
+    dv_name,
+    file_name,
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"{get_images_https_server()}{Images.Cirros.DIR}/{file_name}",
         cert_configmap=https_config_map.name,
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
@@ -210,15 +229,16 @@ def test_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_http_data_volume(
-    skip_upstream, namespace, dv_name, file_name
+    skip_upstream, namespace, storage_class_matrix__module__, dv_name, file_name
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{file_name}",
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
@@ -246,15 +266,16 @@ def test_scratch_space_import_http_data_volume(
     ],
 )
 def test_scratch_space_import_http_basic_auth_data_volume(
-    skip_upstream, namespace, secret, dv_name, file_name
+    skip_upstream, namespace, storage_class_matrix__module__, secret, dv_name, file_name
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         secret=secret,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
@@ -295,8 +316,14 @@ def test_scratch_space_import_http_basic_auth_data_volume(
     ],
 )
 def test_no_scratch_space_import_http_basic_auth(
-    skip_upstream, namespace, secret, dv_name, file_name,
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    secret,
+    dv_name,
+    file_name,
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
         namespace=namespace.name,
@@ -304,6 +331,8 @@ def test_no_scratch_space_import_http_basic_auth(
         secret=secret,
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="5Gi",
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     )
 
 
@@ -331,14 +360,17 @@ def test_no_scratch_space_import_http_basic_auth(
     ],
 )
 def test_no_scratch_space_import_http(
-    skip_upstream, namespace, dv_name, file_name,
+    skip_upstream, namespace, storage_class_matrix__module__, dv_name, file_name,
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{file_name}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="5Gi",
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     )
 
 
@@ -384,18 +416,19 @@ def test_no_scratch_space_import_http(
     ],
 )
 def test_scratch_space_upload_data_volume(
-    skip_upstream, namespace, tmpdir, file_name, dv_name
+    skip_upstream, namespace, storage_class_matrix__module__, tmpdir, file_name, dv_name
 ):
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{Images.Cirros.DIR}/{file_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=namespace.name,
         size="3Gi",
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
@@ -423,16 +456,21 @@ def test_scratch_space_upload_data_volume(
 
 @pytest.mark.polarion("CNV-2319")
 def test_scratch_space_import_registry_data_volume(
-    skip_upstream, namespace, images_private_registry_server, registry_config_map
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    images_private_registry_server,
+    registry_config_map,
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="scratch-space-import-registry",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
         cert_configmap=registry_config_map.name,
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
@@ -443,19 +481,27 @@ def test_scratch_space_import_registry_data_volume(
 
 
 def create_dv_and_vm_no_scratch_space(
-    dv_name, namespace, url, content_type, size, cert_configmap=None, secret=None,
+    dv_name,
+    namespace,
+    storage_class,
+    volume_mode,
+    url,
+    content_type,
+    size,
+    cert_configmap=None,
+    secret=None,
 ):
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
-        namespace=namespace.name,
+        namespace=namespace,
         content_type=content_type,
         url=url,
         cert_configmap=cert_configmap,
         size=size,
         secret=secret,
-        storage_class=StorageClass.Types.ROOK,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        storage_class=storage_class,
+        volume_mode=volume_mode,
     ) as dv:
         thread = threading.Thread(target=dv.wait())
         thread.daemon = True
