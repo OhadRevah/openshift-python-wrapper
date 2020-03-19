@@ -28,7 +28,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         teardown=True,
         mtu=None,
         ports=None,
-        ipv4_dhcp=False,
+        ipv4_dhcp=None,
     ):
         super().__init__(name=name, teardown=teardown)
         self.desired_state = {"interfaces": []}
@@ -39,7 +39,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         self.ports = ports or []
         self.iface = None
         self.ifaces = []
-        self.ipv4_dhcp = ipv4_dhcp
+        self._ipv4_dhcp = ipv4_dhcp
         self.ipv4_iface_state = {}
         if self.node_selector:
             for pod in self.worker_pods:
@@ -80,7 +80,7 @@ class NodeNetworkConfigurationPolicy(Resource):
             return
 
     def __enter__(self):
-        if self.ipv4_dhcp:
+        if self._ipv4_dhcp:
             self._ipv4_state_backup()
 
         if self.mtu:
@@ -107,14 +107,14 @@ class NodeNetworkConfigurationPolicy(Resource):
 
     @property
     def ipv4_dhcp(self):
-        return self.ipv4_dhcp
+        return self._ipv4_dhcp
 
     @ipv4_dhcp.setter
     def ipv4_dhcp(self, ipv4_dhcp):
-        if ipv4_dhcp != self.ipv4_dhcp:
-            self.ipv4_dhcp = ipv4_dhcp
+        if ipv4_dhcp != self._ipv4_dhcp:
+            self._ipv4_dhcp = ipv4_dhcp
 
-            if self.ipv4_dhcp:
+            if self._ipv4_dhcp:
                 self._ipv4_state_backup()
                 self.iface["ipv4"] = {"dhcp": True, "enabled": True}
 
@@ -172,7 +172,7 @@ class NodeNetworkConfigurationPolicy(Resource):
             bridge["state"] = self.Interface.State.ABSENT
             self.set_interface(bridge)
 
-            if self.ipv4_dhcp:
+            if self._ipv4_dhcp:
                 temp_ipv4_iface_state = {}
                 for pod in self.worker_pods:
                     node_network_state = NodeNetworkState(name=pod.node.name)

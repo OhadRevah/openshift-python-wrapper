@@ -116,7 +116,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ports=None,
         mtu=None,
         node_selector=None,
-        ipv4_dhcp=False,
+        ipv4_dhcp=None,
         teardown=True,
     ):
         """
