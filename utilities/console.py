@@ -50,7 +50,7 @@ class Console(object):
             )
 
         LOGGER.info(f"Connect to {self.vm.name} console")
-        self._console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+        self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
 
         self._connect(
             login_prompt="login:",
@@ -79,7 +79,7 @@ class Console(object):
 
     def disconnect(self):
         if self.child.terminated:
-            self._console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+            self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
         self.child.send("\n\n")
         self.child.expect(self.prompt)
         self.child.send("exit")
@@ -87,7 +87,7 @@ class Console(object):
         self.child.expect("login:")
         self.child.close()
 
-    def _console_eof_sampler(self, func, *func_args):
+    def console_eof_sampler(self, func, *func_args):
         sampler = TimeoutSampler(300, 5, func, pexpect.exceptions.EOF, *func_args)
         for sample in sampler:
             if sample:

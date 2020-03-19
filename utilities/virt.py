@@ -643,24 +643,42 @@ class Prometheus(object):
 def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
     LOGGER.info("Enable SSH in VM.")
 
+    rhel_7_7 = "7.7" in vm.vmi.os_version
+    vm_console = None
+
+    enable_ssh_command = [
+        r"sudo sed -iE "
+        r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
+        r" /etc/ssh/sshd_config",
+    ]
+
+    vm_console_run_commands(
+        console_impl=console_impl, vm=vm, commands=enable_ssh_command,
+    )
+
+    # Workaround for RHEL 7.7 - console may not be successfully logged out
+    if rhel_7_7:
+        vm_console = console_impl(vm=vm)
+        vm_console.console_eof_sampler(
+            pexpect.spawn, vm_console.cmd, [], vm_console.timeout
+        )
+        vm_console.disconnect()
+
     if systemctl_support:
-        ssh_service_restart_cmd = [
-            "sudo systemctl enable sshd",
-            "sudo systemctl restart sshd",
-        ]
+        ssh_service_restart_cmd = ["sudo systemctl restart sshd"]
     # For older linux versions which do not support systemctl
     else:
         ssh_service_restart_cmd = ["sudo /etc/init.d/sshd restart"]
 
-    commands = [
-        r"sudo sed -iE "
-        r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
-        r" /etc/ssh/sshd_config",
-    ] + ssh_service_restart_cmd
-
     vm_console_run_commands(
-        console_impl=console_impl, vm=vm, commands=commands,
+        console_impl=console_impl,
+        vm=vm,
+        commands=ssh_service_restart_cmd,
+        verify_commands_output=False,
     )
+
+    if rhel_7_7:
+        vm_console.disconnect()
 
     wait_for_ssh_service(vm, console_impl, systemctl_support=systemctl_support)
 
@@ -672,7 +690,7 @@ def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
         timeout=30,
         sleep=5,
         func=ssh_service_activated,
-        exceptions=pexpect.exceptions.TIMEOUT,
+        exceptions=(pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF),
         vm=vm,
         console_impl=console_impl,
         systemctl_support=systemctl_support,

@@ -328,6 +328,19 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
         return xmltodict.parse(self.get_xml(), process_namespaces=True)
 
+    @property
+    def guest_os_info(self):
+        return self.instance.status.guestOSInfo
+
+    @property
+    def os_version(self):
+        vmi_os_version = self.guest_os_info.get("version", {})
+        if not vmi_os_version:
+            LOGGER.warning(
+                "Guest agent is not installed on the VM; OS version is not available."
+            )
+        return vmi_os_version
+
 
 class VirtualMachineInstanceMigration(NamespacedResource):
     api_group = API_GROUP
