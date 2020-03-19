@@ -41,13 +41,13 @@ def bond1(skip_no_bond_support, network_utility_pods, nodes_active_nics):
 
 @pytest.fixture(scope="class")
 def bridge_on_bond(
-    bridge_device_matrix, bond1, network_utility_pods, schedulable_nodes
+    bridge_device_matrix__class__, bond1, network_utility_pods, schedulable_nodes
 ):
     """
     Create bridge and attach the BOND to it
     """
     with bridge_device(
-        bridge_type=bridge_device_matrix,
+        bridge_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         bridge_name="br1bond",
         network_utility_pods=network_utility_pods,
@@ -77,10 +77,10 @@ def nad(
 
 
 @pytest.fixture(scope="class")
-def br1bond_nad(skip_no_bond_support, bridge_device_matrix, namespace):
+def br1bond_nad(skip_no_bond_support, bridge_device_matrix__class__, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix,
+        nad_type=bridge_device_matrix__class__,
         nad_name="br1bond-nad",
         bridge_name="br1bond",
         tuning=True,
