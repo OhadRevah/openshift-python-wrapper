@@ -492,3 +492,61 @@ def linux_bridge_over_vxlan(
             ipv4_dhcp=ipv4_dhcp,
         ) as br:
             yield br
+
+
+class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        bond_name,
+        nics,
+        nodes,
+        worker_pods,
+        mode,
+        node_selector=None,
+        mtu=None,
+        teardown=True,
+        ipv4_dhcp=False,
+    ):
+        super().__init__(
+            name=name,
+            worker_pods=worker_pods,
+            node_selector=node_selector,
+            teardown=teardown,
+            mtu=mtu,
+            ipv4_dhcp=ipv4_dhcp,
+        )
+        self.bond_name = bond_name
+        self.nodes = nodes
+        self.nics = nics
+        self.mode = mode
+
+    def to_dict(self):
+        if not self.iface:
+            self.iface = {
+                "name": self.bond_name,
+                "type": "bond",
+                "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
+                "mtu": self.mtu,
+                "link-aggregation": {
+                    "mode": self.mode,
+                    "slaves": self.nics,
+                    "options": {"miimon": "120"},
+                },
+            }
+            if self.mtu:
+                for port in self.nics:
+                    _port = {
+                        "name": port,
+                        "type": "ethernet",
+                        "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
+                        "mtu": self.mtu,
+                    }
+                    self.set_interface(_port)
+
+        self.set_interface(self.iface)
+        if self.iface not in self.ifaces:
+            self.ifaces.append(self.iface)
+
+        res = super().to_dict()
+        return res
