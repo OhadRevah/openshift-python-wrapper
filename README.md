@@ -296,3 +296,11 @@ docs/build/html/index.html
 ##### unprivileged_client
 To skip 'unprivileged_client' creation pass to pytest command:
 --tc=no_unprivileged_client:True
+
+##### ssh workers by fixture
+workers_ssh_executors fixture need to ssh the workers
+From the slave it will work since it used the default ssh key to connect
+To use non default key:
+```bash
+export HOST_SSH_KEY=path.to.ssh_key
+```
