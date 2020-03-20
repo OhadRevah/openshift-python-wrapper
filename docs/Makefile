@@ -23,5 +23,4 @@ help:
 %: Makefile
 	@$(SPHINXAPIDOC) -T -f -o "$(SOURCEDIR)/rst" "$(UTILITIESDIR)"
 	@$(SPHINXAPIDOC) -T -f -o "$(SOURCEDIR)/rst" "$(RESOURCES)"
-	@$(SPHINXAPIDOC) -T -f -o "$(SOURCEDIR)/rst" "$(TESTS)"
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
