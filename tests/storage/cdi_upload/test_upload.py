@@ -24,6 +24,17 @@ from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
+HTTP_UNAUTHORIZED = 401
+HTTP_OK = 200
+
+
+def wait_for_upload_response_code(token, data, response_code):
+    sampler = TimeoutSampler(
+        timeout=60, sleep=5, func=storage_utils.upload_image, token=token, data=data,
+    )
+    for sample in sampler:
+        if sample == response_code:
+            return True
 
 
 @pytest.mark.polarion("CNV-2318")
@@ -121,10 +132,10 @@ def test_successful_upload_with_supported_formats(
     skip_upstream,
     namespace,
     tmpdir,
+    storage_class_matrix__module__,
     dv_name,
     remote_name,
     local_name,
-    storage_class_matrix__module__,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     local_name = f"{tmpdir}/{local_name}"
@@ -143,96 +154,83 @@ def test_successful_upload_with_supported_formats(
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.parametrize(
+    "data_volume_multi_storage_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "cnv-2018",
+                "source": "upload",
+                "dv_size": "3Gi",
+                "wait": False,
+            },
+            marks=(pytest.mark.polarion("CNV-2018")),
+        ),
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-2018")
 def test_successful_upload_token_validity(
-    skip_upstream, namespace, tmpdir, default_client
+    skip_upstream,
+    namespace,
+    data_volume_multi_storage_scope_function,
+    upload_file_path,
 ):
-    dv_name = "cnv-2018"
-    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-    storage_utils.downloaded_image(
-        remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        local_name=local_name,
-    )
-    with utilities.storage.create_dv(
-        source="upload",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        size="3Gi",
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
-    ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
-        with UploadTokenRequest(
-            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
-        ) as utr:
-            token = utr.create().status.token
-            sampler = TimeoutSampler(
-                timeout=60,
-                sleep=5,
-                func=storage_utils.upload_image,
-                token=shuffle(token),
-                data=local_name,
-            )
-            for sample in sampler:
-                if sample == 401:
-                    return True
-        with UploadTokenRequest(
-            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
-        ) as utr:
-            token = utr.create().status.token
-            sampler = TimeoutSampler(
-                timeout=60,
-                sleep=5,
-                func=storage_utils.upload_image,
-                token=token,
-                data=local_name,
-            )
-            for sample in sampler:
-                if sample == 200:
-                    return True
+    dv = data_volume_multi_storage_scope_function
+    dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+    with UploadTokenRequest(
+        name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
+    ) as utr:
+        token = utr.create().status.token
+        wait_for_upload_response_code(
+            token=shuffle(token), data="test", response_code=HTTP_UNAUTHORIZED
+        )
+    with UploadTokenRequest(
+        name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
+    ) as utr:
+        token = utr.create().status.token
+        wait_for_upload_response_code(
+            token=token, data=upload_file_path, response_code=HTTP_OK
+        )
 
 
+@pytest.mark.parametrize(
+    "data_volume_multi_storage_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "cnv-2011",
+                "source": "upload",
+                "dv_size": "3Gi",
+                "wait": False,
+            },
+            marks=(pytest.mark.polarion("CNV-2011")),
+        ),
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-2011")
 def test_successful_upload_token_expiry(
-    skip_upstream, namespace, tmpdir, default_client
+    skip_upstream, namespace, data_volume_multi_storage_scope_function
 ):
-    dv_name = "cnv-2011"
-    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-    storage_utils.downloaded_image(
-        remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        local_name=local_name,
-    )
-    with utilities.storage.create_dv(
-        source="upload",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        size="3Gi",
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
-    ) as dv:
-        LOGGER.info("Wait for DV to be UploadReady")
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
-        with UploadTokenRequest(
-            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
-        ) as utr:
-            token = utr.create().status.token
-            LOGGER.info("Wait until token expires ...")
-            time.sleep(310)
-            sampler = TimeoutSampler(
-                timeout=60,
-                sleep=5,
-                func=storage_utils.upload_image,
-                token=token,
-                data=local_name,
-            )
-            for sample in sampler:
-                if sample == 401:
-                    return True
+    dv = data_volume_multi_storage_scope_function
+    dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+    with UploadTokenRequest(
+        name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
+    ) as utr:
+        token = utr.create().status.token
+        LOGGER.info("Wait until token expires ...")
+        time.sleep(310)
+        wait_for_upload_response_code(
+            token=token, data="test", response_code=HTTP_UNAUTHORIZED
+        )
 
 
-def _upload_image(dv_name, namespace, local_name, size=None):
+def _upload_image(
+    dv_name, namespace, storage_class, volume_mode, local_name, size=None
+):
     """
-    Upload test that is executed in parallel in with other tasks.
+    Upload image function for the use of other tests
     """
     size = size or "3Gi"
     with utilities.storage.create_dv(
@@ -240,8 +238,8 @@ def _upload_image(dv_name, namespace, local_name, size=None):
         dv_name=dv_name,
         namespace=namespace.name,
         size=size,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=volume_mode,
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=300)
@@ -251,32 +249,23 @@ def _upload_image(dv_name, namespace, local_name, size=None):
             token = utr.create().status.token
             sleep(5)
             LOGGER.info("Ensure upload was successful")
-            sampler = TimeoutSampler(
-                timeout=60,
-                sleep=5,
-                func=storage_utils.upload_image,
-                token=token,
-                data=local_name,
+            wait_for_upload_response_code(
+                token=token, data=local_name, response_code=HTTP_OK
             )
-            for sample in sampler:
-                if sample == 200:
-                    return True
 
 
 @pytest.mark.polarion("CNV-2015")
 def test_successful_concurrent_uploads(
-    skip_upstream, namespace, tmpdir, default_client
+    skip_upstream, upload_file_path, namespace, storage_class_matrix__module__,
 ):
     dvs_processes = []
-    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-    storage_utils.downloaded_image(
-        remote_name=f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        local_name=local_name,
-    )
+    storage_class = [*storage_class_matrix__module__][0]
+    volume_mode = storage_class_matrix__module__[storage_class]["volume_mode"]
     available_pv = PersistentVolume(namespace).max_available_pvs
     for dv in range(available_pv):
         dv_process = multiprocessing.Process(
-            target=_upload_image, args=(f"dv-{dv}", namespace, local_name),
+            target=_upload_image,
+            args=(f"dv-{dv}", namespace, storage_class, volume_mode, upload_file_path),
         )
         dv_process.start()
         dvs_processes.append(dv_process)
@@ -287,18 +276,32 @@ def test_successful_concurrent_uploads(
             raise pytest.fail("Creating DV exited with non-zero return code")
 
 
-@pytest.mark.polarion("CNV-2017")
+@pytest.mark.parametrize(
+    "upload_file_path",
+    [
+        pytest.param(
+            {
+                "remote_image_dir": Images.Rhel.DIR,
+                "remote_image_name": Images.Rhel.RHEL8_0_IMG,
+            },
+            marks=(pytest.mark.polarion("CNV-2017")),
+        ),
+    ],
+    indirect=True,
+)
 def test_successful_upload_missing_file_in_transit(
-    skip_upstream, tmpdir, namespace, default_client
+    skip_upstream, namespace, storage_class_matrix__class__, upload_file_path
 ):
     dv_name = "cnv-2017"
-    local_name = f"{tmpdir}/{Images.Rhel.RHEL8_0_IMG}"
+    storage_class = [*storage_class_matrix__class__][0]
+    volume_mode = storage_class_matrix__class__[storage_class]["volume_mode"]
     storage_utils.downloaded_image(
         remote_name=f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
-        local_name=local_name,
+        local_name=upload_file_path,
     )
     upload_process = multiprocessing.Process(
-        target=_upload_image, args=(dv_name, namespace, local_name, "10Gi"),
+        target=_upload_image,
+        args=(dv_name, namespace, storage_class, volume_mode, upload_file_path, "10Gi"),
     )
 
     # Run process in parallel
@@ -310,7 +313,7 @@ def test_successful_upload_missing_file_in_transit(
     # Once the bug is fixed, the below line needs to be uncommented and sleep should be removed.
     # DataVolume(dv_name, namespace).wait_for_status(status="UploadInProgress", timeout=300)
     time.sleep(15)
-    sh.rm("-f", local_name)
+    sh.rm("-f", upload_file_path)
 
     # Exit the completed processes
     upload_process.join()

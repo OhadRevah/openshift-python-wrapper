@@ -55,7 +55,7 @@ def upload_image_to_dv(dv_name, volume_mode, storage_ns_name, storage_class):
         storage_class=storage_class,
         volume_mode=volume_mode,
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
         yield dv
 
 
@@ -218,8 +218,12 @@ def upload_image(token, data):
     uploadproxy = Route(name="cdi-uploadproxy", namespace="openshift-cnv")
     uploadproxy_url = f"https://{uploadproxy.host}/v1alpha1/upload"
     LOGGER.info(msg=f"Upload {data} to {uploadproxy_url}")
-    with open(data, "rb") as fd:
-        fd_data = fd.read()
+    try:
+        with open(data, "rb") as fd:
+            fd_data = fd.read()
+    except (OSError, IOError):
+        fd_data = data
+
     return requests.post(
         uploadproxy_url, data=fd_data, headers=headers, verify=False
     ).status_code

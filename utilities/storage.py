@@ -81,14 +81,13 @@ def data_volume(
     # Set dv attributes
     # Values can be extracted from request.param or from rhel_os_matrix
     # windows_os_matrix (passed as os_matrix)
+    source = params_dict.get("source", "http")
+    image = params_dict.get("image", "")
+    dv_name = params_dict.get("dv_name").replace(".", "-").lower()
     if os_matrix:
         os_matrix_key = [*os_matrix][0]
         image = os_matrix[os_matrix_key]["image"]
         dv_name = os_matrix_key
-    else:
-        image = f"{request.param['image']}"
-        dv_name = request.param["dv_name"].replace(".", "-").lower()
-    source = params_dict.get("source", "http")
     dv_kwargs = {
         "dv_name": dv_name,
         "namespace": namespace.name,
