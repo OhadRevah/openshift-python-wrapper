@@ -96,5 +96,5 @@ def data_volume(
 
     # Create dv
     with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
-        dv.wait(timeout=1800 if "win" in image else 1200)
+        dv.wait(timeout=2400 if "win" in image else 1200)
         yield dv
