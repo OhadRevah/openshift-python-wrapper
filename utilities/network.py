@@ -262,17 +262,20 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,
-        name,
         worker_pods,
-        iface_name,
         iface_state,
         base_iface,
         tag,
+        name=None,
         node_selector=None,
         ipv4_dhcp=None,
         ipv6_enable=False,
         teardown=True,
     ):
+        iface_name = f"{base_iface}.{tag}"
+        if not name:
+            name = f"{iface_name}-nncp"
+
         super().__init__(
             name=name,
             node_selector=node_selector,
@@ -280,10 +283,10 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
             teardown=teardown,
             ipv4_dhcp=ipv4_dhcp,
         )
-        self.iface_name = iface_name
         self.iface_state = iface_state
         self.base_iface = base_iface
         self.tag = tag
+        self.iface_name = iface_name
         self.ipv6_enable = ipv6_enable
         self.master_iface = None
 

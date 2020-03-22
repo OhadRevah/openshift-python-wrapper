@@ -20,6 +20,13 @@ class NodeNetworkConfigurationPolicy(Resource):
             DOWN = "down"
             ABSENT = "absent"
 
+    class Conditions:
+        class Type:
+            FAILING = "Failing"
+            AVAILABLE = "Available"
+            PROGRESSING = "Progressing"
+            MATCHING = "Matching"
+
     def __init__(
         self,
         name,
