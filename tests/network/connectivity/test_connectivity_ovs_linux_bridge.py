@@ -325,6 +325,7 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2072")
     def test_positive_vlan(
         self,
+        skip_rhel7_workers,
         skip_if_workers_vms,
         namespace,
         ovs_lb_bridge,
@@ -347,6 +348,7 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2075")
     def test_negative_vlan(
         self,
+        skip_rhel7_workers,
         skip_if_workers_vms,
         namespace,
         ovs_lb_bridge,
@@ -367,6 +369,7 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2335")
     def test_guest_performance(
         self,
+        skip_rhel7_workers,
         skip_if_workers_vms,
         namespace,
         ovs_lb_bridge,
@@ -394,6 +397,7 @@ class TestBondConnectivity:
     @pytest.mark.polarion("CNV-3366")
     def test_bond(
         self,
+        skip_rhel7_workers,
         skip_no_bond_support,
         namespace,
         br1bond_nad,
