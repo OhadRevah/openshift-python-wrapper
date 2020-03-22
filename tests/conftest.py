@@ -829,10 +829,11 @@ def data_volume_scope_class(
 
 @pytest.fixture(scope="class")
 def cloud_init_data(
-    request, skip_ceph_on_rhel7, rhel7_workers, rhel7_psi_network_config,
+    request, skip_ceph_on_rhel7, workers_type, rhel7_workers, rhel7_psi_network_config,
 ):
     if rhel7_workers:
         bootcmds = nmcli_add_con_cmds(
+            workers_type=workers_type,
             iface="eth1",
             ip=rhel7_psi_network_config["vm_address"],
             default_gw=rhel7_psi_network_config["default_gw"],
