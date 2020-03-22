@@ -123,27 +123,32 @@ def kubevirt_crd_resources(default_client, custom_resource_definitions):
 
 
 @pytest.fixture(scope="module")
-def network_attachment_definition(hco_namespace):
+def network_attachment_definition(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
     with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+        nad_type=network_utils.OVS if rhel7_workers else network_utils.LINUX_BRIDGE,
         nad_name="mgnad",
-        bridge_name="mgbr",
+        bridge_name=rhel7_ovs_bridge if rhel7_workers else "mgbr",
         namespace=hco_namespace,
     ) as network_attachment_definition:
         yield network_attachment_definition
 
 
 @pytest.fixture(scope="module")
-def nodenetworkstate_with_bridge(network_utility_pods, schedulable_nodes):
-    with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
-        nncp_name="must-gather-br",
-        bridge_name="mgbr",
-        network_utility_pods=network_utility_pods,
-        nodes=schedulable_nodes,
-        vxlan=False,
-    ) as br:
-        yield br
+def nodenetworkstate_with_bridge(
+    rhel7_workers, rhel7_ovs_bridge, network_utility_pods, schedulable_nodes
+):
+    if rhel7_workers:
+        yield rhel7_ovs_bridge
+    else:
+        with network_utils.bridge_device(
+            bridge_type=network_utils.LINUX_BRIDGE,
+            nncp_name="must-gather-br",
+            bridge_name="mgbr",
+            network_utility_pods=network_utility_pods,
+            nodes=schedulable_nodes,
+            vxlan=False,
+        ) as br:
+            yield br
 
 
 @pytest.fixture(scope="module")
