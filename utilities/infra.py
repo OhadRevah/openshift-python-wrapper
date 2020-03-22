@@ -156,3 +156,9 @@ def get_cert(server_type):
     with open(path, "r") as cert_content:
         data = cert_content.read()
     return data
+
+
+class ClusterHosts:
+    class Type:
+        VIRTUAL = "virtual"
+        PHYSICAL = "physical"

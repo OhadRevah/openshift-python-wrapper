@@ -42,7 +42,7 @@ from resources.virtual_machine import (
 from tests.compute.ssp.supported_os.common_templates.utils import wait_for_windows_vm
 from tests.compute.utils import WinRMcliPod, nmcli_add_con_cmds
 from utilities import console
-from utilities.infra import create_ns, generate_yaml_from_template
+from utilities.infra import ClusterHosts, create_ns, generate_yaml_from_template
 from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -704,14 +704,14 @@ def workers_type(network_utility_pods):
             command=["bash", "-c", "dmesg | grep 'Hypervisor detected' | wc -l"]
         )
         if int(out) > 0:
-            return "virtual"
+            return ClusterHosts.Type.VIRTUAL
 
-    return "physical"
+    return ClusterHosts.Type.PHYSICAL
 
 
 @pytest.fixture(scope="module")
 def skip_if_workers_vms(workers_type):
-    if workers_type == "virtual":
+    if workers_type == ClusterHosts.Type.VIRTUAL:
         pytest.skip(msg="Test should run only BM cluster")
 
 
@@ -878,7 +878,7 @@ def bridge_attached_helper_vm(
         cloud_init_data["bootcmd"] = bootcmds
 
         # On PSI, set DHCP server configuration
-        if workers_type == "virtual":
+        if workers_type == ClusterHosts.Type.VIRTUAL:
             cloud_init_data["runcmd"] = [
                 "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
                 f"\\nauthoritative;\\nsubnet {rhel7_psi_network_config['subnet']} "

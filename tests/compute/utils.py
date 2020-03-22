@@ -7,6 +7,7 @@ from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from rrmngmnt import ssh, user
 from utilities import console
+from utilities.infra import ClusterHosts
 from utilities.virt import wait_for_vm_interfaces
 
 
@@ -96,7 +97,7 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
 
     # On bare metal cluster, address is acquired by DHCP
     # Default GW is set to eth1, thus should be removed from eth0
-    if workers_type == "physical":
+    if workers_type == ClusterHosts.Type.PHYSICAL:
         bootcmds += [
             "nmcli connection modify eth1 ipv4.method auto",
             "route del default gw  0.0.0.0 eth0",
@@ -109,7 +110,7 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
     bootcmds += [f"nmcli con up {iface}"]
 
     # On PSI, change default GW to brcnv network
-    if workers_type == "virtual":
+    if workers_type == ClusterHosts.Type.VIRTUAL:
         bootcmds += [
             f"ip route replace default via " f"{default_gw}",
             "route del default gw  0.0.0.0 eth0",
