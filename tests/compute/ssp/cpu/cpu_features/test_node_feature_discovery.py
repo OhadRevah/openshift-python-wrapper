@@ -53,7 +53,10 @@ def config_map_cpu_model_dict():
         name="kubevirt-cpu-plugin-configmap", namespace=py_config["hco_namespace"]
     )
 
-    return yaml.full_load(cpu_plugin_map.instance.data["cpu-plugin-configmap.yaml"])
+    return yaml.load(
+        cpu_plugin_map.instance.data["cpu-plugin-configmap.yaml"],
+        Loader=yaml.FullLoader,
+    )
 
 
 @pytest.fixture(scope="module")
