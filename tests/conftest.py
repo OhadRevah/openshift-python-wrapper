@@ -205,7 +205,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(
             fixture_name,
             matrix_params,
-            ids=[f"<{matrix_param}>" for matrix_param in matrix_params],
+            ids=[[*matrix_param][0] for matrix_param in matrix_params],
             scope=scope[0],
         )
 
