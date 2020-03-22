@@ -259,6 +259,59 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         return res
 
 
+class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        worker_pods,
+        iface_name,
+        iface_state,
+        base_iface,
+        tag,
+        node_selector=None,
+        ipv4_dhcp=None,
+        ipv6_enable=False,
+        teardown=True,
+    ):
+        super().__init__(
+            name=name,
+            node_selector=node_selector,
+            worker_pods=worker_pods,
+            teardown=teardown,
+            ipv4_dhcp=ipv4_dhcp,
+        )
+        self.iface_name = iface_name
+        self.iface_state = iface_state
+        self.base_iface = base_iface
+        self.tag = tag
+        self.ipv6_enable = ipv6_enable
+        self.master_iface = None
+
+    def to_dict(self):
+        res = super().to_dict()
+        if not self.master_iface:
+            self.master_iface = {
+                "name": self.iface_name,
+                "type": "vlan",
+                "state": self.iface_state,
+            }
+
+        vlan_spec = {"vlan": {"base-iface": self.base_iface, "id": self.tag}}
+        self.master_iface.update(vlan_spec)
+        if self.ipv4_dhcp:
+            ipv4_spec = {
+                "ipv4": {"enabled": True, "dhcp": True},
+                "ipv6": {"enabled": self.ipv6_enable},
+            }
+            self.master_iface.update(ipv4_spec)
+
+        self.set_interface(self.master_iface)
+        if self.iface not in self.ifaces:
+            self.ifaces.append(self.master_iface)
+
+        return res
+
+
 class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
     def __init__(
         self,
