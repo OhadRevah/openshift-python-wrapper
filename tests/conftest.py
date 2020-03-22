@@ -975,6 +975,7 @@ def vm_instance_from_template(
         template_dv=data_volume,
         vm_dict=request.param.get("vm_dict"),
         cpu_threads=request.param.get("cpu_threads"),
+        memory=request.param.get("memory"),
         network_model=request.param.get("network_model"),
         network_multiqueue=request.param.get("network_multiqueue"),
         networks=network_configuration if network_configuration else None,

@@ -373,6 +373,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         ssh=False,
         vm_dict=None,
         cpu_threads=None,
+        memory=None,
         network_model=None,
         network_multiqueue=None,
         cloud_init_data=None,
@@ -388,6 +389,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             network_model=network_model,
             network_multiqueue=network_multiqueue,
             cpu_threads=cpu_threads,
+            memory=memory,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
         )
