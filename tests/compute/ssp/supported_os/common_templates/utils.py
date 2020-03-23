@@ -524,6 +524,7 @@ def get_windows_os_info_from_rmcli(vm, winrmcli_pod, helper_vm=False):
         vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
         winrmcli_pod=winrmcli_pod,
         cmd='systeminfo | findstr /B /C:"OS Name" /C:"OS Version"',
+        target_vm=vm,
         helper_vm=helper_vm,
     )
 

@@ -72,11 +72,11 @@ def execute_winrm_in_vm(target_vm, helper_vm, cmd):
         vmi=target_vm.vmi, name=[*target_vm.networks][0]
     )
 
-    cmd = (
+    run_cmd = (
         f"podman run -it docker.io/kubevirt/winrmcli winrm-cli -hostname "
         f"{target_vm_ip} -username {py_config['windows_username']} -password "
-        f"{py_config['windows_password']} '{cmd}'"
-    ).split(" ")
+        f"{py_config['windows_password']}"
+    ).split(" ") + [cmd]
 
     ssh_user = user.User(
         name=console.Fedora.USERNAME, password=console.Fedora.PASSWORD,
@@ -89,7 +89,7 @@ def execute_winrm_in_vm(target_vm, helper_vm, cmd):
                 vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
             )
         ),
-    ).run_cmd(cmd=cmd, tcp_timeout=480, io_timeout=480)[1]
+    ).run_cmd(cmd=run_cmd, tcp_timeout=480, io_timeout=480)[1]
 
 
 def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
