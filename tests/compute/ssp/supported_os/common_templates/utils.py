@@ -444,9 +444,9 @@ def os_info_parser(os_info_list, field_name):
 
 def execute_ssh_command(username, passwd, ip, port, cmd):
     ssh_user = user.User(name=username, password=passwd)
-    rc, out, err = ssh.RemoteExecutor(user=ssh_user, address=ip, port=port).run_cmd(
-        cmd=cmd
-    )
+    rc, out, err = ssh.RemoteExecutor(
+        user=ssh_user, address=str(ip), port=port
+    ).run_cmd(cmd=cmd)
     assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
     return out
 
