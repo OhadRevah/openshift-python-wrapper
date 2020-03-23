@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import logging
 
 import tests.network.utils as network_utils
@@ -48,6 +47,15 @@ def vm_started(vm, wait_for_interfaces=True):
         wait_for_vm_interfaces(vm.vmi)
 
 
+def execute_ssh_command(username, passwd, ip, port, cmd, timeout=60):
+    ssh_user = user.User(name=username, password=passwd)
+    rc, out, err = ssh.RemoteExecutor(
+        user=ssh_user, address=str(ip), port=port
+    ).run_cmd(cmd=cmd, tcp_timeout=timeout, io_timeout=timeout)
+    assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
+    return out
+
+
 def execute_winrm_cmd(
     vmi_ip, winrmcli_pod, cmd, timeout=20, target_vm=False, helper_vm=False
 ):
@@ -78,18 +86,16 @@ def execute_winrm_in_vm(target_vm, helper_vm, cmd):
         f"{py_config['windows_password']}"
     ).split(" ") + [cmd]
 
-    ssh_user = user.User(
-        name=console.Fedora.USERNAME, password=console.Fedora.PASSWORD,
-    )
-
-    return ssh.RemoteExecutor(
-        user=ssh_user,
-        address=str(
-            network_utils.get_vmi_ip_v4_by_name(
-                vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
-            )
+    return execute_ssh_command(
+        username=console.Fedora.USERNAME,
+        passwd=console.Fedora.PASSWORD,
+        ip=network_utils.get_vmi_ip_v4_by_name(
+            vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
         ),
-    ).run_cmd(cmd=run_cmd, tcp_timeout=480, io_timeout=480)[1]
+        port=22,
+        cmd=run_cmd,
+        timeout=480,
+    )
 
 
 def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):

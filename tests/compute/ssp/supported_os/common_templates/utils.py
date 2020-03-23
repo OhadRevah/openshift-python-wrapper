@@ -15,7 +15,7 @@ from resources import pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from rrmngmnt import ssh, user
-from tests.compute.utils import execute_winrm_cmd, vm_started
+from tests.compute.utils import execute_ssh_command, execute_winrm_cmd, vm_started
 from utilities.virt import vm_console_run_commands
 
 
@@ -440,15 +440,6 @@ def os_info_parser(os_info_list, field_name):
     return "".join(
         [x.split("=")[1] for x in os_info_list if x.startswith(f"{field_name}=")]
     )
-
-
-def execute_ssh_command(username, passwd, ip, port, cmd):
-    ssh_user = user.User(name=username, password=passwd)
-    rc, out, err = ssh.RemoteExecutor(
-        user=ssh_user, address=str(ip), port=port
-    ).run_cmd(cmd=cmd)
-    assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
-    return out
 
 
 def validate_linux_guest_agent_info(vm, ip, ssh_port, username, passwd):
