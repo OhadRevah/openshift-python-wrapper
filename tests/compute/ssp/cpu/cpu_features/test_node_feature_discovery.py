@@ -54,8 +54,7 @@ def config_map_cpu_model_dict():
     )
 
     return yaml.load(
-        cpu_plugin_map.instance.data["cpu-plugin-configmap.yaml"],
-        Loader=yaml.FullLoader,
+        cpu_plugin_map.instance.data["cpu-plugin-configmap.yaml"], Loader=yaml.Loader,
     )
 
 

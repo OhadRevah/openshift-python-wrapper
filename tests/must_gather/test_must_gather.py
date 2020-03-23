@@ -485,7 +485,7 @@ def test_crd_resources(default_client, cnv_must_gather, kubevirt_crd_resources):
                 )
 
             with open(resource_file) as resource_file:
-                file_content = yaml.load(resource_file.read(), Loader=yaml.FullLoader)
+                file_content = yaml.load(resource_file.read(), Loader=yaml.Loader)
             assert resource_item["metadata"]["name"] == file_content["metadata"]["name"]
             assert resource_item["metadata"]["uid"] == file_content["metadata"]["uid"]
 
