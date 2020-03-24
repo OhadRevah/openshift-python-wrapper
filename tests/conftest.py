@@ -123,20 +123,24 @@ def pytest_collection_modifyitems(session, config, items):
     Add polarion test case it from tests to junit xml
     """
     for item in items:
-        if [
+        scope_match = re.compile(r"__(module|class|function)__$")
+        for fixture_name in [
             fixture_name
             for fixture_name in item.fixturenames
             if "_matrix" in fixture_name
         ]:
-            values = re.findall("(<.*?>)", item.name)
+            matrix_name = scope_match.sub("", fixture_name)
+            values = re.findall("(#.*?#)", item.name)
             for value in values:
-                value = value.strip("<").strip(">")
-                for k, v in py_config.items():
-                    if isinstance(v, list):
-                        if value in v:
-                            item.user_properties.append(
-                                (f"polarion-parameter-{k}", value)
-                            )
+                value = value.strip("#").strip("#")
+                for param in py_config[matrix_name]:
+                    if isinstance(param, dict):
+                        param = [*param][0]
+
+                    if value == param:
+                        item.user_properties.append(
+                            (f"polarion-parameter-{matrix_name}", value)
+                        )
 
         for marker in item.iter_markers(name="polarion"):
             test_id = marker.args[0]
@@ -202,11 +206,15 @@ def pytest_generate_tests(metafunc):
         matrix_params = (
             _matrix_params if isinstance(_matrix_params, list) else [_matrix_params]
         )
+        ids = []
+        for matrix_param in matrix_params:
+            if isinstance(matrix_param, dict):
+                ids.append(f"#{[*matrix_param][0]}#")
+            else:
+                ids.append(f"#{matrix_param}#")
+
         metafunc.parametrize(
-            fixture_name,
-            matrix_params,
-            ids=[[*matrix_param][0] for matrix_param in matrix_params],
-            scope=scope[0],
+            fixture_name, matrix_params, ids=ids, scope=scope[0],
         )
 
 
