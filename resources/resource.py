@@ -632,7 +632,9 @@ class Resource(object):
         Raises:
             TimeoutExpiredError: If Pod condition in not in desire status.
         """
-        LOGGER.info(f"Wait for {self.kind} {self.name} condition to be {condition}")
+        LOGGER.info(
+            f"Wait for {self.kind}/{self.name}'s '{condition}' condition to be '{status}'"
+        )
         samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
