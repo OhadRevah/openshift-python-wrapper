@@ -297,6 +297,8 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         res = super().to_dict()
         spec_config = {"cniVersion": "0.3.1", "name": self.bridge_name}
         bridge_dict = {"type": self.cni_type, "bridge": self.bridge_name}
+        if self.mtu:
+            bridge_dict["mtu"] = self.mtu
         spec_config["plugins"] = [bridge_dict]
         if self.vlan:
             spec_config["vlan"] = self.vlan
@@ -329,8 +331,6 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
         if self.tuning_type:
             tuning_dict = {"type": self.tuning_type}
-            if self.mtu:
-                tuning_dict["mtu"] = self.mtu
 
             config_plugins.append(tuning_dict)
 
