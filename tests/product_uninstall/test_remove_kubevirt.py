@@ -77,7 +77,7 @@ def test_remove_workloads(
     # ensure deletion instruction to KubeVirt resource resulted in deletion of the
     # kubevirt cr AND all vms in the cluster
     for sample in TimeoutSampler(
-        timeout=60,
+        timeout=180,
         sleep=5,
         func=lambda: list(VirtualMachine.get(dyn_client=default_client))
         or kubevirt_resource.instance.uid == old_uid,
