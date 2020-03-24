@@ -29,6 +29,7 @@ def create_dv(
     client=None,
     source_pvc=None,
     source_namespace=None,
+    teardown=True,
 ):
     with DataVolume(
         source=source,
@@ -46,6 +47,7 @@ def create_dv(
         client=client,
         source_pvc=source_pvc,
         source_namespace=source_namespace,
+        teardown=teardown,
     ) as dv:
         yield dv
 

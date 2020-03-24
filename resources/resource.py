@@ -232,6 +232,17 @@ class Resource(object):
         DELETING = "Deleting"
         DEPLOYED = "Deployed"
 
+    class Condition:
+        UPGRADEABLE = "Upgradeable"
+        AVAILABLE = "Available"
+        DEGRADED = "Degraded"
+        PROGRESSING = "Progressing"
+        RECONCILE_COMPLETE = "ReconcileComplete"
+
+        class Status:
+            STATUS_TRUE = "True"
+            STATUS_FALSE = "False"
+
     def __init__(self, name, client=None, teardown=True):
         """
         Create a API resource
@@ -644,7 +655,11 @@ class Resource(object):
             namespace=self.namespace,
         )
         for sample in samples:
-            if sample.items:
+            if (
+                sample.items
+                and sample.items[0].get("status")
+                and sample.items[0].status.get("conditions")
+            ):
                 sample_conditions = sample.items[0].status.conditions
                 if sample_conditions:
                     for cond in sample_conditions:
