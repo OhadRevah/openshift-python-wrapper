@@ -16,10 +16,15 @@ from resources.route import Route
 from resources.service import Service
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
+from tests.conftest import vm_instance_from_template, wait_for_windows_vm
 from utilities import console
 from utilities.infra import Images, get_cert
 from utilities.storage import create_dv, get_images_external_http_server
-from utilities.virt import VirtualMachineForTests, run_virtctl_command
+from utilities.virt import (
+    VirtualMachineForTests,
+    run_virtctl_command,
+    validate_windows_guest_agent_info,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -139,6 +144,38 @@ def create_vm_from_dv(dv, vm_name="cirros-vm", image=None, start=True):
             vm.start(wait=True)
             vm.vmi.wait_until_running(timeout=300)
         yield vm
+
+
+def create_windows_vm_validate_guest_agent_info(
+    cloud_init_data,
+    bridge_attached_helper_vm,
+    dv,
+    namespace,
+    network_configuration,
+    unprivileged_client,
+    vm_params,
+    winrmcli_pod_scope_function,
+):
+    with vm_instance_from_template(
+        request=vm_params,
+        cloud_init_data=cloud_init_data,
+        data_volume=dv,
+        network_configuration=network_configuration,
+        namespace=namespace,
+        unprivileged_client=unprivileged_client,
+    ) as vm_dv:
+        wait_for_windows_vm(
+            vm=vm_dv,
+            version=vm_params["os_version"],
+            winrmcli_pod=winrmcli_pod_scope_function,
+            timeout=1800,
+            helper_vm=bridge_attached_helper_vm,
+        )
+        validate_windows_guest_agent_info(
+            vm=vm_dv,
+            winrmcli_pod=winrmcli_pod_scope_function,
+            helper_vm=bridge_attached_helper_vm,
+        )
 
 
 def virtctl_upload(

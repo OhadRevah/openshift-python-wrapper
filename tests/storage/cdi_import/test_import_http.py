@@ -12,6 +12,7 @@ from subprocess import run
 import pytest
 import utilities.storage
 from openshift.dynamic.exceptions import UnprocessibleEntityError
+from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
@@ -20,7 +21,11 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
 from utilities.infra import Images
-from utilities.virt import CIRROS_IMAGE, wait_for_console
+from utilities.virt import (
+    CIRROS_IMAGE,
+    validate_windows_guest_agent_info,
+    wait_for_console,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -780,3 +785,44 @@ def test_vm_from_dv_on_different_node(
             )
             LOGGER.debug("Verify VM console connection")
             wait_for_console(vm=vm_dv, console_impl=console.Cirros)
+
+
+@pytest.mark.parametrize(
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-win-19",
+                "source": "http",
+                "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+            },
+            {
+                "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
+                "template_labels": {
+                    "os": py_config["latest_windows_version"]["os_label"],
+                    "workload": "server",
+                    "flavor": "medium",
+                },
+                "cpu_threads": 2,
+            },
+            {"os_version": py_config["latest_windows_version"]["os_version"]},
+            marks=pytest.mark.polarion("CNV-3637"),
+        ),
+    ],
+    indirect=True,
+)
+def test_successful_vm_from_imported_dv_windows(
+    skip_upstream,
+    unprivileged_client,
+    namespace,
+    data_volume_multi_storage_scope_function,
+    vm_instance_from_template_scope_function,
+    winrmcli_pod_scope_function,
+    bridge_attached_helper_vm,
+    started_windows_vm,
+):
+    validate_windows_guest_agent_info(
+        vm=vm_instance_from_template_scope_function,
+        winrmcli_pod=winrmcli_pod_scope_function,
+        helper_vm=bridge_attached_helper_vm,
+    )

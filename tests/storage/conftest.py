@@ -12,12 +12,13 @@ from pytest_testconfig import config as py_config
 from resources.cdi import CDI
 from resources.cdi_config import CDIConfig
 from resources.configmap import ConfigMap
+from resources.datavolume import DataVolume
 from resources.deployment import Deployment, HttpDeployment
 from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.storage_class import StorageClass
-from tests.storage.utils import HttpService
+from tests.storage.utils import HttpService, downloaded_image, virtctl_upload_dv
 from utilities.infra import get_cert
 
 
@@ -218,3 +219,39 @@ def registry_config_map(namespace):
         name="registry-cert", namespace=namespace.name, data=get_cert("registry_cert")
     ) as configmap:
         yield configmap
+
+
+@pytest.fixture()
+def uploaded_dv(
+    request, namespace, storage_class_matrix__class__, tmpdir,
+):
+    storage_class = [*storage_class_matrix__class__][0]
+    image_file = request.param.get("image_file")
+    dv_name = image_file.split(".")[0].replace("_", "-").lower()
+    local_path = f"{tmpdir}/{image_file}"
+    downloaded_image(
+        remote_name=request.param.get("remote_name"), local_name=local_path
+    )
+    res, out = virtctl_upload_dv(
+        namespace=namespace.name,
+        name=dv_name,
+        size=request.param.get("dv_size"),
+        storage_class=storage_class,
+        image_path=local_path,
+        insecure=True,
+    )
+    LOGGER.info(out)
+    assert res
+    dv = DataVolume(namespace=namespace.name, name=dv_name)
+    dv.wait(timeout=60)
+    assert dv.pvc.bound()
+    yield dv
+    dv.delete(wait=True)
+    # We do not want 11-30G~ files in /tmp
+    # Pytest will only cleanup every 3 tmpdir calls
+    try:
+        LOGGER.info("Deleting image file from tmpdir")
+        os.remove(os.path.join(tmpdir, image_file))
+    except OSError as e:
+        LOGGER.error(e)
+        raise

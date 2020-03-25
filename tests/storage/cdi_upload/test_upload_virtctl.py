@@ -356,3 +356,50 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
     LOGGER.info(out)
     assert not res
     assert f"PVC {empty_pvc.name} not available for upload" in out
+
+
+@pytest.mark.parametrize(
+    ("uploaded_dv", "vm_params"),
+    [
+        pytest.param(
+            {
+                "dv_size": "38Gi",
+                "remote_name": py_config["latest_windows_version"]["image"],
+                "image_file": Images.Windows.WIN19_IMG,
+            },
+            {
+                "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
+                "template_labels": {
+                    "os": py_config["latest_windows_version"]["os_label"],
+                    "workload": "server",
+                    "flavor": "medium",
+                },
+                "cpu_threads": 2,
+                "os_version": py_config["latest_windows_version"]["os_version"],
+            },
+            marks=(pytest.mark.polarion("CNV-3410")),
+        ),
+    ],
+    indirect=["uploaded_dv"],
+)
+def test_successful_vm_from_uploaded_dv_windows(
+    skip_upstream,
+    uploaded_dv,
+    unprivileged_client,
+    network_configuration,
+    cloud_init_data,
+    vm_params,
+    namespace,
+    winrmcli_pod_scope_function,
+    bridge_attached_helper_vm,
+):
+    storage_utils.create_windows_vm_validate_guest_agent_info(
+        cloud_init_data=cloud_init_data,
+        bridge_attached_helper_vm=bridge_attached_helper_vm,
+        dv=uploaded_dv,
+        namespace=namespace,
+        network_configuration=network_configuration,
+        unprivileged_client=unprivileged_client,
+        vm_params=vm_params,
+        winrmcli_pod_scope_function=winrmcli_pod_scope_function,
+    )
