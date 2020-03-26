@@ -10,6 +10,7 @@ import os.path
 import re
 import shutil
 import urllib.request
+from contextlib import contextmanager
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
 import bcrypt
@@ -950,6 +951,7 @@ VM creation from template
 """
 
 
+@contextmanager
 def vm_instance_from_template(
     request,
     unprivileged_client,
@@ -1006,14 +1008,15 @@ def vm_instance_from_template_scope_function(
     Creates a VM from template and starts it (if requested).
     """
 
-    yield from vm_instance_from_template(
+    with vm_instance_from_template(
         request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-    )
+    ) as vm:
+        yield vm
 
 
 @pytest.fixture(scope="class")
@@ -1030,14 +1033,15 @@ def vm_instance_from_template_scope_class(
     Creates a VM from template and starts it (if requested).
     """
 
-    yield from vm_instance_from_template(
+    with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-    )
+    ) as vm:
+        yield vm
 
 
 """
