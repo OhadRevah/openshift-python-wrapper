@@ -10,20 +10,6 @@ from resources.pod import Pod
 from tests.network.utils import bridge_device
 
 
-@pytest.fixture(scope="session", autouse=True)
-def network_init(
-    net_utility_daemonset,
-    schedulable_node_ips,
-    network_utility_pods,
-    multi_nics_nodes,
-    bond_supported,
-):
-    """
-    Create network test namespaces
-    """
-    pass
-
-
 @pytest.fixture(scope="session")
 def bond_supported(network_utility_pods, multi_nics_nodes, nodes_active_nics):
     """
