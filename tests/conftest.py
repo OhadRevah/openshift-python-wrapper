@@ -968,28 +968,28 @@ def vm_instance_from_template(
 
     Prerequisite - a DV must be created prior to VM creation.
     """
-
+    params = request.param if hasattr(request, "param") else request
     with VirtualMachineForTestsFromTemplate(
-        name=request.param["vm_name"].replace(".", "-").lower(),
+        name=params["vm_name"].replace(".", "-").lower(),
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=Template.generate_template_labels(**request.param["template_labels"]),
+        labels=Template.generate_template_labels(**params["template_labels"]),
         template_dv=data_volume,
-        vm_dict=request.param.get("vm_dict"),
-        cpu_threads=request.param.get("cpu_threads"),
-        memory=request.param.get("memory"),
-        network_model=request.param.get("network_model"),
-        network_multiqueue=request.param.get("network_multiqueue"),
+        vm_dict=params.get("vm_dict"),
+        cpu_threads=params.get("cpu_threads"),
+        memory=params.get("memory"),
+        network_model=params.get("network_model"),
+        network_multiqueue=params.get("network_multiqueue"),
         networks=network_configuration if network_configuration else None,
         interfaces=sorted(network_configuration.keys())
         if network_configuration
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
     ) as vm:
-        if request.param.get("start_vm", True):
+        if params.get("start_vm", True):
             vm.start(wait=True)
             vm.vmi.wait_until_running()
-            if request.param.get("guest_agent", True):
+            if params.get("guest_agent", True):
                 wait_for_vm_interfaces(vm.vmi)
         yield vm
 
