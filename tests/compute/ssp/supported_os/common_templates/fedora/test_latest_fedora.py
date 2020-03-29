@@ -196,7 +196,7 @@ class TestCommonTemplatesFedora:
         ), "Failed to login via SSH"
 
     @pytest.mark.run(after="test_expose_ssh")
-    @pytest.mark.polarion("CNV-3513")
+    @pytest.mark.polarion("CNV-3937")
     def test_guest_agent_info(
         self,
         data_volume_scope_class,
