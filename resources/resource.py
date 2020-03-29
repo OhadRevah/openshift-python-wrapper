@@ -641,18 +641,13 @@ class Resource(object):
             field_selector=f"metadata.name=={self.name}",
             namespace=self.namespace,
         )
-        current_status = None
-        try:
-            for sample in samples:
+        for sample in samples:
+            if sample.items:
                 sample_conditions = sample.items[0].status.conditions
-                for cond in sample_conditions:
-                    if cond.type == condition and cond.status == status:
-                        return
-
-        except TimeoutExpiredError:
-            if current_status:
-                LOGGER.error(f"Status of {self.kind} {self.name} is {current_status}")
-            raise
+                if sample_conditions:
+                    for cond in sample_conditions:
+                        if cond.type == condition and cond.status == status:
+                            return
 
 
 class NamespacedResource(Resource):
