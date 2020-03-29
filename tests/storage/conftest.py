@@ -32,7 +32,7 @@ def cdi_resources(request, default_client):
     return [rcs for rcs in resource_list if rcs.name.startswith("cdi-")]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def internal_http_configmap(namespace):
     path = os.path.join("tests/storage/internal_http/certs", "tls.crt")
     with open(path, "r") as cert_content:
@@ -44,7 +44,7 @@ def internal_http_configmap(namespace):
             yield configmap
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def internal_http_secret(namespace):
     with Secret(
         name="internal-http-secret",

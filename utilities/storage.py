@@ -93,8 +93,10 @@ def data_volume(
         dv_kwargs["url"] = f"{get_images_external_http_server()}{image}"
     elif source == "https":
         dv_kwargs["url"] = f"{get_images_https_server()}{image}"
-
+    if params_dict.get("cert_configmap"):
+        dv_kwargs["cert_configmap"] = params_dict.get("cert_configmap")
     # Create dv
     with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
-        dv.wait(timeout=2400 if "win" in image else 1200)
+        if params_dict.get("wait", True):
+            dv.wait(timeout=2400 if "win" in image else 1200)
         yield dv
