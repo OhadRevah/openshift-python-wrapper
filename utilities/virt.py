@@ -124,6 +124,7 @@ class VirtualMachineForTests(VirtualMachine):
         data_volume_template=None,
         teardown=True,
         cloud_init_type=None,
+        pvc=None,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -155,6 +156,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.network_multiqueue = network_multiqueue
         self.data_volume_template = data_volume_template
         self.cloud_init_type = cloud_init_type
+        self.pvc = pvc
 
     def __enter__(self):
         super().__enter__()
@@ -336,6 +338,19 @@ class VirtualMachineForTests(VirtualMachine):
             res["spec"].setdefault("dataVolumeTemplates", []).append(
                 self.data_volume_template
             )
+
+        if self.pvc:
+            pvc_disk_name = f"{self.pvc.name}-pvc-disk"
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {"bus": "virtio"}, "name": pvc_disk_name})
+            spec.setdefault("volumes", []).append(
+                {
+                    "name": pvc_disk_name,
+                    "persistentVolumeClaim": {"claimName": self.pvc.name},
+                }
+            )
+
         return res
 
     def ssh_enable(self):
