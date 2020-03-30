@@ -173,7 +173,7 @@ def virtctl_upload_dv(
 ):
     command = [
         "image-upload",
-        "dv",
+        f"{'dv' if not pvc else pvc}",
         f"{name}",
         f"--image-path={image_path}",
         f"--size={size}",
