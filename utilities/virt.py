@@ -714,3 +714,8 @@ def ssh_service_activated(vm, console_impl, systemctl_support=True):
         vm_console.sendline(ssh_service_status_cmd)
         vm_console.expect(expected)
         return True
+
+
+def wait_for_console(vm, console_impl):
+    with console_impl(vm=vm, timeout=1500):
+        pass

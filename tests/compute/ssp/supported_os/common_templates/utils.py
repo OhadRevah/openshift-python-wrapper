@@ -90,11 +90,6 @@ def vm_deleted(vm):
         return False
 
 
-def wait_for_console(vm, console_impl):
-    with console_impl(vm=vm, timeout=1500):
-        pass
-
-
 def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):
     return (
         network_utils.get_vmi_ip_v4_by_name(vmi=vm.vmi, name=[*vm.networks][0])

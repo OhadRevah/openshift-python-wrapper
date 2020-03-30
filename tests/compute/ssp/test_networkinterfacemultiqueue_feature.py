@@ -7,12 +7,10 @@ from time import sleep
 import pytest
 from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
-from tests.compute.ssp.supported_os.common_templates.utils import (
-    wait_for_console,
-    wait_for_windows_vm,
-)
+from tests.compute.ssp.supported_os.common_templates.utils import wait_for_windows_vm
 from tests.compute.utils import vm_started
 from utilities import console
+from utilities.virt import wait_for_console
 
 
 def _update_and_validate_vm_cpu_spec(

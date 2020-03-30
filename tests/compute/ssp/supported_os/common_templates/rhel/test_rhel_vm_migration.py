@@ -9,6 +9,7 @@ import utilities.virt
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
+from utilities.virt import wait_for_console
 
 
 @pytest.mark.parametrize(
@@ -49,7 +50,7 @@ def test_migrate_vm_rhel(
     can be accessed.
     """
 
-    utils.wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
+    wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
 
     utilities.virt.enable_ssh_service_in_vm(
         vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
@@ -63,7 +64,7 @@ def test_migrate_vm_rhel(
 
     utils.migrate_vm(vm_instance_from_template_scope_function)
 
-    utils.wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
+    wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
 
     # Verify successful SSH connection after migration
     assert utils.check_ssh_connection(

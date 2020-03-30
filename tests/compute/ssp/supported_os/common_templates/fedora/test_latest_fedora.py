@@ -12,6 +12,7 @@ import utilities.virt
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
+from utilities.virt import wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ class TestCommonTemplatesFedora:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        utils.wait_for_console(vm_object_from_template_scope_class, console.Fedora)
+        wait_for_console(vm_object_from_template_scope_class, console.Fedora)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3348")

@@ -11,6 +11,7 @@ import tests.compute.utils
 import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities import console
+from utilities.virt import wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ class TestCommonTemplatesRhel:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        utils.wait_for_console(vm_object_from_template_rhel_os, console.RHEL)
+        wait_for_console(vm_object_from_template_rhel_os, console.RHEL)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3318")
