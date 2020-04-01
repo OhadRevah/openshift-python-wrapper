@@ -174,3 +174,11 @@ def bridge_nad(
 
     with BRIDGE_NAD_TYPE[nad_type](**kwargs) as nad:
         yield nad
+
+
+def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):
+    for k, v in cloud_init_extra_user_data.items():
+        if k not in cloud_init_data:
+            cloud_init_data.update(cloud_init_extra_user_data)
+        else:
+            cloud_init_data[k] = cloud_init_data[k] + v

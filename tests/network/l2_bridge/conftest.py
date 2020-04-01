@@ -2,7 +2,11 @@
 from ipaddress import ip_interface
 
 import pytest
-from tests.network.utils import bridge_nad, nmcli_add_con_cmds
+from tests.network.utils import (
+    bridge_nad,
+    nmcli_add_con_cmds,
+    update_cloud_init_extra_user_data,
+)
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -117,9 +121,9 @@ def _cloud_init_data(
     data["runcmd"] = runcmd
 
     if cloud_init_extra_user_data:
-        for k, v in cloud_init_extra_user_data.items():
-            data[k] = data[k] + v
-
+        update_cloud_init_extra_user_data(
+            cloud_init_data=data, cloud_init_extra_user_data=cloud_init_extra_user_data
+        )
     return data
 
 
