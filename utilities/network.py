@@ -597,6 +597,9 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     }
                     self.set_interface(_port)
 
+        if self.ipv4_dhcp:
+            self.iface["ipv4"] = {"dhcp": True, "enabled": True}
+
         self.set_interface(self.iface)
         if self.iface not in self.ifaces:
             self.ifaces.append(self.iface)
