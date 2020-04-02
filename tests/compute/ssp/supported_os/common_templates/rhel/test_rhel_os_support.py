@@ -121,6 +121,12 @@ class TestCommonTemplatesRhel:
     ):
         """ CNV common templates access VM via SSH """
 
+        # On RHEL7 VM IP is used for SSH
+        if "rhel-6" in [*rhel_os_matrix__class__][0] and rhel7_workers:
+            pytest.skip(
+                "RHEL6 does not have guest agent, IP cannot be obtained on RHEL 7."
+            )
+
         utilities.virt.enable_ssh_service_in_vm(
             vm=vm_object_from_template_rhel_os,
             console_impl=console.RHEL,
