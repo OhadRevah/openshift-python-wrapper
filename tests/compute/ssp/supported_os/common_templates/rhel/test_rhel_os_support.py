@@ -127,6 +127,13 @@ class TestCommonTemplatesRhel:
                 "RHEL6 does not have guest agent, IP cannot be obtained on RHEL 7."
             )
 
+        # On RHEL7, default GW is via eth1. For RHEL8.2, needs to explicitly
+        # remove default GW from eth0 after VM is running
+        if "rhel-8-2" in [*rhel_os_matrix__class__][0] and rhel7_workers:
+            utils.remove_eth0_default_gw(
+                vm=vm_object_from_template_rhel_os, console_impl=console.RHEL
+            )
+
         utilities.virt.enable_ssh_service_in_vm(
             vm=vm_object_from_template_rhel_os,
             console_impl=console.RHEL,
