@@ -40,14 +40,15 @@ class NodeNetworkConfigurationPolicy(Resource):
         self.ifaces = []
         self._ipv4_dhcp = ipv4_dhcp
         self.ipv4_iface_state = {}
-        if node_selector:
+        self.node_selector = node_selector
+        if self.node_selector:
             for pod in self.worker_pods:
                 if pod.node.name == node_selector:
                     self.worker_pods = [pod]
-                    self.node_selector = {"kubernetes.io/hostname": node_selector}
+                    self._node_selector = {"kubernetes.io/hostname": self.node_selector}
                     break
         else:
-            self.node_selector = {"node-role.kubernetes.io/worker": ""}
+            self._node_selector = {"node-role.kubernetes.io/worker": ""}
 
     def set_interface(self, interface):
         # First drop the interface if it's already in the list
@@ -64,8 +65,8 @@ class NodeNetworkConfigurationPolicy(Resource):
     def to_dict(self):
         res = super()._base_body()
         res.update({"spec": {"desiredState": self.desired_state}})
-        if self.node_selector:
-            res["spec"]["nodeSelector"] = self.node_selector
+        if self._node_selector:
+            res["spec"]["nodeSelector"] = self._node_selector
 
         return res
 
