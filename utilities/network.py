@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import logging
 
@@ -609,3 +610,33 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
         res = super().to_dict()
         return res
+
+
+def get_vmi_ip_v4_by_name(vmi, name):
+    sampler = TimeoutSampler(timeout=120, sleep=1, func=lambda: vmi.interfaces)
+    try:
+        for sample in sampler:
+            for iface in sample:
+                if iface.name == name:
+                    for ipaddr in iface.ipAddresses:
+                        try:
+                            ip = ipaddress.ip_interface(ipaddr)
+                            if ip.version == 4:
+                                return ip.ip
+                        # ipaddress module fails to identify IPv6 with % as a valid IP
+                        except ValueError as e:
+                            if (
+                                "does not appear to be an IPv4 or IPv6 "
+                                "interface" in str(e)
+                            ):
+                                continue
+    except TimeoutExpiredError:
+        raise IpNotFound(name)
+
+
+class IpNotFound(Exception):
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return f"IP address not found for interface {self.name}"

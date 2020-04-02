@@ -9,7 +9,7 @@ import urllib.request
 import xml.etree.ElementTree as EleTree
 
 import bitmath
-import tests.network.utils as network_utils
+import utilities.network
 from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
 from resources.utils import TimeoutSampler
@@ -92,7 +92,7 @@ def vm_deleted(vm):
 
 def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):
     return (
-        network_utils.get_vmi_ip_v4_by_name(vmi=vm.vmi, name=[*vm.networks][0])
+        utilities.network.get_vmi_ip_v4_by_name(vmi=vm.vmi, name=[*vm.networks][0])
         if rhel7_workers
         else list(schedulable_node_ips.values())[0]
     )

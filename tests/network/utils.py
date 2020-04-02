@@ -1,10 +1,8 @@
 import contextlib
-import ipaddress
 import logging
 import re
 
 from pytest_testconfig import config as py_config
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 from utilities import console
 from utilities.network import (
     LinuxBridgeNetworkAttachmentDefinition,
@@ -27,36 +25,6 @@ BRIDGE_NAD_TYPE = {
     LINUX_BRIDGE: LinuxBridgeNetworkAttachmentDefinition,
     OVS: OvsBridgeNetworkAttachmentDefinition,
 }
-
-
-class IpNotFound(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"IP address not found for interface {self.name}"
-
-
-def get_vmi_ip_v4_by_name(vmi, name):
-    sampler = TimeoutSampler(timeout=120, sleep=1, func=lambda: vmi.interfaces)
-    try:
-        for sample in sampler:
-            for iface in sample:
-                if iface.name == name:
-                    for ipaddr in iface.ipAddresses:
-                        try:
-                            ip = ipaddress.ip_interface(ipaddr)
-                            if ip.version == 4:
-                                return ip.ip
-                        # ipaddress module fails to identify IPv6 with % as a valid IP
-                        except ValueError as e:
-                            if (
-                                "does not appear to be an IPv4 or IPv6 "
-                                "interface" in str(e)
-                            ):
-                                continue
-    except TimeoutExpiredError:
-        raise IpNotFound(name)
 
 
 def _console_ping(src_vm, dst_ip, packetsize=None):

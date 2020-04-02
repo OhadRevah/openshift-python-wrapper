@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import tests.network.utils as network_utils
+import utilities.network
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from rrmngmnt import ssh, user
@@ -76,7 +76,7 @@ def execute_winrm_cmd(
 
 
 def execute_winrm_in_vm(target_vm, helper_vm, cmd):
-    target_vm_ip = network_utils.get_vmi_ip_v4_by_name(
+    target_vm_ip = utilities.network.get_vmi_ip_v4_by_name(
         vmi=target_vm.vmi, name=[*target_vm.networks][0]
     )
 
@@ -89,7 +89,7 @@ def execute_winrm_in_vm(target_vm, helper_vm, cmd):
     return execute_ssh_command(
         username=console.Fedora.USERNAME,
         passwd=console.Fedora.PASSWORD,
-        ip=network_utils.get_vmi_ip_v4_by_name(
+        ip=utilities.network.get_vmi_ip_v4_by_name(
             vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
         ),
         port=22,

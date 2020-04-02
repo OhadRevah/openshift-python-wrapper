@@ -9,8 +9,9 @@ import pytest
 import tests.network.utils as network_utils
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from tests.network.utils import get_vmi_ip_v4_by_name, nmcli_add_con_cmds
+from tests.network.utils import nmcli_add_con_cmds
 from utilities import console
+from utilities.network import get_vmi_ip_v4_by_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,

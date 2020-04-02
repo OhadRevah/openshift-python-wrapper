@@ -9,11 +9,10 @@ from tests.network.utils import (
     assert_ping_successful,
     bridge_device,
     bridge_nad,
-    get_vmi_ip_v4_by_name,
     nmcli_add_con_cmds,
 )
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.network import BondNodeNetworkConfigurationPolicy
+from utilities.network import BondNodeNetworkConfigurationPolicy, get_vmi_ip_v4_by_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
