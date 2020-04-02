@@ -169,15 +169,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     }
                     self.set_interface(_port)
 
-        if self.ipv4_dhcp:
-            self.iface["ipv4"] = {"dhcp": True, "enabled": True}
-
-        self.set_interface(self.iface)
-        if self.iface not in self.ifaces:
-            self.ifaces.append(self.iface)
-
         res = super().to_dict()
-
         return res
 
 
@@ -270,7 +262,6 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         name=None,
         node_selector=None,
         ipv4_dhcp=None,
-        ipv6_enable=False,
         teardown=True,
     ):
         iface_name = f"{base_iface}.{tag}"
@@ -288,7 +279,6 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         self.base_iface = base_iface
         self.tag = tag
         self.iface_name = iface_name
-        self.ipv6_enable = ipv6_enable
         self.master_iface = None
 
     def to_dict(self):
@@ -302,17 +292,6 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
 
         vlan_spec = {"vlan": {"base-iface": self.base_iface, "id": self.tag}}
         self.master_iface.update(vlan_spec)
-        if self.ipv4_dhcp:
-            ipv4_spec = {
-                "ipv4": {"enabled": True, "dhcp": True},
-                "ipv6": {"enabled": self.ipv6_enable},
-            }
-            self.master_iface.update(ipv4_spec)
-
-        self.set_interface(self.master_iface)
-        if self.iface not in self.ifaces:
-            self.ifaces.append(self.master_iface)
-
         return res
 
 
@@ -600,13 +579,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                         "mtu": self.mtu,
                     }
                     self.set_interface(_port)
-
-        if self.ipv4_dhcp:
-            self.iface["ipv4"] = {"dhcp": True, "enabled": True}
-
-        self.set_interface(self.iface)
-        if self.iface not in self.ifaces:
-            self.ifaces.append(self.iface)
 
         res = super().to_dict()
         return res
