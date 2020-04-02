@@ -521,6 +521,15 @@ def schedulable_nodes(nodes):
 
 
 @pytest.fixture(scope="session")
+def schedulable_worker_pods(network_utility_pods, schedulable_nodes):
+    yield [
+        pod
+        for pod in network_utility_pods
+        if pod.node.name in [node.name for node in schedulable_nodes]
+    ]
+
+
+@pytest.fixture(scope="session")
 def masters(nodes):
     yield [
         node for node in nodes if "node-role.kubernetes.io/master" in node.labels.keys()
