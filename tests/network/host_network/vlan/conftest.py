@@ -33,18 +33,14 @@ DHCP_IP_RANGE_END = f"{DHCP_IP_SUBNET}.100"
 
 @pytest.fixture(scope="module")
 def vlan_iface_on_all_nodes(
-    skip_if_no_multinic_nodes,
-    network_utility_pods,
-    nodes_active_nics,
-    schedulable_worker_pods,
-    vlan_tag_id,
+    skip_if_no_multinic_nodes, network_utility_pods, nodes_active_nics, vlan_tag_id,
 ):
     # Select the last NIC from the list as a way to ensure that the selected NIC is not already used (e.g. as
     # a bond's slave).
     vlan_base_iface = nodes_active_nics[network_utility_pods[0].node.name][-1]
 
     with VLANInterfaceNodeNetworkConfigurationPolicy(
-        worker_pods=schedulable_worker_pods,
+        worker_pods=network_utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
@@ -56,20 +52,20 @@ def vlan_iface_on_all_nodes(
 @pytest.fixture(scope="module")
 def vlan_iface_on_one_node_with_different_tag(
     skip_if_no_multinic_nodes,
-    schedulable_worker_pods,
+    network_utility_pods,
     vlan_iface_on_all_nodes,
     dhcp_server,
 ):
     vlan_base_iface = vlan_iface_on_all_nodes.base_iface
     iface_tag = vlan_iface_on_all_nodes.tag + 1
 
-    for pod in schedulable_worker_pods:
+    for pod in network_utility_pods:
         if pod.node.name != dhcp_server.node_selector:
             node_selector = pod.node.name
             break
 
     with VLANInterfaceNodeNetworkConfigurationPolicy(
-        worker_pods=schedulable_worker_pods,
+        worker_pods=network_utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=iface_tag,
@@ -163,9 +159,9 @@ def dhcp_br_nad(dhcp_server_bridge, namespace, bridge_device_matrix__module__):
 
 
 @pytest.fixture(scope="module")
-def dhcp_client_nodes(dhcp_server_vm, schedulable_worker_pods):
+def dhcp_client_nodes(dhcp_server_vm, network_utility_pods):
     dhcp_client_nodes = []
-    for pod in schedulable_worker_pods:
+    for pod in network_utility_pods:
         """
         Allow all nodes to be DHCP clients, except for the one hosting the DHCP server. The reason for this
         exception is a known limitation, where a VLAN DHCP client interface can't be served by a DHCP
@@ -210,7 +206,6 @@ def vlan_iface_over_bond_on_all_nodes(
     skip_if_no_multinic_nodes,
     network_utility_pods,
     nodes_active_nics,
-    schedulable_worker_pods,
     vlan_iface_on_all_nodes,
 ):
     with BondNodeNetworkConfigurationPolicy(
@@ -227,7 +222,7 @@ def vlan_iface_over_bond_on_all_nodes(
         tag_id = vlan_iface_on_all_nodes.tag
 
         with VLANInterfaceNodeNetworkConfigurationPolicy(
-            worker_pods=schedulable_worker_pods,
+            worker_pods=network_utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=vlan_base_iface,
             tag=tag_id,

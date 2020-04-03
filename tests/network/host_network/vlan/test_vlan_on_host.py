@@ -173,13 +173,13 @@ def test_vlan_deletion(
     skip_if_workers_vms,
     namespace,
     vlan_iface_on_all_nodes,
-    schedulable_worker_pods,
+    network_utility_pods,
 ):
     """
     Test that VLAN NICs that are created using k8s-nmstate can be successfully deleted.
     """
     vlan_iface_on_all_nodes.clean_up()
-    for pod in schedulable_worker_pods:
+    for pod in network_utility_pods:
         ip_addr_out = pod.execute(
             command=[
                 "bash",
