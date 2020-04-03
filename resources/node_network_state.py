@@ -100,3 +100,10 @@ class NodeNetworkState(Resource):
     @property
     def routes(self):
         return self.instance.status.currentState.routes
+
+    def ipv4(self, iface):
+        for interface in self.interfaces:
+            if interface["name"] == iface:
+                addresses = interface["ipv4"]["address"]
+                if addresses:
+                    return interface["ipv4"]["address"][0]["ip"]
