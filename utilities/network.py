@@ -539,7 +539,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self,
         name,
         bond_name,
-        nics,
+        slaves,
         worker_pods,
         mode,
         node_selector=None,
@@ -558,7 +558,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv6_enable=ipv6_enable,
         )
         self.bond_name = bond_name
-        self.nics = nics
+        self.slaves = slaves
         self.mode = mode
 
     def to_dict(self):
@@ -570,12 +570,12 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "mtu": self.mtu,
                 "link-aggregation": {
                     "mode": self.mode,
-                    "slaves": self.nics,
+                    "slaves": self.slaves,
                     "options": {"miimon": "120"},
                 },
             }
             if self.mtu:
-                for port in self.nics:
+                for port in self.slaves:
                     _port = {
                         "name": port,
                         "type": "ethernet",

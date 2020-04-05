@@ -211,7 +211,7 @@ def vlan_iface_over_bond_on_all_nodes(
     with BondNodeNetworkConfigurationPolicy(
         name="bond1-nncp",
         bond_name="bond4vlan",
-        nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        slaves=nodes_active_nics[network_utility_pods[0].node.name][2:4],
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=1450,
