@@ -36,7 +36,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         mtu=None,
         ports=None,
         ipv4_dhcp=None,
-        ipv6_enabled=False,
+        ipv6_enable=False,
     ):
         super().__init__(name=name, teardown=teardown)
         self.desired_state = {"interfaces": []}
@@ -47,7 +47,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         self.iface = None
         self.ifaces = []
         self._ipv4_dhcp = ipv4_dhcp
-        self.ipv6_enabled = ipv6_enabled
+        self.ipv6_enable = ipv6_enable
         self.ipv4_iface_state = {}
         self.node_selector = node_selector
         if self.node_selector:
@@ -80,7 +80,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         if self.ipv4_dhcp:
             self.iface["ipv4"] = {"dhcp": True, "enabled": True}
 
-        self.iface["ipv6"] = {"enabled": self.ipv6_enabled}
+        self.iface["ipv6"] = {"enabled": self.ipv6_enable}
 
         self.set_interface(self.iface)
         if self.iface not in self.ifaces:

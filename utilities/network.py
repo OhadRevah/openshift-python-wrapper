@@ -119,6 +119,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         node_selector=None,
         ipv4_dhcp=None,
         teardown=True,
+        ipv6_enable=False,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -141,6 +142,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             mtu=mtu,
             ports=ports,
             ipv4_dhcp=ipv4_dhcp,
+            ipv6_enable=ipv6_enable,
         )
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
@@ -263,6 +265,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         node_selector=None,
         ipv4_dhcp=None,
         teardown=True,
+        ipv6_enable=False,
     ):
         iface_name = f"{base_iface}.{tag}"
         if not name:
@@ -274,6 +277,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
             worker_pods=worker_pods,
             teardown=teardown,
             ipv4_dhcp=ipv4_dhcp,
+            ipv6_enable=ipv6_enable,
         )
         self.iface_state = iface_state
         self.base_iface = base_iface
@@ -543,6 +547,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         mtu=None,
         teardown=True,
         ipv4_dhcp=False,
+        ipv6_enable=False,
     ):
         super().__init__(
             name=name,
@@ -551,6 +556,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             teardown=teardown,
             mtu=mtu,
             ipv4_dhcp=ipv4_dhcp,
+            ipv6_enable=ipv6_enable,
         )
         self.bond_name = bond_name
         self.nodes = nodes
