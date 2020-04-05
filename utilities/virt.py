@@ -132,6 +132,7 @@ class VirtualMachineForTests(VirtualMachine):
         teardown=True,
         cloud_init_type=None,
         pvc=None,
+        attached_secret=None,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -164,6 +165,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.data_volume_template = data_volume_template
         self.cloud_init_type = cloud_init_type
         self.pvc = pvc
+        self.attached_secret = attached_secret
 
     def __enter__(self):
         super().__enter__()
@@ -358,6 +360,24 @@ class VirtualMachineForTests(VirtualMachine):
                 }
             )
 
+        if self.attached_secret:
+            volume_name = self.attached_secret["volume_name"]
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append(
+                {
+                    "disk": {},
+                    "name": volume_name,
+                    "serial": self.attached_secret["serial"],
+                }
+            )
+            spec.setdefault("volumes", []).append(
+                {
+                    "name": volume_name,
+                    "secret": {"secretName": self.attached_secret["secret_name"]},
+                }
+            )
+
         return res
 
     def ssh_enable(self):
@@ -400,6 +420,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         network_multiqueue=None,
         cloud_init_data=None,
         node_selector=None,
+        attached_secret=None,
     ):
         super().__init__(
             name=name,
@@ -414,6 +435,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             memory=memory,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
+            attached_secret=attached_secret,
         )
         self.template_labels = labels
         self.template_dv = template_dv

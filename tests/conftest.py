@@ -1039,6 +1039,7 @@ def vm_instance_from_template(
         if network_configuration
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
+        attached_secret=params.get("attached_secret"),
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True)

@@ -16,11 +16,13 @@ class Secret(NamespacedResource):
         secretkey=None,
         htpasswd=None,
         teardown=True,
+        data_dict=None,
     ):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.accesskeyid = accesskeyid
         self.secretkey = secretkey
         self.htpasswd = htpasswd
+        self.data_dict = data_dict
 
     def to_dict(self):
         res = super()._base_body()
@@ -30,4 +32,7 @@ class Secret(NamespacedResource):
             )
         if self.htpasswd:
             res.update({"data": {"htpasswd": self.htpasswd}})
+        if self.data_dict:
+            res.update({"data": self.data_dict})
+
         return res
