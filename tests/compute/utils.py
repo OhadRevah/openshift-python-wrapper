@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import utilities.network
-from pytest_testconfig import config as py_config
 from resources.pod import Pod
-from rrmngmnt import ssh, user
-from utilities import console
 from utilities.infra import ClusterHosts
 from utilities.virt import wait_for_vm_interfaces
 
@@ -45,57 +41,6 @@ def vm_started(vm, wait_for_interfaces=True):
     vm.vmi.wait_until_running()
     if wait_for_interfaces:
         wait_for_vm_interfaces(vm.vmi)
-
-
-def execute_ssh_command(username, passwd, ip, port, cmd, timeout=60):
-    ssh_user = user.User(name=username, password=passwd)
-    rc, out, err = ssh.RemoteExecutor(
-        user=ssh_user, address=str(ip), port=port
-    ).run_cmd(cmd=cmd, tcp_timeout=timeout, io_timeout=timeout)
-    assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
-    return out
-
-
-def execute_winrm_cmd(
-    vmi_ip, winrmcli_pod, cmd, timeout=20, target_vm=False, helper_vm=False
-):
-    if helper_vm:
-        LOGGER.info(f"Running {cmd} via helper VM.")
-        return execute_winrm_in_vm(target_vm=target_vm, helper_vm=helper_vm, cmd=cmd)
-    else:
-        LOGGER.info(f"Running {cmd} via winrm pod.")
-
-        winrmcli_cmd = [
-            "bash",
-            "-c",
-            f"/bin/winrm-cli -hostname {vmi_ip} \
-            -username {py_config['windows_username']} -password {py_config['windows_password']} \
-            \"{cmd}\"",
-        ]
-        return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)
-
-
-def execute_winrm_in_vm(target_vm, helper_vm, cmd):
-    target_vm_ip = utilities.network.get_vmi_ip_v4_by_name(
-        vmi=target_vm.vmi, name=[*target_vm.networks][0]
-    )
-
-    run_cmd = (
-        f"podman run -it docker.io/kubevirt/winrmcli winrm-cli -hostname "
-        f"{target_vm_ip} -username {py_config['windows_username']} -password "
-        f"{py_config['windows_password']}"
-    ).split(" ") + [cmd]
-
-    return execute_ssh_command(
-        username=console.Fedora.USERNAME,
-        passwd=console.Fedora.PASSWORD,
-        ip=utilities.network.get_vmi_ip_v4_by_name(
-            vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
-        ),
-        port=22,
-        cmd=run_cmd,
-        timeout=480,
-    )
 
 
 def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):

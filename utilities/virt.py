@@ -2,12 +2,15 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 
 import jinja2
 import pexpect
 import requests
+import utilities.network
 import yaml
+from pytest_testconfig import config as py_config
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -15,6 +18,8 @@ from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
+from rrmngmnt import ssh, user
+from utilities import console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -780,3 +785,94 @@ class MissingTemplateVariables(Exception):
 
     def __str__(self):
         return f"Missing variables {self.var} for template {self.template}"
+
+
+def validate_windows_guest_agent_info(vm, winrmcli_pod, helper_vm=False):
+    """ Compare guest OS info from VMI (reported by guest agent) and from OS itself. """
+    windown_os_info_from_rmcli = get_windows_os_info_from_rmcli(
+        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+    for key, val in get_guest_os_info_from_vmi(vmi=vm.vmi).items():
+        if key != "id":
+            assert (
+                val.split("r")[0]
+                if "version" in key
+                else val in windown_os_info_from_rmcli
+            )
+
+
+def get_guest_os_info_from_vmi(vmi):
+    """ Gets guest OS info from VMI. """
+    guest_os_info_dict = dict(vmi.instance.status.guestOSInfo)
+    assert guest_os_info_dict, "Guest agent not installed/active."
+    return guest_os_info_dict
+
+
+def get_windows_os_info_from_rmcli(vm, winrmcli_pod, helper_vm=False):
+    """
+    Gets Windows OS info via remote cli tool from systeminfo.
+    Return string of OS Name and OS Version output of systeminfo.
+    """
+    return execute_winrm_cmd(
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        cmd='systeminfo | findstr /B /C:"OS Name" /C:"OS Version"',
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def execute_winrm_cmd(
+    vmi_ip, winrmcli_pod, cmd, timeout=20, target_vm=False, helper_vm=False
+):
+    """
+    For RHEL7 workers, pass in the following:
+    target_vm: vm which the command will be executed on
+    helper_vm: cmd execution is done using a helper vm, must be fedora
+    """
+    if helper_vm:
+        LOGGER.info(f"Running {cmd} via helper VM.")
+        return execute_winrm_in_vm(target_vm=target_vm, helper_vm=helper_vm, cmd=cmd)
+    else:
+        LOGGER.info(f"Running {cmd} via winrm pod.")
+
+        winrmcli_cmd = [
+            "bash",
+            "-c",
+            f"/bin/winrm-cli -hostname {vmi_ip} \
+            -username {py_config['windows_username']} -password {py_config['windows_password']} \
+            \"{cmd}\"",
+        ]
+        return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)
+
+
+def execute_winrm_in_vm(target_vm, helper_vm, cmd):
+    target_vm_ip = utilities.network.get_vmi_ip_v4_by_name(
+        vmi=target_vm.vmi, name=[*target_vm.networks][0]
+    )
+
+    run_cmd = shlex.split(
+        f"podman run -it docker.io/kubevirt/winrmcli winrm-cli -hostname "
+        f"{target_vm_ip} -username {py_config['windows_username']} -password "
+        f"{py_config['windows_password']}"
+    ) + [cmd]
+
+    return execute_ssh_command(
+        username=console.Fedora.USERNAME,
+        passwd=console.Fedora.PASSWORD,
+        ip=utilities.network.get_vmi_ip_v4_by_name(
+            vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
+        ),
+        port=22,
+        cmd=run_cmd,
+        timeout=480,
+    )
+
+
+def execute_ssh_command(username, passwd, ip, port, cmd, timeout=60):
+    ssh_user = user.User(name=username, password=passwd)
+    rc, out, err = ssh.RemoteExecutor(
+        user=ssh_user, address=str(ip), port=port
+    ).run_cmd(cmd=cmd, tcp_timeout=timeout, io_timeout=timeout)
+    assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
+    return out

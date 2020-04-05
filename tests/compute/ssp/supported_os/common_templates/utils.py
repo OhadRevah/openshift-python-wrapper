@@ -15,8 +15,13 @@ from resources import pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from rrmngmnt import ssh, user
-from tests.compute.utils import execute_ssh_command, execute_winrm_cmd, vm_started
-from utilities.virt import vm_console_run_commands
+from tests.compute.utils import vm_started
+from utilities.virt import (
+    execute_ssh_command,
+    execute_winrm_cmd,
+    get_guest_os_info_from_vmi,
+    vm_console_run_commands,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -444,27 +449,6 @@ def validate_linux_guest_agent_info(vm, ip, ssh_port, username, passwd):
     )
 
 
-def validate_windows_guest_agent_info(vm, winrmcli_pod, helper_vm=False):
-    """ Compare guest OS info from VMI (reported by guest agent) and from OS itself. """
-    windown_os_info_from_rmcli = get_windows_os_info_from_rmcli(
-        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
-    )
-    for key, val in get_guest_os_info_from_vmi(vmi=vm.vmi).items():
-        if key != "id":
-            assert (
-                val.split("r")[0]
-                if "version" in key
-                else val in windown_os_info_from_rmcli
-            )
-
-
-def get_guest_os_info_from_vmi(vmi):
-    """ Gets guest OS info from VMI. """
-    guest_os_info_dict = dict(vmi.instance.status.guestOSInfo)
-    assert guest_os_info_dict, "Guest agent not installed/active."
-    return guest_os_info_dict
-
-
 def get_linux_os_info_from_ssh(ip, port, username, passwd):
     """
     Gets Linux OS info via SSH from etc/os-release and uname -r -v.
@@ -499,20 +483,6 @@ def get_linux_os_info_from_ssh(ip, port, username, passwd):
         "version": os_info_parser(os_release_output_list, "VERSION").split(" ")[0],
         "versionId": os_info_parser(os_release_output_list, "VERSION_ID"),
     }
-
-
-def get_windows_os_info_from_rmcli(vm, winrmcli_pod, helper_vm=False):
-    """
-    Gets Windows OS info via remote cli tool from systeminfo.
-    Return string of OS Name and OS Version output of systeminfo.
-    """
-    return execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        cmd='systeminfo | findstr /B /C:"OS Name" /C:"OS Version"',
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
 
 
 def check_machine_type(vm):

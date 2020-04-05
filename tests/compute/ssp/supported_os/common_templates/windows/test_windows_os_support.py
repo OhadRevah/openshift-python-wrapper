@@ -9,6 +9,7 @@ import pytest
 import tests.compute.utils
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import BUG_STATUS_CLOSED
+from utilities.virt import validate_windows_guest_agent_info
 
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ class TestCommonTemplatesWindows:
         bridge_attached_helper_vm,
     ):
         """ Test Guest OS agent info. """
-        utils.validate_windows_guest_agent_info(
+        validate_windows_guest_agent_info(
             vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,

@@ -11,13 +11,14 @@ import pytest
 from resources.node_maintenance import NodeMaintenance
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from tests.compute.utils import WinRMcliPod, execute_winrm_cmd
+from tests.compute.utils import WinRMcliPod
 from tests.compute.virt import utils as virt_utils
 from utilities import console
 from utilities.infra import Images
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
+    execute_winrm_cmd,
     fedora_vm_body,
 )
 

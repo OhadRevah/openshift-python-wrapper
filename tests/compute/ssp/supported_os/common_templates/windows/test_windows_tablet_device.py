@@ -12,7 +12,7 @@ import re
 import pytest
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
-from tests.compute.utils import execute_winrm_cmd
+from utilities.virt import execute_winrm_cmd
 
 
 LOGGER = logging.getLogger(__name__)
