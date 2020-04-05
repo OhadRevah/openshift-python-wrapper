@@ -101,7 +101,6 @@ def bond1(
     with BondNodeNetworkConfigurationPolicy(
         name="bond1nncp",
         bond_name="bond1",
-        nodes=[i.node.name for i in network_utility_pods],
         nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
         worker_pods=network_utility_pods,
         mode=link_aggregation_mode_matrix__class__,

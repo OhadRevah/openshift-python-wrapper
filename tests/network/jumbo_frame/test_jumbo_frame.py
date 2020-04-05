@@ -29,7 +29,6 @@ def bond1(skip_no_bond_support, network_utility_pods, nodes_active_nics):
     with BondNodeNetworkConfigurationPolicy(
         name="bond1nncp",
         bond_name="bond1",
-        nodes=[i.node.name for i in network_utility_pods],
         nics=nodes_active_nics[network_utility_pods[0].node.name][2:4],
         worker_pods=network_utility_pods,
         mode="active-backup",

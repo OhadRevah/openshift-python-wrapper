@@ -540,7 +540,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         name,
         bond_name,
         nics,
-        nodes,
         worker_pods,
         mode,
         node_selector=None,
@@ -559,7 +558,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv6_enable=ipv6_enable,
         )
         self.bond_name = bond_name
-        self.nodes = nodes
         self.nics = nics
         self.mode = mode
 
