@@ -1,7 +1,15 @@
+import logging
+import socket
+import ssl
+import urllib.error
+import urllib.request
 from contextlib import contextmanager
 
+from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
-from utilities.infra import get_images_external_http_server, get_images_https_server
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -100,3 +108,38 @@ def data_volume(
         if params_dict.get("wait", True):
             dv.wait(timeout=2400 if "win" in image else 1200)
         yield dv
+
+
+def get_images_external_http_server():
+    """
+    Fetch http_server url from config and return if available.
+    """
+    server = py_config[py_config["region"]]["http_server"]
+    try:
+        LOGGER.info(f"Testing connectivity to {server} HTTP server")
+        assert urllib.request.urlopen(server, timeout=60).getcode() == 200
+    except (urllib.error.URLError, socket.timeout) as e:
+        LOGGER.error(
+            f"URL Error when testing connectivity to {server} HTTP server.\nError: {e}"
+        )
+        raise
+
+    return server
+
+
+def get_images_https_server():
+    """
+    Fetch https_server url from config and return if available.
+    """
+    region = py_config["region"]
+    server = py_config[region]["https_server"]
+
+    myssl = ssl.create_default_context()
+    myssl.check_hostname = False
+    myssl.verify_mode = ssl.CERT_NONE
+    try:
+        assert urllib.request.urlopen(server, context=myssl).getcode() == 200
+    except urllib.error.URLError:
+        LOGGER.error("URL Error when testing connectivity to HTTPS server")
+        raise
+    return server

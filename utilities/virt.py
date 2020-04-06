@@ -1,10 +1,13 @@
 import json
 import logging
 import os
+import re
 import subprocess
 
+import jinja2
 import pexpect
 import requests
+import yaml
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -12,7 +15,6 @@ from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
-from utilities.infra import generate_yaml_from_template
 
 
 LOGGER = logging.getLogger(__name__)
@@ -734,3 +736,45 @@ def ssh_service_activated(vm, console_impl, systemctl_support=True):
 def wait_for_console(vm, console_impl):
     with console_impl(vm=vm, timeout=1500):
         pass
+
+
+def generate_yaml_from_template(file_, **kwargs):
+    """
+    Generate JSON from yaml file_
+
+    Args:
+        file_ (str): Yaml file
+
+    Keyword Args:
+        name (str):
+        image (str):
+
+    Returns:
+        dict: Generated from template file
+
+    Raises:
+        MissingTemplateVariables: If not all template variables exists
+
+    Examples:
+        generate_yaml_from_template(file_='path/to/file/name', name='vm-name-1')
+    """
+    with open(file_, "r") as stream:
+        data = stream.read()
+
+    # Find all template variables
+    template_vars = [i.split()[1] for i in re.findall(r"{{ .* }}", data)]
+    for var in template_vars:
+        if var not in kwargs.keys():
+            raise MissingTemplateVariables(var=var, template=file_)
+    template = jinja2.Template(data)
+    out = template.render(**kwargs)
+    return yaml.safe_load(out)
+
+
+class MissingTemplateVariables(Exception):
+    def __init__(self, var, template):
+        self.var = var
+        self.template = template
+
+    def __str__(self):
+        return f"Missing variables {self.var} for template {self.template}"

@@ -19,8 +19,8 @@ from resources.pod import Pod
 from resources.security_context_constraints import SecurityContextConstraints
 from resources.service_account import ServiceAccount
 from resources.storage_class import StorageClass
-from utilities.infra import Images, get_images_external_http_server
-from utilities.storage import create_dv
+from utilities.infra import Images
+from utilities.storage import create_dv, get_images_external_http_server
 
 
 LOGGER = logging.getLogger(__name__)

@@ -9,8 +9,8 @@ from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
 from tests.network.utils import nmcli_add_con_cmds
-from utilities.infra import Images, create_ns, get_images_external_http_server
-from utilities.storage import create_dv
+from utilities.infra import Images, create_ns
+from utilities.storage import create_dv, get_images_external_http_server
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,

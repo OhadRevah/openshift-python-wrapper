@@ -20,11 +20,12 @@ from resources.namespace import Namespace
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
-from utilities.infra import create_ns, generate_yaml_from_template
+from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    generate_yaml_from_template,
 )
 
 

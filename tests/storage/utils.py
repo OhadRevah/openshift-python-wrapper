@@ -17,8 +17,8 @@ from resources.service import Service
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from utilities import console
-from utilities.infra import Images, get_cert, get_images_external_http_server
-from utilities.storage import create_dv
+from utilities.infra import Images, get_cert
+from utilities.storage import create_dv, get_images_external_http_server
 from utilities.virt import VirtualMachineForTests, run_virtctl_command
 
 

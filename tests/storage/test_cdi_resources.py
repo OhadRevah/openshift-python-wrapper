@@ -16,7 +16,8 @@ from resources.service_account import ServiceAccount
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
 from utilities import storage as utils
-from utilities.infra import Images, get_images_https_server
+from utilities.infra import Images
+from utilities.storage import get_images_https_server
 
 
 LOGGER = logging.getLogger(__name__)

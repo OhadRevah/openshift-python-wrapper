@@ -43,7 +43,7 @@ from resources.virtual_machine import (
 from tests.compute.ssp.supported_os.common_templates.utils import wait_for_windows_vm
 from tests.compute.utils import WinRMcliPod, nmcli_add_con_cmds
 from utilities import console
-from utilities.infra import ClusterHosts, create_ns, generate_yaml_from_template
+from utilities.infra import ClusterHosts, create_ns
 from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -52,6 +52,7 @@ from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     enable_ssh_service_in_vm,
     fedora_vm_body,
+    generate_yaml_from_template,
     kubernetes_taint_exists,
     wait_for_vm_interfaces,
 )

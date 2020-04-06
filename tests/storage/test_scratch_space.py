@@ -12,11 +12,8 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
-from utilities.infra import (
-    Images,
-    get_images_external_http_server,
-    get_images_https_server,
-)
+from utilities.infra import Images
+from utilities.storage import get_images_external_http_server, get_images_https_server
 
 
 LOGGER = logging.getLogger(__name__)
