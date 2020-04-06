@@ -552,9 +552,11 @@ def run_virtctl_command(command, namespace=None):
 
 
 def fedora_vm_body(name):
-    return generate_yaml_from_template(
-        file_="tests/manifests/vm-fedora.yaml", name=name
-    )
+    from pkg_resources import resource_stream
+
+    # Make sure we can find the file even if utilities was installed via pip.
+    yaml_file = resource_stream("utilities", "manifests/vm-fedora.yaml").name
+    return generate_yaml_from_template(file_=yaml_file, name=name)
 
 
 def kubernetes_taint_exists(node):
