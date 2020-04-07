@@ -1,11 +1,7 @@
 import json
-import logging
 
 import bitmath
 from utilities import console
-
-
-LOGGER = logging.getLogger(__name__)
 
 
 def run_test_guest_performance(server_vm, client_vm, listen_ip):
