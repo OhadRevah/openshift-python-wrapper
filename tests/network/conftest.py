@@ -103,10 +103,6 @@ def ovs_lb_bridge(
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=ports,
-        ovs_worker_pods=ovs_worker_pods,
-        nodes_active_nics=nodes_active_nics,
-        schedulable_node_ips=schedulable_node_ips,
-        idx=100 + unique_index,
         mtu=mtu,
     ) as br:
         yield br

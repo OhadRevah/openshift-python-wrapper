@@ -12,7 +12,6 @@ def bridge_device(network_utility_pods, schedulable_nodes):
         bridge_name="br1test",
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
-        vxlan=False,
     ) as br_dev:
         yield br_dev
 

@@ -9,8 +9,6 @@ from utilities.network import (
     LinuxBridgeNodeNetworkConfigurationPolicy,
     OvsBridgeNetworkAttachmentDefinition,
     OvsBridgeNodeNetworkConfigurationPolicy,
-    OvsBridgeOverVxlan,
-    linux_bridge_over_vxlan,
 )
 
 
@@ -72,53 +70,25 @@ def bridge_device(
     network_utility_pods,
     nodes,
     ports=None,
-    nodes_active_nics=None,
     mtu=None,
     node_selector=None,
-    schedulable_node_ips=None,
-    ovs_worker_pods=None,
-    idx=100,
-    vxlan=True,
     ipv4_dhcp=None,
 ):
-    if bridge_type == OVS and not ports and vxlan:
-        with OvsBridgeOverVxlan(
-            bridge_name=bridge_name,
-            vxlan_iface_name=f"vxlan-ovs{idx}",
-            ovs_worker_pods=ovs_worker_pods,
-            remote_ips=schedulable_node_ips,
-        ) as br:
-            yield br
-
-    else:
-        schedulable_worker_pods = [
-            pod
-            for pod in network_utility_pods
-            if pod.node.name in [node.name for node in nodes]
-        ]
-        if not ports and vxlan:
-            yield from linux_bridge_over_vxlan(
-                nncp_name=nncp_name,
-                bridge_name=bridge_name,
-                idx=idx,
-                nodes_active_nics=nodes_active_nics,
-                network_utility_pods=schedulable_worker_pods,
-                mtu=mtu,
-                node_selector=node_selector,
-                ipv4_dhcp=ipv4_dhcp,
-            )
-
-        else:
-            with BRIDGE_DEVICE_TYPE[bridge_type](
-                name=nncp_name,
-                bridge_name=bridge_name,
-                worker_pods=schedulable_worker_pods,
-                ports=ports,
-                mtu=mtu,
-                node_selector=node_selector,
-                ipv4_dhcp=ipv4_dhcp,
-            ) as br:
-                yield br
+    schedulable_worker_pods = [
+        pod
+        for pod in network_utility_pods
+        if pod.node.name in [node.name for node in nodes]
+    ]
+    with BRIDGE_DEVICE_TYPE[bridge_type](
+        name=nncp_name,
+        bridge_name=bridge_name,
+        worker_pods=schedulable_worker_pods,
+        ports=ports,
+        mtu=mtu,
+        node_selector=node_selector,
+        ipv4_dhcp=ipv4_dhcp,
+    ) as br:
+        yield br
 
 
 @contextlib.contextmanager

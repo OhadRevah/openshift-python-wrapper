@@ -87,7 +87,6 @@ def bridge_device_on_all_nodes(network_utility_pods, schedulable_nodes):
         bridge_name=BRIDGEMARKER1,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
-        vxlan=False,
     ) as dev:
         yield dev
 
@@ -101,7 +100,6 @@ def non_homogenous_bridges(skip_when_one_node, network_utility_pods, schedulable
         network_utility_pods=[network_utility_pods[0]],
         nodes=schedulable_nodes,
         node_selector=network_utility_pods[0].node.name,
-        vxlan=False,
     ) as bridgemarker2_ncp:
         with network_utils.bridge_device(
             bridge_type=network_utils.LINUX_BRIDGE,
@@ -110,7 +108,6 @@ def non_homogenous_bridges(skip_when_one_node, network_utility_pods, schedulable
             network_utility_pods=[network_utility_pods[1]],
             nodes=schedulable_nodes,
             node_selector=network_utility_pods[1].node.name,
-            vxlan=False,
         ) as bridgemarker3_ncp:
             yield (bridgemarker2_ncp, bridgemarker3_ncp)
 

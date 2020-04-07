@@ -147,7 +147,6 @@ def nodenetworkstate_with_bridge(
             bridge_name="mgbr",
             network_utility_pods=network_utility_pods,
             nodes=schedulable_nodes,
-            vxlan=False,
         ) as br:
             yield br
 
