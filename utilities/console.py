@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 import pexpect
 from resources.utils import TimeoutSampler
@@ -95,7 +96,8 @@ class Console(object):
                 break
 
     def _generate_cmd(self):
-        cmd = f"virtctl console {self.vm.name}"
+        virtctl = os.environ.get("VIRTCTL", "virtctl")
+        cmd = f"{virtctl} console {self.vm.name}"
         if self.vm.namespace:
             cmd += f" -n {self.vm.namespace}"
         return cmd

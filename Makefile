@@ -13,8 +13,8 @@ CLUSTER_UP := $(CLUSTER_DIR)/up.sh
 CLUSTER_DOWN := $(CLUSTER_DIR)/down.sh
 CLI := $(CLUSTER_DIR)/cli.sh
 SSH := $(CLUSTER_DIR)/ssh.sh
-export KUBECTL := $(CLUSTER_DIR)/kubectl.sh
-export VIRTCTL := $(CLUSTER_DIR)/virtctl.sh
+export KUBECTL ?= $(CLUSTER_DIR)/kubectl.sh
+export VIRTCTL ?= $(CLUSTER_DIR)/virtctl.sh
 export KUBEVIRT_PROVIDER ?= okd-4.1
 export KUBEVIRT_NUM_NODES ?= 2
 export KUBEVIRT_NUM_SECONDARY_NICS ?= 4
@@ -28,7 +28,6 @@ install_virtctl := $(HACK_DIR)/install-virtctl.sh
 
 # virtctl binary
 BIN_DIR := local-cluster/_out/bin
-VIRTCTL := $(BIN_DIR)/virtctl
 
 # If not specified otherwise, local cluster's KUBECONFIG will be used
 export KUBECONFIG ?= local-cluster/kubevirtci/_ci-configs/$(KUBEVIRT_PROVIDER)/.kubeconfig
