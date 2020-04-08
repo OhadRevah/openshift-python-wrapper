@@ -1,10 +1,11 @@
 # Pytest args handling
-pytest_args ?= $(PYTEST_ARGS)
+PYTEST_ARGS ?= tests
+
 ifdef UPSTREAM
-	pytest_args += --tc-file=tests/global_config_upstream.py --tc-format=python
+	override PYTEST_ARGS += --tc-file=tests/global_config_upstream.py --tc-format=python
 endif
 ifndef UPSTREAM
-	pytest_args += --tc-file=tests/global_config.py --tc-format=python
+	override PYTEST_ARGS += --tc-file=tests/global_config.py --tc-format=python
 endif
 
 # Local cluster preparations
@@ -41,7 +42,7 @@ check:
 	tox
 
 tests:
-	python3 -m pipenv run pytest tests $(pytest_args)
+	python3 -m pipenv run pytest $(PYTEST_ARGS)
 
 $(CLUSTER_DIR)/%: $(install_kubevirtci)
 	$(install_kubevirtci)
