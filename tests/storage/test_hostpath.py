@@ -19,8 +19,10 @@ from resources.pod import Pod
 from resources.security_context_constraints import SecurityContextConstraints
 from resources.service_account import ServiceAccount
 from resources.storage_class import StorageClass
+from utilities import console
 from utilities.infra import Images
 from utilities.storage import create_dv, get_images_external_http_server
+from utilities.virt import wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -446,9 +448,26 @@ def test_hostpath_registry_import_dv(
         )
 
 
-@pytest.mark.polarion("CNV-3516")
+@pytest.mark.parametrize(
+    "data_volume_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "cnv-3516-source-dv",
+                "image": f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA30_IMG}",
+                "dv_size": "10Gi",
+                "storage_class": StorageClass.Types.HOSTPATH,
+            },
+            marks=(pytest.mark.polarion("CNV-3516")),
+        ),
+    ],
+    indirect=True,
+)
 def test_hostpath_clone_dv_without_annotation_wffc(
-    skip_when_hpp_no_waitforfirstconsumer, default_client, namespace,
+    skip_when_hpp_no_waitforfirstconsumer,
+    default_client,
+    namespace,
+    data_volume_scope_function,
 ):
     """
     Check that in case of WaitForFirstConsumer binding mode, without annotating the source/target DV to a node,
@@ -456,45 +475,26 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     the node name where the pod is scheduled on.
     """
     with create_dv(
-        source="http",
-        dv_name="cnv-3516-source-dv",
+        source="pvc",
+        dv_name="cnv-3516-target-dv",
         namespace=namespace.name,
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        size="1Gi",
+        source_namespace=data_volume_scope_function.namespace,
+        source_pvc=data_volume_scope_function.pvc.name,
+        size="10Gi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
-    ) as source_dv:
-        source_dv.pvc.wait(timeout=300)
-        importer_pod = get_pod_by_name_prefix(
-            default_client, pod_prefix="importer", namespace=source_dv.namespace,
+    ) as target_dv:
+        target_dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND)
+        upload_target_pod = get_pod_by_name_prefix(
+            default_client, pod_prefix="cdi-upload", namespace=namespace.name
         )
-        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
+        upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
         assert_selected_node_annotation(
-            pvc=source_dv.pvc, pod=importer_pod, type_="source"
+            pvc=target_dv.pvc, pod=upload_target_pod, type_="target"
         )
-        source_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=300)
-        with create_dv(
-            source="pvc",
-            dv_name="cnv-3516-target-dv",
-            namespace=namespace.name,
-            source_namespace=source_dv.namespace,
-            source_pvc=source_dv.pvc.name,
-            size="1Gi",
-            storage_class=StorageClass.Types.HOSTPATH,
-            volume_mode=DataVolume.VolumeMode.FILE,
-        ) as target_dv:
-            target_dv.pvc.wait(timeout=300)
-            upload_target_pod = get_pod_by_name_prefix(
-                default_client, pod_prefix="cdi-upload", namespace=namespace.name
-            )
-            upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
-            assert_selected_node_annotation(
-                pvc=target_dv.pvc, pod=upload_target_pod, type_="target"
-            )
-            target_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=600)
-            with storage_utils.create_vm_from_dv(dv=target_dv) as vm:
-                storage_utils.check_disk_count_in_vm(vm=vm)
+        target_dv.wait(timeout=300)
+        with storage_utils.create_vm_from_dv(dv=target_dv, vm_name="fedora-vm") as vm:
+            wait_for_console(vm=vm, console_impl=console.Fedora)
 
 
 @pytest.mark.polarion("CNV-3328")
