@@ -136,9 +136,18 @@ def test_cdiconfig_scratch_space_not_default(
     )
 
 
+@pytest.fixture()
+def skip_if_scratch_space_specified(cdi_config):
+    LOGGER.debug("Use 'skip_if_scratch_space_specifie' fixture...")
+    if cdi_config.scratch_space_storage_class_from_spec:
+        pytest.skip(
+            msg="Skip test because cdiconfig.spec.scratchSpaceStorageClass is specified"
+        )
+
+
 @pytest.mark.polarion("CNV-2412")
 def test_cdi_config_scratch_space_value_is_default(
-    skip_no_default_sc, cdi_config, default_sc
+    skip_no_default_sc, skip_if_scratch_space_specified, cdi_config, default_sc
 ):
     assert cdi_config.scratch_space_storage_class_from_status == default_sc.name
 
