@@ -56,9 +56,14 @@ def cleanup(default_client):
     vmis = list(VirtualMachineInstance.get(default_client, namespace=default_ns))
     vmips = list(VirtualMachineInstancePreset.get(default_client, namespace=default_ns))
     pvcs = list(PersistentVolumeClaim.get(default_client, namespace=default_ns))
-    templates = list(
-        Template.get(default_client, singular_name="template", namespace=default_ns)
-    )
+    try:
+        templates = list(
+            Template.get(default_client, singular_name="template", namespace=default_ns)
+        )
+    except NotImplementedError as e:
+        # Templates are only present if tests run with openshift provider
+        LOGGER.warning(e)
+        templates = []
     yield
     for vm in VirtualMachine.get(default_client, namespace=default_ns):
         if vm not in vms:
@@ -82,11 +87,15 @@ def cleanup(default_client):
         if pvc not in pvcs:
             pvc.delete(wait=True)
 
-    for template in Template.get(
-        default_client, singular_name="template", namespace=default_ns
-    ):
-        if template not in templates:
-            template.delete(wait=True)
+    try:
+        for template in Template.get(
+            default_client, singular_name="template", namespace=default_ns
+        ):
+            if template not in templates:
+                template.delete(wait=True)
+    except NotImplementedError:
+        # Templates are only present if tests run with openshift provider
+        pass
 
 
 @pytest.mark.parametrize(

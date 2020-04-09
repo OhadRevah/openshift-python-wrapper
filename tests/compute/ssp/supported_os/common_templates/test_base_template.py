@@ -114,7 +114,7 @@ def base_templates(default_client):
 
 
 @pytest.mark.polarion("CNV-1069")
-def test_base_templates_annotations(base_templates):
+def test_base_templates_annotations(skip_not_openshift, base_templates):
     """
     Check all CNV templates exists, by label: template.kubevirt.io/type=base
     """
@@ -173,7 +173,12 @@ def test_base_templates_annotations(base_templates):
     ],
 )
 def test_validate_rhel_min_max_memory(
-    base_templates, fetch_osinfo_path, os_type, osinfo_filename, memory_test
+    skip_not_openshift,
+    base_templates,
+    fetch_osinfo_path,
+    os_type,
+    osinfo_filename,
+    memory_test,
 ):
     """
     Validate CNV RHEL templates for minimum and maximum memory, against osinfo db files.
@@ -253,7 +258,12 @@ def test_validate_rhel_min_max_memory(
     ],
 )
 def test_validate_windows_min_max_memory(
-    base_templates, fetch_osinfo_path, osinfo_filename, os_template, memory_test
+    skip_not_openshift,
+    base_templates,
+    fetch_osinfo_path,
+    osinfo_filename,
+    os_template,
+    memory_test,
 ):
     """
     Validate CNV Windows templates for minimum and maximum memory, against osinfo db files.

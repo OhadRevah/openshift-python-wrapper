@@ -47,7 +47,7 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-2191")
 def test_successful_virtctl_upload_no_route(
-    namespace, tmpdir, uploadproxy_route_deleted
+    skip_not_openshift, namespace, tmpdir, uploadproxy_route_deleted
 ):
     route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
     with pytest.raises(NotFoundError):
@@ -73,7 +73,11 @@ def test_successful_virtctl_upload_no_route(
 
 @pytest.mark.polarion("CNV-2217")
 def test_image_upload_with_overridden_url(
-    namespace, tmpdir, new_route_created, cdi_config_upload_proxy_overridden
+    skip_not_openshift,
+    namespace,
+    tmpdir,
+    new_route_created,
+    cdi_config_upload_proxy_overridden,
 ):
     pvc_name = "cnv-2217"
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
@@ -93,7 +97,9 @@ def test_image_upload_with_overridden_url(
 
 
 @pytest.mark.polarion("CNV-3031")
-def test_virtctl_image_upload_with_ca(skip_no_reencrypt_route, tmpdir, namespace):
+def test_virtctl_image_upload_with_ca(
+    skip_no_reencrypt_route, skip_not_openshift, tmpdir, namespace
+):
     local_path = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
     storage_utils.downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_path

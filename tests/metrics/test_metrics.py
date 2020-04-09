@@ -68,13 +68,23 @@ def check_vmi_count_metric(expected_vmi_count, prometheus):
 class TestVMICountMetric:
     @pytest.mark.polarion("CNV-3048")
     def test_vmi_count_metric_increase(
-        self, prometheus, number_of_vmis_exists, vm_metric_1, vm_metric_2
+        self,
+        skip_not_openshift,
+        prometheus,
+        number_of_vmis_exists,
+        vm_metric_1,
+        vm_metric_2,
     ):
         assert check_vmi_count_metric(number_of_vmis_exists + 2, prometheus)
 
     @pytest.mark.polarion("CNV-3089")
     def test_vmi_count_metric_decrease(
-        self, prometheus, number_of_vmis_exists, vm_metric_1, vm_metric_2
+        self,
+        skip_not_openshift,
+        prometheus,
+        number_of_vmis_exists,
+        vm_metric_1,
+        vm_metric_2,
     ):
         vm_metric_2.stop(wait=True)
         assert check_vmi_count_metric(number_of_vmis_exists + 1, prometheus)

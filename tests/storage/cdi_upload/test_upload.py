@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.polarion("CNV-2318")
-def test_cdi_uploadproxy_route_owner_references():
+def test_cdi_uploadproxy_route_owner_references(skip_not_openshift):
     route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
     assert route.instance
     assert route.instance["metadata"]["ownerReferences"][0]["name"] == "cdi-deployment"

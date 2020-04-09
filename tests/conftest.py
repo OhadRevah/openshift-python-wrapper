@@ -23,6 +23,7 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
+from resources.namespace import Namespace
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node import Node
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
@@ -577,7 +578,30 @@ def workers_ssh_executors(rhel7_workers, network_utility_pods):
 
 
 @pytest.fixture(scope="session")
-def nodes_active_nics(schedulable_nodes, workers_ssh_executors):
+def node_physical_nics(default_client, network_utility_pods):
+    if is_openshift(default_client):
+        executors = workers_ssh_executors(network_utility_pods)
+        return {
+            node: executors[node].network.all_interfaces() for node in executors.keys()
+        }
+    else:
+        return network_interfaces_k8s(network_utility_pods)
+
+
+def network_interfaces_k8s(network_utility_pods):
+    interfaces = {}
+    for pod in network_utility_pods:
+        node = pod.instance.spec.nodeName
+        output = pod.execute(
+            ["bash", "-c", "ls -la /sys/class/net | grep pci | grep -o '[^/]*$'"]
+        ).split("\n")
+        interfaces[node] = list(filter(None, output))  # Filter out empty lines
+
+    return interfaces
+
+
+@pytest.fixture(scope="session")
+def nodes_active_nics(schedulable_nodes, node_physical_nics):
     """
     Get nodes active NICs.
     First NIC is management NIC
@@ -592,7 +616,6 @@ def nodes_active_nics(schedulable_nodes, workers_ssh_executors):
     nodes_nics = {}
     for node in schedulable_nodes:
         ifaces = []
-        node_physical_nics = workers_ssh_executors[node.name].network.all_interfaces()
         nns = NodeNetworkState(name=node.name)
         default_routes = [
             route for route in nns.routes.running if route.destination == "0.0.0.0/0"
@@ -608,7 +631,7 @@ def nodes_active_nics(schedulable_nodes, workers_ssh_executors):
             primary = primary_iface_name == iface.name
             if iface.type == "ethernet":
                 # In OVN deployment we get extra auto generated OVN interfaces so we need to exclude them
-                if iface.name not in node_physical_nics:
+                if iface.name not in node_physical_nics[node.name]:
                     continue
 
                 _insert_first(ifaces=ifaces, primary=primary, iface=iface)
@@ -1146,3 +1169,17 @@ def started_windows_vm(
         timeout=1800,
         helper_vm=bridge_attached_helper_vm,
     )
+
+
+def is_openshift(client):
+    namespaces = [ns.name for ns in Namespace.get(client)]
+    return "openshift-operators" in namespaces
+
+
+@pytest.fixture(scope="session")
+def skip_not_openshift(default_client):
+    """
+    Skip test if tests run on kubernetes (and not openshift)
+    """
+    if not is_openshift(default_client):
+        pytest.skip("Skipping test requiring OpenShift")
