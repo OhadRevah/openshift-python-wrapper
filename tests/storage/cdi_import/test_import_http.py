@@ -77,7 +77,11 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
 
 
 @pytest.mark.polarion("CNV-674")
@@ -293,7 +297,11 @@ def test_wrong_content_type(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
 
 
 @pytest.mark.parametrize(
@@ -342,7 +350,11 @@ def test_import_invalid_qcow(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=90)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
 
 
 @pytest.mark.parametrize(
@@ -381,7 +393,11 @@ def test_unpack_compressed(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
 
 
 @pytest.mark.polarion("CNV-2811")
@@ -450,7 +466,11 @@ def test_certconfigmap_incorrect_cert(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
 
 
 @pytest.mark.parametrize(
