@@ -110,7 +110,7 @@ def get_cdi_worker_pods(default_client, pod_prefix, storage_ns_name):
 
 
 @pytest.mark.polarion("CNV-3475")
-def test_importer_pod_cdi_label(default_client, namespace):
+def test_importer_pod_cdi_label(skip_upstream, default_client, namespace):
     # verify "cdi.kubevirt.io" label is included in importer pod
     with storage_utils.import_image_to_dv(
         dv_name="cnv-3475",
@@ -143,7 +143,9 @@ def test_uploader_pod_cdi_label(
 
 
 @pytest.mark.polarion("CNV-3476")
-def test_cloner_pods_cdi_label(default_client, namespace, https_config_map):
+def test_cloner_pods_cdi_label(
+    skip_upstream, default_client, namespace, https_config_map
+):
     # verify "cdi.kubevirt.io" label is included in cloning pods
     url = storage_utils.get_file_url_https_server(
         get_images_https_server(), Images.Cirros.QCOW2_IMG,

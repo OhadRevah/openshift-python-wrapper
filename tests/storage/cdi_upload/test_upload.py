@@ -118,7 +118,13 @@ def test_cdi_uploadproxy_route_owner_references(skip_not_openshift):
     ],
 )
 def test_successful_upload_with_supported_formats(
-    namespace, tmpdir, dv_name, remote_name, local_name, storage_class_matrix__module__,
+    skip_upstream,
+    namespace,
+    tmpdir,
+    dv_name,
+    remote_name,
+    local_name,
+    storage_class_matrix__module__,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     local_name = f"{tmpdir}/{local_name}"
@@ -138,7 +144,9 @@ def test_successful_upload_with_supported_formats(
 
 
 @pytest.mark.polarion("CNV-2018")
-def test_successful_upload_token_validity(namespace, tmpdir, default_client):
+def test_successful_upload_token_validity(
+    skip_upstream, namespace, tmpdir, default_client
+):
     dv_name = "cnv-2018"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
@@ -185,7 +193,9 @@ def test_successful_upload_token_validity(namespace, tmpdir, default_client):
 
 
 @pytest.mark.polarion("CNV-2011")
-def test_successful_upload_token_expiry(namespace, tmpdir, default_client):
+def test_successful_upload_token_expiry(
+    skip_upstream, namespace, tmpdir, default_client
+):
     dv_name = "cnv-2011"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
@@ -254,7 +264,9 @@ def _upload_image(dv_name, namespace, local_name, size=None):
 
 
 @pytest.mark.polarion("CNV-2015")
-def test_successful_concurrent_uploads(namespace, tmpdir, default_client):
+def test_successful_concurrent_uploads(
+    skip_upstream, namespace, tmpdir, default_client
+):
     dvs_processes = []
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
@@ -276,7 +288,9 @@ def test_successful_concurrent_uploads(namespace, tmpdir, default_client):
 
 
 @pytest.mark.polarion("CNV-2017")
-def test_successful_upload_missing_file_in_transit(tmpdir, namespace, default_client):
+def test_successful_upload_missing_file_in_transit(
+    skip_upstream, tmpdir, namespace, default_client
+):
     dv_name = "cnv-2017"
     local_name = f"{tmpdir}/{Images.Rhel.RHEL8_0_IMG}"
     storage_utils.downloaded_image(
