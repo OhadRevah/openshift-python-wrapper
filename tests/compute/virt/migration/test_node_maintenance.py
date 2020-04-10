@@ -187,7 +187,7 @@ def test_node_drain_using_console_fedora(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_instance_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
     [
         pytest.param(
             {
@@ -207,7 +207,9 @@ def test_node_drain_using_console_fedora(
     indirect=True,
 )
 @pytest.mark.usefixtures(
-    "skip_when_one_node", "skip_migration_access_mode_rwo", "data_volume_scope_class"
+    "skip_when_one_node",
+    "skip_migration_access_mode_rwo",
+    "data_volume_multi_storage_scope_class",
 )
 class TestNodeMaintenanceRHEL:
     @pytest.mark.polarion("CNV-2286")
@@ -246,7 +248,7 @@ class TestNodeMaintenanceRHEL:
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
         pytest.param(
             {
@@ -269,7 +271,7 @@ class TestNodeMaintenanceRHEL:
 def test_node_drain_template_windows(
     skip_when_one_node,
     skip_migration_access_mode_rwo,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod,
     bridge_attached_helper_vm,

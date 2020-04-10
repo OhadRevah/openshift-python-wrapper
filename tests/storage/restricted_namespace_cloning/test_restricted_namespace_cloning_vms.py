@@ -41,17 +41,19 @@ def cluster_role_for_creating_pods():
 
 
 @pytest.fixture(scope="module")
-def data_volume_clone_settings(namespace, dst_ns, data_volume_scope_module):
+def data_volume_clone_settings(
+    namespace, dst_ns, data_volume_multi_storage_scope_module
+):
     dv = DataVolume(
         name="dv",
         namespace=dst_ns.name,
         source="pvc",
-        source_pvc=data_volume_scope_module.name,
+        source_pvc=data_volume_multi_storage_scope_module.name,
         source_namespace=namespace.name,
-        volume_mode=data_volume_scope_module.volume_mode,
-        storage_class=data_volume_scope_module.storage_class,
-        size=data_volume_scope_module.size,
-        hostpath_node=data_volume_scope_module.hostpath_node,
+        volume_mode=data_volume_multi_storage_scope_module.volume_mode,
+        storage_class=data_volume_multi_storage_scope_module.storage_class,
+        size=data_volume_multi_storage_scope_module.size,
+        hostpath_node=data_volume_multi_storage_scope_module.hostpath_node,
     )
     return dv
 
@@ -73,7 +75,7 @@ def allow_unprivileged_client_to_manage_vms_on_dst_ns(
 
 
 @pytest.mark.parametrize(
-    ("data_volume_scope_module", "namespace"),
+    ("data_volume_multi_storage_scope_module", "namespace"),
     [
         pytest.param(
             DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2826")
@@ -125,7 +127,7 @@ def test_create_vm_with_cloned_data_volume_positive(
 
 
 @pytest.mark.parametrize(
-    ("data_volume_scope_module", "namespace"),
+    ("data_volume_multi_storage_scope_module", "namespace"),
     [
         pytest.param(
             DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2828")
@@ -183,7 +185,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
 
 
 @pytest.mark.parametrize(
-    ("data_volume_scope_module", "namespace"),
+    ("data_volume_multi_storage_scope_module", "namespace"),
     [
         pytest.param(
             DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2827")
@@ -234,7 +236,7 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
 
 
 @pytest.mark.parametrize(
-    ("data_volume_scope_module", "namespace"),
+    ("data_volume_multi_storage_scope_module", "namespace"),
     [
         pytest.param(
             DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2829")

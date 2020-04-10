@@ -29,7 +29,7 @@ def get_file_url(url, file_name):
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -44,21 +44,21 @@ def get_file_url(url, file_name):
     indirect=True,
 )
 @pytest.mark.polarion("CNV-675")
-def test_delete_pvc_after_successful_import(data_volume_scope_function):
-    pvc = data_volume_scope_function.pvc
+def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_function):
+    pvc = data_volume_multi_storage_scope_function.pvc
     pvc.delete()
     pvc.wait_for_status(status=pvc.Status.BOUND)
-    data_volume_scope_function.wait_for_status(
-        status=data_volume_scope_function.Status.IMPORT_SCHEDULED
+    data_volume_multi_storage_scope_function.wait_for_status(
+        status=data_volume_multi_storage_scope_function.Status.IMPORT_SCHEDULED
     )
-    data_volume_scope_function.wait_for_status(
-        status=data_volume_scope_function.Status.SUCCEEDED
+    data_volume_multi_storage_scope_function.wait_for_status(
+        status=data_volume_multi_storage_scope_function.Status.SUCCEEDED
     )
     with utils.PodWithPVC(
         namespace=pvc.namespace,
-        name=f"{data_volume_scope_function.name}-pod",
-        pvc_name=data_volume_scope_function.name,
-        volume_mode=data_volume_scope_function.volume_mode,
+        name=f"{data_volume_multi_storage_scope_function.name}-pod",
+        pvc_name=data_volume_multi_storage_scope_function.name,
+        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
     ) as pod:
         pod.wait_for_status(status=pod.Status.RUNNING)
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
@@ -474,7 +474,7 @@ def test_certconfigmap_incorrect_cert(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -491,19 +491,20 @@ def test_certconfigmap_incorrect_cert(
     indirect=True,
 )
 @pytest.mark.polarion("CNV-2815")
-def test_certconfigmap_missing_or_wrong_cm(data_volume_scope_function):
+def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_function):
     with pytest.raises(TimeoutExpiredError):
         samples = TimeoutSampler(
             timeout=60,
             sleep=10,
-            func=lambda: data_volume_scope_function.status
+            func=lambda: data_volume_multi_storage_scope_function.status
             != DataVolume.Status.IMPORT_SCHEDULED,
         )
         for sample in samples:
             if sample:
                 LOGGER.error(
-                    f"DV status is not as expected. \
-                    Expected: {DataVolume.Status.IMPORT_SCHEDULED}. Found: {data_volume_scope_function.status}"
+                    f"DV status is not as expected."
+                    f"Expected: {DataVolume.Status.IMPORT_SCHEDULED}. "
+                    f"Found: {data_volume_multi_storage_scope_function.status}"
                 )
 
 
@@ -560,13 +561,13 @@ def test_successful_concurrent_blank_disk_import(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_storage_scope_function",
     [{"dv_name": "cnv-2004", "source": "blank", "image": "", "dv_size": "500Mi"}],
     indirect=True,
 )
 @pytest.mark.polarion("CNV-2004")
-def test_blank_disk_import_validate_status(data_volume_scope_function):
-    data_volume_scope_function.wait_for_status(
+def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_function):
+    data_volume_multi_storage_scope_function.wait_for_status(
         status=DataVolume.Status.SUCCEEDED, timeout=300
     )
 

@@ -815,7 +815,7 @@ def network_configuration(
 
 
 @pytest.fixture()
-def data_volume_scope_function(
+def data_volume_multi_storage_scope_function(
     request,
     skip_ceph_on_rhel7,
     namespace,
@@ -831,7 +831,7 @@ def data_volume_scope_function(
 
 
 @pytest.fixture(scope="class")
-def data_volume_scope_class(
+def data_volume_multi_storage_scope_class(
     request,
     skip_ceph_on_rhel7,
     namespace,
@@ -847,7 +847,7 @@ def data_volume_scope_class(
 
 
 @pytest.fixture(scope="module")
-def data_volume_scope_module(
+def data_volume_multi_storage_scope_module(
     request,
     skip_ceph_on_rhel7_scope_module,
     namespace,
@@ -858,6 +858,36 @@ def data_volume_scope_module(
         request=request,
         namespace=namespace,
         storage_class_matrix=storage_class_matrix__module__,
+        schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture()
+def data_volume_scope_function(request, namespace, schedulable_nodes):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class=request.param["storage_class"],
+        schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture(scope="class")
+def data_volume_scope_class(request, namespace, schedulable_nodes):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class=request.param["storage_class"],
+        schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture(scope="module")
+def data_volume_scope_module(request, namespace, schedulable_nodes):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class=request.param["storage_class"],
         schedulable_nodes=schedulable_nodes,
     )
 
@@ -1000,7 +1030,7 @@ def vm_instance_from_template_scope_function(
     request,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     network_configuration,
     cloud_init_data,
 ):
@@ -1013,7 +1043,7 @@ def vm_instance_from_template_scope_function(
         request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=data_volume_multi_storage_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     ) as vm:
@@ -1025,7 +1055,7 @@ def vm_instance_from_template_scope_class(
     request,
     unprivileged_client,
     namespace,
-    data_volume_scope_class,
+    data_volume_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -1038,7 +1068,7 @@ def vm_instance_from_template_scope_class(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_class,
+        data_volume=data_volume_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     ) as vm:

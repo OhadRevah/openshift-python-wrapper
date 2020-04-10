@@ -13,7 +13,7 @@ from utilities.infra import Images
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
     [
         pytest.param(
             {
@@ -40,7 +40,7 @@ def test_successful_dv_creation_large_image(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,

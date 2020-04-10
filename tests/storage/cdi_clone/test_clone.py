@@ -11,7 +11,7 @@ from utilities.infra import Images
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class",
+    "data_volume_multi_storage_scope_class",
     [
         pytest.param(
             {
@@ -31,14 +31,17 @@ from utilities.infra import Images
     indirect=True,
 )
 def test_successful_clone_of_large_image(
-    skip_upstream, storage_class_matrix__class__, namespace, data_volume_scope_class,
+    skip_upstream,
+    storage_class_matrix__class__,
+    namespace,
+    data_volume_multi_storage_scope_class,
 ):
     storage_class = [*storage_class_matrix__class__][0]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_scope_class.size,
+        size=data_volume_multi_storage_scope_class.size,
         storage_class=storage_class,
         volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
     ) as cdv:
@@ -48,7 +51,7 @@ def test_successful_clone_of_large_image(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class",
+    "data_volume_multi_storage_scope_class",
     [
         {
             "dv_name": "dv-source",
@@ -60,14 +63,17 @@ def test_successful_clone_of_large_image(
 )
 @pytest.mark.polarion("CNV-2148")
 def test_successful_vm_restart_with_cloned_dv(
-    skip_upstream, storage_class_matrix__class__, namespace, data_volume_scope_class,
+    skip_upstream,
+    storage_class_matrix__class__,
+    namespace,
+    data_volume_multi_storage_scope_class,
 ):
     storage_class = [*storage_class_matrix__class__][0]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_scope_class.size,
+        size=data_volume_multi_storage_scope_class.size,
         storage_class=storage_class,
         volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
     ) as cdv:

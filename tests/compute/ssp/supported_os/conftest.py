@@ -96,7 +96,7 @@ def vm_object_from_template_scope_function(
     request,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     network_configuration,
     cloud_init_data,
 ):
@@ -104,7 +104,7 @@ def vm_object_from_template_scope_function(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume_object=data_volume_scope_function,
+        data_volume_object=data_volume_multi_storage_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
@@ -115,7 +115,7 @@ def vm_object_from_template_scope_class(
     request,
     unprivileged_client,
     namespace,
-    data_volume_scope_class,
+    data_volume_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -123,7 +123,7 @@ def vm_object_from_template_scope_class(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume_object=data_volume_scope_class,
+        data_volume_object=data_volume_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )

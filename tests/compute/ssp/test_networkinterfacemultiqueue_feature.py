@@ -47,7 +47,7 @@ def _update_and_validate_vm_cpu_spec(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_instance_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
     [
         (
             {
@@ -132,7 +132,7 @@ class TestLatestRHEL:
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_instance_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
     [
         (
             {

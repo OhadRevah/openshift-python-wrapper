@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "namespace, data_volume_scope_module",
+    "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
             NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
@@ -30,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 def test_unprivileged_user_clone_same_namespace_negative(
     storage_class_matrix__module__,
     namespace,
-    data_volume_scope_module,
+    data_volume_multi_storage_scope_module,
     unprivileged_client,
 ):
     storage_class = [*storage_class_matrix__module__][0]
@@ -45,7 +45,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
             size="500Mi",
             storage_class=storage_class,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
-            source_pvc=data_volume_scope_module.pvc.name,
+            source_pvc=data_volume_multi_storage_scope_module.pvc.name,
             source_namespace=namespace.name,
             client=unprivileged_client,
         ):
@@ -53,7 +53,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
 
 
 @pytest.mark.parametrize(
-    "namespace, data_volume_scope_module",
+    "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
             NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
@@ -64,7 +64,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
 def test_unprivileged_user_clone_same_namespace_positive(
     storage_class_matrix__module__,
     namespace,
-    data_volume_scope_module,
+    data_volume_multi_storage_scope_module,
     unprivileged_client,
     unprivileged_user_username,
     api_group,
@@ -87,7 +87,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
             size="500Mi",
             storage_class=storage_class,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
-            source_pvc=data_volume_scope_module.pvc.name,
+            source_pvc=data_volume_multi_storage_scope_module.pvc.name,
             source_namespace=namespace.name,
             client=unprivileged_client,
         ) as cdv:
@@ -97,7 +97,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
 
 
 @pytest.mark.parametrize(
-    "namespace, data_volume_scope_module",
+    "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
             NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
@@ -108,7 +108,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
 def test_unprivileged_user_clone_different_namespaces_negative(
     storage_class_matrix__module__,
     namespace,
-    data_volume_scope_module,
+    data_volume_multi_storage_scope_module,
     unprivileged_client,
     dst_ns,
 ):
@@ -124,7 +124,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
             size="500Mi",
             storage_class=storage_class,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
-            source_pvc=data_volume_scope_module.pvc.name,
+            source_pvc=data_volume_multi_storage_scope_module.pvc.name,
             source_namespace=namespace.name,
             client=unprivileged_client,
         ):
@@ -132,7 +132,12 @@ def test_unprivileged_user_clone_different_namespaces_negative(
 
 
 @pytest.mark.parametrize(
-    ("namespace", "data_volume_scope_module", "permissions_src", "permissions_dst"),
+    (
+        "namespace",
+        "data_volume_multi_storage_scope_module",
+        "permissions_src",
+        "permissions_dst",
+    ),
     [
         pytest.param(
             NAMESPACE_PARAMS,
@@ -178,12 +183,12 @@ def test_unprivileged_user_clone_different_namespaces_negative(
             id="src_ns: dv/src, verbs: create. dst: dv, verbs: create, delete, list, get.",
         ),
     ],
-    indirect=["namespace", "data_volume_scope_module"],
+    indirect=["namespace", "data_volume_multi_storage_scope_module"],
 )
 def test_user_permissions_positive(
     storage_class_matrix__module__,
     namespace,
-    data_volume_scope_module,
+    data_volume_multi_storage_scope_module,
     dst_ns,
     unprivileged_client,
     permissions_src,
@@ -221,7 +226,7 @@ def test_user_permissions_positive(
                 volume_mode=storage_class_matrix__module__[storage_class][
                     "volume_mode"
                 ],
-                source_pvc=data_volume_scope_module.pvc.name,
+                source_pvc=data_volume_multi_storage_scope_module.pvc.name,
                 source_namespace=namespace.name,
                 client=unprivileged_client,
             ) as cdv:
@@ -231,7 +236,12 @@ def test_user_permissions_positive(
 
 
 @pytest.mark.parametrize(
-    ("namespace", "data_volume_scope_module", "permissions_src", "permissions_dst"),
+    (
+        "namespace",
+        "data_volume_multi_storage_scope_module",
+        "permissions_src",
+        "permissions_dst",
+    ),
     [
         pytest.param(
             NAMESPACE_PARAMS,
@@ -258,12 +268,12 @@ def test_user_permissions_positive(
             id="src_ns: dv, verbs: *. dst: dv, verbs: *.",
         ),
     ],
-    indirect=["namespace", "data_volume_scope_module"],
+    indirect=["namespace", "data_volume_multi_storage_scope_module"],
 )
 def test_user_permissions_negative(
     storage_class_matrix__module__,
     namespace,
-    data_volume_scope_module,
+    data_volume_multi_storage_scope_module,
     dst_ns,
     unprivileged_client,
     permissions_src,
@@ -305,7 +315,7 @@ def test_user_permissions_negative(
                     volume_mode=storage_class_matrix__module__[storage_class][
                         "volume_mode"
                     ],
-                    source_pvc=data_volume_scope_module.pvc.name,
+                    source_pvc=data_volume_multi_storage_scope_module.pvc.name,
                     source_namespace=namespace.name,
                     client=unprivileged_client,
                 ):
@@ -313,7 +323,7 @@ def test_user_permissions_negative(
 
 
 @pytest.mark.parametrize(
-    "namespace, data_volume_scope_module",
+    "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
             NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
@@ -324,7 +334,7 @@ def test_user_permissions_negative(
 def test_user_permissions_only_for_dst_ns_negative(
     storage_class_matrix__module__,
     namespace,
-    data_volume_scope_module,
+    data_volume_multi_storage_scope_module,
     dst_ns,
     unprivileged_client,
     unprivileged_user_username,
@@ -354,7 +364,7 @@ def test_user_permissions_only_for_dst_ns_negative(
                 volume_mode=storage_class_matrix__module__[storage_class][
                     "volume_mode"
                 ],
-                source_pvc=data_volume_scope_module.pvc.name,
+                source_pvc=data_volume_multi_storage_scope_module.pvc.name,
                 source_namespace=namespace.name,
                 client=unprivileged_client,
             ):

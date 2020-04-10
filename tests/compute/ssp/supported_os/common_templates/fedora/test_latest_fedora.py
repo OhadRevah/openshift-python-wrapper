@@ -52,7 +52,7 @@ HYPERV_DICT = {
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, vm_object_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_object_from_template_scope_class",
     [
         (
             {
@@ -81,7 +81,7 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         unprivileged_client,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         """ Test CNV VM creation from template """
@@ -97,7 +97,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM initiation """
@@ -110,7 +110,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         LOGGER.info("Verify VMI HyperV values.")
@@ -123,7 +123,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM console """
@@ -137,7 +137,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates OS version """
@@ -152,7 +152,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
@@ -173,7 +173,7 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         rhel7_workers,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
         vm_ssh_service_scope_class,
         schedulable_node_ips,
@@ -200,7 +200,7 @@ class TestCommonTemplatesFedora:
     @pytest.mark.polarion("CNV-3937")
     def test_guest_agent_info(
         self,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
         schedulable_node_ips,
         rhel7_workers,
@@ -226,7 +226,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         utils.check_machine_type(vm=vm_object_from_template_scope_class)
@@ -237,7 +237,7 @@ class TestCommonTemplatesFedora:
         self,
         skip_upstream,
         namespace,
-        data_volume_scope_class,
+        data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
         """ Test CNV common templates VM deletion """

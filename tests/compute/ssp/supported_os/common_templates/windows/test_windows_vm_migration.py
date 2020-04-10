@@ -10,7 +10,7 @@ from tests.compute.ssp.supported_os.common_templates import utils
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function, "
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, "
     "started_windows_vm, exposed_vm_service",
     [
         pytest.param(
@@ -45,7 +45,7 @@ def test_migrate_vm_windows(
     skip_upstream,
     skip_migration_access_mode_rwo,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
     winrmcli_pod_scope_function,
     started_windows_vm,

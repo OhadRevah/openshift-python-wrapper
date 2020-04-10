@@ -13,7 +13,7 @@ from utilities.virt import wait_for_console
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
         pytest.param(
             {
@@ -39,7 +39,7 @@ def test_migrate_vm_rhel(
     skip_upstream,
     skip_migration_access_mode_rwo,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
     vm_ssh_service_scope_function,
     schedulable_node_ips,

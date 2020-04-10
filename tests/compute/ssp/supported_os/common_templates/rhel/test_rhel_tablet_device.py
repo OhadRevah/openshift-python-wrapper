@@ -22,7 +22,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
         pytest.param(
             {
@@ -50,7 +50,7 @@ def test_tablet_virtio_tablet_device(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
 ):
 
@@ -63,7 +63,7 @@ def test_tablet_virtio_tablet_device(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
         pytest.param(
             {
@@ -91,7 +91,7 @@ def test_tablet_usb_tablet_device(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
 ):
 
@@ -104,7 +104,7 @@ def test_tablet_usb_tablet_device(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
         pytest.param(
             {
@@ -132,7 +132,7 @@ def test_tablet_default_bus_tablet_device(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_instance_from_template_scope_function,
 ):
 
@@ -145,7 +145,7 @@ def test_tablet_default_bus_tablet_device(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_object_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_object_from_template_scope_function",
     [
         pytest.param(
             {
@@ -211,7 +211,7 @@ def test_tablet_invalid_usb_tablet_device(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_object_from_template_scope_function,
 ):
 
@@ -227,7 +227,7 @@ def test_tablet_invalid_usb_tablet_device(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_object_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_object_from_template_scope_function",
     [
         pytest.param(
             {
@@ -255,7 +255,7 @@ def test_tablet_invalid_type_tablet_device(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_storage_scope_function,
     vm_object_from_template_scope_function,
 ):
 
