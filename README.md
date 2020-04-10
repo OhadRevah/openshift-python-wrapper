@@ -74,6 +74,28 @@ Or by setting `KUBECONFIG` variable:
 KUBECONFIG=<kubeconfig file>
 ```
 
+### Kubevirtci Kubernetes provider
+
+When you want to run the test on k8s (and not okd/ocp) provider, you need to make sure that the
+cluster can reach outside world to fetch docker images. Usually all that is required is adding the
+following like to your system `/etc/resolv.conf`:
+
+```
+nameserver 192.168.8.1
+```
+
+### Using custom cluster management binaries
+
+If you need to use custom or system `kubectl` or `virtctl` instead of wrappers from `local-cluster`,
+define `KUBECTL` and `VIRTCTL` environment variables to point to the binaries.
+
+
+### Using emulated virtualization
+
+If you want to use emulated virtualization in your cluster, define `VIRT_EMULATION=1` before you setup
+HCO cluster (ie. before running `make cluster-install-hco`).
+
+
 ## Running the tests
 
 The simplest way to run the tests is as follows for downstream or upstream
@@ -304,3 +326,4 @@ To use non default key:
 ```bash
 export HOST_SSH_KEY=path.to.ssh_key
 ```
+
