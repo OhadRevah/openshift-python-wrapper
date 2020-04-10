@@ -48,12 +48,22 @@ function wait_until_available() {
   return $?
 }
 
+function setup_virt_emulation() {
+  # Turn virtualization emulation if requested
+  if [[ "${VIRT_EMULATION}" == "1" ]]; then
+      echo "Enabling virt emulation"
+      ${KUBECTL} patch configmap kubevirt-config -p '{"data": {"debug.useEmulation": "true"}}'
+
+      ${KUBECTL} rollout restart deployment virt-controller -n ${HCO_NS}
+  fi
+}
+
 set +e
 for i in {0..30}
 do
   echo "Try Number: $i"
   wait_until_available
-  [ $? -eq 0 ] && exit 0
+  [ $? -eq 0 ] && setup_virt_emulation && exit 0
 done
 set -e
 
