@@ -101,16 +101,13 @@ CNV_TEMPLATES_NAME = [
 @pytest.fixture(scope="module")
 def base_templates(default_client):
     """ Return templates list by label """
-    yield [
-        template
-        for template in list(
-            Template.get(
-                default_client,
-                singular_name=Template.singular_name,
-                label_selector="template.kubevirt.io/type=base",
-            )
+    yield list(
+        Template.get(
+            default_client,
+            singular_name=Template.singular_name,
+            label_selector="template.kubevirt.io/type=base",
         )
-    ]
+    )
 
 
 @pytest.mark.polarion("CNV-1069")

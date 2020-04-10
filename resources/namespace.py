@@ -1,6 +1,6 @@
 import logging
 
-from resources.utils import nudge_delete
+from resources.utils import NudgeTimers, nudge_delete
 
 from .resource import Resource
 
@@ -25,4 +25,6 @@ class Namespace(Resource):
     # Terminating state is fixed.
     # Upstream bug: https://github.com/kubernetes/kubernetes/issues/60807
     def nudge_delete(self):
-        nudge_delete(self.name)
+        if not hasattr(self, "_timers"):
+            self._timers = NudgeTimers()
+        nudge_delete(self.name, self._timers)

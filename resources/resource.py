@@ -9,7 +9,12 @@ import kubernetes
 import urllib3
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
-from resources.utils import TimeoutExpiredError, TimeoutSampler, nudge_delete
+from resources.utils import (
+    NudgeTimers,
+    TimeoutExpiredError,
+    TimeoutSampler,
+    nudge_delete,
+)
 from urllib3.exceptions import ProtocolError
 
 
@@ -120,7 +125,7 @@ def _get_api_version(dyn_client, api_group, kind):
     res = _find_supported_resource(dyn_client, api_group, kind)
     if not res:
         LOGGER.error(f"Couldn't find {kind} in {api_group} api group")
-        raise
+        raise NotImplementedError(f"Couldn't find {kind} in {api_group} api group")
     return res.group_version
 
 
@@ -277,7 +282,9 @@ class Resource(object):
         res = _find_supported_resource(self.client, self.api_group, self.kind)
         if not res:
             LOGGER.error(f"Couldn't find {self.kind} in {self.api_group} api group")
-            raise
+            raise NotImplementedError(
+                f"Couldn't find {self.kind} in {self.api_group} api group"
+            )
         self.api_version = _get_api_version(self.client, self.api_group, self.kind)
 
     @classproperty
@@ -531,9 +538,10 @@ class Resource(object):
             samples = TimeoutSampler(
                 timeout=TIMEOUT, sleep=1, func=_exists, name=name, namespace=namespace
             )
+            timers = NudgeTimers()
             for sample in samples:
                 if force:
-                    nudge_delete(name)
+                    nudge_delete(name, timers)
                 if not sample:
                     return
 
