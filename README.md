@@ -327,3 +327,10 @@ To use non default key:
 export HOST_SSH_KEY=path.to.ssh_key
 ```
 
+##### Resources and utilities installation
+To use resources and utilities as independent python packages:
+From cnv-tests dir
+```bash
+pip3 install . -U --user
+```
+Used by import resources and import utilities.
