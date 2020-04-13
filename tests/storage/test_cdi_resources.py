@@ -124,11 +124,17 @@ def test_importer_pod_cdi_label(default_client, namespace):
 
 
 @pytest.mark.polarion("CNV-3474")
-def test_uploader_pod_cdi_label(default_client, namespace):
-    # verify "cdi.kubevirt.io" label is included in uploader pod
+def test_uploader_pod_cdi_label(
+    default_client, storage_class_matrix__module__, namespace
+):
+    """
+    Verify "cdi.kubevirt.io" label is included in uploader pod
+    """
+    storage_class = [*storage_class_matrix__module__][0]
     with storage_utils.upload_image_to_dv(
         dv_name="cnv-3474",
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         storage_ns_name=namespace.name,
     ):
         get_cdi_worker_pods(

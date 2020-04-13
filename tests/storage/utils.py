@@ -46,13 +46,13 @@ def import_image_to_dv(dv_name, images_https_server_name, volume_mode, storage_n
 
 
 @contextmanager
-def upload_image_to_dv(dv_name, volume_mode, storage_ns_name):
+def upload_image_to_dv(dv_name, volume_mode, storage_ns_name, storage_class):
     with create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=storage_ns_name,
         size="3Gi",
-        storage_class=py_config["default_storage_class"],
+        storage_class=storage_class,
         volume_mode=volume_mode,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)

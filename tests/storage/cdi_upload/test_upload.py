@@ -70,7 +70,7 @@ def test_cdi_uploadproxy_route_owner_references():
         pytest.param(
             "cnv-2007",
             f"{Images.Cirros.DIR}/{Images.Cirros.RAW_IMG_XZ}",
-            Images.Cirros.RAW_IMG_GZ,
+            Images.Cirros.RAW_IMG_XZ,
             marks=(pytest.mark.polarion("CNV-2007")),
         ),
         pytest.param(
@@ -118,21 +118,23 @@ def test_cdi_uploadproxy_route_owner_references():
     ],
 )
 def test_successful_upload_with_supported_formats(
-    namespace, tmpdir, dv_name, remote_name, local_name
+    namespace, tmpdir, dv_name, remote_name, local_name, storage_class_matrix__module__,
 ):
+    storage_class = [*storage_class_matrix__module__][0]
     local_name = f"{tmpdir}/{local_name}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         storage_ns_name=namespace.name,
     ) as dv:
         storage_utils.upload_token_request(
-            namespace.name, pvc_name=dv.pvc.name, data=local_name
+            storage_ns_name=namespace.name, pvc_name=dv.pvc.name, data=local_name
         )
         dv.wait()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.polarion("CNV-2018")
