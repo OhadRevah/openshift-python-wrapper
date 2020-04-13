@@ -19,7 +19,7 @@ from resources.storage_class import StorageClass
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import Images
 from utilities.virt import CIRROS_IMAGE, wait_for_console
 
 
@@ -27,10 +27,43 @@ LOGGER = logging.getLogger(__name__)
 
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
+EXIT_STATUS_2 = "Unable to process data: exit status 2"
 
 
 def get_file_url(url, file_name):
     return f"{url}{file_name}"
+
+
+def wait_for_importer_container_message(importer_pod, msg):
+    LOGGER.info(f"Wait for {importer_pod.name} container to show message: {msg}")
+    try:
+        sampled_msg = TimeoutSampler(
+            timeout=120,
+            sleep=5,
+            func=lambda: msg
+            in importer_pod.instance.status.containerStatuses[
+                0
+            ].lastState.terminated.message
+            and importer_container_status_reason(importer_pod) == "CrashLoopBackOff",
+        )
+        for sample in sampled_msg:
+            if sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"{importer_pod.name} did not get message: {msg}")
+        raise
+
+
+def importer_container_status_reason(pod):
+    """
+    Get status for why importer pod container is waiting or terminated
+    (for container status running there is no 'reason' key)
+     """
+    container_state = pod.instance.status.containerStatuses[0].state
+    if container_state.waiting:
+        return container_state.waiting.reason
+    if container_state.terminated:
+        return container_state.terminated.reason
 
 
 @pytest.mark.parametrize(
@@ -84,8 +117,11 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg="Unable to connect to http data source"
         )
 
 
@@ -304,8 +340,11 @@ def test_wrong_content_type(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg=EXIT_STATUS_2
         )
 
 
@@ -315,12 +354,7 @@ def test_wrong_content_type(
         pytest.param(
             "large-size",
             "invalid-qcow-large-size.img",
-            marks=(
-                pytest.mark.polarion("CNV-2553"),
-                pytest.mark.bugzilla(
-                    1739149, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-2553"),),
         ),
         pytest.param(
             "large-json",
@@ -357,8 +391,11 @@ def test_import_invalid_qcow(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg="Unable to process data: exit status 1"
         )
 
 
@@ -400,8 +437,11 @@ def test_unpack_compressed(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg=EXIT_STATUS_2
         )
 
 
@@ -473,8 +513,11 @@ def test_certconfigmap_incorrect_cert(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg="certificate signed by unknown authority"
         )
 
 
@@ -580,9 +623,9 @@ def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_funct
 @pytest.mark.parametrize(
     ("size", "unit", "expected_size"),
     [
-        pytest.param("64", "Mi", "50", marks=(pytest.mark.polarion("CNV-1404"))),
-        pytest.param("1", "Gi", "1.0", marks=(pytest.mark.polarion("CNV-1404"))),
-        pytest.param("13", "Gi", "13", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param("64", "Mi", "64M", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param("1", "Gi", "1.0G", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param("13", "Gi", "13G", marks=(pytest.mark.polarion("CNV-1404"))),
     ],
 )
 def test_vmi_image_size(
@@ -622,8 +665,7 @@ def test_vmi_image_size(
                     command=[
                         "bash",
                         "-c",
-                        "qemu-img info /pvc/disk.img|grep 'disk size'|awk '{print $3}'|\
-                        awk '{$0=substr($0,1,length($0)-1); print $0}'|tr -d '\n'",
+                        "qemu-img info /pvc/disk.img|grep 'virtual size'|awk '{print $3}'|tr -d '\n'",
                     ]
                 )
 
