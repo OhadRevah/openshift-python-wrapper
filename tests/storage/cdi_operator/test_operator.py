@@ -4,6 +4,7 @@ from resources.cdi import CDI
 from resources.pod import Pod
 
 
+@pytest.mark.destructive
 @pytest.mark.polarion("CNV-2512")
 def test_cr_deletion(default_client, cdi):
     # Ensure 'Deployed' status

@@ -157,6 +157,7 @@ def test_cdi_config_exists(cdi_config, upload_proxy_route):
     assert cdi_config.upload_proxy_url == upload_proxy_route.host
 
 
+@pytest.mark.destructive
 @pytest.mark.polarion("CNV-2209")
 def test_different_route_for_upload_proxy(
     cdi_config, namespace, uploadproxy_route_deleted

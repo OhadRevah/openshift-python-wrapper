@@ -44,6 +44,7 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
     assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
+@pytest.mark.destructive
 @pytest.mark.polarion("CNV-2191")
 def test_successful_virtctl_upload_no_route(
     namespace, tmpdir, uploadproxy_route_deleted
