@@ -66,6 +66,7 @@ def data_volume(
         storage_class_matrix = [sc for sc in storages if [*sc][0] == storage_class]
         if not storage_class_matrix:
             raise ValueError(f"{storage_class} not found in {storages}")
+        storage_class_matrix = storage_class_matrix[0]
 
     storage_class = [*storage_class_matrix][0]
     # Save with a different name to avoid confusing.
