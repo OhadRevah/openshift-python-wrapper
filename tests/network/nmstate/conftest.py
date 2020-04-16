@@ -5,8 +5,6 @@ import logging
 import pytest
 import tests.network.utils as network_utils
 import utilities.network
-from resources.node_network_state import NodeNetworkState
-from resources.utils import TimeoutSampler
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -18,65 +16,26 @@ from utilities.virt import (
 LOGGER = logging.getLogger(__name__)
 
 
-def check_address_on_iface(
-    network_utility_pods, node_management_iface_stats, dst_iface_name
-):
-    for pod in network_utility_pods:
-        node_network_state = NodeNetworkState(name=pod.node.name)
-        for interface in node_network_state.instance.status.currentState.interfaces:
-            if interface["name"] == dst_iface_name:
-                ip = interface["ipv4"]["address"][0]["ip"]
-                if ip != node_management_iface_stats[pod.node.name]["ipv4"]:
-                    raise ValueError(
-                        f"{dst_iface_name} didn`t get management ip as expected"
-                    )
-                else:
-                    LOGGER.info(
-                        f"Node {pod.node.name}: {ip} moved to {dst_iface_name} successfully"
-                    )
-
-
-def wait_for_address_on_iface(
-    network_utility_pods, node_management_iface_stats, dst_iface_name
-):
-    samples = TimeoutSampler(
-        timeout=30,
-        sleep=1,
-        func=check_address_on_iface,
-        network_utility_pods=network_utility_pods,
-        node_management_iface_stats=node_management_iface_stats,
-        dst_iface_name=dst_iface_name,
-    )
-    # The first time a value is returned means success,
-    # In case of an error / timeout an exception will be thrown
-    next(iter(samples))
-
-
 @pytest.fixture(scope="module")
-def node_management_iface_stats(network_utility_pods):
-    # Create a dictionary of management interface name and management interface ip per node
-    management_interfaces = {}
+def node_management_iface_stats_node(nodes_active_nics, worker_node1, worker_node2):
+    """
+    This function will return a dictionary where  host node name for 2  workers is the
+    key and value is another dictionary consist of worker iface_name as key.
+    """
+    node_stats = {}
+
+    for worker in worker_node1, worker_node2:
+        node_stats[worker.name] = {"iface_name": nodes_active_nics[worker.name][0]}
+    return node_stats
+
+
+def get_worker_pod(network_utility_pods, worker_node):
+    """
+    This function will return pod  based on node specified as argument.
+    """
     for pod in network_utility_pods:
-        lowest_metric = None
-        iface_name = None
-        node_network_state = NodeNetworkState(name=pod.node.name)
-        for route in node_network_state.instance.status.currentState.routes.running:
-            if route["destination"] == "0.0.0.0/0":
-                if lowest_metric is None:
-                    lowest_metric = route["metric"]
-                    iface_name = route["next-hop-interface"]
-                elif route["metric"] < lowest_metric:
-                    lowest_metric = route["metric"]
-                    iface_name = route["next-hop-interface"]
-        management_interfaces[pod.node.name] = {"iface_name": iface_name}
-
-        for interface in node_network_state.instance.status.currentState.interfaces:
-            if interface["name"] == management_interfaces[pod.node.name]["iface_name"]:
-                management_interfaces[pod.node.name]["ipv4"] = interface["ipv4"][
-                    "address"
-                ][0]["ip"]
-
-    return management_interfaces
+        if pod.node.name == worker_node.name:
+            return pod
 
 
 @pytest.fixture(scope="module")
@@ -123,34 +82,80 @@ def running_vmb(vmb):
     return vmb
 
 
-@pytest.fixture(scope="class")
-def bridges_on_management_ifaces(
+@pytest.fixture(scope="module")
+def bridges_on_management_ifaces_node1(
     network_utility_pods,
     nodes_active_nics,
-    node_management_iface_stats,
-    schedulable_nodes,
+    node_management_iface_stats_node,
+    worker_node1,
 ):
+    """
+    This function will return a dictionary where  host node name of worker0 is the  key
+    and value is another dictionary consist of worker0 iface_name and worker0 host ip as key.
+    """
     # Assuming for now all nodes has the same management interface name
-    management_iface = node_management_iface_stats[network_utility_pods[0].node.name][
-        "iface_name"
-    ]
-
+    management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
+    worker_pod = get_worker_pod(network_utility_pods, worker_node1)
     with network_utils.bridge_device(
         bridge_type=utilities.network.LINUX_BRIDGE,
-        nncp_name="brext-default-net",
-        bridge_name="brext",
+        nncp_name=f"brext-default-net-{worker_node1.name}",
+        bridge_name="brext1",
         network_utility_pods=network_utility_pods,
-        nodes=schedulable_nodes,
+        node_selector=worker_node1.name,
+        nodes=[worker_node1],
         ports=[management_iface],
         ipv4_dhcp=True,
     ) as br_dev:
         # Wait for bridget to get management ip
-        wait_for_address_on_iface(
-            network_utility_pods, node_management_iface_stats, br_dev.bridge_name
+        network_utils.wait_for_address_on_iface(
+            worker_pod=worker_pod, iface_name=br_dev.bridge_name
+        )
+        yield br_dev
+    # Verify Ip is back to the port
+    network_utils.wait_for_address_on_iface(
+        worker_pod=worker_pod, iface_name=management_iface
+    )
+
+
+@pytest.fixture(scope="module")
+def bridges_on_management_ifaces_node2(
+    network_utility_pods,
+    nodes_active_nics,
+    node_management_iface_stats_node,
+    worker_node2,
+):
+    # Assuming for now all nodes has the same management interface name
+    management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
+    worker_pod = get_worker_pod(network_utility_pods, worker_node2)
+    with network_utils.bridge_device(
+        bridge_type=utilities.network.LINUX_BRIDGE,
+        nncp_name=f"brext-default-net-{worker_node2.name}",
+        bridge_name="brext2",
+        network_utility_pods=network_utility_pods,
+        node_selector=worker_node2.name,
+        nodes=[worker_node2],
+        ports=[management_iface],
+        ipv4_dhcp=True,
+    ) as br_dev:
+        # Wait for bridget to get management ip
+        network_utils.wait_for_address_on_iface(
+            worker_pod=worker_pod, iface_name=br_dev.bridge_name
         )
         yield br_dev
 
     # Verify Ip is back to the port
-    wait_for_address_on_iface(
-        network_utility_pods, node_management_iface_stats, management_iface
+    network_utils.wait_for_address_on_iface(
+        worker_pod=worker_pod, iface_name=management_iface
     )
+
+
+@pytest.fixture(scope="module")
+def worker_node1(schedulable_nodes):
+    # Get first worker nodes out of schedulable_nodes list
+    return schedulable_nodes[0]
+
+
+@pytest.fixture(scope="module")
+def worker_node2(schedulable_nodes):
+    # Get second worker nodes out of schedulable_nodes list
+    return schedulable_nodes[1]

@@ -8,8 +8,6 @@ from tests.network.utils import assert_ping_successful
 LOGGER = logging.getLogger(__name__)
 REMOTE_IP = "8.8.8.8"
 
-pytestmark = pytest.mark.skip("Test kill the cluster, need investigation")
-
 
 @pytest.mark.run(before="TestAfterBridgeTeardown")
 @pytest.mark.usefixtures("skip_rhel7_workers")
@@ -18,8 +16,10 @@ class TestWithDhcpOverBridge:
     def test_ping_between_vms_through_brext(
         self,
         skip_when_one_node,
+        worker_nodes_ipv4_false_secondary_nics,
         network_utility_pods,
-        bridges_on_management_ifaces,
+        bridges_on_management_ifaces_node1,
+        bridges_on_management_ifaces_node2,
         vma,
         vmb,
         running_vma,
@@ -34,7 +34,9 @@ class TestWithDhcpOverBridge:
     def test_ping_remote_ip_through_brext(
         self,
         skip_when_one_node,
-        bridges_on_management_ifaces,
+        worker_nodes_ipv4_false_secondary_nics,
+        bridges_on_management_ifaces_node1,
+        bridges_on_management_ifaces_node2,
         vma,
         vmb,
         running_vma,
@@ -51,7 +53,13 @@ class TestWithDhcpOverBridge:
 class TestAfterBridgeTeardown:
     @pytest.mark.polarion("CNV-3028")
     def test_ping_between_vms_through_main_interface(
-        self, skip_when_one_node, vma, vmb, running_vma, running_vmb
+        self,
+        skip_when_one_node,
+        worker_nodes_ipv4_false_secondary_nics,
+        vma,
+        vmb,
+        running_vma,
+        running_vmb,
     ):
         assert_ping_successful(
             src_vm=running_vma,
@@ -60,7 +68,13 @@ class TestAfterBridgeTeardown:
 
     @pytest.mark.polarion("CNV-3029")
     def test_ping_remote_ip_through_main_interface(
-        self, skip_when_one_node, vma, vmb, running_vma, running_vmb
+        self,
+        skip_when_one_node,
+        worker_nodes_ipv4_false_secondary_nics,
+        vma,
+        vmb,
+        running_vma,
+        running_vmb,
     ):
         assert_ping_successful(src_vm=running_vma, dst_ip=REMOTE_IP)
         assert_ping_successful(src_vm=running_vmb, dst_ip=REMOTE_IP)
