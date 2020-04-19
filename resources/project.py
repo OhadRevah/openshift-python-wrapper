@@ -18,9 +18,8 @@ class Project(Resource):
         ACTIVE = "Active"
 
     def nudge_delete(self):
-        if not hasattr(self, "_timers"):
-            self._timers = NudgeTimers()
-        nudge_delete(self.name)
+        timers = NudgeTimers()
+        nudge_delete(name=self.name, timers=timers)
 
 
 class ProjectRequest(Resource):

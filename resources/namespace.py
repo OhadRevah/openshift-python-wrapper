@@ -25,6 +25,5 @@ class Namespace(Resource):
     # Terminating state is fixed.
     # Upstream bug: https://github.com/kubernetes/kubernetes/issues/60807
     def nudge_delete(self):
-        if not hasattr(self, "_timers"):
-            self._timers = NudgeTimers()
-        nudge_delete(self.name, self._timers)
+        timers = NudgeTimers()
+        nudge_delete(name=self.name, timers=timers)

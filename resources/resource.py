@@ -541,7 +541,7 @@ class Resource(object):
             timers = NudgeTimers()
             for sample in samples:
                 if force:
-                    nudge_delete(name, timers)
+                    nudge_delete(name=name, timers=timers)
                 if not sample:
                     return
 
