@@ -578,11 +578,11 @@ def workers_ssh_executors(rhel7_workers, network_utility_pods):
 
 
 @pytest.fixture(scope="session")
-def node_physical_nics(default_client, network_utility_pods):
+def node_physical_nics(default_client, network_utility_pods, workers_ssh_executors):
     if is_openshift(default_client):
-        executors = workers_ssh_executors(network_utility_pods)
         return {
-            node: executors[node].network.all_interfaces() for node in executors.keys()
+            node: workers_ssh_executors[node].network.all_interfaces()
+            for node in workers_ssh_executors.keys()
         }
     else:
         return network_interfaces_k8s(network_utility_pods)
