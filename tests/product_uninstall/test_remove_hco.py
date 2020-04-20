@@ -69,137 +69,122 @@ def start_time():
     yield f"{datetime.utcnow().isoformat(timespec='seconds')}Z"
 
 
-@pytest.mark.parametrize(
-    "data_volume_scope_module",
-    [pytest.param(DV_PARAMS, marks=pytest.mark.polarion("CNV-3916"))],
-    indirect=True,
-)
 @pytest.mark.destructive
-def test_block_removal(
-    default_client,
-    delete_events_before_test,
-    hyperconverged_resource,
-    vm,
-    data_volume_scope_module,
-    start_time,
-):
-    """
-   testcase to verify that HCO can really not be deleted when VMs and/or DVs are still defined.
-
-   test plan:
-
-    1. create a VM (vm fixture)
-    2. create an additional DV (data_volume fixture)
-    3. delete HCO CR
-    4. check that HCO CR is still there pending for deletion
-    5. check that we have an event on the CSV object to alert the user
-    6. delete the VM
-    7. check that HCO CR is still there
-    8. delete the DV
-    9. check that HCO CR and all the other CNV related CRs are gone
-
-    After the test:
-    Restore HCO after deletion
-    """
-    LOGGER.info(f"HCO deletion time (UTC): {start_time}")
-
-    hyperconverged_resource.delete()  # (3) delete HCO CR
-
-    # (4) Make sure HCO exists, but waiting for deletion
-    metadata = hyperconverged_resource.instance["metadata"]
-    assert (
-        hyperconverged_resource.exists
-        and metadata.get("deletionTimestamp") is not None
-        and vm.exists
-        and vm.vmi.status == vm.vmi.Status.RUNNING
-        and data_volume_scope_module.exists
-    )
-
-    # (5) check that there is a warning event
-    ok, msg = assert_event(default_client, VIRT_EVENT, start_time)
-    assert ok, msg
-
-
-@pytest.mark.run(after="test_block_removal")
 @pytest.mark.parametrize(
-    "data_volume_scope_module",
-    [pytest.param(DV_PARAMS, marks=pytest.mark.polarion("CNV-4044"))],
-    indirect=True,
+    "data_volume_scope_class", [pytest.param(DV_PARAMS)], indirect=True,
 )
-def test_remove_vm(vm, hyperconverged_resource, data_volume_scope_module):
-    # (6) delete the VM
-    vm.delete(wait=True)
+class TestRemoveHCO:
+    @pytest.mark.polarion("CNV-3916")
+    def test_block_removal(
+        self,
+        default_client,
+        delete_events_before_test,
+        hyperconverged_resource,
+        vm,
+        data_volume_scope_class,
+        start_time,
+    ):
+        """
+       testcase to verify that HCO can really not be deleted when VMs and/or DVs are still defined.
 
-    # (7) check that HCO still not deleted
-    assert (
-        hyperconverged_resource.exists
-        and not vm.exists
-        and data_volume_scope_module.exists
-    )
+       test plan:
 
+        1. create a VM (vm fixture)
+        2. create an additional DV (data_volume fixture)
+        3. delete HCO CR
+        4. check that HCO CR is still there pending for deletion
+        5. check that we have an event on the CSV object to alert the user
+        6. delete the VM
+        7. check that HCO CR is still there
+        8. delete the DV
+        9. check that HCO CR and all the other CNV related CRs are gone
 
-@pytest.mark.run(after="test_remove_vm")
-@pytest.mark.parametrize(
-    "data_volume_scope_module",
-    [pytest.param(DV_PARAMS, marks=pytest.mark.polarion("CNV-4098"))],
-    indirect=True,
-)
-def test_assert_event_dv(
-    default_client, kubevirt_resource, start_time, data_volume_scope_module
-):
-    kubevirt_resource.wait_deleted()
-    ok, msg = assert_event(default_client, CDI_EVENT, start_time)
-    assert ok, msg
+        After the test:
+        Restore HCO after deletion
+        """
+        LOGGER.info(f"HCO deletion time (UTC): {start_time}")
 
+        hyperconverged_resource.delete()  # (3) delete HCO CR
 
-@pytest.mark.run(after="test_assert_event_dv")
-@pytest.mark.parametrize(
-    "data_volume_scope_module",
-    [pytest.param(DV_PARAMS, marks=pytest.mark.polarion("CNV-4045"))],
-    indirect=True,
-)
-def test_remove_dv(data_volume_scope_module, hyperconverged_resource):
-    # (8) delete the DV
-    data_volume_scope_module.delete(wait=True)
-    assert not data_volume_scope_module.exists
-
-    # (9) HCO should be deleted now, after the VM and the DV are gone. Just wait for it to happen
-    if hyperconverged_resource is not None and hyperconverged_resource.exists:
-        hyperconverged_resource.wait_deleted()
-
-
-# Restore HCO for the next tests
-@pytest.mark.run(after="test_remove_dv")
-@pytest.mark.polarion("CNV-4093")
-def test_restore_hco(default_client):
-
-    LOGGER.info("Recreating HCO")
-    with HyperConverged(
-        name="kubevirt-hyperconverged",
-        namespace=py_config["hco_namespace"],
-        client=default_client,
-        teardown=False,
-    ) as hco:
-        LOGGER.info("Waiting for all HCO conditions to detect that it is deployed")
-        assert hco.exists
-        hco.wait_for_condition(
-            condition=HyperConverged.Condition.PROGRESSING,
-            status=HyperConverged.Condition.Status.STATUS_FALSE,
-            timeout=HCO_DEPLOY_TIMEOUT,
+        # (4) Make sure HCO exists, but waiting for deletion
+        metadata = hyperconverged_resource.instance["metadata"]
+        assert (
+            hyperconverged_resource.exists
+            and metadata.get("deletionTimestamp") is not None
+            and vm.exists
+            and vm.vmi.status == vm.vmi.Status.RUNNING
+            and data_volume_scope_class.exists
         )
-        hco.wait_for_condition(
-            condition=HyperConverged.Condition.DEGRADED,
-            status=HyperConverged.Condition.Status.STATUS_FALSE,
+
+        # (5) check that there is a warning event
+        ok, msg = assert_event(default_client, VIRT_EVENT, start_time)
+        assert ok, msg
+
+    @pytest.mark.run(after="test_block_removal")
+    @pytest.mark.polarion("CNV-4044")
+    def test_remove_vm(self, vm, hyperconverged_resource, data_volume_scope_class):
+        # (6) delete the VM
+        vm.delete(wait=True)
+
+        # (7) check that HCO still not deleted
+        assert (
+            hyperconverged_resource.exists
+            and not vm.exists
+            and data_volume_scope_class.exists
         )
-        hco.wait_for_condition(
-            condition=HyperConverged.Condition.AVAILABLE,
-            status=HyperConverged.Condition.Status.STATUS_TRUE,
-            timeout=HCO_DEPLOY_TIMEOUT,
-        )
-        hco.wait_for_condition(
-            condition=HyperConverged.Condition.UPGRADEABLE,
-            status=HyperConverged.Condition.Status.STATUS_TRUE,
-        )
+
+    @pytest.mark.run(after="test_remove_vm")
+    @pytest.mark.polarion("CNV-4098")
+    def test_assert_event_dv(
+        self, default_client, kubevirt_resource, start_time, data_volume_scope_class
+    ):
+        kubevirt_resource.wait_deleted()
+        ok, msg = assert_event(default_client, CDI_EVENT, start_time)
+        assert ok, msg
+
+    @pytest.mark.run(after="test_assert_event_dv")
+    @pytest.mark.polarion("CNV-4045")
+    def test_remove_dv(self, data_volume_scope_class, hyperconverged_resource):
+        # (8) delete the DV
+        data_volume_scope_class.delete(wait=True)
+        assert not data_volume_scope_class.exists
+
+        # (9) HCO should be deleted now, after the VM and the DV are gone. Just wait for it to happen
+        if hyperconverged_resource is not None and hyperconverged_resource.exists:
+            hyperconverged_resource.wait_deleted()
+
+    # Restore HCO for the next tests
+    @pytest.mark.run(after="test_remove_dv")
+    @pytest.mark.polarion("CNV-4093")
+    def test_restore_hco(self, default_client, data_volume_scope_class):
+
+        LOGGER.info("Recreating HCO")
+        with HyperConverged(
+            name="kubevirt-hyperconverged",
+            namespace=py_config["hco_namespace"],
+            client=default_client,
+            teardown=False,
+        ) as hco:
+            LOGGER.info("Waiting for all HCO conditions to detect that it is deployed")
+            assert hco.exists
+            hco.wait_for_condition(
+                condition=HyperConverged.Condition.PROGRESSING,
+                status=HyperConverged.Condition.Status.STATUS_FALSE,
+                timeout=HCO_DEPLOY_TIMEOUT,
+            )
+            hco.wait_for_condition(
+                condition=HyperConverged.Condition.DEGRADED,
+                status=HyperConverged.Condition.Status.STATUS_FALSE,
+            )
+            hco.wait_for_condition(
+                condition=HyperConverged.Condition.AVAILABLE,
+                status=HyperConverged.Condition.Status.STATUS_TRUE,
+                timeout=HCO_DEPLOY_TIMEOUT,
+            )
+            hco.wait_for_condition(
+                condition=HyperConverged.Condition.UPGRADEABLE,
+                status=HyperConverged.Condition.Status.STATUS_TRUE,
+            )
 
 
 # assert that a certain event was emitted
