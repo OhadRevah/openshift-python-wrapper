@@ -283,19 +283,19 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         self.base_iface = base_iface
         self.tag = tag
         self.iface_name = iface_name
-        self.master_iface = None
+        self.iface = None
 
     def to_dict(self):
-        res = super().to_dict()
-        if not self.master_iface:
-            self.master_iface = {
+        if not self.iface:
+            self.iface = {
                 "name": self.iface_name,
                 "type": "vlan",
                 "state": self.iface_state,
             }
-
         vlan_spec = {"vlan": {"base-iface": self.base_iface, "id": self.tag}}
-        self.master_iface.update(vlan_spec)
+        self.iface.update(vlan_spec)
+        res = super().to_dict()
+
         return res
 
 
