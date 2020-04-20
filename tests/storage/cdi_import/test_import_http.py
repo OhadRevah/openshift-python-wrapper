@@ -16,8 +16,9 @@ from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
+from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, Images
 from utilities.virt import CIRROS_IMAGE, validate_windows_guest_agent_info
 
 
@@ -25,43 +26,10 @@ LOGGER = logging.getLogger(__name__)
 
 ISO_IMG = "Core-current.iso"
 TAR_IMG = "archive.tar"
-EXIT_STATUS_2 = "Unable to process data: exit status 2"
 
 
 def get_file_url(url, file_name):
     return f"{url}{file_name}"
-
-
-def wait_for_importer_container_message(importer_pod, msg):
-    LOGGER.info(f"Wait for {importer_pod.name} container to show message: {msg}")
-    try:
-        sampled_msg = TimeoutSampler(
-            timeout=120,
-            sleep=5,
-            func=lambda: msg
-            in importer_pod.instance.status.containerStatuses[
-                0
-            ].lastState.terminated.message
-            and importer_container_status_reason(importer_pod) == "CrashLoopBackOff",
-        )
-        for sample in sampled_msg:
-            if sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(f"{importer_pod.name} did not get message: {msg}")
-        raise
-
-
-def importer_container_status_reason(pod):
-    """
-    Get status for why importer pod container is waiting or terminated
-    (for container status running there is no 'reason' key)
-     """
-    container_state = pod.instance.status.containerStatuses[0].state
-    if container_state.waiting:
-        return container_state.waiting.reason
-    if container_state.terminated:
-        return container_state.terminated.reason
 
 
 @pytest.mark.parametrize(
@@ -119,7 +87,7 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg="Unable to connect to http data source"
+            importer_pod=dv.importer_pod, msg=ErrorMsg.UNABLE_TO_CONNECT_TO_HTTP
         )
 
 
@@ -342,7 +310,7 @@ def test_wrong_content_type(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=EXIT_STATUS_2
+            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_2
         )
 
 
@@ -403,7 +371,7 @@ def test_import_invalid_qcow(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg="Unable to process data: exit status 1"
+            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_1
         )
 
 
@@ -449,7 +417,7 @@ def test_unpack_compressed(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=EXIT_STATUS_2
+            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_2
         )
 
 
@@ -525,7 +493,8 @@ def test_certconfigmap_incorrect_cert(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg="certificate signed by unknown authority"
+            importer_pod=dv.importer_pod,
+            msg=ErrorMsg.CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY,
         )
 
 

@@ -8,7 +8,8 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from tests.storage import utils
-from utilities.infra import BUG_STATUS_CLOSED
+from tests.storage.cdi_import.conftest import wait_for_importer_container_message
+from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg
 from utilities.virt import VirtualMachineForTests
 
 
@@ -40,15 +41,17 @@ def test_private_registry_cirros(
     images_private_registry_server,
     registry_config_map,
     file_name,
+    storage_class_matrix__function__,
 ):
+    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-cirros-image",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{file_name}",
         cert_configmap=registry_config_map.name,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -56,20 +59,34 @@ def test_private_registry_cirros(
 
 
 @pytest.mark.polarion("CNV-2198")
-def test_disk_image_not_conform_to_registy_disk(namespace):
+def test_disk_image_not_conform_to_registy_disk(
+    namespace, storage_class_matrix__function__
+):
+    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="image-registry-not-conform-registrydisk",
         namespace=namespace.name,
         url="docker://docker.io/cirros",
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod,
+            msg=ErrorMsg.DISK_IMAGE_IN_CONTAINER_NOT_FOUND,
+        )
 
 
 @pytest.mark.polarion("CNV-2028")
-def test_public_registry_multiple_data_volume(namespace):
+def test_public_registry_multiple_data_volume(
+    namespace, storage_class_matrix__function__
+):
+    storage_class = [*storage_class_matrix__function__][0]
     dvs = []
     vms = []
     dvs_processes = []
@@ -81,8 +98,10 @@ def test_public_registry_multiple_data_volume(namespace):
                 name=f"import-registry-dockerhub-{dv}",
                 namespace=namespace.name,
                 url=DOCKERHUB_IMAGE,
-                storage_class=py_config["default_storage_class"],
-                volume_mode=py_config["default_volume_mode"],
+                storage_class=storage_class,
+                volume_mode=storage_class_matrix__function__[storage_class][
+                    "volume_mode"
+                ],
                 size="5Gi",
                 content_type=DataVolume.ContentType.KUBEVIRT,
             )
@@ -96,7 +115,7 @@ def test_public_registry_multiple_data_volume(namespace):
             dvp.join()
 
         for dv in dvs:
-            dv.wait_for_status(status=rdv.Status.SUCCEEDED, timeout=300)
+            dv.wait()
 
         for vm in [vm for vm in dvs]:
             rvm = VirtualMachineForTests(name=vm.name, namespace=namespace.name, dv=vm)
@@ -121,15 +140,18 @@ def test_public_registry_multiple_data_volume(namespace):
 
 @pytest.mark.polarion("CNV-2183")
 def test_private_registry_insecured_configmap(
-    skip_upstream, namespace, images_private_registry_server
+    skip_upstream,
+    namespace,
+    images_private_registry_server,
+    storage_class_matrix__function__,
 ):
-
-    server = images_private_registry_server[9:]
-    c = ConfigMap(
+    storage_class = [*storage_class_matrix__function__][0]
+    server = images_private_registry_server.replace("docker://", "")
+    cm = ConfigMap(
         namespace=py_config["hco_namespace"], name="cdi-insecure-registries", data=None
     )
 
-    c.update(
+    cm.update(
         resource_dict={
             "data": {"mykey": f"{server}:5000"},
             "metadata": {"name": "cdi-insecure-registries"},
@@ -140,8 +162,8 @@ def test_private_registry_insecured_configmap(
         dv_name="import-private-insecured-registry",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -150,8 +172,13 @@ def test_private_registry_insecured_configmap(
 
 @pytest.mark.polarion("CNV-2182")
 def test_private_registry_recover_after_missing_configmap(
-    skip_upstream, namespace, images_private_registry_server, registry_config_map
+    skip_upstream,
+    namespace,
+    images_private_registry_server,
+    registry_config_map,
+    storage_class_matrix__function__,
 ):
+    storage_class = [*storage_class_matrix__function__][0]
     # creating DV before configmap with certificate is created
     with utilities.storage.create_dv(
         source="registry",
@@ -159,8 +186,8 @@ def test_private_registry_recover_after_missing_configmap(
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait_for_status(DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
         dv.wait()
@@ -170,16 +197,21 @@ def test_private_registry_recover_after_missing_configmap(
 
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
-    skip_upstream, namespace, images_private_registry_server, registry_config_map
+    skip_upstream,
+    namespace,
+    images_private_registry_server,
+    registry_config_map,
+    storage_class_matrix__function__,
 ):
+    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -199,10 +231,13 @@ def test_private_registry_with_untrusted_certificate(
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
-            storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
+            storage_class=storage_class,
+            volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
         ) as dv:
-            dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+            dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
+            wait_for_importer_container_message(
+                importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
+            )
 
 
 @pytest.mark.parametrize(
@@ -249,8 +284,15 @@ def test_private_registry_with_untrusted_certificate(
     ],
 )
 def test_public_registry_data_volume(
-    namespace, dv_name, url, cert_configmap, content_type, size
+    namespace,
+    dv_name,
+    url,
+    cert_configmap,
+    content_type,
+    size,
+    storage_class_matrix__function__,
 ):
+    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name=dv_name,
@@ -259,8 +301,8 @@ def test_public_registry_data_volume(
         cert_configmap=cert_configmap,
         content_type=content_type,
         size=size,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -270,8 +312,11 @@ def test_public_registry_data_volume(
 # The following test is to show after imports fails because low capacity storage,
 # we can overcome by updaing to the right requested volume size and import successfully
 @pytest.mark.polarion("CNV-2024")
-def test_public_registry_data_volume_dockerhub_low_capacity(namespace):
+def test_public_registry_data_volume_dockerhub_low_capacity(
+    namespace, storage_class_matrix__function__
+):
     # negative flow - low capacity volume
+    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
@@ -279,10 +324,17 @@ def test_public_registry_data_volume_dockerhub_low_capacity(namespace):
         url=DOCKERHUB_IMAGE,
         content_type="",
         size="16Mi",
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.FAILED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg=ErrorMsg.SHRINK_NOT_SUPPORTED,
+        )
 
     # positive flow
     with utilities.storage.create_dv(
@@ -290,8 +342,8 @@ def test_public_registry_data_volume_dockerhub_low_capacity(namespace):
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=namespace.name,
         url=DOCKERHUB_IMAGE,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -302,7 +354,10 @@ def test_public_registry_data_volume_dockerhub_low_capacity(namespace):
     1725372, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-2150")
-def test_public_registry_data_volume_dockerhub_archive(namespace):
+def test_public_registry_data_volume_dockerhub_archive(
+    namespace, storage_class_matrix__function__
+):
+    storage_class = [*storage_class_matrix__function__][0]
     with pytest.raises(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
@@ -312,7 +367,7 @@ def test_public_registry_data_volume_dockerhub_archive(namespace):
             namespace=namespace.name,
             url=DOCKERHUB_IMAGE,
             content_type=DataVolume.ContentType.ARCHIVE,
-            storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
+            storage_class=storage_class,
+            volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
         ):
             return

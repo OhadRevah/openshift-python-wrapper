@@ -79,3 +79,19 @@ class ClusterHosts:
     class Type:
         VIRTUAL = "virtual"
         PHYSICAL = "physical"
+
+
+class ErrorMsg:
+    """
+    error messages that might show in pod containers
+    """
+
+    EXIT_STATUS_1 = "Unable to process data: exit status 1"
+    EXIT_STATUS_2 = "Unable to process data: exit status 2"
+    UNABLE_TO_CONNECT_TO_HTTP = "Unable to connect to http data source"
+    CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY = "certificate signed by unknown authority"
+    DISK_IMAGE_IN_CONTAINER_NOT_FOUND = (
+        "Unable to process data: Failed to find VM disk image file in the container "
+        "image"
+    )
+    SHRINK_NOT_SUPPORTED = "shrink not yet supported"
