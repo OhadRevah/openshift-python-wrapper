@@ -185,6 +185,36 @@ class TestCommonTemplatesRhel:
             passwd=console.RHEL.PASSWORD,
         )
 
+    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.polarion("CNV-3573")
+    def test_guest_agent_subresource_os_info(
+        self,
+        rhel_os_matrix__class__,
+        vm_object_from_template_rhel_os,
+        schedulable_node_ips,
+        rhel7_workers,
+        data_volume_rhel_os,
+    ):
+        if "rhel-6" in [*rhel_os_matrix__class__][0]:
+            pytest.skip("RHEL6 does not have guest agent")
+
+        utils.validate_cnv_os_info_vs_libvirt_os_info(
+            vm=vm_object_from_template_rhel_os
+        )
+        utils.validate_cnv_os_info_vs_linux_os_info(
+            vm=vm_object_from_template_rhel_os,
+            ssh_ip=utils.get_vm_accessible_ip(
+                rhel7_workers=rhel7_workers,
+                schedulable_node_ips=schedulable_node_ips,
+                vm=vm_object_from_template_rhel_os,
+            ),
+            ssh_port=utils.get_vm_ssh_port(
+                rhel7_workers=rhel7_workers, vm=vm_object_from_template_rhel_os
+            ),
+            ssh_usr=console.RHEL.USERNAME,
+            ssh_pass=console.RHEL.PASSWORD,
+        )
+
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3671")
     def test_vm_machine_type(

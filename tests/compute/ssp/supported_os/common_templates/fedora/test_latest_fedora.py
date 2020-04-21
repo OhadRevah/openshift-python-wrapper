@@ -220,6 +220,58 @@ class TestCommonTemplatesFedora:
             passwd=console.Fedora.PASSWORD,
         )
 
+    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.polarion("CNV-3573")
+    def test_guest_agent_subresource_os_info(
+        self,
+        vm_object_from_template_scope_class,
+        schedulable_node_ips,
+        rhel7_workers,
+        data_volume_multi_storage_scope_class,
+    ):
+        utils.validate_cnv_os_info_vs_libvirt_os_info(
+            vm=vm_object_from_template_scope_class
+        )
+        utils.validate_cnv_os_info_vs_linux_os_info(
+            vm=vm_object_from_template_scope_class,
+            ssh_ip=utils.get_vm_accessible_ip(
+                rhel7_workers=rhel7_workers,
+                schedulable_node_ips=schedulable_node_ips,
+                vm=vm_object_from_template_scope_class,
+            ),
+            ssh_port=utils.get_vm_ssh_port(
+                rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
+            ),
+            ssh_usr=console.Fedora.USERNAME,
+            ssh_pass=console.Fedora.PASSWORD,
+        )
+
+    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.polarion("CNV-3574")
+    def test_guest_agent_subresource_fs_info(
+        self,
+        vm_object_from_template_scope_class,
+        schedulable_node_ips,
+        rhel7_workers,
+        data_volume_multi_storage_scope_class,
+    ):
+        utils.validate_cnv_fs_info_vs_libvirt_fs_info(
+            vm=vm_object_from_template_scope_class
+        )
+        utils.validate_cnv_fs_info_vs_linux_fs_info(
+            vm=vm_object_from_template_scope_class,
+            ssh_ip=utils.get_vm_accessible_ip(
+                rhel7_workers=rhel7_workers,
+                schedulable_node_ips=schedulable_node_ips,
+                vm=vm_object_from_template_scope_class,
+            ),
+            ssh_port=utils.get_vm_ssh_port(
+                rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
+            ),
+            ssh_usr=console.Fedora.USERNAME,
+            ssh_pass=console.Fedora.PASSWORD,
+        )
+
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3668")
     def test_vm_machine_type(

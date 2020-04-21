@@ -9,6 +9,7 @@ import urllib.request
 import xml.etree.ElementTree as EleTree
 
 import bitmath
+import rrmngmnt
 import utilities.network
 from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
@@ -424,6 +425,50 @@ def validate_linux_guest_agent_info(vm, ip, ssh_port, username, passwd):
     )
 
 
+def validate_cnv_os_info_vs_libvirt_os_info(vm):
+    """ Compare OS data from guest agent subresource vs libvirt data. """
+    cnv_os_info = get_cnv_os_info(vm)
+    libvirt_os_info = get_libvirt_os_info(vm)
+
+    assert (
+        cnv_os_info == libvirt_os_info
+    ), f"Data mismatch! CNV data {cnv_os_info}, Libvirt data {libvirt_os_info}"
+
+
+def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
+    """ Compare FS data from guest agent subresource vs libvirt data. """
+    cnv_fs_info = get_cnv_fs_info(vm)
+    libvirt_fs_info = get_libvirt_fs_info(vm)
+
+    assert (
+        cnv_fs_info == libvirt_fs_info
+    ), f"Data mismatch! CNV data {cnv_fs_info}, Libvirt data {libvirt_fs_info}"
+
+
+def validate_cnv_os_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    """ Compare OS data from guest agent subresource vs Linux guest OS data. """
+    cnv_os_info = get_cnv_os_info(vm)
+    guest_os_info = get_linux_os_info(
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
+    )
+
+    assert (
+        cnv_os_info == guest_os_info
+    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
+
+
+def validate_cnv_fs_info_vs_linux_fs_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    """ Compare FS data from guest agent subresource vs Linux guest OS data. """
+    cnv_fs_info = get_cnv_fs_info(vm)
+    guest_fs_info = get_linux_fs_info(
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
+    )
+
+    assert (
+        cnv_fs_info == guest_fs_info
+    ), f"Data mismatch! CNV data {cnv_fs_info}, OS data {guest_fs_info}"
+
+
 def get_linux_os_info_from_ssh(ip, port, username, passwd):
     """
     Gets Linux OS info via SSH from etc/os-release and uname -r -v.
@@ -460,6 +505,141 @@ def get_linux_os_info_from_ssh(ip, port, username, passwd):
     }
 
 
+def get_linux_os_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=ssh_ip, port=ssh_port)
+    ga_ver = get_linux_guest_agent_version(rrmngmnt_host=host)
+    hostname = host.network.hostname
+    os_release = host.os.release_info
+    kernel = host.os.kernel_info
+    timezone = host.os.timezone
+
+    return {
+        "guestAgentVersion": ga_ver,
+        "hostname": hostname,
+        "os": {
+            "name": os_release["NAME"],
+            "kernelRelease": kernel.release,
+            "version": os_release["VERSION"],
+            "prettyName": os_release["PRETTY_NAME"],
+            "versionId": os_release["VERSION_ID"],
+            "kernelVersion": kernel.version,
+            "machine": kernel.type,
+            "id": os_release["ID"],
+        },
+        "timezone": f"{timezone.name}, {int(timezone.offset) * 36}",
+    }
+
+
+def get_linux_fs_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=ssh_ip, port=ssh_port)
+    return get_linux_filesystem(rrmngmnt_host=host)
+
+
+def get_linux_guest_agent_version(rrmngmnt_host):
+    cmd = ["yum", "list", "-q", "installed", "qemu-g*"]
+    rc, out, err = rrmngmnt_host.run_command(cmd)
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", out).group(0)
+
+
+def get_linux_filesystem(rrmngmnt_host):
+    cmd = ["df", "-TB1", "|", "grep", "/dev/vd"]
+    rc, out, err = rrmngmnt_host.run_command(cmd)
+    disks = out.strip().split()
+    return fsinfo_disk_dict(
+        name=disks[0].split("/dev/")[1],
+        mount=disks[6],
+        fstype=disks[1],
+        used=disks[3],
+        total=disks[2],
+    )
+
+
+def fsinfo_disk_dict(name, mount, fstype, used, total):
+    return {
+        "diskName": name,
+        "mountPoint": mount,
+        "fileSystemType": fstype,
+        "usedBytes": round(int(used) / 1024 ** 3, 2),
+        "totalBytes": round(int(total) / 1024 ** 4, 2),
+    }
+
+
+def execute_virsh_qemu_agent_command(vm, command):
+    domain = f"{vm.namespace}_{vm.vmi.name}"
+    output = vm.vmi.virt_launcher_pod.execute(
+        command=["virsh", "qemu-agent-command", domain, f'{{"execute":"{command}"}}'],
+        container="compute",
+    )
+    return json.loads(output)["return"]
+
+
+def get_libvirt_os_info(vm):
+    agentinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-info")
+    hostname = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-host-name")
+    osinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-osinfo")
+    timezone = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-timezone")
+
+    return {
+        "guestAgentVersion": agentinfo["version"],
+        "hostname": hostname["host-name"],
+        "os": {
+            "name": osinfo["name"],
+            "kernelRelease": osinfo["kernel-release"],
+            "version": osinfo["version"],
+            "prettyName": osinfo["pretty-name"],
+            "versionId": osinfo["version-id"],
+            "kernelVersion": osinfo["kernel-version"],
+            "machine": osinfo["machine"],
+            "id": osinfo["id"],
+        },
+        "timezone": f"{timezone['zone']}, {timezone['offset']}",
+    }
+
+
+def get_libvirt_fs_info(vm):
+    fsinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-fsinfo")
+    for disk in fsinfo:
+        if disk["mountpoint"] in ("/", "C:\\"):
+            return fsinfo_disk_dict(
+                name=disk["name"],
+                mount=disk["mountpoint"],
+                fstype=disk["type"],
+                used=disk["used-bytes"],
+                total=disk["total-bytes"],
+            )
+
+
+def get_guest_info_from_subresource(vm):
+    response = vm.vmi.client.client.request(
+        "GET",
+        f"{vm.vmi._subresource_api_url}/guestosinfo",
+        headers=vm.vmi.client.configuration.api_key,
+    )
+    # dict format:
+    # {"guestAgentVersion", "hostname", "os", "timezone", "fsInfo"}
+    return json.loads(response.data)
+
+
+def get_cnv_os_info(vm):
+    os_info = get_guest_info_from_subresource(vm)
+    # "fsInfo" key removed for easier comparison vs libvirt os info and guest os info
+    del os_info["fsInfo"]
+    return os_info
+
+
+def get_cnv_fs_info(vm):
+    fs_info = get_guest_info_from_subresource(vm)["fsInfo"]
+    for disk in fs_info:
+        if disk["mountPoint"] in ("/", "C:\\"):
+            return fsinfo_disk_dict(
+                name=disk["diskName"],
+                mount=disk["mountPoint"],
+                fstype=disk["fileSystemType"],
+                used=disk["usedBytes"],
+                total=disk["totalBytes"],
+            )
+
+
 def check_machine_type(vm):
     """ VM and VMI should have machine type; machine type cannot be empty """
 
@@ -473,3 +653,11 @@ def check_machine_type(vm):
     assert (
         vm_machine_type != ""
     ), f"Machine type does not exist in VM: {vm_machine_type}"
+
+
+def rrmngmnt_host(usr, passwd, ip, port):
+    host = rrmngmnt.Host(ip)
+    host_user = rrmngmnt.user.User(name=usr, password=passwd)
+    host._set_executor_user(host_user)
+    host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
+    return host
