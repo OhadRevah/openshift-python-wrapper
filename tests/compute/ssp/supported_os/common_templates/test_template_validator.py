@@ -25,7 +25,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
             {
                 "vm_name": "rhel-min-memory-validation",
                 "template_labels": {
-                    "os": py_config.get("latest_rhel_version", {}).get("os_label"),
+                    "os": py_config["latest_rhel_version"]["os_label"],
                     "workload": "server",
                     "flavor": "tiny",
                 },

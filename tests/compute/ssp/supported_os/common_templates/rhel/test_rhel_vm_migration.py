@@ -18,13 +18,13 @@ from utilities.virt import wait_for_console
         pytest.param(
             {
                 "dv_name": "dv-rhel-migrate-vm",
-                "image": py_config.get("latest_rhel_version", {}).get("image"),
+                "image": py_config["latest_rhel_version"]["image"],
             },
             {
                 "vm_name": "rhel-migrate-vm",
                 "start_vm": True,
                 "template_labels": {
-                    "os": py_config.get("latest_rhel_version", {}).get("os_label"),
+                    "os": py_config["latest_rhel_version"]["os_label"],
                     "workload": "server",
                     "flavor": "tiny",
                 },

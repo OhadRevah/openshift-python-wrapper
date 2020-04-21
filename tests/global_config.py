@@ -25,6 +25,7 @@ latest_rhel_version = {
 }
 latest_windows_version = {
     "os_label": "win2k19",
+    "os_version": "19",
     "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
 }
 latest_fedora_version = {

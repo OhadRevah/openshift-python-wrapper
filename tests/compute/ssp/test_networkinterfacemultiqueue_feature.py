@@ -159,7 +159,7 @@ class TestLatestWindows:
     Test networkInterfaceMultiqueue on latest Windows with different cpu core/socket/thread combinations.
     """
 
-    WIN_VER = py_config["latest_windows_version"]["os_label"][-2:]
+    WIN_VER = py_config["latest_windows_version"]["os_version"]
 
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")

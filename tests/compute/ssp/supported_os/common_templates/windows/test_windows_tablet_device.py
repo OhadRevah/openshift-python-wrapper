@@ -46,14 +46,14 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=Fal
         pytest.param(
             {
                 "dv_name": "dv-windows-usb-tablet-device-vm",
-                "image": py_config.get("latest_windows_version", {}).get("image"),
+                "image": py_config["latest_windows_version"]["image"],
             },
             {
                 "vm_name": "windows-usb-tablet-device-vm",
                 "start_vm": True,
                 "guest_agent": False,
                 "template_labels": {
-                    "os": py_config.get("latest_windows_version", {}).get("os_label"),
+                    "os": py_config["latest_windows_version"]["os_label"],
                     "workload": "server",
                     "flavor": "medium",
                 },
@@ -62,11 +62,7 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=Fal
                     {"name": "tablet1", "type": "tablet", "bus": "usb"}
                 ),
             },
-            {
-                "os_version": py_config.get("latest_windows_version", {}).get(
-                    "os_label"
-                )[-2:],
-            },
+            {"os_version": py_config["latest_windows_version"]["os_version"]},
             marks=pytest.mark.polarion("CNV-2644"),
         ),
     ],
@@ -100,12 +96,12 @@ def test_tablet_usb_tablet_device(
         pytest.param(
             {
                 "dv_name": "dv-windows-virtio-tablet-device-vm",
-                "image": py_config.get("latest_windows_version", {}).get("image"),
+                "image": py_config["latest_windows_version"]["image"],
             },
             {
                 "vm_name": "windows-virtio-tablet-device-vm",
                 "template_labels": {
-                    "os": py_config.get("latest_windows_version", {}).get("os_label"),
+                    "os": py_config["latest_windows_version"]["os_label"],
                     "workload": "server",
                     "flavor": "medium",
                 },
@@ -116,11 +112,7 @@ def test_tablet_usb_tablet_device(
                     {"name": "win_tablet", "type": "tablet", "bus": "virtio"}
                 ),
             },
-            {
-                "os_version": py_config.get("latest_windows_version", {}).get(
-                    "os_label"
-                )[-2:],
-            },
+            {"os_version": py_config["latest_windows_version"]["os_version"]},
             marks=pytest.mark.polarion("CNV-3444"),
         ),
     ],

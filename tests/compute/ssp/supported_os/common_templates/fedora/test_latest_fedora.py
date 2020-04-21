@@ -56,13 +56,13 @@ HYPERV_DICT = {
     [
         (
             {
-                "dv_name": f'dv-{py_config.get("latest_fedora_version", {}).get("os_label")}',
-                "image": py_config.get("latest_fedora_version", {}).get("image"),
+                "dv_name": f'dv-{py_config["latest_fedora_version"]["os_label"]}',
+                "image": py_config["latest_fedora_version"]["image"],
             },
             {
-                "vm_name": py_config.get("latest_fedora_version", {}).get("os_label"),
+                "vm_name": py_config["latest_fedora_version"]["os_label"],
                 "template_labels": {
-                    "os": py_config.get("latest_fedora_version", {}).get("os_label"),
+                    "os": py_config["latest_fedora_version"]["os_label"],
                     "workload": "desktop",
                     "flavor": "tiny",
                 },
