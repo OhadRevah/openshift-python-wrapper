@@ -122,6 +122,7 @@ def cleanup(default_client):
                 pytest.mark.bugzilla(
                     1751744, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
+                pytest.mark.jira("CNV-4712", run=False),
             ),
         ),
         pytest.param(
@@ -137,6 +138,7 @@ def cleanup(default_client):
                 pytest.mark.bugzilla(
                     1751744, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
+                pytest.mark.jira("CNV-4712", run=False),
             ),
         ),
         pytest.param(
@@ -149,6 +151,7 @@ def cleanup(default_client):
                 pytest.mark.bugzilla(
                     1751744, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
+                pytest.mark.jira("CNV-4712", run=False),
             ),
         ),
     ],
