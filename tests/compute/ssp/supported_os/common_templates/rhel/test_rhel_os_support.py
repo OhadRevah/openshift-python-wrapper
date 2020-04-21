@@ -17,6 +17,7 @@ from utilities.virt import wait_for_console
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.ci
 class TestCommonTemplatesRhel:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3802")

@@ -4,8 +4,19 @@ VM creation is done using CNV common templates.
 
 - Current tests cover RHEL, Fedora and Windows.
 - The tests can only be executed on downstream as http_server is not available for upstream.
-- Windows tests can be executed on bare metal only, as Windows VMs
-run slow on nested visualization.
+- To run a subset of OS support tests (test_rhel_os_support or test_windows_os_support) for a specific version:
+1. Find the available OS versions in global_config.py (keys of rhel_os_matrix or windows_os_matrix dicts)
+2. Add the following to the test execution command line:
+```bash
+--rhel-os-matrix=<RHEL OS version> OR --windows-os-matrix=<Windows OS version>
+```
+- To execute a subset of the tests for ci verification:
+1. Select one of the available OS versions in global_config.py
+2. Select one of the available storage class names in global_config.py (under 'storage_class_matrix')
+3. Add the following to the test execution command line, example:
+```bash
+--rhel-os-matrix=rhel-7-8 --storage_class_matrix=hostpath-provisioner
+```
 
 ## RHEL Tests
 * Create VM
