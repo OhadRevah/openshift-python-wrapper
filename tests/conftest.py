@@ -329,8 +329,8 @@ def pytest_exception_interact(node, call, report):
 
                     with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
                         fd.write(pod.instance.to_str())
-    except Exception as exception_:
-        LOGGER.warning(f"Collecting 'failed tests log' failed {exception_} ")
+    except Exception:
+        return
 
 
 @pytest.fixture(scope="session", autouse=True)
