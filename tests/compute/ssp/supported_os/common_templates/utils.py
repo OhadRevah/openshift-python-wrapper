@@ -340,7 +340,9 @@ def fetch_processid_from_windows_vm(
     )
 
 
-def check_windows_activated_license(vm, winrmcli_pod, reset_action, helper_vm=False):
+def check_windows_activated_license(
+    vm, winrmcli_pod, reset_action, version, helper_vm=False
+):
     """ Verify VM activation mode after VM reset (reboot / stop and start) """
 
     if "stop_start" in reset_action:
@@ -348,10 +350,7 @@ def check_windows_activated_license(vm, winrmcli_pod, reset_action, helper_vm=Fa
     if "reboot" in reset_action:
         reboot_vm(vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm)
     wait_for_windows_vm(
-        vm=vm,
-        version=vm.name.split("-")[-1],
-        winrmcli_pod=winrmcli_pod,
-        helper_vm=helper_vm,
+        vm=vm, version=version, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm,
     )
     assert is_windows_activated(
         vm, winrmcli_pod, helper_vm

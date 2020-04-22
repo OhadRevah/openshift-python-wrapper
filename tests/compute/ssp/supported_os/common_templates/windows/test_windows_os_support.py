@@ -53,7 +53,9 @@ class TestCommonTemplatesWindows:
         tests.compute.utils.vm_started(vm=vm_object_from_template_windows_os)
         utils.wait_for_windows_vm(
             vm=vm_object_from_template_windows_os,
-            version=vm_object_from_template_windows_os.name.split("-")[-1],
+            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
+                "os_version"
+            ],
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
@@ -152,6 +154,9 @@ class TestCommonTemplatesWindows:
             vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="stop_start",
+            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
+                "os_version"
+            ],
             helper_vm=bridge_attached_helper_vm,
         )
 
@@ -184,6 +189,9 @@ class TestCommonTemplatesWindows:
             vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="reboot",
+            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
+                "os_version"
+            ],
             helper_vm=bridge_attached_helper_vm,
         )
 

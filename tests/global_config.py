@@ -149,6 +149,7 @@ rhel_os_matrix = [
 windows_os_matrix = [
     {
         "win-10": {
+            "os_version": "10",
             "image": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
             "template_labels": {
                 "os": "win10",
@@ -160,6 +161,7 @@ windows_os_matrix = [
     },
     {
         "win-12": {
+            "os_version": "12",
             "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
             "template_labels": {
                 "os": "win2k12r2",
@@ -171,6 +173,7 @@ windows_os_matrix = [
     },
     {
         "win-16": {
+            "os_version": "16",
             "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
             "template_labels": {
                 "os": "win2k16",
@@ -182,6 +185,7 @@ windows_os_matrix = [
     },
     {
         "win-19": {
+            "os_version": "19",
             "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
             "template_labels": {
                 "os": "win2k19",
