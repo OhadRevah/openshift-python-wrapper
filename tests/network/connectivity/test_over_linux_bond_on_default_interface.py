@@ -118,6 +118,7 @@ def bond(
         yield bond
 
 
+@pytest.mark.destructive
 class TestBondConnectivityWithNodesDefaultInterface:
     @pytest.mark.polarion("CNV-3432")
     def test_bond_config(
@@ -165,7 +166,6 @@ class TestBondConnectivityWithNodesDefaultInterface:
             )
 
     @pytest.mark.polarion("CNV-3439")
-    @pytest.mark.destructive
     def test_bond_and_persistence(
         self,
         skip_when_one_node,
