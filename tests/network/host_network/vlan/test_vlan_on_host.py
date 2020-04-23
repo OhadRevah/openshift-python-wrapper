@@ -69,6 +69,7 @@ def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_li
     sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
 
 
+@pytest.mark.run(before="test_vlan_deletion")
 @pytest.mark.polarion("CNV-3451")
 def test_vlan_connectivity_on_all_hosts(
     skip_when_one_node,
@@ -92,6 +93,7 @@ def test_vlan_connectivity_on_all_hosts(
     )
 
 
+@pytest.mark.run(before="test_vlan_deletion")
 @pytest.mark.polarion("CNV-3452")
 def test_vlan_connectivity_on_one_host(
     skip_when_one_node,
@@ -115,6 +117,7 @@ def test_vlan_connectivity_on_one_host(
     )
 
 
+@pytest.mark.run(before="test_vlan_deletion")
 @pytest.mark.polarion("CNV-3463")
 def test_no_connectivity_between_different_vlan_tags(
     skip_when_one_node,
@@ -139,6 +142,7 @@ def test_no_connectivity_between_different_vlan_tags(
     )
 
 
+@pytest.mark.run(before="test_vlan_deletion")
 @pytest.mark.polarion("CNV-3469")
 def test_vlan_connectivity_over_bond_on_all_hosts(
     skip_when_one_node,
@@ -166,10 +170,10 @@ def test_vlan_connectivity_over_bond_on_all_hosts(
 """
 This test must remain the last one, otherwise there will be no complete tear-down for this module,
 and resources will remain hanging.
+All tests marked with @pytest.mark.run(before="test_vlan_deletion") to ensure it.
 """
 
 
-@pytest.mark.last
 @pytest.mark.polarion("CNV-3462")
 def test_vlan_deletion(
     skip_when_one_node,
