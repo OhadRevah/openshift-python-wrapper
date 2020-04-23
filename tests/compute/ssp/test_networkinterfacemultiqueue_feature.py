@@ -2,13 +2,10 @@
 Test networkInterfaceMultiqueue feature with cpu core/socket/thread combinations.
 """
 
-from time import sleep
-
 import pytest
 from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
 from tests.compute.ssp.supported_os.common_templates.utils import wait_for_windows_vm
-from tests.compute.utils import vm_started
 from utilities import console
 from utilities.virt import wait_for_console
 
@@ -61,7 +58,6 @@ def _update_and_validate_vm_cpu_spec(
                     "workload": "desktop",
                     "flavor": "large",
                 },
-                "start_vm": False,  # TODO: remove when BZ 1796342 is fixed
             },
         )
     ],
@@ -74,11 +70,9 @@ class TestLatestRHEL:
 
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")
-    def test_default_cpu_values(self, vm_instance_from_template_scope_class):
-        # Temp WA for VM boot bug BZ 1796342.
-        # TODO: When fixed, remove sleep(), vm_started()
-        sleep(60)
-        vm_started(vm=vm_instance_from_template_scope_class)
+    def test_default_cpu_values(
+        self, vm_instance_from_template_scope_class,
+    ):
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
@@ -148,7 +142,6 @@ class TestLatestRHEL:
                 },
                 "network_model": "virtio",
                 "network_multiqueue": True,
-                "start_vm": False,  # TODO: remove when BZ 1796342 is fixed
             },
         )
     ],
@@ -169,10 +162,6 @@ class TestLatestWindows:
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
-        # Temp WA for VM boot bug BZ 1796342.
-        # TODO: When fixed, remove sleep(), vm_started()
-        sleep(300)
-        vm_started(vm=vm_instance_from_template_scope_class)
         wait_for_windows_vm(
             vm=vm_instance_from_template_scope_class,
             version=self.WIN_VER,
