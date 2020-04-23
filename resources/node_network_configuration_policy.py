@@ -107,9 +107,13 @@ class NodeNetworkConfigurationPolicy(Resource):
         if self.mtu:
             for pod in self.worker_pods:
                 for port in self.ports:
-                    self.mtu_dict[port] = pod.execute(
+                    mtu = pod.execute(
                         command=["cat", f"/sys/class/net/{port}/mtu"]
                     ).strip()
+                    LOGGER.info(
+                        f"Backup MTU: {pod.node.name} interface {port} MTU is {mtu}"
+                    )
+                    self.mtu_dict[port] = mtu
 
         super().__enter__()
 
@@ -152,7 +156,7 @@ class NodeNetworkConfigurationPolicy(Resource):
                     "mtu": int(self.mtu_dict[port]),
                 }
                 self.set_interface(_port)
-                self.apply()
+
         try:
             self._absent_interface()
             self.wait_for_bridge_deleted()
