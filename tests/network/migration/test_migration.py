@@ -203,7 +203,7 @@ def assert_low_packet_loss(vm):
         vmc.expect("packet loss", 10)
         packet_loss = float(str(vmc.before).split()[-2].strip("%"))
         LOGGER.info(f"Packet loss percentage {packet_loss}")
-        assert packet_loss < 3.0
+        assert packet_loss < 4.0
 
 
 @pytest.fixture()

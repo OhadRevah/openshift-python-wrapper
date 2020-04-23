@@ -54,6 +54,7 @@ def br1vlan100_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan100-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
+        vlan=100,
     ) as nad:
         yield nad
 
@@ -65,6 +66,7 @@ def br1vlan200_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan200-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
+        vlan=200,
     ) as nad:
         yield nad
 
@@ -76,6 +78,7 @@ def br1vlan300_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan300-nad",
         bridge_name=ovs_lb_bridge.bridge_name,
+        vlan=300,
     ) as nad:
         yield nad
 
@@ -341,7 +344,7 @@ class TestConnectivity:
         )
 
     @pytest.mark.bugzilla(
-        1758917, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        1827257, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.polarion("CNV-2075")
     def test_negative_vlan(
