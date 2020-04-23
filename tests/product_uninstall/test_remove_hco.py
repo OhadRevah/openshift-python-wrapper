@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 DV_PARAMS = {
     "source": "blank",
     "dv_name": "remove-hco-dv",
-    "image": None,
+    "image": "",
     "dv_size": "64Mi",
     "storage_class": py_config["default_storage_class"],
 }
