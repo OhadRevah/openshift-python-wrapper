@@ -254,6 +254,10 @@ def pytest_runtest_logreport(report):
 
 
 def pytest_sessionstart(session):
+    # Save the default storage_class_matrix before it is updated
+    # with runtime storage_class_matrix value(s)
+    py_config["system_storage_class_matrix"] = py_config["storage_class_matrix"]
+
     matrix_addoptions = [
         matrix
         for matrix in session.config.invocation_params.args

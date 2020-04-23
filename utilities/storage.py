@@ -64,7 +64,7 @@ def data_volume(
     DV creation using create_dv.
     """
     if not storage_class_matrix:
-        storages = py_config["storage_class_matrix"]
+        storages = py_config["system_storage_class_matrix"]
         storage_class_matrix = [sc for sc in storages if [*sc][0] == storage_class]
         if not storage_class_matrix:
             raise ValueError(f"{storage_class} not found in {storages}")
