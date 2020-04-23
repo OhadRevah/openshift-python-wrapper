@@ -135,6 +135,7 @@ def test_veth_removed_from_host_after_vm_deleted(
                 _delete_vm_and_compare_veth(
                     pod=pod, vm=vm, vmi_interfaces=vmi_interfaces
                 )
+                break
 
 
 def _delete_vm_and_compare_veth(pod, vm, vmi_interfaces):
