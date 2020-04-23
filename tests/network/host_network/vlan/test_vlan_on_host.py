@@ -15,44 +15,58 @@ SAMPLING_INTERVAL = 1
 
 
 def sampling_handler(
-    sampled_func, timeout=TEST_TIMEOUT, interval=SAMPLING_INTERVAL, err_msg=None
+    sampled_func,
+    iface_name,
+    timeout=TEST_TIMEOUT,
+    interval=SAMPLING_INTERVAL,
+    err_msg=None,
 ):
+    node = None
     try:
         sampled_ip_search = TimeoutSampler(
             timeout=timeout, sleep=interval, func=sampled_func
         )
         for sample in sampled_ip_search:
-            if sample:
+            if sample[0]:
                 return
+            node = sample[1]
 
     except TimeoutExpiredError:
         if err_msg is not None:
-            LOGGER.error(err_msg)
+            LOGGER.error(err_msg.format(iface_name=iface_name, node=node))
         raise
 
 
 def assert_vlan_dynamic_ip(iface_name, workers_ssh_executors, dhcp_clients_list):
     def _find_vlan_ip():
+        node = None
         for node in dhcp_clients_list:
             vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
                 iface_name
             )
             if (vlan_ip is None) or (DHCP_IP_SUBNET not in vlan_ip):
-                return False
-        return True
+                return False, node.name
+        return True, node.name
 
     err_msg = (
-        f"VLAN interface {iface_name} in some nodes was not assigned a dynamic IP."
+        "VLAN interface {iface_name} on node {node} was not assigned a dynamic IP."
     )
-    sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg)
+    sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
 
 
 def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_list):
-    for node in no_dhcp_client_list:
-        vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(iface_name)
-        if vlan_ip is not None:
-            return False
-    return True
+    def _find_vlan_ip():
+        node = None
+        for node in no_dhcp_client_list:
+            vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
+                iface_name
+            )
+            if vlan_ip is not None:
+                return False, node.name
+        return True, node.name
+
+    err_msg = "VLAN interface {iface_name} on node {node} assigned a dynamic IP."
+    sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
 
 
 @pytest.mark.polarion("CNV-3451")
@@ -86,32 +100,23 @@ def test_vlan_connectivity_on_one_host(
     namespace,
     vlan_iface_on_all_nodes,
     dhcp_server,
-    dhcp_client_nodes,
+    selected_disabled_dhcp_client,
     dhcp_client,
-    dhcp_client_on_one_node,
     remove_node_selector,
     workers_ssh_executors,
 ):
     """
     Test that VLAN NIC on only one host (which is not the DHCP server host) is assigned a dynamic IP address.
     """
-    no_dhcp_client_list = list(
-        filter(lambda x: x.name is dhcp_client_on_one_node.name, dhcp_client_nodes)
-    )
-    assert_vlan_dynamic_ip(
-        iface_name=vlan_iface_on_all_nodes.iface_name,
-        workers_ssh_executors=workers_ssh_executors,
-        dhcp_clients_list=[dhcp_client_on_one_node],
-    )
     assert_vlan_iface_no_ip(
         iface_name=vlan_iface_on_all_nodes.iface_name,
         workers_ssh_executors=workers_ssh_executors,
-        no_dhcp_client_list=no_dhcp_client_list,
+        no_dhcp_client_list=[selected_disabled_dhcp_client],
     )
 
 
 @pytest.mark.polarion("CNV-3463")
-def test_neg_no_connectivity_between_different_vlan_tags(
+def test_no_connectivity_between_different_vlan_tags(
     skip_when_one_node,
     skip_rhel7_workers,
     skip_if_workers_vms,
@@ -127,12 +132,11 @@ def test_neg_no_connectivity_between_different_vlan_tags(
     Negative: Test that VLAN NICs (that are created using k8s-nmstate) with different tags have no connectivity
     between them.
     """
-    with pytest.raises(TimeoutExpiredError):
-        assert_vlan_dynamic_ip(
-            iface_name=vlan_iface_on_one_node_with_different_tag.iface_name,
-            workers_ssh_executors=workers_ssh_executors,
-            dhcp_clients_list=[selected_dhcp_client],
-        )
+    assert_vlan_iface_no_ip(
+        iface_name=vlan_iface_on_one_node_with_different_tag.iface_name,
+        workers_ssh_executors=workers_ssh_executors,
+        no_dhcp_client_list=[selected_dhcp_client],
+    )
 
 
 @pytest.mark.polarion("CNV-3469")

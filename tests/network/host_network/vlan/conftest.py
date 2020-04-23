@@ -5,6 +5,7 @@ import logging
 import pytest
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from tests.network.utils import (
+    LINUX_BRIDGE,
     bridge_device,
     bridge_nad,
     nmcli_add_con_cmds,
@@ -48,21 +49,20 @@ def vlan_iface_on_all_nodes(
     ) as vlan_iface:
         yield vlan_iface
 
+    if vlan_iface.exists:
+        vlan_iface.clean_up()
+
 
 @pytest.fixture(scope="module")
 def vlan_iface_on_one_node_with_different_tag(
     skip_if_no_multinic_nodes,
     network_utility_pods,
     vlan_iface_on_all_nodes,
-    dhcp_server,
+    dhcp_client_nodes,
+    selected_dhcp_client,
 ):
     vlan_base_iface = vlan_iface_on_all_nodes.base_iface
     iface_tag = vlan_iface_on_all_nodes.tag + 1
-
-    for pod in network_utility_pods:
-        if pod.node.name != dhcp_server.node_selector:
-            node_selector = pod.node.name
-            break
 
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         worker_pods=network_utility_pods,
@@ -71,7 +71,7 @@ def vlan_iface_on_one_node_with_different_tag(
         tag=iface_tag,
         ipv4_dhcp=True,
         ipv6_enable=False,
-        node_selector=node_selector,
+        node_selector=selected_dhcp_client.name,
     ) as vlan_iface:
         yield vlan_iface
 
@@ -127,11 +127,10 @@ def dhcp_server_bridge(
     network_utility_pods,
     schedulable_nodes,
     node_selector_name,
-    bridge_device_matrix__module__,
 ):
     bridge_name = f"{vlan_iface_on_all_nodes.iface_name}-br"
     with bridge_device(
-        bridge_type=bridge_device_matrix__module__,
+        bridge_type=LINUX_BRIDGE,
         nncp_name=f"{bridge_name}-nncp",
         bridge_name=bridge_name,
         network_utility_pods=network_utility_pods,
@@ -143,7 +142,7 @@ def dhcp_server_bridge(
 
 
 @pytest.fixture(scope="module")
-def dhcp_br_nad(dhcp_server_bridge, namespace, bridge_device_matrix__module__):
+def dhcp_br_nad(dhcp_server_bridge, namespace):
     nad_name = f"{dhcp_server_bridge.bridge_name}-nad"
 
     # Apparently, NetworkAttachmentDefinition name cannot contain dot (although k8s resource naming
@@ -151,7 +150,7 @@ def dhcp_br_nad(dhcp_server_bridge, namespace, bridge_device_matrix__module__):
     nad_name = nad_name.replace(".", "-")
     with bridge_nad(
         namespace=namespace,
-        nad_type=bridge_device_matrix__module__,
+        nad_type=LINUX_BRIDGE,
         nad_name=nad_name,
         bridge_name=dhcp_server_bridge.bridge_name,
     ) as nad:
@@ -189,24 +188,18 @@ def dhcp_client_on_one_node(selected_dhcp_client, vlan_iface_on_all_nodes):
 
 
 @pytest.fixture(scope="module")
-def dhcp_client_over_bond(vlan_iface_over_bond_on_all_nodes, dhcp_client_nodes):
-    for node in dhcp_client_nodes:
-        enable_ipv4_dhcp_client(
-            vlan_iface_nncp=vlan_iface_over_bond_on_all_nodes, selected_node=node.name
-        )
-        vlan_iface_over_bond_on_all_nodes.wait_for_condition(
-            condition=vlan_iface_over_bond_on_all_nodes.Conditions.Type.AVAILABLE,
-            status="True",
-            timeout=60,
-        )
+def dhcp_client_over_bond(vlan_iface_over_bond_on_all_nodes):
+    enable_ipv4_dhcp_client(vlan_iface_nncp=vlan_iface_over_bond_on_all_nodes)
+    vlan_iface_over_bond_on_all_nodes.wait_for_condition(
+        condition=vlan_iface_over_bond_on_all_nodes.Conditions.Type.AVAILABLE,
+        status="True",
+        timeout=60,
+    )
 
 
 @pytest.fixture(scope="module")
 def vlan_iface_over_bond_on_all_nodes(
-    skip_if_no_multinic_nodes,
-    network_utility_pods,
-    nodes_active_nics,
-    vlan_iface_on_all_nodes,
+    skip_if_no_multinic_nodes, network_utility_pods, nodes_active_nics, vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
         name="bond1-nncp",
@@ -216,15 +209,11 @@ def vlan_iface_over_bond_on_all_nodes(
         mode="active-backup",
         mtu=1450,
     ) as bond_iface:
-
-        vlan_base_iface = bond_iface.bond_name
-        tag_id = vlan_iface_on_all_nodes.tag
-
         with VLANInterfaceNodeNetworkConfigurationPolicy(
             worker_pods=network_utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
-            base_iface=vlan_base_iface,
-            tag=tag_id,
+            base_iface=bond_iface.bond_name,
+            tag=vlan_tag_id,
         ) as vlan_iface:
             yield vlan_iface
 
@@ -232,6 +221,14 @@ def vlan_iface_over_bond_on_all_nodes(
 @pytest.fixture(scope="module")
 def selected_dhcp_client(dhcp_client_nodes):
     return dhcp_client_nodes[0]
+
+
+@pytest.fixture(scope="module")
+def selected_disabled_dhcp_client(vlan_iface_on_all_nodes, dhcp_client_nodes):
+    disable_ipv4_dhcp_client(
+        vlan_iface_nncp=vlan_iface_on_all_nodes, selected_node=dhcp_client_nodes[1].name
+    )
+    return dhcp_client_nodes[1]
 
 
 @pytest.fixture(scope="module")
@@ -328,8 +325,12 @@ def set_ipv4_dhcp_client(vlan_iface_nncp, enabled, selected_node=None):
 
 
 def enable_ipv4_dhcp_client(vlan_iface_nncp, selected_node=None):
-    set_ipv4_dhcp_client(vlan_iface_nncp, enabled=True, selected_node=selected_node)
+    set_ipv4_dhcp_client(
+        vlan_iface_nncp=vlan_iface_nncp, enabled=True, selected_node=selected_node
+    )
 
 
 def disable_ipv4_dhcp_client(vlan_iface_nncp, selected_node=None):
-    set_ipv4_dhcp_client(vlan_iface_nncp, enabled=False, selected_node=selected_node)
+    set_ipv4_dhcp_client(
+        vlan_iface_nncp=vlan_iface_nncp, enabled=False, selected_node=selected_node
+    )

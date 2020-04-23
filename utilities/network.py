@@ -434,6 +434,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.bond_name = bond_name
         self.slaves = slaves
         self.mode = mode
+        self.ports = self.slaves
 
     def to_dict(self):
         if not self.iface:
@@ -449,7 +450,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 },
             }
             if self.mtu:
-                for port in self.slaves:
+                for port in self.ports:
                     _port = {
                         "name": port,
                         "type": "ethernet",
