@@ -11,6 +11,7 @@ REMOTE_IP = "8.8.8.8"
 pytestmark = pytest.mark.skip("Test kill the cluster, need investigation")
 
 
+@pytest.mark.run(before="TestAfterBridgeTeardown")
 @pytest.mark.usefixtures("skip_rhel7_workers")
 class TestWithDhcpOverBridge:
     @pytest.mark.polarion("CNV-3002")
@@ -45,7 +46,7 @@ class TestWithDhcpOverBridge:
 
 # Test class should be run as last, because it should check connectivity after,
 # bridge was created, got dhcp of management and release it back to the port
-@pytest.mark.last
+# The first test marked with @pytest.mark.run(before="TestAfterBridgeTeardown") to ensure it.
 @pytest.mark.usefixtures("skip_rhel7_workers")
 class TestAfterBridgeTeardown:
     @pytest.mark.polarion("CNV-3028")
