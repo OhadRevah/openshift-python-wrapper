@@ -14,8 +14,8 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"
-BR1VLAN100 = "br1vlan100"
-NETWORKS = {"net1": BR1TEST, "net2": BR1VLAN100}
+BR2TEST = "br2test"
+NETWORKS = {"net1": BR1TEST, "net2": BR2TEST}
 
 
 def count_veth_devices_on_host(pod):
@@ -45,10 +45,10 @@ def br1test_nad(namespace):
 
 
 @pytest.fixture()
-def br1vlan100_nad(namespace):
+def br2test_nad(namespace):
     with network_utils.bridge_nad(
         nad_type=network_utils.LINUX_BRIDGE,
-        nad_name=BR1VLAN100,
+        nad_name=BR2TEST,
         bridge_name=BR1TEST,
         namespace=namespace,
     ) as nad:
@@ -77,6 +77,7 @@ def bridge_attached_vma(namespace, unprivileged_client):
         interfaces=sorted(NETWORKS.keys()),
         client=unprivileged_client,
         body=fedora_vm_body(name),
+        teardown=False,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -93,6 +94,7 @@ def bridge_attached_vmb(namespace, unprivileged_client):
         interfaces=sorted(NETWORKS.keys()),
         client=unprivileged_client,
         body=fedora_vm_body(name),
+        teardown=False,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
@@ -116,7 +118,7 @@ def test_veth_removed_from_host_after_vm_deleted(
     skip_rhel7_workers,
     network_utility_pods,
     br1test_nad,
-    br1vlan100_nad,
+    br2test_nad,
     bridge_device,
     bridge_attached_vma,
     bridge_attached_vmb,
@@ -130,13 +132,19 @@ def test_veth_removed_from_host_after_vm_deleted(
         vmi_interfaces = vm.vmi.instance.status.interfaces or []
         for pod in network_utility_pods:
             if pod.node.name == vm.vmi.node.name:
-                host_veth_before_delete = count_veth_devices_on_host(pod)
-                expect_host_veth = host_veth_before_delete - len(vmi_interfaces)
-                vm.delete(wait=True)
-
-                sampler = TimeoutSampler(
-                    timeout=120, sleep=1, func=count_veth_devices_on_host, pod=pod
+                _delete_vm_and_compare_veth(
+                    pod=pod, vm=vm, vmi_interfaces=vmi_interfaces
                 )
-                for sample in sampler:
-                    if sample == expect_host_veth:
-                        return True
+
+
+def _delete_vm_and_compare_veth(pod, vm, vmi_interfaces):
+    host_veth_before_delete = count_veth_devices_on_host(pod)
+    expect_host_veth = host_veth_before_delete - len(vmi_interfaces)
+    vm.delete(wait=True)
+
+    sampler = TimeoutSampler(
+        timeout=120, sleep=1, func=count_veth_devices_on_host, pod=pod
+    )
+    for sample in sampler:
+        if sample == expect_host_veth:
+            return True
