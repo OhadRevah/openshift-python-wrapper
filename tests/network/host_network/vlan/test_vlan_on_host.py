@@ -4,167 +4,140 @@ Test VLAN network interfaces on hosts network only (not on CNV VM).
 import logging
 
 import pytest
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from tests.network.host_network.vlan.conftest import DHCP_IP_SUBNET
+from tests.network.host_network.vlan.utils import (
+    assert_vlan_dynamic_ip,
+    assert_vlan_iface_no_ip,
+)
 
 
 LOGGER = logging.getLogger(__name__)
 
-TEST_TIMEOUT = 30
-SAMPLING_INTERVAL = 1
 
-
-def sampling_handler(
-    sampled_func,
-    iface_name,
-    timeout=TEST_TIMEOUT,
-    interval=SAMPLING_INTERVAL,
-    err_msg=None,
-):
-    node = None
-    try:
-        sampled_ip_search = TimeoutSampler(
-            timeout=timeout, sleep=interval, func=sampled_func
+class TestVlanInterface:
+    @pytest.mark.run(before="test_vlan_deletion")
+    @pytest.mark.polarion("CNV-3451")
+    def test_vlan_connectivity_on_all_hosts(
+        self,
+        skip_when_one_node,
+        skip_rhel7_workers,
+        skip_if_workers_vms,
+        workers_ssh_executors,
+        namespace,
+        vlan_iface_dhcp_client_1,
+        vlan_iface_dhcp_client_2,
+        dhcp_server,
+        dhcp_client_nodes,
+    ):
+        """
+        Test that VLAN NICs on all hosts except for the DHCP server host are assigned a dynamic IP address.
+        """
+        assert_vlan_dynamic_ip(
+            iface_name=vlan_iface_dhcp_client_1.iface_name,
+            workers_ssh_executors=workers_ssh_executors,
+            dhcp_clients_list=dhcp_client_nodes,
         )
-        for sample in sampled_ip_search:
-            if sample[0]:
-                return
-            node = sample[1]
 
-    except TimeoutExpiredError:
-        if err_msg is not None:
-            LOGGER.error(err_msg.format(iface_name=iface_name, node=node))
-        raise
+    @pytest.mark.run(before="test_vlan_deletion")
+    @pytest.mark.polarion("CNV-3452")
+    def test_vlan_connectivity_on_one_host(
+        self,
+        skip_when_one_node,
+        skip_rhel7_workers,
+        skip_if_workers_vms,
+        workers_ssh_executors,
+        namespace,
+        vlan_iface_dhcp_client_2,
+        dhcp_server,
+        disabled_dhcp_client_2,
+    ):
+        """
+        Test that VLAN NIC on only one host (which is not the DHCP server host) is assigned a dynamic IP address.
+        """
+        assert_vlan_iface_no_ip(
+            iface_name=vlan_iface_dhcp_client_2.iface_name,
+            workers_ssh_executors=workers_ssh_executors,
+            no_dhcp_client_list=[disabled_dhcp_client_2],
+        )
 
+    @pytest.mark.run(before="test_vlan_deletion")
+    @pytest.mark.polarion("CNV-3463")
+    def test_no_connectivity_between_different_vlan_tags(
+        self,
+        skip_when_one_node,
+        skip_rhel7_workers,
+        skip_if_workers_vms,
+        workers_ssh_executors,
+        namespace,
+        dhcp_server,
+        dhcp_client_2,
+        vlan_iface_on_dhcp_client_2_with_different_tag,
+    ):
+        """
+        Negative: Test that VLAN NICs (that are created using k8s-nmstate) with different tags have no connectivity
+        between them.
+        """
+        assert_vlan_iface_no_ip(
+            iface_name=vlan_iface_on_dhcp_client_2_with_different_tag.iface_name,
+            workers_ssh_executors=workers_ssh_executors,
+            no_dhcp_client_list=[dhcp_client_2],
+        )
 
-def assert_vlan_dynamic_ip(iface_name, workers_ssh_executors, dhcp_clients_list):
-    def _find_vlan_ip():
-        node = None
-        for node in dhcp_clients_list:
-            vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
-                iface_name
+    @pytest.mark.polarion("CNV-3462")
+    def test_vlan_deletion(
+        self,
+        skip_when_one_node,
+        skip_rhel7_workers,
+        skip_if_workers_vms,
+        network_utility_pods,
+        namespace,
+        dhcp_client_nodes,
+        vlan_iface_dhcp_client_1,
+        vlan_iface_dhcp_client_2,
+    ):
+        """
+        Test that VLAN NICs that are created using k8s-nmstate can be successfully deleted.
+        """
+        vlan_iface_dhcp_client_1.clean_up()
+        vlan_iface_dhcp_client_2.clean_up()
+        vlan_iface_name = vlan_iface_dhcp_client_1.iface_name
+        for pod in network_utility_pods:
+            if pod.node not in [node.name for node in dhcp_client_nodes]:
+                # Exclude the node that run the DHCP server VM
+                continue
+
+            ip_addr_out = pod.execute(
+                command=["bash", "-c", f"ip addr show {vlan_iface_name} |  wc -l"]
             )
-            if (vlan_ip is None) or (DHCP_IP_SUBNET not in vlan_ip):
-                return False, node.name
-        return True, node.name
-
-    err_msg = (
-        "VLAN interface {iface_name} on node {node} was not assigned a dynamic IP."
-    )
-    sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
-
-
-def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_list):
-    def _find_vlan_ip():
-        node = None
-        for node in no_dhcp_client_list:
-            vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
-                iface_name
+            assert int(ip_addr_out.strip()) == 0, (
+                f"VLAN interface {vlan_iface_name} was not deleted from node "
+                f"{pod.node.name}."
             )
-            if vlan_ip is not None:
-                return False, node.name
-        return True, node.name
-
-    err_msg = "VLAN interface {iface_name} on node {node} assigned a dynamic IP."
-    sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
 
 
-@pytest.mark.run(before="test_vlan_deletion")
-@pytest.mark.polarion("CNV-3451")
-def test_vlan_connectivity_on_all_hosts(
-    skip_when_one_node,
-    skip_rhel7_workers,
-    skip_if_workers_vms,
-    namespace,
-    vlan_iface_on_all_nodes,
-    dhcp_server,
-    dhcp_client_nodes,
-    dhcp_client,
-    disable_vlan_ipv4_dhcp,
-    workers_ssh_executors,
-):
-    """
-    Test that VLAN NICs on all hosts except for the DHCP server host are assigned a dynamic IP address.
-    """
-    assert_vlan_dynamic_ip(
-        iface_name=vlan_iface_on_all_nodes.iface_name,
-        workers_ssh_executors=workers_ssh_executors,
-        dhcp_clients_list=dhcp_client_nodes,
-    )
-
-
-@pytest.mark.run(before="test_vlan_deletion")
-@pytest.mark.polarion("CNV-3452")
-def test_vlan_connectivity_on_one_host(
-    skip_when_one_node,
-    skip_rhel7_workers,
-    skip_if_workers_vms,
-    namespace,
-    vlan_iface_on_all_nodes,
-    dhcp_server,
-    selected_disabled_dhcp_client,
-    dhcp_client,
-    remove_node_selector,
-    workers_ssh_executors,
-):
-    """
-    Test that VLAN NIC on only one host (which is not the DHCP server host) is assigned a dynamic IP address.
-    """
-    assert_vlan_iface_no_ip(
-        iface_name=vlan_iface_on_all_nodes.iface_name,
-        workers_ssh_executors=workers_ssh_executors,
-        no_dhcp_client_list=[selected_disabled_dhcp_client],
-    )
-
-
-@pytest.mark.run(before="test_vlan_deletion")
-@pytest.mark.polarion("CNV-3463")
-def test_no_connectivity_between_different_vlan_tags(
-    skip_when_one_node,
-    skip_rhel7_workers,
-    skip_if_workers_vms,
-    namespace,
-    vlan_iface_on_all_nodes,
-    dhcp_server,
-    selected_dhcp_client,
-    vlan_iface_on_one_node_with_different_tag,
-    remove_node_selector,
-    workers_ssh_executors,
-):
-    """
-    Negative: Test that VLAN NICs (that are created using k8s-nmstate) with different tags have no connectivity
-    between them.
-    """
-    assert_vlan_iface_no_ip(
-        iface_name=vlan_iface_on_one_node_with_different_tag.iface_name,
-        workers_ssh_executors=workers_ssh_executors,
-        no_dhcp_client_list=[selected_dhcp_client],
-    )
-
-
-@pytest.mark.run(before="test_vlan_deletion")
-@pytest.mark.polarion("CNV-3469")
-def test_vlan_connectivity_over_bond_on_all_hosts(
-    skip_when_one_node,
-    skip_rhel7_workers,
-    skip_if_workers_vms,
-    skip_no_bond_support,
-    namespace,
-    vlan_iface_over_bond_on_all_nodes,
-    dhcp_server,
-    dhcp_client_over_bond,
-    dhcp_client_nodes,
-    workers_ssh_executors,
-):
-    """
-    Test that VLAN NICs which are configured over bond interfaces, on all hosts except for the DHCP server host
-    are assigned a dynamic IP address.
-    """
-    assert_vlan_dynamic_ip(
-        iface_name=vlan_iface_over_bond_on_all_nodes.iface_name,
-        workers_ssh_executors=workers_ssh_executors,
-        dhcp_clients_list=dhcp_client_nodes,
-    )
+class TestVlanBond:
+    @pytest.mark.polarion("CNV-3469")
+    def test_vlan_connectivity_over_bond_on_all_hosts(
+        self,
+        skip_when_one_node,
+        skip_rhel7_workers,
+        skip_if_workers_vms,
+        skip_no_bond_support,
+        workers_ssh_executors,
+        namespace,
+        vlan_iface_bond_dhcp_client_1,
+        vlan_iface_bond_dhcp_client_2,
+        dhcp_server,
+        dhcp_client_nodes,
+    ):
+        """
+        Test that VLAN NICs which are configured over bond interfaces, on all hosts except for the DHCP server host
+        are assigned a dynamic IP address.
+        """
+        assert_vlan_dynamic_ip(
+            iface_name=vlan_iface_bond_dhcp_client_1.iface_name,
+            workers_ssh_executors=workers_ssh_executors,
+            dhcp_clients_list=dhcp_client_nodes,
+        )
 
 
 """
@@ -172,30 +145,3 @@ This test must remain the last one, otherwise there will be no complete tear-dow
 and resources will remain hanging.
 All tests marked with @pytest.mark.run(before="test_vlan_deletion") to ensure it.
 """
-
-
-@pytest.mark.polarion("CNV-3462")
-def test_vlan_deletion(
-    skip_when_one_node,
-    skip_rhel7_workers,
-    skip_if_workers_vms,
-    namespace,
-    vlan_iface_on_all_nodes,
-    network_utility_pods,
-):
-    """
-    Test that VLAN NICs that are created using k8s-nmstate can be successfully deleted.
-    """
-    vlan_iface_on_all_nodes.clean_up()
-    for pod in network_utility_pods:
-        ip_addr_out = pod.execute(
-            command=[
-                "bash",
-                "-c",
-                f"ip addr show {vlan_iface_on_all_nodes.iface_name} |  wc -l",
-            ]
-        )
-        assert int(ip_addr_out.strip()) == 0, (
-            f"VLAN interface {vlan_iface_on_all_nodes.iface_name} was not deleted from node "
-            f"{pod.node.name}."
-        )

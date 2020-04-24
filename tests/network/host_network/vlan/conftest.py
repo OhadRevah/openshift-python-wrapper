@@ -4,11 +4,13 @@ import logging
 
 import pytest
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
-from tests.network.utils import (
-    bridge_device,
-    nmcli_add_con_cmds,
-    update_cloud_init_extra_user_data,
+from tests.network.host_network.vlan.utils import (
+    DHCP_IP_SUBNET,
+    dhcp_server_cloud_init_data,
+    disable_ipv4_dhcp_client,
+    enable_ipv4_dhcp_client,
 )
+from tests.network.utils import bridge_device
 from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
@@ -17,7 +19,6 @@ from utilities.network import (
     bridge_nad,
 )
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     vm_console_run_commands,
@@ -27,55 +28,76 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 
-DHCP_IP_SUBNET = "192.168.1"
-DHCP_IP_RANGE_START = f"{DHCP_IP_SUBNET}.3"
-DHCP_IP_RANGE_END = f"{DHCP_IP_SUBNET}.100"
 
-
-@pytest.fixture(scope="module")
-def vlan_iface_on_all_nodes(
-    skip_if_no_multinic_nodes, network_utility_pods, nodes_active_nics, vlan_tag_id,
+# VLAN on interface fixtures
+@pytest.fixture(scope="class")
+def vlan_iface_dhcp_client_1(
+    network_utility_pods, vlan_base_iface, vlan_tag_id, dhcp_client_1
 ):
-    # Select the last NIC from the list as a way to ensure that the selected NIC is not already used (e.g. as
-    # a bond's slave).
-    vlan_base_iface = nodes_active_nics[network_utility_pods[0].node.name][-1]
-
+    nncp_name = "dhcp-vlan-client-1-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
+        name=nncp_name,
         worker_pods=network_utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
+        node_selector=dhcp_client_1.name,
+        ipv4_dhcp=True,
+        ipv6_enable=False,
         teardown=False,
     ) as vlan_iface:
         yield vlan_iface
 
+    vlan_iface = NodeNetworkConfigurationPolicy(name=nncp_name)
     if vlan_iface.exists:
         vlan_iface.clean_up()
 
 
-@pytest.fixture(scope="module")
-def vlan_iface_on_one_node_with_different_tag(
+@pytest.fixture(scope="class")
+def vlan_iface_dhcp_client_2(
+    network_utility_pods, vlan_base_iface, vlan_tag_id, dhcp_client_2
+):
+    nncp_name = "dhcp-vlan-client-2-nncp"
+    with VLANInterfaceNodeNetworkConfigurationPolicy(
+        name=nncp_name,
+        worker_pods=network_utility_pods,
+        iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
+        base_iface=vlan_base_iface,
+        tag=vlan_tag_id,
+        node_selector=dhcp_client_2.name,
+        ipv4_dhcp=True,
+        ipv6_enable=False,
+        teardown=False,
+    ) as vlan_iface:
+        yield vlan_iface
+
+    vlan_iface = NodeNetworkConfigurationPolicy(name=nncp_name)
+    if vlan_iface.exists:
+        vlan_iface.clean_up()
+
+
+@pytest.fixture(scope="class")
+def vlan_iface_on_dhcp_client_2_with_different_tag(
     skip_if_no_multinic_nodes,
     network_utility_pods,
-    vlan_iface_on_all_nodes,
+    vlan_base_iface,
+    vlan_tag_id,
     dhcp_client_nodes,
-    selected_dhcp_client,
+    dhcp_client_2,
 ):
-    vlan_base_iface = vlan_iface_on_all_nodes.base_iface
-    iface_tag = vlan_iface_on_all_nodes.tag + 1
-
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         worker_pods=network_utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=iface_tag,
+        tag=vlan_tag_id + 1,
         ipv4_dhcp=True,
         ipv6_enable=False,
-        node_selector=selected_dhcp_client.name,
+        node_selector=dhcp_client_2.name,
     ) as vlan_iface:
         yield vlan_iface
 
 
+# DHCP VM fixtures
 @pytest.fixture(scope="module")
 def dhcp_server(running_dhcp_server_vm):
     """
@@ -91,7 +113,7 @@ def dhcp_server(running_dhcp_server_vm):
 
 @pytest.fixture(scope="module")
 def dhcp_server_vm(namespace, node_selector_name, dhcp_br_nad, unprivileged_client):
-    cloud_init_data = _dhcp_server_cloud_init_data(
+    cloud_init_data = dhcp_server_cloud_init_data(
         dhcp_iface_ip_addr=f"{DHCP_IP_SUBNET}.1"
     )
     vm_name = "dhcp-server-vm"
@@ -123,19 +145,16 @@ def running_dhcp_server_vm(dhcp_server_vm):
 
 @pytest.fixture(scope="module")
 def dhcp_server_bridge(
-    vlan_iface_on_all_nodes,
-    network_utility_pods,
-    schedulable_nodes,
-    node_selector_name,
+    dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, node_selector_name,
 ):
-    bridge_name = f"{vlan_iface_on_all_nodes.iface_name}-br"
+    bridge_name = f"{dhcp_server_vlan_iface.iface_name}-br"
     with bridge_device(
         bridge_type=LINUX_BRIDGE,
         nncp_name=f"{bridge_name}-nncp",
         bridge_name=bridge_name,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
-        ports=[vlan_iface_on_all_nodes.iface_name],
+        ports=[dhcp_server_vlan_iface.iface_name],
         node_selector=node_selector_name,
     ) as br:
         yield br
@@ -158,6 +177,26 @@ def dhcp_br_nad(dhcp_server_bridge, namespace):
 
 
 @pytest.fixture(scope="module")
+def dhcp_server_vlan_iface(
+    skip_if_no_multinic_nodes,
+    network_utility_pods,
+    node_selector_name,
+    vlan_base_iface,
+    vlan_tag_id,
+):
+    with VLANInterfaceNodeNetworkConfigurationPolicy(
+        name="dhcp-server-vlan-nncp",
+        worker_pods=network_utility_pods,
+        iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
+        base_iface=vlan_base_iface,
+        tag=vlan_tag_id,
+        node_selector=node_selector_name,
+    ) as vlan_iface:
+        yield vlan_iface
+
+
+# DHCP clients fixtures
+@pytest.fixture(scope="module")
 def dhcp_client_nodes(dhcp_server_vm, network_utility_pods):
     dhcp_client_nodes = []
     for pod in network_utility_pods:
@@ -171,64 +210,94 @@ def dhcp_client_nodes(dhcp_server_vm, network_utility_pods):
     return dhcp_client_nodes
 
 
-@pytest.fixture(scope="module")
-def dhcp_client(vlan_iface_on_all_nodes, dhcp_client_nodes):
-    for node in dhcp_client_nodes:
-        enable_ipv4_dhcp_client(
-            vlan_iface_nncp=vlan_iface_on_all_nodes, selected_node=node.name
-        )
+@pytest.fixture(scope="class")
+def dhcp_client_1(dhcp_client_nodes):
+    return dhcp_client_nodes[0]
 
 
-@pytest.fixture(scope="module")
-def dhcp_client_on_one_node(selected_dhcp_client, vlan_iface_on_all_nodes):
+@pytest.fixture(scope="class")
+def dhcp_client_2(dhcp_client_nodes):
+    return dhcp_client_nodes[1]
+
+
+@pytest.fixture()
+def disabled_dhcp_client_2(vlan_iface_dhcp_client_2, dhcp_client_2):
+    disable_ipv4_dhcp_client(
+        vlan_iface_nncp=vlan_iface_dhcp_client_2, selected_node=dhcp_client_2.name
+    )
+    yield dhcp_client_2
     enable_ipv4_dhcp_client(
-        vlan_iface_nncp=vlan_iface_on_all_nodes, selected_node=selected_dhcp_client.name
-    )
-    return selected_dhcp_client
-
-
-@pytest.fixture(scope="module")
-def dhcp_client_over_bond(vlan_iface_over_bond_on_all_nodes):
-    enable_ipv4_dhcp_client(vlan_iface_nncp=vlan_iface_over_bond_on_all_nodes)
-    vlan_iface_over_bond_on_all_nodes.wait_for_condition(
-        condition=vlan_iface_over_bond_on_all_nodes.Conditions.Type.AVAILABLE,
-        status="True",
-        timeout=60,
+        vlan_iface_nncp=vlan_iface_dhcp_client_2, selected_node=dhcp_client_2.name
     )
 
 
-@pytest.fixture(scope="module")
-def vlan_iface_over_bond_on_all_nodes(
-    skip_if_no_multinic_nodes, network_utility_pods, nodes_active_nics, vlan_tag_id,
+# VLAN on BOND fixtures
+@pytest.fixture(scope="class")
+def vlan_iface_bond_dhcp_client_1(
+    skip_if_no_multinic_nodes,
+    network_utility_pods,
+    nodes_active_nics,
+    dhcp_client_1,
+    vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
-        name="bond1-nncp",
+        name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
         slaves=nodes_active_nics[network_utility_pods[0].node.name][2:4],
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=1450,
+        node_selector=dhcp_client_1.name,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
+            name="dhcp-vlan-bond-client-1-nncp",
             worker_pods=network_utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
             tag=vlan_tag_id,
+            node_selector=dhcp_client_1.name,
+            ipv4_dhcp=True,
+            ipv6_enable=False,
         ) as vlan_iface:
             yield vlan_iface
 
 
-@pytest.fixture(scope="module")
-def selected_dhcp_client(dhcp_client_nodes):
-    return dhcp_client_nodes[0]
+@pytest.fixture(scope="class")
+def vlan_iface_bond_dhcp_client_2(
+    skip_if_no_multinic_nodes,
+    network_utility_pods,
+    nodes_active_nics,
+    dhcp_client_2,
+    vlan_tag_id,
+):
+    with BondNodeNetworkConfigurationPolicy(
+        name="bond-dhcp-client-2-nncp",
+        bond_name="bond4vlan",
+        slaves=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        worker_pods=network_utility_pods,
+        mode="active-backup",
+        mtu=1450,
+        node_selector=dhcp_client_2.name,
+    ) as bond_iface:
+        with VLANInterfaceNodeNetworkConfigurationPolicy(
+            name="dhcp-vlan-bond-client-2-nncp",
+            worker_pods=network_utility_pods,
+            iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
+            base_iface=bond_iface.bond_name,
+            tag=vlan_tag_id,
+            node_selector=dhcp_client_2.name,
+            ipv4_dhcp=True,
+            ipv6_enable=False,
+        ) as vlan_iface:
+            yield vlan_iface
 
 
+# General fixtures
 @pytest.fixture(scope="module")
-def selected_disabled_dhcp_client(vlan_iface_on_all_nodes, dhcp_client_nodes):
-    disable_ipv4_dhcp_client(
-        vlan_iface_nncp=vlan_iface_on_all_nodes, selected_node=dhcp_client_nodes[1].name
-    )
-    return dhcp_client_nodes[1]
+def vlan_base_iface(network_utility_pods, nodes_active_nics):
+    # Select the last NIC from the list as a way to ensure that the selected NIC
+    # is not already used (e.g. as a bond's slave).
+    return nodes_active_nics[network_utility_pods[0].node.name][-1]
 
 
 @pytest.fixture(scope="module")
@@ -236,101 +305,7 @@ def node_selector_name(network_utility_pods):
     return network_utility_pods[0].node.name
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def vlan_tag_id(index_number):
     # 1000 is the range start of available VLAN tag IDs.
     return 1000 + next(index_number)
-
-
-@pytest.fixture(scope="function")
-def disable_vlan_ipv4_dhcp(vlan_iface_on_all_nodes, dhcp_client_nodes):
-    """
-    A teardown fixture.
-    """
-    yield
-
-    for node in dhcp_client_nodes:
-        disable_ipv4_dhcp_client(
-            vlan_iface_nncp=vlan_iface_on_all_nodes, selected_node=node.name
-        )
-        vlan_iface_on_all_nodes.wait_for_condition(
-            condition=vlan_iface_on_all_nodes.Conditions.Type.AVAILABLE,
-            status="True",
-            timeout=60,
-        )
-
-
-@pytest.fixture(scope="function")
-def remove_node_selector(vlan_iface_on_all_nodes):
-    """
-    A teardown fixture.
-    """
-    yield
-
-    resource_dict = {
-        "metadata": {"name": vlan_iface_on_all_nodes.name},
-        "spec": {"nodeSelector": {"kubernetes.io/hostname": None}},
-    }
-    vlan_iface_on_all_nodes.update(resource_dict=resource_dict)
-
-
-def _dhcp_server_cloud_init_data(dhcp_iface_ip_addr):
-    cloud_init_extra_user_data = {
-        "runcmd": [
-            "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
-            f"\\nauthoritative;\\nsubnet {DHCP_IP_SUBNET}.0 netmask 255.255.255.0 "
-            "{\\noption subnet-mask 255.255.255.0;\\nrange  "
-            f"{DHCP_IP_RANGE_START} {DHCP_IP_RANGE_END};"
-            "\\n}' > /etc/dhcp/dhcpd.conf\""
-        ]
-    }
-
-    data = FEDORA_CLOUD_INIT_PASSWORD
-
-    bootcmds = nmcli_add_con_cmds("eth1", dhcp_iface_ip_addr)
-    data["bootcmd"] = bootcmds
-
-    update_cloud_init_extra_user_data(
-        cloud_init_data=data, cloud_init_extra_user_data=cloud_init_extra_user_data
-    )
-    return data
-
-
-def set_ipv4_dhcp_client(vlan_iface_nncp, enabled, selected_node=None):
-    for iface_idx, interface in enumerate(vlan_iface_nncp.desired_state["interfaces"]):
-        if interface["type"] == "vlan":
-            vlan_iface = vlan_iface_nncp.desired_state["interfaces"].pop(iface_idx)
-            vlan_iface.update(
-                {
-                    "ipv4": {"dhcp": enabled, "enabled": enabled},
-                    "ipv6": {"enabled": False},
-                }
-            )
-            vlan_iface_nncp.desired_state["interfaces"].insert(iface_idx, vlan_iface)
-
-            resource_dict = {
-                "metadata": {"name": vlan_iface_nncp.name},
-                "spec": {
-                    "desiredState": {
-                        "interfaces": vlan_iface_nncp.desired_state["interfaces"]
-                    }
-                },
-            }
-            if selected_node:
-                resource_dict["spec"]["nodeSelector"] = {
-                    "kubernetes.io/hostname": selected_node
-                }
-
-            vlan_iface_nncp.update(resource_dict=resource_dict)
-
-
-def enable_ipv4_dhcp_client(vlan_iface_nncp, selected_node=None):
-    set_ipv4_dhcp_client(
-        vlan_iface_nncp=vlan_iface_nncp, enabled=True, selected_node=selected_node
-    )
-
-
-def disable_ipv4_dhcp_client(vlan_iface_nncp, selected_node=None):
-    set_ipv4_dhcp_client(
-        vlan_iface_nncp=vlan_iface_nncp, enabled=False, selected_node=selected_node
-    )
