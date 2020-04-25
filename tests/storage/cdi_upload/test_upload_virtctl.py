@@ -20,8 +20,6 @@ from utilities.virt import VirtualMachineForTests, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
-
-
 LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 
 
@@ -122,13 +120,6 @@ def test_virtctl_image_upload_with_ca(
     assert res
     pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
     assert pvc.bound()
-
-
-@pytest.fixture()
-def download_image():
-    storage_utils.downloaded_image(
-        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=LOCAL_PATH
-    )
 
 
 @pytest.mark.polarion("CNV-3724")

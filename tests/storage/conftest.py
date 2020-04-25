@@ -8,6 +8,7 @@ import logging
 import os
 
 import pytest
+import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.cdi import CDI
 from resources.cdi_config import CDIConfig
@@ -19,10 +20,11 @@ from resources.route import Route
 from resources.secret import Secret
 from resources.storage_class import StorageClass
 from tests.storage.utils import HttpService, downloaded_image, virtctl_upload_dv
-from utilities.infra import get_cert
+from utilities.infra import Images, get_cert
 
 
 LOGGER = logging.getLogger(__name__)
+LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 
 
 @pytest.fixture()
@@ -255,3 +257,10 @@ def uploaded_dv(
     except OSError as e:
         LOGGER.error(e)
         raise
+
+
+@pytest.fixture()
+def download_image():
+    storage_utils.downloaded_image(
+        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=LOCAL_PATH
+    )

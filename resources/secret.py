@@ -36,3 +36,15 @@ class Secret(NamespacedResource):
             res.update({"data": self.data_dict})
 
         return res
+
+    @property
+    def certificate_not_after(self):
+        return self.instance.metadata.annotations[
+            "auth.openshift.io/certificate-not-after"
+        ]
+
+    @property
+    def certificate_not_before(self):
+        return self.instance.metadata.annotations[
+            "auth.openshift.io/certificate-not-before"
+        ]
