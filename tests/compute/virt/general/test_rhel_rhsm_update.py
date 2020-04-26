@@ -14,6 +14,7 @@ import logging
 import pytest
 from pytest_testconfig import config as py_config
 from resources.secret import Secret
+from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.virt import RHEL_CLOUD_INIT_PASSWORD, vm_console_run_commands
@@ -59,6 +60,7 @@ def cloud_init_data():
 def vm(
     request,
     unprivileged_client,
+    rhel7_workers,
     namespace,
     data_volume_scope_function,
     network_configuration,
@@ -72,6 +74,8 @@ def vm(
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     ) as vm:
+        if rhel7_workers:
+            remove_eth0_default_gw(vm=vm, console_impl=console.RHEL)
         yield vm
 
 

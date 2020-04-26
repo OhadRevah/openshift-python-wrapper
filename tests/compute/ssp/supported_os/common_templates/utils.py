@@ -497,11 +497,3 @@ def check_machine_type(vm):
     assert (
         vm_machine_type != ""
     ), f"Machine type does not exist in VM: {vm_machine_type}"
-
-
-def remove_eth0_default_gw(vm, console_impl):
-    vm_console_run_commands(
-        console_impl=console_impl,
-        vm=vm,
-        commands=["sudo route del default gw 0.0.0.0 eth0"],
-    )

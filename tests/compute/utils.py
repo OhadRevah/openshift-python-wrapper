@@ -3,7 +3,7 @@ import logging
 
 from resources.pod import Pod
 from utilities.infra import ClusterHosts
-from utilities.virt import wait_for_vm_interfaces
+from utilities.virt import vm_console_run_commands, wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -69,3 +69,11 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
         ]
 
     return bootcmds
+
+
+def remove_eth0_default_gw(vm, console_impl):
+    vm_console_run_commands(
+        console_impl=console_impl,
+        vm=vm,
+        commands=["sudo route del default gw 0.0.0.0 eth0"],
+    )
