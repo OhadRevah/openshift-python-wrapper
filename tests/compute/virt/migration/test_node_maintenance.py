@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from subprocess import run
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
@@ -41,12 +42,14 @@ def running_sleep_in_linux(vm_cli):
 @contextmanager
 def drain_node_console(node):
     try:
+        LOGGER.info(f"Cordon node {node.name}")
         run(
             f"nohup oc adm drain {node.name} --delete-local-data --ignore-daemonsets=true --force &",
             shell=True,
         )
         yield
     finally:
+        LOGGER.info(f"Uncordon node {node.name}")
         run(f"oc adm uncordon {node.name}", shell=True)
 
 
@@ -56,8 +59,7 @@ def drain_using_console(default_client, source_node, source_pod, vm, vm_cli):
             check_draining_process(
                 default_client=default_client, source_pod=source_pod, vm=vm
             )
-        virt_utils.wait_for_node_unschedulable_status(node=source_node, status=False)
-    yield
+        virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
 
 
 def drain_using_console_windows(
@@ -65,6 +67,7 @@ def drain_using_console_windows(
     source_node,
     source_pod,
     vm,
+    winrmcli_pod,
     windows_initial_boot_time,
     helper_vm=False,
 ):
@@ -80,7 +83,10 @@ def drain_using_console_windows(
         assert (
             boot_time_after_migration == windows_initial_boot_time
         ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
-    yield
+
+    virt_utils.wait_for_node_schedulable_status(
+        node=vm.vmi.virt_launcher_pod.node, status=True,
+    )
 
 
 @pytest.fixture()
@@ -161,11 +167,11 @@ def check_windows_boot_time(vm, winrmcli_pod, timeout=1200, helper_vm=False):
 
 def check_draining_process(default_client, source_pod, vm):
     source_node = source_pod.node
-    virt_utils.wait_for_node_unschedulable_status(node=source_node, status=True)
+    virt_utils.wait_for_node_schedulable_status(node=source_node, status=False)
     for migration_job in VirtualMachineInstanceMigration.get(default_client):
         if migration_job.instance.spec.vmiName == vm.name:
             migration_job.wait_for_status(
-                status=migration_job.Status.SUCCEEDED, timeout=600
+                status=migration_job.Status.SUCCEEDED, timeout=900
             )
 
     source_pod.wait_deleted()
@@ -231,9 +237,7 @@ class TestNodeMaintenanceRHEL:
                     vm=vm_instance_from_template_scope_class,
                 )
                 nm.wait_for_status(status=nm.Status.SUCCEEDED)
-            virt_utils.wait_for_node_unschedulable_status(
-                node=source_node, status=False
-            )
+            virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
 
     @pytest.mark.polarion("CNV-2292")
     def test_node_drain_using_console_rhel(
@@ -254,15 +258,16 @@ class TestNodeMaintenanceRHEL:
         pytest.param(
             {
                 "dv_name": "dv-windows-template-node-maintenance",
-                "image": f"{Images.Windows.DIR}/{Images.Windows.WIM10_IMG}",
+                "image": py_config["latest_windows_version"]["image"],
             },
             {
                 "vm_name": "windows-template-node-maintenance",
                 "template_labels": {
-                    "os": "win10",
-                    "workload": "desktop",
+                    "os": py_config["latest_windows_version"]["os_label"],
+                    "workload": "server",
                     "flavor": "medium",
                 },
+                "cpu_threads": 2,
             },
             marks=pytest.mark.polarion("CNV-2048"),
         ),
@@ -284,11 +289,7 @@ def test_node_drain_template_windows(
         source_node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
         source_pod=vm_instance_from_template_scope_function.vmi.virt_launcher_pod,
         vm=vm_instance_from_template_scope_function,
+        winrmcli_pod=winrmcli_pod,
         windows_initial_boot_time=windows_initial_boot_time,
         helper_vm=bridge_attached_helper_vm,
-    )
-
-    virt_utils.wait_for_node_unschedulable_status(
-        node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
-        status=False,
     )

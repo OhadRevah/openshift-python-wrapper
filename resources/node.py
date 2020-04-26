@@ -1,4 +1,4 @@
-from .resource import Resource
+from .resource import NamespacedResource, Resource
 
 
 class Node(Resource):
@@ -7,3 +7,7 @@ class Node(Resource):
     """
 
     api_version = "v1"
+
+    class Status(NamespacedResource.Status):
+        READY = "Ready"
+        SCHEDULING_DISABLED = "Ready,SchedulingDisabled"
