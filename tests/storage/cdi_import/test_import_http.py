@@ -20,7 +20,7 @@ from resources.storage_class import StorageClass
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import (
     CIRROS_IMAGE,
     validate_windows_guest_agent_info,
@@ -359,12 +359,22 @@ def test_wrong_content_type(
         pytest.param(
             "large-size",
             "invalid-qcow-large-size.img",
-            marks=(pytest.mark.polarion("CNV-2553"),),
+            marks=(
+                pytest.mark.polarion("CNV-2553"),
+                pytest.mark.bugzilla(
+                    1827793, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+                ),
+            ),
         ),
         pytest.param(
             "large-json",
             "invalid-qcow-large-json.img",
-            marks=(pytest.mark.polarion("CNV-2554")),
+            marks=(
+                pytest.mark.polarion("CNV-2554"),
+                pytest.mark.bugzilla(
+                    1823342, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+                ),
+            ),
         ),
         pytest.param(
             "large-memory",
