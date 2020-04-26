@@ -17,7 +17,6 @@ import bcrypt
 import kubernetes
 import pytest
 import rrmngmnt
-import tests.network.utils as network_utils
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
@@ -41,21 +40,23 @@ from resources.virtual_machine import (
     VirtualMachineInstance,
     VirtualMachineInstanceMigration,
 )
-from tests.compute.ssp.supported_os.common_templates.utils import wait_for_windows_vm
-from tests.compute.utils import WinRMcliPod, nmcli_add_con_cmds
 from utilities import console
 from utilities.infra import ClusterHosts, create_ns
+from utilities.network import OVS, bridge_nad
 from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     RHEL_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
+    WinRMcliPod,
     enable_ssh_service_in_vm,
     fedora_vm_body,
     generate_yaml_from_template,
     kubernetes_taint_exists,
+    nmcli_add_con_cmds,
     wait_for_vm_interfaces,
+    wait_for_windows_vm,
 )
 
 
@@ -822,8 +823,8 @@ def network_attachment_definition(
     skip_ceph_on_rhel7, rhel7_ovs_bridge, namespace, rhel7_workers
 ):
     if rhel7_workers:
-        with network_utils.bridge_nad(
-            nad_type=network_utils.OVS,
+        with bridge_nad(
+            nad_type=OVS,
             nad_name="rhel7-nad",
             bridge_name=rhel7_ovs_bridge,
             namespace=namespace,

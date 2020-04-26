@@ -7,6 +7,7 @@ import logging
 
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import nmcli_add_con_cmds
@@ -152,7 +153,7 @@ def bridge_on_all_nodes(
     schedulable_nodes,
 ):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="migration",
         bridge_name=BR1TEST,
         network_utility_pods=network_utility_pods,
@@ -164,8 +165,8 @@ def bridge_on_all_nodes(
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR1TEST,
         bridge_name=BR1TEST,
         namespace=namespace,

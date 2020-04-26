@@ -2,12 +2,9 @@
 from ipaddress import ip_interface
 
 import pytest
-from tests.network.utils import (
-    bridge_nad,
-    nmcli_add_con_cmds,
-    update_cloud_init_extra_user_data,
-)
+from tests.network.utils import nmcli_add_con_cmds, update_cloud_init_extra_user_data
 from utilities import console
+from utilities.network import bridge_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,

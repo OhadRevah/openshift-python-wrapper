@@ -5,6 +5,7 @@ Common templates Windows VM migration and SSH access after migration
 """
 
 import pytest
+import utilities.virt
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
 
@@ -61,7 +62,7 @@ def test_migrate_vm_windows(
 
     utils.migrate_vm(vm_instance_from_template_scope_function)
 
-    utils.wait_for_windows_vm(
+    utilities.virt.wait_for_windows_vm(
         vm=vm_instance_from_template_scope_function,
         version=py_config["latest_windows_version"]["os_version"],
         winrmcli_pod=winrmcli_pod_scope_function,

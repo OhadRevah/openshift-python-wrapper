@@ -4,6 +4,7 @@ import logging
 
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 from resources.node_network_state import NodeNetworkState
 from resources.utils import TimeoutSampler
 from utilities.virt import (
@@ -135,7 +136,7 @@ def bridges_on_management_ifaces(
     ]
 
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="brext-default-net",
         bridge_name="brext",
         network_utility_pods=network_utility_pods,

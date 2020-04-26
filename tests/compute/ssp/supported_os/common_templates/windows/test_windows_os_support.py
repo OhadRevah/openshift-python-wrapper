@@ -7,6 +7,7 @@ import logging
 
 import pytest
 import tests.compute.utils
+import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import validate_windows_guest_agent_info
@@ -51,7 +52,7 @@ class TestCommonTemplatesWindows:
         """ Test CNV common templates VM initiation """
 
         tests.compute.utils.vm_started(vm=vm_object_from_template_windows_os)
-        utils.wait_for_windows_vm(
+        utilities.virt.wait_for_windows_vm(
             vm=vm_object_from_template_windows_os,
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"

@@ -16,7 +16,7 @@ from resources.route import Route
 from resources.service import Service
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
-from tests.conftest import vm_instance_from_template, wait_for_windows_vm
+from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.infra import Images, get_cert
 from utilities.storage import create_dv, get_images_external_http_server
@@ -24,6 +24,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     run_virtctl_command,
     validate_windows_guest_agent_info,
+    wait_for_windows_vm,
 )
 
 

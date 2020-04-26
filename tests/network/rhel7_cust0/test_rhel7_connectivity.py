@@ -4,10 +4,10 @@ VM to VM connectivity
 from collections import OrderedDict
 
 import pytest
-import tests.network.utils as network_utils
-from tests.network.utils import assert_ping_successful, bridge_nad, nmcli_add_con_cmds
+import utilities.network
+from tests.network.utils import assert_ping_successful, nmcli_add_con_cmds
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.network import get_vmi_ip_v4_by_name
+from utilities.network import bridge_nad, get_vmi_ip_v4_by_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -33,7 +33,7 @@ def _masquerade_vmib_ip(vmib, bridge):
 def nad(rhel7_ovs_bridge, namespace):
     with bridge_nad(
         namespace=namespace,
-        nad_type=network_utils.OVS,
+        nad_type=utilities.network.OVS,
         nad_name="br1test-nad",
         bridge_name=rhel7_ovs_bridge,
     ) as nad:

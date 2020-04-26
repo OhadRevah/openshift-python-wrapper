@@ -2,27 +2,11 @@ import contextlib
 import logging
 import re
 
-from pytest_testconfig import config as py_config
 from utilities import console
-from utilities.network import (
-    LinuxBridgeNetworkAttachmentDefinition,
-    LinuxBridgeNodeNetworkConfigurationPolicy,
-    OvsBridgeNetworkAttachmentDefinition,
-    OvsBridgeNodeNetworkConfigurationPolicy,
-)
+from utilities.network import BRIDGE_DEVICE_TYPE
 
 
 LOGGER = logging.getLogger(__name__)
-LINUX_BRIDGE = "linux-bridge"
-OVS = "ovs"
-BRIDGE_DEVICE_TYPE = {
-    LINUX_BRIDGE: LinuxBridgeNodeNetworkConfigurationPolicy,
-    OVS: OvsBridgeNodeNetworkConfigurationPolicy,
-}
-BRIDGE_NAD_TYPE = {
-    LINUX_BRIDGE: LinuxBridgeNetworkAttachmentDefinition,
-    OVS: OvsBridgeNetworkAttachmentDefinition,
-}
 
 
 def _console_ping(src_vm, dst_ip, packetsize=None):
@@ -89,29 +73,6 @@ def bridge_device(
         ipv4_dhcp=ipv4_dhcp,
     ) as br:
         yield br
-
-
-@contextlib.contextmanager
-def bridge_nad(
-    nad_type, nad_name, bridge_name, namespace, tuning=None, vlan=None, mtu=None
-):
-    kwargs = {
-        "namespace": namespace.name,
-        "name": nad_name,
-        "bridge_name": bridge_name,
-        "vlan": vlan,
-        "mtu": mtu,
-    }
-    if nad_type == LINUX_BRIDGE:
-        cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
-        tuning_type = (
-            py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
-        )
-        kwargs["cni_type"] = cni_type
-        kwargs["tuning_type"] = tuning_type
-
-    with BRIDGE_NAD_TYPE[nad_type](**kwargs) as nad:
-        yield nad
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):

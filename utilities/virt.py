@@ -11,6 +11,7 @@ import requests
 import utilities.network
 import yaml
 from pytest_testconfig import config as py_config
+from resources.pod import Pod
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -20,6 +21,7 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from rrmngmnt import ssh, user
 from utilities import console
+from utilities.infra import ClusterHosts
 
 
 LOGGER = logging.getLogger(__name__)
@@ -898,3 +900,78 @@ def execute_ssh_command(username, passwd, ip, port, cmd, timeout=60):
     ).run_cmd(cmd=cmd, tcp_timeout=timeout, io_timeout=timeout)
     assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
     return out
+
+
+def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500, helper_vm=False):
+    """
+    Samples Windows VM; wait for it to complete the boot process.
+    """
+
+    LOGGER.info(
+        f"Windows VM {vm.name} booting up, "
+        f"will attempt to access it up to 25 minutes."
+    )
+
+    sampler = TimeoutSampler(
+        timeout=timeout,
+        sleep=15,
+        func=execute_winrm_cmd,
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrmcli_pod,
+        target_vm=vm,
+        helper_vm=helper_vm,
+        cmd="wmic os get Caption /value",
+    )
+    for sample in sampler:
+        if version in str(sample):
+            return True
+
+
+class WinRMcliPod(Pod):
+    def __init__(self, name, namespace, node_selector=None, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
+        self.node_selector = node_selector
+
+    def to_dict(self):
+        res = super().to_dict()
+        res["spec"] = {
+            "containers": [
+                {
+                    "name": "winrmcli-con",
+                    "image": "kubevirt/winrmcli:latest",
+                    "command": ["bash", "-c", "/usr/bin/sleep 6000"],
+                }
+            ]
+        }
+        if self.node_selector:
+            res["spec"]["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
+
+        return res
+
+
+def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
+    bootcmds = [f"nmcli con add type ethernet con-name {iface} ifname {iface}"]
+
+    # On bare metal cluster, address is acquired by DHCP
+    # Default GW is set to eth1, thus should be removed from eth0
+    if workers_type == ClusterHosts.Type.PHYSICAL:
+        bootcmds += [
+            "nmcli connection modify eth1 ipv4.method auto",
+            "route del default gw  0.0.0.0 eth0",
+        ]
+    else:
+        bootcmds += [
+            f"nmcli con mod {iface} ipv4.addresses {ip}/24 "
+            f"ipv4.method manual connection.autoconnect-priority 1 ipv6.method ignore"
+        ]
+    bootcmds += [f"nmcli con up {iface}"]
+
+    # On PSI, change default GW to brcnv network
+    if workers_type == ClusterHosts.Type.VIRTUAL:
+        bootcmds += [
+            f"ip route replace default via " f"{default_gw}",
+            "route del default gw  0.0.0.0 eth0",
+            f"bash -c 'echo \"nameserver " f'{dns_server}" ' f">/etc/resolv.conf'",
+        ]
+
+    return bootcmds

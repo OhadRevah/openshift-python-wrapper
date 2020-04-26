@@ -1,8 +1,10 @@
+import contextlib
 import ipaddress
 import json
 import logging
 
 from openshift.dynamic.exceptions import ConflictError
+from pytest_testconfig import config as py_config
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
@@ -13,6 +15,8 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 LOGGER = logging.getLogger(__name__)
 IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
 IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
+LINUX_BRIDGE = "linux-bridge"
+OVS = "ovs"
 
 
 class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
@@ -463,6 +467,16 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         return res
 
 
+BRIDGE_DEVICE_TYPE = {
+    LINUX_BRIDGE: LinuxBridgeNodeNetworkConfigurationPolicy,
+    OVS: OvsBridgeNodeNetworkConfigurationPolicy,
+}
+BRIDGE_NAD_TYPE = {
+    LINUX_BRIDGE: LinuxBridgeNetworkAttachmentDefinition,
+    OVS: OvsBridgeNetworkAttachmentDefinition,
+}
+
+
 def get_vmi_ip_v4_by_name(vmi, name):
     sampler = TimeoutSampler(timeout=120, sleep=1, func=lambda: vmi.interfaces)
     try:
@@ -491,3 +505,26 @@ class IpNotFound(Exception):
 
     def __str__(self):
         return f"IP address not found for interface {self.name}"
+
+
+@contextlib.contextmanager
+def bridge_nad(
+    nad_type, nad_name, bridge_name, namespace, tuning=None, vlan=None, mtu=None
+):
+    kwargs = {
+        "namespace": namespace.name,
+        "name": nad_name,
+        "bridge_name": bridge_name,
+        "vlan": vlan,
+        "mtu": mtu,
+    }
+    if nad_type == LINUX_BRIDGE:
+        cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
+        tuning_type = (
+            py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
+        )
+        kwargs["cni_type"] = cni_type
+        kwargs["tuning_type"] = tuning_type
+
+    with BRIDGE_NAD_TYPE[nad_type](**kwargs) as nad:
+        yield nad

@@ -11,6 +11,7 @@ from subprocess import check_output
 
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 import yaml
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
@@ -125,8 +126,10 @@ def kubevirt_crd_resources(default_client, custom_resource_definitions):
 
 @pytest.fixture(scope="module")
 def network_attachment_definition(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.OVS if rhel7_workers else network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.OVS
+        if rhel7_workers
+        else utilities.network.LINUX_BRIDGE,
         nad_name="mgnad",
         bridge_name=rhel7_ovs_bridge if rhel7_workers else "mgbr",
         namespace=hco_namespace,
@@ -142,7 +145,7 @@ def nodenetworkstate_with_bridge(
         yield rhel7_ovs_bridge
     else:
         with network_utils.bridge_device(
-            bridge_type=network_utils.LINUX_BRIDGE,
+            bridge_type=utilities.network.LINUX_BRIDGE,
             nncp_name="must-gather-br",
             bridge_name="mgbr",
             network_utility_pods=network_utility_pods,

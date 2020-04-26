@@ -8,6 +8,7 @@ import logging
 
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 from resources.utils import TimeoutSampler
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -35,8 +36,8 @@ def count_veth_devices_on_host(pod):
 
 @pytest.fixture()
 def br1test_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR1TEST,
         bridge_name=BR1TEST,
         namespace=namespace,
@@ -46,8 +47,8 @@ def br1test_nad(namespace):
 
 @pytest.fixture()
 def br2test_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR2TEST,
         bridge_name=BR1TEST,
         namespace=namespace,
@@ -58,7 +59,7 @@ def br2test_nad(namespace):
 @pytest.fixture()
 def bridge_device(network_utility_pods, schedulable_nodes):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="veth-removed",
         bridge_name=BR1TEST,
         network_utility_pods=network_utility_pods,

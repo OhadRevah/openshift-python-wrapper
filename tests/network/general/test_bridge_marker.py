@@ -2,6 +2,7 @@
 import time
 
 import pytest
+import utilities.network
 from resources.utils import TimeoutExpiredError
 from tests.network import utils as network_utils
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -22,8 +23,8 @@ def _get_name(suffix):
 
 @pytest.fixture()
 def bridge_network(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BRIDGEMARKER1,
         bridge_name=BRIDGEMARKER1,
         namespace=namespace,
@@ -33,14 +34,14 @@ def bridge_network(namespace):
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BRIDGEMARKER2,
         bridge_name=BRIDGEMARKER2,
         namespace=namespace,
     ) as bridgemarker2_nad:
-        with network_utils.bridge_nad(
-            nad_type=network_utils.LINUX_BRIDGE,
+        with utilities.network.bridge_nad(
+            nad_type=utilities.network.LINUX_BRIDGE,
             nad_name=BRIDGEMARKER3,
             bridge_name=BRIDGEMARKER3,
             namespace=namespace,
@@ -82,7 +83,7 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods, schedulable_nodes):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="bridge-marker1",
         bridge_name=BRIDGEMARKER1,
         network_utility_pods=network_utility_pods,
@@ -94,7 +95,7 @@ def bridge_device_on_all_nodes(network_utility_pods, schedulable_nodes):
 @pytest.fixture()
 def non_homogenous_bridges(skip_when_one_node, network_utility_pods, schedulable_nodes):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="bridge-marker2",
         bridge_name=BRIDGEMARKER2,
         network_utility_pods=[network_utility_pods[0]],
@@ -102,7 +103,7 @@ def non_homogenous_bridges(skip_when_one_node, network_utility_pods, schedulable
         node_selector=network_utility_pods[0].node.name,
     ) as bridgemarker2_ncp:
         with network_utils.bridge_device(
-            bridge_type=network_utils.LINUX_BRIDGE,
+            bridge_type=utilities.network.LINUX_BRIDGE,
             nncp_name="bridge-marker3",
             bridge_name=BRIDGEMARKER3,
             network_utility_pods=[network_utility_pods[1]],

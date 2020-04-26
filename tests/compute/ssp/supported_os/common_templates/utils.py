@@ -21,6 +21,7 @@ from utilities.virt import (
     execute_winrm_cmd,
     get_guest_os_info_from_vmi,
     vm_console_run_commands,
+    wait_for_windows_vm,
 )
 
 
@@ -47,31 +48,6 @@ def reboot_vm(vm, winrmcli_pod, helper_vm=False):
     except pod.ExecOnPodError as e:
         if "connection reset by peer" in e.out:
             pass
-
-
-def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500, helper_vm=False):
-    """
-    Samples Windows VM; wait for it to complete the boot process.
-    """
-
-    LOGGER.info(
-        f"Windows VM {vm.name} booting up, "
-        f"will attempt to access it up to 25 minutes."
-    )
-
-    sampler = TimeoutSampler(
-        timeout=timeout,
-        sleep=15,
-        func=execute_winrm_cmd,
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        target_vm=vm,
-        helper_vm=helper_vm,
-        cmd="wmic os get Caption /value",
-    )
-    for sample in sampler:
-        if version in str(sample):
-            return True
 
 
 def vm_os_version(vm, console_impl):

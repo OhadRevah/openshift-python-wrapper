@@ -5,16 +5,16 @@ import logging
 import pytest
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from tests.network.utils import (
-    LINUX_BRIDGE,
     bridge_device,
-    bridge_nad,
     nmcli_add_con_cmds,
     update_cloud_init_extra_user_data,
 )
 from utilities import console
 from utilities.network import (
+    LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
+    bridge_nad,
 )
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

@@ -6,6 +6,7 @@ from time import sleep, time
 
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 from openshift.dynamic.exceptions import InternalServerError
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
@@ -187,8 +188,8 @@ def kubemacpool_second_scope(default_client, kubemacpool_namespace):
 
 @pytest.fixture(scope="module")
 def manual_mac_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="manual-mac-nad",
         bridge_name=BRIDGE_BR1,
         namespace=namespace,
@@ -198,8 +199,8 @@ def manual_mac_nad(namespace):
 
 @pytest.fixture(scope="module")
 def automatic_mac_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="automatic-mac-nad",
         bridge_name=BRIDGE_BR1,
         namespace=namespace,
@@ -209,8 +210,8 @@ def automatic_mac_nad(namespace):
 
 @pytest.fixture(scope="module")
 def manual_mac_out_of_pool_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="manual-out-pool-mac-nad",
         bridge_name=BRIDGE_BR1,
         namespace=namespace,
@@ -221,8 +222,8 @@ def manual_mac_out_of_pool_nad(namespace):
 
 @pytest.fixture(scope="module")
 def automatic_mac_tuning_net_nad(namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="automatic-mac-tun-net-nad",
         bridge_name=BRIDGE_BR1,
         namespace=namespace,
@@ -239,7 +240,7 @@ def bridge_device(
     schedulable_nodes,
 ):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="kubemacpool",
         bridge_name=BRIDGE_BR1,
         network_utility_pods=network_utility_pods,

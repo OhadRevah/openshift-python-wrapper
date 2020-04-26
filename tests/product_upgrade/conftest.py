@@ -3,6 +3,7 @@ VM to VM connectivity
 """
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 from pytest_testconfig import py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
@@ -33,7 +34,7 @@ def bridge_on_all_nodes(
     schedulable_nodes,
 ):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         bridge_name="br1upgrade",
         network_utility_pods=network_utility_pods,
@@ -46,7 +47,7 @@ def bridge_on_all_nodes(
 @pytest.fixture(scope="module")
 def bridge_on_one_node(network_utility_pods, schedulable_nodes):
     with network_utils.bridge_device(
-        bridge_type=network_utils.LINUX_BRIDGE,
+        bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         bridge_name="upg-br-mark",
         network_utility_pods=[network_utility_pods[0]],
@@ -58,8 +59,8 @@ def bridge_on_one_node(network_utility_pods, schedulable_nodes):
 
 @pytest.fixture(scope="module")
 def upgrade_bridge_marker_nad(bridge_on_one_node, upgrade_namespace):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_on_one_node.bridge_name,
         bridge_name=bridge_on_one_node.bridge_name,
         namespace=upgrade_namespace,
@@ -132,8 +133,8 @@ def kubemacpool_configmap(upgrade_namespace):
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(upgrade_namespace, bridge_on_all_nodes):
-    with network_utils.bridge_nad(
-        nad_type=network_utils.LINUX_BRIDGE,
+    with utilities.network.bridge_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_on_all_nodes.bridge_name,
         bridge_name=bridge_on_all_nodes.bridge_name,
         namespace=upgrade_namespace,
