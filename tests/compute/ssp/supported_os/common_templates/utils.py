@@ -469,6 +469,42 @@ def validate_cnv_fs_info_vs_linux_fs_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_por
     ), f"Data mismatch! CNV data {cnv_fs_info}, OS data {guest_fs_info}"
 
 
+def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
+    """ Compare OS data from guest agent subresource vs Windows guest OS data. """
+    cnv_os_info = get_cnv_os_info(vm)
+    guest_os_info = get_windows_os_info(
+        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+
+    assert (
+        cnv_os_info["guestAgentVersion"] == guest_os_info["guestAgentVersion"]
+    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
+    assert (
+        cnv_os_info["hostname"] == guest_os_info["hostname"]
+    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
+    assert (
+        cnv_os_info["timezone"].split(",")[0] in guest_os_info["timezone"]
+    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
+    for key, val in cnv_os_info["os"].items():
+        if key != "id":
+            assert (
+                val.split("_")[1] if "machine" in key else val in guest_os_info["os"]
+            ), f"Data mismatch! CNV data {val} not in OS data {guest_os_info}"
+
+
+def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
+    """ Compare FS data from guest agent subresource vs Windows guest OS data. """
+    cnv_fs_info = get_cnv_fs_info(vm)
+    guest_fs_info = get_windows_fs_info(
+        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+
+    for _key, val in cnv_fs_info.items():
+        assert (
+            str(val) in guest_fs_info
+        ), f"Data mismatch! CNV data {val} not in OS data {guest_fs_info}"
+
+
 def get_linux_os_info_from_ssh(ip, port, username, passwd):
     """
     Gets Linux OS info via SSH from etc/os-release and uname -r -v.
@@ -505,6 +541,126 @@ def get_linux_os_info_from_ssh(ip, port, username, passwd):
     }
 
 
+def get_windows_os_info(vm, winrmcli_pod, helper_vm=False):
+    """ Gets Windows OS info via winrm-cli. """
+    ga_ver = get_windows_guest_agent_version(
+        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
+    ).strip()
+    hostname = get_windows_hostname(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
+    os_release = get_windows_os_release(
+        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+    timezone = get_windows_timezone(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
+
+    return {
+        "guestAgentVersion": guest_version_extractor(ga_ver),
+        "hostname": hostname.strip().split("=")[1],
+        "os": os_release,
+        "timezone": timezone,
+    }
+
+
+def get_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
+    """ Gets Windows filesystem info via winrm-cli. """
+    disk_name = get_windows_volume_list(
+        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+    disk_space = (
+        get_windows_volume_space(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
+        .strip()
+        .split("\r\n")
+    )
+    fs_type = get_windows_volume_info(
+        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
+    )
+
+    return f"{disk_name} {windows_disk_space_extractor(disk_space)} {fs_type}"
+
+
+def get_windows_guest_agent_version(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = 'wmic datafile \\"C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe\\" get Version /value'
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def get_windows_hostname(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = "wmic os get CSName /value"
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def get_windows_os_release(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def get_windows_timezone(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = 'powershell -command "Get-TimeZone"'
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def get_windows_volume_list(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = "fsutil volume list"
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def get_windows_volume_space(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = "fsutil volume diskfree C:"
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
+def get_windows_volume_info(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = "fsutil fsinfo volumeinfo C:"
+    return execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+
 def get_linux_os_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
     host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=ssh_ip, port=ssh_port)
     ga_ver = get_linux_guest_agent_version(rrmngmnt_host=host)
@@ -538,7 +694,7 @@ def get_linux_fs_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
 def get_linux_guest_agent_version(rrmngmnt_host):
     cmd = ["yum", "list", "-q", "installed", "qemu-g*"]
     rc, out, err = rrmngmnt_host.run_command(cmd)
-    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", out).group(0)
+    return guest_version_extractor(out)
 
 
 def get_linux_filesystem(rrmngmnt_host):
@@ -559,9 +715,16 @@ def fsinfo_disk_dict(name, mount, fstype, used, total):
         "diskName": name,
         "mountPoint": mount,
         "fileSystemType": fstype,
-        "usedBytes": round(int(used) / 1024 ** 3, 2),
-        "totalBytes": round(int(total) / 1024 ** 4, 2),
+        "usedBytes": round(int(used) / 1024 ** 3, 1),
+        "totalBytes": round(int(total) / 1024 ** 4, 1),
     }
+
+
+def windows_disk_space_extractor(fsinfo_list):
+    disk_space = [x.split(": ")[1].split()[0].replace(",", "") for x in fsinfo_list]
+    used = round((int(disk_space[1]) - int(disk_space[0])) / 1024 ** 3, 1)
+    total = round(int(disk_space[1]) / 1024 ** 4, 1)
+    return f"used {used}, total {total}\n"
 
 
 def execute_virsh_qemu_agent_command(vm, command):
@@ -571,6 +734,10 @@ def execute_virsh_qemu_agent_command(vm, command):
         container="compute",
     )
     return json.loads(output)["return"]
+
+
+def guest_version_extractor(version_string):
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", version_string).group(0)
 
 
 def get_libvirt_os_info(vm):

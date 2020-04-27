@@ -81,6 +81,46 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3573")
+    def test_guest_agent_subresource_os_info(
+        self,
+        vm_object_from_template_windows_os,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
+        windows_os_matrix__class__,
+    ):
+        utils.validate_cnv_os_info_vs_libvirt_os_info(
+            vm=vm_object_from_template_windows_os
+        )
+        # win-12 doesn't support powershell commands
+        if "win-12" not in [*windows_os_matrix__class__][0]:
+            utils.validate_cnv_os_info_vs_windows_os_info(
+                vm=vm_object_from_template_windows_os,
+                winrmcli_pod=winrmcli_pod_scope_class,
+                helper_vm=bridge_attached_helper_vm,
+            )
+
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3574")
+    def test_guest_agent_subresource_fs_info(
+        self,
+        vm_object_from_template_windows_os,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
+        windows_os_matrix__class__,
+    ):
+        utils.validate_cnv_fs_info_vs_libvirt_fs_info(
+            vm=vm_object_from_template_windows_os
+        )
+        # win-12 doesn't support fsutil commands
+        if "win-12" not in [*windows_os_matrix__class__][0]:
+            utils.validate_cnv_fs_info_vs_windows_fs_info(
+                vm=vm_object_from_template_windows_os,
+                winrmcli_pod=winrmcli_pod_scope_class,
+                helper_vm=bridge_attached_helper_vm,
+            )
+
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3303")
     @pytest.mark.bugzilla(
