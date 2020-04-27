@@ -7,8 +7,7 @@ import subprocess
 
 import pytest
 import tests.network.utils as network_utils
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from rrmngmnt import power_manager
+from resources.utils import TimeoutSampler
 from utilities.network import BondNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -19,39 +18,8 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-
-TIMEOUT = 120
-SLEEP = 15
-
-
-def interface_status(worker_executor, nic_name):
-    """
-    Parameters:
-        worker_executor (executor) - The specific executor
-        nic_name (str)- The specific interface status checked
-
-    Returns:
-        If interface exists and in Up state - The interface's IP (str)
-        Else - None
-    """
-    worker_network = worker_executor.network
-    LOGGER.info(f"Wait until ip is assigned to interface - {nic_name}")
-    if worker_network.get_interface_status(interface=nic_name) == "up":
-        samples = TimeoutSampler(
-            timeout=TIMEOUT,
-            sleep=SLEEP,
-            func=worker_network.find_ip_by_int,
-            interface=nic_name,
-        )
-        try:
-            for sample in samples:
-                if sample:
-                    return sample
-        except TimeoutExpiredError:
-            LOGGER.info(
-                f"Timeout error while waiting for ip to be assigned to interface - {nic_name}"
-            )
-            return None
+TIMEOUT = 600
+SLEEP = 5
 
 
 @pytest.fixture(scope="class")
@@ -118,29 +86,32 @@ def bond(
         yield bond
 
 
+@pytest.fixture(scope="class")
+def get_pod_with_bond(network_utility_pods, bond):
+    """
+    Returns:
+        The specific pod on the worker node with the bond
+    """
+    for pod in network_utility_pods:
+        if pod.node.name == bond.node_selector:
+            return pod
+
+
 @pytest.mark.destructive
 class TestBondConnectivityWithNodesDefaultInterface:
     @pytest.mark.polarion("CNV-3432")
     def test_bond_config(
-        self,
-        skip_no_bond_support,
-        namespace,
-        schedulable_node_ips,
-        schedulable_nodes,
-        workers_ssh_executors,
-        bond,
+        self, skip_no_bond_support, namespace, bond, get_pod_with_bond,
     ):
         """
         Check that bond interface exists on the specific worker node,
         in Up state and has valid IP address.
         """
-        interface_status_ip = interface_status(
-            worker_executor=workers_ssh_executors[bond.node_selector],
-            nic_name=bond.bond_name,
+        bond_ip = network_utils.wait_for_address_on_iface(
+            worker_pod=get_pod_with_bond, iface_name=bond.bond_name,
         )
-        assert interface_status_ip
         # Check connectivity
-        assert subprocess.check_output(["ping", "-c", "1", interface_status_ip])
+        assert subprocess.check_output(["ping", "-c", "1", bond_ip])
 
     @pytest.mark.polarion("CNV-3433")
     def test_vm_connectivity_over_linux_bond(
@@ -171,33 +142,28 @@ class TestBondConnectivityWithNodesDefaultInterface:
         skip_when_one_node,
         skip_no_bond_support,
         namespace,
-        nodes_active_nics,
-        network_utility_pods,
-        schedulable_nodes,
         workers_ssh_executors,
         bond,
+        get_pod_with_bond,
     ):
         """
         Verify bond interface status and persistence after reboot
         """
-        assert interface_status(
-            worker_executor=workers_ssh_executors[bond.node_selector],
-            nic_name=bond.bond_name,
+        worker_exec = workers_ssh_executors[bond.node_selector]
+        network_utils.wait_for_address_on_iface(
+            worker_pod=get_pod_with_bond, iface_name=bond.bond_name,
         )
-        host = workers_ssh_executors[bond.node_selector]
-        host_executor = host.executor()
-        host.add_power_manager(pm_type=power_manager.SSH_TYPE)
-        pm = host.get_power_manager(pm_type=power_manager.SSH_TYPE)
+
         # REBOOT - Check persistence
-        pm.restart()
+        worker_exec.executor().run_cmd(cmd=["bash", "-c", "sudo reboot"])
         LOGGER.info(f"Wait until {bond.node_selector} reboots ...")
         samples = TimeoutSampler(
-            timeout=TIMEOUT, sleep=SLEEP, func=host_executor.is_connective,
+            timeout=TIMEOUT, sleep=SLEEP, func=worker_exec.executor().is_connective,
         )
         for sample in samples:
             if sample:
-                assert interface_status(
-                    worker_executor=workers_ssh_executors[bond.node_selector],
-                    nic_name=bond.bond_name,
-                )
-                return
+                break
+
+        network_utils.wait_for_address_on_iface(
+            worker_pod=get_pod_with_bond, iface_name=bond.bond_name,
+        )
