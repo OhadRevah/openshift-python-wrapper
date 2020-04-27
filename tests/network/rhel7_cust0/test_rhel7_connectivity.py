@@ -6,7 +6,6 @@ from collections import OrderedDict
 import pytest
 import utilities.network
 from tests.network.utils import assert_ping_successful, nmcli_add_con_cmds
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import bridge_nad, get_vmi_ip_v4_by_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -104,41 +103,19 @@ def running_bridge_attached_vmib(bridge_attached_vmb):
     return vmi
 
 
-class TestConnectivity:
-    @pytest.mark.parametrize(
-        "bridge",
-        [
-            pytest.param(
-                "default",
-                marks=(
-                    pytest.mark.polarion("CNV-3692"),
-                    pytest.mark.bugzilla(
-                        1787576,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
-                id="RHEL7-Connectivity_between_VM_to_VM_over_POD_network_make_sure_it_works_while_L2_networks_exists",
-            ),
-            pytest.param(
-                "br1test-nad",
-                marks=(pytest.mark.polarion("CNV-3691")),
-                id="RHEL7-Connectivity_between_VM_to_VM_over_L2_bridge_network",
-            ),
-        ],
+@pytest.mark.polarion("CNV-3691")
+def test_l2_bridge_connectivity(
+    skip_no_rhel7_workers,
+    rhel7_workers,
+    skip_when_one_node,
+    namespace,
+    nad,
+    bridge_attached_vma,
+    bridge_attached_vmb,
+    running_bridge_attached_vmia,
+    running_bridge_attached_vmib,
+):
+    assert_ping_successful(
+        src_vm=running_bridge_attached_vmia,
+        dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, nad.name),
     )
-    def test_bridge(
-        self,
-        bridge,
-        skip_no_rhel7_workers,
-        rhel7_workers,
-        skip_when_one_node,
-        namespace,
-        bridge_attached_vma,
-        bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
-    ):
-        assert_ping_successful(
-            src_vm=running_bridge_attached_vmia,
-            dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
-        )
