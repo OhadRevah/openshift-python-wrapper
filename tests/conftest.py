@@ -359,7 +359,7 @@ def login_to_account(api_address, user, password=None):
         login_command += f" -p {password}"
 
     samples = TimeoutSampler(
-        timeout=120,
+        timeout=60,
         sleep=3,
         exceptions=CalledProcessError,
         func=Popen,
@@ -368,18 +368,22 @@ def login_to_account(api_address, user, password=None):
         stdout=PIPE,
         stderr=PIPE,
     )
-    for sample in samples:
-        LOGGER.info(
-            f"Trying to login to {user} user shell. Login command: {login_command}"
-        )
-        login_result = sample.communicate()
-        if sample.returncode == 0:
-            LOGGER.info(f"Login to {user} user shell - success")
-            return
-        LOGGER.warning(
-            f"Login to unprivileged user - failed due to the following error: "
-            f"{login_result[0].decode('utf-8')} {login_result[1].decode('utf-8')}"
-        )
+    try:
+        for sample in samples:
+            LOGGER.info(
+                f"Trying to login to {user} user shell. Login command: {login_command}"
+            )
+            login_result = sample.communicate()
+            if sample.returncode == 0:
+                LOGGER.info(f"Login to {user} user shell - success")
+                return
+
+            LOGGER.warning(
+                f"Login to unprivileged user - failed due to the following error: "
+                f"{login_result[0].decode('utf-8')} {login_result[1].decode('utf-8')}"
+            )
+    except TimeoutExpiredError:
+        return
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -466,23 +470,28 @@ def unprivileged_client(default_client, unprivileged_secret):
         check_output("oc whoami", shell=True).decode().strip()
     )  # Get current admin account
     kubeconfig_env = os.environ["KUBECONFIG"]
+    kube_config_exists = os.path.isfile(
+        os.path.join(os.path.expanduser("~"), ".kube/config")
+    )
     try:
-        os.environ["KUBECONFIG"] = ""
+        if kube_config_exists:
+            os.environ["KUBECONFIG"] = ""
+
         login_to_account(
             api_address=default_client.configuration.host,
             user=UNPRIVILEGED_USER,
             password=UNPRIVILEGED_PASSWORD,
         )  # Login to unprivileged account
         token = check_output("oc whoami -t", shell=True).decode().strip()  # Get token
-    except TimeoutExpiredError:
-        os.environ["KUBECONFIG"] = kubeconfig_env
-        return
     finally:
         os.environ["KUBECONFIG"] = kubeconfig_env
+        login_to_account(
+            api_address=default_client.configuration.host, user=current_user.strip()
+        )  # Get back to admin account
 
-    login_to_account(
-        api_address=default_client.configuration.host, user=current_user.strip()
-    )  # Get back to admin account
+    if not token:
+        return
+
     token_auth = {
         "api_key": {"authorization": f"Bearer {token}"},
         "host": default_client.configuration.host,
@@ -496,7 +505,9 @@ def unprivileged_client(default_client, unprivileged_secret):
     k8s_client = kubernetes.client.ApiClient(configuration)
     yield DynamicClient(k8s_client)
     try:
-        os.environ["KUBECONFIG"] = ""
+        if kube_config_exists:
+            os.environ["KUBECONFIG"] = ""
+
         login_to_account(
             api_address=default_client.configuration.host,
             user=UNPRIVILEGED_USER,
