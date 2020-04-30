@@ -2,6 +2,8 @@ import contextlib
 import logging
 import re
 
+from resources.node_network_state import NodeNetworkState
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from utilities import console
 from utilities.network import BRIDGE_DEVICE_TYPE
 
@@ -81,3 +83,25 @@ def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_dat
             cloud_init_data.update(cloud_init_extra_user_data)
         else:
             cloud_init_data[k] = cloud_init_data[k] + v
+
+
+def wait_for_address_on_iface(worker_pod, iface_name):
+    """
+    This function returns worker's ip else throws 'resources.utils.TimeoutExpiredError: Timed Out:
+    if function passed in func argument failed.
+    """
+    log = "Worker ip address for {iface_name} : {sample}"
+    samples = TimeoutSampler(
+        timeout=30,
+        sleep=1,
+        func=NodeNetworkState(worker_pod.node.name).ipv4,
+        iface=iface_name,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                LOGGER.info(log.format(iface_name=iface_name, sample=sample))
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error(log.format(iface_name=iface_name, sample=sample))
+        raise
