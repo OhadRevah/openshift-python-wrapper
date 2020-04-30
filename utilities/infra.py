@@ -26,6 +26,7 @@ class Images:
         RHEL7_6_IMG = "rhel-76.qcow2"
         RHEL7_7_IMG = "rhel-77.qcow2"
         RHEL7_8_IMG = "rhel-78.qcow2"
+        RHEL7_9_IMG = "rhel-79.qcow2"
         RHEL8_0_IMG = "rhel-8.qcow2"
         RHEL8_1_IMG = "rhel-81.qcow2"
         RHEL8_2_IMG = "rhel-82.qcow2"

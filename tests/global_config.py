@@ -114,6 +114,17 @@ rhel_os_matrix = [
         }
     },
     {
+        "rhel-7-9": {
+            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
+            # TODO: Modify to 7.9 once it is added to templates
+            "template_labels": {
+                "os": "rhel7.7",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
         "rhel-8-0": {
             "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_0_IMG),
             "template_labels": {
