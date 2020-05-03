@@ -80,8 +80,8 @@ def test_successful_vm_restart_with_cloned_dv(
     ) as cdv:
         cdv.wait(timeout=600)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
             vm_dv.restart(timeout=300, wait=True)
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.parametrize(
