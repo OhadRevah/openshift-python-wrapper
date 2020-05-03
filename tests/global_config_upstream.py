@@ -1,9 +1,8 @@
-import os
-
-from utilities.infra import Images
+import pytest_testconfig
 
 
 global config
+global_config = pytest_testconfig.load_python("tests/global_config.py", "utf-8")
 
 no_unprivileged_client = True
 distribution = "upstream"
@@ -18,21 +17,6 @@ template_defaults = {
 
 default_storage_class = "local"
 default_volume_mode = "Filesystem"
-
-latest_rhel_version = {
-    "os_label": "rhel8.1",
-    "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_1_IMG),
-}
-latest_windows_version = {
-    "os_label": "win2k19",
-    "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
-}
-latest_fedora_version = {
-    "os_label": "fedora31",
-    "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA31_IMG),
-}
-windows_username = "Administrator"
-windows_password = "Heslo123"
 
 region = "USA"
 
