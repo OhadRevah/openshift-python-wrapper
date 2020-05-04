@@ -176,6 +176,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     class Status(NamespacedResource.Status):
         RUNNING = "Running"
+        SCHEDULING = "Scheduling"
 
     def __init__(self, name, namespace, client=None, username=None, password=None):
         super().__init__(name=name, namespace=namespace, client=client)

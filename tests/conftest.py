@@ -1050,6 +1050,7 @@ def vm_instance_from_template(
     data_volume,
     network_configuration,
     cloud_init_data,
+    schedulable_nodes=None,
 ):
     """ Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
@@ -1077,6 +1078,9 @@ def vm_instance_from_template(
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
         attached_secret=params.get("attached_secret"),
+        node_selector=schedulable_nodes[params.get("node_selector_index")].name
+        if params.get("node_selector_index") is not None
+        else None,
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True)
