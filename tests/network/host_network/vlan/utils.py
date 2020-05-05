@@ -128,3 +128,18 @@ def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_li
 
     err_msg = "VLAN interface {iface_name} on node {node} assigned a dynamic IP."
     sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
+
+
+def assert_vlan_interface(iface_name, workers_ssh_executors):
+    def _vlan_iface():
+        node = None
+        for node in workers_ssh_executors:
+            iface_status = workers_ssh_executors[node].network.get_interface_status(
+                iface_name
+            )
+            if iface_status is None:
+                return False, node
+        return True, node
+
+    err_msg = "No VLAN interface {iface_name} found on node {node}."
+    sampling_handler(sampled_func=_vlan_iface, err_msg=err_msg, iface_name=iface_name)

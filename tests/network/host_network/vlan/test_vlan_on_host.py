@@ -7,6 +7,7 @@ import pytest
 from tests.network.host_network.vlan.utils import (
     assert_vlan_dynamic_ip,
     assert_vlan_iface_no_ip,
+    assert_vlan_interface,
 )
 
 
@@ -14,9 +15,22 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TestVlanInterface:
+    @pytest.mark.polarion("CNV-4161")
+    def test_vlan_interface_on_all_hosts(
+        self,
+        skip_rhel7_workers,
+        workers_ssh_executors,
+        namespace,
+        vlan_iface_on_all_nodes,
+    ):
+        assert_vlan_interface(
+            iface_name=vlan_iface_on_all_nodes.iface_name,
+            workers_ssh_executors=workers_ssh_executors,
+        )
+
     @pytest.mark.run(before="test_vlan_deletion")
     @pytest.mark.polarion("CNV-3451")
-    def test_vlan_connectivity_on_all_hosts(
+    def test_vlan_connectivity_on_several_hosts(
         self,
         skip_when_one_node,
         skip_rhel7_workers,

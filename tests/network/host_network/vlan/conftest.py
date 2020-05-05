@@ -97,6 +97,23 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
         yield vlan_iface
 
 
+@pytest.fixture(scope="module")
+def vlan_iface_on_all_nodes(
+    skip_if_no_multinic_nodes,
+    network_utility_pods,
+    nodes_active_nics,
+    vlan_tag_id,
+    vlan_base_iface,
+):
+    with VLANInterfaceNodeNetworkConfigurationPolicy(
+        worker_pods=network_utility_pods,
+        iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
+        base_iface=vlan_base_iface,
+        tag=vlan_tag_id,
+    ) as vlan_iface:
+        yield vlan_iface
+
+
 # DHCP VM fixtures
 @pytest.fixture(scope="module")
 def dhcp_server(running_dhcp_server_vm):
@@ -145,7 +162,7 @@ def running_dhcp_server_vm(dhcp_server_vm):
 
 @pytest.fixture(scope="module")
 def dhcp_server_bridge(
-    dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, node_selector_name,
+    dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, node_selector_name
 ):
     bridge_name = f"{dhcp_server_vlan_iface.iface_name}-br"
     with bridge_device(
