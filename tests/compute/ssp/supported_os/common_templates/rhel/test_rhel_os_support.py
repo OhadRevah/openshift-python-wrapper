@@ -8,7 +8,9 @@ import logging
 
 import pytest
 import utilities.virt
-from tests.compute.ssp.supported_os.common_templates import utils
+from tests.compute.ssp.supported_os.common_templates import (
+    utils as common_templates_utils,
+)
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
 from utilities.virt import wait_for_console
@@ -82,7 +84,7 @@ class TestCommonTemplatesRhel:
     ):
         """ Test CNV common templates OS version """
 
-        utils.vm_os_version(
+        common_templates_utils.vm_os_version(
             vm=vm_object_from_template_rhel_os, console_impl=console.RHEL
         )
 
@@ -141,13 +143,13 @@ class TestCommonTemplatesRhel:
             systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
-        assert utils.check_ssh_connection(
-            ip=utils.get_vm_accessible_ip(
+        assert common_templates_utils.check_ssh_connection(
+            ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_rhel_os,
             ),
-            port=utils.get_vm_ssh_port(
+            port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_rhel_os
             ),
             console_impl=console.RHEL,
@@ -155,7 +157,7 @@ class TestCommonTemplatesRhel:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3513")
-    def test_guest_agent_info(
+    def test_vmi_guest_agent_info(
         self,
         skip_upstream,
         unprivileged_client,
@@ -171,22 +173,22 @@ class TestCommonTemplatesRhel:
         if "rhel-6" in [*rhel_os_matrix__class__][0]:
             pytest.skip("RHEL6 does not have guest agent")
 
-        utils.validate_linux_guest_agent_info(
+        common_templates_utils.validate_vmi_ga_info_vs_linux_os_info(
             vm=vm_object_from_template_rhel_os,
-            ip=utils.get_vm_accessible_ip(
+            ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_rhel_os,
             ),
-            ssh_port=utils.get_vm_ssh_port(
+            ssh_port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_rhel_os
             ),
-            username=console.RHEL.USERNAME,
-            passwd=console.RHEL.PASSWORD,
+            ssh_usr=console.RHEL.USERNAME,
+            ssh_pass=console.RHEL.PASSWORD,
         )
 
     @pytest.mark.run(after="test_expose_ssh")
-    @pytest.mark.polarion("CNV-3573")
+    @pytest.mark.polarion("CNV-4195")
     def test_guest_agent_subresource_os_info(
         self,
         rhel_os_matrix__class__,
@@ -198,17 +200,17 @@ class TestCommonTemplatesRhel:
         if "rhel-6" in [*rhel_os_matrix__class__][0]:
             pytest.skip("RHEL6 does not have guest agent")
 
-        utils.validate_cnv_os_info_vs_libvirt_os_info(
+        common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
             vm=vm_object_from_template_rhel_os
         )
-        utils.validate_cnv_os_info_vs_linux_os_info(
+        common_templates_utils.validate_cnv_os_info_vs_linux_os_info(
             vm=vm_object_from_template_rhel_os,
-            ssh_ip=utils.get_vm_accessible_ip(
+            ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_rhel_os,
             ),
-            ssh_port=utils.get_vm_ssh_port(
+            ssh_port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_rhel_os
             ),
             ssh_usr=console.RHEL.USERNAME,
@@ -226,7 +228,7 @@ class TestCommonTemplatesRhel:
         data_volume_rhel_os,
         vm_object_from_template_rhel_os,
     ):
-        utils.check_machine_type(vm=vm_object_from_template_rhel_os)
+        common_templates_utils.check_machine_type(vm=vm_object_from_template_rhel_os)
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3269")
@@ -241,5 +243,5 @@ class TestCommonTemplatesRhel:
     ):
         """ Test CNV common templates VM deletion """
 
-        if not utils.vm_deleted(vm=vm_object_from_template_rhel_os):
+        if not common_templates_utils.vm_deleted(vm=vm_object_from_template_rhel_os):
             pytest.xfail("VM was not created, nothing to delete.")

@@ -18,9 +18,7 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from rrmngmnt import ssh, user
 from tests.compute.utils import vm_started
 from utilities.virt import (
-    execute_ssh_command,
     execute_winrm_cmd,
-    get_guest_os_info_from_vmi,
     vm_console_run_commands,
     wait_for_windows_vm,
 )
@@ -412,19 +410,6 @@ def check_default_and_validation_memory(
         )
 
 
-def os_info_parser(os_info_list, field_name):
-    return "".join(
-        [x.split("=")[1] for x in os_info_list if x.startswith(f"{field_name}=")]
-    )
-
-
-def validate_linux_guest_agent_info(vm, ip, ssh_port, username, passwd):
-    """ Compare guest OS info from VMI (reported by guest agent) and from OS itself. """
-    assert get_guest_os_info_from_vmi(vmi=vm.vmi) == get_linux_os_info_from_ssh(
-        ip=ip, port=ssh_port, username=username, passwd=passwd
-    )
-
-
 def validate_cnv_os_info_vs_libvirt_os_info(vm):
     """ Compare OS data from guest agent subresource vs libvirt data. """
     cnv_os_info = get_cnv_os_info(vm)
@@ -505,40 +490,28 @@ def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
         ), f"Data mismatch! CNV data {val} not in OS data {guest_fs_info}"
 
 
-def get_linux_os_info_from_ssh(ip, port, username, passwd):
-    """
-    Gets Linux OS info via SSH from etc/os-release and uname -r -v.
-    Return dict (should be same format as dict from "get_guest_os_info_from_vmi") keys:
-    'id', 'kernelRelease', 'kernelVersion', 'name', 'prettyName', 'version', 'versionId'
-    """
-    os_release_output_list = (
-        execute_ssh_command(
-            username=username,
-            passwd=passwd,
-            ip=ip,
-            port=port,
-            cmd=["cat", "/etc/os-release"],
-        )
-        .replace('"', "")
-        .split("\n")
-    )
-    kernel_info_output_list = execute_ssh_command(
-        username=username,
-        passwd=passwd,
-        ip=ip,
-        port=port,
-        cmd=["uname", "-r", ";", "uname", "-v"],
-    ).split("\n")
+def validate_vmi_ga_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    """ Compare OS data from VMI object vs Linux guest OS data. """
+    vmi_info = dict(vm.vmi.guest_os_info)
+    os_info = get_linux_os_info(
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
+    )["os"]
+    del os_info["machine"]  # VMI describe doesn't have machine info
+    os_info["version"] = os_info["version"].split(" ")[0]
 
-    return {
-        "id": os_info_parser(os_release_output_list, "ID"),
-        "kernelRelease": kernel_info_output_list[0],
-        "kernelVersion": kernel_info_output_list[1],
-        "name": os_info_parser(os_release_output_list, "NAME"),
-        "prettyName": os_info_parser(os_release_output_list, "PRETTY_NAME"),
-        "version": os_info_parser(os_release_output_list, "VERSION").split(" ")[0],
-        "versionId": os_info_parser(os_release_output_list, "VERSION_ID"),
-    }
+    assert vmi_info == os_info, f"Data mismatch! VMI data {vmi_info}, OS data {os_info}"
+
+
+def validate_vmi_ga_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
+    """ Compare OS data from VMI object vs Windows guest OS data. """
+    vmi_info = dict(vm.vmi.guest_os_info)
+    os_info = get_windows_os_release(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
+
+    for key, val in vmi_info.items():
+        if key != "id":
+            assert (
+                val.split("r")[0] if "version" in key else val in os_info
+            ), f"Data mismatch! VMI data {val} not in OS data {os_info}"
 
 
 def get_windows_os_info(vm, winrmcli_pod, helper_vm=False):

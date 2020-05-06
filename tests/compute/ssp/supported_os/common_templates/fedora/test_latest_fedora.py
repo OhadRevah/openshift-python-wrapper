@@ -7,10 +7,12 @@ Common templates test latest Fedora
 import logging
 
 import pytest
-import tests.compute.utils
 import utilities.virt
 from pytest_testconfig import config as py_config
-from tests.compute.ssp.supported_os.common_templates import utils
+from tests.compute.ssp.supported_os.common_templates import (
+    utils as common_templates_utils,
+)
+from tests.compute.utils import vm_started
 from utilities import console
 from utilities.virt import wait_for_console
 
@@ -102,7 +104,7 @@ class TestCommonTemplatesFedora:
     ):
         """ Test CNV common templates VM initiation """
 
-        tests.compute.utils.vm_started(vm=vm_object_from_template_scope_class)
+        vm_started(vm=vm_object_from_template_scope_class)
 
     @pytest.mark.run("test_start_vm")
     @pytest.mark.polarion("CNV-2651")
@@ -114,8 +116,12 @@ class TestCommonTemplatesFedora:
         vm_object_from_template_scope_class,
     ):
         LOGGER.info("Verify VMI HyperV values.")
-        utils.check_vm_xml_hyperv(vm=vm_object_from_template_scope_class)
-        utils.check_vm_xml_clock(vm=vm_object_from_template_scope_class)
+        common_templates_utils.check_vm_xml_hyperv(
+            vm=vm_object_from_template_scope_class
+        )
+        common_templates_utils.check_vm_xml_clock(
+            vm=vm_object_from_template_scope_class
+        )
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3344")
@@ -142,7 +148,7 @@ class TestCommonTemplatesFedora:
     ):
         """ Test CNV common templates OS version """
 
-        utils.vm_os_version(
+        common_templates_utils.vm_os_version(
             vm=vm_object_from_template_scope_class, console_impl=console.Fedora
         )
 
@@ -184,13 +190,13 @@ class TestCommonTemplatesFedora:
             vm=vm_object_from_template_scope_class, console_impl=console.Fedora
         )
 
-        assert utils.check_ssh_connection(
-            ip=utils.get_vm_accessible_ip(
+        assert common_templates_utils.check_ssh_connection(
+            ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_scope_class,
             ),
-            port=utils.get_vm_ssh_port(
+            port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
             ),
             console_impl=console.Fedora,
@@ -198,7 +204,7 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3937")
-    def test_guest_agent_info(
+    def test_vmi_guest_agent_info(
         self,
         data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
@@ -206,18 +212,18 @@ class TestCommonTemplatesFedora:
         rhel7_workers,
     ):
         """ Test Guest OS agent info. """
-        utils.validate_linux_guest_agent_info(
+        common_templates_utils.validate_vmi_ga_info_vs_linux_os_info(
             vm=vm_object_from_template_scope_class,
-            ip=utils.get_vm_accessible_ip(
+            ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_scope_class,
             ),
-            ssh_port=utils.get_vm_ssh_port(
+            ssh_port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
             ),
-            username=console.Fedora.USERNAME,
-            passwd=console.Fedora.PASSWORD,
+            ssh_usr=console.Fedora.USERNAME,
+            ssh_pass=console.Fedora.PASSWORD,
         )
 
     @pytest.mark.run(after="test_expose_ssh")
@@ -229,17 +235,17 @@ class TestCommonTemplatesFedora:
         rhel7_workers,
         data_volume_multi_storage_scope_class,
     ):
-        utils.validate_cnv_os_info_vs_libvirt_os_info(
+        common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
             vm=vm_object_from_template_scope_class
         )
-        utils.validate_cnv_os_info_vs_linux_os_info(
+        common_templates_utils.validate_cnv_os_info_vs_linux_os_info(
             vm=vm_object_from_template_scope_class,
-            ssh_ip=utils.get_vm_accessible_ip(
+            ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_scope_class,
             ),
-            ssh_port=utils.get_vm_ssh_port(
+            ssh_port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
             ),
             ssh_usr=console.Fedora.USERNAME,
@@ -255,17 +261,17 @@ class TestCommonTemplatesFedora:
         rhel7_workers,
         data_volume_multi_storage_scope_class,
     ):
-        utils.validate_cnv_fs_info_vs_libvirt_fs_info(
+        common_templates_utils.validate_cnv_fs_info_vs_libvirt_fs_info(
             vm=vm_object_from_template_scope_class
         )
-        utils.validate_cnv_fs_info_vs_linux_fs_info(
+        common_templates_utils.validate_cnv_fs_info_vs_linux_fs_info(
             vm=vm_object_from_template_scope_class,
-            ssh_ip=utils.get_vm_accessible_ip(
+            ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
                 vm=vm_object_from_template_scope_class,
             ),
-            ssh_port=utils.get_vm_ssh_port(
+            ssh_port=common_templates_utils.get_vm_ssh_port(
                 rhel7_workers=rhel7_workers, vm=vm_object_from_template_scope_class
             ),
             ssh_usr=console.Fedora.USERNAME,
@@ -281,7 +287,9 @@ class TestCommonTemplatesFedora:
         data_volume_multi_storage_scope_class,
         vm_object_from_template_scope_class,
     ):
-        utils.check_machine_type(vm=vm_object_from_template_scope_class)
+        common_templates_utils.check_machine_type(
+            vm=vm_object_from_template_scope_class
+        )
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3346")
@@ -294,5 +302,7 @@ class TestCommonTemplatesFedora:
     ):
         """ Test CNV common templates VM deletion """
 
-        if not utils.vm_deleted(vm=vm_object_from_template_scope_class):
+        if not common_templates_utils.vm_deleted(
+            vm=vm_object_from_template_scope_class
+        ):
             pytest.xfail("VM was not created, nothing to delete.")
