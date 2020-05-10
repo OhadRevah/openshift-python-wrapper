@@ -102,18 +102,6 @@ def bridge_attached_vmb(namespace, unprivileged_client):
         yield vm
 
 
-@pytest.fixture()
-def running_bridge_attached_vma(bridge_attached_vma):
-    bridge_attached_vma.vmi.wait_until_running()
-    return bridge_attached_vma
-
-
-@pytest.fixture()
-def running_bridge_attached_vmb(bridge_attached_vmb):
-    bridge_attached_vmb.vmi.wait_until_running()
-    return bridge_attached_vmb
-
-
 @pytest.mark.polarion("CNV-681")
 def test_veth_removed_from_host_after_vm_deleted(
     skip_rhel7_workers,
@@ -123,8 +111,6 @@ def test_veth_removed_from_host_after_vm_deleted(
     bridge_device,
     bridge_attached_vma,
     bridge_attached_vmb,
-    running_bridge_attached_vma,
-    running_bridge_attached_vmb,
 ):
     """
     Check that veth interfaces are removed from host after VM deleted
