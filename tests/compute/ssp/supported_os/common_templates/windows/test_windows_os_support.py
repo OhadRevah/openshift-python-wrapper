@@ -209,6 +209,49 @@ class TestCommonTemplatesWindows:
     ):
         utils.check_machine_type(vm=vm_object_from_template_windows_os)
 
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-3087")
+    def test_pause_unpause_vm(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix__class__,
+        data_volume_windows_os,
+        vm_object_from_template_windows_os,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
+    ):
+        """ Test VM pause and unpause """
+
+        pre_pause_processid = utils.start_and_fetch_processid_on_windows_vm(
+            vm=vm_object_from_template_windows_os,
+            winrmcli_pod=winrmcli_pod_scope_class,
+            process_name="mspaint.exe",
+            helper_vm=bridge_attached_helper_vm,
+        )
+        LOGGER.info(f"Pre pause processid is: {pre_pause_processid}")
+        vm_object_from_template_windows_os.vmi.pause(wait=True)
+
+        vm_object_from_template_windows_os.vmi.unpause(wait=True)
+
+        utils.wait_for_windows_vm(
+            vm=vm_object_from_template_windows_os,
+            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
+                "os_version"
+            ],
+            winrmcli_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
+        )
+        post_pause_processid = utils.fetch_processid_from_windows_vm(
+            vm=vm_object_from_template_windows_os,
+            winrmcli_pod=winrmcli_pod_scope_class,
+            process_name="mspaint.exe",
+            helper_vm=bridge_attached_helper_vm,
+        )
+        LOGGER.info(f"Post pause processid is: {post_pause_processid}")
+        assert pre_pause_processid == post_pause_processid
+
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3289")
     def test_vm_deletion(
