@@ -142,11 +142,9 @@ def assert_provision_on_node_annotation(pvc, node_name, type_):
 
 
 def assert_selected_node_annotation(pvc, pod, type_):
-    selected_node = "volume.kubernetes.io/selected-node"
     assert (
-        pvc.instance.metadata.annotations.get(selected_node)
-        == pod.instance.spec.nodeName
-    ), f"No '{selected_node}' annotation found on {type_} PVC"
+        pvc.selected_node == pod.instance.spec.nodeName
+    ), f"No 'volume.kubernetes.io/selected-node' annotation found on {type_} PVC"
 
 
 def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
@@ -291,12 +289,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING, timeout=180)
             pvc.wait_for_status(status=pvc.Status.BOUND, timeout=60)
-            assert (
-                pod.instance.spec.nodeName
-                == pvc.instance.metadata.annotations[
-                    "volume.kubernetes.io/selected-node"
-                ]
-            )
+            assert pod.instance.spec.nodeName == pvc.selected_node
 
 
 @pytest.mark.polarion("CNV-3280")
@@ -360,12 +353,8 @@ def test_hpp_upload_virtctl(
     )
     pod = Pod(namespace=namespace.name, name=f"cdi-upload-{pvc.name}")
     assert (
-        pvc.instance.metadata.annotations.get("volume.kubernetes.io/selected-node")
-        == pod.instance.spec.nodeName
-        and scratch_pvc.instance.metadata.annotations.get(
-            "volume.kubernetes.io/selected-node"
-        )
-        == pod.instance.spec.nodeName
+        pvc.selected_node == pod.instance.spec.nodeName
+        and scratch_pvc.selected_node == pod.instance.spec.nodeName
     ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC"
 
 

@@ -335,9 +335,7 @@ class VirtualMachineForTests(VirtualMachine):
             ):
                 spec["nodeSelector"] = {
                     "kubernetes.io/hostname": self.dv.hostpath_node
-                    or self.dv.pvc.instance.metadata.annotations[
-                        "volume.kubernetes.io/selected-node"
-                    ]
+                    or self.dv.pvc.selected_node
                 }
 
         if self.machine_type:
@@ -457,6 +455,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         ):
             res["spec"]["template"]["spec"]["nodeSelector"] = {
                 "kubernetes.io/hostname": self.template_dv.hostpath_node
+                or self.template_dv.pvc.selected_node
             }
         return res
 

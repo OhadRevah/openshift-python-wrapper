@@ -79,3 +79,9 @@ class PersistentVolumeClaim(NamespacedResource):
         """
         LOGGER.info(f"Check if {self.kind} {self.name} is bound")
         return self.status == "Bound"
+
+    @property
+    def selected_node(self):
+        return self.instance.metadata.annotations.get(
+            "volume.kubernetes.io/selected-node"
+        )
