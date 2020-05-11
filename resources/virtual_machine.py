@@ -202,7 +202,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             headers=self.client.configuration.api_key,
         )
         if wait:
-            return self.wait_until_paused(timeout=timeout)
+            return self.wait_for_pause_status(pause=True, timeout=timeout)
 
     def unpause(self, timeout=TIMEOUT, wait=False):
         self.client.client.request(
@@ -211,7 +211,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             headers=self.client.configuration.api_key,
         )
         if wait:
-            return self.wait_until_running()
+            return self.wait_for_pause_status(pause=False, timeout=timeout)
 
     @property
     def interfaces(self):
@@ -265,17 +265,27 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
             raise
 
-    def wait_until_paused(self, timeout=TIMEOUT):
+    def wait_for_pause_status(self, pause, timeout=TIMEOUT):
         """
-        Wait for Virtual Machine Instance to be Paused.
+        Wait for Virtual Machine Instance to be paused / unpaused.
+        Paused status is checked in libvirt and in the VMI conditions.
 
         Args:
+            pause (bool): True for paused, False for unpause
             timeout (int): Time to wait for the resource.
 
         Raises:
             TimeoutExpiredError: If resource not exists.
         """
-        LOGGER.info(f"Wait until {self.kind} {self.name} is paused")
+        LOGGER.info(
+            f"Wait until {self.kind} {self.name} is "
+            f"{'Paused' if pause else 'Unpuased'}"
+        )
+        self.wait_for_domstate_pause_status(pause=pause, timeout=timeout)
+        self.wait_for_vmi_condition_pause_status(pause=pause, timeout=timeout)
+
+    def wait_for_domstate_pause_status(self, pause, timeout=TIMEOUT):
+        pause_status = "paused" if pause else "running"
         samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
@@ -283,7 +293,22 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             func=self.get_domstate,
         )
         for sample in samples:
-            if "paused" in sample:
+            if pause_status in sample:
+                return
+
+    def wait_for_vmi_condition_pause_status(self, pause, timeout=TIMEOUT):
+        samples = TimeoutSampler(
+            timeout=timeout,
+            sleep=1,
+            exceptions=(ProtocolError),
+            func=self.get_vmi_active_condition,
+        )
+        for sample in samples:
+            # Paused VM
+            if pause and sample["reason"] == "PausedByUser":
+                return
+            # Unpaused VM
+            if not (pause and sample.get("reason")):
                 return
 
     @property
@@ -322,6 +347,16 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             command=["virsh", "domstate", f"{self.namespace}_{self.name}"],
             container="compute",
         )
+
+    def get_vmi_active_condition(self):
+        """ A VMI may have multiple conditions; the active one it the one with
+        'lastTransitionTime' """
+        return {
+            k: v
+            for condition in self.instance.status.conditions
+            for k, v in condition.items()
+            if condition["lastTransitionTime"]
+        }
 
     @property
     def xml_dict(self):
