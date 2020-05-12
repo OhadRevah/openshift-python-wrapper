@@ -182,9 +182,7 @@ class Connection(ConnectionBase):
 
     def _connect(self):
         display.vvv(
-            u"ESTABLISH VIRT CONSOLE CONNECTION FOR USER: {0}".format(
-                self.user, host=self.host
-            )
+            u"ESTABLISH VIRT CONSOLE CONNECTION FOR USER: {0}".format(self.user)
         )
         cmd = "{exe} console {host}".format(exe=self.virtctl, host=self.host)
         if self.namespace:

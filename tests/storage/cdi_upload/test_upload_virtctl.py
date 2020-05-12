@@ -75,7 +75,7 @@ def test_successful_virtctl_upload_no_route(
     LOGGER.info(f"{virtctl_upload_out}")
     assert (
         virtctl_upload is False
-    ), f"virtctl image-upload command successful, must fail with a non-zero rc"
+    ), "virtctl image-upload command successful, must fail with a non-zero rc"
 
 
 @pytest.mark.polarion("CNV-2217")

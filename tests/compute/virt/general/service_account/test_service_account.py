@@ -42,7 +42,7 @@ def test_vm_with_specified_service_account(vm_vmi):
     """
 
     pod_sa = vm_vmi.virt_launcher_pod.execute(
-        command=["cat", f"/var/run/secrets/kubernetes.io/serviceaccount/namespace"],
+        command=["cat", "/var/run/secrets/kubernetes.io/serviceaccount/namespace"],
         container="compute",
     )
     assert pod_sa == vm_vmi.namespace, "ServiceAccount should be attached to the POD"

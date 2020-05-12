@@ -129,7 +129,7 @@ class PodWithPVC(Pod):
 
 def check_disk_count_in_vm(vm):
     with console.Cirros(vm=vm) as vm_console:
-        LOGGER.info(f"Check disk count.")
+        LOGGER.info("Check disk count.")
         vm_console.sendline("lsblk | grep disk | wc -l")
         vm_console.expect(
             str(len(vm.instance.spec.template.spec.domain.devices.disks)), timeout=60

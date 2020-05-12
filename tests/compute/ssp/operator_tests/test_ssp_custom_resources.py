@@ -48,7 +48,7 @@ class TestSSPCustomResources:
         indirect=True,
     )
     def test_verify_ssp_crd_existence(self, ssp_resource):
-        assert ssp_resource, f"CRD was not found."
+        assert ssp_resource, "CRD was not found."
 
     @pytest.mark.parametrize(
         "ssp_resource",

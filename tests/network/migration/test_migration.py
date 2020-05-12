@@ -199,8 +199,8 @@ def ping_in_background(running_vma, running_vmb):
 
 def assert_low_packet_loss(vm):
     with console.Fedora(vm=vm) as vmc:
-        vmc.sendline(f"sudo kill -SIGINT `cat /tmp/ping.pid`")
-        vmc.sendline(f"grep 'transmitted' /tmp/ping.log")
+        vmc.sendline("sudo kill -SIGINT `cat /tmp/ping.pid`")
+        vmc.sendline("grep 'transmitted' /tmp/ping.log")
         vmc.expect("packet loss", 10)
         packet_loss = float(str(vmc.before).split()[-2].strip("%"))
         LOGGER.info(f"Packet loss percentage {packet_loss}")
@@ -219,7 +219,7 @@ def ssh_in_background(running_vma, running_vmb):
             f"sshpass -p fedora ssh -o 'StrictHostKeyChecking no' fedora@{dst_ip} 'sleep 99999'&"
         )
         vm_console.expect(r"\[\d+\].*\d+", timeout=10)
-        vm_console.sendline(f"ps aux | grep 'sleep'")
+        vm_console.sendline("ps aux | grep 'sleep'")
         vm_console.expect("sshpass -p zzzzzz", timeout=10)
 
 
@@ -228,7 +228,7 @@ def assert_ssh_alive(ssh_vm):
     Check the ssh process is alive
     """
     with console.Fedora(vm=ssh_vm) as tcp_vm_console:
-        tcp_vm_console.sendline(f"ps aux | grep 'sleep'")
+        tcp_vm_console.sendline("ps aux | grep 'sleep'")
         tcp_vm_console.expect("sshpass -p zzzzzz", timeout=10)
 
 

@@ -179,7 +179,7 @@ def config_map_with_cpu_discovery(default_client):
 def nodes_with_no_pciid_label(default_client):
     nodes_with_cpu_feature = Node.get(
         default_client,
-        label_selector=f"feature.node.kubernetes.io/cpu-feature-pcid=true",
+        label_selector="feature.node.kubernetes.io/cpu-feature-pcid=true",
     )
 
     nodes_to_restore = []
