@@ -18,6 +18,7 @@ from utilities.storage import create_dv
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.ci
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",
     [
@@ -52,6 +53,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
             return
 
 
+@pytest.mark.ci
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",
     [

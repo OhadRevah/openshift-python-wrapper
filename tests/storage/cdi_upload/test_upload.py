@@ -154,6 +154,7 @@ def test_successful_upload_with_supported_formats(
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.ci
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [
