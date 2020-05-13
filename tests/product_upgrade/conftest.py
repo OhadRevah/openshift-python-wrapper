@@ -5,9 +5,14 @@ import pytest
 import tests.network.utils as network_utils
 import utilities.network
 from pytest_testconfig import py_config
+from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
-from utilities.storage import data_volume
+from tests.product_upgrade.utils import (
+    wait_for_dvs_import_completed,
+    wait_for_vms_interfaces,
+)
+from utilities.storage import get_images_external_http_server
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -125,47 +130,61 @@ def br1test_nad(namespace, bridge_on_all_nodes):
         yield nad
 
 
-@pytest.fixture(
-    scope="module",
-    params=[
-        {
-            "dv_name": "dv-for-product-upgrade",
-            "image": py_config["latest_rhel_version"]["image"],
-            "storage_class": py_config["default_storage_class"],
-        }
-    ],
-)
-def dv_for_upgrade(request, namespace, schedulable_nodes):
-    yield from data_volume(
-        request=request,
-        namespace=namespace,
-        storage_class=request.param["storage_class"],
-        schedulable_nodes=schedulable_nodes,
-    )
+@pytest.fixture(scope="module")
+def dvs_for_upgrade(namespace, schedulable_nodes):
+    dvs_list = []
+    for sc in py_config["system_storage_class_matrix"]:
+        storage_class = [*sc][0]
+        dv = DataVolume(
+            name=f"dv-for-product-upgrade-{storage_class}",
+            namespace=namespace.name,
+            source="http",
+            storage_class=storage_class,
+            volume_mode=sc[storage_class]["volume_mode"],
+            access_modes=sc[storage_class]["access_mode"],
+            url=f"{get_images_external_http_server()}{py_config['latest_rhel_version']['image']}",
+            size="25Gi",
+            hostpath_node=schedulable_nodes[0].name
+            if storage_class == "hostpath-provisioner"
+            else None,
+        )
+        dv.create()
+        dvs_list.append(dv)
+    wait_for_dvs_import_completed(dvs_list=dvs_list)
+
+    yield dvs_list
+
+    for dv in dvs_list:
+        dv.clean_up()
 
 
 @pytest.fixture(scope="module")
-def vm_for_upgrade(
-    default_client, unprivileged_client, bridge_on_all_nodes, namespace, dv_for_upgrade,
-):
-    template_labels_dict = {
-        "os": "rhel8.0",
+def vms_for_upgrade(unprivileged_client, bridge_on_all_nodes, dvs_for_upgrade):
+    networks = {bridge_on_all_nodes.bridge_name: bridge_on_all_nodes.bridge_name}
+    template_labels = {
+        "os": py_config["latest_rhel_version"]["os_label"],
         "workload": "server",
         "flavor": "tiny",
     }
-    networks = {bridge_on_all_nodes.bridge_name: bridge_on_all_nodes.bridge_name}
-    vm_name = "vm-for-product-upgrade"
-    with VirtualMachineForTestsFromTemplate(
-        name=vm_name,
-        namespace=namespace.name,
-        client=default_client,
-        labels=Template.generate_template_labels(**template_labels_dict),
-        template_dv=dv_for_upgrade,
-        networks=networks,
-        interfaces=sorted(networks.keys()),
-        ssh=True,
-    ) as vm:
+    vms_list = []
+    for dv in dvs_for_upgrade:
+        vm = VirtualMachineForTestsFromTemplate(
+            name=dv.name.replace("dv", "vm"),
+            namespace=dv.namespace,
+            client=unprivileged_client,
+            labels=Template.generate_template_labels(**template_labels),
+            template_dv=dv,
+            networks=networks,
+            interfaces=sorted(networks.keys()),
+        )
+        vm.create()
+        vms_list.append(vm)
         vm.start(wait=True)
         vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vm.vmi, timeout=1100)
-        yield vm
+        vm.ssh_enable()
+    wait_for_vms_interfaces(vms_list=vms_list)
+
+    yield vms_list
+
+    for vm in vms_list:
+        vm.clean_up()

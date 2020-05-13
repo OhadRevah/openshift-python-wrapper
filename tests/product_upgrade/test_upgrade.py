@@ -4,6 +4,7 @@ from ipaddress import ip_interface
 import pytest
 from pytest_testconfig import config as py_config
 from resources.clusterserviceversion import ClusterServiceVersion
+from resources.datavolume import DataVolume
 from resources.deployment import Deployment
 from resources.hyperconverged import HyperConverged
 from resources.installplan import InstallPlan
@@ -25,7 +26,7 @@ TIMEOUT_10MIN = 10 * 60
 
 @pytest.mark.upgrade
 @pytest.mark.incremental
-@pytest.mark.usefixtures("skip_when_one_node", "dv_for_upgrade")
+@pytest.mark.usefixtures("skip_when_one_node")
 class TestUpgrade:
     @staticmethod
     def check_pods_status_and_images(pods, operators_versions):
@@ -129,35 +130,41 @@ class TestUpgrade:
 
     @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-2974")
-    def test_is_vm_running_before_upgrade(self, vm_for_upgrade):
-        assert vm_for_upgrade.vmi.status == "Running"
+    def test_is_vm_running_before_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            assert vm.vmi.status == "Running"
 
     @pytest.mark.run(after="test_is_vm_running_before_upgrade")
     @pytest.mark.polarion("CNV-2975")
-    def test_migration_before_upgrade(self, vm_for_upgrade):
-        self.migrate_vm_and_validate(vm=vm_for_upgrade, when="before")
+    def test_migration_before_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
+                LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
+                continue
+            self.migrate_vm_and_validate(vm=vm, when="before")
 
     @pytest.mark.run(after="test_migration_before_upgrade")
     @pytest.mark.polarion("CNV-2988")
-    def test_vm_have_2_interfaces_before_upgrade(self, vm_for_upgrade):
-        assert len(vm_for_upgrade.vmi.interfaces) == 2
+    def test_vm_have_2_interfaces_before_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            assert len(vm.vmi.interfaces) == 2
 
     @pytest.mark.run(after="test_migration_before_upgrade")
     @pytest.mark.polarion("CNV-2987")
-    def test_vm_console_before_upgrade(self, vm_for_upgrade):
-        vm_console_run_commands(
-            console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"]
-        )
+    def test_vm_console_before_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=["ls"])
 
     @pytest.mark.polarion("CNV-4208")
     @pytest.mark.run(after="test_migration_before_upgrade")
-    def test_vm_ssh_before_upgrade(self, schedulable_node_ips, vm_for_upgrade):
-        enable_ssh_service_in_vm(vm=vm_for_upgrade, console_impl=console.RHEL)
-        assert check_ssh_connection(
-            ip=list(schedulable_node_ips.values())[0],
-            port=vm_for_upgrade.ssh_node_port,
-            console_impl=console.RHEL,
-        ), "Failed to login via SSH"
+    def test_vm_ssh_before_upgrade(self, schedulable_node_ips, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            enable_ssh_service_in_vm(vm=vm, console_impl=console.RHEL)
+            assert check_ssh_connection(
+                ip=list(schedulable_node_ips.values())[0],
+                port=vm.ssh_node_port,
+                console_impl=console.RHEL,
+            ), "Failed to login via SSH"
 
     @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-2743")
@@ -249,38 +256,44 @@ class TestUpgrade:
 
     @pytest.mark.run(after="test_upgrade")
     @pytest.mark.polarion("CNV-2978")
-    def test_is_vm_running_after_upgrade(self, vm_for_upgrade):
-        vm_for_upgrade.vmi.wait_until_running()
+    def test_is_vm_running_after_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            vm.vmi.wait_until_running()
 
     @pytest.mark.run(after="test_is_vm_running_after_upgrade")
     @pytest.mark.polarion("CNV-2989")
-    def test_vm_have_2_interfaces_after_upgrade(self, vm_for_upgrade):
-        assert len(vm_for_upgrade.vmi.interfaces) == 2
+    def test_vm_have_2_interfaces_after_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            assert len(vm.vmi.interfaces) == 2
 
     @pytest.mark.run(after="test_is_vm_running_after_upgrade")
     @pytest.mark.polarion("CNV-2980")
-    def test_vm_console_after_upgrade(self, vm_for_upgrade):
-        vm_console_run_commands(
-            console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"]
-        )
+    def test_vm_console_after_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=["ls"])
 
     @pytest.mark.polarion("CNV-4209")
     @pytest.mark.run(after="test_is_vm_running_after_upgrade")
-    def test_vm_ssh_after_upgrade(self, schedulable_node_ips, vm_for_upgrade):
-        assert check_ssh_connection(
-            ip=list(schedulable_node_ips.values())[0],
-            port=vm_for_upgrade.ssh_node_port,
-            console_impl=console.RHEL,
-        ), "Failed to login via SSH"
+    def test_vm_ssh_after_upgrade(self, schedulable_node_ips, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            assert check_ssh_connection(
+                ip=list(schedulable_node_ips.values())[0],
+                port=vm.ssh_node_port,
+                console_impl=console.RHEL,
+            ), "Failed to login via SSH"
 
     @pytest.mark.run(after="test_vm_console_after_upgrade")
     @pytest.mark.polarion("CNV-2979")
-    def test_migration_after_upgrade(self, vm_for_upgrade):
-        self.migrate_vm_and_validate(vm=vm_for_upgrade, when="after")
-        assert len(vm_for_upgrade.vmi.interfaces) == 2
-        vm_console_run_commands(
-            console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"], timeout=1100
-        )
+    def test_migration_after_upgrade(self, vms_for_upgrade):
+        for vm in vms_for_upgrade:
+            if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
+                LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
+                continue
+            self.migrate_vm_and_validate(vm=vm, when="after")
+            assert len(vm.vmi.interfaces) == 2
+            vm_console_run_commands(
+                console_impl=console.RHEL, vm=vm, commands=["ls"], timeout=1100
+            )
 
     @pytest.mark.run(after="test_upgrade")
     @pytest.mark.polarion("CNV-2747")
