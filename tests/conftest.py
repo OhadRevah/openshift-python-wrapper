@@ -697,6 +697,12 @@ def multi_nics_nodes(nodes_active_nics):
     return min(len(nics) for nics in nodes_active_nics.values()) > 2
 
 
+@pytest.fixture(scope="session")
+def skip_if_no_multinic_nodes(multi_nics_nodes):
+    if not multi_nics_nodes:
+        pytest.skip("Only run on multi NICs node")
+
+
 class NetUtilityDaemonSet(DaemonSet):
     def to_dict(self):
         res = super().to_dict()

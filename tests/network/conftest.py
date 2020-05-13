@@ -28,12 +28,6 @@ def skip_no_bond_support(bond_supported):
         pytest.skip(msg="No BOND support")
 
 
-@pytest.fixture(scope="session")
-def skip_if_no_multinic_nodes(multi_nics_nodes):
-    if not multi_nics_nodes:
-        pytest.skip("Only run on multi NICs node")
-
-
 def get_index_number():
     num = 1
     while True:

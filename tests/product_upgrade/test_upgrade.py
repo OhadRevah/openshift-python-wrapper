@@ -21,7 +21,7 @@ TIMEOUT_10MIN = 10 * 60
 
 @pytest.mark.upgrade
 @pytest.mark.incremental
-@pytest.mark.usefixtures("skip_when_one_node")
+@pytest.mark.usefixtures("skip_when_one_node", "dv_for_upgrade")
 class TestUpgrade:
     @staticmethod
     def check_pods_status_and_images(pods, operators_versions):

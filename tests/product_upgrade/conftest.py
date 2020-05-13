@@ -5,11 +5,9 @@ import pytest
 import tests.network.utils as network_utils
 import utilities.network
 from pytest_testconfig import py_config
-from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
-from utilities.infra import Images, create_ns
-from utilities.storage import create_dv, get_images_external_http_server
+from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -17,11 +15,6 @@ from utilities.virt import (
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def upgrade_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="product-upgrade-test")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -56,12 +49,12 @@ def bridge_on_one_node(network_utility_pods, schedulable_nodes):
 
 
 @pytest.fixture(scope="module")
-def upgrade_bridge_marker_nad(bridge_on_one_node, upgrade_namespace):
+def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
     with utilities.network.bridge_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_on_one_node.bridge_name,
         bridge_name=bridge_on_one_node.bridge_name,
-        namespace=upgrade_namespace,
+        namespace=namespace,
     ) as nad:
         yield nad
 
@@ -74,11 +67,11 @@ def cloud_init(ip_address):
 
 
 @pytest.fixture(scope="module")
-def vm_upgrade_a(upgrade_bridge_marker_nad, upgrade_namespace, unprivileged_client):
+def vm_upgrade_a(upgrade_bridge_marker_nad, namespace, unprivileged_client):
     name = "vm-upgrade-a"
     with VirtualMachineForTests(
         name=name,
-        namespace=upgrade_namespace.name,
+        namespace=namespace.name,
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
         interfaces=[upgrade_bridge_marker_nad.name],
         client=unprivileged_client,
@@ -90,11 +83,11 @@ def vm_upgrade_a(upgrade_bridge_marker_nad, upgrade_namespace, unprivileged_clie
 
 
 @pytest.fixture(scope="module")
-def vm_upgrade_b(upgrade_bridge_marker_nad, upgrade_namespace, unprivileged_client):
+def vm_upgrade_b(upgrade_bridge_marker_nad, namespace, unprivileged_client):
     name = "vm-upgrade-b"
     with VirtualMachineForTests(
         name=name,
-        namespace=upgrade_namespace.name,
+        namespace=namespace.name,
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
         interfaces=[upgrade_bridge_marker_nad.name],
         client=unprivileged_client,
@@ -122,40 +115,38 @@ def running_vm_b(vm_upgrade_b):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def br1test_nad(upgrade_namespace, bridge_on_all_nodes):
+def br1test_nad(namespace, bridge_on_all_nodes):
     with utilities.network.bridge_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_on_all_nodes.bridge_name,
         bridge_name=bridge_on_all_nodes.bridge_name,
-        namespace=upgrade_namespace,
+        namespace=namespace,
     ) as nad:
         yield nad
 
 
-@pytest.fixture(scope="module")
-def data_volume(upgrade_namespace):
-    with create_dv(
-        source="http",
-        dv_name="dv-rhel8-server-tiny",
-        size="25Gi",
-        namespace=upgrade_namespace.name,
-        url=f"{get_images_external_http_server()}{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        access_modes=DataVolume.AccessMode.RWX,
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        storage_class=py_config["default_storage_class"],
-    ) as dv:
-        dv.wait(timeout=900)
-        yield dv
+@pytest.fixture(
+    scope="module",
+    params=[
+        {
+            "dv_name": "dv-for-product-upgrade",
+            "image": py_config["latest_rhel_version"]["image"],
+            "storage_class": py_config["default_storage_class"],
+        }
+    ],
+)
+def dv_for_upgrade(request, namespace, schedulable_nodes):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class=request.param["storage_class"],
+        schedulable_nodes=schedulable_nodes,
+    )
 
 
 @pytest.fixture(scope="module")
 def vm_for_upgrade(
-    default_client,
-    unprivileged_client,
-    bridge_on_all_nodes,
-    upgrade_namespace,
-    data_volume,
+    default_client, unprivileged_client, bridge_on_all_nodes, namespace, dv_for_upgrade,
 ):
     template_labels_dict = {
         "os": "rhel8.0",
@@ -166,10 +157,10 @@ def vm_for_upgrade(
     vm_name = "vm-for-product-upgrade"
     with VirtualMachineForTestsFromTemplate(
         name=vm_name,
-        namespace=upgrade_namespace.name,
+        namespace=namespace.name,
         client=default_client,
         labels=Template.generate_template_labels(**template_labels_dict),
-        template_dv=data_volume,
+        template_dv=dv_for_upgrade,
         networks=networks,
         interfaces=sorted(networks.keys()),
     ) as vm:
