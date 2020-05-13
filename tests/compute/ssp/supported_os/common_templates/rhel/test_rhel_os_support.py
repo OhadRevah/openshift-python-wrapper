@@ -13,7 +13,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
-from utilities.virt import wait_for_console
+from utilities.virt import check_ssh_connection, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ class TestCommonTemplatesRhel:
             systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
-        assert common_templates_utils.check_ssh_connection(
+        assert check_ssh_connection(
             ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,

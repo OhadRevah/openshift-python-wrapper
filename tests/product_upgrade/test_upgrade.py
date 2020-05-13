@@ -12,7 +12,11 @@ from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import assert_ping_successful
 from utilities import console
-from utilities.virt import vm_console_run_commands
+from utilities.virt import (
+    check_ssh_connection,
+    enable_ssh_service_in_vm,
+    vm_console_run_commands,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -145,6 +149,16 @@ class TestUpgrade:
             console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"]
         )
 
+    @pytest.mark.polarion("CNV-4208")
+    @pytest.mark.run(after="test_migration_before_upgrade")
+    def test_vm_ssh_before_upgrade(self, schedulable_node_ips, vm_for_upgrade):
+        enable_ssh_service_in_vm(vm=vm_for_upgrade, console_impl=console.RHEL)
+        assert check_ssh_connection(
+            ip=list(schedulable_node_ips.values())[0],
+            port=vm_for_upgrade.ssh_node_port,
+            console_impl=console.RHEL,
+        ), "Failed to login via SSH"
+
     @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-2743")
     def test_nmstate_bridge_before_upgrade(self, bridge_on_one_node):
@@ -249,6 +263,15 @@ class TestUpgrade:
         vm_console_run_commands(
             console_impl=console.RHEL, vm=vm_for_upgrade, commands=["ls"]
         )
+
+    @pytest.mark.polarion("CNV-4209")
+    @pytest.mark.run(after="test_is_vm_running_after_upgrade")
+    def test_vm_ssh_after_upgrade(self, schedulable_node_ips, vm_for_upgrade):
+        assert check_ssh_connection(
+            ip=list(schedulable_node_ips.values())[0],
+            port=vm_for_upgrade.ssh_node_port,
+            console_impl=console.RHEL,
+        ), "Failed to login via SSH"
 
     @pytest.mark.run(after="test_vm_console_after_upgrade")
     @pytest.mark.polarion("CNV-2979")

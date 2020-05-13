@@ -163,6 +163,7 @@ def vm_for_upgrade(
         template_dv=dv_for_upgrade,
         networks=networks,
         interfaces=sorted(networks.keys()),
+        ssh=True,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

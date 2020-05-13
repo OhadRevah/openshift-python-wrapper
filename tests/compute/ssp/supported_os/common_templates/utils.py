@@ -15,7 +15,6 @@ from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from rrmngmnt import ssh, user
 from tests.compute.utils import vm_started
 from utilities.virt import (
     execute_winrm_cmd,
@@ -80,26 +79,6 @@ def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):
 
 def get_vm_ssh_port(rhel7_workers, vm):
     return 22 if rhel7_workers else vm.ssh_node_port
-
-
-def check_ssh_connection(ip, port, console_impl):
-    """ Verifies successful SSH connection
-    Args:
-        ip (str): host IP
-        port (int): host port
-
-    Returns:
-        bool: True if connection succeeds else False
-    """
-
-    LOGGER.info("Check SSH connection to VM.")
-
-    ssh_user = user.User(name=console_impl.USERNAME, password=console_impl.PASSWORD,)
-    return ssh.RemoteExecutor(
-        user=ssh_user, address=str(ip), port=port
-    ).wait_for_connectivity_state(
-        positive=True, timeout=120, tcp_connection_timeout=120,
-    )
 
 
 def check_telnet_connection(ip, port):

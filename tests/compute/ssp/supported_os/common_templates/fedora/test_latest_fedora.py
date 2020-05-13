@@ -14,7 +14,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import vm_started
 from utilities import console
-from utilities.virt import wait_for_console
+from utilities.virt import check_ssh_connection, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -190,7 +190,7 @@ class TestCommonTemplatesFedora:
             vm=vm_object_from_template_scope_class, console_impl=console.Fedora
         )
 
-        assert common_templates_utils.check_ssh_connection(
+        assert check_ssh_connection(
             ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
                 schedulable_node_ips=schedulable_node_ips,
