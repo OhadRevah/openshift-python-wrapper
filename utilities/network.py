@@ -528,3 +528,34 @@ def bridge_nad(
 
     with BRIDGE_NAD_TYPE[nad_type](**kwargs) as nad:
         yield nad
+
+
+class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+    def __init__(
+        self,
+        name,
+        interfaces_name,
+        worker_pods,
+        iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
+        node_selector=None,
+        teardown=True,
+        ipv4_dhcp=None,
+    ):
+        super().__init__(
+            name, worker_pods, node_selector, ipv4_dhcp=ipv4_dhcp, teardown=teardown,
+        )
+        self.interfaces_name = interfaces_name
+        self.iface_state = iface_state
+
+    def to_dict(self):
+        for nic in self.interfaces_name:
+            self.iface = {
+                "name": nic,
+                "type": "ethernet",
+                "state": self.iface_state,
+            }
+            if self.ipv4_dhcp is not None:
+                self.iface["ipv4"] = {"dhcp": self.ipv4_dhcp, "enabled": self.ipv4_dhcp}
+            self.set_interface(self.iface)
+            res = super().to_dict()
+        return res

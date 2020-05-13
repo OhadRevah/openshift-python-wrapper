@@ -27,6 +27,9 @@ class NodeNetworkConfigurationPolicy(Resource):
             PROGRESSING = "Progressing"
             MATCHING = "Matching"
 
+        class Reason:
+            SUCCESS = "SuccessfullyConfigured"
+
     def __init__(
         self,
         name,

@@ -42,7 +42,7 @@ from resources.virtual_machine import (
 )
 from utilities import console
 from utilities.infra import ClusterHosts, create_ns
-from utilities.network import OVS, bridge_nad
+from utilities.network import OVS, EthernetNetworkConfigurationPolicy, bridge_nad
 from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -1242,3 +1242,53 @@ def skip_not_openshift(default_client):
     """
     if not is_openshift(default_client):
         pytest.skip("Skipping test requiring OpenShift")
+
+
+@pytest.fixture(scope="session")
+def worker_nodes_ipv4_false_secondary_nics(
+    nodes_active_nics, schedulable_nodes, network_utility_pods
+):
+    """
+    Function removes ipv4 from secondary nics.
+    """
+    for worker_node in schedulable_nodes:
+        worker_nics = nodes_active_nics[worker_node.name]
+        with EthernetNetworkConfigurationPolicy(
+            name="disable-ipv4-{}".format(worker_node.name),
+            node_selector=worker_node.name,
+            ipv4_dhcp=False,
+            worker_pods=network_utility_pods,
+            interfaces_name=worker_nics[1:],
+        ) as nncp:
+            wait_for_nncp_status_success(nncp=nncp)
+            LOGGER.info(
+                f"selected worker node - {worker_node.name} under nncp selected nic information - {worker_nics} "
+            )
+
+
+def check_nncp_success_status(nncp):
+    """
+    Check if nncp configured correctly for all nics/nodes.
+    """
+    for condition in nncp.instance.status.conditions:
+        if (
+            condition["reason"]
+            == NodeNetworkConfigurationPolicy.Conditions.Reason.SUCCESS
+            and condition["type"]
+            == NodeNetworkConfigurationPolicy.Conditions.Type.AVAILABLE
+        ):
+            return True
+
+
+def wait_for_nncp_status_success(nncp):
+    samples = TimeoutSampler(
+        timeout=30, sleep=1, func=check_nncp_success_status, nncp=nncp,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                LOGGER.info("NNCP configured Successfully")
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error("Unable to configure NNCP for node")
+        raise
