@@ -1,7 +1,6 @@
 import logging
 from ipaddress import ip_interface
 
-import netaddr
 import pytest
 from pytest_testconfig import config as py_config
 from resources.clusterserviceversion import ClusterServiceVersion
@@ -124,14 +123,6 @@ class TestUpgrade:
             assert bridge_annotation in vm.vmi.node.instance.status.capacity.keys()
             assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
 
-    @staticmethod
-    def assert_mac_in_range(mac_range, vm_a, vm_b):
-        start_range = int(netaddr.EUI(mac_range.instance.data.RANGE_START))
-        end_range = int(netaddr.EUI(mac_range.instance.data.RANGE_END))
-        for vm in [vm_a, vm_b]:
-            vm_mac = int(netaddr.EUI(vm.vmi.interfaces[1].mac))
-            assert start_range <= vm_mac <= end_range
-
     @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-2974")
     def test_is_vm_running_before_upgrade(self, vm_for_upgrade):
@@ -175,20 +166,6 @@ class TestUpgrade:
         )
         self.assert_node_is_marked_by_bridge(
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
-        )
-
-    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
-    @pytest.mark.polarion("CNV-2745")
-    def test_kubemacpool_before_upgrade(
-        self,
-        vm_upgrade_a,
-        vm_upgrade_b,
-        running_vm_a,
-        running_vm_b,
-        kubemacpool_configmap,
-    ):
-        self.assert_mac_in_range(
-            mac_range=kubemacpool_configmap, vm_a=running_vm_a, vm_b=running_vm_b
         )
 
     @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
@@ -303,20 +280,6 @@ class TestUpgrade:
         )
         self.assert_node_is_marked_by_bridge(
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
-        )
-
-    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
-    @pytest.mark.polarion("CNV-2746")
-    def test_kubemacpool_after_upgrade(
-        self,
-        vm_upgrade_a,
-        vm_upgrade_b,
-        running_vm_a,
-        running_vm_b,
-        kubemacpool_configmap,
-    ):
-        self.assert_mac_in_range(
-            mac_range=kubemacpool_configmap, vm_a=running_vm_a, vm_b=running_vm_b
         )
 
     @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")

@@ -5,10 +5,8 @@ import pytest
 import tests.network.utils as network_utils
 import utilities.network
 from pytest_testconfig import py_config
-from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.template import Template
-from tests.network.kubemacpool.conftest import KUBEMACPOOL_CONFIG_MAP_NAME
 from tests.network.utils import nmcli_add_con_cmds
 from utilities.infra import Images, create_ns
 from utilities.storage import create_dv, get_images_external_http_server
@@ -121,14 +119,6 @@ def running_vm_b(vm_upgrade_b):
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vm_upgrade_b
-
-
-@pytest.fixture(scope="module")
-def kubemacpool_configmap(upgrade_namespace):
-    kubemacpool_config_map = ConfigMap(
-        namespace=py_config["hco_namespace"], name=KUBEMACPOOL_CONFIG_MAP_NAME
-    )
-    return kubemacpool_config_map
 
 
 @pytest.fixture(scope="module", autouse=True)
