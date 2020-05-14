@@ -129,13 +129,14 @@ def test_virtctl_image_upload_dv(
     """
     Check that upload a local disk image to a newly created DataVolume
     """
-    dv_name = "cnv-3724"
+    storage_class = [*storage_class_matrix__module__][0]
+    dv_name = f"cnv-3724-{storage_class}"
     res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_PATH,
-        storage_class=[*storage_class_matrix__module__][0],
+        storage_class=storage_class,
         insecure=True,
     )
     LOGGER.info(out)
@@ -297,7 +298,7 @@ def test_virtctl_image_upload_with_exist_pvc_image(
     Check that virtctl fails gracefully when attempting to upload an image to a PVC that already has disk.img
     """
     storage_class = [*storage_class_matrix__module__][0]
-    pvc_name = "cnv-3729"
+    pvc_name = f"cnv-3729-{storage_class}"
     res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
