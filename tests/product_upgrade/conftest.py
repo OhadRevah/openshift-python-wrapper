@@ -1,6 +1,3 @@
-"""
-VM to VM connectivity
-"""
 import pytest
 import tests.network.utils as network_utils
 import utilities.network

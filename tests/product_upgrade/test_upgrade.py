@@ -3,15 +3,11 @@ from ipaddress import ip_interface
 
 import pytest
 from pytest_testconfig import config as py_config
-from resources.clusterserviceversion import ClusterServiceVersion
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
 from resources.hyperconverged import HyperConverged
-from resources.installplan import InstallPlan
-from resources.pod import Pod
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.network.utils import assert_ping_successful
+from tests.product_upgrade.utils import TIMEOUT_10MIN, UpgradeUtils
 from utilities import console
 from utilities.virt import (
     check_ssh_connection,
@@ -21,113 +17,12 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-TIMEOUT_10MIN = 10 * 60
 
 
 @pytest.mark.upgrade
 @pytest.mark.incremental
 @pytest.mark.usefixtures("skip_when_one_node")
 class TestUpgrade:
-    @staticmethod
-    def check_pods_status_and_images(pods, operators_versions):
-        for pod in pods:
-            for oper_name, image_ver in operators_versions.items():
-                if oper_name in pod.name:
-                    image_sampler = TimeoutSampler(
-                        timeout=TIMEOUT_10MIN,
-                        sleep=1,
-                        func=lambda: pod.instance.spec.containers[0].image == image_ver,
-                    )
-                    LOGGER.info(f"Wait for {pod.name} to get updated image version")
-                    for image_sample in image_sampler:
-                        if image_sample:
-                            pod.wait_for_condition(
-                                condition="Ready", status="True", timeout=TIMEOUT_10MIN
-                            )
-                            break
-                    break
-
-    @staticmethod
-    def wait_pods_deleted(old_pods_names, pods):
-        for pod in pods:
-            if pod.name in old_pods_names:
-                pod.wait_deleted(timeout=TIMEOUT_10MIN)
-
-    @staticmethod
-    def get_operators_names_and_images(csv):
-        operators_versions = {}
-        for deploy in csv.instance.spec.install.spec.deployments:
-            operators_versions[deploy.name] = deploy.spec.template.spec.containers[
-                0
-            ].image
-        return operators_versions
-
-    @staticmethod
-    def migrate_vm_and_validate(vm, when):
-        vmi_node_before_migration = vm.vmi.instance.status.nodeName
-        with VirtualMachineInstanceMigration(
-            name=f"{when}-upgrade-migration", namespace=vm.namespace, vmi=vm.vmi
-        ) as mig:
-            mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-            assert vm.vmi.instance.status.nodeName != vmi_node_before_migration
-            assert vm.vmi.instance.status.migrationState.completed
-
-    @staticmethod
-    def get_new_csv(default_client, hco_namespace, new_hco_version):
-        for csv in ClusterServiceVersion.get(
-            dyn_client=default_client, namespace=hco_namespace
-        ):
-            if csv.name == new_hco_version:
-                return csv
-
-    @staticmethod
-    def wait_for_csv(default_client, hco_namespace, new_hco_version, get_new_csv):
-        csv_sampler = TimeoutSampler(
-            timeout=TIMEOUT_10MIN,
-            sleep=1,
-            func=get_new_csv,
-            default_client=default_client,
-            hco_namespace=hco_namespace,
-            new_hco_version=new_hco_version,
-        )
-        for csv_sample in csv_sampler:
-            if csv_sample:
-                csv = csv_sample
-                return csv
-
-    @staticmethod
-    def approve_install_plan(default_client, hco_namespace, new_hco_version):
-        for ip in InstallPlan.get(dyn_client=default_client, namespace=hco_namespace):
-            if new_hco_version == ip.instance.spec.clusterServiceVersionNames[0]:
-                ip_dict = ip.instance.to_dict()
-                ip_dict["spec"]["approved"] = True
-                ip.update(ip_dict)
-                ip.wait_for_status(ip.Status.COMPLETE, timeout=TIMEOUT_10MIN)
-
-    @staticmethod
-    def get_all_operators_pods(default_client, hco_namespace):
-        pods = list(Pod.get(dyn_client=default_client, namespace=hco_namespace))
-        pods = [_pod for _pod in pods if "operator" in _pod.name]
-        assert pods
-        return pods
-
-    @staticmethod
-    def get_hco_operator(default_client, hco_namespace):
-        pods = list(Pod.get(dyn_client=default_client, namespace=hco_namespace))
-        hco_operator_pod = list(filter(lambda x: "hco-operator" in x.name, pods))[0]
-        return hco_operator_pod
-
-    @staticmethod
-    def assert_bridge_and_vms_on_same_node(vm_a, vm_b, bridge):
-        for vm in [vm_a, vm_b]:
-            assert vm.vmi.node.name == bridge.node_selector
-
-    @staticmethod
-    def assert_node_is_marked_by_bridge(bridge_nad, vm):
-        for bridge_annotation in bridge_nad.instance.metadata.annotations.values():
-            assert bridge_annotation in vm.vmi.node.instance.status.capacity.keys()
-            assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
-
     @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-2974")
     def test_is_vm_running_before_upgrade(self, vms_for_upgrade):
@@ -141,7 +36,7 @@ class TestUpgrade:
             if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
-            self.migrate_vm_and_validate(vm=vm, when="before")
+            UpgradeUtils.migrate_vm_and_validate(vm=vm, when="before")
 
     @pytest.mark.run(after="test_migration_before_upgrade")
     @pytest.mark.polarion("CNV-2988")
@@ -182,10 +77,10 @@ class TestUpgrade:
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
-        self.assert_bridge_and_vms_on_same_node(
+        UpgradeUtils.assert_bridge_and_vms_on_same_node(
             vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
         )
-        self.assert_node_is_marked_by_bridge(
+        UpgradeUtils.assert_node_is_marked_by_bridge(
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
         )
 
@@ -205,15 +100,17 @@ class TestUpgrade:
         hco_namespace = py_config["hco_namespace"]
 
         LOGGER.info("Get all operators PODs before upgrade")
-        old_pods = self.get_all_operators_pods(default_client, hco_namespace)
+        old_pods = UpgradeUtils.get_all_operators_pods(default_client, hco_namespace)
         old_pods_names = [pod.name for pod in old_pods]
 
         LOGGER.info("Approve the install plan to trigger the upgrade.")
-        self.approve_install_plan(default_client, hco_namespace, new_hco_version)
+        UpgradeUtils.approve_install_plan(
+            default_client, hco_namespace, new_hco_version
+        )
 
         LOGGER.info("Wait for the new CSV")
-        new_csv = self.wait_for_csv(
-            default_client, hco_namespace, new_hco_version, self.get_new_csv
+        new_csv = UpgradeUtils.wait_for_csv(
+            default_client, hco_namespace, new_hco_version, UpgradeUtils.get_new_csv
         )
 
         LOGGER.info("Check that CSV status is Installing")
@@ -222,21 +119,21 @@ class TestUpgrade:
         )
 
         LOGGER.info("Get all operators PODs names and images version from the new CSV")
-        operators_versions = self.get_operators_names_and_images(new_csv)
+        operators_versions = UpgradeUtils.get_operators_names_and_images(new_csv)
 
         LOGGER.info("Wait for old operators PODs to disappear")
-        self.wait_pods_deleted(old_pods_names, old_pods)
+        UpgradeUtils.wait_pods_deleted(old_pods_names, old_pods)
 
         LOGGER.info("Get all operators PODs after upgrade")
-        new_pods = self.get_all_operators_pods(default_client, hco_namespace)
+        new_pods = UpgradeUtils.get_all_operators_pods(default_client, hco_namespace)
 
         LOGGER.info(
             "Check that all operators PODs have the new images version and have status ready"
         )
-        self.check_pods_status_and_images(new_pods, operators_versions)
+        UpgradeUtils.check_pods_status_and_images(new_pods, operators_versions)
 
         LOGGER.info("Wait for HCO operator to be ready")
-        hco_operator_pod = self.get_hco_operator(default_client, hco_namespace)
+        hco_operator_pod = UpgradeUtils.get_hco_operator(default_client, hco_namespace)
         hco_operator_pod.wait_for_condition(condition="Ready", status="True")
 
         LOGGER.info("Wait for number of replicas = number of updated replicas")
@@ -289,7 +186,7 @@ class TestUpgrade:
             if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
-            self.migrate_vm_and_validate(vm=vm, when="after")
+            UpgradeUtils.migrate_vm_and_validate(vm=vm, when="after")
             assert len(vm.vmi.interfaces) == 2
             vm_console_run_commands(
                 console_impl=console.RHEL, vm=vm, commands=["ls"], timeout=1100
@@ -311,10 +208,10 @@ class TestUpgrade:
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
-        self.assert_bridge_and_vms_on_same_node(
+        UpgradeUtils.assert_bridge_and_vms_on_same_node(
             vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
         )
-        self.assert_node_is_marked_by_bridge(
+        UpgradeUtils.assert_node_is_marked_by_bridge(
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
         )
 
