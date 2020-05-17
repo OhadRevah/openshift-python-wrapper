@@ -94,13 +94,6 @@ def get_operators_names_and_images(csv):
     return operators_versions
 
 
-def get_current_cnv_version(dyn_client, hco_namespace):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=dyn_client, namespace=hco_namespace
-    ):
-        return csv.instance.spec.version
-
-
 def get_new_csv(default_client, hco_namespace, hco_target_version):
     for csv in ClusterServiceVersion.get(
         dyn_client=default_client, namespace=hco_namespace

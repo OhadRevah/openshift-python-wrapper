@@ -6,6 +6,7 @@ Common templates test Windows OS support
 import logging
 
 import pytest
+import tests.compute.ssp.utils as ssp_utils
 import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
@@ -292,6 +293,23 @@ class TestCommonTemplatesWindows:
         )
         LOGGER.info(f"Post pause processid is: {post_pause_processid}")
         assert pre_pause_processid == post_pause_processid
+
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-4203")
+    def test_vm_smbios_default(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        smbios_from_kubevirt_config_cm,
+        namespace,
+        windows_os_matrix__class__,
+        data_volume_windows_os,
+        vm_object_from_template_windows_os,
+    ):
+        ssp_utils.check_vm_xml_smbios(
+            vm=vm_object_from_template_windows_os,
+            cm_values=smbios_from_kubevirt_config_cm,
+        )
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3289")

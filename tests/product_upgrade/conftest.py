@@ -9,6 +9,7 @@ from resources.operator_source import OperatorSource
 from resources.secret import Secret
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
+from utilities.infra import get_current_cnv_version
 from utilities.storage import get_images_external_http_server
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -239,7 +240,7 @@ def catalog_source_config(cnv_upgrade_path, operator_source):
 @pytest.fixture(scope="session")
 def cnv_upgrade_path(default_client, pytestconfig):
     if pytestconfig.option.upgrade == "cnv":
-        cnv_current_version = upgrade_utils.get_current_cnv_version(
+        cnv_current_version = get_current_cnv_version(
             dyn_client=default_client, hco_namespace=py_config["hco_namespace"]
         )
         cnv_target_version = pytestconfig.option.cnv_version

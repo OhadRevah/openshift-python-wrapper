@@ -7,6 +7,7 @@ Common templates test RHEL OS support
 import logging
 
 import pytest
+import tests.compute.ssp.utils as ssp_utils
 import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
@@ -229,6 +230,23 @@ class TestCommonTemplatesRhel:
         vm_object_from_template_rhel_os,
     ):
         common_templates_utils.check_machine_type(vm=vm_object_from_template_rhel_os)
+
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-4201")
+    def test_vm_smbios_default(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        smbios_from_kubevirt_config_cm,
+        namespace,
+        rhel_os_matrix__class__,
+        data_volume_rhel_os,
+        vm_object_from_template_rhel_os,
+    ):
+        ssp_utils.check_vm_xml_smbios(
+            vm=vm_object_from_template_rhel_os,
+            cm_values=smbios_from_kubevirt_config_cm,
+        )
 
     @pytest.mark.run("last")
     @pytest.mark.polarion("CNV-3269")
