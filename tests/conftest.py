@@ -387,28 +387,25 @@ def login_to_account(api_address, user, password=None):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def junitxml_polarion(request):
+def junitxml_polarion(record_testsuite_property):
     """
     Add polarion needed attributes to junit xml
 
     export as os environment:
-        POLARION_CUSTOM_PLANNEDIN
-        POLARION_TESTRUN_ID
+    POLARION_CUSTOM_PLANNEDIN
+    POLARION_TESTRUN_ID
+    POLARION_TIER
     """
-    if request.config.pluginmanager.hasplugin("junitxml"):
-        my_junit = getattr(request.config, "_xml", None)
-        if my_junit:
-            my_junit.add_global_property("polarion-custom-isautomated", "True")
-            my_junit.add_global_property("polarion-testrun-status-id", "inprogress")
-            my_junit.add_global_property(
-                "polarion-custom-plannedin", os.getenv("POLARION_CUSTOM_PLANNEDIN")
-            )
-            my_junit.add_global_property("polarion-user-id", "cnvqe")
-            my_junit.add_global_property("polarion-project-id", "CNV")
-            my_junit.add_global_property("polarion-response-myproduct", "cnv-test-run")
-            my_junit.add_global_property(
-                "polarion-testrun-id", os.getenv("POLARION_TESTRUN_ID")
-            )
+    record_testsuite_property("polarion-custom-isautomated", "True")
+    record_testsuite_property("polarion-testrun-status-id", "inprogress")
+    record_testsuite_property(
+        "polarion-custom-plannedin", os.getenv("POLARION_CUSTOM_PLANNEDIN")
+    )
+    record_testsuite_property("polarion-user-id", "cnvqe")
+    record_testsuite_property("polarion-project-id", "CNV")
+    record_testsuite_property("polarion-response-myproduct", "cnv-test-run")
+    record_testsuite_property("polarion-testrun-id", os.getenv("POLARION_TESTRUN_ID"))
+    record_testsuite_property("polarion-custom-env_tier", os.getenv("POLARION_TIER"))
 
 
 @pytest.fixture(scope="session", autouse=True)
