@@ -448,6 +448,16 @@ def unprivileged_client(default_client, unprivileged_secret):
         yield
 
     else:
+        kube_config_path = os.path.join(os.path.expanduser("~"), ".kube/config")
+        kubeconfig_env = os.environ.get("KUBECONFIG")
+        kube_config_exists = os.path.isfile(kube_config_path)
+        if kubeconfig_env and kube_config_exists:
+            raise ValueError(
+                f"Both KUBECONFIG {kubeconfig_env} and {kube_config_path} exists. "
+                f"Only one should be used, "
+                f"either remove {kube_config_path} file or unset KUBECONFIG"
+            )
+
         # Update identity provider
         identity_provider_config = OAuth(name="cluster")
         identity_provider_config.update(
@@ -469,10 +479,6 @@ def unprivileged_client(default_client, unprivileged_secret):
         current_user = (
             check_output("oc whoami", shell=True).decode().strip()
         )  # Get current admin account
-        kubeconfig_env = os.environ.get("KUBECONFIG")
-        kube_config_exists = os.path.isfile(
-            os.path.join(os.path.expanduser("~"), ".kube/config")
-        )
         try:
             if kube_config_exists:
                 os.environ["KUBECONFIG"] = ""
