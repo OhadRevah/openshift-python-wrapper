@@ -406,6 +406,7 @@ def junitxml_polarion(record_testsuite_property):
     record_testsuite_property("polarion-response-myproduct", "cnv-test-run")
     record_testsuite_property("polarion-testrun-id", os.getenv("POLARION_TESTRUN_ID"))
     record_testsuite_property("polarion-custom-env_tier", os.getenv("POLARION_TIER"))
+    record_testsuite_property("polarion-custom-env_os", os.getenv("POLARION_OS"))
 
 
 @pytest.fixture(scope="session", autouse=True)
