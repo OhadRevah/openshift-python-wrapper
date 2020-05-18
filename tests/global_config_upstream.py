@@ -7,6 +7,7 @@ global_config = pytest_testconfig.load_python("tests/global_config.py", "utf-8")
 no_unprivileged_client = True
 distribution = "upstream"
 hco_namespace = "kubevirt-hyperconverged"
+sriov_namespace = "sriov-network-operator"
 
 test_guest_performance = {"bandwidth": 2.5}
 test_performance_over_pod_network = {"bandwidth": 2.5}

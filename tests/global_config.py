@@ -8,6 +8,7 @@ global config
 no_unprivileged_client = False
 distribution = "downstream"
 hco_namespace = "openshift-cnv"
+sriov_namespace = "openshift-sriov-network-operator"
 
 test_guest_performance = {"bandwidth": 2.5}
 test_performance_over_pod_network = {"bandwidth": 2.5}
