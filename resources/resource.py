@@ -245,8 +245,8 @@ class Resource(object):
         RECONCILE_COMPLETE = "ReconcileComplete"
 
         class Status:
-            STATUS_TRUE = "True"
-            STATUS_FALSE = "False"
+            TRUE = "True"
+            FALSE = "False"
 
     def __init__(self, name, client=None, teardown=True):
         """

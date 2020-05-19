@@ -178,6 +178,11 @@ def test_successful_upload_token_validity(
     upload_file_path,
 ):
     dv = data_volume_multi_storage_scope_function
+    dv.wait_for_condition(
+        condition=DataVolume.Condition.Type.BOUND,
+        status=DataVolume.Condition.Status.TRUE,
+        timeout=300,
+    )
     dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
     with UploadTokenRequest(
         name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
@@ -192,6 +197,16 @@ def test_successful_upload_token_validity(
         token = utr.create().status.token
         wait_for_upload_response_code(
             token=token, data=upload_file_path, response_code=HTTP_OK
+        )
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.RUNNING,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=300,
+        )
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.READY,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=300,
         )
 
 

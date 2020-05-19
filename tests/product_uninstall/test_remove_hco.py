@@ -169,21 +169,21 @@ class TestRemoveHCO:
             assert hco.exists
             hco.wait_for_condition(
                 condition=HyperConverged.Condition.PROGRESSING,
-                status=HyperConverged.Condition.Status.STATUS_FALSE,
+                status=HyperConverged.Condition.Status.FALSE,
                 timeout=HCO_DEPLOY_TIMEOUT,
             )
             hco.wait_for_condition(
                 condition=HyperConverged.Condition.DEGRADED,
-                status=HyperConverged.Condition.Status.STATUS_FALSE,
+                status=HyperConverged.Condition.Status.FALSE,
             )
             hco.wait_for_condition(
                 condition=HyperConverged.Condition.AVAILABLE,
-                status=HyperConverged.Condition.Status.STATUS_TRUE,
+                status=HyperConverged.Condition.Status.TRUE,
                 timeout=HCO_DEPLOY_TIMEOUT,
             )
             hco.wait_for_condition(
                 condition=HyperConverged.Condition.UPGRADEABLE,
-                status=HyperConverged.Condition.Status.STATUS_TRUE,
+                status=HyperConverged.Condition.Status.TRUE,
             )
 
 

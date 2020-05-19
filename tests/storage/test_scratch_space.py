@@ -472,7 +472,16 @@ def test_scratch_space_import_registry_data_volume(
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
-        dv.wait()
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.BOUND,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=300,
+        )
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.READY,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=300,
+        )
         with storage_utils.create_vm_from_dv(dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm_dv)
 

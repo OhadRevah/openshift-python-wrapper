@@ -7,6 +7,7 @@ Clone tests
 import pytest
 import utilities.storage
 from pytest_testconfig import config as py_config
+from resources.datavolume import DataVolume
 from tests.storage import utils
 from utilities.infra import Images
 
@@ -46,9 +47,21 @@ def test_successful_clone_of_large_image(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
     ) as cdv:
-        cdv.wait(timeout=1500)
-        pvc = cdv.pvc
-        assert pvc.bound()
+        cdv.wait_for_condition(
+            condition=DataVolume.Condition.Type.BOUND,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=300,
+        )
+        cdv.wait_for_condition(
+            condition=DataVolume.Condition.Type.RUNNING,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=1500,
+        )
+        cdv.wait_for_condition(
+            condition=DataVolume.Condition.Type.READY,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=2400,
+        )
 
 
 @pytest.mark.parametrize(

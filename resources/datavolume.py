@@ -6,7 +6,7 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from resources.pod import Pod
 
 from .persistent_volume_claim import PersistentVolumeClaim
-from .resource import TIMEOUT, NamespacedResource
+from .resource import TIMEOUT, NamespacedResource, Resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -58,6 +58,15 @@ class DataVolume(NamespacedResource):
 
         BLOCK = "Block"
         FILE = "Filesystem"
+
+    class Condition:
+        class Type:
+            READY = "Ready"
+            BOUND = "Bound"
+            RUNNING = "Running"
+
+        class Status(Resource.Condition.Status):
+            UNKNOWN = "Unknown"
 
     def wait_deleted(self, timeout=TIMEOUT):
         """

@@ -81,13 +81,20 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.BOUND,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=300,
+        )
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=60,
+            timeout=300,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
-        wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.UNABLE_TO_CONNECT_TO_HTTP
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.READY,
+            status=DataVolume.Condition.Status.FALSE,
+            timeout=300,
         )
 
 
@@ -533,6 +540,31 @@ def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_funct
                 )
 
 
+@pytest.mark.polarion("CNV-2151")
+def test_successful_blank_disk_import(namespace, storage_class_matrix__module__):
+    storage_class = [*storage_class_matrix__module__][0]
+    with utilities.storage.create_dv(
+        source="blank",
+        dv_name=f"cnv-2151-{storage_class}",
+        namespace=namespace.name,
+        size="500Mi",
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+    ) as dv:
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.BOUND,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=60,
+        )
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.READY,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=60,
+        )
+        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
+            utils.check_disk_count_in_vm(vm_dv)
+
+
 def blank_disk_import(namespace, storage_class, volume_mode, dv_name):
     with utilities.storage.create_dv(
         source="blank",
@@ -546,22 +578,6 @@ def blank_disk_import(namespace, storage_class, volume_mode, dv_name):
         with utils.create_vm_from_dv(
             dv=dv, image=CIRROS_IMAGE, vm_name=f"vm-{dv_name}"
         ) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
-
-
-@pytest.mark.polarion("CNV-2151")
-def test_successful_blank_disk_import(namespace, storage_class_matrix__module__):
-    storage_class = [*storage_class_matrix__module__][0]
-    with utilities.storage.create_dv(
-        source="blank",
-        dv_name="cnv-2151",
-        namespace=namespace.name,
-        size="500Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
-    ) as dv:
-        dv.wait()
-        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
             utils.check_disk_count_in_vm(vm_dv)
 
 
