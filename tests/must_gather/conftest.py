@@ -86,8 +86,10 @@ def cnv_must_gather(
 
 
 @pytest.fixture(scope="module")
-def node_gather_namespace():
-    yield from create_ns(name="node-gather")
+def node_gather_namespace(kmp_vm_label, default_client):
+    yield from create_ns(
+        name="node-gather", kmp_vm_label=kmp_vm_label, admin_client=default_client
+    )
 
 
 @pytest.fixture(scope="module")
@@ -183,8 +185,15 @@ def skip_when_no_sriov(default_client):
 
 
 @pytest.fixture(scope="module")
-def node_gather_unprivileged_namespace(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="node-gather-unprivileged")
+def node_gather_unprivileged_namespace(
+    unprivileged_client, kmp_vm_label, default_client
+):
+    yield from create_ns(
+        client=unprivileged_client,
+        name="node-gather-unprivileged",
+        kmp_vm_label=kmp_vm_label,
+        admin_client=default_client,
+    )
 
 
 @pytest.fixture(scope="module")

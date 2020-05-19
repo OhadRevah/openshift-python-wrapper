@@ -61,13 +61,23 @@ class ApplyNetworkPolicy(NetworkPolicy):
 
 
 @pytest.fixture(scope="module")
-def namespace_1(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="network-policy-test-1")
+def namespace_1(unprivileged_client, kmp_vm_label, default_client):
+    yield from create_ns(
+        client=unprivileged_client,
+        name="network-policy-test-1",
+        kmp_vm_label=kmp_vm_label,
+        admin_client=default_client,
+    )
 
 
 @pytest.fixture(scope="module")
-def namespace_2(unprivileged_client):
-    yield from create_ns(client=unprivileged_client, name="network-policy-test-2")
+def namespace_2(unprivileged_client, kmp_vm_label, default_client):
+    yield from create_ns(
+        client=unprivileged_client,
+        name="network-policy-test-2",
+        kmp_vm_label=kmp_vm_label,
+        admin_client=default_client,
+    )
 
 
 @pytest.fixture()

@@ -3,6 +3,7 @@ import os
 from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from resources.project import Project, ProjectRequest
+from resources.resource import ResourceEditor
 
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
@@ -55,15 +56,27 @@ class Images:
         DIR = f"{BASE_IMAGES_DIR}/cdi-test-images"
 
 
-def create_ns(name, client=None):
+def label_project(name, label, admin_client):
+    ns = next(
+        Namespace.get(dyn_client=admin_client, field_selector=f"metadata.name=={name}")
+    )
+    ResourceEditor({ns: {"metadata": {"labels": label}}}).update()
+
+
+def create_ns(name, client=None, kmp_vm_label=None, admin_client=None):
+    """
+    For kubemacpool opt_in, provide kmp_vm_label and default_client as admin_client
+    """
     if not client:
-        with Namespace(name=name) as ns:
+        with Namespace(name=name, label=kmp_vm_label) as ns:
             ns.wait_for_status(Namespace.Status.ACTIVE, timeout=120)
             yield ns
     else:
         with ProjectRequest(name=name, client=client):
             project = Project(name=name, client=client)
             project.wait_for_status(project.Status.ACTIVE, timeout=120)
+            if kmp_vm_label:
+                label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
             yield project
 
 

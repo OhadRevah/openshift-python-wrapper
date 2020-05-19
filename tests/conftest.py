@@ -22,6 +22,7 @@ from pytest_testconfig import config as py_config
 from resources.cluster_service_version import ClusterServiceVersion
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
+from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node import Node
@@ -720,8 +721,20 @@ class NetUtilityDaemonSet(DaemonSet):
         return res
 
 
+@pytest.fixture(scope="session")
+def kmp_vm_label():
+    kmp_vm_webhook = "mutatevirtualmachines.kubemacpool.io"
+    kmp_webhook_config = MutatingWebhookConfiguration(name="kubemacpool-mutator")
+
+    for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
+        if webhook["name"] == kmp_vm_webhook:
+            return webhook["namespaceSelector"]["matchLabels"]
+
+    raise Exception(f"Webhook {kmp_vm_webhook} was not found")
+
+
 @pytest.fixture(scope="module")
-def namespace(request, unprivileged_client):
+def namespace(request, unprivileged_client, default_client, kmp_vm_label):
     """ Generate namespace from the test's module name """
     client = True
     if hasattr(request, "param"):
@@ -734,7 +747,10 @@ def namespace(request, unprivileged_client):
         .replace("_", "-")
     )[-63:]
     yield from create_ns(
-        client=unprivileged_client if client else None, name=name.split("-", 1)[-1]
+        client=unprivileged_client if client else None,
+        name=name.split("-", 1)[-1],
+        admin_client=default_client,
+        kmp_vm_label=kmp_vm_label,
     )
 
 

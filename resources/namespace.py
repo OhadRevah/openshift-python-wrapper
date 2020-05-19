@@ -21,6 +21,18 @@ class Namespace(Resource):
     class Status(Resource.Status):
         ACTIVE = "Active"
 
+    def __init__(
+        self, name, client=None, teardown=True, label=None,
+    ):
+        super().__init__(name=name, client=client, teardown=teardown)
+        self.label = label
+
+    def to_dict(self):
+        res = super().to_dict()
+        if self.label:
+            res.setdefault("metadata", {}).setdefault("labels", {}).update(self.label)
+        return res
+
     # TODO: remove the nudge when the underlying issue with namespaces stuck in
     # Terminating state is fixed.
     # Upstream bug: https://github.com/kubernetes/kubernetes/issues/60807
