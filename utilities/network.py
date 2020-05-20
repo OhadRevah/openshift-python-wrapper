@@ -548,6 +548,9 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.iface_state = iface_state
 
     def to_dict(self):
+        res = None
+        if not self.interfaces_name:
+            raise ValueError("Value of interface_name cannot be empty")
         for nic in self.interfaces_name:
             self.iface = {
                 "name": nic,

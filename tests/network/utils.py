@@ -90,6 +90,7 @@ def wait_for_address_on_iface(worker_pod, iface_name):
     This function returns worker's ip else throws 'resources.utils.TimeoutExpiredError: Timed Out:
     if function passed in func argument failed.
     """
+    sample = None
     log = "Worker ip address for {iface_name} : {sample}"
     samples = TimeoutSampler(
         timeout=30,
