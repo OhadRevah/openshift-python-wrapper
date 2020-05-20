@@ -2,9 +2,9 @@ import logging
 from ipaddress import ip_interface
 
 import pytest
+import tests.product_upgrade.utils as upgrade_utils
 from resources.datavolume import DataVolume
 from tests.network.utils import assert_ping_successful
-from tests.product_upgrade.utils import UpgradeUtils
 from utilities import console
 from utilities.virt import (
     check_ssh_connection,
@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.upgrade
 @pytest.mark.incremental
-@pytest.mark.usefixtures("skip_when_one_node", "cnv_versions")
+@pytest.mark.usefixtures("skip_when_one_node", "cnv_upgrade_path")
 class TestUpgrade:
     @pytest.mark.polarion("CNV-2974")
     @pytest.mark.run(before="test_upgrade")
@@ -33,7 +33,7 @@ class TestUpgrade:
             if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
-            UpgradeUtils.migrate_vm_and_validate(vm=vm, when="before")
+            upgrade_utils.migrate_vm_and_validate(vm=vm, when="before")
 
     @pytest.mark.polarion("CNV-2988")
     @pytest.mark.run(after="test_migration_before_upgrade")
@@ -74,10 +74,10 @@ class TestUpgrade:
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
-        UpgradeUtils.assert_bridge_and_vms_on_same_node(
+        upgrade_utils.assert_bridge_and_vms_on_same_node(
             vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
         )
-        UpgradeUtils.assert_node_is_marked_by_bridge(
+        upgrade_utils.assert_node_is_marked_by_bridge(
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
         )
 
@@ -93,13 +93,14 @@ class TestUpgrade:
 
     @pytest.mark.polarion("CNV-2991")
     @pytest.mark.run(after="test_linux_bridge_before_upgrade")
-    def test_upgrade(self, pytestconfig, default_client, cnv_versions):
+    def test_upgrade(
+        self, pytestconfig, default_client, cnv_upgrade_path, catalog_source_config
+    ):
         # TODO: OCP upgrade tests are in progress
 
         if pytestconfig.option.upgrade == "cnv":
-            UpgradeUtils.upgrade_cnv(
-                default_client=default_client,
-                cnv_target_version=cnv_versions["target_version"],
+            upgrade_utils.upgrade_cnv(
+                default_client=default_client, cnv_upgrade_path=cnv_upgrade_path,
             )
 
     @pytest.mark.polarion("CNV-2978")
@@ -137,7 +138,7 @@ class TestUpgrade:
             if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
-            UpgradeUtils.migrate_vm_and_validate(vm=vm, when="after")
+            upgrade_utils.migrate_vm_and_validate(vm=vm, when="after")
             assert len(vm.vmi.interfaces) == 2
             vm_console_run_commands(
                 console_impl=console.RHEL, vm=vm, commands=["ls"], timeout=1100
@@ -159,10 +160,10 @@ class TestUpgrade:
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
-        UpgradeUtils.assert_bridge_and_vms_on_same_node(
+        upgrade_utils.assert_bridge_and_vms_on_same_node(
             vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
         )
-        UpgradeUtils.assert_node_is_marked_by_bridge(
+        upgrade_utils.assert_node_is_marked_by_bridge(
             bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
         )
 

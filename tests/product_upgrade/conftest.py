@@ -1,15 +1,12 @@
 import pytest
 import tests.network.utils as network_utils
+import tests.product_upgrade.utils as upgrade_utils
 import utilities.network
 from pytest_testconfig import py_config
+from resources.catalog_source_config import CatalogSourceConfig
 from resources.datavolume import DataVolume
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
-from tests.product_upgrade.utils import (
-    UpgradeUtils,
-    wait_for_dvs_import_completed,
-    wait_for_vms_interfaces,
-)
 from utilities.storage import get_images_external_http_server
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -148,7 +145,7 @@ def dvs_for_upgrade(namespace, schedulable_nodes):
         )
         dv.create()
         dvs_list.append(dv)
-    wait_for_dvs_import_completed(dvs_list=dvs_list)
+    upgrade_utils.wait_for_dvs_import_completed(dvs_list=dvs_list)
 
     yield dvs_list
 
@@ -180,7 +177,7 @@ def vms_for_upgrade(unprivileged_client, bridge_on_all_nodes, dvs_for_upgrade):
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         vm.ssh_enable()
-    wait_for_vms_interfaces(vms_list=vms_list)
+    upgrade_utils.wait_for_vms_interfaces(vms_list=vms_list)
 
     yield vms_list
 
@@ -188,21 +185,49 @@ def vms_for_upgrade(unprivileged_client, bridge_on_all_nodes, dvs_for_upgrade):
         vm.clean_up()
 
 
-@pytest.fixture(scope="session")
-def cnv_versions(default_client, pytestconfig):
-    cnv_current_version = UpgradeUtils.get_current_cnv_version(
-        dyn_client=default_client, hco_namespace=py_config["hco_namespace"]
-    )
-    cnv_target_version = pytestconfig.option.cnv_version
-    # Upgrade only if a newer CNV version is requested
-    if int(cnv_target_version.replace(".", "")) <= int(
-        cnv_current_version.replace(".", "")
-    ):
-        raise ValueError(
-            f"Cannot upgrade to older/identical versions, current: {cnv_current_version} target: {cnv_target_version}"
-        )
+@pytest.fixture()
+def catalog_source_config(cnv_upgrade_path):
+    marketplace_namespace = "openshift-marketplace"
+    # For x-stream and y-stream - create CatalogSourceConfig
+    if cnv_upgrade_path.get("upgrade_path") != "z-stream":
+        with CatalogSourceConfig(
+            name="cnv-catalogsource-config-staging",
+            namespace=marketplace_namespace,
+            source=upgrade_utils.APP_REGISTRY,
+            target_namespace=marketplace_namespace,
+            packages="kubevirt-hyperconverged",
+            cs_display_name="HCO Operator",
+            cs_publisher="Red Hat",
+        ) as csc:
+            csc.wait_for_csc_status(status=csc.Status.SUCCEEDED)
+            yield csc
+    else:
+        yield
 
-    return {
-        "current_version": cnv_current_version,
-        "target_version": cnv_target_version,
-    }
+
+@pytest.fixture(scope="session")
+def cnv_upgrade_path(default_client, pytestconfig):
+    if pytestconfig.option.upgrade == "cnv":
+        cnv_current_version = upgrade_utils.get_current_cnv_version(
+            dyn_client=default_client, hco_namespace=py_config["hco_namespace"]
+        )
+        cnv_target_version = pytestconfig.option.cnv_version
+        # Upgrade only if a newer CNV version is requested
+        if int(cnv_target_version.replace(".", "")) <= int(
+            cnv_current_version.replace(".", "")
+        ):
+            raise ValueError(
+                f"Cannot upgrade to older/identical versions,"
+                f"current: {cnv_current_version} target: {cnv_target_version}"
+            )
+
+        cnv_upgrade_dict = {
+            "current_version": cnv_current_version,
+            "target_version": cnv_target_version,
+        }
+        (
+            cnv_upgrade_dict["upgrade_path"],
+            cnv_upgrade_dict["target_channel"],
+        ) = upgrade_utils.upgrade_path(cnv_upgrade_dict=cnv_upgrade_dict)
+
+        return cnv_upgrade_dict
