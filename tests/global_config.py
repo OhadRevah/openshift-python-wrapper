@@ -66,6 +66,12 @@ storage_class_matrix = [
         }
     },
     {"nfs": {"volume_mode": "Filesystem", "access_mode": "ReadWriteMany"}},
+    {
+        "ocs-storagecluster-ceph-rbd": {
+            "volume_mode": "Block",
+            "access_mode": "ReadWriteMany",
+        }
+    },
 ]
 link_aggregation_mode_matrix = [
     "active-backup",
