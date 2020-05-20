@@ -31,10 +31,10 @@ def bridge_on_all_nodes(
     nodes_active_nics,
     schedulable_nodes,
 ):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
-        bridge_name="br1upgrade",
+        interface_name="br1upgrade",
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[
@@ -48,10 +48,10 @@ def bridge_on_all_nodes(
 
 @pytest.fixture(scope="module")
 def bridge_on_one_node(network_utility_pods, worker_node1):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
-        bridge_name="upg-br-mark",
+        interface_name="upg-br-mark",
         network_utility_pods=network_utility_pods,
         node_selector=worker_node1.name,
     ) as br:
@@ -60,10 +60,10 @@ def bridge_on_one_node(network_utility_pods, worker_node1):
 
 @pytest.fixture(scope="module")
 def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_on_one_node.bridge_name,
-        bridge_name=bridge_on_one_node.bridge_name,
+        interface_name=bridge_on_one_node.bridge_name,
         namespace=namespace,
     ) as nad:
         yield nad
@@ -126,10 +126,10 @@ def running_vm_b(vm_upgrade_b):
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace, bridge_on_all_nodes):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_on_all_nodes.bridge_name,
-        bridge_name=bridge_on_all_nodes.bridge_name,
+        interface_name=bridge_on_all_nodes.bridge_name,
         namespace=namespace,
     ) as nad:
         yield nad

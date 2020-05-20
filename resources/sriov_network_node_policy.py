@@ -1,5 +1,3 @@
-from pytest_testconfig import config as py_config
-
 from .resource import NamespacedResource
 
 
@@ -13,6 +11,7 @@ class SriovNetworkNodePolicy(NamespacedResource):
     def __init__(
         self,
         name,
+        policy_namespace,
         pf_names,
         root_devices,
         num_vfs,
@@ -22,9 +21,8 @@ class SriovNetworkNodePolicy(NamespacedResource):
         node_selector=None,
         teardown=True,
     ):
-        super().__init__(
-            name=name, namespace=py_config["sriov_namespace"], teardown=teardown
-        )
+        self.policy_namespace = policy_namespace
+        super().__init__(name=name, namespace=policy_namespace, teardown=teardown)
         self.pf_names = pf_names
         self.root_devices = root_devices
         self.num_vfs = num_vfs

@@ -15,9 +15,9 @@ from tests.network.utils import (
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
-    bridge_nad,
     get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
+    network_nad,
 )
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -41,47 +41,47 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="class")
-def nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
-    with bridge_nad(
+def nad(bridge_device_matrix__class__, namespace, network_interface):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def br1vlan100_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
-    with bridge_nad(
+def br1vlan100_nad(bridge_device_matrix__class__, namespace, network_interface):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan100-nad",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
         vlan=100,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def br1vlan200_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
-    with bridge_nad(
+def br1vlan200_nad(bridge_device_matrix__class__, namespace, network_interface):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan200-nad",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
         vlan=200,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def br1vlan300_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
-    with bridge_nad(
+def br1vlan300_nad(bridge_device_matrix__class__, namespace, network_interface):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan300-nad",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
         vlan=300,
     ) as nad:
         yield nad
@@ -89,11 +89,11 @@ def br1vlan300_nad(bridge_device_matrix__class__, namespace, ovs_lb_bridge):
 
 @pytest.fixture(scope="class")
 def br1bond_nad(bridge_device_matrix__class__, namespace):
-    with bridge_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1bond-nad",
-        bridge_name="br1bond",
+        interface_name="br1bond",
     ) as nad:
         yield nad
 
@@ -127,10 +127,10 @@ def bridge_on_bond(
     """
     Create bridge and attach the BOND to it
     """
-    with network_utils.bridge_device(
-        bridge_type=bridge_device_matrix__class__,
+    with network_utils.network_device(
+        interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
-        bridge_name=br1bond_nad.bridge_name,
+        interface_name=br1bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[bond1.bond_name],
@@ -302,7 +302,7 @@ class TestConnectivity:
         bridge,
         rhel7_workers,
         namespace,
-        ovs_lb_bridge,
+        network_interface,
         bridge_attached_vma,
         bridge_attached_vmb,
         running_bridge_attached_vmia,
@@ -323,7 +323,7 @@ class TestConnectivity:
         skip_rhel7_workers,
         skip_if_workers_vms,
         namespace,
-        ovs_lb_bridge,
+        network_interface,
         br1vlan100_nad,
         bridge_attached_vma,
         bridge_attached_vmb,
@@ -346,7 +346,7 @@ class TestConnectivity:
         skip_rhel7_workers,
         skip_if_workers_vms,
         namespace,
-        ovs_lb_bridge,
+        network_interface,
         br1vlan300_nad,
         bridge_attached_vma,
         bridge_attached_vmb,
@@ -367,7 +367,7 @@ class TestConnectivity:
         skip_rhel7_workers,
         skip_if_workers_vms,
         namespace,
-        ovs_lb_bridge,
+        network_interface,
         nad,
         bridge_attached_vma,
         bridge_attached_vmb,

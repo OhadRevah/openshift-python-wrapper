@@ -4,7 +4,7 @@ from ipaddress import ip_interface
 import pytest
 from tests.network.utils import nmcli_add_con_cmds, update_cloud_init_extra_user_data
 from utilities import console
-from utilities.network import bridge_nad
+from utilities.network import network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -31,45 +31,47 @@ DOT1Q_VLAN_ID = 10
 
 
 @pytest.fixture(scope="class")
-def dot1q_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
-    with bridge_nad(
+def dot1q_nad(bridge_device_matrix__class__, network_interface, namespace):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def dhcp_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
-    with bridge_nad(
+def dhcp_nad(bridge_device_matrix__class__, network_interface, namespace):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="dhcp-broadcast",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def custom_eth_type_llpd_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
-    with bridge_nad(
+def custom_eth_type_llpd_nad(
+    bridge_device_matrix__class__, network_interface, namespace
+):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="custom-eth-type-icmp",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def mpls_nad(bridge_device_matrix__class__, ovs_lb_bridge, namespace):
-    with bridge_nad(
+def mpls_nad(bridge_device_matrix__class__, network_interface, namespace):
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="mpls",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
     ) as nad:
         yield nad
 

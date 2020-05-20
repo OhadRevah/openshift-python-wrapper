@@ -23,10 +23,10 @@ def _get_name(suffix):
 
 @pytest.fixture()
 def bridge_network(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BRIDGEMARKER1,
-        bridge_name=BRIDGEMARKER1,
+        interface_name=BRIDGEMARKER1,
         namespace=namespace,
     ) as attachdef:
         yield attachdef
@@ -34,16 +34,16 @@ def bridge_network(namespace):
 
 @pytest.fixture()
 def bridge_networks(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BRIDGEMARKER2,
-        bridge_name=BRIDGEMARKER2,
+        interface_name=BRIDGEMARKER2,
         namespace=namespace,
     ) as bridgemarker2_nad:
-        with utilities.network.bridge_nad(
+        with utilities.network.network_nad(
             nad_type=utilities.network.LINUX_BRIDGE,
             nad_name=BRIDGEMARKER3,
-            bridge_name=BRIDGEMARKER3,
+            interface_name=BRIDGEMARKER3,
             namespace=namespace,
         ) as bridgemarker3_nad:
             yield (bridgemarker2_nad, bridgemarker3_nad)
@@ -82,10 +82,10 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
 
 @pytest.fixture()
 def bridge_device_on_all_nodes(network_utility_pods, schedulable_nodes):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="bridge-marker1",
-        bridge_name=BRIDGEMARKER1,
+        interface_name=BRIDGEMARKER1,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
     ) as dev:
@@ -96,17 +96,17 @@ def bridge_device_on_all_nodes(network_utility_pods, schedulable_nodes):
 def non_homogenous_bridges(
     skip_when_one_node, network_utility_pods, worker_node1, worker_node2
 ):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="bridge-marker2",
-        bridge_name=BRIDGEMARKER2,
+        interface_name=BRIDGEMARKER2,
         network_utility_pods=network_utility_pods,
         node_selector=worker_node1.name,
     ) as bridgemarker2_ncp:
-        with network_utils.bridge_device(
-            bridge_type=utilities.network.LINUX_BRIDGE,
+        with network_utils.network_device(
+            interface_type=utilities.network.LINUX_BRIDGE,
             nncp_name="bridge-marker3",
-            bridge_name=BRIDGEMARKER3,
+            interface_name=BRIDGEMARKER3,
             network_utility_pods=network_utility_pods,
             node_selector=worker_node2.name,
         ) as bridgemarker3_ncp:

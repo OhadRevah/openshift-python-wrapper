@@ -6,7 +6,7 @@ from collections import OrderedDict
 import pytest
 import utilities.network
 from tests.network.utils import assert_ping_successful, nmcli_add_con_cmds
-from utilities.network import bridge_nad, get_vmi_ip_v4_by_name
+from utilities.network import get_vmi_ip_v4_by_name, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -30,11 +30,11 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 @pytest.fixture(scope="class")
 def nad(rhel7_ovs_bridge, namespace):
-    with bridge_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=utilities.network.OVS,
         nad_name="br1test-nad",
-        bridge_name=rhel7_ovs_bridge,
+        interface_name=rhel7_ovs_bridge,
     ) as nad:
         yield nad
 

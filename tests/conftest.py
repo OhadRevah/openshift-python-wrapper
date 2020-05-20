@@ -44,7 +44,7 @@ from resources.virtual_machine import (
 )
 from utilities import console
 from utilities.infra import ClusterHosts, create_ns
-from utilities.network import OVS, EthernetNetworkConfigurationPolicy, bridge_nad
+from utilities.network import OVS, EthernetNetworkConfigurationPolicy, network_nad
 from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -879,10 +879,10 @@ def network_attachment_definition(
     skip_ceph_on_rhel7, rhel7_ovs_bridge, namespace, rhel7_workers
 ):
     if rhel7_workers:
-        with bridge_nad(
+        with network_nad(
             nad_type=OVS,
             nad_name="rhel7-nad",
-            bridge_name=rhel7_ovs_bridge,
+            interface_name=rhel7_ovs_bridge,
             namespace=namespace,
         ) as network_attachment_definition:
             yield network_attachment_definition

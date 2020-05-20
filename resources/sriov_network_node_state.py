@@ -1,5 +1,3 @@
-from pytest_testconfig import config as py_config
-
 from .resource import NamespacedResource
 
 
@@ -10,8 +8,8 @@ class SriovNetworkNodeState(NamespacedResource):
 
     api_group = "sriovnetwork.openshift.io"
 
-    def __init__(self, name):
-        super().__init__(name=name, namespace=py_config["sriov_namespace"])
+    def __init__(self, name, policy_namespace):
+        super().__init__(name=name, namespace=policy_namespace)
 
     @property
     def interfaces(self):

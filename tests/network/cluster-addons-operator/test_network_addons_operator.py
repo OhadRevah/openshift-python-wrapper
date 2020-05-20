@@ -7,10 +7,10 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 @pytest.fixture(scope="module", autouse="True")
 def bridge_device(network_utility_pods, schedulable_nodes):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="test-network-operator",
-        bridge_name="br1test",
+        interface_name="br1test",
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
     ) as br_dev:
@@ -19,10 +19,10 @@ def bridge_device(network_utility_pods, schedulable_nodes):
 
 @pytest.fixture(scope="module", autouse="True")
 def br1test_nad(namespace, bridge_device):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=bridge_device.bridge_name,
-        bridge_name=bridge_device.bridge_name,
+        interface_name=bridge_device.bridge_name,
         namespace=namespace,
     ) as nad:
         yield nad

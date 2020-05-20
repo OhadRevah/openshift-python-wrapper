@@ -7,7 +7,7 @@ Pytest conftest file for CNV network tests
 import pytest
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
-from tests.network.utils import bridge_device
+from tests.network.utils import network_device
 from utilities.network import get_hosts_common_ports
 
 
@@ -70,7 +70,7 @@ def ovs_worker_pods(schedulable_nodes, default_client):
 
 
 @pytest.fixture(scope="class")
-def ovs_lb_bridge(
+def network_interface(
     request,
     bridge_device_matrix__class__,
     index_number,
@@ -89,14 +89,14 @@ def ovs_lb_bridge(
         else []
     )
     unique_index = next(index_number)
-    bridge_name = f"br{unique_index}test"
-    with bridge_device(
-        bridge_type=bridge_device_matrix__class__,
-        nncp_name=f"{bridge_name}-nncp",
-        bridge_name=bridge_name,
+    interface_name = f"br{unique_index}test"
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name=f"{interface_name}-nncp",
+        interface_name=interface_name,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=ports,
         mtu=mtu,
-    ) as br:
-        yield br
+    ) as iface:
+        yield iface

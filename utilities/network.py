@@ -9,6 +9,8 @@ from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
 from resources.resource import sub_resource_level
+from resources.sriov_network import SriovNetwork
+from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 
@@ -17,6 +19,7 @@ IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
 IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
 LINUX_BRIDGE = "linux-bridge"
 OVS = "ovs"
+SRIOV = "sriov"
 
 
 class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
@@ -486,13 +489,15 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         return res
 
 
-BRIDGE_DEVICE_TYPE = {
+NETWORK_DEVICE_TYPE = {
     LINUX_BRIDGE: LinuxBridgeNodeNetworkConfigurationPolicy,
     OVS: OvsBridgeNodeNetworkConfigurationPolicy,
+    SRIOV: SriovNetworkNodePolicy,
 }
-BRIDGE_NAD_TYPE = {
+NAD_TYPE = {
     LINUX_BRIDGE: LinuxBridgeNetworkAttachmentDefinition,
     OVS: OvsBridgeNetworkAttachmentDefinition,
+    SRIOV: SriovNetwork,
 }
 
 
@@ -527,25 +532,37 @@ class IpNotFound(Exception):
 
 
 @contextlib.contextmanager
-def bridge_nad(
-    nad_type, nad_name, bridge_name, namespace, tuning=None, vlan=None, mtu=None
+def network_nad(
+    nad_type,
+    nad_name,
+    namespace,
+    interface_name=None,
+    tuning=None,
+    vlan=None,
+    mtu=None,
+    ipam=None,
 ):
     kwargs = {
-        "namespace": namespace.name,
         "name": nad_name,
-        "bridge_name": bridge_name,
         "vlan": vlan,
-        "mtu": mtu,
     }
     if nad_type == LINUX_BRIDGE:
         cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
         tuning_type = (
             py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
         )
+        kwargs["namespace"] = namespace.name
         kwargs["cni_type"] = cni_type
         kwargs["tuning_type"] = tuning_type
+        kwargs["bridge_name"] = interface_name
+        kwargs["mtu"] = mtu
 
-    with BRIDGE_NAD_TYPE[nad_type](**kwargs) as nad:
+    if nad_type == SRIOV:
+        kwargs["network_namespace"] = namespace
+        kwargs["resource_name"] = nad_name
+        kwargs["ipam"] = ipam
+
+    with NAD_TYPE[nad_type](**kwargs) as nad:
         yield nad
 
 

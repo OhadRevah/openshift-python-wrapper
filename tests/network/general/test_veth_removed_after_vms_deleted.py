@@ -36,10 +36,10 @@ def count_veth_devices_on_host(pod):
 
 @pytest.fixture()
 def br1test_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR1TEST,
-        bridge_name=BR1TEST,
+        interface_name=BR1TEST,
         namespace=namespace,
     ) as nad:
         yield nad
@@ -47,10 +47,10 @@ def br1test_nad(namespace):
 
 @pytest.fixture()
 def br2test_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR2TEST,
-        bridge_name=BR1TEST,
+        interface_name=BR1TEST,
         namespace=namespace,
     ) as nad:
         yield nad
@@ -58,10 +58,10 @@ def br2test_nad(namespace):
 
 @pytest.fixture()
 def bridge_device(network_utility_pods, schedulable_nodes):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="veth-removed",
-        bridge_name=BR1TEST,
+        interface_name=BR1TEST,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
     ) as dev:

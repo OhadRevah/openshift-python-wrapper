@@ -133,12 +133,12 @@ def kubevirt_crd_resources(default_client, custom_resource_definitions):
 
 @pytest.fixture(scope="module")
 def network_attachment_definition(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.OVS
         if rhel7_workers
         else utilities.network.LINUX_BRIDGE,
         nad_name="mgnad",
-        bridge_name=rhel7_ovs_bridge if rhel7_workers else "mgbr",
+        interface_name=rhel7_ovs_bridge if rhel7_workers else "mgbr",
         namespace=hco_namespace,
     ) as network_attachment_definition:
         yield network_attachment_definition
@@ -151,10 +151,10 @@ def nodenetworkstate_with_bridge(
     if rhel7_workers:
         yield rhel7_ovs_bridge
     else:
-        with network_utils.bridge_device(
-            bridge_type=utilities.network.LINUX_BRIDGE,
+        with network_utils.network_device(
+            interface_type=utilities.network.LINUX_BRIDGE,
             nncp_name="must-gather-br",
-            bridge_name="mgbr",
+            interface_name="mgbr",
             network_utility_pods=network_utility_pods,
             nodes=schedulable_nodes,
         ) as br:

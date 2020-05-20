@@ -162,10 +162,10 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
 
 @pytest.fixture(scope="module")
 def manual_mac_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="manual-mac-nad",
-        bridge_name=BRIDGE_BR1,
+        interface_name=BRIDGE_BR1,
         namespace=namespace,
     ) as manual_mac_nad:
         yield manual_mac_nad
@@ -173,10 +173,10 @@ def manual_mac_nad(namespace):
 
 @pytest.fixture(scope="module")
 def automatic_mac_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="automatic-mac-nad",
-        bridge_name=BRIDGE_BR1,
+        interface_name=BRIDGE_BR1,
         namespace=namespace,
     ) as automatic_mac_nad:
         yield automatic_mac_nad
@@ -184,10 +184,10 @@ def automatic_mac_nad(namespace):
 
 @pytest.fixture(scope="module")
 def manual_mac_out_of_pool_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="manual-out-pool-mac-nad",
-        bridge_name=BRIDGE_BR1,
+        interface_name=BRIDGE_BR1,
         namespace=namespace,
         tuning=True,
     ) as manual_mac_out_pool_nad:
@@ -196,10 +196,10 @@ def manual_mac_out_of_pool_nad(namespace):
 
 @pytest.fixture(scope="module")
 def automatic_mac_tuning_net_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="automatic-mac-tun-net-nad",
-        bridge_name=BRIDGE_BR1,
+        interface_name=BRIDGE_BR1,
         namespace=namespace,
         tuning=True,
     ) as automatic_mac_tuning_net_nad:
@@ -213,10 +213,10 @@ def bridge_device(
     network_utility_pods,
     schedulable_nodes,
 ):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="kubemacpool",
-        bridge_name=BRIDGE_BR1,
+        interface_name=BRIDGE_BR1,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[

@@ -7,15 +7,15 @@ import pytest
 from tests.network.utils import (
     assert_no_ping,
     assert_ping_successful,
-    bridge_device,
+    network_device,
     nmcli_add_con_cmds,
 )
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
-    bridge_nad,
     get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
+    network_nad,
 )
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -48,10 +48,10 @@ def bridge_on_bond(
     """
     Create bridge and attach the BOND to it
     """
-    with bridge_device(
-        bridge_type=bridge_device_matrix__class__,
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
-        bridge_name="br1bond",
+        interface_name="br1bond",
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[bond1.bond_name],
@@ -65,13 +65,13 @@ def nad(
     namespace,
     network_utility_pods,
     nodes_active_nics,
-    ovs_lb_bridge,
+    network_interface,
 ):
-    with bridge_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
-        bridge_name=ovs_lb_bridge.bridge_name,
+        interface_name=network_interface.bridge_name,
         tuning=True,
         mtu=9000,
     ) as nad:
@@ -80,11 +80,11 @@ def nad(
 
 @pytest.fixture(scope="class")
 def br1bond_nad(skip_no_bond_support, bridge_device_matrix__class__, namespace):
-    with bridge_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1bond-nad",
-        bridge_name="br1bond",
+        interface_name="br1bond",
         tuning=True,
         mtu=9000,
     ) as nad:
@@ -223,7 +223,7 @@ def running_bond_bridge_attached_vmib(bond_bridge_attached_vmb):
     1814614, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.usefixtures("skip_rhel7_workers")
-@pytest.mark.parametrize("ovs_lb_bridge", [{"mtu": 9000}], indirect=True)
+@pytest.mark.parametrize("network_interface", [{"mtu": 9000}], indirect=True)
 class TestJumboFrame:
     @pytest.mark.polarion("CNV-2685")
     def test_connectivity_over_linux_bridge_large_mtu(
@@ -231,7 +231,7 @@ class TestJumboFrame:
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
-        ovs_lb_bridge,
+        network_interface,
         namespace,
         nad,
         bridge_attached_vma,
@@ -258,7 +258,7 @@ class TestJumboFrame:
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
-        ovs_lb_bridge,
+        network_interface,
         namespace,
         nad,
         bridge_attached_vma,

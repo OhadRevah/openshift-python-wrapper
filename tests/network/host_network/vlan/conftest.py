@@ -10,14 +10,14 @@ from tests.network.host_network.vlan.utils import (
     disable_ipv4_dhcp_client,
     enable_ipv4_dhcp_client,
 )
-from tests.network.utils import bridge_device
+from tests.network.utils import network_device
 from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
-    bridge_nad,
     get_hosts_common_ports,
+    network_nad,
 )
 from utilities.virt import (
     VirtualMachineForTests,
@@ -170,10 +170,10 @@ def dhcp_server_bridge(
     dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, worker_node1
 ):
     bridge_name = f"{dhcp_server_vlan_iface.iface_name}-br"
-    with bridge_device(
-        bridge_type=LINUX_BRIDGE,
+    with network_device(
+        interface_type=LINUX_BRIDGE,
         nncp_name=f"{bridge_name}-nncp",
-        bridge_name=bridge_name,
+        interface_name=bridge_name,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[dhcp_server_vlan_iface.iface_name],
@@ -189,11 +189,11 @@ def dhcp_br_nad(dhcp_server_bridge, namespace):
     # Apparently, NetworkAttachmentDefinition name cannot contain dot (although k8s resource naming
     # does allow that - https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names).
     nad_name = nad_name.replace(".", "-")
-    with bridge_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=LINUX_BRIDGE,
         nad_name=nad_name,
-        bridge_name=dhcp_server_bridge.bridge_name,
+        interface_name=dhcp_server_bridge.bridge_name,
     ) as nad:
         yield nad
 

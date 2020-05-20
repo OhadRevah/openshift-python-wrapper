@@ -3,9 +3,10 @@ import logging
 import re
 
 from resources.node_network_state import NodeNetworkState
+from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from utilities import console
-from utilities.network import BRIDGE_DEVICE_TYPE
+from utilities.network import NETWORK_DEVICE_TYPE, SRIOV
 
 
 LOGGER = logging.getLogger(__name__)
@@ -49,31 +50,43 @@ def running_vmi(vm):
 
 
 @contextlib.contextmanager
-def bridge_device(
-    bridge_type,
+def network_device(
+    interface_type,
     nncp_name,
-    bridge_name,
     network_utility_pods,
     nodes=None,
+    interface_name=None,
     ports=None,
     mtu=None,
     node_selector=None,
     ipv4_dhcp=None,
+    priority=None,
+    namespace=None,
 ):
     nodes_names = [node_selector] if node_selector else [node.name for node in nodes]
-    schedulable_worker_pods = [
-        pod for pod in network_utility_pods if pod.node.name in nodes_names
-    ]
-    with BRIDGE_DEVICE_TYPE[bridge_type](
-        name=nncp_name,
-        bridge_name=bridge_name,
-        worker_pods=schedulable_worker_pods,
-        ports=ports,
-        mtu=mtu,
-        node_selector=node_selector,
-        ipv4_dhcp=ipv4_dhcp,
-    ) as br:
-        yield br
+    worker_pods = [pod for pod in network_utility_pods if pod.node.name in nodes_names]
+    kwargs = {
+        "name": nncp_name,
+        "mtu": mtu,
+    }
+    if interface_type == SRIOV:
+        snns = SriovNetworkNodeState(name=worker_pods[0].node.name)
+        iface = snns.interfaces[0]
+        kwargs["namespace"] = namespace
+        kwargs["pf_names"] = snns.iface_name(iface=iface)
+        kwargs["root_devices"] = snns.pciaddress(iface=iface)
+        kwargs["num_vfs"] = snns.totalvfs(iface=iface)
+        kwargs["priority"] = priority or 99
+
+    else:
+        kwargs["bridge_name"] = interface_name
+        kwargs["worker_pods"] = worker_pods
+        kwargs["ports"] = ports
+        kwargs["node_selector"] = node_selector
+        kwargs["ipv4_dhcp"] = ipv4_dhcp
+
+    with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
+        yield iface
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):

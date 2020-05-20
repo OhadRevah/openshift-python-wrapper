@@ -152,10 +152,10 @@ def bridge_on_all_nodes(
     nodes_active_nics,
     schedulable_nodes,
 ):
-    with network_utils.bridge_device(
-        bridge_type=utilities.network.LINUX_BRIDGE,
+    with network_utils.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="migration",
-        bridge_name=BR1TEST,
+        interface_name=BR1TEST,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[
@@ -169,10 +169,10 @@ def bridge_on_all_nodes(
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR1TEST,
-        bridge_name=BR1TEST,
+        interface_name=BR1TEST,
         namespace=namespace,
     ) as nad:
         yield nad

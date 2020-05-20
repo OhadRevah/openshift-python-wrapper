@@ -1,5 +1,3 @@
-from pytest_testconfig import config as py_config
-
 from .resource import NamespacedResource
 
 
@@ -13,15 +11,15 @@ class SriovNetwork(NamespacedResource):
     def __init__(
         self,
         name,
-        resource_name,
+        policy_namespace,
         network_namespace,
+        resource_name=None,
         vlan=None,
         ipam=None,
         teardown=True,
     ):
-        super().__init__(
-            name=name, namespace=py_config["sriov_namespace"], teardown=teardown
-        )
+        self.policy_namespace = policy_namespace
+        super().__init__(name=name, namespace=policy_namespace, teardown=teardown)
         self.network_namespace = network_namespace
         self.resource_name = resource_name
         self.vlan = vlan
