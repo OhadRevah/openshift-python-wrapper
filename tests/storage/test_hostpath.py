@@ -4,6 +4,7 @@
 Hostpath Provisioner test suite
 """
 import logging
+from multiprocessing.pool import ThreadPool
 
 import pytest
 import tests.storage.utils as storage_utils
@@ -19,6 +20,7 @@ from resources.pod import Pod
 from resources.security_context_constraints import SecurityContextConstraints
 from resources.service_account import ServiceAccount
 from resources.storage_class import StorageClass
+from resources.utils import TimeoutSampler
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import create_dv, get_images_external_http_server
@@ -140,13 +142,13 @@ def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node):
 def assert_provision_on_node_annotation(pvc, node_name, type_):
     provision_on_node = "kubevirt.io/provisionOnNode"
     assert pvc.instance.metadata.annotations.get(provision_on_node) == node_name
-    f"No '{provision_on_node}' annotation found on {type_} PVC"
+    f"No '{provision_on_node}' annotation found on {type_} PVC / node names differ"
 
 
-def assert_selected_node_annotation(pvc, pod, type_):
+def assert_selected_node_annotation(pvc_node_name, pod_node_name, type_="source"):
     assert (
-        pvc.selected_node == pod.instance.spec.nodeName
-    ), f"No 'volume.kubernetes.io/selected-node' annotation found on {type_} PVC"
+        pvc_node_name == pod_node_name
+    ), f"No 'volume.kubernetes.io/selected-node' annotation found on {type_} PVC / node names differ"
 
 
 def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
@@ -155,7 +157,51 @@ def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
         for pod in Pod.get(dyn_client=default_client, namespace=namespace)
         if pod.name.startswith(pod_prefix)
     ]
-    return pods[0]
+    return pods[0] if pods else None
+
+
+def _get_pod_and_scratch_pvc(default_client, namespace, pod_prefix, pvc_suffix):
+    pvcs = list(
+        PersistentVolumeClaim.get(dyn_client=default_client, namespace=namespace)
+    )
+    matched_pvcs = [pvc for pvc in pvcs if pvc.name.endswith(pvc_suffix)]
+    matched_pod = get_pod_by_name_prefix(
+        default_client=default_client, pod_prefix=pod_prefix, namespace=namespace
+    )
+    return {
+        "pod": matched_pod,
+        "pvc": matched_pvcs[0] if matched_pvcs else None,
+    }
+
+
+def get_pod_and_scratch_pvc_nodes(default_client, namespace):
+    """
+    Returns scratch pvc and pod nodes using sampling.
+    This is essential in order to get hold of the resources before they are finished and not accessible.
+
+    Args:
+        namespace: namespace to search in
+        default_client: open connection to remote cluster
+    """
+    LOGGER.info("Waiting for cdi-upload worker pod and scratch pvc")
+    sampler = TimeoutSampler(
+        timeout=30,
+        sleep=5,
+        func=_get_pod_and_scratch_pvc,
+        default_client=default_client,
+        namespace=namespace,
+        pod_prefix="cdi-upload",
+        pvc_suffix="scratch",
+    )
+    for sample in sampler:
+        pod = sample.get("pod")
+        pvc = sample.get("pvc")
+        if pod and pvc:
+            LOGGER.info("Found cdi-upload worker pod and scratch pvc")
+            return {
+                "pod_node": pod.instance.spec.nodeName,
+                "scratch_pvc_node": pvc.selected_node,
+            }
 
 
 @pytest.mark.polarion("CNV-2817")
@@ -322,16 +368,25 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
 def test_hpp_upload_virtctl(
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
+    default_client,
     namespace,
     tmpdir,
 ):
     """
-    Check that upload disk image via virtcl tool works
+    Check that upload disk image via virtctl tool works
     """
     local_name = f"{tmpdir}/{Images.Fedora.FEDORA29_IMG}"
     remote_name = f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}"
     storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
     pvc_name = "cnv-2771"
+
+    # Get pod and scratch pvc nodes, before they are inaccessible
+    thread_pool = ThreadPool(processes=1)
+    async_result = thread_pool.apply_async(
+        func=get_pod_and_scratch_pvc_nodes,
+        kwds={"default_client": default_client, "namespace": namespace.name},
+    )
+    # Start virtctl upload process, meanwhile, resources are sampled
     virtctl_upload = storage_utils.virtctl_upload(
         namespace=namespace.name,
         image_path=local_name,
@@ -340,18 +395,15 @@ def test_hpp_upload_virtctl(
         storage_class=StorageClass.Types.HOSTPATH,
         insecure=True,
     )
+    return_val = async_result.get()  # get return value from side thread
     LOGGER.debug(virtctl_upload)
     assert virtctl_upload
     pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
     assert pvc.bound()
-    scratch_pvc = PersistentVolumeClaim(
-        namespace=namespace.name, name=f"{pvc_name}-scratch"
-    )
-    pod = Pod(namespace=namespace.name, name=f"cdi-upload-{pvc.name}")
-    assert (
-        pvc.selected_node == pod.instance.spec.nodeName
-        and scratch_pvc.selected_node == pod.instance.spec.nodeName
-    ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC"
+    assert all(
+        node == return_val.get("pod_node")
+        for node in (pvc.selected_node, return_val.get("scratch_pvc_node"))
+    ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC / node names differ"
 
 
 @pytest.mark.polarion("CNV-2769")
@@ -429,7 +481,9 @@ def test_hostpath_registry_import_dv(
         )
         dv.importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
         assert_selected_node_annotation(
-            pvc=dv.scratch_pvc, pod=dv.importer_pod, type_="scratch"
+            pvc_node_name=dv.scratch_pvc.selected_node,
+            pod_node_name=dv.importer_pod.instance.spec.nodeName,
+            type_="scratch",
         )
         assert_provision_on_node_annotation(
             pvc=dv.pvc, node_name=worker_node1.name, type_="import"
@@ -482,7 +536,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         )
         upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
         assert_selected_node_annotation(
-            pvc=target_dv.pvc, pod=upload_target_pod, type_="target"
+            pvc_node_name=target_dv.pvc.selected_node,
+            pod_node_name=upload_target_pod.instance.spec.nodeName,
+            type_="target",
         )
         target_dv.wait(timeout=300)
         with storage_utils.create_vm_from_dv(
@@ -515,12 +571,19 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
     ) as dv:
         dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
         dv.importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
-        assert_selected_node_annotation(pvc=dv.pvc, pod=dv.importer_pod, type_="target")
+        pod_node_name = dv.importer_pod.instance.spec.nodeName
+        pvc_node_name = dv.pvc.selected_node
+        assert_selected_node_annotation(
+            pvc_node_name=pvc_node_name, pod_node_name=pod_node_name, type_="target"
+        )
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
+        scratch_pvc_node_name = dv.scratch_pvc.selected_node
         assert_selected_node_annotation(
-            pvc=dv.scratch_pvc, pod=dv.importer_pod, type_="scratch"
+            pvc_node_name=scratch_pvc_node_name,
+            pod_node_name=pod_node_name,
+            type_="scratch",
         )
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
 
