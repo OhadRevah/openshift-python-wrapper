@@ -103,7 +103,11 @@ def test_image_upload_with_overridden_url(
 
 @pytest.mark.polarion("CNV-3031")
 def test_virtctl_image_upload_with_ca(
-    skip_no_reencrypt_route, skip_not_openshift, tmpdir, namespace
+    skip_no_reencrypt_route,
+    skip_router_wildcard_cert_not_trusted,
+    skip_not_openshift,
+    tmpdir,
+    namespace,
 ):
     local_path = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
     storage_utils.downloaded_image(
