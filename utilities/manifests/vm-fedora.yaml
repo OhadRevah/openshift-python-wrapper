@@ -35,6 +35,6 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
       - containerDisk:
-          image: quay.io/redhat/cnv-tests-fedora-staging:31
+          image: quay.io/openshift-cnv/cnv-tests-fedora:31
         name: containerdisk
 status: {}

@@ -53,21 +53,21 @@ The tar container will be located under "fedora_build" folder.
 ```bash
 cd fedora_build
 docker load -i fedora-$FEDORA_VERSION.tar
-docker tag fedora:$FEDORA_VERSION quay.io/redhat/cnv-tests-fedora-staging:$FEDORA_VERSION
-docker push quay.io/redhat/cnv-tests-fedora-staging:$FEDORA_VERSION
+docker tag fedora:$FEDORA_VERSION quay.io/openshift-cnv/cnv-tests-fedora-staging:$FEDORA_VERSION
+docker push quay.io/openshift-cnv/cnv-tests-fedora-staging:$FEDORA_VERSION
 ```
 
 30 tag should changed based on the Fedora version.
 
 ### Verify
-Change tests/manifests/vm-fedora.yaml to use cnv-tests-fedora-staging image
-`image: quay.io/redhat/cnv-tests-fedora-staging`
+Change tests/manifests/vm-fedora.yaml to use fedora-staging image
+`image: quay.io/openshift-cnv/cnv-tests-fedora-staging`
 Run the tests (cnv-tests).
 
-Once verified push the image to quay.io/redhat/cnv-tests-fedora
+Once verified push the image to quay.io/openshift-cnv/cnv-tests-fedora
 ```bash
-docker tag fedora:$FEDORA_VERSION quay.io/redhat/cnv-tests-fedora:$FEDORA_VERSION
-docker push quay.io/redhat/cnv-tests-fedora:$FEDORA_VERSION
+docker tag fedora:$FEDORA_VERSION quay.io/openshift-cnv/cnv-tests-fedora:$FEDORA_VERSION
+docker push quay.io/openshift-cnv/cnv-tests-fedora:$FEDORA_VERSION
 ```
 
 ### Push qcow image to HTTP servers

@@ -106,7 +106,7 @@ class PodWithPVC(Pod):
                     "containers": [
                         {
                             "name": "runner",
-                            "image": "quay.io/redhat/cnv-tests-net-util-container",
+                            "image": "quay.io/openshift-cnv/cnv-tests-net-util-container",
                             "command": [
                                 "/bin/bash",
                                 "-c",

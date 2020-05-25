@@ -225,9 +225,9 @@ commands necessary to control network components on the tests environment hosts.
 To build the image:
 
 ```bash
-docker build -t quay.io/redhat/cnv-tests-net-util-container -f ./tests/network/Dockerfile.net-utility ./tests/network
+docker build -t quay.io/openshift-cnv/cnv-tests-net-util-container -f ./tests/network/Dockerfile.net-utility ./tests/network
 docker login quay.io # Need to have right to push under the redhat organization
-docker push quay.io/redhat/cnv-tests-net-util-container
+docker push quay.io/openshift-cnv/cnv-tests-net-util-container
 ```
 
 # Development
