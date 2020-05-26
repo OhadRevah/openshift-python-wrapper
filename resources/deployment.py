@@ -107,7 +107,7 @@ class HttpDeployment(Deployment):
                             "containers": [
                                 {
                                     "name": "http",
-                                    "image": "quay.io/openshift-cnv/cnv-tests-internal-http",
+                                    "image": "quay.io/openshift-cnv/qe-cnv-tests-internal-http",
                                     "imagePullPolicy": "IfNotPresent",
                                     "command": ["/usr/sbin/nginx"],
                                     "readinessProbe": {

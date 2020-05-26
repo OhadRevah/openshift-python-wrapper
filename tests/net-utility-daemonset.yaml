@@ -27,7 +27,7 @@ spec:
         - /bin/bash
         - -c
         - echo ok > /tmp/healthy && sleep INF
-        image: quay.io/openshift-cnv/cnv-tests-net-util-container
+        image: quay.io/openshift-cnv/qe-cnv-tests-net-util-container
         imagePullPolicy: IfNotPresent
         name: utility
         readinessProbe:
