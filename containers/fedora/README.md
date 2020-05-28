@@ -1,7 +1,7 @@
 # Prerequisite
 Export the relevant Fedora version, fore example:
 ```bash
-export FEDORA_VERSION=31
+export FEDORA_VERSION=32
 ```
 
 # Fedora VM container
@@ -18,7 +18,7 @@ To execute the build script the following packages needed:
 
 build.sh get Fedora image as parameter, for example:
 ```bash
-./build.sh Fedora-Cloud-Base-30-1.2.x86_64.qcow2 $FEDORA_VERSION
+./build.sh Fedora-Cloud-Base-32-1.6.x86_64.qcow2 $FEDORA_VERSION
 ```
 
 This will install:
@@ -35,6 +35,9 @@ This will install:
     stress
     sshpass
     podman
+    ethtool
+    libibverbs
+    dpdk
 
 enable qemu-guest-agent and sshd services in the VM.
 If extra packages needed add them in user-data file.
@@ -57,7 +60,7 @@ docker tag fedora:$FEDORA_VERSION quay.io/openshift-cnv/qe-cnv-tests-fedora-stag
 docker push quay.io/openshift-cnv/qe-cnv-tests-fedora-staging:$FEDORA_VERSION
 ```
 
-30 tag should changed based on the Fedora version.
+32 tag should changed based on the Fedora version.
 
 ### Verify
 Change tests/manifests/vm-fedora.yaml to use fedora-staging image
@@ -73,6 +76,6 @@ docker push quay.io/openshift-cnv/qe-cnv-tests-fedora:$FEDORA_VERSION
 ### Push qcow image to HTTP servers
 Push qcow2 image to EMEA and USA HTTP servers
 ```bash
-scp fedora_build/Fedora-Cloud-Base-30-1.2.x86_64.qcow2 root@cnv-qe-server.scl.lab.tlv.redhat.com:/var/www/files/cnv-tests/fedora/
-scp fedora_build/Fedora-Cloud-Base-30-1.2.x86_64.qcow2 root@cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com:/var/www/files/cnv-tests/fedora/
+scp fedora_build/Fedora-Cloud-Base-32-1.6.x86_64.qcow2 root@cnv-qe-server.scl.lab.tlv.redhat.com:/var/www/files/cnv-tests/fedora-images/
+scp fedora_build/Fedora-Cloud-Base-32-1.6.x86_64.qcow2 root@cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com:/var/www/files/cnv-tests/fedora-images/
 ```
