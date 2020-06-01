@@ -29,9 +29,10 @@ latest_windows_version = {
     "os_version": "19",
     "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
 }
+# TODO: Update to Fedora32 once https://issues.redhat.com/browse/CNV-5129 is handled.
 latest_fedora_version = {
     "os_label": "fedora31",
-    "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA31_IMG),
+    "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
 }
 windows_username = "Administrator"
 windows_password = "Heslo123"
