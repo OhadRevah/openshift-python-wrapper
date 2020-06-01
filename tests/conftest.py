@@ -1254,7 +1254,7 @@ def worker_nodes_ipv4_false_secondary_nics(
     for worker_node in schedulable_nodes:
         worker_nics = nodes_active_nics[worker_node.name]
         with EthernetNetworkConfigurationPolicy(
-            name="disable-ipv4-{}".format(worker_node.name),
+            name=f"disable-ipv4-{worker_node.name}",
             node_selector=worker_node.name,
             ipv4_dhcp=False,
             worker_pods=network_utility_pods,
