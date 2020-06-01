@@ -15,7 +15,7 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from utilities.virt import wait_for_vm_interfaces
 
 
-APP_REGISTRY = "redhat-operators-stage"
+APP_REGISTRY = "rh-osbs-operators"
 LOGGER = logging.getLogger(__name__)
 TIMEOUT_10MIN = 10 * 60
 

@@ -5,6 +5,8 @@ import utilities.network
 from pytest_testconfig import py_config
 from resources.catalog_source_config import CatalogSourceConfig
 from resources.datavolume import DataVolume
+from resources.operator_source import OperatorSource
+from resources.secret import Secret
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
 from utilities.storage import get_images_external_http_server
@@ -15,6 +17,9 @@ from utilities.virt import (
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
+
+
+MARKETPLACE_NAMESPACE = "openshift-marketplace"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -186,15 +191,41 @@ def vms_for_upgrade(unprivileged_client, bridge_on_all_nodes, dvs_for_upgrade):
 
 
 @pytest.fixture()
-def catalog_source_config(cnv_upgrade_path):
-    marketplace_namespace = "openshift-marketplace"
-    # For x-stream and y-stream - create CatalogSourceConfig
+def registry_secret():
+    token = (
+        "basic cmgtb3Nicy1vcGVyYXRvcnMrY252cWU6MDBVSjc0ME1LRUpEWlVTVDBaMlRMW"
+        "lZRRlE2SFJVUDAxTldWNFpWQTBHVzFORUxWT0FKOVVUWVBUMkgzTlowVg=="
+    )
+    with Secret(
+        name=f"quay-registry-{upgrade_utils.APP_REGISTRY}",
+        namespace=MARKETPLACE_NAMESPACE,
+        string_data={"token": token},
+    ) as secret:
+        yield secret
+
+
+@pytest.fixture()
+def operator_source(registry_secret):
+    with OperatorSource(
+        name=upgrade_utils.APP_REGISTRY,
+        namespace=MARKETPLACE_NAMESPACE,
+        registry_namespace=upgrade_utils.APP_REGISTRY,
+        display_name=upgrade_utils.APP_REGISTRY,
+        publisher="Red Hat",
+        secret=registry_secret.name,
+    ) as os:
+        yield os
+
+
+@pytest.fixture()
+def catalog_source_config(cnv_upgrade_path, operator_source):
+    # For x-stream and y-stream - create OperatorSource and CatalogSourceConfig
     if cnv_upgrade_path.get("upgrade_path") != "z-stream":
         with CatalogSourceConfig(
-            name="cnv-catalogsource-config-staging",
-            namespace=marketplace_namespace,
-            source=upgrade_utils.APP_REGISTRY,
-            target_namespace=marketplace_namespace,
+            name="cnv-catalogsource-config-rh-osbs-operators",
+            namespace=MARKETPLACE_NAMESPACE,
+            source=operator_source.instance.spec.registryNamespace,
+            target_namespace=MARKETPLACE_NAMESPACE,
             packages="kubevirt-hyperconverged",
             cs_display_name="HCO Operator",
             cs_publisher="Red Hat",
