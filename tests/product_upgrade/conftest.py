@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 import tests.network.utils as network_utils
 import tests.product_upgrade.utils as upgrade_utils
@@ -263,3 +265,11 @@ def cnv_upgrade_path(default_client, pytestconfig):
         ) = upgrade_utils.upgrade_path(cnv_upgrade_dict=cnv_upgrade_dict)
 
         return cnv_upgrade_dict
+
+
+@pytest.fixture(scope="module")
+def vms_for_upgrade_dict_before(vms_for_upgrade):
+    vms_dict = {}
+    for vm in vms_for_upgrade:
+        vms_dict[vm.name] = deepcopy(vm.instance.to_dict())
+    yield vms_dict

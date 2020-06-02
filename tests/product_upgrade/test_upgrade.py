@@ -176,3 +176,16 @@ class TestUpgrade:
             running_vm_b.vmi.instance.status.interfaces[1].ipAddress
         ).ip
         assert_ping_successful(src_vm=running_vm_a, dst_ip=str(dst_ip_address))
+
+    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.polarion("CNV-3682")
+    def test_machine_type_after_upgrade(
+        self, vms_for_upgrade, vms_for_upgrade_dict_before
+    ):
+        for vm in vms_for_upgrade:
+            assert (
+                vm.instance.spec.template.spec.domain.machine.type
+                == vms_for_upgrade_dict_before[vm.name]["spec"]["template"]["spec"][
+                    "domain"
+                ]["machine"]["type"]
+            )
