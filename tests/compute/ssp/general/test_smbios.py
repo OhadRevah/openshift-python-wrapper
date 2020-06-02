@@ -29,12 +29,24 @@ def configmap_smbios_vm(unprivileged_client, namespace):
         yield vm
 
 
+@pytest.fixture()
+def smbios_defaults(default_client, cnv_current_version):
+    smbios_defaults = {
+        "Family": "Red Hat",
+        "Product": "Container-native virtualization",
+        "Manufacturer": "Red Hat",
+        "Sku": cnv_current_version,
+        "Version": cnv_current_version,
+    }
+    return smbios_defaults
+
+
 @pytest.mark.polarion("CNV-4346")
 def test_cm_smbios_defaults(
-    skip_upstream, default_client, smbios_from_kubevirt_config_cm
+    skip_upstream, smbios_from_kubevirt_config_cm, smbios_defaults
 ):
     ssp_utils.check_smbios_defaults(
-        default_client=default_client, cm_values=smbios_from_kubevirt_config_cm
+        smbios_defaults=smbios_defaults, cm_values=smbios_from_kubevirt_config_cm
     )
 
 

@@ -9,7 +9,6 @@ import os
 import os.path
 import re
 import shutil
-import urllib.request
 from contextlib import contextmanager
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -20,6 +19,7 @@ import rrmngmnt
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
+from resources.cluster_service_version import ClusterServiceVersion
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
 from resources.namespace import Namespace
@@ -720,31 +720,6 @@ class NetUtilityDaemonSet(DaemonSet):
         return res
 
 
-@pytest.fixture(scope="session")
-def cnv_containers():
-    res = {}
-    if py_config["distribution"] == "upstream":
-        return res
-
-    data = urllib.request.urlopen(
-        "http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/CNV/latest-CNV-2.3-RHEL-8/containers.list",
-        timeout=60,
-    )
-    if data.getcode() != 200:
-        return res
-
-    for line in data.readlines():
-        line = line.decode("utf-8")
-        if "image:" in line:
-            line = line.strip()
-            image_url = line.rsplit()[-1].strip()
-            image_url = image_url.strip('"')
-            name = image_url.rsplit("/", 1)[-1].split(":")[0]
-            res[name] = image_url
-
-    return res
-
-
 @pytest.fixture(scope="module")
 def namespace(request, unprivileged_client):
     """ Generate namespace from the test's module name """
@@ -1293,3 +1268,11 @@ def wait_for_nncp_status_success(nncp):
     except TimeoutExpiredError:
         LOGGER.error("Unable to configure NNCP for node")
         raise
+
+
+@pytest.fixture(scope="session")
+def cnv_current_version(default_client):
+    for csv in ClusterServiceVersion.get(
+        dyn_client=default_client, namespace=py_config["hco_namespace"]
+    ):
+        return csv.instance.spec.version

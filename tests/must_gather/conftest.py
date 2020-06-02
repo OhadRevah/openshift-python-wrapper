@@ -53,9 +53,18 @@ class MissingResourceException(Exception):
 
 
 @pytest.fixture(scope="module")
+def must_gather_image_url(cnv_current_version):
+    if py_config["distribution"] == "upstream":
+        return "quay.io/kubevirt/must-gather"
+
+    must_gather_image = "container-native-virtualization-cnv-must-gather-rhel8"
+    return f"registry-proxy.engineering.redhat.com/rh-osbs/{must_gather_image}:v{cnv_current_version}"
+
+
+@pytest.fixture(scope="module")
 def cnv_must_gather(
     tmpdir_factory,
-    cnv_containers,
+    must_gather_image_url,
     network_attachment_definition,
     nodenetworkstate_with_bridge,
     running_vm,
@@ -63,14 +72,11 @@ def cnv_must_gather(
     """
     Run cnv-must-gather for data collection.
     """
-    if py_config["distribution"] == "upstream":
-        image = "quay.io/kubevirt/must-gather"
-    else:
-        image = cnv_containers["container-native-virtualization-cnv-must-gather-rhel8"]
-
     path = tmpdir_factory.mktemp("must_gather")
     try:
-        must_gather_cmd = f"oc adm must-gather --image={image} --dest-dir={path}"
+        must_gather_cmd = (
+            f"oc adm must-gather --image={must_gather_image_url} --dest-dir={path}"
+        )
         LOGGER.info(f"Running: {must_gather_cmd}")
         check_output(must_gather_cmd, shell=True)
         must_gather_log_dir = os.path.join(path, os.listdir(path)[0])

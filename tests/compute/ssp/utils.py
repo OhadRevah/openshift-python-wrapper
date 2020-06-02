@@ -1,8 +1,5 @@
 import logging
 
-from pytest_testconfig import py_config
-from utilities.infra import get_current_cnv_version
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,19 +25,8 @@ def check_vm_xml_smbios(vm, cm_values):
     assert all(results.values())
 
 
-def check_smbios_defaults(default_client, cm_values):
+def check_smbios_defaults(smbios_defaults, cm_values):
     LOGGER.info("Compare SMBIOS config map values to expected default values.")
-    cnv_version = get_current_cnv_version(
-        dyn_client=default_client, hco_namespace=py_config["hco_namespace"]
-    )
-    smbios_defaults = {
-        "Family": "Red Hat",
-        "Product": "Container-native virtualization",
-        "Manufacturer": "Red Hat",
-        "Sku": cnv_version,
-        "Version": cnv_version,
-    }
-
     assert (
         cm_values == smbios_defaults
     ), f"Configmap values {cm_values} do not match default values {smbios_defaults}"

@@ -1,7 +1,6 @@
 import os
 
 from pytest_testconfig import config as py_config
-from resources.cluster_service_version import ClusterServiceVersion
 from resources.namespace import Namespace
 from resources.project import Project, ProjectRequest
 
@@ -97,10 +96,3 @@ class ErrorMsg:
         "image"
     )
     SHRINK_NOT_SUPPORTED = "shrink not yet supported"
-
-
-def get_current_cnv_version(dyn_client, hco_namespace):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=dyn_client, namespace=hco_namespace
-    ):
-        return csv.instance.spec.version
