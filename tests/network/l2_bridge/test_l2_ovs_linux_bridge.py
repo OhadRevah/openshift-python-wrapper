@@ -58,9 +58,8 @@ class TestL2LinuxBridge:
         """
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
         """
-
         current_ip = TimeoutSampler(
-            timeout=60,
+            timeout=120,
             sleep=2,
             func=get_vmi_ip_v4_by_name,
             vmi=configured_vm_b.vmi,

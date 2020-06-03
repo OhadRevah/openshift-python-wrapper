@@ -152,9 +152,9 @@ def bridge_attached_vma(
     networks[br1vlan100_nad.name] = br1vlan100_nad.name
     networks[br1vlan200_nad.name] = br1vlan200_nad.name
     bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
-    bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.1"))
-    bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.1"))
+    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
+    bootcmds.extend(nmcli_add_con_cmds("eth2", "10.200.1.1"))
+    bootcmds.extend(nmcli_add_con_cmds("eth3", "10.200.2.1"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
 
@@ -187,9 +187,9 @@ def bridge_attached_vmb(
     networks[br1vlan100_nad.name] = br1vlan100_nad.name
     networks[br1vlan300_nad.name] = br1vlan300_nad.name
     bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
-    bootcmds.extend(nmcli_add_con_cmds("eth2", "192.168.1.2"))
-    bootcmds.extend(nmcli_add_con_cmds("eth3", "192.168.2.2"))
+    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
+    bootcmds.extend(nmcli_add_con_cmds("eth2", "10.200.1.2"))
+    bootcmds.extend(nmcli_add_con_cmds("eth3", "10.200.2.2"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
 
@@ -216,7 +216,7 @@ def bond_bridge_attached_vma(
     networks[br1bond_nad.name] = br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.3.1")
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "10.200.3.1")
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -241,7 +241,7 @@ def bond_bridge_attached_vmb(
     networks[br1bond_nad.name] = br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "192.168.3.2")
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "10.200.3.2")
 
     with VirtualMachineForTests(
         namespace=namespace.name,

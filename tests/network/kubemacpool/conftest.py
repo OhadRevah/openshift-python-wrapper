@@ -271,16 +271,16 @@ def vm_a(
 ):
     requested_network_config = {
         "eth1": IfaceTuple(
-            ip_address="192.168.1.1", mac_address="02:aa:bc:00:00:10", name=all_nads[0]
+            ip_address="10.200.1.1", mac_address="02:aa:bc:00:00:10", name=all_nads[0]
         ),
         "eth2": IfaceTuple(
-            ip_address="192.168.2.1", mac_address="auto", name=all_nads[1]
+            ip_address="10.200.2.1", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="192.168.3.1", mac_address="02:a4:c5:97:f7:11", name=all_nads[2]
+            ip_address="10.200.3.1", mac_address="02:a4:c5:97:f7:11", name=all_nads[2]
         ),
         "eth4": IfaceTuple(
-            ip_address="192.168.4.1", mac_address="auto", name=all_nads[3]
+            ip_address="10.200.4.1", mac_address="auto", name=all_nads[3]
         ),
     }
     yield from create_vm(
@@ -297,16 +297,16 @@ def vm_b(
 ):
     requested_network_config = {
         "eth1": IfaceTuple(
-            ip_address="192.168.1.2", mac_address="02:aa:bc:00:00:20", name=all_nads[0]
+            ip_address="10.200.1.2", mac_address="02:aa:bc:00:00:20", name=all_nads[0]
         ),
         "eth2": IfaceTuple(
-            ip_address="192.168.2.2", mac_address="auto", name=all_nads[1]
+            ip_address="10.200.2.2", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="192.168.3.2", mac_address="02:a4:c5:97:f7:22", name=all_nads[2]
+            ip_address="10.200.3.2", mac_address="02:a4:c5:97:f7:22", name=all_nads[2]
         ),
         "eth4": IfaceTuple(
-            ip_address="192.168.4.2", mac_address="auto", name=all_nads[3]
+            ip_address="10.200.4.2", mac_address="auto", name=all_nads[3]
         ),
     }
     yield from create_vm(
@@ -356,16 +356,16 @@ def vm_c(namespace, vm_a, all_nads, unprivileged_client):
     vm_a.delete(wait=True)
     requested_network_config = {
         "eth1": IfaceTuple(
-            ip_address="192.168.1.1", mac_address="auto", name=all_nads[0]
+            ip_address="10.200.1.1", mac_address="auto", name=all_nads[0]
         ),
         "eth2": IfaceTuple(
-            ip_address="192.168.2.1", mac_address="auto", name=all_nads[1]
+            ip_address="10.200.2.1", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="192.168.3.1", mac_address="auto", name=all_nads[2]
+            ip_address="10.200.3.1", mac_address="auto", name=all_nads[2]
         ),
         "eth4": IfaceTuple(
-            ip_address="192.168.4.1", mac_address="auto", name=all_nads[3]
+            ip_address="10.200.4.1", mac_address="auto", name=all_nads[3]
         ),
     }
     yield from create_vm(
@@ -381,16 +381,16 @@ def vm_d(namespace, vm_b, all_nads, unprivileged_client):
     vm_b.delete(wait=True)
     requested_network_config = {
         "eth1": IfaceTuple(
-            ip_address="192.168.1.2", mac_address="auto", name=all_nads[0]
+            ip_address="10.200.1.2", mac_address="auto", name=all_nads[0]
         ),
         "eth2": IfaceTuple(
-            ip_address="192.168.2.2", mac_address="auto", name=all_nads[1]
+            ip_address="10.200.2.2", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="192.168.3.2", mac_address="auto", name=all_nads[2]
+            ip_address="10.200.3.2", mac_address="auto", name=all_nads[2]
         ),
         "eth4": IfaceTuple(
-            ip_address="192.168.4.2", mac_address="auto", name=all_nads[3]
+            ip_address="10.200.4.2", mac_address="auto", name=all_nads[3]
         ),
     }
     yield from create_vm(

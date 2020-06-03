@@ -45,7 +45,7 @@ def bridge_attached_vma(schedulable_nodes, namespace, unprivileged_client, nad):
     networks = OrderedDict()
     networks[nad.name] = nad.name
     bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.1"))
+    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
 
@@ -69,7 +69,7 @@ def bridge_attached_vmb(schedulable_nodes, namespace, unprivileged_client, nad):
     networks = OrderedDict()
     networks[nad.name] = nad.name
     bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "192.168.0.2"))
+    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = bootcmds
 

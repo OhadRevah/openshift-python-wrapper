@@ -84,10 +84,10 @@ class TestConnectivity:
     #: TestConnectivity setup
     # .........                                                                      ..........
     # |       |---eth0:           : POD network                  :auto:       eth0---|        |
-    # |       |---eth1:192.168.1.1: Manual MAC          from pool:192.168.1.2:eth1---|        |
-    # | VM-A  |---eth2:192.168.2.1: Automatic MAC       from pool:192.168.2.2:eth2---|  VM-B  |
-    # |       |---eth3:192.168.3.1: Manual MAC not      from pool:192.168.3.2:eth3---|        |
-    # |.......|---eth4:192.168.4.1: Automatic mac tuning network :192.168.4.2:eth4---|........|
+    # |       |---eth1:10.200.1.1: Manual MAC          from pool:10.200.1.2:eth1---|        |
+    # | VM-A  |---eth2:10.200.2.1: Automatic MAC       from pool:10.200.2.2:eth2---|  VM-B  |
+    # |       |---eth3:10.200.3.1: Manual MAC not      from pool:10.200.3.2:eth3---|        |
+    # |.......|---eth4:10.200.4.1: Automatic mac tuning network :10.200.4.2:eth4---|........|
     @pytest.mark.polarion("CNV-2154")
     def test_manual_mac_from_pool(self, namespace, configured_vm_a, configured_vm_b):
         """Test that manually assigned mac address from pool is configured and working"""
@@ -159,10 +159,10 @@ class TestKubemacpoolChanged:
     #: TestKubemacpoolChanged setup
     # .........                                                                      ..........
     # |       |---eth0:           : POD network                  :auto:       eth0---|        |
-    # |       |---eth1:192.168.1.1: Manual MAC          from pool:192.168.1.2:eth1---|        |
-    # | VM-A  |---eth2:192.168.2.1: Automatic MAC       from pool:192.168.2.2:eth2---|  VM-B  |
-    # |       |---eth3:192.168.3.1: Manual MAC not      from pool:192.168.3.2:eth3---|        |
-    # |.......|---eth4:192.168.4.1: Automatic mac tuning network :192.168.4.2:eth4---|........|
+    # |       |---eth1:10.200.1.1: Manual MAC          from pool:10.200.1.2:eth1---|        |
+    # | VM-A  |---eth2:10.200.2.1: Automatic MAC       from pool:10.200.2.2:eth2---|  VM-B  |
+    # |       |---eth3:10.200.3.1: Manual MAC not      from pool:10.200.3.2:eth3---|        |
+    # |.......|---eth4:10.200.4.1: Automatic mac tuning network :10.200.4.2:eth4---|........|
     @pytest.mark.polarion("CNV-2158")
     def test_manual_mac_from_previous_pool(
         self, kubemacpool_second_scope, configured_vm_a, configured_vm_b
@@ -221,10 +221,10 @@ class TestMacFromNewKubemacpoolRange:
     #: TestMacFromNewKubemacpoolRange setup
     # .........                                                               ..........
     # |       |---eth0:           :Automatic MAC from pool:         ---eth0---|        |
-    # |       |---eth1:192.168.1.1:Automatic MAC from pool:192.168.1.2:eth1---|        |
-    # | VM-A  |---eth2:192.168.2.1:Automatic MAC from pool:192.168.2.2:eth2---|  VM-B  |
-    # | (NEW) |---eth3:192.168.3.1:Automatic MAC from pool:192.168.3.2:eth3---|  (NEW) |
-    # |.......|---eth4:192.168.4.1:Automatic MAC from pool:192.168.4.2:eth4---|........|
+    # |       |---eth1:10.200.1.1:Automatic MAC from pool:10.200.1.2:eth1---|        |
+    # | VM-A  |---eth2:10.200.2.1:Automatic MAC from pool:10.200.2.2:eth2---|  VM-B  |
+    # | (NEW) |---eth3:10.200.3.1:Automatic MAC from pool:10.200.3.2:eth3---|  (NEW) |
+    # |.......|---eth4:10.200.4.1:Automatic MAC from pool:10.200.4.2:eth4---|........|
     @pytest.mark.polarion("CNV-2161")
     def test_automatic_new_mac_new_vm(
         self,

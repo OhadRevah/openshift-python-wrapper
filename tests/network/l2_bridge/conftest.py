@@ -16,17 +16,17 @@ from utilities.virt import (
 
 #: Test setup
 #       .........                                                                                      ..........
-#       |       |---eth1:192.168.0.1:                                              192.168.0.2:---eth1:|        |
-#       |       |---eth1.10:192.168.1.1 :dot1q test :                            192.168.1.2:eth1.10---|        |
-#       | VM-A  |---eth2:192.168.2.1    : multicast(ICMP), custom eth type test:    192.168.2.2:eth2---|  VM-B  |
-#       |       |---eth3:192.168.3.1    : DHCP test :                               192.168.3.2:eth3---|        |
-#       |.......|---eth4:192.168.4.1    : mpls test :                               192.168.4.2:eth4---|........|
+#       |       |---eth1:10.200.0.1:                                              10.200.0.2:---eth1:|        |
+#       |       |---eth1.10:10.200.1.1 :dot1q test :                            10.200.1.2:eth1.10---|        |
+#       | VM-A  |---eth2:10.200.2.1    : multicast(ICMP), custom eth type test:    10.200.2.2:eth2---|  VM-B  |
+#       |       |---eth3:10.200.3.1    : DHCP test :                               10.200.3.2:eth3---|        |
+#       |.......|---eth4:10.200.4.1    : mpls test :                               10.200.4.2:eth4---|........|
 
-VMA_MPLS_LOOPBACK_IP = "192.168.100.1/32"
+VMA_MPLS_LOOPBACK_IP = "10.200.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
-VMB_MPLS_LOOPBACK_IP = "192.168.200.1/32"
+VMB_MPLS_LOOPBACK_IP = "10.200.200.1/32"
 VMB_MPLS_ROUTE_TAG = 200
-VMB_DHCP_ADDRESS = "192.168.3.3"
+VMB_DHCP_ADDRESS = "10.200.3.3"
 DOT1Q_VLAN_ID = 10
 
 
@@ -226,7 +226,7 @@ def vm_a(namespace, all_nads, unprivileged_client):
     cloud_init_extra_user_data = {
         "runcmd": [
             "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
-            "\\nauthoritative;\\nsubnet 192.168.3.0 netmask 255.255.255.0 {"
+            "\\nauthoritative;\\nsubnet 10.200.3.0 netmask 255.255.255.0 {"
             "\\noption subnet-mask 255.255.255.0;\\nrange  "
             f"{VMB_DHCP_ADDRESS} {VMB_DHCP_ADDRESS};"
             "\\n}' > /etc/dhcp/dhcpd.conf\"",  # Inject dhcp configuration to dhcpd.conf
@@ -235,11 +235,11 @@ def vm_a(namespace, all_nads, unprivileged_client):
     }
 
     interface_ip_addresses = [
-        "192.168.0.1",
-        "192.168.2.1",
-        "192.168.3.1",
-        "192.168.4.1",
-        "192.168.1.1",
+        "10.200.0.1",
+        "10.200.2.1",
+        "10.200.3.1",
+        "10.200.4.1",
+        "10.200.1.1",
     ]
     yield from bridge_attached_vm(
         name="vm-fedora-1",
@@ -251,7 +251,7 @@ def vm_a(namespace, all_nads, unprivileged_client):
         mpls_local_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_ip=VMB_MPLS_LOOPBACK_IP,
         mpls_dest_tag=VMB_MPLS_ROUTE_TAG,
-        mpls_route_next_hop="192.168.4.2",
+        mpls_route_next_hop="10.200.4.2",
         client=unprivileged_client,
     )
 
@@ -259,11 +259,11 @@ def vm_a(namespace, all_nads, unprivileged_client):
 @pytest.fixture(scope="class")
 def vm_b(namespace, all_nads, unprivileged_client):
     interface_ip_addresses = [
-        "192.168.0.2",
-        "192.168.2.2",
-        "192.168.3.2",
-        "192.168.4.2",
-        "192.168.1.2",
+        "10.200.0.2",
+        "10.200.2.2",
+        "10.200.3.2",
+        "10.200.4.2",
+        "10.200.1.2",
     ]
     yield from bridge_attached_vm(
         name="vm-fedora-2",
@@ -275,7 +275,7 @@ def vm_b(namespace, all_nads, unprivileged_client):
         dhcp_pool_address=VMB_DHCP_ADDRESS,
         mpls_dest_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_tag=VMA_MPLS_ROUTE_TAG,
-        mpls_route_next_hop="192.168.4.1",
+        mpls_route_next_hop="10.200.4.1",
         client=unprivileged_client,
     )
 
