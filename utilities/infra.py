@@ -96,3 +96,6 @@ class ErrorMsg:
         "image"
     )
     SHRINK_NOT_SUPPORTED = "shrink not yet supported"
+    NOT_EXIST_IN_IMAGE_DIR = (
+        "image file does not exist in image directory - directory is empty"
+    )

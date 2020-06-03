@@ -58,16 +58,34 @@ def test_private_registry_cirros(
             utils.check_disk_count_in_vm(vm_dv)
 
 
-@pytest.mark.polarion("CNV-2198")
+@pytest.mark.parametrize(
+    ("dv_name", "url", "error_msg"),
+    [
+        pytest.param(
+            "cnv-2198",
+            "docker://docker.io/cirros",
+            ErrorMsg.DISK_IMAGE_IN_CONTAINER_NOT_FOUND,
+            marks=(pytest.mark.polarion("CNV-2198")),
+            id="image-registry-not-conform-registrydisk",
+        ),
+        pytest.param(
+            "cnv-2340",
+            "docker://quay.io/openshift-cnv/qe-cnv-tests-registry-fedora29-qcow2-rootdir",
+            ErrorMsg.NOT_EXIST_IN_IMAGE_DIR,
+            marks=(pytest.mark.polarion("CNV-2340")),
+            id="import-registry-fedora29-qcow-rootdir",
+        ),
+    ],
+)
 def test_disk_image_not_conform_to_registy_disk(
-    namespace, storage_class_matrix__function__
+    dv_name, url, error_msg, namespace, storage_class_matrix__function__
 ):
     storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
-        dv_name="image-registry-not-conform-registrydisk",
+        dv_name=dv_name,
         namespace=namespace.name,
-        url="docker://docker.io/cirros",
+        url=url,
         storage_class=storage_class,
         volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
     ) as dv:
@@ -77,8 +95,7 @@ def test_disk_image_not_conform_to_registy_disk(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod,
-            msg=ErrorMsg.DISK_IMAGE_IN_CONTAINER_NOT_FOUND,
+            importer_pod=dv.importer_pod, msg=error_msg,
         )
 
 
