@@ -540,9 +540,15 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         node_selector=None,
         teardown=True,
         ipv4_dhcp=None,
+        node_active_nics=None,
     ):
         super().__init__(
-            name, worker_pods, node_selector, ipv4_dhcp=ipv4_dhcp, teardown=teardown,
+            name,
+            worker_pods,
+            node_selector,
+            ipv4_dhcp=ipv4_dhcp,
+            teardown=teardown,
+            node_active_nics=node_active_nics,
         )
         self.interfaces_name = interfaces_name
         self.iface_state = iface_state

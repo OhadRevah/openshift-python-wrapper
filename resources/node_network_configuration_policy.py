@@ -40,6 +40,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         ports=None,
         ipv4_dhcp=None,
         ipv6_enable=False,
+        node_active_nics=None,
     ):
         super().__init__(name=name, teardown=teardown)
         self.desired_state = {"interfaces": []}
@@ -49,6 +50,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         self.ports = ports or []
         self.iface = None
         self.ifaces = []
+        self.node_active_nics = node_active_nics or []
         self._ipv4_dhcp = ipv4_dhcp
         self.ipv6_enable = ipv6_enable
         self.ipv4_iface_state = {}
@@ -160,11 +162,19 @@ class NodeNetworkConfigurationPolicy(Resource):
                 }
                 self.set_interface(_port)
 
-        try:
-            self._absent_interface()
-            self.wait_for_bridge_deleted()
-        except TimeoutExpiredError as e:
-            LOGGER.error(e)
+        for iface in self.ifaces:
+            """
+            If any physical interfaces are part of the policy - we will skip them,
+            because we don't want to delete them (and we actually can't, and this attempt
+            would end with failure).
+            """
+            if iface["name"] in self.node_active_nics:
+                continue
+            try:
+                self._absent_interface()
+                self.wait_for_bridge_deleted()
+            except TimeoutExpiredError as e:
+                LOGGER.error(e)
 
         self.delete()
 

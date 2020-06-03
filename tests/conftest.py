@@ -1259,6 +1259,7 @@ def worker_nodes_ipv4_false_secondary_nics(
             ipv4_dhcp=False,
             worker_pods=network_utility_pods,
             interfaces_name=worker_nics[1:],
+            node_active_nics=worker_nics,
         ) as nncp:
             wait_for_nncp_status_success(nncp=nncp)
             LOGGER.info(
