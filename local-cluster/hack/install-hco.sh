@@ -7,6 +7,8 @@ HCO_VERSION='master'
 HCO_SOURCES="https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/${HCO_VERSION}"
 HCO_RESOURCES='crds/hco00.crd.yaml
 crds/hco01.crd.yaml
+crds/hco02.crd.yaml
+crds/hostpath-provisioner00.crd.yaml
 crds/kubevirt00.crd.yaml
 crds/containerized-data-importer00.crd.yaml
 crds/cluster-network-addons00.crd.yaml
@@ -15,6 +17,7 @@ crds/scheduling-scale-performance02.crd.yaml
 crds/scheduling-scale-performance03.crd.yaml
 crds/node-maintenance00.crd.yaml
 crds/scheduling-scale-performance01.crd.yaml
+crds/vm-import-operator00.crd.yaml
 cluster_role.yaml
 service_account.yaml
 cluster_role_binding.yaml

@@ -118,3 +118,6 @@ fedora_build
 
 # Sphinx docs
 docs/source/rst
+
+# IntelliJ project folder
+.idea/

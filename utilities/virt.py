@@ -4,6 +4,7 @@ import os
 import re
 import shlex
 import subprocess
+from contextlib import contextmanager
 
 import jinja2
 import pexpect
@@ -19,6 +20,7 @@ from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
+from resources.virtual_machine_import import VirtualMachineImport
 from rrmngmnt import ssh, user
 from utilities import console
 from utilities.infra import ClusterHosts
@@ -994,3 +996,23 @@ def check_ssh_connection(ip, port, console_impl):
     ).wait_for_connectivity_state(
         positive=True, timeout=120, tcp_connection_timeout=120,
     )
+
+
+@contextmanager
+def create_vm_import(
+    name,
+    namespace,
+    provider_credentials_secret_name,
+    provider_credentials_secret_namespace,
+    vm_id,
+    target_vm_name,
+):
+    with VirtualMachineImport(
+        name,
+        namespace,
+        provider_credentials_secret_name,
+        provider_credentials_secret_namespace,
+        vm_id=vm_id,
+        target_vm_name=target_vm_name,
+    ) as vmimport:
+        yield vmimport
