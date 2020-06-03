@@ -68,7 +68,11 @@ def running_vmb(vmb):
 
 @pytest.fixture(scope="class")
 def bond(
-    skip_no_bond_support, network_utility_pods, nodes_active_nics, schedulable_nodes,
+    skip_no_bond_support,
+    network_utility_pods,
+    nodes_active_nics,
+    schedulable_nodes,
+    worker_nodes_ipv4_false_secondary_nics,
 ):
     """
     Create BOND if setup support BOND
