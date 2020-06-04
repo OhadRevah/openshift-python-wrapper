@@ -172,17 +172,17 @@ class NodeNetworkConfigurationPolicy(Resource):
                 continue
             try:
                 self._absent_interface()
-                self.wait_for_bridge_deleted()
+                self.wait_for_interface_deleted()
             except TimeoutExpiredError as e:
                 LOGGER.error(e)
 
         self.delete()
 
-    def wait_for_bridge_deleted(self):
+    def wait_for_interface_deleted(self):
         for pod in self.worker_pods:
-            for bridge in self.ifaces:
+            for iface in self.ifaces:
                 node_network_state = NodeNetworkState(name=pod.node.name)
-                node_network_state.wait_until_deleted(bridge["name"])
+                node_network_state.wait_until_deleted(iface["name"])
 
     def validate_create(self):
         for pod in self.worker_pods:
