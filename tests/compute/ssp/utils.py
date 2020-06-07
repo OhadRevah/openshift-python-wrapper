@@ -35,7 +35,7 @@ def check_smbios_defaults(default_client, cm_values):
     )
     smbios_defaults = {
         "Family": "Red Hat",
-        "Product": "OpenShift virtualization",
+        "Product": "Container-native virtualization",
         "Manufacturer": "Red Hat",
         "Sku": cnv_version,
         "Version": cnv_version,
