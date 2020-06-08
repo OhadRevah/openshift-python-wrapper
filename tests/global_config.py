@@ -21,8 +21,8 @@ default_storage_class = "nfs"
 default_volume_mode = "Filesystem"
 
 latest_rhel_version = {
-    "os_label": "rhel8.1",
-    "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_1_IMG),
+    "os_label": "rhel8.2",
+    "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
 }
 latest_windows_version = {
     "os_label": "win2k19",
@@ -113,9 +113,8 @@ rhel_os_matrix = [
     {
         "rhel-7-8": {
             "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
-            # TODO: Modify to 7.8 once it is added to templates
             "template_labels": {
-                "os": "rhel7.7",
+                "os": "rhel7.8",
                 "workload": "server",
                 "flavor": "tiny",
             },
@@ -126,7 +125,7 @@ rhel_os_matrix = [
             "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
             # TODO: Modify to 7.9 once it is added to templates
             "template_labels": {
-                "os": "rhel7.7",
+                "os": "rhel7.8",
                 "workload": "server",
                 "flavor": "tiny",
             },
@@ -155,9 +154,8 @@ rhel_os_matrix = [
     {
         "rhel-8-2": {
             "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
-            # TODO: Modify to 8.2 once it is added to templates
             "template_labels": {
-                "os": "rhel8.1",
+                "os": "rhel8.2",
                 "workload": "server",
                 "flavor": "tiny",
             },
@@ -168,7 +166,7 @@ rhel_os_matrix = [
             "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_3_IMG),
             # TODO: Modify to 8.3 once it is added to templates
             "template_labels": {
-                "os": "rhel8.1",
+                "os": "rhel8.2",
                 "workload": "server",
                 "flavor": "tiny",
             },
