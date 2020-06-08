@@ -848,7 +848,7 @@ def get_windows_os_info_from_rmcli(vm, winrmcli_pod, helper_vm=False):
 
 
 def execute_winrm_cmd(
-    vmi_ip, winrmcli_pod, cmd, timeout=20, target_vm=False, helper_vm=False
+    vmi_ip, winrmcli_pod, cmd, timeout=120, target_vm=False, helper_vm=False
 ):
     """
     For RHEL7 workers, pass in the following:

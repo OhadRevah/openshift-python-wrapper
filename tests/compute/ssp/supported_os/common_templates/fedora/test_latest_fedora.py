@@ -14,6 +14,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import vm_started
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import check_ssh_connection, wait_for_console
 
 
@@ -228,6 +229,9 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3573")
+    @pytest.mark.bugzilla(
+        1845127, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     def test_guest_agent_subresource_os_info(
         self,
         vm_object_from_template_scope_class,

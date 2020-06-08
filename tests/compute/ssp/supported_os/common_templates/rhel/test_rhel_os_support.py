@@ -14,6 +14,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import check_ssh_connection, wait_for_console
 
 
@@ -190,6 +191,9 @@ class TestCommonTemplatesRhel:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-4195")
+    @pytest.mark.bugzilla(
+        1845127, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     def test_guest_agent_subresource_os_info(
         self,
         rhel_os_matrix__class__,
