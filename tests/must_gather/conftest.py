@@ -17,7 +17,6 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
 from resources.daemonset import DaemonSet
-from resources.namespace import Namespace
 from resources.pod import Pod
 from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
@@ -244,13 +243,3 @@ def config_maps_file(hco_namespace, cnv_must_gather):
         f"{cnv_must_gather}/namespaces/{hco_namespace.name}/core/configmaps.yaml", "r",
     ) as config_map_file:
         return yaml.safe_load(config_map_file)
-
-
-@pytest.fixture(scope="module")
-def hco_namespace(default_client):
-    return list(
-        Namespace.get(
-            dyn_client=default_client,
-            field_selector=f"metadata.name=={py_config['hco_namespace']}",
-        )
-    )[0]

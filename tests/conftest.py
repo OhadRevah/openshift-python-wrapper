@@ -1302,3 +1302,13 @@ def cnv_current_version(default_client):
 @pytest.fixture(scope="module")
 def kubevirt_config_cm():
     return ConfigMap(name="kubevirt-config", namespace=py_config["hco_namespace"])
+
+
+@pytest.fixture(scope="module")
+def hco_namespace(default_client):
+    return list(
+        Namespace.get(
+            dyn_client=default_client,
+            field_selector=f"metadata.name=={py_config['hco_namespace']}",
+        )
+    )[0]

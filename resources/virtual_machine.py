@@ -141,6 +141,9 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
                 if sample.items[0].spec.running == status:
                     return
 
+    def get_interfaces(self):
+        return self.instance.spec.template.spec.domain.devices.interfaces
+
     @property
     def vmi(self):
         """

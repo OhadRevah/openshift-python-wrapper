@@ -1,18 +1,15 @@
 import logging
+import random
 from collections import namedtuple
 from ipaddress import ip_interface
 from itertools import chain
-from time import sleep, time
 
+import netaddr
 import pytest
 import tests.network.utils as network_utils
 import utilities.network
-from openshift.dynamic.exceptions import InternalServerError
-from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
-from resources.deployment import Deployment
-from resources.namespace import Namespace
-from resources.pod import Pod
+from resources.utils import TimeoutSampler
 from tests.network.utils import nmcli_add_con_cmds, running_vmi
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -29,21 +26,7 @@ IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
 CREATE_VM_TIMEOUT = 50
 
 
-def restart_kubemacpool(default_client):
-    for pod in Pod.get(
-        dyn_client=default_client,
-        label_selector="control-plane=mac-controller-manager",
-        namespace=py_config["hco_namespace"],
-    ):
-        pod.delete(wait=True)
-
-    kubemac_pool_deployment = Deployment(
-        name="kubemacpool-mac-controller-manager", namespace=py_config["hco_namespace"]
-    )
-    kubemac_pool_deployment.wait_until_avail_replicas()
-
-
-def create_vm(name, namespace, iface_config, client):
+def create_vm(name, namespace, iface_config, client, mac_pool):
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     bootcmds = list(
         chain.from_iterable(
@@ -59,39 +42,66 @@ def create_vm(name, namespace, iface_config, client):
         "sysctl -w net.ipv4.conf.all.arp_announce=2",
     ]
     cloud_init_data["runcmd"] = runcmd
-    # Even if kubemacpool is in running state is not operational.
-    # We need try: except block as workaround.
-    # In case if error occurs because of kubemacpool pod is not operational it will retry
-    # Link to bug https://github.com/K8sNetworkPlumbingWG/kubemacpool/issues/50
-    end_time = time() + CREATE_VM_TIMEOUT
-    while time() < end_time:
-        try:
-            with VirtualMachineWithMultipleAttachments(
-                namespace=namespace.name,
-                name=name,
-                iface_config=iface_config,
-                client=client,
-                cloud_init_data=cloud_init_data,
-            ) as vm:
-                yield vm
-                return
-        except InternalServerError:  # Suppress exception if kubemacpool pod is not ready
-            sleep(2)
-    LOGGER.error(msg="Cannot create VM. Check kubemacpool status.")
+
+    with VirtualMachineWithMultipleAttachments(
+        namespace=namespace.name,
+        name=name,
+        iface_config=iface_config,
+        client=client,
+        cloud_init_data=cloud_init_data,
+    ) as vm:
+        mac_pool.append_macs(vm)
+        yield vm
+        mac_pool.remove_macs(vm)
 
 
-def update_kubemacpool_scope(api_client, namespace, scope):
-    kubemacpool_config_map = ConfigMap(
-        namespace=namespace.name, name=KUBEMACPOOL_CONFIG_MAP_NAME
-    )
-    kubemacpool_config_map.update(
-        resource_dict={
-            "data": {"RANGE_START": scope[0], "RANGE_END": scope[1]},
-            "metadata": {"name": KUBEMACPOOL_CONFIG_MAP_NAME},
-        }
-    )
-    restart_kubemacpool(default_client=api_client)
-    return kubemacpool_config_map.instance
+class MacPool:
+    """
+    Class to manage the mac addresses pool.
+    to get this class, use mac_pool fixture.
+    whenever you create a VM, before yield, call: mac_pool.append_macs(vm)
+    and after yield, call: mac_pool.remove_macs(vm).
+    """
+
+    def __init__(self, kmp_range):
+        self.range_start = self.mac_to_int(kmp_range["RANGE_START"])
+        self.range_end = self.mac_to_int(kmp_range["RANGE_END"])
+        self.pool = range(self.range_start, self.range_end + 1)
+        self.used_macs = []
+
+    def get_mac_from_pool(self):
+        return self.mac_sampler(func=random.choice, seq=self.pool)
+
+    def get_mac_out_of_pool(self):
+        return self.mac_sampler(func=random.randrange, start=0, stop=self.range_start)
+
+    def mac_sampler(self, func, *args, **kwargs):
+        sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
+        for sample in sampler:
+            mac = self.int_to_mac(sample)
+            if mac not in self.used_macs:
+                return mac
+
+    @staticmethod
+    def mac_to_int(mac):
+        return int(netaddr.EUI(mac))
+
+    @staticmethod
+    def int_to_mac(num):
+        mac = netaddr.EUI(num)
+        mac.dialect = netaddr.mac_unix_expanded
+        return str(mac)
+
+    def append_macs(self, vm):
+        for iface in vm.get_interfaces():
+            self.used_macs.append(iface["macAddress"])
+
+    def remove_macs(self, vm):
+        for iface in vm.get_interfaces():
+            self.used_macs.remove(iface["macAddress"])
+
+    def mac_is_within_range(self, mac):
+        return self.mac_to_int(mac) in self.pool
 
 
 class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
@@ -148,32 +158,6 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
             if mac.mac_address != "auto":
                 iface["macAddress"] = mac.mac_address
         return res
-
-
-@pytest.fixture(scope="module", autouse=True)
-def kubemacpool_namespace():
-    return Namespace(name=py_config["hco_namespace"])
-
-
-@pytest.fixture(scope="module", autouse=True)
-def kubemacpool_first_scope(default_client, kubemacpool_namespace):
-    default_pool = ConfigMap(
-        namespace=kubemacpool_namespace.name, name=KUBEMACPOOL_CONFIG_MAP_NAME
-    )
-    original_range_start = default_pool.instance["data"]["RANGE_START"]
-    original_range_end = default_pool.instance["data"]["RANGE_END"]
-    try:
-        yield update_kubemacpool_scope(  # Create test pool
-            api_client=default_client,
-            namespace=kubemacpool_namespace,
-            scope=("02:aa:bc:00:00:00", "02:aa:bc:ff:ff:ff"),
-        )
-    finally:
-        update_kubemacpool_scope(  # Restore original mac pool
-            api_client=default_client,
-            namespace=kubemacpool_namespace,
-            scope=(original_range_start, original_range_end),
-        )
 
 
 @pytest.fixture(scope="module")
@@ -256,18 +240,35 @@ def all_nads(
 
 
 @pytest.fixture(scope="module")
+def kubemacpool_range(hco_namespace):
+    default_pool = ConfigMap(
+        namespace=hco_namespace.name, name=KUBEMACPOOL_CONFIG_MAP_NAME
+    )
+    return default_pool.instance["data"]
+
+
+@pytest.fixture(scope="module")
+def mac_pool(kubemacpool_range):
+    return MacPool(kmp_range=kubemacpool_range)
+
+
+@pytest.fixture(scope="class")
 def vm_a(
-    namespace, all_nads, bridge_device, kubemacpool_first_scope, unprivileged_client,
+    namespace, all_nads, bridge_device, mac_pool, unprivileged_client,
 ):
     requested_network_config = {
         "eth1": IfaceTuple(
-            ip_address="10.200.1.1", mac_address="02:aa:bc:00:00:10", name=all_nads[0]
+            ip_address="10.200.1.1",
+            mac_address=mac_pool.get_mac_from_pool(),
+            name=all_nads[0],
         ),
         "eth2": IfaceTuple(
             ip_address="10.200.2.1", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="10.200.3.1", mac_address="02:a4:c5:97:f7:11", name=all_nads[2]
+            ip_address="10.200.3.1",
+            mac_address=mac_pool.get_mac_out_of_pool(),
+            name=all_nads[2],
         ),
         "eth4": IfaceTuple(
             ip_address="10.200.4.1", mac_address="auto", name=all_nads[3]
@@ -278,22 +279,27 @@ def vm_a(
         iface_config=requested_network_config,
         namespace=namespace,
         client=unprivileged_client,
+        mac_pool=mac_pool,
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def vm_b(
-    namespace, all_nads, bridge_device, kubemacpool_first_scope, unprivileged_client,
+    namespace, all_nads, bridge_device, mac_pool, unprivileged_client,
 ):
     requested_network_config = {
         "eth1": IfaceTuple(
-            ip_address="10.200.1.2", mac_address="02:aa:bc:00:00:20", name=all_nads[0]
+            ip_address="10.200.1.2",
+            mac_address=mac_pool.get_mac_from_pool(),
+            name=all_nads[0],
         ),
         "eth2": IfaceTuple(
             ip_address="10.200.2.2", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="10.200.3.2", mac_address="02:a4:c5:97:f7:22", name=all_nads[2]
+            ip_address="10.200.3.2",
+            mac_address=mac_pool.get_mac_out_of_pool(),
+            name=all_nads[2],
         ),
         "eth4": IfaceTuple(
             ip_address="10.200.4.2", mac_address="auto", name=all_nads[3]
@@ -304,27 +310,28 @@ def vm_b(
         iface_config=requested_network_config,
         namespace=namespace,
         client=unprivileged_client,
+        mac_pool=mac_pool,
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def started_vmi_a(vm_a):
     return running_vmi(vm_a)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def started_vmi_b(vm_b):
     return running_vmi(vm_b)
 
 
 @pytest.fixture(scope="class")
-def configured_vm_a(vm_a, started_vmi_a):
+def running_vm_a(vm_a, started_vmi_a):
     wait_for_vm_interfaces(vmi=started_vmi_a)
     return vm_a
 
 
 @pytest.fixture(scope="class")
-def configured_vm_b(vm_b, started_vmi_b):
+def running_vm_b(vm_b, started_vmi_b):
     wait_for_vm_interfaces(vmi=started_vmi_b)
     return vm_b
 

@@ -1,4 +1,3 @@
-import netaddr
 import pytest
 from tests.network.utils import assert_ping_successful
 
@@ -9,12 +8,6 @@ def ifaces_config_same(vm, vmi):
     vm_interfaces = vm_temp_spec["domain"]["devices"]["interfaces"]
     vmi_interfaces = vmi.instance["spec"]["domain"]["devices"]["interfaces"]
     return vm_interfaces == vmi_interfaces
-
-
-def mac_is_within_range(kubemacpool_range, mac):
-    start_mac = netaddr.EUI(kubemacpool_range["data"]["RANGE_START"])
-    end_mac = netaddr.EUI(kubemacpool_range["data"]["RANGE_END"])
-    return int(start_mac) <= int(netaddr.EUI(mac)) <= int(end_mac)
 
 
 class IfaceNotFound(Exception):
@@ -50,10 +43,9 @@ def assert_mac_static_vms_connectivity_via_network(vm_a, vm_b, nad_name):
     assert_ping_successful(src_vm=vm_a, dst_ip=dst_ip_address)
 
 
-def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, kubemacpool):
+def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, mac_pool):
     for vm in (vm_a, vm_a):
-        assert mac_is_within_range(
-            kubemacpool_range=kubemacpool,
+        assert mac_pool.mac_is_within_range(
             mac=get_vmi_iface_mac_address_by_name(
                 vmi=vm.vmi, name=vm.auto_mac_iface_config.name
             ),
@@ -72,66 +64,62 @@ class TestConnectivity:
     # |       |---eth3:10.200.3.1: Manual MAC not      from pool:10.200.3.2:eth3---|        |
     # |.......|---eth4:10.200.4.1: Automatic mac tuning network :10.200.4.2:eth4---|........|
     @pytest.mark.polarion("CNV-2154")
-    def test_manual_mac_from_pool(self, namespace, configured_vm_a, configured_vm_b):
+    def test_manual_mac_from_pool(
+        self, namespace, started_vmi_a, started_vmi_b, running_vm_a, running_vm_b
+    ):
         """Test that manually assigned mac address from pool is configured and working"""
         assert_mac_static_vms_connectivity_via_network(
-            vm_a=configured_vm_a,
-            vm_b=configured_vm_b,
-            nad_name="manual_mac_iface_config",
+            vm_a=running_vm_a, vm_b=running_vm_b, nad_name="manual_mac_iface_config",
         )
 
     @pytest.mark.polarion("CNV-2156")
-    def test_manual_mac_not_from_pool(self, configured_vm_a, configured_vm_b):
+    def test_manual_mac_not_from_pool(self, running_vm_a, running_vm_b):
         """Test that manually assigned mac address out of pool is configured and working"""
         assert_mac_static_vms_connectivity_via_network(
-            vm_a=configured_vm_a,
-            vm_b=configured_vm_b,
+            vm_a=running_vm_a,
+            vm_b=running_vm_b,
             nad_name="manual_mac_out_pool_iface_config",
         )
 
     @pytest.mark.polarion("CNV-2241")
     def test_automatic_mac_from_pool_pod_network(
-        self, kubemacpool_first_scope, configured_vm_a, configured_vm_b
+        self, mac_pool, running_vm_a, running_vm_b
     ):
         """Test that automatic mac address assigned to POD's masquerade network
         from kubemacpool belongs to range and connectivity is OK"""
         assert_mac_in_range_vms_connectivity_via_network(
-            vm_a=configured_vm_a,
-            vm_b=configured_vm_b,
+            vm_a=running_vm_a,
+            vm_b=running_vm_b,
             nad_name="default_masquerade_iface_config",
-            kubemacpool=kubemacpool_first_scope,
+            mac_pool=mac_pool,
         )
 
     @pytest.mark.polarion("CNV-2155")
-    def test_automatic_mac_from_pool(
-        self, kubemacpool_first_scope, configured_vm_a, configured_vm_b
-    ):
+    def test_automatic_mac_from_pool(self, mac_pool, running_vm_a, running_vm_b):
         """Test that automatic mac address assigned to interface
         from kubemacpool belongs to range and connectivity is OK"""
         assert_mac_in_range_vms_connectivity_via_network(
-            vm_a=configured_vm_a,
-            vm_b=configured_vm_b,
+            vm_a=running_vm_a,
+            vm_b=running_vm_b,
             nad_name="auto_mac_iface_config",
-            kubemacpool=kubemacpool_first_scope,
+            mac_pool=mac_pool,
         )
 
     @pytest.mark.polarion("CNV-2242")
-    def test_automatic_mac_from_pool_tuning(
-        self, kubemacpool_first_scope, configured_vm_a, configured_vm_b
-    ):
+    def test_automatic_mac_from_pool_tuning(self, mac_pool, running_vm_a, running_vm_b):
         """Test that automatic mac address assigned to tuning interface
         from kubemacpool is belongs to range and connectivity is OK"""
         assert_mac_in_range_vms_connectivity_via_network(
-            vm_a=configured_vm_a,
-            vm_b=configured_vm_b,
+            vm_a=running_vm_a,
+            vm_b=running_vm_b,
             nad_name="auto_mac_tuning_iface_config",
-            kubemacpool=kubemacpool_first_scope,
+            mac_pool=mac_pool,
         )
 
     @pytest.mark.polarion("CNV-2157")
     def test_mac_preserved_after_shutdown(
-        self, restarted_vmi_a, restarted_vmi_b, configured_vm_a, configured_vm_b
+        self, restarted_vmi_a, restarted_vmi_b, running_vm_a, running_vm_b
     ):
         """Test that all macs are preserved even after VM restart"""
-        assert ifaces_config_same(vm=configured_vm_a, vmi=restarted_vmi_a)
-        assert ifaces_config_same(vm=configured_vm_b, vmi=restarted_vmi_b)
+        assert ifaces_config_same(vm=running_vm_a, vmi=restarted_vmi_a)
+        assert ifaces_config_same(vm=running_vm_b, vmi=restarted_vmi_b)
