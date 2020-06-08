@@ -56,6 +56,22 @@ def configmap_with_cert(namespace):
         yield configmap
 
 
+@pytest.fixture()
+def update_configmap_with_cert(request, configmap_with_cert):
+    LOGGER.debug("Use 'update_configmap_with_cert' fixture...")
+    injected_content = request.param["injected_content"]
+    ResourceEditor(
+        {
+            configmap_with_cert: {
+                "data": {
+                    configmap_with_cert.cert_name: f"{configmap_with_cert.data[:50]}{injected_content}"
+                    f"{configmap_with_cert.data[50:]}"
+                }
+            }
+        }
+    ).update()
+
+
 @pytest.mark.parametrize(
     "file_name",
     [
@@ -470,4 +486,50 @@ def test_fqdn_name(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.FALSE,
             timeout=300,
+        )
+
+
+@pytest.mark.parametrize(
+    ("dv_name", "update_configmap_with_cert"),
+    [
+        pytest.param(
+            "cnv-2351",
+            {"injected_content": "\0,^@%$!#$%~*()"},
+            marks=(pytest.mark.polarion("CNV-2351")),
+            id="invalid_control_characters_in_cert_configmap",
+        ),
+        pytest.param(
+            "cnv-2352",
+            {"injected_content": "0101010101010010010101001010"},
+            marks=(pytest.mark.polarion("CNV-2352")),
+            id="binary_string_in_cert_configmap",
+        ),
+    ],
+    indirect=["update_configmap_with_cert"],
+)
+def test_inject_invalid_cert_to_configmap(
+    dv_name,
+    configmap_with_cert,
+    update_configmap_with_cert,
+    namespace,
+    images_private_registry_server,
+    storage_class_matrix__function__,
+):
+    """
+    Test that generate ConfigMap from cert file, then inject invalid content in the cert of ConfigMap, import will fail.
+    """
+    storage_class = [*storage_class_matrix__function__][0]
+    with utilities.storage.create_dv(
+        source="registry",
+        dv_name=dv_name,
+        namespace=namespace.name,
+        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        cert_configmap=configmap_with_cert.name,
+        size="1Gi",
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+    ) as dv:
+        dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=600)
+        wait_for_importer_container_message(
+            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
         )
