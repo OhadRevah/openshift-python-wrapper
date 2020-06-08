@@ -137,6 +137,7 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_type=None,
         pvc=None,
         attached_secret=None,
+        cpu_placement=False,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -170,6 +171,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.cloud_init_type = cloud_init_type
         self.pvc = pvc
         self.attached_secret = attached_secret
+        self.cpu_placement = cpu_placement
 
     def __enter__(self):
         super().__enter__()
@@ -293,6 +295,11 @@ class VirtualMachineForTests(VirtualMachine):
             spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "sockets"
             ] = self.cpu_sockets
+
+        if self.cpu_placement:
+            spec.setdefault("domain", {}).setdefault("cpu", {})[
+                "dedicatedCpuPlacement"
+            ] = True
 
         # Memory must be set.
         if self.memory or not self.body:
