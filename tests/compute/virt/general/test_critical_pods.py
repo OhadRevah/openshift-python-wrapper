@@ -2,7 +2,6 @@
 Check that KubeVirt infra pods are critical
 """
 
-import json
 import logging
 
 import pytest
@@ -41,16 +40,19 @@ def test_kubevirt_pods_are_critical(virt_pods):
     Positive: ensure infra pods are critical
     """
     for pod in virt_pods:
-        annotations = pod.instance.metadata.annotations
-
         LOGGER.info(f"Check {pod.name} marked as critical-pod")
         assert (
-            annotations.get("scheduler.alpha.kubernetes.io/critical-pod") == ""
+            pod.instance.metadata.annotations.get(
+                "scheduler.alpha.kubernetes.io/critical-pod"
+            )
+            == ""
         ), f"Expected {pod.name} to be a critical pod"
 
         LOGGER.info(f"Check that {pod.name} has CriticalAddonsOnly tolerations")
-        toleration_data = annotations.get("scheduler.alpha.kubernetes.io/tolerations")
+        toleration_data = pod.instance.to_dict()["spec"].get("tolerations", [])
         assert toleration_data, f"Expected {pod.name} to have tolerations assigned"
-        assert {"key": "CriticalAddonsOnly", "operator": "Exists"} in json.loads(
-            toleration_data
-        ), f"Expected {pod.name} to have CriticalAddonsOnly toleration"
+        assert [
+            entry
+            for entry in toleration_data
+            if entry == {"key": "CriticalAddonsOnly", "operator": "Exists"}
+        ], f"Expected {pod.name} to have CriticalAddonsOnly toleration"
