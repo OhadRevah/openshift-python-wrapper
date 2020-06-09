@@ -6,6 +6,10 @@
  - username: admin@internal
  - password: qum5net
 
+### Maintainers
+ - Ilanit Stein <istein@redhat.com>
+ - Igor Braginsky <ibragins@redhat.com>
+
 ### Virtual Machines
 
 | VM ID | VM Name | Network | Cores | Sockets | Threads |
