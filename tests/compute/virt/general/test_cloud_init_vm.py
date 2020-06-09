@@ -8,6 +8,8 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    vm_console_run_commands,
+    wait_for_console,
 )
 
 
@@ -28,7 +30,7 @@ from utilities.virt import (
 def vm_with_cloud_init_type(request, namespace):
     """VM with cloudInit disk."""
     cloud_init_type = request.param["cloud_init_type"]
-    name = f"vm-cloud-init-test{cloud_init_type}".lower()
+    name = f"vm-cloud-init-test-{cloud_init_type}".lower()
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
@@ -42,6 +44,9 @@ def vm_with_cloud_init_type(request, namespace):
 
 
 def test_cloud_init_types(vm_with_cloud_init_type):
-    with console.Fedora(vm=vm_with_cloud_init_type) as vm_console:
-        vm_console.sendline("cat /etc/os-release")
-        vm_console.expect("1", timeout=20)
+    wait_for_console(vm=vm_with_cloud_init_type, console_impl=console.Fedora)
+    vm_console_run_commands(
+        console_impl=console.Fedora,
+        vm=vm_with_cloud_init_type,
+        commands=["cat /etc/os-release"],
+    )
