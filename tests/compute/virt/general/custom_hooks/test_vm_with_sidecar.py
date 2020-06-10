@@ -8,12 +8,9 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    vm_console_run_commands,
+    wait_for_console,
     wait_for_vm_interfaces,
-)
-
-
-CHECK_DMIDECODE_PACKAGE = (
-    "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward' | wc -l\n"
 )
 
 
@@ -71,6 +68,11 @@ def test_vm_with_sidecar_hook(running_sidecar_vm):
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
     And check that package includes manufacturer: "Radical Edward"
     """
-    with console.Fedora(vm=running_sidecar_vm) as vm_console:
-        vm_console.sendline(CHECK_DMIDECODE_PACKAGE)
-        vm_console.expect("1", timeout=20)
+    wait_for_console(vm=running_sidecar_vm, console_impl=console.Fedora)
+    vm_console_run_commands(
+        console_impl=console.Fedora,
+        vm=running_sidecar_vm,
+        commands=[
+            "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward' | wc -l\n"
+        ],
+    )
