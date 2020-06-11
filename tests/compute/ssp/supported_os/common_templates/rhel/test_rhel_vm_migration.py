@@ -12,6 +12,7 @@ from utilities import console
 from utilities.virt import check_ssh_connection, wait_for_console
 
 
+@pytest.mark.smoke
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
