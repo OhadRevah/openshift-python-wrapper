@@ -109,6 +109,10 @@ link_aggregation_mode_matrix = [
     "balance-tlb",
     "balance-alb",
 ]
+link_aggregation_mode_no_connectivity_matrix = [
+    "balance-xor",
+    "802.3ad",
+]
 
 rhel_os_matrix = [
     {
