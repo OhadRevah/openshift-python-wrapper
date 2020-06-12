@@ -137,14 +137,18 @@ class PolarionIds(object):
             )
 
     def _check_pytest_fixture_polarion_ids(self, f):
+        exist = False
         for f_arg in f.args.args:
             for polarion_id in iter_polarion_ids_from_pytest_fixture(
                 self.tree, f_arg.arg
             ):
+                exist = True
                 if isinstance(polarion_id, ast.Str):
                     yield from self._if_bad_pid_fixture(f, polarion_id)
                 else:
                     yield from self._non_decorated_fixture(f, polarion_id)
+        if not exist:
+            yield from self._non_decorated(f, "")
 
     def run(self):
         """
@@ -157,7 +161,7 @@ class PolarionIds(object):
                 # Test is missing Polarion ID, check if test use parametrize fixture
                 # with Polarion ID.
                 yield from self._check_pytest_fixture_polarion_ids(f)
-                break
+                continue
 
             for deco in f.decorator_list:
                 if not hasattr(deco, "func"):
