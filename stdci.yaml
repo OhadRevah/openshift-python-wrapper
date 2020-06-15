@@ -1,5 +1,5 @@
 ---
-distro: rhel7
+distro: el7
 sub-stages:
   - check
 # TODO: Enable once we can deploy OKD

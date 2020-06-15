@@ -1,0 +1,12 @@
+[flake8]
+max-line-length = 120
+exclude =
+    doc,
+    .tox,
+    .git,
+    .yml,
+    Pipfile.*
+
+[flake8:local-plugins]
+extension =
+    PID = flake8_plugins.PolarionIds:PolarionIds

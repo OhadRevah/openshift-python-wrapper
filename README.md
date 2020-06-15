@@ -247,23 +247,15 @@ patch is listed in comments to the review request.
 ## How-to verify your patch
 
 ### Check the code
-
-Code style must pass flake8-black.
-The plugin: https://github.com/peterjc/flake8-black
-How to install and use black tool: https://github.com/python/black
-
-Code style must pass flake8-isort
-The plugin: https://github.com/gforcada/flake8-isort
-How to install and use isort: https://github.com/timothycrosley/isort/wiki/isort-Plugins
-
-To get automatic black and isort check and fix on pre-commit:
+We use checks tools that are defined in .pre-commit-config.yaml file
+To install pre-commit:
 ```bash
 pip install pre-commit --user
 ```
-This will use .pre-commit-config.yaml configuration.
+pre-commit will try to fix the error.
+If some error where fixed git add & git commit is needed again.
 
 To check for PEP 8 issues locally run:
-
 ```bash
 make check
 ```
