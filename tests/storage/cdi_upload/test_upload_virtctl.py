@@ -407,3 +407,28 @@ def test_successful_vm_from_uploaded_dv_windows(
         vm_params=vm_params,
         winrmcli_pod_scope_function=winrmcli_pod_scope_function,
     )
+
+
+@pytest.mark.polarion("CNV-4033")
+def test_disk_image_after_upload_virtctl(
+    skip_block_volumemode,
+    download_image,
+    namespace,
+    storage_class_matrix__function__,
+    unprivileged_client,
+):
+    storage_params = storage_utils.storage_params(storage_class_matrix__function__)
+    dv_name = "cnv-4033"
+    res, out = storage_utils.virtctl_upload_dv(
+        namespace=namespace.name,
+        name=dv_name,
+        size="1Gi",
+        image_path=LOCAL_PATH,
+        storage_class=storage_params["storage_class"],
+        insecure=True,
+        access_mode=storage_params["access_modes"],
+    )
+    LOGGER.info(out)
+    assert res
+    dv = DataVolume(namespace=namespace.name, name=dv_name)
+    storage_utils.create_vm_and_verify_image_permission(dv=dv)

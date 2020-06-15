@@ -378,3 +378,27 @@ def set_permissions(
             role_ref_name=cluster_role.name,
         ) as role_binding:
             yield [cluster_role, role_binding]
+
+
+def create_vm_and_verify_image_permission(dv):
+    with create_vm_from_dv(dv) as vm:
+        vm.vmi.wait_until_running()
+        v_pod = vm.vmi.virt_launcher_pod
+        LOGGER.debug("Check image exist, permission and ownership")
+        output = v_pod.execute(
+            command=["ls", "-l", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
+        )
+        assert "disk.img" in output
+        # Note: we will update the permission to 660 instead of 644
+        # After the patch deliver to upstream of Jira https://issues.redhat.com/browse/CNV-5109
+        assert "-rw-r--r--." in output
+        assert "qemu qemu" in output
+
+
+def storage_params(storage_class_matrix):
+    storage_class = [*storage_class_matrix][0]
+    return {
+        "storage_class": storage_class,
+        "volume_mode": storage_class_matrix[storage_class]["volume_mode"],
+        "access_modes": storage_class_matrix[storage_class]["access_mode"],
+    }

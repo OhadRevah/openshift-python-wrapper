@@ -14,8 +14,11 @@ from tests.storage.restricted_namespace_cloning.conftest import (
 )
 from tests.storage.utils import (
     create_cluster_role,
+    create_dv,
     create_role_binding,
+    create_vm_and_verify_image_permission,
     set_permissions,
+    storage_params,
 )
 from utilities.virt import VirtualMachineForTests
 
@@ -285,3 +288,65 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
                 dv=data_volume_clone_settings,
             ) as vm:
                 vm.start(wait=True)
+
+
+@pytest.mark.parametrize(
+    (
+        "namespace",
+        "data_volume_multi_storage_scope_function",
+        "permissions_src",
+        "permissions_dst",
+    ),
+    [
+        pytest.param(
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            (["datavolumes", "datavolumes/source"], ["*"]),
+            (["datavolumes", "datavolumes/source"], ["*"]),
+            marks=(pytest.mark.polarion("CNV-4034")),
+        )
+    ],
+    indirect=["namespace", "data_volume_multi_storage_scope_function"],
+)
+def test_disk_image_after_create_vm_with_restricted_clone(
+    storage_class_matrix__function__,
+    namespace,
+    data_volume_multi_storage_scope_function,
+    dst_ns,
+    unprivileged_client,
+    permissions_src,
+    permissions_dst,
+    unprivileged_user_username,
+    api_group,
+):
+    with set_permissions(
+        role_name="datavolume-cluster-role-src",
+        verbs=permissions_src[1],
+        permissions_to_resources=permissions_src[0],
+        binding_name="role_bind_src",
+        namespace=namespace.name,
+        subjects_kind="User",
+        subjects_name=unprivileged_user_username,
+        subjects_api_group=api_group,
+    ):
+        with set_permissions(
+            role_name="datavolume-cluster-role-dst",
+            verbs=permissions_dst[1],
+            permissions_to_resources=permissions_dst[0],
+            binding_name="role_bind_dst",
+            namespace=dst_ns.name,
+            subjects_kind="User",
+            subjects_name=unprivileged_user_username,
+            subjects_api_group=api_group,
+        ):
+            with create_dv(
+                dv_name="target-dv",
+                namespace=dst_ns.name,
+                source="pvc",
+                size="500Mi",
+                source_pvc=data_volume_multi_storage_scope_function.pvc.name,
+                source_namespace=namespace.name,
+                client=unprivileged_client,
+                **storage_params(storage_class_matrix__function__),
+            ) as cdv:
+                create_vm_and_verify_image_permission(dv=cdv)

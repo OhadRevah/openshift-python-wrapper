@@ -264,3 +264,11 @@ def download_image():
     storage_utils.downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=LOCAL_PATH
     )
+
+
+@pytest.fixture()
+def skip_block_volumemode(storage_class_matrix__module__):
+    LOGGER.debug("Use 'skip_block_volumemode' fixture...")
+    storage_class = [*storage_class_matrix__module__][0]
+    if storage_class_matrix__module__[storage_class]["volume_mode"] == "Block":
+        pytest.skip("Test is not supported on Block volume mode")

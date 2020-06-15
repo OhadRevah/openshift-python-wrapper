@@ -155,3 +155,35 @@ def test_successful_vm_from_cloned_dv_windows(
             vm_params=vm_params,
             winrmcli_pod_scope_function=winrmcli_pod_scope_function,
         )
+
+
+@pytest.mark.parametrize(
+    "data_volume_multi_storage_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": "1Gi",
+            },
+            marks=pytest.mark.polarion("CNV-4035"),
+        )
+    ],
+    indirect=True,
+)
+def test_disk_image_after_clone(
+    skip_block_volumemode,
+    namespace,
+    storage_class_matrix__function__,
+    data_volume_multi_storage_scope_function,
+    unprivileged_client,
+):
+    with utilities.storage.create_dv(
+        source="pvc",
+        dv_name="dv-cnv-4035",
+        namespace=namespace.name,
+        size=data_volume_multi_storage_scope_function.size,
+        client=unprivileged_client,
+        **utils.storage_params(storage_class_matrix__function__),
+    ) as cdv:
+        utils.create_vm_and_verify_image_permission(dv=cdv)
