@@ -44,6 +44,7 @@ def secret(namespace, ovirt_config):
         yield secret
 
 
+@pytest.mark.polarion("CNV-4381")
 def test_vm_import(secret, namespace):
     vm_name = "test"
     with create_vm_import(
