@@ -255,6 +255,7 @@ def empty_pvc(namespace, storage_class_matrix__module__, schedulable_nodes):
         name="empty-pvc",
         namespace=namespace.name,
         storage_class=storage_class,
+        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         accessmodes=storage_class_matrix__module__[storage_class]["access_mode"],
         size="1Gi",
         hostpath_node=schedulable_nodes[0].name,

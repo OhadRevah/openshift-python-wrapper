@@ -29,18 +29,28 @@ class PersistentVolumeClaim(NamespacedResource):
         ROX = "ReadOnlyMany"
         RWX = "ReadWriteMany"
 
+    class VolumeMode:
+        """
+        VolumeMode object
+        """
+
+        BLOCK = "Block"
+        FILE = "Filesystem"
+
     def __init__(
         self,
         name,
         namespace,
         storage_class=None,
         accessmodes=None,
+        volume_mode=VolumeMode.FILE,
         size=None,
         hostpath_node=None,
         teardown=True,
     ):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.accessmodes = accessmodes
+        self.volume_mode = volume_mode
         self.size = size
         self.hostpath_node = hostpath_node
         self.storage_class = storage_class
@@ -50,6 +60,7 @@ class PersistentVolumeClaim(NamespacedResource):
         res.update(
             {
                 "spec": {
+                    "volumeMode": self.volume_mode,
                     "accessModes": [self.accessmodes],
                     "resources": {"requests": {"storage": self.size}},
                 }
