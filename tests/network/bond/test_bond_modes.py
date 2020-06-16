@@ -29,7 +29,7 @@ def bond_nad(bridge_device_matrix__class__, namespace):
 
 @pytest.fixture(scope="class")
 def bond(
-    link_aggregation_mode_no_connectivity_matrix,
+    link_aggregation_mode_no_connectivity_matrix__class__,
     network_utility_pods,
     nodes_active_nics,
     schedulable_nodes,
@@ -42,7 +42,7 @@ def bond(
         bond_name="test-bond",
         slaves=nodes_active_nics[network_utility_pods[0].node.name][2:],
         worker_pods=network_utility_pods,
-        mode=link_aggregation_mode_no_connectivity_matrix,
+        mode=link_aggregation_mode_no_connectivity_matrix__class__,
         mtu=1450,
         node_selector=schedulable_nodes[0].name,
     ) as bond:
@@ -51,7 +51,7 @@ def bond(
 
 @pytest.fixture(scope="class")
 def bond_bridge(
-    link_aggregation_mode_no_connectivity_matrix,
+    link_aggregation_mode_no_connectivity_matrix__class__,
     network_utility_pods,
     schedulable_nodes,
     bond_nad,
@@ -61,7 +61,7 @@ def bond_bridge(
     Create bridge and attach the BOND to it
     """
     with network_utils.bridge_device(
-        bridge_type=link_aggregation_mode_no_connectivity_matrix,
+        bridge_type=link_aggregation_mode_no_connectivity_matrix__class__,
         nncp_name="bridge-on-bond",
         bridge_name=bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,
