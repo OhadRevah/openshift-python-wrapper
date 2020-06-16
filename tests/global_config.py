@@ -69,13 +69,13 @@ windows_username = "Administrator"
 windows_password = "Heslo123"
 
 region = "USA"
-use_server = "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
+usa_server = "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
 emea_server = "cnv-qe-server.scl.lab.tlv.redhat.com"
 USA = {
-    "http_server": f"http://{use_server}/files/",
-    "https_server": f"https://{use_server}/files/",
-    "http_server_auth": f"http://{use_server}/files/mod-auth-basic/",
-    "registry_server": f"docker://{use_server}",
+    "http_server": f"http://{usa_server}/files/",
+    "https_server": f"https://{usa_server}/files/",
+    "http_server_auth": f"http://{usa_server}/files/mod-auth-basic/",
+    "registry_server": f"docker://{usa_server}",
     "https_cert": "usa_https.crt",
     "registry_cert": "usa_registry.crt",
 }
