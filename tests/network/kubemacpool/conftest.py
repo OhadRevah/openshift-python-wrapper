@@ -176,16 +176,6 @@ def kubemacpool_first_scope(default_client, kubemacpool_namespace):
         )
 
 
-@pytest.fixture(scope="class")
-def kubemacpool_second_scope(default_client, kubemacpool_namespace):
-    # This fixture can update an existing MAC address range to the new one
-    return update_kubemacpool_scope(
-        api_client=default_client,
-        namespace=kubemacpool_namespace,
-        scope=("02:ff:fb:00:00:00", "02:ff:fb:ff:ff:ff"),
-    )
-
-
 @pytest.fixture(scope="module")
 def manual_mac_nad(namespace):
     with utilities.network.bridge_nad(
@@ -349,75 +339,3 @@ def restarted_vmi_a(vm_a):
 def restarted_vmi_b(vm_b):
     vm_b.stop(wait=True)
     return running_vmi(vm_b)
-
-
-@pytest.fixture(scope="class")
-def vm_c(namespace, vm_a, all_nads, unprivileged_client):
-    vm_a.delete(wait=True)
-    requested_network_config = {
-        "eth1": IfaceTuple(
-            ip_address="10.200.1.1", mac_address="auto", name=all_nads[0]
-        ),
-        "eth2": IfaceTuple(
-            ip_address="10.200.2.1", mac_address="auto", name=all_nads[1]
-        ),
-        "eth3": IfaceTuple(
-            ip_address="10.200.3.1", mac_address="auto", name=all_nads[2]
-        ),
-        "eth4": IfaceTuple(
-            ip_address="10.200.4.1", mac_address="auto", name=all_nads[3]
-        ),
-    }
-    yield from create_vm(
-        name="vm-fedora-c",
-        iface_config=requested_network_config,
-        namespace=namespace,
-        client=unprivileged_client,
-    )
-
-
-@pytest.fixture(scope="class")
-def vm_d(namespace, vm_b, all_nads, unprivileged_client):
-    vm_b.delete(wait=True)
-    requested_network_config = {
-        "eth1": IfaceTuple(
-            ip_address="10.200.1.2", mac_address="auto", name=all_nads[0]
-        ),
-        "eth2": IfaceTuple(
-            ip_address="10.200.2.2", mac_address="auto", name=all_nads[1]
-        ),
-        "eth3": IfaceTuple(
-            ip_address="10.200.3.2", mac_address="auto", name=all_nads[2]
-        ),
-        "eth4": IfaceTuple(
-            ip_address="10.200.4.2", mac_address="auto", name=all_nads[3]
-        ),
-    }
-    yield from create_vm(
-        name="vm-fedora-d",
-        iface_config=requested_network_config,
-        namespace=namespace,
-        client=unprivileged_client,
-    )
-
-
-@pytest.fixture(scope="class")
-def started_vmi_c(vm_c):
-    return running_vmi(vm_c)
-
-
-@pytest.fixture(scope="class")
-def started_vmi_d(vm_d):
-    return running_vmi(vm_d)
-
-
-@pytest.fixture(scope="class")
-def booted_vm_c(vm_c, started_vmi_c):
-    wait_for_vm_interfaces(vmi=started_vmi_c)
-    return vm_c
-
-
-@pytest.fixture(scope="class")
-def booted_vm_d(vm_d, started_vmi_d):
-    wait_for_vm_interfaces(vmi=started_vmi_d)
-    return vm_d
