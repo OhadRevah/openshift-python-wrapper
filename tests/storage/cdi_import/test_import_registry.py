@@ -8,6 +8,7 @@ from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
+from resources.resource import ResourceEditor
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, get_cert
@@ -20,6 +21,27 @@ QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
+REGISTRY_TLS_SELF_SIGNED_SERVER = py_config[py_config["region"]]["registry_server"]
+
+
+@pytest.fixture()
+def disable_tls_registry(configmap_with_cert):
+    """
+    To disable TLS security for a registry
+    """
+    LOGGER.debug("Use 'disable_tls_registry' fixture...")
+    cdi_insecure_registries = ConfigMap(
+        name="cdi-insecure-registries", namespace=py_config["hco_namespace"]
+    )
+    ResourceEditor(
+        {
+            cdi_insecure_registries: {
+                "data": {
+                    configmap_with_cert.cert_name: f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443",
+                }
+            }
+        }
+    ).update()
 
 
 @pytest.fixture()
@@ -402,3 +424,50 @@ def test_public_registry_data_volume_dockerhub_archive(
             volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
         ):
             return
+
+
+@pytest.mark.polarion("CNV-2347")
+def test_fqdn_name(
+    namespace,
+    configmap_with_cert,
+    disable_tls_registry,
+    storage_class_matrix__function__,
+):
+    """
+    Test that it does a full name string check in the insecure registry ConfigMap,
+    not a partial check of just the prefix.
+    """
+    storage_class = [*storage_class_matrix__function__][0]
+    with utilities.storage.create_dv(
+        source="registry",
+        dv_name=f"cnv-2347-{storage_class}",
+        namespace=namespace.name,
+        # Substring of the FQDN name
+        url=f"{REGISTRY_TLS_SELF_SIGNED_SERVER[:22]}{REGISTRY_TLS_SELF_SIGNED_SERVER[30:]}:8443/"
+        f"{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        cert_configmap=configmap_with_cert.name,
+        size="1Gi",
+        storage_class=storage_class,
+        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+    ) as dv:
+        # Import fails because FQDN is verified from the registry certificate and a substring is not supported.
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.BOUND,
+            status=DataVolume.Condition.Status.TRUE,
+            timeout=60,
+        )
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_SCHEDULED,
+            timeout=300,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.RUNNING,
+            status=DataVolume.Condition.Status.FALSE,
+            timeout=300,
+        )
+        dv.wait_for_condition(
+            condition=DataVolume.Condition.Type.READY,
+            status=DataVolume.Condition.Status.FALSE,
+            timeout=300,
+        )
