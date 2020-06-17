@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import multiprocessing
 
 import pytest
@@ -9,15 +10,28 @@ from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
-from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg
+from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, get_cert
 from utilities.virt import VirtualMachineForTests
 
 
+LOGGER = logging.getLogger(__name__)
 DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
+
+
+@pytest.fixture()
+def configmap_with_cert(namespace):
+    LOGGER.debug("Use 'configmap_with_cert' fixture...")
+    with ConfigMap(
+        name="registry-cm-cert",
+        namespace=namespace.name,
+        cert_name=py_config[py_config["region"]]["registry_cert"],
+        data=get_cert("registry_cert"),
+    ) as configmap:
+        yield configmap
 
 
 @pytest.mark.parametrize(
