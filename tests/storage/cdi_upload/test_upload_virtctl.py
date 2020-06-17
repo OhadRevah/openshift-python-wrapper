@@ -37,10 +37,11 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2192"
-    virtctl_upload = storage_utils.virtctl_upload(
+    virtctl_upload = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
-        pvc_name=pvc_name,
-        pvc_size="1Gi",
+        name=pvc_name,
+        size="1Gi",
+        storage_class=py_config["default_storage_class"],
         image_path=local_name,
         insecure=True,
     )
@@ -52,7 +53,7 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-2191")
 def test_successful_virtctl_upload_no_route(
-    skip_not_openshift, namespace, tmpdir, uploadproxy_route_deleted
+    skip_not_openshift, namespace, tmpdir, uploadproxy_route_deleted,
 ):
     route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
     with pytest.raises(NotFoundError):
@@ -63,10 +64,11 @@ def test_successful_virtctl_upload_no_route(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2191"
-    virtctl_upload, virtctl_upload_out = storage_utils.virtctl_upload(
+    virtctl_upload, virtctl_upload_out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
-        pvc_name=pvc_name,
-        pvc_size="1Gi",
+        name=pvc_name,
+        size="1Gi",
+        storage_class=py_config["default_storage_class"],
         image_path=local_name,
         insecure=True,
     )
@@ -89,10 +91,11 @@ def test_image_upload_with_overridden_url(
     storage_utils.downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
-    virtctl_upload = storage_utils.virtctl_upload(
+    virtctl_upload = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
-        pvc_name=pvc_name,
-        pvc_size="1Gi",
+        name=pvc_name,
+        size="1Gi",
+        storage_class=py_config["default_storage_class"],
         image_path=local_name,
         insecure=True,
     )
@@ -114,10 +117,11 @@ def test_virtctl_image_upload_with_ca(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_path
     )
     pvc_name = "cnv-3031"
-    res, out = storage_utils.virtctl_upload(
+    res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
-        pvc_name=pvc_name,
-        pvc_size="1Gi",
+        name=pvc_name,
+        size="1Gi",
+        storage_class=py_config["default_storage_class"],
         image_path=local_path,
     )
     LOGGER.info(out)

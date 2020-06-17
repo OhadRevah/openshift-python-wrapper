@@ -64,11 +64,7 @@ def data_volume(
     DV creation using create_dv.
     """
     if not storage_class_matrix:
-        storages = py_config["system_storage_class_matrix"]
-        storage_class_matrix = [sc for sc in storages if [*sc][0] == storage_class]
-        if not storage_class_matrix:
-            raise ValueError(f"{storage_class} not found in {storages}")
-        storage_class_matrix = storage_class_matrix[0]
+        storage_class_matrix = get_storage_class_dict_from_matrix(storage_class)
 
     storage_class = [*storage_class_matrix][0]
     # Save with a different name to avoid confusing.
@@ -152,3 +148,11 @@ def get_images_https_server():
         LOGGER.error("URL Error when testing connectivity to HTTPS server")
         raise
     return server
+
+
+def get_storage_class_dict_from_matrix(storage_class):
+    storages = py_config["system_storage_class_matrix"]
+    matching_storage_classes = [sc for sc in storages if [*sc][0] == storage_class]
+    if not matching_storage_classes:
+        raise ValueError(f"{storage_class} not found in {storages}")
+    return matching_storage_classes[0]

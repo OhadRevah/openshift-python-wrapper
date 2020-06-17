@@ -19,7 +19,11 @@ from resources.utils import TimeoutSampler
 from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.infra import Images, get_cert
-from utilities.storage import create_dv, get_images_external_http_server
+from utilities.storage import (
+    create_dv,
+    get_images_external_http_server,
+    get_storage_class_dict_from_matrix,
+)
 from utilities.virt import (
     VirtualMachineForTests,
     run_virtctl_command,
@@ -208,11 +212,11 @@ def virtctl_upload_dv(
     size,
     pvc=False,
     storage_class=None,
+    volume_mode=None,
     access_mode=None,
     uploadproxy_url=None,
     wait_secs=None,
     insecure=False,
-    block_volume=False,
     no_create=False,
 ):
     command = [
@@ -225,6 +229,14 @@ def virtctl_upload_dv(
     if pvc:
         command[1] = "pvc"
     if storage_class:
+        if not (
+            volume_mode and access_mode
+        ):  # In case either one of them is missing, must fetch missing mode/s from matrix
+            storage_class_dict = get_storage_class_dict_from_matrix(storage_class)
+            storage_class = [*storage_class_dict][0]
+        # There is still an option that one mode was passed by caller, will use the passed value
+        volume_mode = volume_mode or storage_class_dict[storage_class]["volume_mode"]
+        access_mode = access_mode or storage_class_dict[storage_class]["access_mode"]
         command.append(f"--storage-class={storage_class}")
     if access_mode:
         command.append(f"--access-mode={access_mode}")
@@ -234,7 +246,7 @@ def virtctl_upload_dv(
         command.append(f"--wait-secs={wait_secs}")
     if insecure:
         command.append("--insecure")
-    if block_volume:
+    if volume_mode == "Block":
         command.append("--block-volume")
     if no_create:
         command.append("--no-create")
