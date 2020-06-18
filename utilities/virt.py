@@ -1011,8 +1011,12 @@ def create_vm_import(
     namespace,
     provider_credentials_secret_name,
     provider_credentials_secret_namespace,
-    vm_id,
     target_vm_name,
+    vm_id=None,
+    vm_name=None,
+    cluster_name=None,
+    ovirt_mappings=None,
+    start_vm=False,
 ):
     with VirtualMachineImport(
         name,
@@ -1021,5 +1025,9 @@ def create_vm_import(
         provider_credentials_secret_namespace,
         vm_id=vm_id,
         target_vm_name=target_vm_name,
+        start_vm=start_vm,
+        ovirt_mappings=ovirt_mappings,
+        vm_name=vm_name,
+        cluster_name=cluster_name,
     ) as vmimport:
         yield vmimport

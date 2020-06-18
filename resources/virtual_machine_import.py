@@ -72,6 +72,17 @@ class VirtualMachineImport(NamespacedResource):
         COMPLETED = "ProcessingCompleted"
         FAILED = "ProcessingFailed"
 
+    class SucceededConditionReason:
+        """
+        Succeeced cond reason object
+        """
+
+        VALIDATION_FAILED = "ValidationFailed"
+        VM_CREATION_FAILED = "VMCreationFailed"
+        DATAVOLUME_CREATION_FAILED = "DataVolumeCreationFailed"
+        VIRTUAL_MACHINE_READY = "VirtualMachineReady"
+        VIRTUAL_MACHINE_RUNNING = "VirtualMachineRunning"
+
     def __init__(
         self,
         name,
@@ -162,8 +173,9 @@ class VirtualMachineImport(NamespacedResource):
 
         return res
 
-    def wait(self, timeout=600):
-
+    def wait(
+        self, timeout=600, cond_reason=SucceededConditionReason.VIRTUAL_MACHINE_READY,
+    ):
         LOGGER.info(f"Wait for {self.kind} {self.name} Succeeced condition to be true")
         samples = TimeoutSampler(
             timeout=timeout,
@@ -183,7 +195,7 @@ class VirtualMachineImport(NamespacedResource):
                             condition.type == self.Condition.MAPPING_RULES_VERIFIED
                             or condition.type == self.Condition.VALID
                         ):
-                            if condition.status == "False":
+                            if condition.status == self.Condition.Status.FALSE:
                                 msg = (
                                     f"Status of {self.kind} {self.name} {condition.type} is "
                                     f"{condition.status} ({condition.reason}: {condition.message})"
@@ -192,11 +204,38 @@ class VirtualMachineImport(NamespacedResource):
                                 raise TimeoutExpiredError(msg)
 
                         if condition.type == self.Condition.SUCCEEDED:
-                            if condition.status == "True":
-                                return
-                            msg = (
-                                f"Status of {self.kind} {self.name} {condition.type} is "
-                                f"{condition.status} ({condition.reason}: {condition.message})"
-                            )
-                            LOGGER.info(msg)
-                            raise TimeoutExpiredError(msg)
+                            if condition.status == self.Condition.Status.TRUE:
+                                if condition.reason == cond_reason:
+                                    return
+                            else:
+                                msg = (
+                                    f"Status of {self.kind} {self.name} {condition.type} is "
+                                    f"{condition.status} ({condition.reason}: {condition.message})"
+                                )
+                                LOGGER.info(msg)
+                                raise TimeoutExpiredError(msg)
+
+
+class OvirtMappings:
+    def __init__(
+        self, disk_mappings=None, network_mappings=None, storage_mappings=None
+    ):
+        self.disk_mappings = disk_mappings
+        self.network_mappings = network_mappings
+        self.storage_mappings = storage_mappings
+
+
+class ResourceMappingItem:
+    def __init__(
+        self,
+        target_name,
+        target_namespace=None,
+        target_type=None,
+        source_name=None,
+        source_id=None,
+    ):
+        self.target_name = target_name
+        self.target_namespace = target_namespace
+        self.source_name = source_name
+        self.source_id = source_id
+        self.target_type = target_type
