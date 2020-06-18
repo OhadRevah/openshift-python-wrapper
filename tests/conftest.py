@@ -20,6 +20,7 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.cluster_service_version import ClusterServiceVersion
+from resources.configmap import ConfigMap
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
@@ -1292,3 +1293,8 @@ def cnv_current_version(default_client):
         dyn_client=default_client, namespace=py_config["hco_namespace"]
     ):
         return csv.instance.spec.version
+
+
+@pytest.fixture(scope="module")
+def kubevirt_config_cm():
+    return ConfigMap(name="kubevirt-config", namespace=py_config["hco_namespace"])

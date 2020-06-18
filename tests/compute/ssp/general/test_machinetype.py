@@ -31,13 +31,9 @@ def vm(request, unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def updated_configmap_machine_type(request, get_kubevirt_config_cm):
+def updated_configmap_machine_type(request, kubevirt_config_cm):
     with ResourceEditor(
-        {
-            get_kubevirt_config_cm: {
-                "data": {"machine-type": request.param["machine_type"]}
-            }
-        }
+        {kubevirt_config_cm: {"data": {"machine-type": request.param["machine_type"]}}}
     ) as edits:
         yield edits
 
