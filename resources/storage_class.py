@@ -15,14 +15,14 @@ class StorageClass(Resource):
         These are names of StorageClass instances when you run `oc get sc`
         """
 
-        LOCAL = "local-sc"
+        LOCAL_BLOCK = "local-block"
         HOSTPATH = "hostpath-provisioner"
-        ROOK = "rook-ceph-block"
+        CEPH_RBD = "ocs-storagecluster-ceph-rbd"
 
     class Provisioner:
         HOSTPATH = "kubevirt.io/hostpath-provisioner"
-        LOCAL_SC = "kubernetes.io/no-provisioner"
-        CEPH_RBD = "rook-ceph.rbd.csi.ceph.com"
+        LOCAL_BLOCK = "kubernetes.io/no-provisioner"
+        CEPH_RBD = "openshift-storage.rbd.csi.ceph.com"
 
     class VolumeBindingMode:
         """

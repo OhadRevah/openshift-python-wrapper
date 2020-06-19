@@ -206,7 +206,7 @@ def test_cdiconfig_changing_storage_class_default(
     with ResourceEditor(
         {
             default_sc: _get_update_dict(
-                default=False, storage_class=StorageClass.Types.ROOK
+                default=False, storage_class=StorageClass.Types.CEPH_RBD
             )
         }
     ):
