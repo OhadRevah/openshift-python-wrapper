@@ -9,6 +9,7 @@ from pytest_testconfig import config as py_config
 from resources.secret import Secret
 from resources.virtual_machine_import import VirtualMachineImport
 from tests.vmimport.rhv import utils
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import create_vm_import
 
 
@@ -17,11 +18,12 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def rhv_provider():
-    return rhv.RHV(
+    with rhv.RHV(
         url=py_config["rhv_url"],
         username=py_config["rhv_username"],
         password=py_config["rhv_password"],
-    )
+    ) as provider:
+        yield provider
 
 
 @pytest.fixture(scope="module")
@@ -56,6 +58,9 @@ def secret(namespace, ovirt_config):
         yield secret
 
 
+@pytest.mark.bugzilla(
+    1849664, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-4381")
 def test_vm_import(secret, namespace, rhv_provider):
     source_vm_name = "cirros-vm-for-tests"
@@ -87,14 +92,9 @@ def test_vm_import(secret, namespace, rhv_provider):
 
 
 def check_vm_config(vm, rhv_provider, source_vm_name, source_vm_cluster):
-    vms_service = rhv_provider.api.system_service().vms_service()
-    source_vm = vms_service.list(
-        search=f"name={source_vm_name} cluster={source_vm_cluster}"
-    )[0]
-    source_vm_nic = vms_service.vm_service(source_vm.id).nics_service().list()[0]
-
+    source_vm = rhv_provider.vm(name=source_vm_name, cluster=source_vm_cluster)
+    source_vm_nic = rhv_provider.vm_nics(vm=source_vm)[0]
     spec = vm.spec.template.spec
-
     domain = spec.domain
     interfaces = domain.devices.interfaces
 

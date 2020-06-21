@@ -18,6 +18,13 @@ class RHV:
         if not self.api:
             self.api = self._api
 
+    def __enter__(self):
+        self.api = self._api
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.api.close()
+
     @property
     def _api(self):
         return ovirtsdk4.Connection(
@@ -28,3 +35,20 @@ class RHV:
             debug=self.debug,
             log=self.log,
         )
+
+    @property
+    def vms_services(self):
+        return self.api.system_service().vms_service()
+
+    def vms(self, search):
+        return self.vms_services.list(search=search)
+
+    def vm(self, name, cluster=None):
+        query = f"name={name}"
+        if cluster:
+            query = f"{query} cluster={cluster}"
+
+        return self.vms(search=query)[0]
+
+    def vm_nics(self, vm):
+        return self.vms_services.vm_service(vm.id).nics_service().list()
