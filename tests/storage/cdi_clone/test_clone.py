@@ -9,7 +9,7 @@ import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from tests.storage import utils
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
 @pytest.mark.parametrize(
@@ -97,6 +97,9 @@ def test_successful_vm_restart_with_cloned_dv(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.bugzilla(
+    1842958, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     ("data_volume_multi_storage_scope_function", "vm_params"),
     [

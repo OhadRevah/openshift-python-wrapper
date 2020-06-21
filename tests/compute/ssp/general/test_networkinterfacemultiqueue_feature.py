@@ -6,6 +6,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import wait_for_console, wait_for_windows_vm
 
 
@@ -124,6 +125,9 @@ class TestLatestRHEL:
         )
 
 
+@pytest.mark.bugzilla(
+    1842958, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
     [

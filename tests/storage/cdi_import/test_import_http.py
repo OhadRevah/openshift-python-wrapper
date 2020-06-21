@@ -745,6 +745,9 @@ def test_vm_from_dv_on_different_node(
         assert vm_dv.vmi.node.name != importer_pod_node_name
 
 
+@pytest.mark.bugzilla(
+    1842958, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
     [

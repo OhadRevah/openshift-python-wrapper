@@ -14,7 +14,7 @@ from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.virt import utils as virt_utils
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -252,6 +252,9 @@ class TestNodeMaintenanceRHEL:
         )
 
 
+@pytest.mark.bugzilla(
+    1842958, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
     [
