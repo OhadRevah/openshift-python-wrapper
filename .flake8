@@ -10,3 +10,5 @@ exclude =
 [flake8:local-plugins]
 extension =
     PID = flake8_plugins.PolarionIds:PolarionIds
+paths =
+    .
