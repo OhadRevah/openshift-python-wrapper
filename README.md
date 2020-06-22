@@ -326,3 +326,15 @@ From cnv-tests dir
 pip3 install . -U --user
 ```
 Used by import resources and import utilities.
+
+
+##### Known Issues
+pycurl may fail with error:
+ImportError: pycurl: libcurl link-time ssl backend (nss) is different from compile-time ssl backend (none/other)
+
+To fix it:
+```bash
+export PYCURL_SSL_LIBRARY=nss # or openssl. depend on the error (link-time ssl backend (nss))
+pipenv run pip uninstall pycurl
+pipenv run pip install pycurl --no-cache-dir
+```
