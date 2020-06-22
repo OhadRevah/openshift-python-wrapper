@@ -40,6 +40,7 @@ class VirtualMachineImport(NamespacedResource):
         SUCCEEDED = "Succeeded"
         VALID = "Valid"
         MAPPING_RULES_VERIFIED = "MappingRulesVerified"
+        PROCESSING = "Processing"
 
     class ValidConditionReason:
         """
@@ -174,7 +175,11 @@ class VirtualMachineImport(NamespacedResource):
         return res
 
     def wait(
-        self, timeout=600, cond_reason=SucceededConditionReason.VIRTUAL_MACHINE_READY,
+        self,
+        timeout=600,
+        cond_reason=SucceededConditionReason.VIRTUAL_MACHINE_READY,
+        cond_status=Condition.Status.TRUE,
+        cond_type=Condition.SUCCEEDED,
     ):
         LOGGER.info(f"Wait for {self.kind} {self.name} Succeeced condition to be true")
         samples = TimeoutSampler(
@@ -185,35 +190,33 @@ class VirtualMachineImport(NamespacedResource):
             field_selector=f"metadata.name=={self.name}",
             namespace=self.namespace,
         )
-        for sample in samples:
-            if sample.items:
-                sample_status = sample.items[0].status
-                if sample_status:
-                    current_conditions = sample_status.conditions
-                    for condition in current_conditions:
-                        if (
-                            condition.type == self.Condition.MAPPING_RULES_VERIFIED
-                            or condition.type == self.Condition.VALID
-                        ):
-                            if condition.status == self.Condition.Status.FALSE:
+        last_condition = None
+        try:
+            for sample in samples:
+                if sample.items:
+                    sample_status = sample.items[0].status
+                    if sample_status:
+                        current_conditions = sample_status.conditions
+                        for condition in current_conditions:
+                            last_condition = condition
+                            if (
+                                condition.type == cond_type
+                                and condition.status == cond_status
+                                and condition.reason == cond_reason
+                            ):
                                 msg = (
                                     f"Status of {self.kind} {self.name} {condition.type} is "
                                     f"{condition.status} ({condition.reason}: {condition.message})"
                                 )
                                 LOGGER.info(msg)
-                                raise TimeoutExpiredError(msg)
-
-                        if condition.type == self.Condition.SUCCEEDED:
-                            if condition.status == self.Condition.Status.TRUE:
-                                if condition.reason == cond_reason:
-                                    return
-                            else:
-                                msg = (
-                                    f"Status of {self.kind} {self.name} {condition.type} is "
-                                    f"{condition.status} ({condition.reason}: {condition.message})"
-                                )
-                                LOGGER.info(msg)
-                                raise TimeoutExpiredError(msg)
+                                return
+        except TimeoutExpiredError:
+            msg = (
+                f"Last condition of {self.kind} {self.name} {last_condition.type} was "
+                f"{last_condition.status} ({last_condition.reason}: {last_condition.message})"
+            )
+            LOGGER.error(msg)
+            raise
 
 
 class OvirtMappings:

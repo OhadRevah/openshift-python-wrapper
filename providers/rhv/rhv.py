@@ -52,3 +52,6 @@ class RHV:
 
     def vm_nics(self, vm):
         return self.vms_services.vm_service(vm.id).nics_service().list()
+
+    def vm_disk_attachments(self, vm):
+        return self.vms_services.vm_service(vm.id).disk_attachments_service().list()

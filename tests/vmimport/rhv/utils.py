@@ -8,3 +8,7 @@ POD_MAPPING = OvirtMappings(
         )
     ]
 )
+
+
+def make_labels(vmimport_name):
+    return f"vmimport.v2v.kubevirt.io/vmi-name={vmimport_name}"
