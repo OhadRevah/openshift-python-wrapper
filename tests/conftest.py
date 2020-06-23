@@ -448,6 +448,7 @@ def unprivileged_client(default_client, unprivileged_secret):
         yield
 
     else:
+        token = None
         kube_config_path = os.path.join(os.path.expanduser("~"), ".kube/config")
         kubeconfig_env = os.environ.get("KUBECONFIG")
         kube_config_exists = os.path.isfile(kube_config_path)
@@ -488,9 +489,13 @@ def unprivileged_client(default_client, unprivileged_secret):
                 user=UNPRIVILEGED_USER,
                 password=UNPRIVILEGED_PASSWORD,
             )  # Login to unprivileged account
-            token = (
-                check_output("oc whoami -t", shell=True).decode().strip()
-            )  # Get token
+            try:
+                token = (
+                    check_output("oc whoami -t", shell=True).decode().strip()
+                )  # Get token
+            except CalledProcessError:
+                LOGGER.warning(f"Failed to obtain {UNPRIVILEGED_USER} token")
+
         finally:
             if kubeconfig_env:
                 os.environ["KUBECONFIG"] = kubeconfig_env
@@ -499,9 +504,7 @@ def unprivileged_client(default_client, unprivileged_secret):
                 api_address=default_client.configuration.host, user=current_user.strip()
             )  # Get back to admin account
 
-        if not token:
-            yield
-        else:
+        if token:
             token_auth = {
                 "api_key": {"authorization": f"Bearer {token}"},
                 "host": default_client.configuration.host,
