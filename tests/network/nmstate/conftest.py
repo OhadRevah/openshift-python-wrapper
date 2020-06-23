@@ -23,7 +23,6 @@ def node_management_iface_stats_node(nodes_active_nics, worker_node1, worker_nod
     key and value is another dictionary consist of worker iface_name as key.
     """
     node_stats = {}
-
     for worker in worker_node1, worker_node2:
         node_stats[worker.name] = {"iface_name": nodes_active_nics[worker.name][0]}
     return node_stats
@@ -39,12 +38,12 @@ def get_worker_pod(network_utility_pods, worker_node):
 
 
 @pytest.fixture(scope="module")
-def vma(schedulable_nodes, namespace, unprivileged_client):
+def vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -54,12 +53,12 @@ def vma(schedulable_nodes, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(schedulable_nodes, namespace, unprivileged_client):
+def vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=schedulable_nodes[1].name,
+        node_selector=worker_node2.name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,

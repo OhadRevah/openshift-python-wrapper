@@ -572,6 +572,7 @@ def schedulable_nodes(nodes):
         and node.labels[schedulable_label] == "true"
         and not node.instance.spec.unschedulable
         and not kubernetes_taint_exists(node)
+        and node.kubelet_ready
     ]
 
 
