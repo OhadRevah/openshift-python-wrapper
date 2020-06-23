@@ -32,6 +32,12 @@ def macs_are_the_same(vmi, expected_mac, iface_name):
     return actual_vmi_interface_mac_address == expected_mac
 
 
+def assert_mac_not_in_range(vm, nad_name, mac_pool):
+    assert not mac_pool.mac_is_within_range(
+        mac=get_vmi_iface_mac_address_by_name(vmi=vm.vmi, name=nad_name)
+    )
+
+
 def assert_mac_static_vms_connectivity_via_network(vm_a, vm_b, nad_name):
     for vm in (vm_a, vm_a):
         vm_mac_address = getattr(vm, nad_name).mac_address
@@ -123,3 +129,25 @@ class TestConnectivity:
         """Test that all macs are preserved even after VM restart"""
         assert ifaces_config_same(vm=running_vm_a, vmi=restarted_vmi_a)
         assert ifaces_config_same(vm=running_vm_b, vmi=restarted_vmi_b)
+
+
+class TestNegatives:
+    @pytest.mark.polarion("CNV-4199")
+    def test_opted_out_ns(
+        self, mac_pool, opted_out_ns, opted_out_ns_nad, opted_out_ns_running_vm,
+    ):
+        assert_mac_not_in_range(
+            vm=opted_out_ns_running_vm,
+            nad_name=opted_out_ns_nad.name,
+            mac_pool=mac_pool,
+        )
+
+    @pytest.mark.polarion("CNV-4217")
+    def test_wrong_label_ns(
+        self, mac_pool, wrong_label_ns, wrong_label_ns_nad, wrong_label_ns_running_vm,
+    ):
+        assert_mac_not_in_range(
+            vm=wrong_label_ns_running_vm,
+            nad_name=wrong_label_ns_nad.name,
+            mac_pool=mac_pool,
+        )

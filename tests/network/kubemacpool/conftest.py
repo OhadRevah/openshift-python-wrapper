@@ -11,6 +11,7 @@ import utilities.network
 from resources.configmap import ConfigMap
 from resources.utils import TimeoutSampler
 from tests.network.utils import nmcli_add_con_cmds, running_vmi
+from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -346,3 +347,90 @@ def restarted_vmi_a(vm_a):
 def restarted_vmi_b(vm_b):
     vm_b.stop(wait=True)
     return running_vmi(vm=vm_b)
+
+
+@pytest.fixture(scope="class")
+def opted_out_ns_vm(opted_out_ns, opted_out_ns_nad, mac_pool):
+    networks = {opted_out_ns_nad.name: opted_out_ns_nad.name}
+    name = f"{opted_out_ns.name}-vm"
+    with VirtualMachineForTests(
+        namespace=opted_out_ns.name,
+        name=name,
+        networks=networks,
+        interfaces=networks.keys(),
+        body=fedora_vm_body(name),
+    ) as vm:
+        mac_pool.append_macs(vm)
+        yield vm
+        mac_pool.remove_macs(vm)
+
+
+@pytest.fixture(scope="class")
+def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
+    networks = {wrong_label_ns_nad.name: wrong_label_ns_nad.name}
+    name = f"{wrong_label_ns.name}-vm"
+    with VirtualMachineForTests(
+        namespace=wrong_label_ns.name,
+        name=name,
+        networks=networks,
+        interfaces=networks.keys(),
+        body=fedora_vm_body(name),
+    ) as vm:
+        mac_pool.append_macs(vm)
+        yield vm
+        mac_pool.remove_macs(vm)
+
+
+@pytest.fixture(scope="class")
+def opted_out_ns_started_vmi(opted_out_ns_vm):
+    return running_vmi(opted_out_ns_vm)
+
+
+@pytest.fixture(scope="class")
+def wrong_label_ns_started_vmi(wrong_label_ns_vm):
+    return running_vmi(wrong_label_ns_vm)
+
+
+@pytest.fixture(scope="class")
+def opted_out_ns_running_vm(opted_out_ns_vm, opted_out_ns_started_vmi):
+    wait_for_vm_interfaces(vmi=opted_out_ns_started_vmi)
+    return opted_out_ns_vm
+
+
+@pytest.fixture(scope="class")
+def wrong_label_ns_running_vm(wrong_label_ns_vm, wrong_label_ns_started_vmi):
+    wait_for_vm_interfaces(vmi=wrong_label_ns_started_vmi)
+    return wrong_label_ns_vm
+
+
+@pytest.fixture(scope="class")
+def opted_out_ns_nad(opted_out_ns, bridge_device):
+    with utilities.network.bridge_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name=f"{opted_out_ns.name}-nad",
+        bridge_name=bridge_device.bridge_name,
+        namespace=opted_out_ns,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def wrong_label_ns_nad(wrong_label_ns, bridge_device):
+    with utilities.network.bridge_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name=f"{wrong_label_ns.name}-nad",
+        bridge_name=bridge_device.bridge_name,
+        namespace=wrong_label_ns,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def opted_out_ns():
+    yield from create_ns(name="kmp-opted-out")
+
+
+@pytest.fixture(scope="class")
+def wrong_label_ns(kmp_vm_label):
+    kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] += "-wrong-label"
+    yield from create_ns(name="kmp-wrong-label", kmp_vm_label=kmp_vm_label)
