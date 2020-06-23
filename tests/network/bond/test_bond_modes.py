@@ -51,7 +51,7 @@ def bond(
 
 @pytest.fixture(scope="class")
 def bond_bridge(
-    link_aggregation_mode_no_connectivity_matrix__class__,
+    bridge_device_matrix__class__,
     network_utility_pods,
     schedulable_nodes,
     bond_nad,
@@ -61,7 +61,7 @@ def bond_bridge(
     Create bridge and attach the BOND to it
     """
     with network_utils.bridge_device(
-        bridge_type=link_aggregation_mode_no_connectivity_matrix__class__,
+        bridge_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         bridge_name=bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,
