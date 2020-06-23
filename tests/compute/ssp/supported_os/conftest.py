@@ -38,6 +38,22 @@ def data_volume_windows_os(
     )
 
 
+@pytest.fixture(scope="class")
+def data_volume_fedora_os(
+    skip_ceph_on_rhel7,
+    namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
+    fedora_os_matrix__class__,
+):
+    yield from data_volume(
+        namespace=namespace,
+        storage_class_matrix=storage_class_matrix__class__,
+        schedulable_nodes=schedulable_nodes,
+        os_matrix=fedora_os_matrix__class__,
+    )
+
+
 def vm_object_from_template(
     unprivileged_client,
     namespace,
@@ -169,6 +185,27 @@ def vm_object_from_template_windows_os(
     )
 
 
+@pytest.fixture(scope="class")
+def vm_object_from_template_fedora_os(
+    request,
+    unprivileged_client,
+    namespace,
+    fedora_os_matrix__class__,
+    data_volume_fedora_os,
+    network_configuration,
+    cloud_init_data,
+):
+    return vm_object_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        os_matrix=fedora_os_matrix__class__,
+        data_volume_object=data_volume_fedora_os,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+    )
+
+
 def vm_ssh_service(vm_object_from_template):
     """ Manages (creation and deletion) of a service to enable SSH access to the VM
 
@@ -209,6 +246,15 @@ def vm_ssh_service_rhel_os(rhel7_workers, vm_object_from_template_rhel_os):
         yield
     else:
         yield from vm_ssh_service(vm_object_from_template_rhel_os)
+
+
+@pytest.fixture(scope="class")
+def vm_ssh_service_fedora_os(rhel7_workers, vm_object_from_template_fedora_os):
+    # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
+    if rhel7_workers:
+        yield
+    else:
+        yield from vm_ssh_service(vm_object_from_template_fedora_os)
 
 
 @pytest.fixture()

@@ -8,7 +8,7 @@ VM creation is done using CNV common templates.
 1. Find the available OS versions in global_config.py (keys of rhel_os_matrix or windows_os_matrix dicts)
 2. Add the following to the test execution command line:
 ```bash
---rhel-os-matrix=<RHEL OS version> OR --windows-os-matrix=<Windows OS version>
+--rhel-os-matrix=<RHEL OS version> OR --windows-os-matrix=<Windows OS version> OR --fedora-os-matrix=<Fedora OS version>
 ```
 - To execute a subset of the tests for ci verification:
 1. Select one of the available OS versions in global_config.py

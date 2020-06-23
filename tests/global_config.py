@@ -60,9 +60,8 @@ latest_windows_version = {
     "os_version": "19",
     "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
 }
-# TODO: Update to Fedora32 once https://issues.redhat.com/browse/CNV-5129 is handled.
 latest_fedora_version = {
-    "os_label": "fedora31",
+    "os_label": "fedora32",
     "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
 }
 windows_username = "Administrator"
@@ -256,6 +255,29 @@ windows_os_matrix = [
                 "flavor": "medium",
             },
             "license": "N8BP4-3RHM3-YQWTF-MBJC3-YBKQ3",
+        }
+    },
+]
+
+fedora_os_matrix = [
+    {
+        "fedora-31": {
+            "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA31_IMG),
+            "template_labels": {
+                "os": "fedora31",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
+    {
+        "fedora-32": {
+            "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
+            "template_labels": {
+                "os": "fedora32",
+                "workload": "server",
+                "flavor": "tiny",
+            },
         }
     },
 ]
