@@ -94,7 +94,9 @@ def bridges_on_management_ifaces_node1(
     """
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
-    worker_pod = get_worker_pod(network_utility_pods, worker_node1)
+    worker_pod = get_worker_pod(
+        network_utility_pods=network_utility_pods, worker_node=worker_node1
+    )
     with network_utils.bridge_device(
         bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node1.name}",
@@ -125,7 +127,9 @@ def bridges_on_management_ifaces_node2(
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
-    worker_pod = get_worker_pod(network_utility_pods, worker_node2)
+    worker_pod = get_worker_pod(
+        network_utility_pods=network_utility_pods, worker_node=worker_node2
+    )
     with network_utils.bridge_device(
         bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node2.name}",

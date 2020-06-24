@@ -249,7 +249,7 @@ def test_ping_vm_migration(
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert running_vmb.vmi.instance.status.nodeName != src_node
 
-    assert_low_packet_loss(running_vma)
+    assert_low_packet_loss(vm=running_vma)
 
 
 @pytest.mark.polarion("CNV-2063")
@@ -270,7 +270,7 @@ def test_ssh_vm_migration(
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert running_vmb.vmi.instance.status.nodeName != src_node
 
-    assert_ssh_alive(running_vma)
+    assert_ssh_alive(ssh_vm=running_vma)
 
 
 @pytest.mark.polarion("CNV-2061")

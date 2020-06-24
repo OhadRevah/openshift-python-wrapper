@@ -79,7 +79,9 @@ def bond_and_privileged_pod(network_utility_pods):
         )
 
         bond_mode_string = "ovs-port.bond-mode:balance-slb"
-        bond = get_interface_by_attribute(all_connections, bond_mode_string)
+        bond = get_interface_by_attribute(
+            all_connections=all_connections, att=bond_mode_string
+        )
 
         if bond:
             return bond, pod
@@ -116,7 +118,7 @@ def slave(privileged_pod, bond, node_with_bond):
     )
 
     bond_string = f"connection.master:{bond}"
-    slave = get_interface_by_attribute(all_connections, bond_string)
+    slave = get_interface_by_attribute(all_connections=all_connections, att=bond_string)
 
     assert slave is not None, f"OVS Bond {bond} on node {node_with_bond} has no slaves"
     return slave

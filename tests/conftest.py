@@ -824,12 +824,16 @@ def _skip_ceph_on_rhel7(storage_class, rhel7_workers):
 
 @pytest.fixture(scope="class")
 def skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers):
-    _skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers)
+    _skip_ceph_on_rhel7(
+        storage_class=storage_class_matrix__class__, rhel7_workers=rhel7_workers
+    )
 
 
 @pytest.fixture(scope="module")
 def skip_ceph_on_rhel7_scope_module(storage_class_matrix__module__, rhel7_workers):
-    _skip_ceph_on_rhel7(storage_class_matrix__module__, rhel7_workers)
+    _skip_ceph_on_rhel7(
+        storage_class=storage_class_matrix__module__, rhel7_workers=rhel7_workers
+    )
 
 
 @pytest.fixture(scope="session")

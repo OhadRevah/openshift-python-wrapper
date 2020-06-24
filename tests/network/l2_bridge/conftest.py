@@ -195,13 +195,13 @@ def bridge_attached_vm(
     client=None,
 ):
     cloud_init_data = _cloud_init_data(
-        ip_addresses,
-        mpls_local_ip,
-        mpls_local_tag,
-        mpls_dest_ip,
-        mpls_dest_tag,
-        mpls_route_next_hop,
-        cloud_init_extra_user_data,
+        ip_addresses=ip_addresses,
+        mpls_local_ip=mpls_local_ip,
+        mpls_local_tag=mpls_local_tag,
+        mpls_dest_ip=mpls_dest_ip,
+        mpls_dest_tag=mpls_dest_tag,
+        mpls_route_next_hop=mpls_route_next_hop,
+        cloud_init_extra_user_data=cloud_init_extra_user_data,
     )
     with VirtualMachineAttachedToBridge(
         namespace=namespace,
@@ -282,12 +282,12 @@ def vm_b(namespace, all_nads, unprivileged_client):
 
 @pytest.fixture(scope="class")
 def started_vmi_a(vm_a):
-    return running_vmi(vm_a)
+    return running_vmi(vm=vm_a)
 
 
 @pytest.fixture(scope="class")
 def started_vmi_b(vm_b):
-    return running_vmi(vm_b)
+    return running_vmi(vm=vm_b)
 
 
 @pytest.fixture(scope="class")

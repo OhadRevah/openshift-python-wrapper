@@ -26,7 +26,7 @@ def dhcp_server_cloud_init_data(dhcp_iface_ip_addr):
 
     data = FEDORA_CLOUD_INIT_PASSWORD
 
-    bootcmds = nmcli_add_con_cmds("eth1", dhcp_iface_ip_addr)
+    bootcmds = nmcli_add_con_cmds(iface="eth1", ip=dhcp_iface_ip_addr)
     data["bootcmd"] = bootcmds
 
     update_cloud_init_extra_user_data(

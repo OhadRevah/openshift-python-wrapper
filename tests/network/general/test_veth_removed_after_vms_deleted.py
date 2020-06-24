@@ -126,7 +126,7 @@ def test_veth_removed_from_host_after_vm_deleted(
 
 
 def _delete_vm_and_compare_veth(pod, vm, vmi_interfaces):
-    host_veth_before_delete = count_veth_devices_on_host(pod)
+    host_veth_before_delete = count_veth_devices_on_host(pod=pod)
     expect_host_veth = host_veth_before_delete - len(vmi_interfaces)
     vm.delete(wait=True)
 

@@ -132,7 +132,7 @@ def test_bridge_marker_no_device(
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod
-    _assert_failure_reason_is_bridge_missing(pod, bridge_network)
+    _assert_failure_reason_is_bridge_missing(pod=pod, bridge=bridge_network)
 
 
 # note: the order of fixtures is important because we should first create the

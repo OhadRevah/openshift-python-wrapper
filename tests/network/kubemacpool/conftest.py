@@ -316,12 +316,12 @@ def vm_b(
 
 @pytest.fixture(scope="class")
 def started_vmi_a(vm_a):
-    return running_vmi(vm_a)
+    return running_vmi(vm=vm_a)
 
 
 @pytest.fixture(scope="class")
 def started_vmi_b(vm_b):
-    return running_vmi(vm_b)
+    return running_vmi(vm=vm_b)
 
 
 @pytest.fixture(scope="class")
@@ -339,10 +339,10 @@ def running_vm_b(vm_b, started_vmi_b):
 @pytest.fixture(scope="function")
 def restarted_vmi_a(vm_a):
     vm_a.stop(wait=True)
-    return running_vmi(vm_a)
+    return running_vmi(vm=vm_a)
 
 
 @pytest.fixture(scope="function")
 def restarted_vmi_b(vm_b):
     vm_b.stop(wait=True)
-    return running_vmi(vm_b)
+    return running_vmi(vm=vm_b)

@@ -216,7 +216,7 @@ def bond_bridge_attached_vma(
     networks[br1bond_nad.name] = br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "10.200.3.1")
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(iface="eth1", ip="10.200.3.1")
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -241,7 +241,7 @@ def bond_bridge_attached_vmb(
     networks[br1bond_nad.name] = br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds("eth1", "10.200.3.2")
+    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(iface="eth1", ip="10.200.3.2")
 
     with VirtualMachineForTests(
         namespace=namespace.name,
