@@ -20,7 +20,7 @@ DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
-PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros-qcow2.img:latest"
+PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros.qcow2:latest"
 REGISTRY_TLS_SELF_SIGNED_SERVER = py_config[py_config["region"]]["registry_server"]
 
 
@@ -95,15 +95,13 @@ def test_private_registry_cirros(
     file_name,
     storage_class_matrix__function__,
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-cirros-image",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{file_name}",
         cert_configmap=registry_config_map.name,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -132,14 +130,12 @@ def test_private_registry_cirros(
 def test_disk_image_not_conform_to_registy_disk(
     dv_name, url, error_msg, namespace, storage_class_matrix__function__
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name=dv_name,
         namespace=namespace.name,
         url=url,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -155,7 +151,6 @@ def test_disk_image_not_conform_to_registy_disk(
 def test_public_registry_multiple_data_volume(
     namespace, storage_class_matrix__function__
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     dvs = []
     vms = []
     dvs_processes = []
@@ -167,12 +162,9 @@ def test_public_registry_multiple_data_volume(
                 name=f"import-registry-dockerhub-{dv}",
                 namespace=namespace.name,
                 url=DOCKERHUB_IMAGE,
-                storage_class=storage_class,
-                volume_mode=storage_class_matrix__function__[storage_class][
-                    "volume_mode"
-                ],
                 size="5Gi",
                 content_type=DataVolume.ContentType.KUBEVIRT,
+                **utils.storage_params(storage_class_matrix__function__),
             )
 
             dv_process = multiprocessing.Process(target=rdv.create)
@@ -203,8 +195,8 @@ def test_public_registry_multiple_data_volume(
             vm.vmi.wait_until_running()
             utils.check_disk_count_in_vm(vm)
     finally:
-        for rcs in dvs + vms:
-            rcs.delete()
+        for rcs in vms + dvs:
+            rcs.delete(wait=True)
 
 
 @pytest.mark.polarion("CNV-2183")
@@ -214,7 +206,6 @@ def test_private_registry_insecured_configmap(
     images_private_registry_server,
     storage_class_matrix__function__,
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     server = images_private_registry_server.replace("docker://", "")
     cm = ConfigMap(
         namespace=py_config["hco_namespace"], name="cdi-insecure-registries", data=None
@@ -231,8 +222,7 @@ def test_private_registry_insecured_configmap(
         dv_name="import-private-insecured-registry",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -247,7 +237,6 @@ def test_private_registry_recover_after_missing_configmap(
     registry_config_map,
     storage_class_matrix__function__,
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     # creating DV before configmap with certificate is created
     with utilities.storage.create_dv(
         source="registry",
@@ -255,8 +244,7 @@ def test_private_registry_recover_after_missing_configmap(
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
         dv.wait()
@@ -272,15 +260,13 @@ def test_private_registry_with_untrusted_certificate(
     registry_config_map,
     storage_class_matrix__function__,
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv) as vm_dv:
@@ -300,8 +286,7 @@ def test_private_registry_with_untrusted_certificate(
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
-            storage_class=storage_class,
-            volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+            **utils.storage_params(storage_class_matrix__function__),
         ) as dv:
             dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
             wait_for_importer_container_message(
@@ -361,7 +346,6 @@ def test_public_registry_data_volume(
     size,
     storage_class_matrix__function__,
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name=dv_name,
@@ -370,8 +354,7 @@ def test_public_registry_data_volume(
         cert_configmap=cert_configmap,
         content_type=content_type,
         size=size,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -385,7 +368,6 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
     namespace, storage_class_matrix__function__
 ):
     # negative flow - low capacity volume
-    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-registry-dockerhub-low-capacity-dv",
@@ -393,8 +375,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
         url=DOCKERHUB_IMAGE,
         content_type="",
         size="16Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -402,7 +383,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.SHRINK_NOT_SUPPORTED,
+            importer_pod=dv.importer_pod, msg=ErrorMsg.LARGER_PVC_REQUIRED,
         )
 
     # positive flow
@@ -411,8 +392,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=namespace.name,
         url=DOCKERHUB_IMAGE,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -426,7 +406,6 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
 def test_public_registry_data_volume_dockerhub_archive(
     namespace, storage_class_matrix__function__
 ):
-    storage_class = [*storage_class_matrix__function__][0]
     with pytest.raises(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
@@ -436,8 +415,7 @@ def test_public_registry_data_volume_dockerhub_archive(
             namespace=namespace.name,
             url=DOCKERHUB_IMAGE,
             content_type=DataVolume.ContentType.ARCHIVE,
-            storage_class=storage_class,
-            volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+            **utils.storage_params(storage_class_matrix__function__),
         ):
             return
 
@@ -463,8 +441,7 @@ def test_fqdn_name(
         f"{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
         size="1Gi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         # Import fails because FQDN is verified from the registry certificate and a substring is not supported.
         dv.wait_for_condition(
@@ -518,7 +495,6 @@ def test_inject_invalid_cert_to_configmap(
     """
     Test that generate ConfigMap from cert file, then inject invalid content in the cert of ConfigMap, import will fail.
     """
-    storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
         source="registry",
         dv_name=dv_name,
@@ -526,8 +502,7 @@ def test_inject_invalid_cert_to_configmap(
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
         size="1Gi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__function__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=600)
         wait_for_importer_container_message(

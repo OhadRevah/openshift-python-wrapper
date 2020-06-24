@@ -108,7 +108,7 @@ class ErrorMsg:
         "Unable to process data: Failed to find VM disk image file in the container "
         "image"
     )
-    SHRINK_NOT_SUPPORTED = "shrink not yet supported"
+    LARGER_PVC_REQUIRED = "A larger PVC is required"
     NOT_EXIST_IN_IMAGE_DIR = (
         "image file does not exist in image directory - directory is empty"
     )
