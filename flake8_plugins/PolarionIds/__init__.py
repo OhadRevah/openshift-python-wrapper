@@ -41,7 +41,7 @@ def find_func_in_tree(tree, name):
 
 
 def iter_polarion_ids_from_pytest_fixture(tree, name):
-    func = find_func_in_tree(tree, name)
+    func = find_func_in_tree(tree=tree, name=name)
     if func:
         if not func.decorator_list:
             return None
