@@ -86,7 +86,7 @@ def verify_label(cdi_resources):
     indirect=True,
 )
 def test_verify_pod_cdi_label(cdi_resources):
-    verify_label(cdi_resources)
+    verify_label(cdi_resources=cdi_resources)
 
 
 def _resource_list(default_client, pod_prefix, storage_ns_name):

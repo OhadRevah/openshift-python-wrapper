@@ -64,7 +64,9 @@ def data_volume(
     DV creation using create_dv.
     """
     if not storage_class_matrix:
-        storage_class_matrix = get_storage_class_dict_from_matrix(storage_class)
+        storage_class_matrix = get_storage_class_dict_from_matrix(
+            storage_class=storage_class
+        )
 
     storage_class = [*storage_class_matrix][0]
     # Save with a different name to avoid confusing.

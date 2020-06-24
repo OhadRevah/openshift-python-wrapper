@@ -486,7 +486,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     ) as target_dv:
         target_dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND)
         upload_target_pod = get_pod_by_name_prefix(
-            default_client, pod_prefix="cdi-upload", namespace=namespace.name
+            default_client=default_client,
+            pod_prefix="cdi-upload",
+            namespace=namespace.name,
         )
         upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
         assert_selected_node_annotation(

@@ -417,7 +417,9 @@ def test_disk_image_after_upload_virtctl(
     storage_class_matrix__function__,
     unprivileged_client,
 ):
-    storage_params = storage_utils.storage_params(storage_class_matrix__function__)
+    storage_params = storage_utils.storage_params(
+        storage_class_matrix=storage_class_matrix__function__
+    )
     dv_name = "cnv-4033"
     res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,

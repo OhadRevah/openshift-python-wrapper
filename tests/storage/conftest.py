@@ -144,7 +144,7 @@ def skip_test_if_no_hpp_sc(hpp_storage_class):
 
 @pytest.fixture(scope="session")
 def cdi_config():
-    cdi_config = CDIConfig("config")
+    cdi_config = CDIConfig(name="config")
     assert cdi_config.instance is not None
     return cdi_config
 
@@ -172,7 +172,7 @@ def uploadproxy_route_deleted():
 
 @pytest.fixture()
 def cdi_config_upload_proxy_overridden(upload_proxy_route):
-    cdi_config = CDIConfig("config")
+    cdi_config = CDIConfig(name="config")
     assert cdi_config.instance is not None
     new_upload_proxy_url = (
         f"newuploadroute-cdi-{py_config['hco_namespace']}.apps.working.oc4"
