@@ -286,3 +286,20 @@ def test_validate_windows_min_max_memory(
         memory_test=memory_test,
         osinfo_filename=osinfo_filename,
     )
+
+
+@pytest.mark.polarion("CNV-4420")
+def test_common_templates_machine_type(
+    machine_type_from_kubevirt_config_cm, base_templates
+):
+    """ Verify that machine type in templates match the value in kubevirt-config cm """
+    unmatched_templates = [
+        template.name
+        for template in base_templates
+        if template.instance.objects[0].spec.template.spec.domain.machine.type
+        != machine_type_from_kubevirt_config_cm
+    ]
+
+    assert (
+        not unmatched_templates
+    ), f"Templates with machine-type that do not match kubevirt cm: {unmatched_templates}"
