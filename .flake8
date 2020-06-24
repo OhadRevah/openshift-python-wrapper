@@ -5,10 +5,61 @@ exclude =
     .tox,
     .git,
     .yml,
-    Pipfile.*
+    Pipfile.*,
+    ansible/*,
+    docs/*,
+    .cache/*
+
+fcfn_exclude_functions =
+    re,
+    split,
+    replace,
+    os,
+    parser,
+    int,
+    str,
+    urllib,
+    shutil,
+    LOGGER,
+    list,
+    getattr,
+    compile,
+    get_plugin,
+    ElementTree,
+    xml_doc,
+    findall,
+    record_testsuite_property,
+    get,
+    time,
+    tmpdir_factory,
+    sh,
+    next,
+    json,
+    yaml,
+    subprocess,
+    sorted,
+    jinja2,
+    xmltodict,
+    netaddr,
+    dict,
+    round,
+    request,
+    range,
+    min,
+    len,
+    sub,
+    extend,
+    setdefault,
+    float,
+    sum,
+    append,
+    join,
+    deepcopy,
+    print
 
 [flake8:local-plugins]
 extension =
     PID = flake8_plugins.PolarionIds:PolarionIds
+    FCFN = flake8_plugins.FunctionCallForceNames:FunctionCallForceNames
 paths =
     .
