@@ -55,4 +55,4 @@ def test_csv_properties(csv):
     assert csv.instance.spec.provider.name == "Red Hat"
     assert csv.instance.spec.displayName == "OpenShift virtualization"
     assert annotations.get("capabilities") == "Full Lifecycle"
-    assert annotations.get("support") == "true"
+    assert annotations.get("support") == "Red Hat"
