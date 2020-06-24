@@ -84,7 +84,7 @@ class Pod(NamespacedResource):
             _preload_content=False,
         )
 
-        timeout_watch = utils.TimeoutWatch(timeout)
+        timeout_watch = utils.TimeoutWatch(timeout=timeout)
         while resp.is_open():
             resp.run_forever(timeout=2)
             try:

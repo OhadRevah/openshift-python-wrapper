@@ -70,7 +70,9 @@ def libvirt_min_cpu_features_list(
     """
     Extract minimal CPU model features from libvirt/cpu_map xml.
     """
-    exec_pod = list(Pod.get(default_client, namespace=cpu_test_vm.namespace))[0]
+    exec_pod = list(
+        Pod.get(dyn_client=default_client, namespace=cpu_test_vm.namespace)
+    )[0]
     stdout = exec_pod.execute(
         command=[
             "cat",

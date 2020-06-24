@@ -51,7 +51,9 @@ def test_migrate_vm_rhel(
     can be accessed.
     """
 
-    wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
+    wait_for_console(
+        vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
+    )
 
     utilities.virt.enable_ssh_service_in_vm(
         vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
@@ -63,9 +65,11 @@ def test_migrate_vm_rhel(
         console_impl=console.RHEL,
     ), "Failed to login via SSH"
 
-    utils.migrate_vm(vm_instance_from_template_scope_function)
+    utils.migrate_vm(vm=vm_instance_from_template_scope_function)
 
-    wait_for_console(vm_instance_from_template_scope_function, console.RHEL)
+    wait_for_console(
+        vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
+    )
 
     # Verify successful SSH connection after migration
     assert check_ssh_connection(

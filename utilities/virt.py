@@ -738,7 +738,9 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
     if rhel_7_7:
         vm_console.disconnect()
 
-    wait_for_ssh_service(vm, console_impl, systemctl_support=systemctl_support)
+    wait_for_ssh_service(
+        vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
+    )
 
 
 def wait_for_ssh_service(vm, console_impl, systemctl_support=True):

@@ -98,7 +98,7 @@ def test_tablet_usb_tablet_device(
         driver_state="Running",
         helper_vm=bridge_attached_helper_vm,
     )
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
 
 
 @pytest.mark.parametrize(
@@ -149,7 +149,7 @@ def test_tablet_virtio_tablet_device(
         helper_vm=bridge_attached_helper_vm,
     )
 
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
 
 
 @pytest.mark.bugzilla(
@@ -200,7 +200,7 @@ def test_windows_server_default_tablet_device(
         helper_vm=bridge_attached_helper_vm,
     )
 
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
 
 
 @pytest.mark.parametrize(
@@ -248,4 +248,4 @@ def test_windows_desktop_default_tablet_device(
         helper_vm=bridge_attached_helper_vm,
     )
 
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)

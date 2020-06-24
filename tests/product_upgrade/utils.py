@@ -159,7 +159,7 @@ def get_install_plan(default_client, hco_namespace, hco_target_version):
 def approve_install_plan(install_plan):
     ip_dict = install_plan.instance.to_dict()
     ip_dict["spec"]["approved"] = True
-    install_plan.update(ip_dict)
+    install_plan.update(resource_dict=ip_dict)
     install_plan.wait_for_status(install_plan.Status.COMPLETE, timeout=TIMEOUT_10MIN)
 
 
@@ -197,7 +197,9 @@ def upgrade_cnv(default_client, cnv_upgrade_path):
     )
     hco_namespace = py_config["hco_namespace"]
     LOGGER.info("Get all operators PODs before upgrade")
-    old_pods = get_all_operators_pods(default_client, hco_namespace)
+    old_pods = get_all_operators_pods(
+        default_client=default_client, hco_namespace=hco_namespace
+    )
     old_pods_names = [pod.name for pod in old_pods]
 
     if cnv_upgrade_path["upgrade_path"] == "x-stream":
@@ -238,7 +240,7 @@ def upgrade_cnv(default_client, cnv_upgrade_path):
     )
 
     LOGGER.info("Get all operators PODs names and images version from the new CSV")
-    operators_versions = get_operators_names_and_images(new_csv)
+    operators_versions = get_operators_names_and_images(new_csv=new_csv)
 
     LOGGER.info("Wait for old operators PODs to disappear")
     wait_pods_deleted(old_pods_names=old_pods_names, pods=old_pods)

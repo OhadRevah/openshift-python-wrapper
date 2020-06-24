@@ -185,7 +185,7 @@ def test_node_drain_using_console_fedora(
 ):
 
     drain_using_console(
-        default_client,
+        default_client=default_client,
         source_node=vm_container_disk_fedora.vmi.virt_launcher_pod.node,
         source_pod=vm_container_disk_fedora.vmi.virt_launcher_pod,
         vm=vm_container_disk_fedora,
@@ -288,7 +288,7 @@ def test_node_drain_template_windows(
     default_client,
 ):
     drain_using_console_windows(
-        default_client,
+        default_client=default_client,
         source_node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
         source_pod=vm_instance_from_template_scope_function.vmi.virt_launcher_pod,
         vm=vm_instance_from_template_scope_function,

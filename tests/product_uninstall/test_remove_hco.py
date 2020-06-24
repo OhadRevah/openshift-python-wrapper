@@ -53,12 +53,12 @@ def vm(unprivileged_client, namespace):
 @pytest.fixture()
 def delete_events_before_test(default_client):
     Event.delete_events(
-        default_client,
+        dyn_client=default_client,
         namespace=py_config["hco_namespace"],
         field_selector=f"reason={VIRT_EVENT}",
     )
     Event.delete_events(
-        default_client,
+        dyn_client=default_client,
         namespace=py_config["hco_namespace"],
         field_selector=f"reason={CDI_EVENT}",
     )
@@ -117,7 +117,11 @@ class TestRemoveHCO:
         )
 
         # (5) check that there is a warning event
-        ok, msg = assert_event(default_client, VIRT_EVENT, start_time)
+        ok, msg = assert_event(
+            default_client=default_client,
+            event_reason=VIRT_EVENT,
+            start_time=start_time,
+        )
         assert ok, msg
 
     @pytest.mark.run(after="test_block_removal")
@@ -139,7 +143,9 @@ class TestRemoveHCO:
         self, default_client, kubevirt_resource, start_time, data_volume_scope_class
     ):
         kubevirt_resource.wait_deleted()
-        ok, msg = assert_event(default_client, CDI_EVENT, start_time)
+        ok, msg = assert_event(
+            default_client=default_client, event_reason=CDI_EVENT, start_time=start_time
+        )
         assert ok, msg
 
     @pytest.mark.run(after="test_assert_event_dv")

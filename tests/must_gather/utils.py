@@ -33,7 +33,9 @@ class ResourceFieldEqBugWorkaround(object):
 def compare_resource_values(resource, path, checks):
     with open(path) as resource_file:
         file_content = yaml.load(resource_file.read(), Loader=yaml.Loader)
-    compare_resource_contents(resource, file_content, checks)
+    compare_resource_contents(
+        resource=resource, file_content=file_content, checks=checks
+    )
 
 
 def compare_resource_contents(resource, file_content, checks):
@@ -62,7 +64,7 @@ def compare_resources(resource_instance, temp_dir, resource_path, checks):
             namespace=resource_instance.namespace or DEFAULT_NAMESPACE,
         ),
     )
-    compare_resource_values(resource_instance, path, checks)
+    compare_resource_values(resource=resource_instance, path=path, checks=checks)
 
 
 def check_list_of_resources(
@@ -84,7 +86,12 @@ def check_list_of_resources(
 
 def check_resource(resource, resource_name, temp_dir, resource_path, checks):
     resource_instance = resource(name=resource_name)
-    compare_resources(resource_instance, temp_dir, resource_path, checks)
+    compare_resources(
+        resource_instance=resource_instance,
+        temp_dir=temp_dir,
+        resource_path=resource_path,
+        checks=checks,
+    )
 
 
 def check_node_resource(temp_dir, cmd, node_gather_pods, results_file):

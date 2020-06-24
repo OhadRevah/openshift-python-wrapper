@@ -252,9 +252,9 @@ def test_nmstate_config_data(cnv_must_gather, default_client):
 )
 def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector):
     utils.check_logs(
-        cnv_must_gather,
-        running_hco_containers,
-        label_selector,
+        cnv_must_gather=cnv_must_gather,
+        running_hco_containers=running_hco_containers,
+        label_selector=label_selector,
         namespace=py_config["hco_namespace"],
     )
 

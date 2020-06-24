@@ -122,7 +122,9 @@ def _find_supported_resource(dyn_client, api_group, kind):
 
 
 def _get_api_version(dyn_client, api_group, kind):
-    res = _find_supported_resource(dyn_client, api_group, kind)
+    res = _find_supported_resource(
+        dyn_client=dyn_client, api_group=api_group, kind=kind
+    )
     if not res:
         LOGGER.error(f"Couldn't find {kind} in {api_group} api group")
         raise NotImplementedError(f"Couldn't find {kind} in {api_group} api group")
@@ -164,9 +166,7 @@ class KubeAPIVersion(Version):
             except ValueError:
                 pass
 
-        errmsg = "version '{0}' does not conform to kubernetes api versioning guidelines".format(
-            vstring
-        )
+        errmsg = f"version '{vstring}' does not conform to kubernetes api versioning guidelines"
 
         if (
             len(components) not in (2, 4)

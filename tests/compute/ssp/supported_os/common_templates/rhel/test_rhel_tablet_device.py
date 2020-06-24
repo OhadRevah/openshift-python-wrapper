@@ -57,9 +57,11 @@ def test_tablet_virtio_tablet_device(
     LOGGER.info("Test tablet device - virtio bus.")
 
     utils.check_vm_system_tablet_device(
-        vm_instance_from_template_scope_function, console.RHEL, expected_device="Virtio"
+        vm=vm_instance_from_template_scope_function,
+        console_impl=console.RHEL,
+        expected_device="Virtio",
     )
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
 
 
 @pytest.mark.parametrize(
@@ -98,9 +100,11 @@ def test_tablet_usb_tablet_device(
     LOGGER.info("Test tablet device -  USB bus.")
 
     utils.check_vm_system_tablet_device(
-        vm_instance_from_template_scope_function, console.RHEL, expected_device="USB"
+        vm=vm_instance_from_template_scope_function,
+        console_impl=console.RHEL,
+        expected_device="USB",
     )
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
 
 
 @pytest.mark.parametrize(
@@ -139,9 +143,11 @@ def test_tablet_default_bus_tablet_device(
     LOGGER.info("Test tablet device - default device bus - USB.")
 
     utils.check_vm_system_tablet_device(
-        vm_instance_from_template_scope_function, console.RHEL, expected_device="USB"
+        vm=vm_instance_from_template_scope_function,
+        console_impl=console.RHEL,
+        expected_device="USB",
     )
-    utils.check_vm_xml_tablet_device(vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
 
 
 @pytest.mark.parametrize(

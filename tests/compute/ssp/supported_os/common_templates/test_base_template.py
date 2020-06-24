@@ -185,11 +185,15 @@ def test_validate_rhel_min_max_memory(
         f"{fetch_osinfo_path}/os/redhat.com/{osinfo_filename}.xml"
     )
     osinfo_memory_value = utils.fetch_osinfo_memory(
-        osinfo_file_path, memory_test, "all"
+        osinfo_file_path=osinfo_file_path, memory_test=memory_test, resources_arch="all"
     )
 
     utils.check_default_and_validation_memory(
-        base_templates, osinfo_memory_value, os_type, memory_test, osinfo_filename
+        get_base_templates=base_templates,
+        osinfo_memory_value=osinfo_memory_value,
+        os_type=os_type,
+        memory_test=memory_test,
+        osinfo_filename=osinfo_filename,
     )
 
 
@@ -270,7 +274,9 @@ def test_validate_windows_min_max_memory(
         f"{fetch_osinfo_path}/os/microsoft.com/{osinfo_filename}.xml"
     )
     osinfo_memory_value = utils.fetch_osinfo_memory(
-        osinfo_file_path, memory_test, "x86_64"
+        osinfo_file_path=osinfo_file_path,
+        memory_test=memory_test,
+        resources_arch="x86_64",
     )
 
     utils.check_default_and_validation_memory(

@@ -66,7 +66,7 @@ def test_migrate_vm_windows(
         port=vm_instance_from_template_scope_function.custom_service_port,
     ), "Failed to login via Telnet"
 
-    utils.migrate_vm(vm_instance_from_template_scope_function)
+    utils.migrate_vm(vm=vm_instance_from_template_scope_function)
 
     utilities.virt.wait_for_windows_vm(
         vm=vm_instance_from_template_scope_function,

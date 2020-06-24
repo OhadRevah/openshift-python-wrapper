@@ -50,7 +50,9 @@ def number_of_vmis_exists(default_client):
 
 
 def check_vmi_metric(prometheus):
-    response = prometheus.query("/api/v1/query?query=cnv:vmi_status_running:count")
+    response = prometheus.query(
+        query="/api/v1/query?query=cnv:vmi_status_running:count"
+    )
     assert response["status"] == "success"
     return sum(int(node["value"][1]) for node in response["data"]["result"])
 

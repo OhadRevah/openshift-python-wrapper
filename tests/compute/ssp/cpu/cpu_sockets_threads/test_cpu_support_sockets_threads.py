@@ -17,12 +17,12 @@ from utilities.virt import (
 
 def check_vm_dumpxml(vm, cores, sockets, threads):
     def _parse_xml(vm):
-        wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vmi=vm.vmi)
         data_xml = vm.vmi.get_xml()
         xml_dict = xmltodict.parse(data_xml, process_namespaces=True)
         return xml_dict["domain"]["cpu"]["topology"]
 
-    cpu = _parse_xml(vm)
+    cpu = _parse_xml(vm=vm)
     if sockets:
         assert cpu["@sockets"] == str(
             sockets

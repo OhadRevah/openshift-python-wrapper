@@ -6,7 +6,7 @@ import re
 import socket
 import tarfile
 import urllib.request
-import xml.etree.ElementTree as EleTree
+from xml.etree import ElementTree
 
 import bitmath
 import rrmngmnt
@@ -28,7 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 def stop_start_vm(vm, wait_for_interfaces=True):
     vm.stop(wait=True)
-    vm_started(vm, wait_for_interfaces)
+    vm_started(vm=vm, wait_for_interfaces=wait_for_interfaces)
 
 
 def reboot_vm(vm, winrmcli_pod, helper_vm=False):
@@ -276,7 +276,7 @@ def start_and_fetch_processid_on_windows_vm(
         helper_vm=helper_vm,
     )
     return fetch_processid_from_windows_vm(
-        vm, winrmcli_pod, process_name=process_name, helper_vm=helper_vm
+        vm=vm, winrmcli_pod=winrmcli_pod, process_name=process_name, helper_vm=helper_vm
     )
 
 
@@ -316,9 +316,11 @@ def add_activate_windows_license(vm, winrm_pod, license_key, helper_vm=False):
     the activation was successful.
     """
 
-    add_windows_license(vm, winrm_pod, windows_license=license_key, helper_vm=helper_vm)
+    add_windows_license(
+        vm=vm, winrmcli_pod=winrm_pod, windows_license=license_key, helper_vm=helper_vm
+    )
     activate_windows_online(
-        vm, winrm_pod, helper_vm,
+        vm=vm, winrmcli_pod=winrm_pod, helper_vm=helper_vm,
     )
     assert is_windows_activated(vm=vm, winrmcli_pod=winrm_pod, helper_vm=helper_vm), (
         "VM license is not " "activated."
@@ -328,7 +330,7 @@ def add_activate_windows_license(vm, winrm_pod, license_key, helper_vm=False):
 def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):
     """ Fetch memory min and max values from the osinfo files. """
 
-    xml_doc = EleTree.parse(osinfo_file_path)
+    xml_doc = ElementTree.parse(osinfo_file_path)
     root = xml_doc.getroot()
     resources = root.findall("./os/resources")
     return [
@@ -391,8 +393,8 @@ def check_default_and_validation_memory(
 
 def validate_cnv_os_info_vs_libvirt_os_info(vm):
     """ Compare OS data from guest agent subresource vs libvirt data. """
-    cnv_os_info = get_cnv_os_info(vm)
-    libvirt_os_info = get_libvirt_os_info(vm)
+    cnv_os_info = get_cnv_os_info(vm=vm)
+    libvirt_os_info = get_libvirt_os_info(vm=vm)
 
     assert (
         cnv_os_info == libvirt_os_info
@@ -401,8 +403,8 @@ def validate_cnv_os_info_vs_libvirt_os_info(vm):
 
 def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
     """ Compare FS data from guest agent subresource vs libvirt data. """
-    cnv_fs_info = get_cnv_fs_info(vm)
-    libvirt_fs_info = get_libvirt_fs_info(vm)
+    cnv_fs_info = get_cnv_fs_info(vm=vm)
+    libvirt_fs_info = get_libvirt_fs_info(vm=vm)
 
     assert (
         cnv_fs_info == libvirt_fs_info
@@ -411,7 +413,7 @@ def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
 
 def validate_cnv_os_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
     """ Compare OS data from guest agent subresource vs Linux guest OS data. """
-    cnv_os_info = get_cnv_os_info(vm)
+    cnv_os_info = get_cnv_os_info(vm=vm)
     guest_os_info = get_linux_os_info(
         ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
     )
@@ -423,7 +425,7 @@ def validate_cnv_os_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_por
 
 def validate_cnv_fs_info_vs_linux_fs_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
     """ Compare FS data from guest agent subresource vs Linux guest OS data. """
-    cnv_fs_info = get_cnv_fs_info(vm)
+    cnv_fs_info = get_cnv_fs_info(vm=vm)
     guest_fs_info = get_linux_fs_info(
         ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
     )
@@ -435,7 +437,7 @@ def validate_cnv_fs_info_vs_linux_fs_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_por
 
 def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
     """ Compare OS data from guest agent subresource vs Windows guest OS data. """
-    cnv_os_info = get_cnv_os_info(vm)
+    cnv_os_info = get_cnv_os_info(vm=vm)
     guest_os_info = get_windows_os_info(
         vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
     )
@@ -458,7 +460,7 @@ def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
 
 def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
     """ Compare FS data from guest agent subresource vs Windows guest OS data. """
-    cnv_fs_info = get_cnv_fs_info(vm)
+    cnv_fs_info = get_cnv_fs_info(vm=vm)
     guest_fs_info = get_windows_fs_info(
         vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
     )
@@ -645,13 +647,13 @@ def get_linux_fs_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
 
 def get_linux_guest_agent_version(rrmngmnt_host):
     cmd = ["yum", "list", "-q", "installed", "qemu-g*"]
-    rc, out, err = rrmngmnt_host.run_command(cmd)
-    return guest_version_extractor(out)
+    rc, out, err = rrmngmnt_host.run_command(command=cmd)
+    return guest_version_extractor(version_string=out)
 
 
 def get_linux_filesystem(rrmngmnt_host):
     cmd = ["df", "-TB1", "|", "grep", "/dev/vd"]
-    rc, out, err = rrmngmnt_host.run_command(cmd)
+    rc, out, err = rrmngmnt_host.run_command(command=cmd)
     disks = out.strip().split()
     return fsinfo_disk_dict(
         name=disks[0].split("/dev/")[1],
@@ -740,7 +742,7 @@ def get_guest_info_from_subresource(vm):
 
 
 def get_cnv_os_info(vm):
-    os_info = get_guest_info_from_subresource(vm)
+    os_info = get_guest_info_from_subresource(vm=vm)
     # "fsInfo" key removed for easier comparison vs libvirt os info and guest os info
     del os_info["fsInfo"]
     return os_info
@@ -775,8 +777,8 @@ def check_machine_type(vm):
 
 
 def rrmngmnt_host(usr, passwd, ip, port):
-    host = rrmngmnt.Host(ip)
+    host = rrmngmnt.Host(ip=ip)
     host_user = rrmngmnt.user.User(name=usr, password=passwd)
-    host._set_executor_user(host_user)
+    host._set_executor_user(user=host_user)
     host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
     return host
