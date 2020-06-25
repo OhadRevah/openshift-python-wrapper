@@ -383,12 +383,12 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
 
 @pytest.fixture(scope="class")
 def opted_out_ns_started_vmi(opted_out_ns_vm):
-    return running_vmi(opted_out_ns_vm)
+    return running_vmi(vm=opted_out_ns_vm)
 
 
 @pytest.fixture(scope="class")
 def wrong_label_ns_started_vmi(wrong_label_ns_vm):
-    return running_vmi(wrong_label_ns_vm)
+    return running_vmi(vm=wrong_label_ns_vm)
 
 
 @pytest.fixture(scope="class")
