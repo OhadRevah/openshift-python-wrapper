@@ -186,7 +186,7 @@ Example:
 Matrix fixtures can be added in global_config.py.
 You can run a test using a subset of a simple matrix (i.e flat list), example:
 ```bash
---tc-exact --tc=bridge_devices:ovs
+--bridge-device-matrix=linux-bridge
 ```
 
 To run a test using a subset of a complex matrix (e.g list of dicts), you'll also need to add
@@ -199,7 +199,6 @@ Example:
 ```bash
 --storage-class-matrix=rook-ceph-block
 --storage-class-matrix=rook-ceph-block,nfs
---bridge-device-matrix=ovs
 ```
 
 ### Using matrix fixtures

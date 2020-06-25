@@ -268,7 +268,6 @@ def pytest_sessionstart(session):
         if "-matrix=" in matrix
     ]
     for matrix_addoption in matrix_addoptions:
-        items_dict = {}
         items_list = []
         key, vals = matrix_addoption.split("=")
         key = key.strip("--").replace("-", "_")
@@ -279,13 +278,13 @@ def pytest_sessionstart(session):
                 if isinstance(item, dict):
                     # Extract only the dicts item which has the requested key from
                     if [*item][0] == val:
-                        items_dict.update(item)
+                        items_list.append(item)
 
                 if isinstance(item, str):
                     # Extract only the items item which has the requested key from
                     items_list.append(val)
 
-        py_config[key] = items_dict if items_dict else items_list
+        py_config[key] = items_list
 
 
 def pytest_sessionfinish(session, exitstatus):
