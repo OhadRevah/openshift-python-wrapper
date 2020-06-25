@@ -13,7 +13,7 @@ import rrmngmnt
 import utilities.network
 from openshift.dynamic.exceptions import NotFoundError
 from resources import pod
-from resources.utils import TimeoutSampler
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.utils import vm_started
 from utilities.virt import (
@@ -403,12 +403,26 @@ def validate_cnv_os_info_vs_libvirt_os_info(vm):
 
 def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
     """ Compare FS data from guest agent subresource vs libvirt data. """
-    cnv_fs_info = get_cnv_fs_info(vm=vm)
-    libvirt_fs_info = get_libvirt_fs_info(vm=vm)
 
-    assert (
-        cnv_fs_info == libvirt_fs_info
-    ), f"Data mismatch! CNV data {cnv_fs_info}, Libvirt data {libvirt_fs_info}"
+    def _get_cnv_fs_info_vs_libvirt_fs_info(vm):
+        cnv_fs_info = get_cnv_fs_info(vm=vm)
+        libvirt_fs_info = get_libvirt_fs_info(vm=vm)
+        return {"cnv_fs_info": cnv_fs_info, "libvirt_fs_info": libvirt_fs_info}
+
+    fs_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=_get_cnv_fs_info_vs_libvirt_fs_info, vm=vm,
+    )
+
+    try:
+        for sample in fs_info_sampler:
+            if sample:
+                if sample["cnv_fs_info"] == sample["libvirt_fs_info"]:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {sample['cnv_fs_info']} not in Libvirt data {sample['libvirt_fs_info']}"
+        )
+        raise
 
 
 def validate_cnv_os_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
@@ -425,14 +439,26 @@ def validate_cnv_os_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_por
 
 def validate_cnv_fs_info_vs_linux_fs_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
     """ Compare FS data from guest agent subresource vs Linux guest OS data. """
-    cnv_fs_info = get_cnv_fs_info(vm=vm)
+    cnv_fs_info = None
     guest_fs_info = get_linux_fs_info(
-        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port,
     )
 
-    assert (
-        cnv_fs_info == guest_fs_info
-    ), f"Data mismatch! CNV data {cnv_fs_info}, OS data {guest_fs_info}"
+    cnv_fs_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=get_cnv_fs_info, vm=vm,
+    )
+
+    try:
+        for sample in cnv_fs_info_sampler:
+            if sample:
+                cnv_fs_info = sample
+                if guest_fs_info == sample:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {cnv_fs_info} not in OS data {guest_fs_info}"
+        )
+        raise
 
 
 def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
@@ -460,15 +486,26 @@ def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
 
 def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
     """ Compare FS data from guest agent subresource vs Windows guest OS data. """
-    cnv_fs_info = get_cnv_fs_info(vm=vm)
+    cnv_fs_info = None
     guest_fs_info = get_windows_fs_info(
-        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm,
     )
 
-    for _key, val in cnv_fs_info.items():
-        assert (
-            str(val) in guest_fs_info
-        ), f"Data mismatch! CNV data {val} not in OS data {guest_fs_info}"
+    cnv_fs_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=get_cnv_fs_info, vm=vm,
+    )
+
+    try:
+        for sample in cnv_fs_info_sampler:
+            if sample:
+                cnv_fs_info = sample
+                if [str(val) in guest_fs_info for val in sample.values()]:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {cnv_fs_info} not in OS data {guest_fs_info}"
+        )
+        raise
 
 
 def validate_vmi_ga_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
