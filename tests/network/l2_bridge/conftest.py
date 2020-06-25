@@ -165,7 +165,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         )
 
     def to_dict(self):
-        self.body = fedora_vm_body(self.name)
+        self.body = fedora_vm_body(name=self.name)
         res = super().to_dict()
         return res
 
@@ -303,7 +303,7 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     wait_for_vm_interfaces(vmi=started_vmi_b)
 
     vm_console_run_commands(
-        console.Fedora, vm=vm_a, commands=["sudo systemctl start dhcpd"]
+        console_impl=console.Fedora, vm=vm_a, commands=["sudo systemctl start dhcpd"]
     )
     return vm_a
 
@@ -317,5 +317,7 @@ def configured_vm_b(vm_a, vm_b, started_vmi_b, configured_vm_a):
         "sudo nmcli connection modify eth3 ipv4.method auto",
         "sudo nmcli con up eth3",
     ]
-    vm_console_run_commands(console.Fedora, vm=vm_b, commands=post_install_command)
+    vm_console_run_commands(
+        console_impl=console.Fedora, vm=vm_b, commands=post_install_command
+    )
     return vm_b

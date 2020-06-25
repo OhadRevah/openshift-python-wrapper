@@ -281,10 +281,10 @@ def test_sriov_logs_gathering(
     label_selector,
 ):
     utils.check_logs(
-        cnv_must_gather,
-        running_sriov_network_operator_containers,
-        label_selector,
-        utils.SRIOV_NETWORK_OPERATOR_NAMESPACE,
+        cnv_must_gather=cnv_must_gather,
+        running_hco_containers=running_sriov_network_operator_containers,
+        label_selector=label_selector,
+        namespace=utils.SRIOV_NETWORK_OPERATOR_NAMESPACE,
     )
 
 
@@ -411,15 +411,15 @@ def test_gathered_config_maps(
     if has_owner:
         checks.append(("metadata", "ownerReferences"))
     utils.compare_resource_contents(
-        config_map_by_name,
-        next(
+        resource=config_map_by_name,
+        file_content=next(
             filter(
                 lambda resource: resource["metadata"]["name"]
                 == config_map_by_name.name,
                 config_maps_file["items"],
             )
         ),
-        checks,
+        checks=checks,
     )
 
 

@@ -118,7 +118,7 @@ def test_empty_url(namespace, storage_class_matrix__module__):
 def test_successful_import_archive(
     namespace, storage_class_matrix__module__, images_internal_http_server
 ):
-    url = get_file_url(images_internal_http_server["http"], TAR_IMG)
+    url = get_file_url(url=images_internal_http_server["http"], file_name=TAR_IMG)
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
@@ -154,7 +154,7 @@ def test_successful_import_archive(
 def test_successful_import_image(
     namespace, storage_class_matrix__module__, images_internal_http_server, file_name
 ):
-    url = get_file_url(images_internal_http_server["http"], file_name)
+    url = get_file_url(url=images_internal_http_server["http"], file_name=file_name)
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
@@ -185,7 +185,7 @@ def test_successful_import_secure_archive(
     images_internal_http_server,
     internal_http_configmap,
 ):
-    url = get_file_url(images_internal_http_server["https"], TAR_IMG)
+    url = get_file_url(url=images_internal_http_server["https"], file_name=TAR_IMG)
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
@@ -218,7 +218,9 @@ def test_successful_import_secure_image(
     images_internal_http_server,
     internal_http_configmap,
 ):
-    url = get_file_url(images_internal_http_server["https"], Images.Cdi.QCOW2_IMG)
+    url = get_file_url(
+        url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
+    )
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",

@@ -148,7 +148,8 @@ def test_cloner_pods_cdi_label(
 ):
     # verify "cdi.kubevirt.io" label is included in cloning pods
     url = storage_utils.get_file_url_https_server(
-        get_images_https_server(), Images.Cirros.QCOW2_IMG,
+        images_https_server=get_images_https_server(),
+        file_name=Images.Cirros.QCOW2_IMG,
     )
     with utils.create_dv(
         source="http",

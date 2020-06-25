@@ -21,7 +21,7 @@ def fetch_osinfo_path(tmpdir_factory):
     cwd = os.getcwd()
     osinfo_path = tmpdir_factory.mktemp("osinfodb")
     os.chdir(osinfo_path)
-    download_and_extract_tar(f"{osinfo_repo}{tarfile_name}.tar.xz")
+    download_and_extract_tar(tarfile_url=f"{osinfo_repo}{tarfile_name}.tar.xz")
     os.chdir(cwd)
     yield os.path.join(osinfo_path, tarfile_name)
     shutil.rmtree(osinfo_path)

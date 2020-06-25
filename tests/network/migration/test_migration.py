@@ -74,7 +74,7 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         )
 
     def to_dict(self):
-        self.body = fedora_vm_body(self.name)
+        self.body = fedora_vm_body(name=self.name)
         res = super().to_dict()
         vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
             "interfaces"
@@ -189,7 +189,7 @@ def http_service(namespace, running_vma, running_vmb):
 
 @pytest.fixture()
 def ping_in_background(running_vma, running_vmb):
-    dst_ip = get_vmi_ip_v4_by_name(running_vmb.vmi, BR1TEST)
+    dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
     LOGGER.info(f"Ping {dst_ip} from {running_vma.name} to {running_vmb.name}")
     with console.Fedora(vm=running_vma) as vmc:
         vmc.sendline(f"sudo ping -i 0.1 {dst_ip} > /tmp/ping.log &")
@@ -212,7 +212,7 @@ def ssh_in_background(running_vma, running_vmb):
     """
     Start ssh connection to the vm
     """
-    dst_ip = get_vmi_ip_v4_by_name(running_vmb.vmi, BR1TEST)
+    dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
     LOGGER.info(f"Start ssh connection to {running_vmb.name} from {running_vma.name}")
     with console.Fedora(vm=running_vma) as vm_console:
         vm_console.sendline(

@@ -121,7 +121,7 @@ def dhcp_server(running_dhcp_server_vm):
     Once a VM is up and running - start a DHCP server on it.
     """
     vm_console_run_commands(
-        console.Fedora,
+        console_impl=console.Fedora,
         vm=running_dhcp_server_vm,
         commands=["sudo systemctl start dhcpd"],
     )
@@ -156,7 +156,7 @@ def dhcp_server_vm(namespace, node_selector_name, dhcp_br_nad, unprivileged_clie
 def running_dhcp_server_vm(dhcp_server_vm):
     dhcp_server_vm.start(wait=True)
     dhcp_server_vm.vmi.wait_until_running()
-    wait_for_vm_interfaces(dhcp_server_vm.vmi)
+    wait_for_vm_interfaces(vmi=dhcp_server_vm.vmi)
     return dhcp_server_vm
 
 

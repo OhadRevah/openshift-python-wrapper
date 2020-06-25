@@ -41,5 +41,7 @@ def test_vm_restart(vm_to_restart):
     LOGGER.info("VM is stopped: Starting VM")
     vm_to_restart.start(wait=True)
     vm_to_restart.vmi.wait_until_running()
-    wait_for_vm_interfaces(vm_to_restart.vmi)
-    vm_console_run_commands(console.Fedora, vm_to_restart, ["cat /proc/cmdline"])
+    wait_for_vm_interfaces(vmi=vm_to_restart.vmi)
+    vm_console_run_commands(
+        console_impl=console.Fedora, vm=vm_to_restart, commands=["cat /proc/cmdline"]
+    )

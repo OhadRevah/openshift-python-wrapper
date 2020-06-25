@@ -89,7 +89,9 @@ class Console(object):
         self.child.close()
 
     def console_eof_sampler(self, func, *func_args):
-        sampler = TimeoutSampler(300, 5, func, pexpect.exceptions.EOF, *func_args)
+        sampler = TimeoutSampler(  # noqa: FCFN001
+            300, 5, func, pexpect.exceptions.EOF, *func_args,
+        )
         for sample in sampler:
             if sample:
                 self.child = sample

@@ -51,7 +51,9 @@ def _collect_instance_data(directory, resource_object):
 def _collect_pod_logs(dyn_client, resource_item, **kwargs):
     kube_v1_api = kubernetes.client.CoreV1Api(api_client=dyn_client.client)
     return kube_v1_api.read_namespaced_pod_log(
-        resource_item.metadata.name, resource_item.metadata.namespace, **kwargs
+        name=resource_item.metadata.name,
+        namespace=resource_item.metadata.namespace,
+        **kwargs,
     )
 
 
@@ -279,13 +281,17 @@ class Resource(object):
         self.teardown = teardown
 
     def _get_api_version(self):
-        res = _find_supported_resource(self.client, self.api_group, self.kind)
+        res = _find_supported_resource(
+            dyn_client=self.client, api_group=self.api_group, kind=self.kind
+        )
         if not res:
             LOGGER.error(f"Couldn't find {self.kind} in {self.api_group} api group")
             raise NotImplementedError(
                 f"Couldn't find {self.kind} in {self.api_group} api group"
             )
-        self.api_version = _get_api_version(self.client, self.api_group, self.kind)
+        self.api_version = _get_api_version(
+            dyn_client=self.client, api_group=self.api_group, kind=self.kind
+        )
 
     @classproperty
     def kind(cls):  # noqa: N805

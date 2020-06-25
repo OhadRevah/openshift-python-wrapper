@@ -26,7 +26,7 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
         )
 
     def to_dict(self):
-        self.body = fedora_vm_body(self.name)
+        self.body = fedora_vm_body(name=self.name)
         res = super().to_dict()
 
         res["spec"]["template"]["metadata"].setdefault("annotations", {})
@@ -57,7 +57,7 @@ def sidecar_vm(namespace, unprivileged_client):
 
 @pytest.fixture()
 def running_sidecar_vm(sidecar_vm):
-    wait_for_vm_interfaces(sidecar_vm.vmi)
+    wait_for_vm_interfaces(vmi=sidecar_vm.vmi)
     yield sidecar_vm
 
 

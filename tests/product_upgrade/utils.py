@@ -160,7 +160,9 @@ def approve_install_plan(install_plan):
     ip_dict = install_plan.instance.to_dict()
     ip_dict["spec"]["approved"] = True
     install_plan.update(resource_dict=ip_dict)
-    install_plan.wait_for_status(install_plan.Status.COMPLETE, timeout=TIMEOUT_10MIN)
+    install_plan.wait_for_status(
+        status=install_plan.Status.COMPLETE, timeout=TIMEOUT_10MIN
+    )
 
 
 def wait_for_install_plan(default_client, hco_namespace, hco_target_version):
@@ -236,11 +238,11 @@ def upgrade_cnv(default_client, cnv_upgrade_path):
 
     LOGGER.info("Check that CSV status is Installing")
     new_csv.wait_for_status(
-        new_csv.Status.INSTALLING, timeout=TIMEOUT_10MIN, stop_status=None
+        status=new_csv.Status.INSTALLING, timeout=TIMEOUT_10MIN, stop_status=None
     )
 
     LOGGER.info("Get all operators PODs names and images version from the new CSV")
-    operators_versions = get_operators_names_and_images(new_csv=new_csv)
+    operators_versions = get_operators_names_and_images(csv=new_csv)
 
     LOGGER.info("Wait for old operators PODs to disappear")
     wait_pods_deleted(old_pods_names=old_pods_names, pods=old_pods)
@@ -271,5 +273,5 @@ def upgrade_cnv(default_client, cnv_upgrade_path):
 
     LOGGER.info("Check that CSV status is Succeeded")
     new_csv.wait_for_status(
-        new_csv.Status.SUCCEEDED, timeout=TIMEOUT_10MIN, stop_status=None
+        status=new_csv.Status.SUCCEEDED, timeout=TIMEOUT_10MIN, stop_status=None
     )

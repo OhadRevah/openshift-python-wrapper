@@ -90,7 +90,7 @@ PODS_TO_COLLECT_INFO = [
 
 
 def _get_client():
-    return DynamicClient(kubernetes.config.new_client_from_config())
+    return DynamicClient(client=kubernetes.config.new_client_from_config())
 
 
 def _separator(symbol_, val=None):
@@ -617,15 +617,15 @@ def workers_ssh_executors(rhel7_workers, network_utility_pods):
     executors = {}
     ssh_key = os.getenv("HOST_SSH_KEY")
     for pod in network_utility_pods:
-        host = rrmngmnt.Host(pod.instance.status.podIP)
+        host = rrmngmnt.Host(ip=pod.instance.status.podIP)
         if ssh_key:
             host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(use_pkey=True)
 
         host_user = rrmngmnt.user.User(
             name="root" if rhel7_workers else "core", password=None
         )
-        host._set_executor_user(host_user)
-        host.add_user(host_user)
+        host._set_executor_user(user=host_user)
+        host.add_user(user=host_user)
         executors[pod.node.name] = host
 
     return executors

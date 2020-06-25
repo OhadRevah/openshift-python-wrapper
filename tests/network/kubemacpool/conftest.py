@@ -64,8 +64,8 @@ class MacPool:
     """
 
     def __init__(self, kmp_range):
-        self.range_start = self.mac_to_int(kmp_range["RANGE_START"])
-        self.range_end = self.mac_to_int(kmp_range["RANGE_END"])
+        self.range_start = self.mac_to_int(mac=kmp_range["RANGE_START"])
+        self.range_end = self.mac_to_int(mac=kmp_range["RANGE_END"])
         self.pool = range(self.range_start, self.range_end + 1)
         self.used_macs = []
 
@@ -149,7 +149,7 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
         return self.iface_config["eth4"]
 
     def to_dict(self):
-        self.body = fedora_vm_body(self.name)
+        self.body = fedora_vm_body(name=self.name)
         res = super().to_dict()
         for mac, iface in zip(
             self.iface_config.values(),

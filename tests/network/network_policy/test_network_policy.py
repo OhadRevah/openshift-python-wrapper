@@ -28,7 +28,7 @@ class VirtualMachineMasquerade(VirtualMachineForTests):
         )
 
     def to_dict(self):
-        self.body = fedora_vm_body(self.name)
+        self.body = fedora_vm_body(name=self.name)
         res = super().to_dict()
         vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
             "interfaces"
@@ -135,14 +135,14 @@ def vmb(namespace_2, schedulable_nodes, unprivileged_client):
 @pytest.fixture(scope="module")
 def running_vma(vma):
     vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vma.vmi)
+    wait_for_vm_interfaces(vmi=vma.vmi)
     yield vma
 
 
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
     vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmb.vmi)
+    wait_for_vm_interfaces(vmi=vmb.vmi)
     yield vmb
 
 

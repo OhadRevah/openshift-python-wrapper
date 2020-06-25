@@ -52,7 +52,7 @@ def bridge_networks(namespace):
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_network):
     networks = {bridge_network.name: bridge_network.name}
-    name = _get_name(f"bridge-vm-{time.time()}")
+    name = _get_name(suffix=f"bridge-vm-{time.time()}")
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
@@ -67,7 +67,7 @@ def bridge_attached_vmi(namespace, bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
     networks = {b.name: b.name for b in bridge_networks}
-    name = _get_name(f"multi-bridge-vm-{time.time()}")
+    name = _get_name(suffix=f"multi-bridge-vm-{time.time()}")
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,

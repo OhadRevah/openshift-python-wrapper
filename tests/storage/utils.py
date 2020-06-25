@@ -37,7 +37,9 @@ LOGGER = logging.getLogger(__name__)
 
 @contextmanager
 def import_image_to_dv(dv_name, images_https_server_name, volume_mode, storage_ns_name):
-    url = get_file_url_https_server(images_https_server_name, Images.Cirros.QCOW2_IMG)
+    url = get_file_url_https_server(
+        images_https_server=images_https_server_name, file_name=Images.Cirros.QCOW2_IMG
+    )
     with ConfigMap(
         name="https-cert-configmap",
         namespace=storage_ns_name,
