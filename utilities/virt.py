@@ -98,7 +98,7 @@ def merge_dicts(source_dict, target_dict):
     for key, value in source_dict.items():
         if isinstance(value, dict):
             node = target_dict.setdefault(key, {})
-            merge_dicts(value, node)
+            merge_dicts(source_dict=value, target_dict=node)
         else:
             target_dict[key] = value
 
@@ -180,7 +180,11 @@ class VirtualMachineForTests(VirtualMachine):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
+        super().__exit__(
+            exception_type=exception_type,
+            exception_value=exception_value,
+            traceback=traceback,
+        )
         if self.ssh_service:
             self.ssh_service.delete(wait=True)
         if self.custom_service:
@@ -241,7 +245,7 @@ class VirtualMachineForTests(VirtualMachine):
                 cloud_init_volume = spec["volumes"][-1]
             cloud_init_volume[cloud_init_volume_type][
                 "userData"
-            ] = _generate_cloud_init_user_data(self.cloud_init_data)
+            ] = _generate_cloud_init_user_data(user_data=self.cloud_init_data)
             disks_spec = (
                 spec.setdefault("domain", {})
                 .setdefault("devices", {})
@@ -456,7 +460,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.body = self.process_template()
         res = super().to_dict()
         if self.vm_dict:
-            res = merge_dicts(self.vm_dict, res)
+            res = merge_dicts(source_dict=self.vm_dict, target_dict=res)
         # For hpp, DV and VM must reside on the same node
         if (
             self.template_dv.storage_class == "hostpath-provisioner"
@@ -1021,10 +1025,10 @@ def create_vm_import(
     start_vm=False,
 ):
     with VirtualMachineImport(
-        name,
-        namespace,
-        provider_credentials_secret_name,
-        provider_credentials_secret_namespace,
+        name=name,
+        namespace=namespace,
+        provider_credentials_secret_name=provider_credentials_secret_name,
+        provider_credentials_secret_namespace=provider_credentials_secret_namespace,
         vm_id=vm_id,
         target_vm_name=target_vm_name,
         start_vm=start_vm,

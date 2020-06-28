@@ -69,7 +69,7 @@ def create_ns(name, client=None, kmp_vm_label=None, admin_client=None):
     """
     if not client:
         with Namespace(name=name, label=kmp_vm_label) as ns:
-            ns.wait_for_status(Namespace.Status.ACTIVE, timeout=120)
+            ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=120)
             yield ns
     else:
         with ProjectRequest(name=name, client=client):

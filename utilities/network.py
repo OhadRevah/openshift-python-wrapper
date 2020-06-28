@@ -89,7 +89,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
     def validate_create(self):
         for pod in self.worker_pods:
             node_network_state = NodeNetworkState(name=pod.node.name)
-            node_network_state.wait_until_up(self.vxlan_name)
+            node_network_state.wait_until_up(name=self.vxlan_name)
 
     def _absent_vxlan(self):
         res = self.to_dict()
@@ -107,7 +107,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
     def wait_for_vxlan_deleted(self):
         for pod in self.worker_pods:
             node_network_state = NodeNetworkState(name=pod.node.name)
-            node_network_state.wait_until_deleted(self.vxlan_name)
+            node_network_state.wait_until_deleted(name=self.vxlan_name)
 
 
 class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
@@ -173,7 +173,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                         "state": IFACE_UP_STATE,
                         "mtu": self.mtu,
                     }
-                    self.set_interface(_port)
+                    self.set_interface(interface=_port)
 
         res = super().to_dict()
         return res
@@ -193,9 +193,9 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         teardown=True,
     ):
         super().__init__(
-            name,
-            worker_pods,
-            bridge_name,
+            name=name,
+            worker_pods=worker_pods,
+            bridge_name=bridge_name,
             bridge_type="linux-bridge",
             stp_config={"enabled": stp_config},
             ports=ports,
@@ -220,9 +220,9 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         teardown=True,
     ):
         super().__init__(
-            name,
-            worker_pods,
-            bridge_name,
+            name=name,
+            worker_pods=worker_pods,
+            bridge_name=bridge_name,
             bridge_type="ovs-bridge",
             stp_config=stp_config,
             ports=ports,
@@ -365,7 +365,14 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         teardown=True,
     ):
         super().__init__(
-            name, namespace, bridge_name, cni_type, vlan, client, mtu, teardown=teardown
+            name=name,
+            namespace=namespace,
+            bridge_name=bridge_name,
+            cni_type=cni_type,
+            vlan=vlan,
+            client=client,
+            mtu=mtu,
+            teardown=teardown,
         )
         self.tuning_type = tuning_type
 
@@ -399,7 +406,14 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         teardown=True,
     ):
         super().__init__(
-            name, namespace, bridge_name, cni_type, vlan, client, mtu, teardown=teardown
+            name=name,
+            namespace=namespace,
+            bridge_name=bridge_name,
+            cni_type=cni_type,
+            vlan=vlan,
+            client=client,
+            mtu=mtu,
+            teardown=teardown,
         )
 
     def to_dict(self):
@@ -461,7 +475,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                         "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
                         "mtu": self.mtu,
                     }
-                    self.set_interface(_port)
+                    self.set_interface(interface=_port)
 
         res = super().to_dict()
         return res
@@ -485,7 +499,7 @@ def get_vmi_ip_v4_by_name(vmi, name):
                 if iface.name == name:
                     for ipaddr in iface.ipAddresses:
                         try:
-                            ip = ipaddress.ip_interface(ipaddr)
+                            ip = ipaddress.ip_interface(address=ipaddr)
                             if ip.version == 4:
                                 return ip.ip
                         # ipaddress module fails to identify IPv6 with % as a valid IP
@@ -543,9 +557,9 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         node_active_nics=None,
     ):
         super().__init__(
-            name,
-            worker_pods,
-            node_selector,
+            name=name,
+            worker_pods=worker_pods,
+            node_selector=node_selector,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
             node_active_nics=node_active_nics,
@@ -565,6 +579,6 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             }
             if self.ipv4_dhcp is not None:
                 self.iface["ipv4"] = {"dhcp": self.ipv4_dhcp, "enabled": self.ipv4_dhcp}
-            self.set_interface(self.iface)
+            self.set_interface(interface=self.iface)
             res = super().to_dict()
         return res
