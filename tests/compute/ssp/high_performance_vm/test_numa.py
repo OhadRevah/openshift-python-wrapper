@@ -10,6 +10,16 @@ from utilities.virt import (
 )
 
 
+@pytest.fixture(scope="module")
+def skip_if_cpumanager_disabled(schedulable_nodes):
+    cpumanager_status = [
+        True if node.instance.metadata.labels.cpumanager == "true" else False
+        for node in schedulable_nodes
+    ]
+    if not any(cpumanager_status):
+        pytest.skip(msg="Test should run on cluster with CPU Manager")
+
+
 @pytest.fixture()
 def vm_numa(namespace, unprivileged_client):
     name = "vm-numa"
@@ -52,7 +62,13 @@ def node_cpu_list(numa_pod):
 
 
 @pytest.mark.polarion("CNV-4216")
-def test_numa(skip_if_workers_vms, numa_pod, node_cpu_list, vm_cpu_list):
+def test_numa(
+    skip_if_workers_vms,
+    skip_if_cpumanager_disabled,
+    numa_pod,
+    node_cpu_list,
+    vm_cpu_list,
+):
     pod_limits = numa_pod.instance.spec.containers[0].resources.limits
     pod_requests = numa_pod.instance.spec.containers[0].resources.requests
     assert (
