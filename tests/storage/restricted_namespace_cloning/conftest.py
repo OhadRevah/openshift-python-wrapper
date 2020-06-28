@@ -32,3 +32,9 @@ def dst_ns():
     with Namespace(name="restricted-namespace-destination-namespace") as ns:
         ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=120)
         yield ns
+
+
+@pytest.fixture(scope="module")
+def skip_when_no_unprivileged_client_available(unprivileged_client):
+    if not unprivileged_client:
+        pytest.skip(msg="No unprivileged client available, skipping test")

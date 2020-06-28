@@ -18,6 +18,9 @@ from utilities.storage import create_dv
 LOGGER = logging.getLogger(__name__)
 
 
+pytestmark = pytest.mark.usefixtures("skip_when_no_unprivileged_client_available")
+
+
 @pytest.mark.ci
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",

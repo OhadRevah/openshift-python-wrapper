@@ -26,6 +26,9 @@ from utilities.virt import VirtualMachineForTests
 LOGGER = logging.getLogger(__name__)
 
 
+pytestmark = pytest.mark.usefixtures("skip_when_no_unprivileged_client_available")
+
+
 @pytest.fixture(scope="module")
 def service_account(dst_ns):
     with ServiceAccount(name="vm-service-account", namespace=dst_ns.name) as sa:
