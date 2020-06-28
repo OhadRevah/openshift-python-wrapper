@@ -503,39 +503,40 @@ def unprivileged_client(default_client, unprivileged_secret):
             login_to_account(
                 api_address=default_client.configuration.host, user=current_user.strip()
             )  # Get back to admin account
+            if not token:
+                yield
 
-        if token:
-            token_auth = {
-                "api_key": {"authorization": f"Bearer {token}"},
-                "host": default_client.configuration.host,
-                "verify_ssl": True,
-                "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
-            }
-            configuration = kubernetes.client.Configuration()
-            for k, v in token_auth.items():
-                setattr(configuration, k, v)
+        token_auth = {
+            "api_key": {"authorization": f"Bearer {token}"},
+            "host": default_client.configuration.host,
+            "verify_ssl": True,
+            "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
+        }
+        configuration = kubernetes.client.Configuration()
+        for k, v in token_auth.items():
+            setattr(configuration, k, v)
 
-            k8s_client = kubernetes.client.ApiClient(configuration)
-            yield DynamicClient(k8s_client)
-            try:
-                if kube_config_exists:
-                    os.environ["KUBECONFIG"] = ""
+        k8s_client = kubernetes.client.ApiClient(configuration)
+        yield DynamicClient(k8s_client)
+        try:
+            if kube_config_exists:
+                os.environ["KUBECONFIG"] = ""
 
-                login_to_account(
-                    api_address=default_client.configuration.host,
-                    user=UNPRIVILEGED_USER,
-                    password=UNPRIVILEGED_PASSWORD,
-                )  # Login to unprivileged account
-                LOGGER.info("Logout unprivileged_client")
-                Popen(args=["oc", "logout"], stdout=PIPE, stderr=PIPE).communicate()
-            finally:
-                if kubeconfig_env:
-                    os.environ["KUBECONFIG"] = kubeconfig_env
+            login_to_account(
+                api_address=default_client.configuration.host,
+                user=UNPRIVILEGED_USER,
+                password=UNPRIVILEGED_PASSWORD,
+            )  # Login to unprivileged account
+            LOGGER.info("Logout unprivileged_client")
+            Popen(args=["oc", "logout"], stdout=PIPE, stderr=PIPE).communicate()
+        finally:
+            if kubeconfig_env:
+                os.environ["KUBECONFIG"] = kubeconfig_env
 
-                login_to_account(
-                    api_address=default_client.configuration.host,
-                    user=current_user.strip(),
-                )  # Get back to admin account
+            login_to_account(
+                api_address=default_client.configuration.host,
+                user=current_user.strip(),
+            )  # Get back to admin account
 
 
 @pytest.fixture(scope="session")
