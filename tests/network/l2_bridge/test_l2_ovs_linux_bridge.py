@@ -76,12 +76,12 @@ class TestL2LinuxBridge:
         """
         Test custom type field in ethernet header.
         """
-        with _open_console(configured_vm_b) as vmb_console:
+        with _open_console(vm=configured_vm_b) as vmb_console:
             vmb_console.sendline(
                 f"sudo tcpdump -i eth2 -nn -e -c 5  ether proto {CUSTOM_ETH_PROTOCOL}"
             )
 
-            with _open_console(configured_vm_a) as vma_console:
+            with _open_console(vm=configured_vm_a) as vma_console:
                 vma_console.sendline(
                     f"sudo nping -e eth2 --ether-type {CUSTOM_ETH_PROTOCOL} "
                     f"{get_vmi_ip_v4_by_name(configured_vm_b.vmi, custom_eth_type_llpd_nad.name)} -c 10"

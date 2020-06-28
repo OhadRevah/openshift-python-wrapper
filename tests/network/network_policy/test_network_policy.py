@@ -44,7 +44,7 @@ class VirtualMachineMasquerade(VirtualMachineForTests):
 
 class ApplyNetworkPolicy(NetworkPolicy):
     def __init__(self, name, namespace, ports=None, teardown=True):
-        super().__init__(name, namespace, teardown=teardown)
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.ports = ports
 
     def to_dict(self):

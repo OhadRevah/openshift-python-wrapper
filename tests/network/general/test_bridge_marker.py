@@ -161,4 +161,4 @@ def test_bridge_marker_devices_exist_on_different_nodes(
     # validate the exact reason for VMI startup failure is missing bridge
     pod = multi_bridge_attached_vmi.virt_launcher_pod
     for bridge in bridge_networks:
-        _assert_failure_reason_is_bridge_missing(pod, bridge)
+        _assert_failure_reason_is_bridge_missing(pod=pod, bridge=bridge)

@@ -31,7 +31,7 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     bootcmds = list(
         chain.from_iterable(
-            nmcli_add_con_cmds(iface, iface_config[iface].ip_address)
+            nmcli_add_con_cmds(iface=iface, ip=iface_config[iface].ip_address)
             for iface in ("eth%d" % idx for idx in range(1, 5))
         )
     )
@@ -51,9 +51,9 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
         client=client,
         cloud_init_data=cloud_init_data,
     ) as vm:
-        mac_pool.append_macs(vm)
+        mac_pool.append_macs(vm=vm)
         yield vm
-        mac_pool.remove_macs(vm)
+        mac_pool.remove_macs(vm=vm)
 
 
 class MacPool:
@@ -79,7 +79,7 @@ class MacPool:
     def mac_sampler(self, func, *args, **kwargs):
         sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
         for sample in sampler:
-            mac = self.int_to_mac(sample)
+            mac = self.int_to_mac(num=sample)
             if mac not in self.used_macs:
                 return mac
 
@@ -360,9 +360,9 @@ def opted_out_ns_vm(opted_out_ns, opted_out_ns_nad, mac_pool):
         interfaces=networks.keys(),
         body=fedora_vm_body(name),
     ) as vm:
-        mac_pool.append_macs(vm)
+        mac_pool.append_macs(vm=vm)
         yield vm
-        mac_pool.remove_macs(vm)
+        mac_pool.remove_macs(vm=vm)
 
 
 @pytest.fixture(scope="class")
@@ -376,9 +376,9 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
         interfaces=networks.keys(),
         body=fedora_vm_body(name),
     ) as vm:
-        mac_pool.append_macs(vm)
+        mac_pool.append_macs(vm=vm)
         yield vm
-        mac_pool.remove_macs(vm)
+        mac_pool.remove_macs(vm=vm)
 
 
 @pytest.fixture(scope="class")

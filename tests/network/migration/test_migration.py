@@ -182,7 +182,8 @@ def http_service(namespace, running_vma, running_vmb):
         # Check that http service on port 80 can be accessed by cluster IP
         # before vmi migration.
         http_port_accessible(
-            running_vma, running_vmb.vmi.virt_launcher_pod.instance.status.podIP
+            vm=running_vma,
+            server_ip=running_vmb.vmi.virt_launcher_pod.instance.status.podIP,
         )
         yield svc
 
@@ -295,5 +296,6 @@ def test_migration_with_masquerade(
         assert running_vmb.vmi.instance.status.nodeName != vmi_node_before_migration
         assert running_vmb.vmi.instance.status.migrationState.completed
         http_port_accessible(
-            running_vma, running_vmb.vmi.virt_launcher_pod.instance.status.podIP
+            vm=running_vma,
+            server_ip=running_vmb.vmi.virt_launcher_pod.instance.status.podIP,
         )

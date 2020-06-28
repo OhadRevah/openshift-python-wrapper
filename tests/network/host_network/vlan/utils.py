@@ -103,7 +103,7 @@ def assert_vlan_dynamic_ip(iface_name, workers_ssh_executors, dhcp_clients_list)
         node = None
         for node in dhcp_clients_list:
             vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
-                iface_name
+                interface=iface_name
             )
             if (vlan_ip is None) or (DHCP_IP_SUBNET not in vlan_ip):
                 return False, node.name
@@ -120,7 +120,7 @@ def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_li
         node = None
         for node in no_dhcp_client_list:
             vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
-                iface_name
+                interface=iface_name
             )
             if vlan_ip is not None:
                 return False, node.name
@@ -135,7 +135,7 @@ def assert_vlan_interface(iface_name, workers_ssh_executors):
         node = None
         for node in workers_ssh_executors:
             iface_status = workers_ssh_executors[node].network.get_interface_status(
-                iface_name
+                interface=iface_name
             )
             if iface_status is None:
                 return False, node
