@@ -55,7 +55,26 @@ fcfn_exclude_functions =
     append,
     join,
     deepcopy,
-    print
+    print,
+    logging,
+    add_option,
+    pytest,
+    update,
+    expect,
+    sendline,
+    write,
+    open,
+    insert,
+    send,
+    namedtuple,
+    strip,
+    parametrize,
+    pop,
+    remove,
+    console_eof_sampler,
+    check_output,
+    sleep,
+    datetime
 
 [flake8:local-plugins]
 extension =
