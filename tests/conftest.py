@@ -1048,7 +1048,7 @@ def bridge_attached_helper_vm(
             client=unprivileged_client,
         ) as vm:
             vm.start(wait=True)
-            wait_for_vm_interfaces(vm.vmi)
+            wait_for_vm_interfaces(vmi=vm.vmi)
             enable_ssh_service_in_vm(vm=vm, console_impl=console.Fedora)
             yield vm
     else:
@@ -1104,7 +1104,7 @@ def vm_instance_from_template(
             vm.start(wait=True)
             vm.vmi.wait_until_running()
             if params.get("guest_agent", True):
-                wait_for_vm_interfaces(vm.vmi)
+                wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
 
 
@@ -1123,7 +1123,7 @@ def vm_instance_from_template_scope_function(
     """
 
     with vm_instance_from_template(
-        request,
+        request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_multi_storage_scope_function,
