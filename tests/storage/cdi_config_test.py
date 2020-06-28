@@ -61,7 +61,10 @@ def cdiconfig_update(
                             remote_name=remote_name, local_name=local_name
                         )
                         with utils.upload_image_to_dv(
-                            dv_name, volume_mode, storage_ns_name
+                            dv_name,
+                            volume_mode,
+                            storage_ns_name,
+                            storage_class=storage_class_type,
                         ) as dv:
                             utils.upload_token_request(
                                 storage_ns_name, pvc_name=dv.pvc.name, data=local_name
@@ -84,7 +87,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=get_images_https_server(),
         storage_ns_name=namespace.name,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        volume_mode=DataVolume.VolumeMode.FILE,
         run_vm=True,
         tmpdir=tmpdir,
     )
@@ -100,7 +103,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         dv_name="cnv-2478",
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=namespace.name,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        volume_mode=DataVolume.VolumeMode.FILE,
         images_https_server_name=get_images_https_server(),
         run_vm=True,
     )
