@@ -87,7 +87,7 @@ class NodeNetworkConfigurationPolicy(Resource):
 
         self.iface["ipv6"] = {"enabled": self.ipv6_enable}
 
-        self.set_interface(self.iface)
+        self.set_interface(interface=self.iface)
         if self.iface not in self.ifaces:
             self.ifaces.append(self.iface)
 
@@ -148,7 +148,7 @@ class NodeNetworkConfigurationPolicy(Resource):
                 self._ipv4_state_backup()
                 self.iface["ipv4"] = {"dhcp": True, "enabled": True}
 
-            self.set_interface(self.iface)
+            self.set_interface(interface=self.iface)
             self.apply()
 
     def clean_up(self):
@@ -160,7 +160,7 @@ class NodeNetworkConfigurationPolicy(Resource):
                     "state": self.Interface.State.UP,
                     "mtu": int(self.mtu_dict[port]),
                 }
-                self.set_interface(_port)
+                self.set_interface(interface=_port)
 
         for iface in self.ifaces:
             """
@@ -182,13 +182,13 @@ class NodeNetworkConfigurationPolicy(Resource):
         for pod in self.worker_pods:
             for iface in self.ifaces:
                 node_network_state = NodeNetworkState(name=pod.node.name)
-                node_network_state.wait_until_deleted(iface["name"])
+                node_network_state.wait_until_deleted(name=iface["name"])
 
     def validate_create(self):
         for pod in self.worker_pods:
             for bridge in self.ifaces:
                 node_network_state = NodeNetworkState(name=pod.node.name)
-                node_network_state.wait_until_up(bridge["name"])
+                node_network_state.wait_until_up(name=bridge["name"])
 
     def _ipv4_state_backup(self):
         # Backup current state of dhcp for the interfaces which arent veth or current bridge
@@ -208,7 +208,7 @@ class NodeNetworkConfigurationPolicy(Resource):
     def _absent_interface(self):
         for bridge in self.ifaces:
             bridge["state"] = self.Interface.State.ABSENT
-            self.set_interface(bridge)
+            self.set_interface(interface=bridge)
 
             if self._ipv4_dhcp:
                 temp_ipv4_iface_state = {}
@@ -238,6 +238,6 @@ class NodeNetworkConfigurationPolicy(Resource):
                 # Restore DHCP state of the changed bridge connected ports
                 for iface_name, ipv4 in previous_state.items():
                     interface = {"name": iface_name, "ipv4": ipv4}
-                    self.set_interface(interface)
+                    self.set_interface(interface=interface)
 
         self.apply()

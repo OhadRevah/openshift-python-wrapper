@@ -161,15 +161,15 @@ class VirtualMachineImport(NamespacedResource):
 
         if self.ovirt_mappings:
             if self.ovirt_mappings.disk_mappings:
-                mappings = _map_mappings(self.ovirt_mappings.disk_mappings)
+                mappings = _map_mappings(mappings=self.ovirt_mappings.disk_mappings)
                 ovirt.setdefault("mappings", {}).setdefault("diskMappings", mappings)
 
             if self.ovirt_mappings.network_mappings:
-                mappings = _map_mappings(self.ovirt_mappings.network_mappings)
+                mappings = _map_mappings(mappings=self.ovirt_mappings.network_mappings)
                 ovirt.setdefault("mappings", {}).setdefault("networkMappings", mappings)
 
             if self.ovirt_mappings.storage_mappings:
-                mappings = _map_mappings(self.ovirt_mappings.storage_mappings)
+                mappings = _map_mappings(mappings=self.ovirt_mappings.storage_mappings)
                 ovirt.setdefault("mappings", {}).setdefault("storageMappings", mappings)
 
         return res

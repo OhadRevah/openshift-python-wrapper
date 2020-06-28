@@ -158,7 +158,7 @@ class KubeAPIVersion(Version):
     def __init__(self, vstring=None):
         self.vstring = vstring
         self.version = None
-        super().__init__(vstring)
+        super().__init__(vstring=vstring)
 
     def parse(self, vstring):
         components = [x for x in self.component_re.split(vstring) if x]
@@ -191,7 +191,7 @@ class KubeAPIVersion(Version):
 
     def _cmp(self, other):
         if isinstance(other, str):
-            other = KubeAPIVersion(other)
+            other = KubeAPIVersion(vstring=other)
 
         myver = self.version
         otherver = other.version
@@ -266,7 +266,9 @@ class Resource(object):
         self.client = client
         if not self.client:
             try:
-                self.client = DynamicClient(kubernetes.config.new_client_from_config())
+                self.client = DynamicClient(
+                    client=kubernetes.config.new_client_from_config()
+                )
             except (
                 kubernetes.config.ConfigException,
                 urllib3.exceptions.MaxRetryError,
@@ -613,7 +615,9 @@ class Resource(object):
             generator: Generator of Resources of cls.kind
         """
         if not cls.api_version:
-            cls.api_version = _get_api_version(dyn_client, cls.api_group, cls.kind)
+            cls.api_version = _get_api_version(
+                dyn_client=dyn_client, api_group=cls.api_group, kind=cls.kind
+            )
 
         get_kwargs = {"singular_name": singular_name} if singular_name else {}
         for resource_field in (
@@ -704,7 +708,9 @@ class NamespacedResource(Resource):
             generator: Generator of Resources of cls.kind
         """
         if not cls.api_version:
-            cls.api_version = _get_api_version(dyn_client, cls.api_group, cls.kind)
+            cls.api_version = _get_api_version(
+                dyn_client=dyn_client, api_group=cls.api_group, kind=cls.kind
+            )
 
         get_kwargs = {"singular_name": singular_name} if singular_name else {}
         for resource_field in (
@@ -778,7 +784,9 @@ class ResourceEditor(object):
 
         for resource, update in self._patches.items():
             # prepare backup
-            backup = self._create_backup(resource.instance.to_dict(), update)
+            backup = self._create_backup(
+                original=resource.instance.to_dict(), patch=update
+            )
 
             # no need to back up if no changes have been made
             if backup:
@@ -795,10 +803,10 @@ class ResourceEditor(object):
         }
 
         # apply changes
-        self._apply_patches(patches_to_apply, "Updating")
+        self._apply_patches(patches=patches_to_apply, action_text="Updating")
 
     def restore(self):
-        self._apply_patches(self._backups, "Restoring")
+        self._apply_patches(patches=self._backups, action_text="Restoring")
 
     def __enter__(self):
         self.update()
@@ -835,7 +843,9 @@ class ResourceEditor(object):
                     continue
 
                 # recursive call
-                key_diff = ResourceEditor._create_backup(original[key], value)
+                key_diff = ResourceEditor._create_backup(
+                    original=original[key], patch=value
+                )
 
                 if key_diff:
                     diff_dict[key] = key_diff

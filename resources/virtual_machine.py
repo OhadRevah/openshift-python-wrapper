@@ -70,7 +70,7 @@ class VirtualMachine(NamespacedResource, AnsibleLoginAnnotationsMixin):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
         )
-        self._store_login_information(username, password)
+        self._store_login_information(username=username, password=password)
 
     @property
     def _subresource_api_url(self):
@@ -183,7 +183,7 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
 
     def __init__(self, name, namespace, client=None, username=None, password=None):
         super().__init__(name=name, namespace=namespace, client=client)
-        self._store_login_information(username, password)
+        self._store_login_information(username=username, password=password)
 
     @property
     def _subresource_api_url(self):
