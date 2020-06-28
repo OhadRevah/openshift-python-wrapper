@@ -7,7 +7,7 @@ from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import wait_for_console, wait_for_windows_vm
+from utilities.virt import wait_for_console, wait_for_vm_interfaces, wait_for_windows_vm
 
 
 def _update_and_validate_vm_cpu_spec(
@@ -73,6 +73,7 @@ class TestLatestRHEL:
     def test_default_cpu_values(
         self, vm_instance_from_template_scope_class,
     ):
+        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
@@ -82,6 +83,7 @@ class TestLatestRHEL:
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_scope_class, network_multiqueue=False
         )
+        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
@@ -91,6 +93,7 @@ class TestLatestRHEL:
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_scope_class, cores=4
         )
+        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
@@ -100,6 +103,7 @@ class TestLatestRHEL:
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_scope_class, sockets=4
         )
+        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
@@ -109,6 +113,7 @@ class TestLatestRHEL:
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_scope_class, threads=4
         )
+        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
@@ -120,6 +125,7 @@ class TestLatestRHEL:
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_scope_class, cores=4, sockets=2, threads=2
         )
+        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
         wait_for_console(
             vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
         )
