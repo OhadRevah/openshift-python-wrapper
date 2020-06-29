@@ -343,9 +343,9 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         bridge_dict = {"type": self.cni_type, "bridge": self.bridge_name}
         if self.mtu:
             bridge_dict["mtu"] = self.mtu
-        spec_config["plugins"] = [bridge_dict]
         if self.vlan:
-            spec_config["vlan"] = self.vlan
+            bridge_dict["vlan"] = self.vlan
+        spec_config["plugins"] = [bridge_dict]
 
         res["spec"]["config"] = spec_config
         return res
