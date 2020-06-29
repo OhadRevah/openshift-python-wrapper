@@ -458,7 +458,10 @@ def test_webhookconfig_resources(cnv_must_gather, default_client):
         list(MutatingWebhookConfiguration.get(default_client)),
     ]:
         utils.compare_webhook_svc_contents(
-            webhook_resources, cnv_must_gather, default_client, checks
+            webhook_resources=webhook_resources,
+            cnv_must_gather=cnv_must_gather,
+            default_client=default_client,
+            checks=checks,
         )
 
 

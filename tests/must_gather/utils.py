@@ -81,7 +81,12 @@ def check_list_of_resources(
         default_client, namespace=namespace, label_selector=label_selector
     ):
         if filter_resource is None or filter_resource in resource_instance.name:
-            compare_resources(resource_instance, temp_dir, resource_path, checks)
+            compare_resources(
+                resource_instance=resource_instance,
+                temp_dir=temp_dir,
+                resource_path=resource_path,
+                checks=checks,
+            )
 
 
 def check_resource(resource, resource_name, temp_dir, resource_path, checks):
@@ -144,7 +149,11 @@ def check_logs(cnv_must_gather, running_hco_containers, label_selector, namespac
         container_name = container["name"]
         for is_previous in (True, False):
             log_size = pod_logfile_size(
-                pod.name, container_name, is_previous, cnv_must_gather, namespace
+                pod_name=pod.name,
+                container_name=container_name,
+                previous=is_previous,
+                cnv_must_gather_path=cnv_must_gather,
+                namespace=namespace,
             )
             # Skip comparison of empty/large files. Large files could be ratated, and hence not equal.
             if log_size > 10000 or log_size == 0:
@@ -153,7 +162,11 @@ def check_logs(cnv_must_gather, running_hco_containers, label_selector, namespac
                 previous=is_previous, container=container_name, timestamps=True
             )
             log_file = pod_logfile(
-                pod.name, container_name, is_previous, cnv_must_gather, namespace
+                pod_name=pod.name,
+                container_name=container_name,
+                previous=is_previous,
+                cnv_must_gather_path=cnv_must_gather,
+                namespace=namespace,
             )
             assert (
                 log_file in pod_log
@@ -186,4 +199,6 @@ def compare_webhook_svc_contents(
         )
         for svc_resource in svc_resources:
             if webhooks_svc_name == svc_resource.name:
-                compare_resource_values(svc_resource, service_file, checks)
+                compare_resource_values(
+                    resource=svc_resource, path=service_file, checks=checks
+                )
