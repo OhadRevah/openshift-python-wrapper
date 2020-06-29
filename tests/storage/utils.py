@@ -145,7 +145,7 @@ def check_disk_count_in_vm(vm):
 
 @contextmanager
 def create_vm_from_dv(
-    dv, vm_name="cirros-vm", image=None, start=True, node_selector=None
+    dv, vm_name="cirros-vm", image=None, start=True, node_selector=None, memory=None,
 ):
     with VirtualMachineForTests(
         name=vm_name,
@@ -153,6 +153,7 @@ def create_vm_from_dv(
         dv=dv,
         image=image,
         node_selector=node_selector,
+        memory=memory,
     ) as vm:
         if start:
             vm.start(wait=True)

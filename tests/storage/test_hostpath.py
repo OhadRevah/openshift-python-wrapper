@@ -485,7 +485,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             pvc=target_dv.pvc, pod=upload_target_pod, type_="target"
         )
         target_dv.wait(timeout=300)
-        with storage_utils.create_vm_from_dv(dv=target_dv, vm_name="fedora-vm") as vm:
+        with storage_utils.create_vm_from_dv(
+            dv=target_dv, vm_name="fedora-vm", memory="1Gi",
+        ) as vm:
             wait_for_console(vm=vm, console_impl=console.Fedora)
 
 
