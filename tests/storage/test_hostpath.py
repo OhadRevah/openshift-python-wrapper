@@ -602,10 +602,7 @@ def test_hpp_clusterrole_and_clusterrolebinding(
     skip_test_if_no_hpp_sc, hpp_clusterrole, hpp_clusterrolebinding
 ):
     assert hpp_clusterrole.exists
-    assert (
-        hpp_clusterrole.instance["metadata"]["ownerReferences"][0]["kind"]
-        == "HostPathProvisioner"
-    )
+    assert hpp_clusterrole.instance["metadata"]["name"] == "hostpath-provisioner"
 
     assert hpp_clusterrolebinding.exists
     assert (
