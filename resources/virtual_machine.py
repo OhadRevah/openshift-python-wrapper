@@ -380,6 +380,14 @@ class VirtualMachineInstance(NamespacedResource, AnsibleLoginAnnotationsMixin):
             )
         return vmi_os_version
 
+    def interface_ip(self, interface):
+        iface_ip = [
+            iface["ipAddress"]
+            for iface in self.interfaces
+            if iface["interfaceName"] == interface
+        ]
+        return iface_ip[0] if iface_ip else None
+
 
 class VirtualMachineInstanceMigration(NamespacedResource):
     api_group = API_GROUP
