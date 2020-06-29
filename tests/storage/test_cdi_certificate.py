@@ -84,7 +84,7 @@ def refresh_cdi_certificates(secrets):
             if secret.name == cdi_secret:
                 new_end = secret.certificate_not_before
                 res = ResourceEditor(
-                    {
+                    patches={
                         secret: {
                             "metadata": {
                                 "annotations": {

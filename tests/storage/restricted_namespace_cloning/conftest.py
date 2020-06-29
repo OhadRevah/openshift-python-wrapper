@@ -30,5 +30,5 @@ def unprivileged_user_username():
 @pytest.fixture(scope="module")
 def dst_ns():
     with Namespace(name="restricted-namespace-destination-namespace") as ns:
-        ns.wait_for_status(Namespace.Status.ACTIVE, timeout=120)
+        ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=120)
         yield ns

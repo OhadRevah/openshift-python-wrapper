@@ -77,7 +77,7 @@ def test_remove_cdi_dv(
     # CDI can't be removed
     with pytest.raises(BadRequestError) as exc_info:
         cdi.delete()
-        _assert_cdi_delete(exc_info)
+        _assert_cdi_delete(exc_info=exc_info)
 
     assert (
         cdi.status == CDI.Status.DEPLOYED
@@ -131,7 +131,7 @@ def test_remove_cdi_vm(
     # CDI can't be removed
     with pytest.raises(BadRequestError) as exc_info:
         cdi.delete()
-        _assert_cdi_delete(exc_info)
+        _assert_cdi_delete(exc_info=exc_info)
 
     assert (
         cdi.status == CDI.Status.DEPLOYED

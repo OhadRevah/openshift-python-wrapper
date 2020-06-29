@@ -126,7 +126,7 @@ def verify_image_location_via_dv_pod_with_pvc(dv, schedulable_nodes):
 
 def verify_image_location_via_dv_virt_launcher_pod(dv, schedulable_nodes):
     dv.wait()
-    with storage_utils.create_vm_from_dv(dv) as vm:
+    with storage_utils.create_vm_from_dv(dv=dv) as vm:
         vm.vmi.wait_until_running()
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check pod location...")
@@ -281,7 +281,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
         storage_class=StorageClass.Types.HOSTPATH,
     ) as pvc:
         pvc.wait_for_status(
-            pvc.Status.PENDING, timeout=60, stop_status=pvc.Status.BOUND
+            status=pvc.Status.PENDING, timeout=60, stop_status=pvc.Status.BOUND
         )
         with storage_utils.PodWithPVC(
             namespace=pvc.namespace,

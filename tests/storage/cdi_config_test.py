@@ -32,7 +32,7 @@ def cdiconfig_update(
     tmpdir=None,
 ):
     with ResourceEditor(
-        {cdiconfig: {"spec": {"scratchSpaceStorageClass": storage_class_type}}}
+        patches={cdiconfig: {"spec": {"scratchSpaceStorageClass": storage_class_type}}}
     ):
         samples = TimeoutSampler(
             timeout=30,
@@ -45,14 +45,14 @@ def cdiconfig_update(
                 if run_vm:
                     if source == "http":
                         with utils.import_image_to_dv(
-                            dv_name,
-                            images_https_server_name,
-                            volume_mode,
-                            storage_ns_name,
+                            dv_name=dv_name,
+                            images_https_server_name=images_https_server_name,
+                            volume_mode=volume_mode,
+                            storage_ns_name=storage_ns_name,
                         ) as dv:
                             dv.wait()
-                            with utils.create_vm_from_dv(dv) as vm_dv:
-                                utils.check_disk_count_in_vm(vm_dv)
+                            with utils.create_vm_from_dv(dv=dv) as vm_dv:
+                                utils.check_disk_count_in_vm(vm=vm_dv)
                                 break
                     elif source == "upload":
                         local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
@@ -168,7 +168,7 @@ def test_different_route_for_upload_proxy(
     with Route(
         namespace=namespace.name, name="my-route", service="cdi-uploadproxy"
     ) as new_route:
-        cdi_config.wait_until_upload_url_changed(new_route.host)
+        cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_route.host)
 
 
 @pytest.mark.polarion("CNV-2215")
@@ -207,21 +207,22 @@ def test_cdiconfig_changing_storage_class_default(
         }
 
     with ResourceEditor(
-        {
+        patches={
             default_sc: _get_update_dict(
                 default=False, storage_class=StorageClass.Types.CEPH_RBD
             )
         }
     ):
         with ResourceEditor(
-            {
+            patches={
                 hpp_storage_class: _get_update_dict(
                     default=True, storage_class=StorageClass.Types.HOSTPATH
                 )
             }
         ):
             url = utils.get_file_url_https_server(
-                get_images_https_server(), Images.Cirros.QCOW2_IMG
+                images_https_server=get_images_https_server(),
+                file_name=Images.Cirros.QCOW2_IMG,
             )
             with ConfigMap(
                 name="https-cert-configmap",
@@ -238,5 +239,5 @@ def test_cdiconfig_changing_storage_class_default(
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()
-                    with utils.create_vm_from_dv(dv) as vm_dv:
-                        utils.check_disk_count_in_vm(vm_dv)
+                    with utils.create_vm_from_dv(dv=dv) as vm_dv:
+                        utils.check_disk_count_in_vm(vm=vm_dv)

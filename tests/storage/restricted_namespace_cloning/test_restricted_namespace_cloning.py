@@ -94,7 +94,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
             client=unprivileged_client,
         ) as cdv:
             cdv.wait()
-            with utils.create_vm_from_dv(cdv):
+            with utils.create_vm_from_dv(dv=cdv):
                 return
 
 
@@ -233,7 +233,7 @@ def test_user_permissions_positive(
                 client=unprivileged_client,
             ) as cdv:
                 cdv.wait()
-                with utils.create_vm_from_dv(cdv):
+                with utils.create_vm_from_dv(dv=cdv):
                     return
 
 

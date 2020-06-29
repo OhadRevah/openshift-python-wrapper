@@ -178,9 +178,9 @@ def cdi_config_upload_proxy_overridden(upload_proxy_route):
         f"newuploadroute-cdi-{py_config['hco_namespace']}.apps.working.oc4"
     )
     with ResourceEditor(
-        {cdi_config: {"spec": {"uploadProxyURLOverride": new_upload_proxy_url}}}
+        patches={cdi_config: {"spec": {"uploadProxyURLOverride": new_upload_proxy_url}}}
     ):
-        cdi_config.wait_until_upload_url_changed(new_upload_proxy_url)
+        cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_upload_proxy_url)
 
 
 @pytest.fixture()

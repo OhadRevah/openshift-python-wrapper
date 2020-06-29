@@ -234,7 +234,9 @@ def virtctl_upload_dv(
         if not (
             volume_mode and access_mode
         ):  # In case either one of them is missing, must fetch missing mode/s from matrix
-            storage_class_dict = get_storage_class_dict_from_matrix(storage_class)
+            storage_class_dict = get_storage_class_dict_from_matrix(
+                storage_class=storage_class
+            )
             storage_class = [*storage_class_dict][0]
         # There is still an option that one mode was passed by caller, will use the passed value
         volume_mode = volume_mode or storage_class_dict[storage_class]["volume_mode"]
@@ -383,7 +385,7 @@ def set_permissions(
 
 
 def create_vm_and_verify_image_permission(dv):
-    with create_vm_from_dv(dv) as vm:
+    with create_vm_from_dv(dv=dv) as vm:
         vm.vmi.wait_until_running()
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check image exist, permission and ownership")

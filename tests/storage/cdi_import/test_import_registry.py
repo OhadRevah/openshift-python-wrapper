@@ -104,8 +104,8 @@ def test_private_registry_cirros(
         **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -193,7 +193,7 @@ def test_public_registry_multiple_data_volume(
 
         for vm in vms:
             vm.vmi.wait_until_running()
-            utils.check_disk_count_in_vm(vm)
+            utils.check_disk_count_in_vm(vm=vm)
     finally:
         for rcs in vms + dvs:
             rcs.delete(wait=True)
@@ -226,7 +226,7 @@ def test_private_registry_insecured_configmap(
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.polarion("CNV-2182")
@@ -246,10 +246,10 @@ def test_private_registry_recover_after_missing_configmap(
         cert_configmap=registry_config_map.name,
         **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
-        dv.wait_for_status(DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
+        dv.wait_for_status(status=DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.polarion("CNV-2344")
@@ -269,8 +269,8 @@ def test_private_registry_with_untrusted_certificate(
         **utils.storage_params(storage_class_matrix__function__),
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
         # negative flow - remove certificate from configmap
         registry_config_map.update(
@@ -358,7 +358,7 @@ def test_public_registry_data_volume(
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 # The following test is to show after imports fails because low capacity storage,
@@ -396,7 +396,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.bugzilla(

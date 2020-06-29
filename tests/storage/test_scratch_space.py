@@ -72,7 +72,7 @@ def test_upload_https_scratch_space_delete_pvc(
                 if sample == 200:
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-                        storage_utils.check_disk_count_in_vm(vm_dv)
+                        storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
 
 
@@ -95,8 +95,8 @@ def test_import_https_scratch_space_delete_pvc(
         )
         dv.scratch_pvc.delete()
         dv.wait()
-        with storage_utils.create_vm_from_dv(dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -204,8 +204,8 @@ def test_scratch_space_import_https_data_volume(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
         dv.wait()
-        with storage_utils.create_vm_from_dv(dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -241,8 +241,8 @@ def test_scratch_space_import_http_data_volume(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
         dv.wait()
-        with storage_utils.create_vm_from_dv(dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -279,8 +279,8 @@ def test_scratch_space_import_http_basic_auth_data_volume(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
         dv.wait()
-        with storage_utils.create_vm_from_dv(dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.parametrize(
@@ -447,7 +447,7 @@ def test_scratch_space_upload_data_volume(
                     )
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-                        storage_utils.check_disk_count_in_vm(vm_dv)
+                        storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
 
 
@@ -482,8 +482,8 @@ def test_scratch_space_import_registry_data_volume(
             status=DataVolume.Condition.Status.TRUE,
             timeout=300,
         )
-        with storage_utils.create_vm_from_dv(dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 def create_dv_and_vm_no_scratch_space(
@@ -517,4 +517,4 @@ def create_dv_and_vm_no_scratch_space(
         except NotFoundError:
             pass
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm_dv)
+            storage_utils.check_disk_count_in_vm(vm=vm_dv)

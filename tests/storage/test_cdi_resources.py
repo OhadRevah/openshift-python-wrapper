@@ -119,7 +119,9 @@ def test_importer_pod_cdi_label(skip_upstream, default_client, namespace):
         storage_ns_name=namespace.name,
     ):
         get_cdi_worker_pods(
-            default_client, pod_prefix="importer", storage_ns_name=namespace.name
+            default_client=default_client,
+            pod_prefix="importer",
+            storage_ns_name=namespace.name,
         )
 
 
@@ -138,7 +140,9 @@ def test_uploader_pod_cdi_label(
         storage_ns_name=namespace.name,
     ):
         get_cdi_worker_pods(
-            default_client, pod_prefix="cdi-upload", storage_ns_name=namespace.name
+            default_client=default_client,
+            pod_prefix="cdi-upload",
+            storage_ns_name=namespace.name,
         )
 
 
@@ -171,12 +175,12 @@ def test_cloner_pods_cdi_label(
         ) as dv1:
             dv1.wait_for_status(status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=600)
             get_cdi_worker_pods(
-                default_client,
+                default_client=default_client,
                 pod_prefix="cdi-clone-source-dv",
                 storage_ns_name=dv.namespace,
             )
             get_cdi_worker_pods(
-                default_client,
+                default_client=default_client,
                 pod_prefix="cdi-upload-dv-target",
                 storage_ns_name=dv.namespace,
             )

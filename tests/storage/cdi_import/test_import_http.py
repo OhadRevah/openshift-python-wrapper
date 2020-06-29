@@ -458,7 +458,7 @@ def test_certconfigmap(
             pvc_name=pvc.name,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         ) as pod:
-            pod.wait_for_status(pod.Status.RUNNING)
+            pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 1
 
 
@@ -564,7 +564,7 @@ def test_successful_blank_disk_import(namespace, storage_class_matrix__module__)
             timeout=60,
         )
         with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 def blank_disk_import(namespace, storage_class, volume_mode, dv_name):
@@ -580,7 +580,7 @@ def blank_disk_import(namespace, storage_class, volume_mode, dv_name):
         with utils.create_vm_from_dv(
             dv=dv, image=CIRROS_IMAGE, vm_name=f"vm-{dv_name}"
         ) as vm_dv:
-            utils.check_disk_count_in_vm(vm_dv)
+            utils.check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.polarion("CNV-2001")
@@ -646,7 +646,7 @@ def test_vmi_image_size(
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=240)
-        with utils.create_vm_from_dv(dv, image=CIRROS_IMAGE, start=False):
+        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE, start=False):
             with utils.PodWithPVC(
                 namespace=dv.namespace,
                 name=f"{dv.name}-pod",
@@ -686,7 +686,7 @@ def test_disk_falloc(
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait()
-        with utils.create_vm_from_dv(dv) as vm_dv:
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
             with console.Cirros(vm=vm_dv) as vm_console:
                 LOGGER.info("Fill disk space.")
                 vm_console.sendline("dd if=/dev/zero of=file bs=1M")
