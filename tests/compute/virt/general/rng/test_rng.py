@@ -23,7 +23,7 @@ def rng_vm(unprivileged_client, namespace):
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
 
 

@@ -18,7 +18,7 @@ def kubevirt_resource(default_client):
 @pytest.fixture()
 def set_uninstall_strategy_remove_workloads(kubevirt_resource):
     with ResourceEditor(
-        {kubevirt_resource: {"spec": {"uninstallStrategy": "RemoveWorkloads"}}}
+        patches={kubevirt_resource: {"spec": {"uninstallStrategy": "RemoveWorkloads"}}}
     ) as edits:
         yield edits
 

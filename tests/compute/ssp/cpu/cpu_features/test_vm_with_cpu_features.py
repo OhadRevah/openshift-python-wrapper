@@ -41,7 +41,7 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
 
 

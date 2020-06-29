@@ -54,7 +54,7 @@ def drain_node_console(node):
 
 
 def drain_using_console(default_client, source_node, source_pod, vm, vm_cli):
-    with running_sleep_in_linux(vm_cli):
+    with running_sleep_in_linux(vm_cli=vm_cli):
         with drain_node_console(node=source_node):
             check_draining_process(
                 default_client=default_client, source_pod=source_pod, vm=vm
@@ -227,7 +227,7 @@ class TestNodeMaintenanceRHEL:
         source_node = source_pod.node
 
         with running_sleep_in_linux(
-            console.RHEL(vm_instance_from_template_scope_class)
+            vm_cli=console.RHEL(vm_instance_from_template_scope_class)
         ):
             with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
@@ -244,7 +244,7 @@ class TestNodeMaintenanceRHEL:
         self, vm_instance_from_template_scope_class, default_client
     ):
         drain_using_console(
-            default_client,
+            default_client=default_client,
             source_node=vm_instance_from_template_scope_class.vmi.virt_launcher_pod.node,
             source_pod=vm_instance_from_template_scope_class.vmi.virt_launcher_pod,
             vm=vm_instance_from_template_scope_class,

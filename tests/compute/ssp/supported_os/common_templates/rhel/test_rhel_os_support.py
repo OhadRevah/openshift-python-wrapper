@@ -71,7 +71,7 @@ class TestCommonTemplatesRhel:
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
-        wait_for_console(vm_object_from_template_rhel_os, console.RHEL)
+        wait_for_console(vm=vm_object_from_template_rhel_os, console_impl=console.RHEL)
 
     @pytest.mark.run(after="test_vm_console")
     @pytest.mark.polarion("CNV-3318")

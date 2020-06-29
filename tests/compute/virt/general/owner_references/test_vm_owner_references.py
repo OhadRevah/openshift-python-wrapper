@@ -29,7 +29,7 @@ def fedora_vm(unprivileged_client, namespace):
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
-        _wait_for_virt_launcher_pod(vm.vmi)
+        _wait_for_virt_launcher_pod(vmi=vm.vmi)
         yield vm
 
 

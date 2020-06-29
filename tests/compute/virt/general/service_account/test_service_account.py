@@ -48,7 +48,7 @@ def test_vm_with_specified_service_account(vm_vmi):
     assert pod_sa == vm_vmi.namespace, "ServiceAccount should be attached to the POD"
 
     # Verifies that ServiceAccount is attached to VMI
-    with console.Fedora(vm_vmi) as vm_console:
+    with console.Fedora(vm=vm_vmi) as vm_console:
         vm_console.sendline("sudo su -")
         vm_console.expect("#")
         vm_console.sendline("mount /dev/sda /mnt")

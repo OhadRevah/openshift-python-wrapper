@@ -44,7 +44,7 @@ def cpu_flag_vm_positive(cpu_module, namespace, unprivileged_client):
     ) as vm:
         vm.start(wait=True, timeout=240)
         vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
 
 

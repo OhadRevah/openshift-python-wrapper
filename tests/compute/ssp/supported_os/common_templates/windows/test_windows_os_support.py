@@ -167,7 +167,9 @@ class TestCommonTemplatesWindows:
     ):
 
         LOGGER.info("Verify VM HyperV values.")
-        common_templates_utils.check_vm_xml_hyperv(vm_object_from_template_windows_os)
+        common_templates_utils.check_vm_xml_hyperv(
+            vm=vm_object_from_template_windows_os
+        )
         common_templates_utils.check_windows_vm_hvinfo(
             vm=vm_object_from_template_windows_os,
             winrmcli_pod=winrmcli_pod_scope_class,

@@ -16,7 +16,7 @@ def vm_started(vm, wait_for_interfaces=True):
     vm.start(wait=True)
     vm.vmi.wait_until_running()
     if wait_for_interfaces:
-        wait_for_vm_interfaces(vm.vmi)
+        wait_for_vm_interfaces(vmi=vm.vmi)
 
 
 def remove_eth0_default_gw(vm, console_impl):

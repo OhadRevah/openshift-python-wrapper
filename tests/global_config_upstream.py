@@ -2,7 +2,9 @@ import pytest_testconfig
 
 
 global config
-global_config = pytest_testconfig.load_python("tests/global_config.py", "utf-8")
+global_config = pytest_testconfig.load_python(
+    py_file="tests/global_config.py", encoding="utf-8"
+)
 
 no_unprivileged_client = True
 distribution = "upstream"

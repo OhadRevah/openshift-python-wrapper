@@ -72,7 +72,9 @@ def test_node_maintenance_job_rhel(
         virt_utils.wait_for_node_schedulable_status(node=vm_node, status=False)
         vm.start()
         nm.wait_for_status(status=nm.Status.RUNNING)
-        vm.vmi.wait_for_status(VirtualMachineInstance.Status.SCHEDULING, timeout=20)
+        vm.vmi.wait_for_status(
+            status=VirtualMachineInstance.Status.SCHEDULING, timeout=20
+        )
         nm.wait_for_status(status=nm.Status.SUCCEEDED)
     assert (
         vm.vmi.status == VirtualMachineInstance.Status.SCHEDULING
