@@ -13,7 +13,7 @@ def privileged_scc():
     yield SecurityContextConstraints(name="privileged")
 
 
-@pytest.mark.polarion("CNV-4211")
+@pytest.mark.polarion("CNV-4439")
 def test_users_in_privileged_scc_bz1831536(skip_not_openshift, privileged_scc):
     """
     Validate that Users in privileged SCC is not updated after installing CNV
