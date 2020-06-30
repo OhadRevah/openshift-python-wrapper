@@ -7,7 +7,11 @@ from collections import OrderedDict
 
 import pytest
 import tests.network.utils as network_utils
-from utilities.network import BondNodeNetworkConfigurationPolicy, bridge_nad
+from utilities.network import (
+    BondNodeNetworkConfigurationPolicy,
+    bridge_nad,
+    get_hosts_common_ports,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -40,7 +44,7 @@ def bond(
     with BondNodeNetworkConfigurationPolicy(
         name="bondnncp",
         bond_name="test-bond",
-        slaves=nodes_active_nics[network_utility_pods[0].node.name][2:],
+        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
         worker_pods=network_utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         mtu=1450,

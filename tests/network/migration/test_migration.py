@@ -158,7 +158,11 @@ def bridge_on_all_nodes(
         bridge_name=BR1TEST,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
-        ports=[nodes_active_nics[network_utility_pods[0].node.name][1]],
+        ports=[
+            utilities.network.get_hosts_common_ports(
+                nodes_active_nics=nodes_active_nics
+            )[1]
+        ],
     ) as br:
         yield br
 

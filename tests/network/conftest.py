@@ -8,6 +8,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from tests.network.utils import bridge_device
+from utilities.network import get_hosts_common_ports
 
 
 @pytest.fixture(scope="session")
@@ -83,11 +84,10 @@ def ovs_lb_bridge(
     params = request.param if hasattr(request, "param") else {}
     mtu = params.get("mtu")
     ports = (
-        [nodes_active_nics[network_utility_pods[0].node.name][1]]
+        [get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1]]
         if multi_nics_nodes
         else []
     )
-
     unique_index = next(index_number)
     bridge_name = f"br{unique_index}test"
     with bridge_device(

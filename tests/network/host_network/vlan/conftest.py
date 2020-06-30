@@ -17,6 +17,7 @@ from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
     bridge_nad,
+    get_hosts_common_ports,
 )
 from utilities.virt import (
     VirtualMachineForTests,
@@ -260,7 +261,7 @@ def vlan_iface_bond_dhcp_client_1(
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
-        slaves=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -290,7 +291,7 @@ def vlan_iface_bond_dhcp_client_2(
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-2-nncp",
         bond_name="bond4vlan",
-        slaves=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=1450,

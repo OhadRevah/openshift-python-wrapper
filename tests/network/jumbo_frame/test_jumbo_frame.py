@@ -14,6 +14,7 @@ from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     bridge_nad,
+    get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
 )
 from utilities.virt import (
@@ -32,7 +33,7 @@ def bond1(skip_no_bond_support, network_utility_pods, nodes_active_nics):
     with BondNodeNetworkConfigurationPolicy(
         name="bond1nncp",
         bond_name="bond1",
-        slaves=nodes_active_nics[network_utility_pods[0].node.name][2:4],
+        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=9000,

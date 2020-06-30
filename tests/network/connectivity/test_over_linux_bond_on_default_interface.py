@@ -8,7 +8,7 @@ import subprocess
 import pytest
 import tests.network.utils as network_utils
 from resources.utils import TimeoutSampler
-from utilities.network import BondNodeNetworkConfigurationPolicy
+from utilities.network import BondNodeNetworkConfigurationPolicy, get_hosts_common_ports
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -80,7 +80,7 @@ def bond(
     with BondNodeNetworkConfigurationPolicy(
         name="bond1nncp",
         bond_name="test-bond",
-        slaves=nodes_active_nics[network_utility_pods[0].node.name][0:2],
+        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[0:2],
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=1450,

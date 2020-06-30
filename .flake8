@@ -74,7 +74,8 @@ fcfn_exclude_functions =
     console_eof_sampler,
     check_output,
     sleep,
-    datetime
+    datetime,
+    intersection
 
 [flake8:local-plugins]
 extension =
