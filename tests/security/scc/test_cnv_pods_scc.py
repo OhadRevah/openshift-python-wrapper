@@ -30,6 +30,15 @@ def cnv_pods(default_client):
     yield list(Pod.get(dyn_client=default_client, namespace=py_config["hco_namespace"]))
 
 
+@pytest.mark.polarion("CNV-4438")
+def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
+    """
+    Validate that Pods in hco_namespace (openshift-cnv) have openshift.io/scc
+    """
+    for pod in cnv_pods:
+        assert "openshift.io/scc" in pod.instance.metadata.annotations
+
+
 @pytest.mark.polarion("CNV-4211")
 def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
     """
