@@ -358,6 +358,8 @@ def opted_out_ns_vm(opted_out_ns, opted_out_ns_nad, mac_pool):
         body=fedora_vm_body(name),
     ) as vm:
         mac_pool.append_macs(vm=vm)
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
         mac_pool.remove_macs(vm=vm)
 
@@ -374,30 +376,10 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
         body=fedora_vm_body(name),
     ) as vm:
         mac_pool.append_macs(vm=vm)
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
         yield vm
         mac_pool.remove_macs(vm=vm)
-
-
-@pytest.fixture(scope="class")
-def opted_out_ns_started_vmi(opted_out_ns_vm):
-    return running_vmi(vm=opted_out_ns_vm)
-
-
-@pytest.fixture(scope="class")
-def wrong_label_ns_started_vmi(wrong_label_ns_vm):
-    return running_vmi(vm=wrong_label_ns_vm)
-
-
-@pytest.fixture(scope="class")
-def opted_out_ns_running_vm(opted_out_ns_vm, opted_out_ns_started_vmi):
-    wait_for_vm_interfaces(vmi=opted_out_ns_started_vmi)
-    return opted_out_ns_vm
-
-
-@pytest.fixture(scope="class")
-def wrong_label_ns_running_vm(wrong_label_ns_vm, wrong_label_ns_started_vmi):
-    wait_for_vm_interfaces(vmi=wrong_label_ns_started_vmi)
-    return wrong_label_ns_vm
 
 
 @pytest.fixture(scope="class")
