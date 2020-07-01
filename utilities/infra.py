@@ -57,9 +57,7 @@ class Images:
 
 
 def label_project(name, label, admin_client):
-    ns = next(
-        Namespace.get(dyn_client=admin_client, field_selector=f"metadata.name=={name}")
-    )
+    ns = Namespace(client=admin_client, name=name)
     ResourceEditor({ns: {"metadata": {"labels": label}}}).update()
 
 

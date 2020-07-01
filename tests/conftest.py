@@ -356,6 +356,10 @@ def login_to_account(api_address, user, password=None):
     """
     Helper function for login. Raise exception if login failed
     """
+    stop_errors = [
+        "connect: no route to host",
+        "x509: certificate signed by unknown authority",
+    ]
     login_command = f"oc login {api_address} -u {user}"
     if password:
         login_command += f" -p {password}"
@@ -378,14 +382,17 @@ def login_to_account(api_address, user, password=None):
             login_result = sample.communicate()
             if sample.returncode == 0:
                 LOGGER.info(f"Login to {user} user shell - success")
-                return
+                return True
 
             LOGGER.warning(
                 f"Login to unprivileged user - failed due to the following error: "
                 f"{login_result[0].decode('utf-8')} {login_result[1].decode('utf-8')}"
             )
+            if [err for err in stop_errors if err in login_result[1].decode("utf-8")]:
+                break
+
     except TimeoutExpiredError:
-        return
+        return False
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -480,63 +487,60 @@ def unprivileged_client(default_client, unprivileged_secret):
         current_user = (
             check_output("oc whoami", shell=True).decode().strip()
         )  # Get current admin account
-        try:
-            if kube_config_exists:
-                os.environ["KUBECONFIG"] = ""
+        if kube_config_exists:
+            os.environ["KUBECONFIG"] = ""
 
-            login_to_account(
-                api_address=default_client.configuration.host,
-                user=UNPRIVILEGED_USER,
-                password=UNPRIVILEGED_PASSWORD,
-            )  # Login to unprivileged account
-            try:
-                token = (
-                    check_output("oc whoami -t", shell=True).decode().strip()
-                )  # Get token
-            except CalledProcessError:
-                LOGGER.warning(f"Failed to obtain {UNPRIVILEGED_USER} token")
+        if login_to_account(
+            api_address=default_client.configuration.host,
+            user=UNPRIVILEGED_USER,
+            password=UNPRIVILEGED_PASSWORD,
+        ):  # Login to unprivileged account
+            token = (
+                check_output("oc whoami -t", shell=True).decode().strip()
+            )  # Get token
+            token_auth = {
+                "api_key": {"authorization": f"Bearer {token}"},
+                "host": default_client.configuration.host,
+                "verify_ssl": True,
+                "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
+            }
+            configuration = kubernetes.client.Configuration()
+            for k, v in token_auth.items():
+                setattr(configuration, k, v)
 
-        finally:
             if kubeconfig_env:
                 os.environ["KUBECONFIG"] = kubeconfig_env
 
             login_to_account(
                 api_address=default_client.configuration.host, user=current_user.strip()
             )  # Get back to admin account
-            if not token:
-                yield
 
-        token_auth = {
-            "api_key": {"authorization": f"Bearer {token}"},
-            "host": default_client.configuration.host,
-            "verify_ssl": True,
-            "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
-        }
-        configuration = kubernetes.client.Configuration()
-        for k, v in token_auth.items():
-            setattr(configuration, k, v)
+            k8s_client = kubernetes.client.ApiClient(configuration)
+            yield DynamicClient(k8s_client)
+        else:
+            yield
 
-        k8s_client = kubernetes.client.ApiClient(configuration)
-        yield DynamicClient(k8s_client)
-        try:
-            if kube_config_exists:
-                os.environ["KUBECONFIG"] = ""
+        # Teardown
+        if token:
+            try:
+                if kube_config_exists:
+                    os.environ["KUBECONFIG"] = ""
 
-            login_to_account(
-                api_address=default_client.configuration.host,
-                user=UNPRIVILEGED_USER,
-                password=UNPRIVILEGED_PASSWORD,
-            )  # Login to unprivileged account
-            LOGGER.info("Logout unprivileged_client")
-            Popen(args=["oc", "logout"], stdout=PIPE, stderr=PIPE).communicate()
-        finally:
-            if kubeconfig_env:
-                os.environ["KUBECONFIG"] = kubeconfig_env
+                login_to_account(
+                    api_address=default_client.configuration.host,
+                    user=UNPRIVILEGED_USER,
+                    password=UNPRIVILEGED_PASSWORD,
+                )  # Login to unprivileged account
+                LOGGER.info("Logout unprivileged_client")
+                Popen(args=["oc", "logout"], stdout=PIPE, stderr=PIPE).communicate()
+            finally:
+                if kubeconfig_env:
+                    os.environ["KUBECONFIG"] = kubeconfig_env
 
-            login_to_account(
-                api_address=default_client.configuration.host,
-                user=current_user.strip(),
-            )  # Get back to admin account
+                login_to_account(
+                    api_address=default_client.configuration.host,
+                    user=current_user.strip(),
+                )  # Get back to admin account
 
 
 @pytest.fixture(scope="session")
@@ -728,9 +732,11 @@ class NetUtilityDaemonSet(DaemonSet):
 
 
 @pytest.fixture(scope="session")
-def kmp_vm_label():
+def kmp_vm_label(default_client):
     kmp_vm_webhook = "mutatevirtualmachines.kubemacpool.io"
-    kmp_webhook_config = MutatingWebhookConfiguration(name="kubemacpool-mutator")
+    kmp_webhook_config = MutatingWebhookConfiguration(
+        client=default_client, name="kubemacpool-mutator"
+    )
 
     for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
         if webhook["name"] == kmp_vm_webhook:
