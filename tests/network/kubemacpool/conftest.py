@@ -73,9 +73,6 @@ class MacPool:
     def get_mac_from_pool(self):
         return self.mac_sampler(func=random.choice, seq=self.pool)
 
-    def get_mac_out_of_pool(self):
-        return self.mac_sampler(func=random.randrange, start=0, stop=self.range_start)
-
     def mac_sampler(self, func, *args, **kwargs):
         sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
         for sample in sampler:
@@ -271,9 +268,7 @@ def vm_a(
             ip_address="10.200.2.1", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="10.200.3.1",
-            mac_address=mac_pool.get_mac_out_of_pool(),
-            name=all_nads[2],
+            ip_address="10.200.3.1", mac_address="02:01:00:00:00:00", name=all_nads[2],
         ),
         "eth4": IfaceTuple(
             ip_address="10.200.4.1", mac_address="auto", name=all_nads[3]
@@ -302,9 +297,7 @@ def vm_b(
             ip_address="10.200.2.2", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address="10.200.3.2",
-            mac_address=mac_pool.get_mac_out_of_pool(),
-            name=all_nads[2],
+            ip_address="10.200.3.2", mac_address="02:02:00:00:00:00", name=all_nads[2],
         ),
         "eth4": IfaceTuple(
             ip_address="10.200.4.2", mac_address="auto", name=all_nads[3]
