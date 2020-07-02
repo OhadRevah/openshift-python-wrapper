@@ -138,14 +138,18 @@ def dhcp_server_vm(namespace, node_selector_name, dhcp_br_nad, unprivileged_clie
 
     networks = [dhcp_br_nad.name]
     interfaces = [dhcp_br_nad.bridge_name]
-    vm_networks = dict(zip(interfaces, networks))
+
+    # At least until https://bugzilla.redhat.com/show_bug.cgi?id=1853028 is fixed -
+    # network name in VM spec cannot contain dot.
+    vm_interfaces = [iface.replace(".", "-") for iface in interfaces]
+    vm_networks = dict(zip(vm_interfaces, networks))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(vm_name),
         networks=vm_networks,
-        interfaces=interfaces,
+        interfaces=vm_interfaces,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
         node_selector=node_selector_name,
