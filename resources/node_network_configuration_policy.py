@@ -10,6 +10,10 @@ from .resource import Resource
 LOGGER = logging.getLogger(__name__)
 
 
+class NNCPConfigurationFailed(Exception):
+    pass
+
+
 class NodeNetworkConfigurationPolicy(Resource):
 
     api_group = "nmstate.io"
@@ -29,6 +33,7 @@ class NodeNetworkConfigurationPolicy(Resource):
 
         class Reason:
             SUCCESS = "SuccessfullyConfigured"
+            FAILED = "FailedToConfigure"
 
     def __init__(
         self,
@@ -123,6 +128,7 @@ class NodeNetworkConfigurationPolicy(Resource):
         super().__enter__()
 
         try:
+            self.wait_for_status_success()
             self.validate_create()
             return self
         except Exception as e:
@@ -241,3 +247,36 @@ class NodeNetworkConfigurationPolicy(Resource):
                     self.set_interface(interface=interface)
 
         self.apply()
+
+    def status(self):
+        for condition in self.instance.status.conditions:
+            if condition["type"] == self.Conditions.Type.AVAILABLE:
+                return condition["reason"]
+
+    def wait_for_status_success(self):
+        # if we get here too fast there are no conditions, we need to wait.
+        self.wait_for_conditions()
+
+        samples = TimeoutSampler(timeout=30, sleep=1, func=self.status)
+        try:
+            for sample in samples:
+                if sample == self.Conditions.Reason.SUCCESS:
+                    LOGGER.info("NNCP configured Successfully")
+                    return sample
+
+                if sample == self.Conditions.Reason.FAILED:
+                    raise NNCPConfigurationFailed(
+                        f"Reason: {self.Conditions.Reason.FAILED}"
+                    )
+
+        except (TimeoutExpiredError, NNCPConfigurationFailed):
+            LOGGER.error("Unable to configure NNCP for node")
+            raise
+
+    def wait_for_conditions(self):
+        samples = TimeoutSampler(
+            timeout=30, sleep=1, func=lambda: self.instance.status.conditions
+        )
+        for sample in samples:
+            if sample:
+                return

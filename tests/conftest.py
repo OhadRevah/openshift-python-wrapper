@@ -1267,39 +1267,10 @@ def worker_nodes_ipv4_false_secondary_nics(
             worker_pods=network_utility_pods,
             interfaces_name=worker_nics[1:],
             node_active_nics=worker_nics,
-        ) as nncp:
-            wait_for_nncp_status_success(nncp=nncp)
-            LOGGER.info(
-                f"selected worker node - {worker_node.name} under nncp selected nic information - {worker_nics} "
-            )
-
-
-def check_nncp_success_status(nncp):
-    """
-    Check if nncp configured correctly for all nics/nodes.
-    """
-    for condition in nncp.instance.status.conditions:
-        if (
-            condition["reason"]
-            == NodeNetworkConfigurationPolicy.Conditions.Reason.SUCCESS
-            and condition["type"]
-            == NodeNetworkConfigurationPolicy.Conditions.Type.AVAILABLE
         ):
-            return True
-
-
-def wait_for_nncp_status_success(nncp):
-    samples = TimeoutSampler(
-        timeout=30, sleep=1, func=check_nncp_success_status, nncp=nncp,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                LOGGER.info("NNCP configured Successfully")
-                return sample
-    except TimeoutExpiredError:
-        LOGGER.error("Unable to configure NNCP for node")
-        raise
+            LOGGER.info(
+                f"selected worker node - {worker_node.name} under NNCP selected NIC information - {worker_nics} "
+            )
 
 
 @pytest.fixture(scope="session")
