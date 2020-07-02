@@ -22,6 +22,11 @@ from tests.must_gather import utils
 from utilities.infra import BUG_STATUS_CLOSED
 
 
+pytestmark = pytest.mark.bugzilla(
+    1853028, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
+
+
 @pytest.mark.parametrize(
     ("resource_type", "resource_path", "checks"),
     [
