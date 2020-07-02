@@ -9,7 +9,6 @@ from tests.network.host_network.vlan.utils import (
     assert_vlan_iface_no_ip,
     assert_vlan_interface,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
@@ -29,9 +28,6 @@ class TestVlanInterface:
             workers_ssh_executors=workers_ssh_executors,
         )
 
-    @pytest.mark.bugzilla(
-        1852786, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.run(before="test_vlan_deletion")
     @pytest.mark.polarion("CNV-3451")
     def test_vlan_connectivity_on_several_hosts(
@@ -55,9 +51,6 @@ class TestVlanInterface:
             dhcp_clients_list=dhcp_client_nodes,
         )
 
-    @pytest.mark.bugzilla(
-        1852786, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.run(before="test_vlan_deletion")
     @pytest.mark.polarion("CNV-3452")
     def test_vlan_connectivity_on_one_host(
@@ -80,9 +73,6 @@ class TestVlanInterface:
             no_dhcp_client_list=[disabled_dhcp_client_2],
         )
 
-    @pytest.mark.bugzilla(
-        1852786, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.run(before="test_vlan_deletion")
     @pytest.mark.polarion("CNV-3463")
     def test_no_connectivity_between_different_vlan_tags(
@@ -139,9 +129,6 @@ class TestVlanInterface:
 
 
 class TestVlanBond:
-    @pytest.mark.bugzilla(
-        1852786, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.polarion("CNV-3469")
     def test_vlan_connectivity_over_bond_on_all_hosts(
         self,
