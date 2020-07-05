@@ -4,16 +4,14 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-flake8 = "*"
-pytest = "*"
+ipython = "*"
+ipdb = "*"
 
 [packages]
 openshift = "*"
 kubernetes = "*"
 pexpect = "*"
 PyYAML = "*"
-ipython = "*"
-ipdb = "*"
 pytest = "*"
 bitmath = "*"
 urllib3 = "*"
@@ -21,7 +19,7 @@ netaddr = "*"
 bcrypt = "*"
 pytest-marker-bugzilla = "*"
 pytest-testconfig = "*"
-python-bugzilla = "*"
+python-bugzilla = "==2.3.0"  # pipenv fail to install on python 3.6.8 if version is > 2.3.0
 sh = "*"
 pytest-ordering = "*"
 ansible = {editable = true,git = "https://github.com/ansible/ansible.git",ref = "devel"}
@@ -32,6 +30,7 @@ xmltodict = "*"
 pytest-jira = "==0.3.11"
 python-rrmngmnt = "*"
 importlib-metadata = "*"
+importlib-resources = "*"
 ovirt-python-sdk = "*"
 
 [requires]
