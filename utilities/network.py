@@ -434,6 +434,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         slaves,
         worker_pods,
         mode,
+        primary_slave=None,
         node_selector=None,
         mtu=None,
         teardown=True,
@@ -452,10 +453,14 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.bond_name = bond_name
         self.slaves = slaves
         self.mode = mode
+        self.primary_slave = primary_slave
         self.ports = self.slaves
 
     def to_dict(self):
         if not self.iface:
+            options_dic = {"miimon": "120"}
+            if self.mode == "active-backup" and self.primary_slave is not None:
+                options_dic.update({"primary": self.primary_slave})
             self.iface = {
                 "name": self.bond_name,
                 "type": "bond",
@@ -464,7 +469,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "link-aggregation": {
                     "mode": self.mode,
                     "slaves": self.slaves,
-                    "options": {"miimon": "120"},
+                    "options": options_dic,
                 },
             }
             if self.mtu:
