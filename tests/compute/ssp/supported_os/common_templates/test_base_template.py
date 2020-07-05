@@ -14,60 +14,49 @@ from tests.compute.ssp.supported_os.common_templates import utils
 
 LOGGER = logging.getLogger(__name__)
 
-CNV_TEMPLATES_NAME = [
-    "fedora-desktop-large",
-    "fedora-desktop-medium",
-    "fedora-desktop-small",
-    "fedora-desktop-tiny",
-    "fedora-highperformance-large",
-    "fedora-highperformance-medium",
-    "fedora-highperformance-small",
-    "fedora-highperformance-tiny",
-    "fedora-server-large",
-    "fedora-server-medium",
-    "fedora-server-small",
-    "fedora-server-tiny",
-    "rhel6-desktop-large",
-    "rhel6-desktop-medium",
-    "rhel6-desktop-small",
-    "rhel6-desktop-tiny",
-    "rhel6-server-large",
-    "rhel6-server-medium",
-    "rhel6-server-small",
-    "rhel6-server-tiny",
-    "rhel7-desktop-large",
-    "rhel7-desktop-medium",
-    "rhel7-desktop-small",
-    "rhel7-desktop-tiny",
-    "rhel7-highperformance-large",
-    "rhel7-highperformance-medium",
-    "rhel7-highperformance-small",
-    "rhel7-highperformance-tiny",
-    "rhel7-server-large",
-    "rhel7-server-medium",
-    "rhel7-server-small",
-    "rhel7-server-tiny",
-    "rhel8-desktop-large",
-    "rhel8-desktop-medium",
-    "rhel8-desktop-small",
-    "rhel8-desktop-tiny",
-    "rhel8-highperformance-large",
-    "rhel8-highperformance-medium",
-    "rhel8-highperformance-small",
-    "rhel8-highperformance-tiny",
-    "rhel8-server-large",
-    "rhel8-server-medium",
-    "rhel8-server-small",
-    "rhel8-server-tiny",
-    "win2k12r2-desktop-large",
-    "win2k12r2-desktop-medium",
-    "win2k12r2-server-large",
-    "win2k12r2-server-medium",
-    "windows-server-large",
-    "windows-server-medium",
-    "windows10-desktop-large",
-    "windows10-desktop-medium",
-]
+LINUX_WORKLOADS_LIST = ["tiny", "small", "medium", "large"]
+LINUX_FLAVORS_LIST = ["desktop", "highperformance", "server"]
+
+
+@pytest.fixture()
+def common_templates_expected_list():
+    common_templates_list = get_rhel_templates_list()
+    common_templates_list += get_fedora_templates_list()
+    common_templates_list += get_windows_templates_list()
+    return common_templates_list
+
+
+def get_rhel_templates_list():
+    rhel_major_releases_list = ["6", "7", "8"]
+    # RHEL6 - only desktop and server versions are released
+    return [
+        f"rhel{release}-{flavor}-{workload}"
+        for release in rhel_major_releases_list
+        for flavor in LINUX_FLAVORS_LIST
+        for workload in LINUX_WORKLOADS_LIST
+        if not (release == "6" and flavor == "highperformance")
+    ]
+
+
+def get_fedora_templates_list():
+    return [
+        f"fedora-{flavor}-{workload}"
+        for flavor in LINUX_FLAVORS_LIST
+        for workload in LINUX_WORKLOADS_LIST
+    ]
+
+
+def get_windows_templates_list():
+    return [
+        "win2k12r2-desktop-large",
+        "win2k12r2-desktop-medium",
+        "win2k12r2-server-large",
+        "win2k12r2-server-medium",
+        "windows-server-large",
+        "windows-server-medium",
+        "windows10-desktop-large",
+        "windows10-desktop-medium",
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -83,14 +72,17 @@ def base_templates(default_client):
 
 
 @pytest.mark.polarion("CNV-1069")
-def test_base_templates_annotations(skip_not_openshift, base_templates):
+def test_base_templates_annotations(
+    skip_not_openshift, base_templates, common_templates_expected_list
+):
     """
     Check all CNV templates exists, by label: template.kubevirt.io/type=base
     """
-    base_templates = [template.name for template in base_templates]
-    assert len(base_templates) == len(CNV_TEMPLATES_NAME), (
+    base_templates = [template.name.split("-v")[0] for template in base_templates]
+
+    assert not set(base_templates) ^ set(common_templates_expected_list), (
         f"Not all base CNV templates exists\n exist templates:\n "
-        f"{base_templates} expected:\n {CNV_TEMPLATES_NAME}",
+        f"{base_templates} expected:\n {common_templates_expected_list}",
     )
 
 
