@@ -503,6 +503,17 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 [f"{label}=true" for label in self.template_labels]
             ),
         )
+
+        # TODO: when https://bugzilla.redhat.com/show_bug.cgi?id=1854081 is fixed:
+        # 1. Add assert len(list(template)) == 1
+        # 2. Remove explicit selection of Windows templates
+        if any(re.search(r".*/win.*", label) for label in self.template_labels):
+            template = (
+                _template
+                for _template in template
+                if re.match(r"^windows(" r"10)?-.*", _template.name)
+            )
+
         return list(template)[0]
 
 
