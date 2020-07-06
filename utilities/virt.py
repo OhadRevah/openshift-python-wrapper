@@ -141,6 +141,8 @@ class VirtualMachineForTests(VirtualMachine):
         cpu_placement=False,
         template_dv=None,
         termination_grace_period=None,
+        smm_enabled=None,
+        efi_params=None,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -177,6 +179,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.cpu_placement = cpu_placement
         self.template_dv = template_dv
         self.termination_grace_period = termination_grace_period
+        self.smm_enabled = smm_enabled
+        self.efi_params = efi_params
 
     def __enter__(self):
         super().__enter__()
@@ -379,6 +383,16 @@ class VirtualMachineForTests(VirtualMachine):
                     "kubernetes.io/hostname": self.dv.hostpath_node
                     or self.dv.pvc.selected_node
                 }
+
+        if self.smm_enabled is not None:
+            spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
+                "smm", {}
+            )["enabled"] = self.smm_enabled
+
+        if self.efi_params is not None:
+            spec.setdefault("domain", {}).setdefault("firmware", {}).setdefault(
+                "bootloader", {}
+            )["efi"] = self.efi_params
 
         if self.machine_type:
             spec.setdefault("domain", {}).setdefault("machine", {})[
