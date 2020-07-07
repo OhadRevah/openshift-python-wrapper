@@ -17,6 +17,7 @@ from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
 from resources.service_account import ServiceAccount
+from resources.sriov_network import SriovNetwork
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -207,9 +208,18 @@ class VirtualMachineForTests(VirtualMachine):
         ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
 
         for iface_name in self.interfaces:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "interfaces", []
-            ).append({"name": iface_name, "bridge": {}})
+            if SriovNetwork(
+                name=iface_name,
+                network_namespace=self.namespace,
+                policy_namespace=py_config["sriov_namespace"],
+            ).exists:
+                spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                    "interfaces", []
+                ).append({"name": iface_name, "sriov": {}})
+            else:
+                spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                    "interfaces", []
+                ).append({"name": iface_name, "bridge": {}})
 
         for iface_name, network in self.networks.items():
             spec.setdefault("networks", []).append(
