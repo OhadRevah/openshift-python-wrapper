@@ -23,12 +23,12 @@ SLEEP = 5
 
 
 @pytest.fixture(scope="class")
-def vma(schedulable_nodes, namespace, unprivileged_client):
+def vma(worker_node1, namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -38,12 +38,12 @@ def vma(schedulable_nodes, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def vmb(schedulable_nodes, namespace, unprivileged_client):
+def vmb(worker_node2, namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=schedulable_nodes[1].name,
+        node_selector=worker_node2.name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
@@ -71,7 +71,7 @@ def bond(
     skip_no_bond_support,
     network_utility_pods,
     nodes_active_nics,
-    schedulable_nodes,
+    worker_node1,
     worker_nodes_ipv4_false_secondary_nics,
 ):
     """
@@ -84,7 +84,7 @@ def bond(
         worker_pods=network_utility_pods,
         mode="active-backup",
         mtu=1450,
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         ipv4_dhcp=True,
     ) as bond:
         yield bond

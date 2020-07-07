@@ -54,16 +54,15 @@ def bridge_device(
     nncp_name,
     bridge_name,
     network_utility_pods,
-    nodes,
+    nodes=None,
     ports=None,
     mtu=None,
     node_selector=None,
     ipv4_dhcp=None,
 ):
+    nodes_names = [node_selector] if node_selector else [node.name for node in nodes]
     schedulable_worker_pods = [
-        pod
-        for pod in network_utility_pods
-        if pod.node.name in [node.name for node in nodes]
+        pod for pod in network_utility_pods if pod.node.name in nodes_names
     ]
     with BRIDGE_DEVICE_TYPE[bridge_type](
         name=nncp_name,

@@ -93,22 +93,22 @@ def bridge_device_on_all_nodes(network_utility_pods, schedulable_nodes):
 
 
 @pytest.fixture()
-def non_homogenous_bridges(skip_when_one_node, network_utility_pods, schedulable_nodes):
+def non_homogenous_bridges(
+    skip_when_one_node, network_utility_pods, worker_node1, worker_node2
+):
     with network_utils.bridge_device(
         bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="bridge-marker2",
         bridge_name=BRIDGEMARKER2,
-        network_utility_pods=[network_utility_pods[0]],
-        nodes=schedulable_nodes,
-        node_selector=network_utility_pods[0].node.name,
+        network_utility_pods=network_utility_pods,
+        node_selector=worker_node1.name,
     ) as bridgemarker2_ncp:
         with network_utils.bridge_device(
             bridge_type=utilities.network.LINUX_BRIDGE,
             nncp_name="bridge-marker3",
             bridge_name=BRIDGEMARKER3,
-            network_utility_pods=[network_utility_pods[1]],
-            nodes=schedulable_nodes,
-            node_selector=network_utility_pods[1].node.name,
+            network_utility_pods=network_utility_pods,
+            node_selector=worker_node2.name,
         ) as bridgemarker3_ncp:
             yield (bridgemarker2_ncp, bridgemarker3_ncp)
 

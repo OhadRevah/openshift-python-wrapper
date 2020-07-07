@@ -150,15 +150,3 @@ def bridges_on_management_ifaces_node2(
     network_utils.wait_for_address_on_iface(
         worker_pod=worker_pod, iface_name=management_iface
     )
-
-
-@pytest.fixture(scope="module")
-def worker_node1(schedulable_nodes):
-    # Get first worker nodes out of schedulable_nodes list
-    return schedulable_nodes[0]
-
-
-@pytest.fixture(scope="module")
-def worker_node2(schedulable_nodes):
-    # Get second worker nodes out of schedulable_nodes list
-    return schedulable_nodes[1]

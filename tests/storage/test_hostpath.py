@@ -109,7 +109,7 @@ def hpp_daemonset():
     )
 
 
-def verify_image_location_via_dv_pod_with_pvc(dv, schedulable_nodes):
+def verify_image_location_via_dv_pod_with_pvc(dv, worker_node):
     dv.wait()
     with storage_utils.PodWithPVC(
         namespace=dv.namespace,
@@ -119,18 +119,18 @@ def verify_image_location_via_dv_pod_with_pvc(dv, schedulable_nodes):
     ) as pod:
         pod.wait_for_status(status="Running")
         LOGGER.debug("Check pod location...")
-        assert pod.instance["spec"]["nodeName"] == schedulable_nodes[0].name
+        assert pod.instance["spec"]["nodeName"] == worker_node.name
         LOGGER.debug("Check image location...")
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
-def verify_image_location_via_dv_virt_launcher_pod(dv, schedulable_nodes):
+def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node):
     dv.wait()
     with storage_utils.create_vm_from_dv(dv=dv) as vm:
         vm.vmi.wait_until_running()
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check pod location...")
-        assert v_pod.instance["spec"]["nodeName"] == schedulable_nodes[0].name
+        assert v_pod.instance["spec"]["nodeName"] == worker_node.name
         LOGGER.debug("Check image location...")
         assert "disk.img" in v_pod.execute(
             command=["ls", "-1", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
@@ -159,9 +159,7 @@ def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
 
 
 @pytest.mark.polarion("CNV-2817")
-def test_hostpath_pod_reference_pvc(
-    skip_test_if_no_hpp_sc, namespace, schedulable_nodes
-):
+def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, namespace, worker_node1):
     """
     Check that after disk image is written to the PVC which has been provisioned on the specified node,
     Pod can use this image.
@@ -175,11 +173,9 @@ def test_hostpath_pod_reference_pvc(
         size="20Gi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as dv:
-        verify_image_location_via_dv_pod_with_pvc(
-            dv=dv, schedulable_nodes=schedulable_nodes
-        )
+        verify_image_location_via_dv_pod_with_pvc(dv=dv, worker_node=worker_node1)
 
 
 @pytest.mark.polarion("CNV-3354")
@@ -206,7 +202,7 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
 
 @pytest.mark.polarion("CNV-3228")
 def test_hpp_specify_node_immediate(
-    skip_when_hpp_no_immediate, namespace, schedulable_nodes
+    skip_when_hpp_no_immediate, namespace, worker_node1
 ):
     """
     Check that the PVC will bound PV and DataVolume status becomes Succeeded once importer Pod finished importing
@@ -222,7 +218,7 @@ def test_hpp_specify_node_immediate(
         size="35Gi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as dv:
         dv.wait(timeout=600)
 
@@ -243,7 +239,7 @@ def test_hpp_specify_node_immediate(
     ],
 )
 def test_hostpath_http_import_dv(
-    skip_when_hpp_no_immediate, namespace, dv_name, image_name, schedulable_nodes,
+    skip_when_hpp_no_immediate, namespace, dv_name, image_name, worker_node1,
 ):
     """
     Check that CDI importing from HTTP endpoint works well with hostpath-provisioner
@@ -257,11 +253,9 @@ def test_hostpath_http_import_dv(
         size="500Mi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as dv:
-        verify_image_location_via_dv_virt_launcher_pod(
-            dv=dv, schedulable_nodes=schedulable_nodes
-        )
+        verify_image_location_via_dv_virt_launcher_pod(dv=dv, worker_node=worker_node1)
 
 
 @pytest.mark.polarion("CNV-3227")
@@ -296,7 +290,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 
 @pytest.mark.polarion("CNV-3280")
 def test_hpp_pvc_specify_node_waitforfirstconsumer(
-    skip_when_hpp_no_waitforfirstconsumer, namespace, schedulable_nodes,
+    skip_when_hpp_no_waitforfirstconsumer, namespace, worker_node1,
 ):
     """
     Check that kubevirt.io/provisionOnNode annotation works in WaitForFirstConsumer mode.
@@ -308,11 +302,11 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as pvc:
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=60)
         assert_provision_on_node_annotation(
-            pvc=pvc, node_name=schedulable_nodes[0].name, type_="regular"
+            pvc=pvc, node_name=worker_node1.name, type_="regular"
         )
         with storage_utils.PodWithPVC(
             namespace=pvc.namespace,
@@ -321,7 +315,7 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
             volume_mode=DataVolume.VolumeMode.FILE,
         ) as pod:
             pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
-            assert pod.instance.spec.nodeName == schedulable_nodes[0].name
+            assert pod.instance.spec.nodeName == worker_node1.name
 
 
 @pytest.mark.polarion("CNV-2771")
@@ -366,7 +360,7 @@ def test_hostpath_upload_dv_with_token(
     skip_when_cdiconfig_scratch_no_hpp,
     namespace,
     tmpdir,
-    schedulable_nodes,
+    worker_node1,
 ):
     dv_name = "cnv-2769"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
@@ -380,7 +374,7 @@ def test_hostpath_upload_dv_with_token(
         namespace=namespace.name,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
@@ -388,9 +382,7 @@ def test_hostpath_upload_dv_with_token(
             storage_ns_name=dv.namespace, pvc_name=dv.pvc.name, data=local_name
         )
         dv.wait()
-        verify_image_location_via_dv_pod_with_pvc(
-            dv=dv, schedulable_nodes=schedulable_nodes
-        )
+        verify_image_location_via_dv_pod_with_pvc(dv=dv, worker_node=worker_node1)
 
 
 @pytest.mark.parametrize(
@@ -415,7 +407,7 @@ def test_hostpath_registry_import_dv(
     namespace,
     dv_name,
     url,
-    schedulable_nodes,
+    worker_node1,
 ):
     """
     Check that when importing image from public registry with kubevirt.io/provisionOnNode annotation works well.
@@ -429,7 +421,7 @@ def test_hostpath_registry_import_dv(
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
@@ -440,12 +432,10 @@ def test_hostpath_registry_import_dv(
             pvc=dv.scratch_pvc, pod=dv.importer_pod, type_="scratch"
         )
         assert_provision_on_node_annotation(
-            pvc=dv.pvc, node_name=schedulable_nodes[0].name, type_="import"
+            pvc=dv.pvc, node_name=worker_node1.name, type_="import"
         )
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
-        verify_image_location_via_dv_virt_launcher_pod(
-            dv=dv, schedulable_nodes=schedulable_nodes
-        )
+        verify_image_location_via_dv_virt_launcher_pod(dv=dv, worker_node=worker_node1)
 
 
 @pytest.mark.parametrize(
@@ -535,7 +525,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
 
 @pytest.mark.polarion("CNV-2770")
 def test_hostpath_clone_dv_with_annotation(
-    skip_test_if_no_hpp_sc, namespace, schedulable_nodes
+    skip_test_if_no_hpp_sc, namespace, worker_node1
 ):
     """
     Check that on WaitForFirstConsumer or Immediate binding mode,
@@ -552,11 +542,11 @@ def test_hostpath_clone_dv_with_annotation(
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as source_dv:
         source_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=300)
         assert_provision_on_node_annotation(
-            pvc=source_dv.pvc, node_name=schedulable_nodes[0].name, type_="import"
+            pvc=source_dv.pvc, node_name=worker_node1.name, type_="import"
         )
         with create_dv(
             source="pvc",
@@ -564,14 +554,14 @@ def test_hostpath_clone_dv_with_annotation(
             namespace=namespace.name,
             size="1Gi",
             storage_class=StorageClass.Types.HOSTPATH,
-            hostpath_node=schedulable_nodes[0].name,
+            hostpath_node=worker_node1.name,
             volume_mode=DataVolume.VolumeMode.FILE,
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
         ) as target_dv:
             target_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=600)
             assert_provision_on_node_annotation(
-                pvc=target_dv.pvc, node_name=schedulable_nodes[0].name, type_="target"
+                pvc=target_dv.pvc, node_name=worker_node1.name, type_="target"
             )
             with storage_utils.create_vm_from_dv(dv=target_dv) as vm:
                 storage_utils.check_disk_count_in_vm(vm=vm)

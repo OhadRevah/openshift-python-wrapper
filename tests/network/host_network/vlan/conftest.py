@@ -316,15 +316,15 @@ def vlan_iface_bond_dhcp_client_2(
 
 # General fixtures
 @pytest.fixture(scope="module")
-def vlan_base_iface(network_utility_pods, nodes_active_nics):
+def vlan_base_iface(worker_node1, nodes_active_nics):
     # Select the last NIC from the list as a way to ensure that the selected NIC
     # is not already used (e.g. as a bond's slave).
-    return nodes_active_nics[network_utility_pods[0].node.name][-1]
+    return nodes_active_nics[worker_node1.name][-1]
 
 
 @pytest.fixture(scope="module")
-def node_selector_name(network_utility_pods):
-    return network_utility_pods[0].node.name
+def node_selector_name(worker_node1):
+    return worker_node1.name
 
 
 @pytest.fixture(scope="module")

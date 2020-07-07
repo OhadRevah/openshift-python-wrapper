@@ -105,12 +105,12 @@ def allow_http80_port(namespace_1):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace_1, schedulable_nodes, unprivileged_client):
+def vma(namespace_1, worker_node1, unprivileged_client):
     name = "vma"
     with VirtualMachineMasquerade(
         namespace=namespace_1.name,
         name=name,
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
@@ -118,12 +118,12 @@ def vma(namespace_1, schedulable_nodes, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace_2, schedulable_nodes, unprivileged_client):
+def vmb(namespace_2, worker_node1, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace_2.name,
         name=name,
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,

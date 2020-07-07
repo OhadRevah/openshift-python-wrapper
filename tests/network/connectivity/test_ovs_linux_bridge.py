@@ -140,12 +140,7 @@ def bridge_on_bond(
 
 @pytest.fixture(scope="class")
 def bridge_attached_vma(
-    schedulable_nodes,
-    namespace,
-    unprivileged_client,
-    nad,
-    br1vlan100_nad,
-    br1vlan200_nad,
+    worker_node1, namespace, unprivileged_client, nad, br1vlan100_nad, br1vlan200_nad,
 ):
     name = "vma"
     networks = OrderedDict()
@@ -165,7 +160,7 @@ def bridge_attached_vma(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -175,12 +170,7 @@ def bridge_attached_vma(
 
 @pytest.fixture(scope="class")
 def bridge_attached_vmb(
-    schedulable_nodes,
-    namespace,
-    unprivileged_client,
-    nad,
-    br1vlan100_nad,
-    br1vlan300_nad,
+    worker_node2, namespace, unprivileged_client, nad, br1vlan100_nad, br1vlan300_nad,
 ):
     name = "vmb"
     networks = OrderedDict()
@@ -200,7 +190,7 @@ def bridge_attached_vmb(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=schedulable_nodes[1].name,
+        node_selector=worker_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -210,7 +200,7 @@ def bridge_attached_vmb(
 
 @pytest.fixture(scope="class")
 def bond_bridge_attached_vma(
-    schedulable_nodes, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
+    worker_node1, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
 ):
     name = "bond-vma"
     networks = OrderedDict()
@@ -225,7 +215,7 @@ def bond_bridge_attached_vma(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -235,7 +225,7 @@ def bond_bridge_attached_vma(
 
 @pytest.fixture(scope="class")
 def bond_bridge_attached_vmb(
-    schedulable_nodes, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
+    worker_node2, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
 ):
     name = "bond-vmb"
     networks = OrderedDict()
@@ -250,7 +240,7 @@ def bond_bridge_attached_vmb(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=schedulable_nodes[1].name,
+        node_selector=worker_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:

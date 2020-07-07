@@ -47,14 +47,13 @@ def bridge_on_all_nodes(
 
 
 @pytest.fixture(scope="module")
-def bridge_on_one_node(network_utility_pods, schedulable_nodes):
+def bridge_on_one_node(network_utility_pods, worker_node1):
     with network_utils.bridge_device(
         bridge_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         bridge_name="upg-br-mark",
-        network_utility_pods=[network_utility_pods[0]],
-        nodes=schedulable_nodes,
-        node_selector=network_utility_pods[0].node.name,
+        network_utility_pods=network_utility_pods,
+        node_selector=worker_node1.name,
     ) as br:
         yield br
 
@@ -137,7 +136,7 @@ def br1test_nad(namespace, bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="module")
-def dvs_for_upgrade(namespace, schedulable_nodes):
+def dvs_for_upgrade(namespace, worker_node1):
     dvs_list = []
     for sc in py_config["system_storage_class_matrix"]:
         storage_class = [*sc][0]
@@ -150,7 +149,7 @@ def dvs_for_upgrade(namespace, schedulable_nodes):
             access_modes=sc[storage_class]["access_mode"],
             url=f"{get_images_external_http_server()}{py_config['latest_rhel_version']['image']}",
             size="25Gi",
-            hostpath_node=schedulable_nodes[0].name
+            hostpath_node=worker_node1.name
             if storage_class == "hostpath-provisioner"
             else None,
         )

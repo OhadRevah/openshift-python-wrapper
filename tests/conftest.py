@@ -807,11 +807,11 @@ def skip_if_workers_vms(workers_type):
 
 # RHEL 7 specific fixtures
 @pytest.fixture(scope="session")
-def rhel7_workers(schedulable_nodes):
+def rhel7_workers(worker_node1):
     # Check only the first Node since mixed rchos and RHEL7 workers in cluster is not supported.
     return re.search(
         r"^Red Hat Enterprise Linux Server 7\.\d",
-        schedulable_nodes[0].instance.status.nodeInfo.osImage,
+        worker_node1.instance.status.nodeInfo.osImage,
     )
 
 
@@ -1004,7 +1004,7 @@ def bridge_attached_helper_vm(
     workers_type,
     skip_ceph_on_rhel7,
     rhel7_workers,
-    schedulable_nodes,
+    worker_node1,
     namespace,
     unprivileged_client,
     network_attachment_definition,
@@ -1049,7 +1049,7 @@ def bridge_attached_helper_vm(
             body=fedora_vm_body(name),
             networks=networks,
             interfaces=sorted(networks.keys()),
-            node_selector=schedulable_nodes[0].name,
+            node_selector=worker_node1.name,
             cloud_init_data=cloud_init_data,
             client=unprivileged_client,
         ) as vm:
@@ -1074,7 +1074,7 @@ def vm_instance_from_template(
     data_volume,
     network_configuration,
     cloud_init_data,
-    schedulable_nodes=None,
+    node_selector=None,
 ):
     """ Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
@@ -1102,9 +1102,7 @@ def vm_instance_from_template(
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
         attached_secret=params.get("attached_secret"),
-        node_selector=schedulable_nodes[params.get("node_selector_index")].name
-        if params.get("node_selector_index") is not None
-        else None,
+        node_selector=node_selector,
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True)
@@ -1294,3 +1292,15 @@ def hco_namespace(default_client):
             field_selector=f"metadata.name=={py_config['hco_namespace']}",
         )
     )[0]
+
+
+@pytest.fixture(scope="session")
+def worker_node1(schedulable_nodes):
+    # Get first worker nodes out of schedulable_nodes list
+    return schedulable_nodes[0]
+
+
+@pytest.fixture(scope="session")
+def worker_node2(schedulable_nodes):
+    # Get second worker nodes out of schedulable_nodes list
+    return schedulable_nodes[1]

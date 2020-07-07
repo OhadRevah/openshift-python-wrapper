@@ -36,7 +36,7 @@ def bond(
     link_aggregation_mode_no_connectivity_matrix__class__,
     network_utility_pods,
     nodes_active_nics,
-    schedulable_nodes,
+    worker_node1,
 ):
     """
     Create BOND if setup support BOND
@@ -48,18 +48,14 @@ def bond(
         worker_pods=network_utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         mtu=1450,
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
     ) as bond:
         yield bond
 
 
 @pytest.fixture(scope="class")
 def bond_bridge(
-    bridge_device_matrix__class__,
-    network_utility_pods,
-    schedulable_nodes,
-    bond_nad,
-    bond,
+    bridge_device_matrix__class__, network_utility_pods, worker_node1, bond_nad, bond,
 ):
     """
     Create bridge and attach the BOND to it
@@ -69,16 +65,15 @@ def bond_bridge(
         nncp_name="bridge-on-bond",
         bridge_name=bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,
-        nodes=schedulable_nodes,
         ports=[bond.bond_name],
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="class")
 def bond_vm(
-    schedulable_nodes, namespace, unprivileged_client, bond_nad, bond_bridge,
+    worker_node1, namespace, unprivileged_client, bond_nad, bond_bridge,
 ):
     name = "bond-vm"
     networks = OrderedDict()
@@ -90,7 +85,7 @@ def bond_vm(
         body=fedora_vm_body(name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=schedulable_nodes[0].name,
+        node_selector=worker_node1.name,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:

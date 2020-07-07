@@ -25,7 +25,7 @@ def _assert_cdi_delete(exc_info):
 
 
 @pytest.fixture(scope="module")
-def pvc_hpp(namespace, schedulable_nodes):
+def pvc_hpp(namespace, worker_node1):
     LOGGER.debug("Use 'pvc_hpp' fixture...")
     with PersistentVolumeClaim(
         name="pvc-hpp",
@@ -33,7 +33,7 @@ def pvc_hpp(namespace, schedulable_nodes):
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as pvc:
         pvc.wait()
         yield pvc

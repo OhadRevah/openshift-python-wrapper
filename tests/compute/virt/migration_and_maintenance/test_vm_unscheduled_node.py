@@ -11,7 +11,7 @@ from tests.conftest import vm_instance_from_template
 @pytest.fixture()
 def vm(
     request,
-    schedulable_nodes,
+    worker_node1,
     unprivileged_client,
     namespace,
     data_volume_scope_function,
@@ -25,7 +25,7 @@ def vm(
         data_volume=data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
-        schedulable_nodes=schedulable_nodes,
+        node_selector=worker_node1.name,
     ) as vm:
         yield vm
 
@@ -46,7 +46,6 @@ def vm(
                     "workload": "server",
                     "flavor": "tiny",
                 },
-                "node_selector_index": 0,
                 "start_vm": False,
             },
         )

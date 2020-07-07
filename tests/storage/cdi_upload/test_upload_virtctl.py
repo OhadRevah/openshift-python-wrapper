@@ -252,7 +252,7 @@ def test_virtctl_image_upload_with_exist_dv(
 
 
 @pytest.fixture()
-def empty_pvc(namespace, storage_class_matrix__module__, schedulable_nodes):
+def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
     LOGGER.debug("Use 'empty_pvc' fixture...")
     storage_class = [*storage_class_matrix__module__][0]
     with PersistentVolumeClaim(
@@ -262,7 +262,7 @@ def empty_pvc(namespace, storage_class_matrix__module__, schedulable_nodes):
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         accessmodes=storage_class_matrix__module__[storage_class]["access_mode"],
         size="1Gi",
-        hostpath_node=schedulable_nodes[0].name,
+        hostpath_node=worker_node1.name,
     ) as pvc:
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=60)
         yield pvc
