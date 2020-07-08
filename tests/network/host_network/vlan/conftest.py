@@ -130,7 +130,7 @@ def dhcp_server(running_dhcp_server_vm):
 
 
 @pytest.fixture(scope="module")
-def dhcp_server_vm(namespace, node_selector_name, dhcp_br_nad, unprivileged_client):
+def dhcp_server_vm(namespace, worker_node1, dhcp_br_nad, unprivileged_client):
     cloud_init_data = dhcp_server_cloud_init_data(
         dhcp_iface_ip_addr=f"{DHCP_IP_SUBNET}.1"
     )
@@ -152,7 +152,7 @@ def dhcp_server_vm(namespace, node_selector_name, dhcp_br_nad, unprivileged_clie
         interfaces=vm_interfaces,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-        node_selector=node_selector_name,
+        node_selector=worker_node1.name,
     ) as vm:
         yield vm
 
@@ -167,7 +167,7 @@ def running_dhcp_server_vm(dhcp_server_vm):
 
 @pytest.fixture(scope="module")
 def dhcp_server_bridge(
-    dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, node_selector_name
+    dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, worker_node1
 ):
     bridge_name = f"{dhcp_server_vlan_iface.iface_name}-br"
     with bridge_device(
@@ -177,7 +177,7 @@ def dhcp_server_bridge(
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[dhcp_server_vlan_iface.iface_name],
-        node_selector=node_selector_name,
+        node_selector=worker_node1.name,
     ) as br:
         yield br
 
@@ -202,7 +202,7 @@ def dhcp_br_nad(dhcp_server_bridge, namespace):
 def dhcp_server_vlan_iface(
     skip_if_no_multinic_nodes,
     network_utility_pods,
-    node_selector_name,
+    worker_node1,
     vlan_base_iface,
     vlan_tag_id,
 ):
@@ -212,7 +212,7 @@ def dhcp_server_vlan_iface(
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
-        node_selector=node_selector_name,
+        node_selector=worker_node1.name,
     ) as vlan_iface:
         yield vlan_iface
 
@@ -320,11 +320,6 @@ def vlan_base_iface(worker_node1, nodes_active_nics):
     # Select the last NIC from the list as a way to ensure that the selected NIC
     # is not already used (e.g. as a bond's slave).
     return nodes_active_nics[worker_node1.name][-1]
-
-
-@pytest.fixture(scope="module")
-def node_selector_name(worker_node1):
-    return worker_node1.name
 
 
 @pytest.fixture(scope="module")
