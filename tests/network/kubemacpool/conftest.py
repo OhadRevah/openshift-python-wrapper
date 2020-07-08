@@ -9,6 +9,8 @@ import pytest
 import tests.network.utils as network_utils
 import utilities.network
 from resources.configmap import ConfigMap
+from resources.deployment import Deployment
+from resources.resource import ResourceEditor
 from resources.utils import TimeoutSampler
 from tests.network.utils import nmcli_add_con_cmds, running_vmi
 from utilities.infra import create_ns
@@ -413,3 +415,18 @@ def opted_out_ns():
 def wrong_label_ns(kmp_vm_label):
     kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] += "-wrong-label"
     yield from create_ns(name="kmp-wrong-label", kmp_vm_label=kmp_vm_label)
+
+
+@pytest.fixture(scope="function")
+def kmp_down(hco_namespace):
+    cnao = Deployment(
+        namespace=hco_namespace.name, name="cluster-network-addons-operator"
+    )
+    kmp = Deployment(
+        namespace=hco_namespace.name, name="kubemacpool-mac-controller-manager"
+    )
+    with ResourceEditor(patches={cnao: {"spec": {"replicas": 0}}}):
+        cnao.wait_until_no_replicas()
+        with ResourceEditor(patches={kmp: {"spec": {"replicas": 0}}}):
+            kmp.wait_until_no_replicas()
+            yield

@@ -1,5 +1,7 @@
 import pytest
+from kubernetes.client.rest import ApiException
 from tests.network.utils import assert_ping_successful
+from utilities.virt import VirtualMachineForTests
 
 
 def ifaces_config_same(vm, vmi):
@@ -147,3 +149,10 @@ class TestNegatives:
         assert_mac_not_in_range(
             vm=wrong_label_ns_vm, nad_name=wrong_label_ns_nad.name, mac_pool=mac_pool,
         )
+
+
+@pytest.mark.polarion("CNV-4405")
+def test_kmp_down(namespace, kmp_down):
+    with pytest.raises(ApiException):
+        with VirtualMachineForTests(name="kmp-down-vm", namespace=namespace.name):
+            return
