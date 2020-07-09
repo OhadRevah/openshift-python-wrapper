@@ -83,6 +83,7 @@ class VirtualMachineImport(NamespacedResource):
         DATAVOLUME_CREATION_FAILED = "DataVolumeCreationFailed"
         VIRTUAL_MACHINE_READY = "VirtualMachineReady"
         VIRTUAL_MACHINE_RUNNING = "VirtualMachineRunning"
+        VMTEMPLATE_MATCHING_FAILED = "VMTemplateMatchingFailed"
 
     def __init__(
         self,
