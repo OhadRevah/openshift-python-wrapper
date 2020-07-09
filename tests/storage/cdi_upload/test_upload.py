@@ -136,6 +136,7 @@ def test_successful_upload_with_supported_formats(
     dv_name,
     remote_name,
     local_name,
+    unprivileged_client,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     local_name = f"{tmpdir}/{local_name}"
@@ -145,6 +146,7 @@ def test_successful_upload_with_supported_formats(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         storage_ns_name=namespace.name,
+        client=unprivileged_client,
     ) as dv:
         storage_utils.upload_token_request(
             storage_ns_name=namespace.name, pvc_name=dv.pvc.name, data=local_name
