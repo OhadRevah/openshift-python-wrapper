@@ -33,7 +33,7 @@ pytestmark = pytest.mark.bugzilla(
         pytest.param(
             NodeNetworkState,
             "cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
-            (("spec",), ("metadata", "uid"), ("metadata", "name")),
+            (("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-2707")),
             id="test_nodenetworkstate_resources",
         ),
