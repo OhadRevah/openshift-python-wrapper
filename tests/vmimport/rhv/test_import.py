@@ -1,8 +1,6 @@
-import http
 import logging
 
 import pytest
-import requests
 import yaml
 from providers.rhv import rhv
 from pytest_testconfig import config as py_config
@@ -26,37 +24,25 @@ def rhv_provider():
         username=py_config["rhv_username"],
         password=py_config["rhv_password"],
     ) as provider:
+        if not provider.api.test():
+            pytest.skip(
+                msg=f"Skipping VM import tests: oVirt {provider.url} is not available."
+            )
         yield provider
 
 
 @pytest.fixture(scope="module")
-def ovirt_config():
-    api_url = py_config["rhv_url"]
-    username = py_config["rhv_username"]
-    password = py_config["rhv_password"]
-
-    with requests.get(
-        f"{api_url}/vms", auth=(username, password), verify=False
-    ) as response:
-        if response.status_code != http.HTTPStatus.OK:
-            pytest.skip(
-                msg=f"Skipping VM import tests: oVirt {api_url} is not available."
-            )
-
-    return {
-        "apiUrl": api_url,
-        "username": username,
-        "password": password,
-        "caCert": py_config["rhv_cert"],
+def secret(namespace, rhv_provider):
+    string_data = {
+        "apiUrl": rhv_provider.url,
+        "username": rhv_provider.username,
+        "password": rhv_provider.password,
+        "caCert": open(rhv_provider.ca_file, "r").read(),
     }
-
-
-@pytest.fixture(scope="module")
-def secret(namespace, ovirt_config):
     with Secret(
         name="ovirt-secret",
         namespace=namespace.name,
-        string_data={"ovirt": yaml.dump(ovirt_config)},
+        string_data={"ovirt": yaml.dump(string_data)},
     ) as secret:
         yield secret
 
