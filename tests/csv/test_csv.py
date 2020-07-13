@@ -19,7 +19,7 @@ EXPECTED_KEYWORDS_SET = {
 
 EXPECTED_LINK_MAP = {
     "Source Code": "https://github.com/kubevirt",
-    "OpenShift virtualization": "https://www.openshift.com/learn/topics/virtualization/",
+    "OpenShift Virtualization": "https://www.openshift.com/learn/topics/virtualization/",
     "KubeVirt Project": "https://kubevirt.io",
 }
 
@@ -82,7 +82,7 @@ def test_csv_properties(csv):
     Asserting remaining csv properties.
     """
     assert csv.instance.spec.provider.name == "Red Hat"
-    assert csv.instance.spec.displayName == "OpenShift virtualization"
+    assert csv.instance.spec.displayName == "OpenShift Virtualization"
 
     annotations = csv.instance.metadata.annotations
     assert annotations.get("capabilities") == "Full Lifecycle"
