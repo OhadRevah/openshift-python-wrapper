@@ -43,10 +43,21 @@ class NodeNetworkConfigurationPolicy(Resource):
         teardown=True,
         mtu=None,
         ports=None,
-        ipv4_dhcp=None,
+        ipv4_enable=False,
+        ipv4_dhcp=False,
+        ipv4_addresses=None,
         ipv6_enable=False,
         node_active_nics=None,
     ):
+        """
+        ipv4_addresses should be sent in this format:
+        [{"ip": <ip1-string>, "prefix-length": <prefix-len1-int>},
+         {"ip": <ip2-string>, "prefix-length": <prefix-len2-int>}, ...]
+        For example:
+        [{"ip": "10.1.2.3", "prefix-length": 24},
+         {"ip": "10.4.5.6", "prefix-length": 24},
+         {"ip": "10.7.8.9", "prefix-length": 23}]
+        """
         super().__init__(name=name, teardown=teardown)
         self.desired_state = {"interfaces": []}
         self.worker_pods = worker_pods
@@ -56,7 +67,9 @@ class NodeNetworkConfigurationPolicy(Resource):
         self.iface = None
         self.ifaces = []
         self.node_active_nics = node_active_nics or []
+        self.ipv4_enable = ipv4_enable
         self._ipv4_dhcp = ipv4_dhcp
+        self.ipv4_addresses = ipv4_addresses or []
         self.ipv6_enable = ipv6_enable
         self.ipv4_iface_state = {}
         self.node_selector = node_selector
@@ -87,8 +100,15 @@ class NodeNetworkConfigurationPolicy(Resource):
         if self._node_selector:
             res["spec"]["nodeSelector"] = self._node_selector
 
-        if self.ipv4_dhcp:
-            self.iface["ipv4"] = {"dhcp": True, "enabled": True}
+        """
+        It's the responsibility of the caller to verify the desired configuration they send.
+        For example: "ipv4.dhcp.enabled: false" without specifying any static IP address is a valid desired state and
+        therefore not blocked in the code, but nmstate would reject it. Such configuration might be used for negative
+        tests.
+        """
+        self.iface["ipv4"] = {"enabled": self.ipv4_enable, "dhcp": self.ipv4_dhcp}
+        if self.ipv4_addresses:
+            self.iface["ipv4"]["address"] = self.ipv4_addresses
 
         self.iface["ipv6"] = {"enabled": self.ipv6_enable}
 

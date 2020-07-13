@@ -105,6 +105,7 @@ def bridges_on_management_ifaces_node1(
         node_selector=worker_node1.name,
         nodes=[worker_node1],
         ports=[management_iface],
+        ipv4_enable=True,
         ipv4_dhcp=True,
     ) as br_dev:
         # Wait for bridget to get management ip
@@ -138,6 +139,7 @@ def bridges_on_management_ifaces_node2(
         node_selector=worker_node2.name,
         nodes=[worker_node2],
         ports=[management_iface],
+        ipv4_enable=True,
         ipv4_dhcp=True,
     ) as br_dev:
         # Wait for bridget to get management ip

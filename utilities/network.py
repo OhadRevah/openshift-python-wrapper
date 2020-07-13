@@ -124,7 +124,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ports=None,
         mtu=None,
         node_selector=None,
-        ipv4_dhcp=None,
+        ipv4_enable=False,
+        ipv4_dhcp=False,
         teardown=True,
         ipv6_enable=False,
     ):
@@ -148,6 +149,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             teardown=teardown,
             mtu=mtu,
             ports=ports,
+            ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
         )
@@ -192,7 +194,8 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         ports=None,
         mtu=None,
         node_selector=None,
-        ipv4_dhcp=None,
+        ipv4_enable=False,
+        ipv4_dhcp=False,
         teardown=True,
     ):
         super().__init__(
@@ -204,6 +207,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             ports=ports,
             mtu=mtu,
             node_selector=node_selector,
+            ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
         )
@@ -219,7 +223,8 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         stp_config=True,
         mtu=None,
         node_selector=None,
-        ipv4_dhcp=None,
+        ipv4_enable=False,
+        ipv4_dhcp=False,
         teardown=True,
     ):
         super().__init__(
@@ -231,6 +236,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             ports=ports,
             mtu=mtu,
             node_selector=node_selector,
+            ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
         )
@@ -270,7 +276,8 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         tag,
         name=None,
         node_selector=None,
-        ipv4_dhcp=None,
+        ipv4_enable=False,
+        ipv4_dhcp=False,
         teardown=True,
         ipv6_enable=False,
     ):
@@ -283,6 +290,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
             node_selector=node_selector,
             worker_pods=worker_pods,
             teardown=teardown,
+            ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
         )
@@ -441,6 +449,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         node_selector=None,
         mtu=None,
         teardown=True,
+        ipv4_enable=False,
         ipv4_dhcp=False,
         ipv6_enable=False,
     ):
@@ -450,6 +459,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             node_selector=node_selector,
             teardown=teardown,
             mtu=mtu,
+            ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
         )
@@ -596,13 +606,15 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         node_selector=None,
         teardown=True,
-        ipv4_dhcp=None,
+        ipv4_enable=False,
+        ipv4_dhcp=False,
         node_active_nics=None,
     ):
         super().__init__(
             name=name,
             worker_pods=worker_pods,
             node_selector=node_selector,
+            ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
             node_active_nics=node_active_nics,
@@ -620,8 +632,6 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "type": "ethernet",
                 "state": self.iface_state,
             }
-            if self.ipv4_dhcp is not None:
-                self.iface["ipv4"] = {"dhcp": self.ipv4_dhcp, "enabled": self.ipv4_dhcp}
             self.set_interface(interface=self.iface)
             res = super().to_dict()
         return res

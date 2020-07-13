@@ -86,6 +86,7 @@ def bond(
         mtu=1450,
         node_selector=worker_node1.name,
         ipv4_dhcp=True,
+        ipv4_enable=True,
     ) as bond:
         yield bond
 

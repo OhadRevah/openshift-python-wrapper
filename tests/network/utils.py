@@ -59,7 +59,8 @@ def network_device(
     ports=None,
     mtu=None,
     node_selector=None,
-    ipv4_dhcp=None,
+    ipv4_enable=False,
+    ipv4_dhcp=False,
     priority=None,
     namespace=None,
 ):
@@ -83,6 +84,7 @@ def network_device(
         kwargs["worker_pods"] = worker_pods
         kwargs["ports"] = ports
         kwargs["node_selector"] = node_selector
+        kwargs["ipv4_enable"] = ipv4_enable
         kwargs["ipv4_dhcp"] = ipv4_dhcp
 
     with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
