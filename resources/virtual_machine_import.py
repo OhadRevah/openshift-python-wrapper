@@ -181,7 +181,9 @@ class VirtualMachineImport(NamespacedResource):
         cond_status=Condition.Status.TRUE,
         cond_type=Condition.SUCCEEDED,
     ):
-        LOGGER.info(f"Wait for {self.kind} {self.name} Succeeced condition to be true")
+        LOGGER.info(
+            f"Wait for {self.kind} {self.name} {cond_reason} condition to be {cond_status}"
+        )
         samples = TimeoutSampler(
             timeout=timeout,
             sleep=1,
@@ -197,16 +199,16 @@ class VirtualMachineImport(NamespacedResource):
                     sample_status = sample.items[0].status
                     if sample_status:
                         current_conditions = sample_status.conditions
-                        for condition in current_conditions:
-                            last_condition = condition
+                        for cond in current_conditions:
+                            last_condition = cond
                             if (
-                                condition.type == cond_type
-                                and condition.status == cond_status
-                                and condition.reason == cond_reason
+                                cond.type == cond_type
+                                and cond.status == cond_status
+                                and cond.reason == cond_reason
                             ):
                                 msg = (
-                                    f"Status of {self.kind} {self.name} {condition.type} is "
-                                    f"{condition.status} ({condition.reason}: {condition.message})"
+                                    f"Status of {self.kind} {self.name} {cond.type} is "
+                                    f"{cond.status} ({cond.reason}: {cond.message})"
                                 )
                                 LOGGER.info(msg)
                                 return
