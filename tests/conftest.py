@@ -35,6 +35,8 @@ from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.secret import Secret
 from resources.service_account import ServiceAccount
+from resources.sriov_network_node_policy import SriovNetworkNodePolicy
+from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import (
@@ -1304,3 +1306,40 @@ def worker_node1(schedulable_nodes):
 def worker_node2(schedulable_nodes):
     # Get second worker nodes out of schedulable_nodes list
     return schedulable_nodes[1]
+
+
+@pytest.fixture(scope="session")
+def sriov_workers(schedulable_nodes):
+    sriov_worker_label = "feature.node.kubernetes.io/network-sriov.capable"
+    yield [
+        node
+        for node in schedulable_nodes
+        if node.labels.get(sriov_worker_label) == "true"
+    ]
+
+
+@pytest.fixture(scope="session")
+def skip_if_no_sriov_workers(sriov_workers):
+    if not any(sriov_workers):
+        pytest.skip(msg="Test should run on cluster with hosts that have SR-IOV card")
+
+
+@pytest.fixture(scope="session")
+def sriov_node_state(sriov_workers):
+    return SriovNetworkNodeState(
+        name=sriov_workers[0].name, policy_namespace=py_config["sriov_namespace"],
+    )
+
+
+@pytest.fixture(scope="session")
+def sriov_node_policy(sriov_node_state):
+    sriov_iface = sriov_node_state.instance.spec.interfaces[0]
+    with SriovNetworkNodePolicy(
+        name="test-sriov-policy",
+        policy_namespace=sriov_node_state.namespace,
+        pf_names=sriov_iface.name,
+        root_devices=sriov_iface.pciAddress,
+        num_vfs=sriov_iface.numVfs,
+        resource_name=sriov_iface.vfGroups[0].resourceName,
+    ) as policy:
+        yield policy
