@@ -9,8 +9,8 @@ import pytest
 import tests.network.utils as network_utils
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
-    bridge_nad,
     get_hosts_common_ports,
+    network_nad,
 )
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -22,11 +22,11 @@ from utilities.virt import (
 
 @pytest.fixture(scope="class")
 def bond_nad(bridge_device_matrix__class__, namespace):
-    with bridge_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="bond-nad",
-        bridge_name="brbond",
+        interface_name="brbond",
     ) as nad:
         yield nad
 
@@ -60,10 +60,10 @@ def bond_bridge(
     """
     Create bridge and attach the BOND to it
     """
-    with network_utils.bridge_device(
-        bridge_type=bridge_device_matrix__class__,
+    with network_utils.network_device(
+        interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
-        bridge_name=bond_nad.bridge_name,
+        interface_name=bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,
         ports=[bond.bond_name],
         node_selector=worker_node1.name,
