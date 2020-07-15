@@ -156,3 +156,15 @@ def test_kmp_down(namespace, kmp_down):
     with pytest.raises(ApiException):
         with VirtualMachineForTests(name="kmp-down-vm", namespace=namespace.name):
             return
+
+
+@pytest.mark.destructive
+@pytest.mark.polarion("CNV-3979")
+def test_kmp_crash_loop(
+    skip_if_no_ovn,
+    namespace,
+    kmp_crash_loop,
+    deleted_ovnkube_node_pod,
+    ovnkube_node_daemonset,
+):
+    ovnkube_node_daemonset.wait_until_deployed()
