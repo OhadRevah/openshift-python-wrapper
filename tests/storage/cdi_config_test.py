@@ -26,6 +26,7 @@ def cdiconfig_update(
     storage_class_type,
     storage_ns_name,
     dv_name,
+    client,
     volume_mode=py_config["default_volume_mode"],
     images_https_server_name="",
     run_vm=False,
@@ -65,6 +66,7 @@ def cdiconfig_update(
                             volume_mode,
                             storage_ns_name,
                             storage_class=storage_class_type,
+                            client=client,
                         ) as dv:
                             utils.upload_token_request(
                                 storage_ns_name, pvc_name=dv.pvc.name, data=local_name
@@ -78,7 +80,7 @@ def cdiconfig_update(
 
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
-    skip_test_if_no_hpp_sc, tmpdir, cdi_config, namespace,
+    skip_test_if_no_hpp_sc, tmpdir, cdi_config, namespace, unprivileged_client
 ):
     cdiconfig_update(
         source="upload",
@@ -90,12 +92,13 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         volume_mode=DataVolume.VolumeMode.FILE,
         run_vm=True,
         tmpdir=tmpdir,
+        client=unprivileged_client,
     )
 
 
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
-    skip_test_if_no_hpp_sc, cdi_config, namespace,
+    skip_test_if_no_hpp_sc, cdi_config, namespace, unprivileged_client
 ):
     cdiconfig_update(
         source="http",
@@ -106,12 +109,13 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         volume_mode=DataVolume.VolumeMode.FILE,
         images_https_server_name=get_images_https_server(),
         run_vm=True,
+        client=unprivileged_client,
     )
 
 
 @pytest.mark.polarion("CNV-2214")
 def test_cdiconfig_status_scratchspace_update_with_spec(
-    skip_test_if_no_hpp_sc, cdi_config, namespace
+    skip_test_if_no_hpp_sc, cdi_config, namespace, unprivileged_client
 ):
     cdiconfig_update(
         source="http",
@@ -120,12 +124,13 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
+        client=unprivileged_client,
     )
 
 
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_test_if_no_hpp_sc, cdi_config, namespace,
+    skip_test_if_no_hpp_sc, cdi_config, namespace, unprivileged_client
 ):
     cdiconfig_update(
         source="http",
@@ -136,6 +141,7 @@ def test_cdiconfig_scratch_space_not_default(
         storage_ns_name=namespace.name,
         run_vm=True,
         volume_mode=DataVolume.VolumeMode.FILE,
+        client=unprivileged_client,
     )
 
 
