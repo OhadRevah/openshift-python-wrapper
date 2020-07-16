@@ -208,14 +208,21 @@ class VirtualMachineForTests(VirtualMachine):
         ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
 
         for iface_name in self.interfaces:
-            if SriovNetwork(
-                name=iface_name,
-                network_namespace=self.namespace,
-                policy_namespace=py_config["sriov_namespace"],
-            ).exists:
+            try:
+                # On cluster without SR-IOV deploy we will get NotImplementedError
+                sriov_network_exists = SriovNetwork(
+                    name=iface_name,
+                    network_namespace=self.namespace,
+                    policy_namespace=py_config["sriov_namespace"],
+                ).exists
+            except NotImplementedError:
+                sriov_network_exists = False
+
+            if sriov_network_exists:
                 spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                     "interfaces", []
                 ).append({"name": iface_name, "sriov": {}})
+
             else:
                 spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                     "interfaces", []

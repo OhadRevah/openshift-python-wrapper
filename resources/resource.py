@@ -128,8 +128,9 @@ def _get_api_version(dyn_client, api_group, kind):
         dyn_client=dyn_client, api_group=api_group, kind=kind
     )
     if not res:
-        LOGGER.error(f"Couldn't find {kind} in {api_group} api group")
-        raise NotImplementedError(f"Couldn't find {kind} in {api_group} api group")
+        log = f"Couldn't find {kind} in {api_group} api group"
+        LOGGER.warning(log)
+        raise NotImplementedError(log)
     return res.group_version
 
 
