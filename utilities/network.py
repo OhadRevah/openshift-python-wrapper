@@ -506,19 +506,36 @@ def get_vmi_ip_v4_by_name(vmi, name):
     try:
         for sample in sampler:
             for iface in sample:
+                working_iface = None
                 if iface.name == name:
-                    for ipaddr in iface.ipAddresses:
-                        try:
-                            ip = ipaddress.ip_interface(address=ipaddr)
-                            if ip.version == 4:
-                                return ip.ip
-                        # ipaddress module fails to identify IPv6 with % as a valid IP
-                        except ValueError as e:
-                            if (
-                                "does not appear to be an IPv4 or IPv6 "
-                                "interface" in str(e)
-                            ):
-                                continue
+                    working_iface = iface
+
+                else:
+                    # TODO : This Block is meant to be removed once BZ 1856347 is fixed
+                    if not iface.name:
+                        for iface_ in vmi.instance.spec.domain.devices.interfaces:
+                            if name == iface_["name"]:
+                                LOGGER.info(
+                                    "This is has SR-IOV enabled interface. name key is missing and will be fixed by : "
+                                    "BZ id=1856347"
+                                )
+                                working_iface = iface
+                                break
+
+                if not working_iface:
+                    continue
+
+                for ipaddr in working_iface.ipAddresses:
+                    try:
+                        ip = ipaddress.ip_interface(address=ipaddr)
+                        if ip.version == 4:
+                            return ip.ip
+                    # ipaddress module fails to identify IPv6 with % as a valid IP
+                    except ValueError as e:
+                        if "does not appear to be an IPv4 or IPv6 " "interface" in str(
+                            e
+                        ):
+                            continue
     except TimeoutExpiredError:
         raise IpNotFound(name)
 
