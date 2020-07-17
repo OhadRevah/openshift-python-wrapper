@@ -643,3 +643,10 @@ def get_hosts_common_ports(nodes_active_nics):
 
     LOGGER.info(f"Hosts common NICs: {nics_list}")
     return nics_list
+
+
+def sriov_network_dict(namespace, network):
+    """
+    This function returns sriov network dictionary passed as an argument during vm creation
+    """
+    return {network.name: f"{namespace.name}/{network.name}"}
