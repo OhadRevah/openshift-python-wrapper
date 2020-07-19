@@ -14,7 +14,7 @@ from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import Images
 from utilities.storage import create_dv
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
@@ -359,9 +359,6 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
     assert f"PVC {empty_pvc.name} not available for upload" in out
 
 
-@pytest.mark.bugzilla(
-    1842958, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     ("uploaded_dv", "vm_params"),
     [

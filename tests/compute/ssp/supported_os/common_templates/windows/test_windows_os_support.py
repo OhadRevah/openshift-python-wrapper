@@ -18,12 +18,6 @@ from utilities.infra import BUG_STATUS_CLOSED
 LOGGER = logging.getLogger(__name__)
 
 
-# Windows common templates - cdrom restriction blocks VM creation
-pytestmark = pytest.mark.bugzilla(
-    1842958, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-
-
 @pytest.mark.parametrize(
     "vm_object_from_template_windows_os", [({"cpu_threads": 2})], indirect=True,
 )
