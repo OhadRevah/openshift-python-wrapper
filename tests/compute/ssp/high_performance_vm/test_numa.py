@@ -3,6 +3,7 @@ import re
 import pytest
 import xmltodict
 from resources.sriov_network import SriovNetwork
+from utilities.network import sriov_network_dict
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -57,7 +58,7 @@ def vm_numa(namespace, unprivileged_client):
 @pytest.fixture()
 def vm_numa_sriov(namespace, unprivileged_client, sriov_net):
     name = "vm-numa-sriov"
-    networks = {sriov_net.name: f"{namespace.name}/{sriov_net.name}"}
+    networks = sriov_network_dict(namespace=namespace, network=sriov_net)
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
