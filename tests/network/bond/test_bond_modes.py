@@ -102,6 +102,7 @@ class TestBondModes:
         slaves = _exec.run_command(command=shlex.split(f"cat {bonding_path}/slaves"))[1]
         worker_slaves = slaves.split()
         worker_slaves.sort()
+        bond.slaves.sort()
         assert mode.split()[0] == bond.mode
         assert worker_slaves == bond.slaves
 
