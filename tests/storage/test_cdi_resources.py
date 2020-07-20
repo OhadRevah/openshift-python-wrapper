@@ -127,7 +127,7 @@ def test_importer_pod_cdi_label(skip_upstream, default_client, namespace):
 
 @pytest.mark.polarion("CNV-3474")
 def test_uploader_pod_cdi_label(
-    default_client, storage_class_matrix__module__, namespace
+    default_client, storage_class_matrix__module__, namespace, unprivileged_client
 ):
     """
     Verify "cdi.kubevirt.io" label is included in uploader pod
@@ -143,6 +143,7 @@ def test_uploader_pod_cdi_label(
             default_client=default_client,
             pod_prefix="cdi-upload",
             storage_ns_name=namespace.name,
+            client=unprivileged_client,
         )
 
 
