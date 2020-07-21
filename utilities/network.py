@@ -579,6 +579,10 @@ def network_nad(
         kwargs["resource_name"] = nad_name
         kwargs["ipam"] = ipam
 
+    if nad_type == OVS:
+        kwargs["namespace"] = namespace.name
+        kwargs["bridge_name"] = interface_name
+
     with NAD_TYPE[nad_type](**kwargs) as nad:
         yield nad
 
