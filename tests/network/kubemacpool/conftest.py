@@ -386,10 +386,10 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
 
 @pytest.fixture(scope="class")
 def opted_out_ns_nad(opted_out_ns, bridge_device):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=bridge_device.bridge_type,
         nad_name=f"{opted_out_ns.name}-nad",
-        bridge_name=bridge_device.bridge_name,
+        interface_name=bridge_device.bridge_name,
         namespace=opted_out_ns,
     ) as nad:
         yield nad
@@ -397,10 +397,10 @@ def opted_out_ns_nad(opted_out_ns, bridge_device):
 
 @pytest.fixture(scope="class")
 def wrong_label_ns_nad(wrong_label_ns, bridge_device):
-    with utilities.network.bridge_nad(
+    with utilities.network.network_nad(
         nad_type=bridge_device.bridge_type,
         nad_name=f"{wrong_label_ns.name}-nad",
-        bridge_name=bridge_device.bridge_name,
+        interface_name=bridge_device.bridge_name,
         namespace=wrong_label_ns,
     ) as nad:
         yield nad
