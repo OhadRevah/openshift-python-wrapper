@@ -653,7 +653,7 @@ def get_windows_volume_info(vm, winrm_pod, helper_vm=False):
 
 
 def get_linux_os_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=ssh_ip, port=ssh_port)
+    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
     ga_ver = get_linux_guest_agent_version(rrmngmnt_host=host)
     hostname = host.network.hostname
     os_release = host.os.release_info
@@ -678,7 +678,7 @@ def get_linux_os_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
 
 
 def get_linux_fs_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=ssh_ip, port=ssh_port)
+    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
     return get_linux_filesystem(rrmngmnt_host=host)
 
 
@@ -814,7 +814,7 @@ def check_machine_type(vm):
 
 
 def rrmngmnt_host(usr, passwd, ip, port):
-    host = rrmngmnt.Host(ip=ip)
+    host = rrmngmnt.Host(ip=str(ip))
     host_user = rrmngmnt.user.User(name=usr, password=passwd)
     host._set_executor_user(user=host_user)
     host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
