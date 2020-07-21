@@ -148,7 +148,7 @@ def test_upload_after_certs_renewal(
     """
     Check that CDI can do upload operation after certs get refreshed
     """
-    dv_name = "cnv-3667"
+    dv_name = f"cnv-3667-{time.time()}"
     res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
