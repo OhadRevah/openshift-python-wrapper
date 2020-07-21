@@ -517,6 +517,7 @@ def validate_vmi_ga_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_por
     del os_info["machine"]  # VMI describe doesn't have machine info
     os_info["version"] = os_info["version"].split(" ")[0]
 
+    assert vmi_info, "VMI doesn't have guest agent data!"
     assert vmi_info == os_info, f"Data mismatch! VMI data {vmi_info}, OS data {os_info}"
 
 
@@ -525,6 +526,7 @@ def validate_vmi_ga_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
     vmi_info = dict(vm.vmi.guest_os_info)
     os_info = get_windows_os_release(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
 
+    assert vmi_info, "VMI doesn't have guest agent data!"
     for key, val in vmi_info.items():
         if key != "id":
             assert (
