@@ -182,7 +182,7 @@ class HttpDeployment(Deployment):
                                 {
                                     "name": "http",
                                     "image": "quay.io/openshift-cnv/qe-cnv-tests-internal-http",
-                                    "imagePullPolicy": "IfNotPresent",
+                                    "imagePullPolicy": "Always",
                                     "command": ["/usr/sbin/nginx"],
                                     "readinessProbe": {
                                         "httpGet": {"path": "/", "port": 80},
