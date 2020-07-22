@@ -41,7 +41,7 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="class")
-def nad(bridge_device_matrix__class__, namespace, network_interface):
+def ovs_linux_nad(bridge_device_matrix__class__, namespace, network_interface):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
@@ -52,7 +52,9 @@ def nad(bridge_device_matrix__class__, namespace, network_interface):
 
 
 @pytest.fixture(scope="class")
-def br1vlan100_nad(bridge_device_matrix__class__, namespace, network_interface):
+def ovs_linux_br1vlan100_nad(
+    bridge_device_matrix__class__, namespace, network_interface
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
@@ -64,7 +66,9 @@ def br1vlan100_nad(bridge_device_matrix__class__, namespace, network_interface):
 
 
 @pytest.fixture(scope="class")
-def br1vlan200_nad(bridge_device_matrix__class__, namespace, network_interface):
+def ovs_linux_br1vlan200_nad(
+    bridge_device_matrix__class__, namespace, network_interface
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
@@ -76,7 +80,9 @@ def br1vlan200_nad(bridge_device_matrix__class__, namespace, network_interface):
 
 
 @pytest.fixture(scope="class")
-def br1vlan300_nad(bridge_device_matrix__class__, namespace, network_interface):
+def ovs_linux_br1vlan300_nad(
+    bridge_device_matrix__class__, namespace, network_interface
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
@@ -88,7 +94,7 @@ def br1vlan300_nad(bridge_device_matrix__class__, namespace, network_interface):
 
 
 @pytest.fixture(scope="class")
-def br1bond_nad(bridge_device_matrix__class__, namespace):
+def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
@@ -99,7 +105,7 @@ def br1bond_nad(bridge_device_matrix__class__, namespace):
 
 
 @pytest.fixture(scope="class")
-def bond1(
+def ovs_linux_bond1(
     network_utility_pods, nodes_active_nics, link_aggregation_mode_matrix__class__,
 ):
     """
@@ -117,12 +123,12 @@ def bond1(
 
 
 @pytest.fixture(scope="class")
-def bridge_on_bond(
+def ovs_linux_bridge_on_bond(
     bridge_device_matrix__class__,
     network_utility_pods,
     schedulable_nodes,
-    br1bond_nad,
-    bond1,
+    ovs_linux_br1bond_nad,
+    ovs_linux_bond1,
 ):
     """
     Create bridge and attach the BOND to it
@@ -130,23 +136,28 @@ def bridge_on_bond(
     with network_utils.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
-        interface_name=br1bond_nad.bridge_name,
+        interface_name=ovs_linux_br1bond_nad.bridge_name,
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
-        ports=[bond1.bond_name],
+        ports=[ovs_linux_bond1.bond_name],
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="class")
-def bridge_attached_vma(
-    worker_node1, namespace, unprivileged_client, nad, br1vlan100_nad, br1vlan200_nad,
+def ovs_linux_bridge_attached_vma(
+    worker_node1,
+    namespace,
+    unprivileged_client,
+    ovs_linux_nad,
+    ovs_linux_br1vlan100_nad,
+    ovs_linux_br1vlan200_nad,
 ):
     name = "vma"
     networks = OrderedDict()
-    networks[nad.name] = nad.name
-    networks[br1vlan100_nad.name] = br1vlan100_nad.name
-    networks[br1vlan200_nad.name] = br1vlan200_nad.name
+    networks[ovs_linux_nad.name] = ovs_linux_nad.name
+    networks[ovs_linux_br1vlan100_nad.name] = ovs_linux_br1vlan100_nad.name
+    networks[ovs_linux_br1vlan200_nad.name] = ovs_linux_br1vlan200_nad.name
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "10.200.1.1"))
@@ -169,14 +180,19 @@ def bridge_attached_vma(
 
 
 @pytest.fixture(scope="class")
-def bridge_attached_vmb(
-    worker_node2, namespace, unprivileged_client, nad, br1vlan100_nad, br1vlan300_nad,
+def ovs_linux_bridge_attached_vmb(
+    worker_node2,
+    namespace,
+    unprivileged_client,
+    ovs_linux_nad,
+    ovs_linux_br1vlan100_nad,
+    ovs_linux_br1vlan300_nad,
 ):
     name = "vmb"
     networks = OrderedDict()
-    networks[nad.name] = nad.name
-    networks[br1vlan100_nad.name] = br1vlan100_nad.name
-    networks[br1vlan300_nad.name] = br1vlan300_nad.name
+    networks[ovs_linux_nad.name] = ovs_linux_nad.name
+    networks[ovs_linux_br1vlan100_nad.name] = ovs_linux_br1vlan100_nad.name
+    networks[ovs_linux_br1vlan300_nad.name] = ovs_linux_br1vlan300_nad.name
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth2", "10.200.1.2"))
@@ -199,12 +215,16 @@ def bridge_attached_vmb(
 
 
 @pytest.fixture(scope="class")
-def bond_bridge_attached_vma(
-    worker_node1, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
+def ovs_linux_bond_bridge_attached_vma(
+    worker_node1,
+    namespace,
+    unprivileged_client,
+    ovs_linux_br1bond_nad,
+    ovs_linux_bridge_on_bond,
 ):
     name = "bond-vma"
     networks = OrderedDict()
-    networks[br1bond_nad.name] = br1bond_nad.name
+    networks[ovs_linux_br1bond_nad.name] = ovs_linux_br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds(iface="eth1", ip="10.200.3.1")
@@ -224,12 +244,16 @@ def bond_bridge_attached_vma(
 
 
 @pytest.fixture(scope="class")
-def bond_bridge_attached_vmb(
-    worker_node2, namespace, unprivileged_client, br1bond_nad, bridge_on_bond,
+def ovs_linux_bond_bridge_attached_vmb(
+    worker_node2,
+    namespace,
+    unprivileged_client,
+    ovs_linux_br1bond_nad,
+    ovs_linux_bridge_on_bond,
 ):
     name = "bond-vmb"
     networks = OrderedDict()
-    networks[br1bond_nad.name] = br1bond_nad.name
+    networks[ovs_linux_br1bond_nad.name] = ovs_linux_br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["bootcmd"] = nmcli_add_con_cmds(iface="eth1", ip="10.200.3.2")
@@ -249,32 +273,32 @@ def bond_bridge_attached_vmb(
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vmia(bridge_attached_vma):
-    vmi = bridge_attached_vma.vmi
+def ovs_linux_bridge_attached_running_vmia(ovs_linux_bridge_attached_vma):
+    vmi = ovs_linux_bridge_attached_vma.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vmib(bridge_attached_vmb):
-    vmi = bridge_attached_vmb.vmi
+def ovs_linux_bridge_attached_running_vmib(ovs_linux_bridge_attached_vmb):
+    vmi = ovs_linux_bridge_attached_vmb.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
 @pytest.fixture(scope="class")
-def running_bond_bridge_attached_vmia(bond_bridge_attached_vma):
-    vmi = bond_bridge_attached_vma.vmi
+def ovs_linux_bond_bridge_attached_running_vmia(ovs_linux_bond_bridge_attached_vma):
+    vmi = ovs_linux_bond_bridge_attached_vma.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
 @pytest.fixture(scope="class")
-def running_bond_bridge_attached_vmib(bond_bridge_attached_vmb):
-    vmi = bond_bridge_attached_vmb.vmi
+def ovs_linux_bond_bridge_attached_running_vmib(ovs_linux_bond_bridge_attached_vmb):
+    vmi = ovs_linux_bond_bridge_attached_vmb.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vmi
@@ -303,18 +327,18 @@ class TestConnectivity:
         rhel7_workers,
         namespace,
         network_interface,
-        bridge_attached_vma,
-        bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
+        ovs_linux_bridge_attached_vma,
+        ovs_linux_bridge_attached_vmb,
+        ovs_linux_bridge_attached_running_vmia,
+        ovs_linux_bridge_attached_running_vmib,
     ):
         if bridge == "default" and rhel7_workers:
             # https://bugzilla.redhat.com/show_bug.cgi?id=1787576
             pytest.skip(msg="Masquerade not working on RHEL7 workers.")
 
         assert_ping_successful(
-            src_vm=running_bridge_attached_vmia,
-            dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, bridge),
+            src_vm=ovs_linux_bridge_attached_running_vmia,
+            dst_ip=_masquerade_vmib_ip(ovs_linux_bridge_attached_running_vmib, bridge),
         )
 
     @pytest.mark.polarion("CNV-2072")
@@ -324,16 +348,17 @@ class TestConnectivity:
         skip_if_workers_vms,
         namespace,
         network_interface,
-        br1vlan100_nad,
-        bridge_attached_vma,
-        bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
+        ovs_linux_br1vlan100_nad,
+        ovs_linux_bridge_attached_vma,
+        ovs_linux_bridge_attached_vmb,
+        ovs_linux_bridge_attached_running_vmia,
+        ovs_linux_bridge_attached_running_vmib,
     ):
         assert_ping_successful(
-            src_vm=running_bridge_attached_vmia,
+            src_vm=ovs_linux_bridge_attached_running_vmia,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmib, name=br1vlan100_nad.name
+                vmi=ovs_linux_bridge_attached_running_vmib,
+                name=ovs_linux_br1vlan100_nad.name,
             ),
         )
 
@@ -347,16 +372,17 @@ class TestConnectivity:
         skip_if_workers_vms,
         namespace,
         network_interface,
-        br1vlan300_nad,
-        bridge_attached_vma,
-        bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
+        ovs_linux_br1vlan300_nad,
+        ovs_linux_bridge_attached_vma,
+        ovs_linux_bridge_attached_vmb,
+        ovs_linux_bridge_attached_running_vmia,
+        ovs_linux_bridge_attached_running_vmib,
     ):
         assert_no_ping(
-            src_vm=running_bridge_attached_vmia,
+            src_vm=ovs_linux_bridge_attached_running_vmia,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmib, name=br1vlan300_nad.name
+                vmi=ovs_linux_bridge_attached_running_vmib,
+                name=ovs_linux_br1vlan300_nad.name,
             ),
         )
 
@@ -368,21 +394,21 @@ class TestConnectivity:
         skip_if_workers_vms,
         namespace,
         network_interface,
-        nad,
-        bridge_attached_vma,
-        bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
+        ovs_linux_nad,
+        ovs_linux_bridge_attached_vma,
+        ovs_linux_bridge_attached_vmb,
+        ovs_linux_bridge_attached_running_vmia,
+        ovs_linux_bridge_attached_running_vmib,
     ):
         """
         In-guest performance bandwidth passthrough.
         """
         expected_res = py_config["test_guest_performance"]["bandwidth"]
         bits_per_second = run_test_guest_performance(
-            server_vm=bridge_attached_vma,
-            client_vm=bridge_attached_vmb,
+            server_vm=ovs_linux_bridge_attached_vma,
+            client_vm=ovs_linux_bridge_attached_vmb,
             listen_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmia, name=nad.name
+                vmi=ovs_linux_bridge_attached_running_vmia, name=ovs_linux_nad.name
             ),
         )
         assert bits_per_second >= expected_res
@@ -395,16 +421,17 @@ class TestBondConnectivity:
         skip_rhel7_workers,
         skip_no_bond_support,
         namespace,
-        br1bond_nad,
-        bridge_on_bond,
-        bond_bridge_attached_vma,
-        bond_bridge_attached_vmb,
-        running_bond_bridge_attached_vmia,
-        running_bond_bridge_attached_vmib,
+        ovs_linux_br1bond_nad,
+        ovs_linux_bridge_on_bond,
+        ovs_linux_bond_bridge_attached_vma,
+        ovs_linux_bond_bridge_attached_vmb,
+        ovs_linux_bond_bridge_attached_running_vmia,
+        ovs_linux_bond_bridge_attached_running_vmib,
     ):
         assert_ping_successful(
-            src_vm=running_bond_bridge_attached_vmia,
+            src_vm=ovs_linux_bond_bridge_attached_running_vmia,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bond_bridge_attached_vmib, name=br1bond_nad.name
+                vmi=ovs_linux_bond_bridge_attached_running_vmib,
+                name=ovs_linux_br1bond_nad.name,
             ),
         )
