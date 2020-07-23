@@ -20,7 +20,7 @@ pytest-testconfig = "*"
 python-bugzilla = "==2.3.0"  # pipenv fail to install on python 3.6.8 if version is > 2.3.0
 sh = "*"
 pytest-ordering = "*"
-ansible = {editable = true,git = "https://github.com/ansible/ansible.git",ref = "devel"}
+ansible = {editable = true, git = "https://github.com/ansible/ansible.git",ref = "devel"}
 jinja2 = "*"
 pytest-ansible = {git = "https://github.com/ansible/pytest-ansible.git"}
 requests = "*"
@@ -30,6 +30,7 @@ python-rrmngmnt = "*"
 importlib-metadata = "*"
 importlib-resources = "*"
 ovirt-python-sdk = "*"
+ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper.git"}
 
 [requires]
 python_version = "3"

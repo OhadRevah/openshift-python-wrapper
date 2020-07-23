@@ -3,6 +3,8 @@
 This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
+The infra for the tests can be found in https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper
+
 # Prerequirements
 
 Following binaries are needed:
@@ -320,15 +322,6 @@ To use non default key:
 ```bash
 export HOST_SSH_KEY=path.to.ssh_key
 ```
-
-##### Resources and utilities installation
-To use resources and utilities as independent python packages:
-From cnv-tests dir
-```bash
-pip3 install . -U --user
-```
-Used by import resources and import utilities.
-
 
 ##### Known Issues
 pycurl may fail with error:
