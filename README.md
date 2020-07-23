@@ -195,6 +195,9 @@ the following to tests/conftest.py
 
 Multiple keys can be selected by passing them with ','
 
+available storage classes can be found in global_config.py/global_config_upstream.py
+under storage_class_matrix dictionary.
+
 Example:
 ```bash
 --storage-class-matrix=rook-ceph-block
