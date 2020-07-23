@@ -506,7 +506,8 @@ def unprivileged_client(default_client, unprivileged_secret):
                             "type": "HTPasswd",
                             "htpasswd": {"fileData": {"name": "htpass-secret"}},
                         }
-                    ]
+                    ],
+                    "tokenConfig": {"accessTokenMaxAgeSeconds": 604800},
                 },
             }
         )
