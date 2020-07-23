@@ -6,7 +6,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module", autouse="True")
-def bridge_device(network_utility_pods, schedulable_nodes):
+def net_add_op_bridge_device(network_utility_pods, schedulable_nodes):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="test-network-operator",
@@ -18,18 +18,18 @@ def bridge_device(network_utility_pods, schedulable_nodes):
 
 
 @pytest.fixture(scope="module", autouse="True")
-def br1test_nad(namespace, bridge_device):
+def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
     with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name=bridge_device.bridge_name,
-        interface_name=bridge_device.bridge_name,
+        nad_name=net_add_op_bridge_device.bridge_name,
+        interface_name=net_add_op_bridge_device.bridge_name,
         namespace=namespace,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module")
-def network_addons_config_cr(default_client):
+def net_add_op_config_cr(default_client):
     nac = NetworkAddonsConfig.get(default_client)
     nac_list = list(nac)
     assert nac_list, "There should be one NetworkAddonsConfig CR."
@@ -37,12 +37,12 @@ def network_addons_config_cr(default_client):
 
 
 @pytest.fixture(scope="module")
-def bridge_attached_vm(namespace, br1test_nad):
+def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
     name = "oper-test-vm"
     with VirtualMachineForTests(
         namespace=namespace.name,
-        interfaces=[br1test_nad.name],
-        networks={br1test_nad.name: br1test_nad.name},
+        interfaces=[net_add_op_br1test_nad.name],
+        networks={net_add_op_br1test_nad.name: net_add_op_br1test_nad.name},
         name=name,
         body=fedora_vm_body(name),
     ) as vm:
@@ -52,7 +52,7 @@ def bridge_attached_vm(namespace, br1test_nad):
 
 @pytest.mark.ci
 @pytest.mark.polarion("CNV-2520")
-def test_component_installed_by_operator(skip_rhel7_workers, network_addons_config_cr):
+def test_component_installed_by_operator(skip_rhel7_workers, net_add_op_config_cr):
     """
     Verify that the network addons operator is supposed to install Linux-Bridge
     (a mandatory default component), by checking if the component appears in
@@ -60,16 +60,16 @@ def test_component_installed_by_operator(skip_rhel7_workers, network_addons_conf
     """
     component_name_in_cr = "linuxBridge"
     assert (
-        component_name_in_cr in network_addons_config_cr.instance.spec.keys()
+        component_name_in_cr in net_add_op_config_cr.instance.spec.keys()
     ), f"{component_name_in_cr} is missing from the network operator CR."
 
 
 @pytest.mark.ci
 @pytest.mark.polarion("CNV-2296")
-def test_linux_bridge_functionality(skip_rhel7_workers, bridge_attached_vm):
+def test_linux_bridge_functionality(skip_rhel7_workers, net_add_op_bridge_attached_vm):
     """
     Verify the linux-bridge component valid functionality.
     Start a VM and verify it starts successfully, as an indication of successful
     deployment of linux-bridge.
     """
-    bridge_attached_vm.vmi.wait_until_running()
+    net_add_op_bridge_attached_vm.vmi.wait_until_running()
