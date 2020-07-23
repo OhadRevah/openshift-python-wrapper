@@ -77,9 +77,6 @@ fcfn_exclude_functions =
     datetime,
     intersection
 
-[flake8:local-plugins]
-extension =
-    PID = flake8_plugins.PolarionIds:PolarionIds
-    FCFN = flake8_plugins.FunctionCallForceNames:FunctionCallForceNames
-paths =
-    .
+enable-extensions =
+    PID,
+    FCFN,

@@ -5,6 +5,8 @@ OpenShift + CNV installation.
 
 The infra for the tests can be found in https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper
 
+flake8 plugins defined in .flake8 can bo found in https://gitlab.cee.redhat.com/myakove/flake8-python-plugins
+
 # Prerequirements
 
 Following binaries are needed:
