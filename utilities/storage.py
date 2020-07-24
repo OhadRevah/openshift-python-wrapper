@@ -114,7 +114,15 @@ def data_volume(
     # Create dv
     with create_dv(**{k: v for k, v in dv_kwargs.items() if v is not None}) as dv:
         if params_dict.get("wait", True):
-            dv.wait(timeout=2400 if "win" in image else 1200)
+            if source == "upload":
+                dv.wait_for_condition(
+                    condition=DataVolume.Condition.Type.BOUND,
+                    status=DataVolume.Condition.Status.TRUE,
+                    timeout=300,
+                )
+                dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+            else:
+                dv.wait(timeout=2400 if "win" in image else 1200)
         yield dv
 
 

@@ -28,10 +28,17 @@ HTTP_UNAUTHORIZED = 401
 HTTP_OK = 200
 
 
-def wait_for_upload_response_code(token, data, response_code):
-    sampler = TimeoutSampler(
-        timeout=60, sleep=5, func=storage_utils.upload_image, token=token, data=data,
-    )
+def wait_for_upload_response_code(token, data, response_code, asynchronous=False):
+    kwargs = {
+        "timeout": 60,
+        "sleep": 5,
+        "func": storage_utils.upload_image,
+        "token": token,
+        "data": data,
+    }
+    if asynchronous:
+        kwargs["asynchronous"] = asynchronous
+    sampler = TimeoutSampler(**kwargs)
     for sample in sampler:
         if sample == response_code:
             return True
@@ -335,3 +342,45 @@ def test_successful_upload_missing_file_in_transit(
 
     # Exit the completed processes
     upload_process.join()
+
+
+@pytest.mark.parametrize(
+    "download_specified_image, data_volume_multi_storage_scope_function",
+    [
+        pytest.param(
+            {
+                "image_path": py_config["latest_rhel_version"]["image_path"],
+                "image_file": py_config["latest_rhel_version"]["image_name"],
+            },
+            {
+                "dv_name": "cnv-4511",
+                "source": "upload",
+                "dv_size": "3Gi",
+                "wait": True,
+            },
+            marks=(pytest.mark.polarion("CNV-4511")),
+        ),
+    ],
+    indirect=True,
+)
+def test_print_response_body_on_error_upload(
+    namespace, download_specified_image, data_volume_multi_storage_scope_function,
+):
+    """
+    Check that CDI now reports validation failures as part of the body response
+    in case for instance the disk image virtual size > PVC size > disk size
+    """
+    dv = data_volume_multi_storage_scope_function
+    with UploadTokenRequest(
+        name=dv.name, namespace=dv.namespace, pvc_name=dv.pvc.name,
+    ) as utr:
+        token = utr.create().status.token
+        LOGGER.debug("Start upload an image asynchronously ...")
+
+        # Upload should fail with an error
+        wait_for_upload_response_code(
+            token=token,
+            data=download_specified_image,
+            response_code=400,
+            asynchronous=True,
+        )

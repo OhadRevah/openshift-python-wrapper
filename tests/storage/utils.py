@@ -277,10 +277,12 @@ def downloaded_image(remote_name, local_name):
         raise
 
 
-def upload_image(token, data):
+def upload_image(token, data, asynchronous=False):
     headers = {"Authorization": f"Bearer {token}"}
-    uploadproxy = Route(name="cdi-uploadproxy", namespace="openshift-cnv")
+    uploadproxy = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
     uploadproxy_url = f"https://{uploadproxy.host}/v1alpha1/upload"
+    if asynchronous:
+        uploadproxy_url = f"{uploadproxy_url}-async"
     LOGGER.info(msg=f"Upload {data} to {uploadproxy_url}")
     try:
         with open(data, "rb") as fd:

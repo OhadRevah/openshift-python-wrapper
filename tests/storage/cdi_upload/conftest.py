@@ -9,6 +9,7 @@ import subprocess
 
 import pytest
 import tests.storage.utils as storage_utils
+from tests.storage.utils import downloaded_image
 from utilities.infra import Images
 
 
@@ -53,3 +54,12 @@ def skip_router_wildcard_cert_not_trusted(admin_client):
     pytest.skip(
         msg="Skip testing. Wildcard router certificate not in systems trust store."
     )
+
+
+@pytest.fixture()
+def download_specified_image(request, tmpdir_factory):
+    local_path = tmpdir_factory.mktemp("cdi_upload").join(
+        request.param.get("image_file")
+    )
+    downloaded_image(remote_name=request.param.get("image_path"), local_name=local_path)
+    return local_path
