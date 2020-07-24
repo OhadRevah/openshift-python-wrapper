@@ -14,7 +14,7 @@ from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import ErrorMsg, Images
 from utilities.storage import create_dv
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
@@ -427,3 +427,38 @@ def test_disk_image_after_upload_virtctl(
     assert res
     dv = DataVolume(namespace=namespace.name, name=dv_name)
     storage_utils.create_vm_and_verify_image_permission(dv=dv)
+
+
+@pytest.mark.parametrize(
+    "download_specified_image",
+    [
+        pytest.param(
+            {
+                "image_path": py_config["latest_rhel_version"]["image_path"],
+                "image_file": py_config["latest_rhel_version"]["image_name"],
+            },
+            marks=(pytest.mark.polarion("CNV-4512")),
+        ),
+    ],
+    indirect=True,
+)
+def test_print_response_body_on_error_upload_virtctl(
+    namespace, download_specified_image, storage_class_matrix__module__
+):
+    """
+    Check that CDI now reports validation failures as part of the body response
+    in case for instance the disk image virtual size > PVC size > disk size
+    """
+    storage_class = [*storage_class_matrix__module__][0]
+    dv_name = f"cnv-4512-{storage_class}"
+    res, out = storage_utils.virtctl_upload_dv(
+        namespace=namespace.name,
+        name=dv_name,
+        size="3G",
+        image_path=download_specified_image,
+        storage_class=storage_class,
+        insecure=True,
+    )
+    LOGGER.info(out)
+    assert not res
+    assert ErrorMsg.LARGER_PVC_REQUIRED in out
