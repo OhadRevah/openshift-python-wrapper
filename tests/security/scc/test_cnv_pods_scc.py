@@ -22,6 +22,7 @@ POD_SCC_WHITELIST = [
     "nmstate",
     "ovs-cni-marker",
     "kubevirt-handler",
+    "kubevirt-node-labeller",
 ]
 
 
@@ -35,8 +36,13 @@ def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
     """
     Validate that Pods in hco_namespace (openshift-cnv) have openshift.io/scc
     """
+    failed_pods = []
     for pod in cnv_pods:
-        assert "openshift.io/scc" in pod.instance.metadata.annotations
+        if not pod.instance.metadata.annotations.get("openshift.io/scc"):
+            failed_pods.append(pod.name)
+    assert (
+        not failed_pods
+    ), f"The following pods do not have scc annotation: {failed_pods}"
 
 
 @pytest.mark.polarion("CNV-4211")
@@ -48,12 +54,14 @@ def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
     failed_pods = []
     for pod in cnv_pods:
         LOGGER.info(f"Currently Validating {pod.name} Pod.")
-        for bug_id, pod_name in bugzilla.items():
-            if pod_name in pod.name:
-                LOGGER.info(f"Currently a bug {bug_id} for {pod.name}")
-                break
+        pod_bug_id = [
+            bug_id for bug_id, pod_name in bugzilla.items() if pod_name in pod.name
+        ]
+        if pod_bug_id:
+            LOGGER.info(f"Currently bug {pod_bug_id} for {pod.name}")
+            continue
         if (
-            pod.instance.metadata.annotations["openshift.io/scc"]
+            pod.instance.metadata.annotations.get("openshift.io/scc")
             not in POD_SCC_WHITELIST
         ):
             failed_pods.append(pod.name)
