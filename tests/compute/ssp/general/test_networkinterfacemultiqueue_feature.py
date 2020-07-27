@@ -6,6 +6,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import wait_for_console, wait_for_vm_interfaces, wait_for_windows_vm
 
 
@@ -61,6 +62,9 @@ def _update_and_validate_vm_cpu_spec(
         )
     ],
     indirect=True,
+)
+@pytest.mark.bugzilla(
+    1860880, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 class TestLatestRHEL:
     """
