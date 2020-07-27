@@ -117,7 +117,9 @@ def running_sriov_vm2(sriov_vm2):
     return vmi
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers", "skip_insufficient_sriov_workers")
+@pytest.mark.usefixtures(
+    "skip_rhel7_workers", "skip_if_no_sriov_workers", "skip_insufficient_sriov_workers"
+)
 class TestPingConnectivity:
     @pytest.mark.polarion("CNV-3963")
     def test_sriov_basic_connectivity(
