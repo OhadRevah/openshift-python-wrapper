@@ -112,6 +112,12 @@ class ErrorMsg:
     NOT_EXIST_IN_IMAGE_DIR = (
         "image file does not exist in image directory - directory is empty"
     )
+    INVALID_FORMAT_FOR_QCOW = "Unable to process data: Invalid format qcow for image "
+    COULD_NOT_OPEN_SIZE_TOO_BIG = "Unable to process data: qemu-img: Could not open '/data/disk.img': L1 size too big"
+    REQUESTED_RANGE_NOT_SATISFIABLE = (
+        "Unable to process data: qemu-img: curl: The requested URL returned error: "
+        "416 Requested Range Not Satisfiable"
+    )
 
 
 def get_bug_status(bugzilla_connection_params, bug):

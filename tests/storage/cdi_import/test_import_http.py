@@ -18,7 +18,7 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, Images
+from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, Images, get_bug_status
 from utilities.virt import CIRROS_IMAGE, validate_windows_guest_agent_info
 
 
@@ -328,11 +328,12 @@ def test_wrong_content_type(
 
 
 @pytest.mark.parametrize(
-    ("dv_name", "file_name"),
+    ("dv_name", "file_name", "error_message"),
     [
         pytest.param(
             "large-size",
             "invalid-qcow-large-size.img",
+            ErrorMsg.INVALID_FORMAT_FOR_QCOW,
             marks=(
                 pytest.mark.polarion("CNV-2553"),
                 pytest.mark.bugzilla(
@@ -343,22 +344,20 @@ def test_wrong_content_type(
         pytest.param(
             "large-json",
             "invalid-qcow-large-json.img",
-            marks=(
-                pytest.mark.polarion("CNV-2554"),
-                pytest.mark.bugzilla(
-                    1823342, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                ),
-            ),
+            ErrorMsg.REQUESTED_RANGE_NOT_SATISFIABLE,
+            marks=(pytest.mark.polarion("CNV-2554"),),
         ),
         pytest.param(
             "large-memory",
             "invalid-qcow-large-memory.img",
-            marks=(pytest.mark.polarion("CNV-2255")),
+            ErrorMsg.COULD_NOT_OPEN_SIZE_TOO_BIG,
+            marks=(pytest.mark.polarion("CNV-2555"),),
         ),
         pytest.param(
             "backing-file",
             "invalid-qcow-backing-file.img",
-            marks=(pytest.mark.polarion("CNV-2139")),
+            ErrorMsg.COULD_NOT_OPEN_SIZE_TOO_BIG,
+            marks=(pytest.mark.polarion("CNV-2139"),),
         ),
     ],
 )
@@ -368,15 +367,27 @@ def test_import_invalid_qcow(
     images_internal_http_server,
     dv_name,
     file_name,
+    error_message,
+    bugzilla_connection_params,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
+    # TODO: remove once bug #1850501 is fixed
+    if [*storage_class_matrix__module__][
+        0
+    ] == "ocs-storagecluster-ceph-rbd" and dv_name in ("backing-file", "large-memory"):
+        if (
+            get_bug_status(
+                bugzilla_connection_params=bugzilla_connection_params, bug=1850501
+            )
+            not in BUG_STATUS_CLOSED
+        ):
+            pytest.skip(msg="Skipping test on OCS due to bug #1850501")
+
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
         url=get_file_url(url=images_internal_http_server["http"], file_name=file_name),
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -384,7 +395,7 @@ def test_import_invalid_qcow(
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_1
+            importer_pod=dv.importer_pod, msg=error_message
         )
 
 
