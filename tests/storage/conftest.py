@@ -14,13 +14,14 @@ from resources.cdi import CDI
 from resources.cdi_config import CDIConfig
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
-from resources.deployment import Deployment, HttpDeployment
+from resources.deployment import Deployment
 from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.storage_class import StorageClass
 from tests.storage.utils import HttpService, downloaded_image, virtctl_upload_dv
 from utilities.infra import Images, get_cert
+from utilities.storage import HttpDeployment
 
 
 LOGGER = logging.getLogger(__name__)

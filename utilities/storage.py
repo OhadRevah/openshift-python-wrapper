@@ -7,6 +7,7 @@ from contextlib import contextmanager
 
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
+from resources.deployment import Deployment
 
 
 LOGGER = logging.getLogger(__name__)
@@ -158,3 +159,47 @@ def get_storage_class_dict_from_matrix(storage_class):
     if not matching_storage_classes:
         raise ValueError(f"{storage_class} not found in {storages}")
     return matching_storage_classes[0]
+
+
+class HttpDeployment(Deployment):
+    def to_dict(self):
+        res = super()._base_body()
+        res.update(
+            {
+                "spec": {
+                    "replicas": 1,
+                    "selector": {"matchLabels": {"name": "internal-http"}},
+                    "template": {
+                        "metadata": {
+                            "labels": {
+                                "name": "internal-http",
+                                "cdi.kubevirt.io/testing": "",
+                            }
+                        },
+                        "spec": {
+                            "terminationGracePeriodSeconds": 0,
+                            "containers": [
+                                {
+                                    "name": "http",
+                                    "image": "quay.io/openshift-cnv/qe-cnv-tests-internal-http",
+                                    "imagePullPolicy": "IfNotPresent",
+                                    "command": ["/usr/sbin/nginx"],
+                                    "readinessProbe": {
+                                        "httpGet": {"path": "/", "port": 80},
+                                        "initialDelaySeconds": 20,
+                                        "periodSeconds": 20,
+                                    },
+                                    "securityContext": {"privileged": True},
+                                    "livenessProbe": {
+                                        "httpGet": {"path": "/", "port": 80},
+                                        "initialDelaySeconds": 20,
+                                        "periodSeconds": 20,
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                }
+            }
+        )
+        return res
