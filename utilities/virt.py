@@ -140,6 +140,7 @@ class VirtualMachineForTests(VirtualMachine):
         attached_secret=None,
         cpu_placement=False,
         template_dv=None,
+        termination_grace_period=None,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -175,6 +176,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.attached_secret = attached_secret
         self.cpu_placement = cpu_placement
         self.template_dv = template_dv
+        self.termination_grace_period = termination_grace_period
 
     def __enter__(self):
         super().__enter__()
@@ -418,6 +420,9 @@ class VirtualMachineForTests(VirtualMachine):
                 }
             )
 
+        if self.termination_grace_period:
+            spec["terminationGracePeriodSeconds"] = self.termination_grace_period
+
         return res
 
     def ssh_enable(self):
@@ -443,6 +448,8 @@ class VirtualMachineForTests(VirtualMachine):
 
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
+    # TODO: remove when bug 1861297 is fixed
+    #  termination_grace_period is set to 30 because currently the templates set is to 0 (force stop)
     def __init__(
         self,
         name,
@@ -461,6 +468,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cloud_init_data=None,
         node_selector=None,
         attached_secret=None,
+        termination_grace_period=30,
     ):
         super().__init__(
             name=name,
@@ -477,6 +485,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             node_selector=node_selector,
             attached_secret=attached_secret,
             template_dv=template_dv,
+            termination_grace_period=termination_grace_period,
         )
         self.template_labels = labels
         self.template_dv = template_dv
