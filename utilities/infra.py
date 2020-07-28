@@ -1,5 +1,6 @@
 import os
 
+import bugzilla
 from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from resources.project import Project, ProjectRequest
@@ -110,3 +111,12 @@ class ErrorMsg:
     NOT_EXIST_IN_IMAGE_DIR = (
         "image file does not exist in image directory - directory is empty"
     )
+
+
+def get_bug_status(bugzilla_connection_params, bug):
+    bzapi = bugzilla.Bugzilla(
+        url=bugzilla_connection_params["bugzilla_url"],
+        user=bugzilla_connection_params["bugzilla_username"],
+        api_key=bugzilla_connection_params["bugzilla_api_key"],
+    )
+    return bzapi.getbug(bug).status

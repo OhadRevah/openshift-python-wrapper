@@ -9,6 +9,7 @@ import os
 import os.path
 import re
 import shutil
+from configparser import ConfigParser
 from contextlib import contextmanager
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -1343,3 +1344,15 @@ def sriov_node_policy(sriov_node_state):
         resource_name=sriov_iface.vfGroups[0].resourceName,
     ) as policy:
         yield policy
+
+
+@pytest.fixture(scope="session")
+def bugzilla_connection_params(pytestconfig):
+    bz_cfg = os.path.join(pytestconfig.rootdir, "bugzilla.cfg")
+    parser = ConfigParser()
+    # Open the file with the correct encoding
+    parser.read(bz_cfg, encoding="utf-8")
+    params_dict = {}
+    for params in parser.items("DEFAULT"):
+        params_dict[params[0]] = params[1]
+    return params_dict
