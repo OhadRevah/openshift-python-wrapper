@@ -139,6 +139,7 @@ class VirtualMachineForTests(VirtualMachine):
         pvc=None,
         attached_secret=None,
         cpu_placement=False,
+        template_dv=None,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -173,6 +174,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.pvc = pvc
         self.attached_secret = attached_secret
         self.cpu_placement = cpu_placement
+        self.template_dv = template_dv
 
     def __enter__(self):
         super().__enter__()
@@ -282,6 +284,14 @@ class VirtualMachineForTests(VirtualMachine):
 
         if self.node_selector:
             spec["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
+
+        # For storage class that is not ReadWriteMany - evictionStrategy should be
+        # removed from the VM
+        if (
+            self.template_dv
+            and "ReadWriteMany" not in self.template_dv.instance.spec.pvc.accessModes
+        ):
+            spec.pop("evictionStrategy", None)
 
         if self.eviction:
             spec["evictionStrategy"] = "LiveMigrate"
@@ -466,6 +476,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
             attached_secret=attached_secret,
+            template_dv=template_dv,
         )
         self.template_labels = labels
         self.template_dv = template_dv
