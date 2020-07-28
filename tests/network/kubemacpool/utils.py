@@ -1,11 +1,46 @@
 import logging
+import random
+from collections import namedtuple
+from ipaddress import ip_interface
+from itertools import chain
 
+import netaddr
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+from tests.network.utils import nmcli_add_con_cmds
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    VirtualMachineForTests,
+    fedora_vm_body,
+)
 
 
 LOGGER = logging.getLogger(__name__)
 KMP_PODS_LABEL = "control-plane=mac-controller-manager"
+IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
+
+
+def vm_network_config(mac_pool, all_nads, end_ip, mac_uid):
+    """end_ip - int in range [1,254]"""
+    """mac_uid - string in range ['0','f'] in hex"""
+    return {
+        "eth1": IfaceTuple(
+            ip_address=f"10.200.1.{end_ip}",
+            mac_address=mac_pool.get_mac_from_pool(),
+            name=all_nads[0],
+        ),
+        "eth2": IfaceTuple(
+            ip_address=f"10.200.2.{end_ip}", mac_address="auto", name=all_nads[1]
+        ),
+        "eth3": IfaceTuple(
+            ip_address=f"10.200.3.{end_ip}",
+            mac_address=f"02:0{mac_uid}:00:00:00:00",
+            name=all_nads[2],
+        ),
+        "eth4": IfaceTuple(
+            ip_address=f"10.200.4.{end_ip}", mac_address="auto", name=all_nads[3]
+        ),
+    }
 
 
 def get_pods(dyn_client, namespace, label=None):
@@ -55,3 +90,164 @@ def wait_for_kmp_pods_to_be_in_crashloop(dyn_client, namespace):
                 f"{pod.name} container did not get status {Pod.Status.CRASH_LOOPBACK_OFF}"
             )
             raise
+
+
+def create_vm(name, namespace, iface_config, client, mac_pool):
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    bootcmds = list(
+        chain.from_iterable(
+            nmcli_add_con_cmds(iface=iface, ip=iface_config[iface].ip_address)
+            for iface in ("eth%d" % idx for idx in range(1, 5))
+        )
+    )
+    cloud_init_data["bootcmd"] = bootcmds
+    runcmd = [
+        # 2 kernel flags are used to disable wrong arp behavior
+        "sysctl -w net.ipv4.conf.all.arp_ignore=1",
+        # Send arp reply only if ip belongs to the interface
+        "sysctl -w net.ipv4.conf.all.arp_announce=2",
+    ]
+    cloud_init_data["runcmd"] = runcmd
+
+    with VirtualMachineWithMultipleAttachments(
+        namespace=namespace.name,
+        name=name,
+        iface_config=iface_config,
+        client=client,
+        cloud_init_data=cloud_init_data,
+    ) as vm:
+        mac_pool.append_macs(vm=vm)
+        yield vm
+        mac_pool.remove_macs(vm=vm)
+
+
+class MacPool:
+    """
+    Class to manage the mac addresses pool.
+    to get this class, use mac_pool fixture.
+    whenever you create a VM, before yield, call: mac_pool.append_macs(vm)
+    and after yield, call: mac_pool.remove_macs(vm).
+    """
+
+    def __init__(self, kmp_range):
+        self.range_start = self.mac_to_int(mac=kmp_range["RANGE_START"])
+        self.range_end = self.mac_to_int(mac=kmp_range["RANGE_END"])
+        self.pool = range(self.range_start, self.range_end + 1)
+        self.used_macs = []
+
+    def get_mac_from_pool(self):
+        return self.mac_sampler(func=random.choice, seq=self.pool)
+
+    def mac_sampler(self, func, *args, **kwargs):
+        sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
+        for sample in sampler:
+            mac = self.int_to_mac(num=sample)
+            if mac not in self.used_macs:
+                return mac
+
+    @staticmethod
+    def mac_to_int(mac):
+        return int(netaddr.EUI(mac))
+
+    @staticmethod
+    def int_to_mac(num):
+        mac = netaddr.EUI(num)
+        mac.dialect = netaddr.mac_unix_expanded
+        return str(mac)
+
+    def append_macs(self, vm):
+        for iface in vm.get_interfaces():
+            self.used_macs.append(iface["macAddress"])
+
+    def remove_macs(self, vm):
+        for iface in vm.get_interfaces():
+            self.used_macs.remove(iface["macAddress"])
+
+    def mac_is_within_range(self, mac):
+        return self.mac_to_int(mac) in self.pool
+
+
+class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
+    def __init__(
+        self, name, namespace, iface_config, client=None, cloud_init_data=None
+    ):
+        self.iface_config = iface_config
+
+        networks = {}
+        for config in self.iface_config.values():
+            networks[config.name] = config.name
+
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            networks=networks,
+            interfaces=networks.keys(),
+            client=client,
+            cloud_init_data=cloud_init_data,
+        )
+
+    @property
+    def default_masquerade_iface_config(self):
+        pod_iface_config = self.vmi.instance["status"]["interfaces"][0]
+        return IfaceTuple(
+            ip_interface(pod_iface_config["ipAddress"]).ip,
+            "auto",
+            pod_iface_config["name"],
+        )
+
+    @property
+    def manual_mac_iface_config(self):
+        return self.iface_config["eth1"]
+
+    @property
+    def auto_mac_iface_config(self):
+        return self.iface_config["eth2"]
+
+    @property
+    def manual_mac_out_pool_iface_config(self):  # Manually assigned mac out of pool
+        return self.iface_config["eth3"]
+
+    @property
+    def auto_mac_tuning_iface_config(self):
+        return self.iface_config["eth4"]
+
+    def to_dict(self):
+        self.body = fedora_vm_body(name=self.name)
+        res = super().to_dict()
+        for mac, iface in zip(
+            self.iface_config.values(),
+            res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"][1:],
+        ):
+            if mac.mac_address != "auto":
+                iface["macAddress"] = mac.mac_address
+        return res
+
+
+def compare_ifaces_config(vm, vmi):
+    """Compares vm and vmi interface configuration"""
+    vm_temp_spec = vm.instance["spec"]["template"]["spec"]
+    vm_interfaces = vm_temp_spec["domain"]["devices"]["interfaces"]
+    vmi_interfaces = vmi.instance["spec"]["domain"]["devices"]["interfaces"]
+    return vm_interfaces == vmi_interfaces
+
+
+class IfaceNotFound(Exception):
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return f"Interface not found for NAD {self.name}"
+
+
+def get_vmi_iface_mac_address_by_name(vmi, name):
+    for iface in vmi.interfaces:
+        if iface.name == name:
+            return iface.mac
+    raise IfaceNotFound(name)
+
+
+def compare_macs(vmi, expected_mac, iface_name):
+    actual_vmi_interface_mac_address = get_vmi_iface_mac_address_by_name(
+        vmi=vmi, name=iface_name
+    )
+    return actual_vmi_interface_mac_address == expected_mac

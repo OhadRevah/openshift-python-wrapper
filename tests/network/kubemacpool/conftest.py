@@ -1,10 +1,3 @@
-import logging
-import random
-from collections import namedtuple
-from ipaddress import ip_interface
-from itertools import chain
-
-import netaddr
 import pytest
 import tests.network.utils as network_utils
 import utilities.network
@@ -13,206 +6,15 @@ from resources.daemonset import DaemonSet
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.resource import ResourceEditor
-from resources.utils import TimeoutSampler
-from tests.network.kubemacpool.utils import (
-    KMP_PODS_LABEL,
-    get_pods,
-    wait_for_kmp_pods_creation,
-    wait_for_kmp_pods_to_be_in_crashloop,
-    wait_for_pods_deletion,
-)
-from tests.network.utils import nmcli_add_con_cmds, running_vmi
+from tests.network.utils import running_vmi
 from utilities.infra import create_ns
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
 
-
-LOGGER = logging.getLogger(__name__)
-BRIDGE_BR1 = "br1test"
-KUBEMACPOOL_CONFIG_MAP_NAME = "kubemacpool-mac-range-config"
-IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
-CREATE_VM_TIMEOUT = 50
-
-
-def create_vm(name, namespace, iface_config, client, mac_pool):
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    bootcmds = list(
-        chain.from_iterable(
-            nmcli_add_con_cmds(iface=iface, ip=iface_config[iface].ip_address)
-            for iface in ("eth%d" % idx for idx in range(1, 5))
-        )
-    )
-    cloud_init_data["bootcmd"] = bootcmds
-    runcmd = [
-        # 2 kernel flags are used to disable wrong arp behavior
-        "sysctl -w net.ipv4.conf.all.arp_ignore=1",
-        # Send arp reply only if ip belongs to the interface
-        "sysctl -w net.ipv4.conf.all.arp_announce=2",
-    ]
-    cloud_init_data["runcmd"] = runcmd
-
-    with VirtualMachineWithMultipleAttachments(
-        namespace=namespace.name,
-        name=name,
-        iface_config=iface_config,
-        client=client,
-        cloud_init_data=cloud_init_data,
-    ) as vm:
-        mac_pool.append_macs(vm=vm)
-        yield vm
-        mac_pool.remove_macs(vm=vm)
-
-
-class MacPool:
-    """
-    Class to manage the mac addresses pool.
-    to get this class, use mac_pool fixture.
-    whenever you create a VM, before yield, call: mac_pool.append_macs(vm)
-    and after yield, call: mac_pool.remove_macs(vm).
-    """
-
-    def __init__(self, kmp_range):
-        self.range_start = self.mac_to_int(mac=kmp_range["RANGE_START"])
-        self.range_end = self.mac_to_int(mac=kmp_range["RANGE_END"])
-        self.pool = range(self.range_start, self.range_end + 1)
-        self.used_macs = []
-
-    def get_mac_from_pool(self):
-        return self.mac_sampler(func=random.choice, seq=self.pool)
-
-    def mac_sampler(self, func, *args, **kwargs):
-        sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
-        for sample in sampler:
-            mac = self.int_to_mac(num=sample)
-            if mac not in self.used_macs:
-                return mac
-
-    @staticmethod
-    def mac_to_int(mac):
-        return int(netaddr.EUI(mac))
-
-    @staticmethod
-    def int_to_mac(num):
-        mac = netaddr.EUI(num)
-        mac.dialect = netaddr.mac_unix_expanded
-        return str(mac)
-
-    def append_macs(self, vm):
-        for iface in vm.get_interfaces():
-            self.used_macs.append(iface["macAddress"])
-
-    def remove_macs(self, vm):
-        for iface in vm.get_interfaces():
-            self.used_macs.remove(iface["macAddress"])
-
-    def mac_is_within_range(self, mac):
-        return self.mac_to_int(mac) in self.pool
-
-
-class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
-    def __init__(
-        self, name, namespace, iface_config, client=None, cloud_init_data=None
-    ):
-        self.iface_config = iface_config
-
-        networks = {}
-        for config in self.iface_config.values():
-            networks[config.name] = config.name
-
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            networks=networks,
-            interfaces=networks.keys(),
-            client=client,
-            cloud_init_data=cloud_init_data,
-        )
-
-    @property
-    def default_masquerade_iface_config(self):
-        pod_iface_config = self.vmi.instance["status"]["interfaces"][0]
-        return IfaceTuple(
-            ip_interface(pod_iface_config["ipAddress"]).ip,
-            "auto",
-            pod_iface_config["name"],
-        )
-
-    @property
-    def manual_mac_iface_config(self):
-        return self.iface_config["eth1"]
-
-    @property
-    def auto_mac_iface_config(self):
-        return self.iface_config["eth2"]
-
-    @property
-    def manual_mac_out_pool_iface_config(self):  # Manually assigned mac out of pool
-        return self.iface_config["eth3"]
-
-    @property
-    def auto_mac_tuning_iface_config(self):
-        return self.iface_config["eth4"]
-
-    def to_dict(self):
-        self.body = fedora_vm_body(name=self.name)
-        res = super().to_dict()
-        for mac, iface in zip(
-            self.iface_config.values(),
-            res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"][1:],
-        ):
-            if mac.mac_address != "auto":
-                iface["macAddress"] = mac.mac_address
-        return res
-
-
-@pytest.fixture(scope="module")
-def manual_mac_nad(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name="manual-mac-nad",
-        interface_name=BRIDGE_BR1,
-        namespace=namespace,
-    ) as manual_mac_nad:
-        yield manual_mac_nad
-
-
-@pytest.fixture(scope="module")
-def automatic_mac_nad(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name="automatic-mac-nad",
-        interface_name=BRIDGE_BR1,
-        namespace=namespace,
-    ) as automatic_mac_nad:
-        yield automatic_mac_nad
-
-
-@pytest.fixture(scope="module")
-def manual_mac_out_of_pool_nad(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name="manual-out-pool-mac-nad",
-        interface_name=BRIDGE_BR1,
-        namespace=namespace,
-        tuning=True,
-    ) as manual_mac_out_pool_nad:
-        yield manual_mac_out_pool_nad
-
-
-@pytest.fixture(scope="module")
-def automatic_mac_tuning_net_nad(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name="automatic-mac-tun-net-nad",
-        interface_name=BRIDGE_BR1,
-        namespace=namespace,
-        tuning=True,
-    ) as automatic_mac_tuning_net_nad:
-        yield automatic_mac_tuning_net_nad
+from . import utils as kmp_utils
 
 
 @pytest.fixture(scope="module")
@@ -225,7 +27,7 @@ def bridge_device(
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="kubemacpool",
-        interface_name=BRIDGE_BR1,
+        interface_name="br1test",
         network_utility_pods=network_utility_pods,
         nodes=schedulable_nodes,
         ports=[
@@ -235,6 +37,74 @@ def bridge_device(
         ],
     ) as dev:
         yield dev
+
+
+@pytest.fixture(scope="module")
+def manual_mac_nad(namespace, bridge_device):
+    with utilities.network.network_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name="manual-mac-nad",
+        interface_name=bridge_device.bridge_name,
+        namespace=namespace,
+    ) as manual_mac_nad:
+        yield manual_mac_nad
+
+
+@pytest.fixture(scope="module")
+def automatic_mac_nad(namespace, bridge_device):
+    with utilities.network.network_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name="automatic-mac-nad",
+        interface_name=bridge_device.bridge_name,
+        namespace=namespace,
+    ) as automatic_mac_nad:
+        yield automatic_mac_nad
+
+
+@pytest.fixture(scope="module")
+def manual_mac_out_of_pool_nad(namespace, bridge_device):
+    with utilities.network.network_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name="manual-out-pool-mac-nad",
+        interface_name=bridge_device.bridge_name,
+        namespace=namespace,
+        tuning=True,
+    ) as manual_mac_out_pool_nad:
+        yield manual_mac_out_pool_nad
+
+
+@pytest.fixture(scope="module")
+def automatic_mac_tuning_net_nad(namespace, bridge_device):
+    with utilities.network.network_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name="automatic-mac-tun-net-nad",
+        interface_name=bridge_device.bridge_name,
+        namespace=namespace,
+        tuning=True,
+    ) as automatic_mac_tuning_net_nad:
+        yield automatic_mac_tuning_net_nad
+
+
+@pytest.fixture(scope="class")
+def opted_out_ns_nad(opted_out_ns, bridge_device):
+    with utilities.network.network_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name=f"{opted_out_ns.name}-nad",
+        interface_name=bridge_device.bridge_name,
+        namespace=opted_out_ns,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def wrong_label_ns_nad(wrong_label_ns, bridge_device):
+    with utilities.network.network_nad(
+        nad_type=bridge_device.bridge_type,
+        nad_name=f"{wrong_label_ns.name}-nad",
+        interface_name=bridge_device.bridge_name,
+        namespace=wrong_label_ns,
+    ) as nad:
+        yield nad
 
 
 @pytest.fixture(scope="module")
@@ -255,37 +125,24 @@ def all_nads(
 @pytest.fixture(scope="module")
 def kubemacpool_range(hco_namespace):
     default_pool = ConfigMap(
-        namespace=hco_namespace.name, name=KUBEMACPOOL_CONFIG_MAP_NAME
+        namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
     )
     return default_pool.instance["data"]
 
 
 @pytest.fixture(scope="module")
 def mac_pool(kubemacpool_range):
-    return MacPool(kmp_range=kubemacpool_range)
+    return kmp_utils.MacPool(kmp_range=kubemacpool_range)
 
 
 @pytest.fixture(scope="class")
 def vm_a(
     namespace, all_nads, bridge_device, mac_pool, unprivileged_client,
 ):
-    requested_network_config = {
-        "eth1": IfaceTuple(
-            ip_address="10.200.1.1",
-            mac_address=mac_pool.get_mac_from_pool(),
-            name=all_nads[0],
-        ),
-        "eth2": IfaceTuple(
-            ip_address="10.200.2.1", mac_address="auto", name=all_nads[1]
-        ),
-        "eth3": IfaceTuple(
-            ip_address="10.200.3.1", mac_address="02:01:00:00:00:00", name=all_nads[2],
-        ),
-        "eth4": IfaceTuple(
-            ip_address="10.200.4.1", mac_address="auto", name=all_nads[3]
-        ),
-    }
-    yield from create_vm(
+    requested_network_config = kmp_utils.vm_network_config(
+        mac_pool=mac_pool, all_nads=all_nads, end_ip=1, mac_uid="1"
+    )
+    yield from kmp_utils.create_vm(
         name="vm-fedora-a",
         iface_config=requested_network_config,
         namespace=namespace,
@@ -298,23 +155,10 @@ def vm_a(
 def vm_b(
     namespace, all_nads, bridge_device, mac_pool, unprivileged_client,
 ):
-    requested_network_config = {
-        "eth1": IfaceTuple(
-            ip_address="10.200.1.2",
-            mac_address=mac_pool.get_mac_from_pool(),
-            name=all_nads[0],
-        ),
-        "eth2": IfaceTuple(
-            ip_address="10.200.2.2", mac_address="auto", name=all_nads[1]
-        ),
-        "eth3": IfaceTuple(
-            ip_address="10.200.3.2", mac_address="02:02:00:00:00:00", name=all_nads[2],
-        ),
-        "eth4": IfaceTuple(
-            ip_address="10.200.4.2", mac_address="auto", name=all_nads[3]
-        ),
-    }
-    yield from create_vm(
+    requested_network_config = kmp_utils.vm_network_config(
+        mac_pool=mac_pool, all_nads=all_nads, end_ip=2, mac_uid="2"
+    )
+    yield from kmp_utils.create_vm(
         name="vm-fedora-b",
         iface_config=requested_network_config,
         namespace=namespace,
@@ -394,28 +238,6 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
 
 
 @pytest.fixture(scope="class")
-def opted_out_ns_nad(opted_out_ns, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name=f"{opted_out_ns.name}-nad",
-        interface_name=bridge_device.bridge_name,
-        namespace=opted_out_ns,
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="class")
-def wrong_label_ns_nad(wrong_label_ns, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name=f"{wrong_label_ns.name}-nad",
-        interface_name=bridge_device.bridge_name,
-        namespace=wrong_label_ns,
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="class")
 def opted_out_ns():
     yield from create_ns(name="kmp-opted-out")
 
@@ -481,19 +303,19 @@ def kmp_crash_loop(
             }
         }
     ):
-        wait_for_pods_deletion(
-            pods=get_pods(
+        kmp_utils.wait_for_pods_deletion(
+            pods=kmp_utils.get_pods(
                 dyn_client=default_client,
                 namespace=hco_namespace,
-                label=KMP_PODS_LABEL,
+                label=kmp_utils.KMP_PODS_LABEL,
             )
         )
-        wait_for_kmp_pods_creation(
+        kmp_utils.wait_for_kmp_pods_creation(
             dyn_client=default_client,
             namespace=hco_namespace,
             replicas=kmp_deployment.instance.spec.replicas,
         )
-        wait_for_kmp_pods_to_be_in_crashloop(
+        kmp_utils.wait_for_kmp_pods_to_be_in_crashloop(
             dyn_client=default_client, namespace=hco_namespace,
         )
         yield
@@ -514,7 +336,7 @@ def ovnkube_node_daemonset(ovn_ns):
 
 @pytest.fixture()
 def deleted_ovnkube_node_pod(default_client, ovn_ns):
-    pods = get_pods(
+    pods = kmp_utils.get_pods(
         dyn_client=default_client, namespace=ovn_ns, label="app=ovnkube-node"
     )
     assert pods, "No ovnkube-node pods were found"

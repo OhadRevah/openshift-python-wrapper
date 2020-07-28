@@ -3,40 +3,12 @@ from kubernetes.client.rest import ApiException
 from tests.network.utils import assert_ping_successful
 from utilities.virt import VirtualMachineForTests
 
-
-def ifaces_config_same(vm, vmi):
-    """Compares vm and vmi interface configuration"""
-    vm_temp_spec = vm.instance["spec"]["template"]["spec"]
-    vm_interfaces = vm_temp_spec["domain"]["devices"]["interfaces"]
-    vmi_interfaces = vmi.instance["spec"]["domain"]["devices"]["interfaces"]
-    return vm_interfaces == vmi_interfaces
-
-
-class IfaceNotFound(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"Interface not found for NAD {self.name}"
-
-
-def get_vmi_iface_mac_address_by_name(vmi, name):
-    for iface in vmi.interfaces:
-        if iface.name == name:
-            return iface.mac
-    raise IfaceNotFound(name)
-
-
-def macs_are_the_same(vmi, expected_mac, iface_name):
-    actual_vmi_interface_mac_address = get_vmi_iface_mac_address_by_name(
-        vmi=vmi, name=iface_name
-    )
-    return actual_vmi_interface_mac_address == expected_mac
+from . import utils as kmp_utils
 
 
 def assert_mac_not_in_range(vm, nad_name, mac_pool):
     assert not mac_pool.mac_is_within_range(
-        mac=get_vmi_iface_mac_address_by_name(vmi=vm.vmi, name=nad_name)
+        mac=kmp_utils.get_vmi_iface_mac_address_by_name(vmi=vm.vmi, name=nad_name)
     )
 
 
@@ -44,7 +16,7 @@ def assert_mac_static_vms_connectivity_via_network(vm_a, vm_b, nad_name):
     for vm in (vm_a, vm_a):
         vm_mac_address = getattr(vm, nad_name).mac_address
         vm_nad_name = getattr(vm, nad_name).name
-        assert macs_are_the_same(
+        assert kmp_utils.compare_macs(
             vmi=vm.vmi, iface_name=vm_nad_name, expected_mac=vm_mac_address
         )
     dst_ip_address = getattr(vm_b, nad_name).ip_address
@@ -54,7 +26,7 @@ def assert_mac_static_vms_connectivity_via_network(vm_a, vm_b, nad_name):
 def assert_mac_in_range_vms_connectivity_via_network(vm_a, vm_b, nad_name, mac_pool):
     for vm in (vm_a, vm_a):
         assert mac_pool.mac_is_within_range(
-            mac=get_vmi_iface_mac_address_by_name(
+            mac=kmp_utils.get_vmi_iface_mac_address_by_name(
                 vmi=vm.vmi, name=vm.auto_mac_iface_config.name
             ),
         )
@@ -129,8 +101,8 @@ class TestConnectivity:
         self, restarted_vmi_a, restarted_vmi_b, running_vm_a, running_vm_b
     ):
         """Test that all macs are preserved even after VM restart"""
-        assert ifaces_config_same(vm=running_vm_a, vmi=restarted_vmi_a)
-        assert ifaces_config_same(vm=running_vm_b, vmi=restarted_vmi_b)
+        assert kmp_utils.compare_ifaces_config(vm=running_vm_a, vmi=restarted_vmi_a)
+        assert kmp_utils.compare_ifaces_config(vm=running_vm_b, vmi=restarted_vmi_b)
 
 
 class TestNegatives:
