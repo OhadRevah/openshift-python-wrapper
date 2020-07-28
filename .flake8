@@ -1,4 +1,7 @@
 [flake8]
+# UFN plugin must be run in serial
+jobs = 0
+
 max-line-length = 120
 exclude =
     doc,
@@ -81,3 +84,4 @@ fcfn_exclude_functions =
 enable-extensions =
     PID,
     FCFN,
+    UFN,
