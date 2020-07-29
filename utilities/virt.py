@@ -606,7 +606,7 @@ class CommandExecFailed(Exception):
         return f"Command: {self.name} - exec failed."
 
 
-def _run_command(command):
+def run_command(command):
     """
     Run command locally.
 
@@ -651,7 +651,7 @@ def run_virtctl_command(command, namespace=None):
         virtctl_cmd = virtctl_cmd + ["--kubeconfig", kubeconfig]
 
     virtctl_cmd = virtctl_cmd + command
-    return _run_command(command=virtctl_cmd)
+    return run_command(command=virtctl_cmd)
 
 
 def fedora_vm_body(name):

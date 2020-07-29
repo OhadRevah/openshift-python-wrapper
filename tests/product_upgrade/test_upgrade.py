@@ -18,7 +18,9 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.upgrade
 @pytest.mark.incremental
-@pytest.mark.usefixtures("skip_when_one_node", "cnv_upgrade_path")
+@pytest.mark.usefixtures(
+    "skip_when_one_node", "cnv_upgrade_path", "nodes_status_before_upgrade"
+)
 class TestUpgrade:
     @pytest.mark.polarion("CNV-2974")
     @pytest.mark.run(before="test_upgrade")
@@ -93,17 +95,46 @@ class TestUpgrade:
         ).ip
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
+    @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
     @pytest.mark.run(after="test_linux_bridge_before_upgrade")
     def test_upgrade(
-        self, pytestconfig, default_client, cnv_upgrade_path, catalog_source_config
+        self,
+        pytestconfig,
+        default_client,
+        hco_namespace,
+        cnv_upgrade_path,
+        operatorhub_no_default_sources,
+        operator_source,
     ):
-        # TODO: OCP upgrade tests are in progress
+        if pytestconfig.option.upgrade == "ocp":
+            upgrade_utils.upgrade_ocp(
+                ocp_image=pytestconfig.option.ocp_image, default_client=default_client
+            )
 
         if pytestconfig.option.upgrade == "cnv":
             upgrade_utils.upgrade_cnv(
-                default_client=default_client, cnv_upgrade_path=cnv_upgrade_path,
+                default_client=default_client,
+                hco_namespace=hco_namespace,
+                cnv_upgrade_path=cnv_upgrade_path,
+                upgrade_resilience=pytestconfig.option.upgrade_resilience,
             )
+
+    @pytest.mark.polarion("CNV-4509")
+    @pytest.mark.run(after="test_upgrade")
+    def test_cnv_pods_running_after_upgrade(self, default_client, hco_namespace):
+        LOGGER.info("Verify CNV pods running after upgrade.")
+        upgrade_utils.verify_cnv_pods_are_running(
+            default_client=default_client, hco_namespace=hco_namespace
+        )
+
+    @pytest.mark.polarion("CNV-4510")
+    @pytest.mark.run(after="test_upgrade")
+    def test_nodes_status_after_upgrade(self, nodes, nodes_status_before_upgrade):
+        LOGGER.info("Verify nodes status after upgrade.")
+        upgrade_utils.verify_nodes_status_after_upgrade(
+            nodes=nodes, nodes_status_before_upgrade=nodes_status_before_upgrade
+        )
 
     @pytest.mark.polarion("CNV-2978")
     @pytest.mark.run(after="test_upgrade")

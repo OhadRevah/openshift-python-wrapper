@@ -5,9 +5,10 @@ import tests.network.utils as network_utils
 import tests.product_upgrade.utils as upgrade_utils
 import utilities.network
 from pytest_testconfig import py_config
-from resources.catalog_source_config import CatalogSourceConfig
 from resources.datavolume import DataVolume
+from resources.operator_hub import OperatorHub
 from resources.operator_source import OperatorSource
+from resources.resource import ResourceEditor
 from resources.secret import Secret
 from resources.template import Template
 from tests.network.utils import nmcli_add_con_cmds
@@ -194,55 +195,57 @@ def vms_for_upgrade(unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_up
         vm.clean_up()
 
 
-@pytest.fixture()
-def registry_secret():
-    token = (
-        "basic cmgtb3Nicy1vcGVyYXRvcnMrY252cWU6MDBVSjc0ME1LRUpEWlVTVDBaMlRMW"
-        "lZRRlE2SFJVUDAxTldWNFpWQTBHVzFORUxWT0FKOVVUWVBUMkgzTlowVg=="
-    )
-    with Secret(
-        name=f"quay-registry-{upgrade_utils.APP_REGISTRY}",
-        namespace=MARKETPLACE_NAMESPACE,
-        string_data={"token": token},
-    ) as secret:
-        yield secret
+@pytest.fixture(scope="session")
+def cnv_upgrade(pytestconfig):
+    """ Returns True if requested upgrade if for CNV else False """
+    return pytestconfig.option.upgrade == "cnv"
 
 
 @pytest.fixture()
-def operator_source(registry_secret):
-    with OperatorSource(
-        name=upgrade_utils.APP_REGISTRY,
-        namespace=MARKETPLACE_NAMESPACE,
-        registry_namespace=upgrade_utils.APP_REGISTRY,
-        display_name=upgrade_utils.APP_REGISTRY,
-        publisher="Red Hat",
-        secret=registry_secret.name,
-    ) as os:
-        yield os
-
-
-@pytest.fixture()
-def catalog_source_config(cnv_upgrade_path, operator_source):
-    # For x-stream and y-stream - create OperatorSource and CatalogSourceConfig
-    if cnv_upgrade_path.get("upgrade_path") != "z-stream":
-        with CatalogSourceConfig(
-            name="cnv-catalogsource-config-rh-osbs-operators",
+def registry_secret(cnv_upgrade):
+    if cnv_upgrade:
+        token = (
+            "basic cmgtb3Nicy1vcGVyYXRvcnMrY252cWU6MDBVSjc0ME1LRUpEWlVTVDBaMlRMW"
+            "lZRRlE2SFJVUDAxTldWNFpWQTBHVzFORUxWT0FKOVVUWVBUMkgzTlowVg=="
+        )
+        with Secret(
+            name=f"quay-registry-{upgrade_utils.APP_REGISTRY}",
             namespace=MARKETPLACE_NAMESPACE,
-            source=operator_source.instance.spec.registryNamespace,
-            target_namespace=MARKETPLACE_NAMESPACE,
-            packages="kubevirt-hyperconverged",
-            cs_display_name="HCO Operator",
-            cs_publisher="Red Hat",
-        ) as csc:
-            csc.wait_for_csc_status(status=csc.Status.SUCCEEDED)
-            yield csc
+            string_data={"token": token},
+        ) as secret:
+            yield secret
     else:
         yield
 
 
+@pytest.fixture()
+def operator_source(registry_secret):
+    if registry_secret:
+        with OperatorSource(
+            name=upgrade_utils.APP_REGISTRY,
+            namespace=MARKETPLACE_NAMESPACE,
+            registry_namespace=upgrade_utils.APP_REGISTRY,
+            display_name=upgrade_utils.APP_REGISTRY,
+            publisher="Red Hat",
+            secret=registry_secret.name,
+        ) as os:
+            yield os
+    else:
+        yield
+
+
+@pytest.fixture()
+def operatorhub_no_default_sources(default_client, cnv_upgrade):
+    if cnv_upgrade:
+        for source in OperatorHub.get(dyn_client=default_client):
+            ResourceEditor(
+                patches={source: {"spec": {"disableAllDefaultSources": True}}}
+            ).update()
+
+
 @pytest.fixture(scope="session")
-def cnv_upgrade_path(default_client, pytestconfig, cnv_current_version):
-    if pytestconfig.option.upgrade == "cnv":
+def cnv_upgrade_path(default_client, cnv_upgrade, pytestconfig, cnv_current_version):
+    if cnv_upgrade:
         cnv_target_version = pytestconfig.option.cnv_version
         # Upgrade only if a newer CNV version is requested
         if int(cnv_target_version.replace(".", "")) <= int(
@@ -271,3 +274,8 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
     for vm in vms_for_upgrade:
         vms_dict[vm.name] = deepcopy(vm.instance.to_dict())
     yield vms_dict
+
+
+@pytest.fixture(scope="module")
+def nodes_status_before_upgrade(nodes):
+    return upgrade_utils.get_nodes_status(nodes=nodes)

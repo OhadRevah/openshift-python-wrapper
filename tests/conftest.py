@@ -116,12 +116,17 @@ def pytest_addoption(parser):
     parser.addoption("--rhel-os-matrix", help="RHEL OS matrix to use")
     parser.addoption("--windows-os-matrix", help="Windows OS matrix to use")
     parser.addoption("--fedora-os-matrix", help="Fedora OS matrix to use")
+    parser.addoption(
+        "--upgrade_resilience",
+        action="store_true",
+        help="If provided, run upgrade with disruptions",
+    )
 
 
 def pytest_cmdline_main(config):
     if config.getoption("upgrade") == "ocp":
-        # TODO: OCP upgrade is in progress; exception should be removed when done
-        raise NotImplementedError("OCP upgrade is not implemented.")
+        if not config.getoption("ocp_image"):
+            raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
 
     if config.getoption("upgrade") == "cnv":
         if not config.getoption("cnv_version"):
@@ -163,6 +168,14 @@ def pytest_collection_modifyitems(session, config, items):
         for marker in item.iter_markers(name="jira"):
             test_id = marker.args[0]
             item.user_properties.append(("jira", test_id))
+
+        for _upgrade_resilience_item in item.iter_markers(name="upgrade_resilience"):
+            item.user_properties.append(
+                (
+                    "polarion-parameter-upgrade_resilience",
+                    config.getoption("upgrade_resilience"),
+                )
+            )
 
     #  Collect only 'upgrade' tests when running pytest with --upgrade
     upgrade_tests = [item for item in items if "upgrade" in item.keywords]
