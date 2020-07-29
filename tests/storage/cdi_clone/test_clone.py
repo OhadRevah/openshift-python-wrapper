@@ -169,9 +169,9 @@ def test_successful_vm_from_cloned_dv_windows(
     indirect=True,
 )
 def test_disk_image_after_clone(
-    skip_block_volumemode,
+    skip_block_volumemode_scope_class,
     namespace,
-    storage_class_matrix__function__,
+    storage_class_matrix__class__,
     data_volume_multi_storage_scope_function,
     unprivileged_client,
 ):
@@ -181,6 +181,7 @@ def test_disk_image_after_clone(
         namespace=namespace.name,
         size=data_volume_multi_storage_scope_function.size,
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__class__),
     ) as cdv:
+        cdv.wait()
         utils.create_vm_and_verify_image_permission(dv=cdv)

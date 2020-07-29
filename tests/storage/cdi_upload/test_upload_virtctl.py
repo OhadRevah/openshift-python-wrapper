@@ -173,7 +173,7 @@ def test_virtctl_image_upload_with_exist_dv_image(
     data_volume_multi_storage_scope_function,
     download_image,
     namespace,
-    storage_class_matrix__module__,
+    storage_class_matrix__class__,
 ):
     """
     Check that virtctl fails gracefully when attempting to upload an image to a data volume that already has disk.img
@@ -183,7 +183,7 @@ def test_virtctl_image_upload_with_exist_dv_image(
         name=data_volume_multi_storage_scope_function.name,
         size="1Gi",
         image_path=LOCAL_PATH,
-        storage_class=[*storage_class_matrix__module__][0],
+        storage_class=[*storage_class_matrix__class__][0],
         insecure=True,
         no_create=True,
     )
@@ -408,24 +408,21 @@ def test_successful_vm_from_uploaded_dv_windows(
 
 @pytest.mark.polarion("CNV-4033")
 def test_disk_image_after_upload_virtctl(
-    skip_block_volumemode,
+    skip_block_volumemode_scope_module,
     download_image,
     namespace,
-    storage_class_matrix__function__,
+    storage_class_matrix__module__,
     unprivileged_client,
 ):
-    storage_params = storage_utils.storage_params(
-        storage_class_matrix=storage_class_matrix__function__
-    )
-    dv_name = "cnv-4033"
+    storage_class = [*storage_class_matrix__module__][0]
+    dv_name = f"cnv-4033-{storage_class}"
     res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_PATH,
-        storage_class=storage_params["storage_class"],
+        storage_class=storage_class,
         insecure=True,
-        access_mode=storage_params["access_modes"],
     )
     LOGGER.info(out)
     assert res

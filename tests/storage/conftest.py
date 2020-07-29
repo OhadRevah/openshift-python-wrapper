@@ -271,9 +271,18 @@ def download_image():
     )
 
 
-@pytest.fixture()
-def skip_block_volumemode(storage_class_matrix__module__):
+def _skip_block_volumemode(storage_class_matrix):
     LOGGER.debug("Use 'skip_block_volumemode' fixture...")
-    storage_class = [*storage_class_matrix__module__][0]
-    if storage_class_matrix__module__[storage_class]["volume_mode"] == "Block":
+    storage_class = [*storage_class_matrix][0]
+    if storage_class_matrix[storage_class]["volume_mode"] == "Block":
         pytest.skip("Test is not supported on Block volume mode")
+
+
+@pytest.fixture(scope="class")
+def skip_block_volumemode_scope_class(storage_class_matrix__class__):
+    _skip_block_volumemode(storage_class_matrix=storage_class_matrix__class__)
+
+
+@pytest.fixture(scope="module")
+def skip_block_volumemode_scope_module(storage_class_matrix__module__):
+    _skip_block_volumemode(storage_class_matrix=storage_class_matrix__module__)

@@ -316,7 +316,8 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
     indirect=["namespace", "data_volume_multi_storage_scope_function"],
 )
 def test_disk_image_after_create_vm_with_restricted_clone(
-    storage_class_matrix__function__,
+    skip_block_volumemode_scope_class,
+    storage_class_matrix__class__,
     namespace,
     data_volume_multi_storage_scope_function,
     dst_ns,
@@ -354,6 +355,7 @@ def test_disk_image_after_create_vm_with_restricted_clone(
                 source_pvc=data_volume_multi_storage_scope_function.pvc.name,
                 source_namespace=namespace.name,
                 client=unprivileged_client,
-                **storage_params(storage_class_matrix=storage_class_matrix__function__),
+                **storage_params(storage_class_matrix=storage_class_matrix__class__),
             ) as cdv:
+                cdv.wait()
                 create_vm_and_verify_image_permission(dv=cdv)

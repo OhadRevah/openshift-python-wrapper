@@ -805,10 +805,10 @@ def test_successful_vm_from_imported_dv_windows(
 
 @pytest.mark.polarion("CNV-4032")
 def test_disk_image_after_import(
-    skip_block_volumemode,
+    skip_block_volumemode_scope_module,
     images_internal_http_server,
     namespace,
-    storage_class_matrix__function__,
+    storage_class_matrix__module__,
     unprivileged_client,
 ):
     with utilities.storage.create_dv(
@@ -818,6 +818,6 @@ def test_disk_image_after_import(
         url=f"{utilities.storage.get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="2Gi",
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
         utils.create_vm_and_verify_image_permission(dv=dv)
