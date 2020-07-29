@@ -30,6 +30,7 @@ python-rrmngmnt = "*"
 importlib-metadata = "*"
 importlib-resources = "*"
 ovirt-python-sdk = "*"
+click = "*"
 ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper.git"}
 
 [requires]

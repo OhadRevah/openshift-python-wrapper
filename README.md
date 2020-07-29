@@ -4,8 +4,14 @@ This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
 The infra for the tests can be found in https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper
-
 flake8 plugins defined in .flake8 can bo found in https://gitlab.cee.redhat.com/myakove/flake8-python-plugins
+
+## Use unmerged merged-request
+To run the tests with unmerged merged-request from ocp-python-wrapper use the script "install-resources-mr.py"
+```bash
+# Should be executed from cnv-tests folder.
+python install-resources-mr.py -u <gitlab username> -b <unmerged branch name to fetch>
+```
 
 # Prerequirements
 
