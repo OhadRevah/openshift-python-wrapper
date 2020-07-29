@@ -207,7 +207,11 @@ def cdi():
 
 @pytest.fixture()
 def https_config_map(request, namespace):
-    data = request.param["data"] if request else get_cert(server_type="https_cert")
+    data = (
+        request.param["data"]
+        if hasattr(request, "param")
+        else get_cert(server_type="https_cert")
+    )
     with ConfigMap(
         name="https-cert", namespace=namespace.name, cert_name="ca.pem", data=data,
     ) as configmap:

@@ -21,6 +21,7 @@ from utilities.storage import get_images_https_server
 
 
 LOGGER = logging.getLogger(__name__)
+CDI_LABEL = "cdi.kubevirt.io"
 
 
 def verify_label(cdi_resources):
@@ -28,7 +29,7 @@ def verify_label(cdi_resources):
     for rcs in cdi_resources:
         if rcs.name.startswith("cdi-operator"):
             continue
-        if "cdi.kubevirt.io" not in rcs.instance.metadata.labels.keys():
+        if CDI_LABEL not in rcs.instance.metadata.labels.keys():
             bad_pods.append(rcs.name)
     assert not bad_pods, " ".join(bad_pods)
 
@@ -89,23 +90,24 @@ def test_verify_pod_cdi_label(cdi_resources):
     verify_label(cdi_resources=cdi_resources)
 
 
-def _resource_list(default_client, pod_prefix, storage_ns_name):
+def _pods_list(default_client, pod_name, storage_ns_name):
     pods = list(Pod.get(dyn_client=default_client, namespace=storage_ns_name))
-    return [pod for pod in pods if pod.name.startswith(pod_prefix)]
+    return [pod for pod in pods if pod_name in pod.name]
 
 
-def get_cdi_worker_pods(default_client, pod_prefix, storage_ns_name):
+def is_cdi_worker_pod(default_client, pod_name, storage_ns_name):
+    """pod_name can also be partial pod name"""
     LOGGER.info("waiting for worker pod")
     sampler = TimeoutSampler(
         timeout=30,
         sleep=1,
-        func=_resource_list,
+        func=_pods_list,
         default_client=default_client,
-        pod_prefix=pod_prefix,
+        pod_name=pod_name,
         storage_ns_name=storage_ns_name,
     )
     for sample in sampler:
-        if [pod for pod in sample if "cdi.kubevirt.io" in pod.labels.keys()]:
+        if [pod for pod in sample if CDI_LABEL in pod.labels.keys()]:
             break
 
 
@@ -118,9 +120,9 @@ def test_importer_pod_cdi_label(skip_upstream, default_client, namespace):
         volume_mode=py_config["default_volume_mode"],
         storage_ns_name=namespace.name,
     ):
-        get_cdi_worker_pods(
+        is_cdi_worker_pod(
             default_client=default_client,
-            pod_prefix="importer",
+            pod_name="importer",
             storage_ns_name=namespace.name,
         )
 
@@ -138,12 +140,12 @@ def test_uploader_pod_cdi_label(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         storage_ns_name=namespace.name,
+        client=unprivileged_client,
     ):
-        get_cdi_worker_pods(
+        is_cdi_worker_pod(
             default_client=default_client,
-            pod_prefix="cdi-upload",
+            pod_name="cdi-upload",
             storage_ns_name=namespace.name,
-            client=unprivileged_client,
         )
 
 
@@ -175,13 +177,13 @@ def test_cloner_pods_cdi_label(
             volume_mode=py_config["default_volume_mode"],
         ) as dv1:
             dv1.wait_for_status(status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=600)
-            get_cdi_worker_pods(
+            is_cdi_worker_pod(
                 default_client=default_client,
-                pod_prefix="cdi-clone-source-dv",
+                pod_name="cdi-upload-dv-target",
                 storage_ns_name=dv.namespace,
             )
-            get_cdi_worker_pods(
+            is_cdi_worker_pod(
                 default_client=default_client,
-                pod_prefix="cdi-upload-dv-target",
+                pod_name="-source-pod",
                 storage_ns_name=dv.namespace,
             )
