@@ -130,7 +130,7 @@ def test_vm_import(secret, namespace, rhv_provider, cm_notemplate):
         cluster_name=source_vm_cluster,
         target_vm_name=target_vm_name,
         start_vm=True,
-        ovirt_mappings=utils.network_mappings([utils.POD_MAPPING]),
+        ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
     ) as vmimport:
         vmimport.wait(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING

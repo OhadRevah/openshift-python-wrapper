@@ -227,7 +227,7 @@ class TestNodeMaintenanceRHEL:
         source_node = source_pod.node
 
         with running_sleep_in_linux(
-            vm_cli=console.RHEL(vm_instance_from_template_scope_class)
+            vm_cli=console.RHEL(vm=vm_instance_from_template_scope_class)
         ):
             with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
