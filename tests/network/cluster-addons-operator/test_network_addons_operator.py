@@ -44,7 +44,7 @@ def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
         interfaces=[net_add_op_br1test_nad.name],
         networks={net_add_op_br1test_nad.name: net_add_op_br1test_nad.name},
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
     ) as vm:
         vm.start(wait=True)
         yield vm

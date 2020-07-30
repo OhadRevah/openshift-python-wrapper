@@ -103,7 +103,7 @@ def bridge_attached_vma(worker_node1, namespace, unprivileged_client, nad):
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node1.name,
@@ -126,7 +126,7 @@ def bridge_attached_vmb(worker_node2, namespace, unprivileged_client, nad):
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node2.name,
@@ -151,7 +151,7 @@ def bond_bridge_attached_vma(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node1.name,
@@ -176,7 +176,7 @@ def bond_bridge_attached_vmb(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node2.name,

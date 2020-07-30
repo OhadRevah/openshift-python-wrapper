@@ -366,7 +366,7 @@ def opted_out_ns_vm(opted_out_ns, opted_out_ns_nad, mac_pool):
         name=name,
         networks=networks,
         interfaces=networks.keys(),
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
     ) as vm:
         mac_pool.append_macs(vm=vm)
         vm.start(wait=True)
@@ -384,7 +384,7 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
         name=name,
         networks=networks,
         interfaces=networks.keys(),
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
     ) as vm:
         mac_pool.append_macs(vm=vm)
         vm.start(wait=True)

@@ -75,7 +75,8 @@ fcfn_exclude_functions =
     check_output,
     sleep,
     datetime,
-    intersection
+    intersection,
+    keys
 
 enable-extensions =
     PID,

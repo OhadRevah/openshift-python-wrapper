@@ -168,7 +168,7 @@ def ovs_linux_bridge_attached_vma(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node1.name,
@@ -203,7 +203,7 @@ def ovs_linux_bridge_attached_vmb(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node2.name,
@@ -232,7 +232,7 @@ def ovs_linux_bond_bridge_attached_vma(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node1.name,
@@ -261,7 +261,7 @@ def ovs_linux_bond_bridge_attached_vmb(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node2.name,

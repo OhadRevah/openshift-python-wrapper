@@ -67,7 +67,7 @@ def sriov_vm1(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=sriov_workers_node1.name,
@@ -98,7 +98,7 @@ def sriov_vm2(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=sriov_workers_node2.name,

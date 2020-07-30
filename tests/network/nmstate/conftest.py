@@ -45,7 +45,7 @@ def vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
         name=name,
         node_selector=worker_node1.name,
         client=unprivileged_client,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
@@ -60,7 +60,7 @@ def vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client):
         name=name,
         node_selector=worker_node2.name,
         client=unprivileged_client,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)

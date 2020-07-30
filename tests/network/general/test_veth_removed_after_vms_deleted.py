@@ -77,7 +77,7 @@ def bridge_attached_vma(namespace, unprivileged_client):
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
         client=unprivileged_client,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         teardown=False,
     ) as vm:
         vm.start(wait=True)
@@ -94,7 +94,7 @@ def bridge_attached_vmb(namespace, unprivileged_client):
         networks=NETWORKS,
         interfaces=sorted(NETWORKS.keys()),
         client=unprivileged_client,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         teardown=False,
     ) as vm:
         vm.start(wait=True)

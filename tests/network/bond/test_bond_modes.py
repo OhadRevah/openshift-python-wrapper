@@ -86,7 +86,7 @@ def bond_modes_vm(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node1.name,

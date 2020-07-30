@@ -20,7 +20,7 @@ def report_masquerade_ip_vm(unprivileged_client, namespace):
         namespace=namespace.name,
         name=name,
         client=unprivileged_client,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)

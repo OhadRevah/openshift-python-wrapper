@@ -58,7 +58,7 @@ def bridge_attached_vmi(namespace, bridge_network):
         name=name,
         networks=networks,
         interfaces=sorted(networks.keys()),
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
     ) as vm:
         vm.start()
         yield vm.vmi
@@ -74,7 +74,7 @@ def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
         networks=networks,
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
     ) as vm:
         vm.start()
         yield vm.vmi

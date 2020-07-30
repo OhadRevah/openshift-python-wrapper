@@ -150,7 +150,7 @@ def dhcp_server_vm(namespace, worker_node1, dhcp_br_nad, unprivileged_client):
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=vm_name,
-        body=fedora_vm_body(vm_name),
+        body=fedora_vm_body(name=vm_name),
         networks=vm_networks,
         interfaces=vm_interfaces,
         cloud_init_data=cloud_init_data,
