@@ -23,14 +23,14 @@ SECRET_KEY = "MTIz"
 
 
 @pytest.fixture()
-def secret(namespace):
+def scratch_space_secret(namespace):
     with Secret(
         name="http-secret",
         namespace=namespace.name,
         accesskeyid=ACCESS_KEY_ID,
         secretkey=SECRET_KEY,
-    ) as secret:
-        yield secret
+    ) as scratch_space_secret:
+        yield scratch_space_secret
 
 
 @pytest.mark.polarion("CNV-2327")
@@ -263,7 +263,12 @@ def test_scratch_space_import_http_data_volume(
     ],
 )
 def test_scratch_space_import_http_basic_auth_data_volume(
-    skip_upstream, namespace, storage_class_matrix__module__, secret, dv_name, file_name
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    scratch_space_secret,
+    dv_name,
+    file_name,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
@@ -273,7 +278,7 @@ def test_scratch_space_import_http_basic_auth_data_volume(
         url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
-        secret=secret,
+        secret=scratch_space_secret,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
@@ -316,7 +321,7 @@ def test_no_scratch_space_import_http_basic_auth(
     skip_upstream,
     namespace,
     storage_class_matrix__module__,
-    secret,
+    scratch_space_secret,
     dv_name,
     file_name,
 ):
@@ -325,7 +330,7 @@ def test_no_scratch_space_import_http_basic_auth(
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
-        secret=secret,
+        secret=scratch_space_secret,
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="5Gi",
         storage_class=storage_class,
