@@ -72,7 +72,5 @@ def test_vm_with_sidecar_hook(running_sidecar_vm):
     vm_console_run_commands(
         console_impl=console.Fedora,
         vm=running_sidecar_vm,
-        commands=[
-            "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward' | wc -l\n"
-        ],
+        commands=["sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward'\n"],
     )
