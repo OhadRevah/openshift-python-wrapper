@@ -29,7 +29,7 @@ def _masquerade_vmib_ip(vmib, bridge):
 
 
 @pytest.fixture(scope="class")
-def nad(rhel7_ovs_bridge, namespace):
+def rhel7_nad(rhel7_ovs_bridge, namespace):
     with network_nad(
         namespace=namespace,
         nad_type=utilities.network.OVS,
@@ -40,10 +40,10 @@ def nad(rhel7_ovs_bridge, namespace):
 
 
 @pytest.fixture(scope="class")
-def bridge_attached_vma(worker_node1, namespace, unprivileged_client, nad):
+def rhel7_bridge_attached_vma(worker_node1, namespace, unprivileged_client, rhel7_nad):
     name = "vma"
     networks = OrderedDict()
-    networks[nad.name] = nad.name
+    networks[rhel7_nad.name] = rhel7_nad.name
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
@@ -64,10 +64,10 @@ def bridge_attached_vma(worker_node1, namespace, unprivileged_client, nad):
 
 
 @pytest.fixture(scope="class")
-def bridge_attached_vmb(worker_node2, namespace, unprivileged_client, nad):
+def rhel7_bridge_attached_vmb(worker_node2, namespace, unprivileged_client, rhel7_nad):
     name = "vmb"
     networks = OrderedDict()
-    networks[nad.name] = nad.name
+    networks[rhel7_nad.name] = rhel7_nad.name
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
@@ -88,16 +88,16 @@ def bridge_attached_vmb(worker_node2, namespace, unprivileged_client, nad):
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vmia(bridge_attached_vma):
-    vmi = bridge_attached_vma.vmi
+def rhel7_running_bridge_attached_vmia(rhel7_bridge_attached_vma):
+    vmi = rhel7_bridge_attached_vma.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vmi
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vmib(bridge_attached_vmb):
-    vmi = bridge_attached_vmb.vmi
+def rhel7_running_bridge_attached_vmib(rhel7_bridge_attached_vmb):
+    vmi = rhel7_bridge_attached_vmb.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
     return vmi
@@ -109,13 +109,13 @@ def test_l2_bridge_connectivity(
     rhel7_workers,
     skip_when_one_node,
     namespace,
-    nad,
-    bridge_attached_vma,
-    bridge_attached_vmb,
-    running_bridge_attached_vmia,
-    running_bridge_attached_vmib,
+    rhel7_nad,
+    rhel7_bridge_attached_vma,
+    rhel7_bridge_attached_vmb,
+    rhel7_running_bridge_attached_vmia,
+    rhel7_running_bridge_attached_vmib,
 ):
     assert_ping_successful(
-        src_vm=running_bridge_attached_vmia,
-        dst_ip=_masquerade_vmib_ip(running_bridge_attached_vmib, nad.name),
+        src_vm=rhel7_running_bridge_attached_vmia,
+        dst_ip=_masquerade_vmib_ip(rhel7_running_bridge_attached_vmib, rhel7_nad.name),
     )

@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def vma(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
+def ovs_bond_vma(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -28,7 +28,7 @@ def vma(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
 
 
 @pytest.fixture(scope="module")
-def vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
+def ovs_bond_vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -45,17 +45,17 @@ def vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bond):
 
 
 @pytest.fixture(scope="module")
-def running_vma(vma):
-    vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vma.vmi)
-    return vma
+def running_ovs_bond_vma(ovs_bond_vma):
+    ovs_bond_vma.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=ovs_bond_vma.vmi)
+    return ovs_bond_vma
 
 
 @pytest.fixture(scope="module")
-def running_vmb(vmb):
-    vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmb.vmi)
-    return vmb
+def running_ovs_bond_vmb(ovs_bond_vmb):
+    ovs_bond_vmb.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=ovs_bond_vmb.vmi)
+    return ovs_bond_vmb
 
 
 def get_interface_by_attribute(all_connections, att):
