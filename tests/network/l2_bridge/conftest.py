@@ -285,28 +285,28 @@ def l2_bridge_vm_b(namespace, l2_bridge_all_nads, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def started_vmi_a(l2_bridge_vm_a):
+def l2_bridge_started_vmi_a(l2_bridge_vm_a):
     return running_vmi(vm=l2_bridge_vm_a)
 
 
 @pytest.fixture(scope="class")
-def started_vmi_b(l2_bridge_vm_b):
+def l2_bridge_started_vmi_b(l2_bridge_vm_b):
     return running_vmi(vm=l2_bridge_vm_b)
 
 
 @pytest.fixture(scope="class")
 def configured_l2_bridge_vm_a(
-    l2_bridge_vm_a, l2_bridge_vm_b, started_vmi_a, started_vmi_b
+    l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_started_vmi_a, l2_bridge_started_vmi_b
 ):
     """
     Waits until l2_bridge_vm_a and l2_bridge_vm_b are running and all interfaces are UP then
     runs dhcpd server. To avoid incorrect dhcpd IP address allocation
     this commands are critical to run ONLY after l2_bridge_vm_b is UP and configured
     """
-    wait_for_vm_interfaces(vmi=started_vmi_a)
+    wait_for_vm_interfaces(vmi=l2_bridge_started_vmi_a)
 
     # This is mandatory step to avoid ip allocation to the incorrect interface
-    wait_for_vm_interfaces(vmi=started_vmi_b)
+    wait_for_vm_interfaces(vmi=l2_bridge_started_vmi_b)
 
     vm_console_run_commands(
         console_impl=console.Fedora,
@@ -318,7 +318,7 @@ def configured_l2_bridge_vm_a(
 
 @pytest.fixture(scope="class")
 def configured_l2_bridge_vm_b(
-    l2_bridge_vm_a, l2_bridge_vm_b, started_vmi_b, configured_l2_bridge_vm_a
+    l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_started_vmi_b, configured_l2_bridge_vm_a
 ):
     """
     Starts dhcp client in l2_bridge_vm_b
