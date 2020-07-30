@@ -22,7 +22,7 @@ def vm_metric_1(namespace, unprivileged_client):
     with VirtualMachineForTests(
         name=vm_name,
         namespace=namespace.name,
-        body=fedora_vm_body(vm_name),
+        body=fedora_vm_body(name=vm_name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -36,7 +36,7 @@ def vm_metric_2(namespace, unprivileged_client):
     with VirtualMachineForTests(
         name=vm_name,
         namespace=namespace.name,
-        body=fedora_vm_body(vm_name),
+        body=fedora_vm_body(name=vm_name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:

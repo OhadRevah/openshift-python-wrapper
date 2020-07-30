@@ -34,7 +34,7 @@ def vm_with_cloud_init_type(request, namespace):
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         cloud_init_type=cloud_init_type,
     ) as vm:

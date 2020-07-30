@@ -85,8 +85,8 @@ def vm_upgrade_a(upgrade_bridge_marker_nad, namespace, unprivileged_client):
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
         interfaces=[upgrade_bridge_marker_nad.name],
         client=unprivileged_client,
-        cloud_init_data=cloud_init("10.200.100.1"),
-        body=fedora_vm_body(name),
+        cloud_init_data=cloud_init(ip_address="10.200.100.1"),
+        body=fedora_vm_body(name=name),
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -101,8 +101,8 @@ def vm_upgrade_b(upgrade_bridge_marker_nad, namespace, unprivileged_client):
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
         interfaces=[upgrade_bridge_marker_nad.name],
         client=unprivileged_client,
-        cloud_init_data=cloud_init("10.200.100.2"),
-        body=fedora_vm_body(name),
+        cloud_init_data=cloud_init(ip_address="10.200.100.2"),
+        body=fedora_vm_body(name=name),
     ) as vm:
         vm.start(wait=True)
         yield vm

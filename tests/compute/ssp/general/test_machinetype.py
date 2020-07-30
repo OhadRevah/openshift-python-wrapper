@@ -20,7 +20,7 @@ def vm(request, unprivileged_client, namespace):
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         machine_type=request.param.get("machine_type"),
@@ -152,7 +152,7 @@ def test_unsupported_machine_type(namespace, unprivileged_client):
         with VirtualMachineForTests(
             name=vm_name,
             namespace=namespace.name,
-            body=fedora_vm_body(vm_name),
+            body=fedora_vm_body(name=vm_name),
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
             machine_type="pc-i440fx",

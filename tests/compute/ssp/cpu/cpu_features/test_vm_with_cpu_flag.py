@@ -38,7 +38,7 @@ def cpu_flag_vm_positive(cpu_module, namespace, unprivileged_client):
         name=name,
         namespace=namespace.name,
         cpu_flags={"model": cpu_module},
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -67,7 +67,7 @@ def cpu_flag_vm_negative(request, unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         cpu_flags=request.param[0],
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:

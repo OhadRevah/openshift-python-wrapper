@@ -96,7 +96,7 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
         name=name,
         namespace=namespace.name,
         eviction=True,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         client=unprivileged_client,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:

@@ -90,7 +90,7 @@ def libvirt_min_cpu_features_list(
 def cpu_test_vm(namespace):
     name = "cpu-test"
     with VirtualMachineForTests(
-        name=name, namespace=namespace.name, body=fedora_vm_body(name)
+        name=name, namespace=namespace.name, body=fedora_vm_body(name=name)
     ) as vm:
         vm.start()
         vm.vmi.wait_until_running()

@@ -72,7 +72,7 @@ def vm_with_cpu_support(request, namespace, unprivileged_client):
         cpu_cores=request.param["cores"],
         cpu_sockets=request.param["sockets"],
         cpu_threads=request.param["threads"],
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -102,7 +102,7 @@ def no_cpu_settings_vm(namespace, unprivileged_client):
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -132,7 +132,7 @@ def test_vm_with_cpu_limitation(namespace, unprivileged_client):
         cpu_cores=2,
         cpu_limits=2,
         cpu_requests=2,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -154,7 +154,7 @@ def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
             namespace=namespace.name,
             cpu_limits=2,
             cpu_requests=4,
-            body=fedora_vm_body(name),
+            body=fedora_vm_body(name=name),
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
         ):

@@ -26,7 +26,7 @@ def vm_vmi(namespace, service_account, unprivileged_client):
         name=name,
         namespace=namespace.name,
         service_accounts=[service_account.name],
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         client=unprivileged_client,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
@@ -71,7 +71,7 @@ def test_vm_with_2_service_accounts(namespace):
             name=name,
             namespace=namespace.name,
             service_accounts=["sa-1", "sa-2"],
-            body=fedora_vm_body(name),
+            body=fedora_vm_body(name=name),
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         ):
             return

@@ -35,7 +35,7 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         cpu_flags=request.param[0],
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -79,7 +79,7 @@ def cpu_features_vm_negative(request, unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         cpu_flags=request.param[0],
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
@@ -127,7 +127,7 @@ def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace, fea
             name=vm_name,
             namespace=namespace.name,
             cpu_flags={"features": features},
-            body=fedora_vm_body(vm_name),
+            body=fedora_vm_body(name=vm_name),
             cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
         ):
@@ -141,7 +141,7 @@ def cpu_features_vm_require_pcid(namespace, unprivileged_client):
         name=name,
         namespace=namespace.name,
         cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:

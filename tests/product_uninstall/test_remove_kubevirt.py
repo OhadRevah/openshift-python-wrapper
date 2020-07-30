@@ -29,7 +29,7 @@ def vm(unprivileged_client, namespace):
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
-        body=fedora_vm_body(name),
+        body=fedora_vm_body(name=name),
         client=unprivileged_client,
     ) as vm:
         vm.start()
