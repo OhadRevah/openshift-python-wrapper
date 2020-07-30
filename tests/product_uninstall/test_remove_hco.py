@@ -6,7 +6,6 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.event import Event
 from resources.hyperconverged import HyperConverged
-from resources.kubevirt import KubeVirt
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -29,14 +28,8 @@ def hyperconverged_resource(default_client):
         return hco
 
 
-@pytest.fixture()
-def kubevirt_resource(default_client):
-    for kv in KubeVirt.get(dyn_client=default_client):
-        return kv
-
-
 @pytest.fixture(scope="module")
-def vm(unprivileged_client, namespace):
+def remove_hco_vm(unprivileged_client, namespace):
     name = f"remove-hco-vm-{time.time()}"
     with VirtualMachineForTests(
         name=name,
@@ -80,7 +73,7 @@ class TestRemoveHCO:
         default_client,
         delete_events_before_test,
         hyperconverged_resource,
-        vm,
+        remove_hco_vm,
         data_volume_scope_class,
         start_time,
     ):
@@ -111,8 +104,8 @@ class TestRemoveHCO:
         assert (
             hyperconverged_resource.exists
             and metadata.get("deletionTimestamp") is not None
-            and vm.exists
-            and vm.vmi.status == vm.vmi.Status.RUNNING
+            and remove_hco_vm.exists
+            and remove_hco_vm.vmi.status == remove_hco_vm.vmi.Status.RUNNING
             and data_volume_scope_class.exists
         )
 
@@ -126,14 +119,16 @@ class TestRemoveHCO:
 
     @pytest.mark.run(after="test_block_removal")
     @pytest.mark.polarion("CNV-4044")
-    def test_remove_vm(self, vm, hyperconverged_resource, data_volume_scope_class):
+    def test_remove_vm(
+        self, remove_hco_vm, hyperconverged_resource, data_volume_scope_class
+    ):
         # (6) delete the VM
-        vm.delete(wait=True)
+        remove_hco_vm.delete(wait=True)
 
         # (7) check that HCO still not deleted
         assert (
             hyperconverged_resource.exists
-            and not vm.exists
+            and not remove_hco_vm.exists
             and data_volume_scope_class.exists
         )
 

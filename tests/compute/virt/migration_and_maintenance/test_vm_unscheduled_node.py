@@ -9,7 +9,7 @@ from tests.conftest import vm_instance_from_template
 
 
 @pytest.fixture()
-def vm(
+def unscheduled_node_vm(
     request,
     worker_node1,
     unprivileged_client,
@@ -54,7 +54,11 @@ def vm(
 )
 @pytest.mark.polarion("CNV-4157")
 def test_node_maintenance_job_rhel(
-    skip_when_one_node, nodes, data_volume_scope_function, vm, default_client,
+    skip_when_one_node,
+    nodes,
+    data_volume_scope_function,
+    unscheduled_node_vm,
+    default_client,
 ):
     """ Test VM scheduling on a node under maintenance.
     1. Start node maintenance job
@@ -66,21 +70,25 @@ def test_node_maintenance_job_rhel(
     6. Wait for VMI status to be 'Running'
     7. Verify VMI is running on the selected node
     """
-    vm_node = [node for node in nodes if node.name == vm.node_selector][0]
+    vm_node = [
+        node for node in nodes if node.name == unscheduled_node_vm.node_selector
+    ][0]
     with NodeMaintenance(name="node-maintenance-job", node=vm_node) as nm:
         virt_utils.wait_for_node_schedulable_status(node=vm_node, status=False)
-        vm.start()
+        unscheduled_node_vm.start()
         nm.wait_for_status(status=nm.Status.RUNNING)
-        vm.vmi.wait_for_status(
+        unscheduled_node_vm.vmi.wait_for_status(
             status=VirtualMachineInstance.Status.SCHEDULING, timeout=20
         )
         nm.wait_for_status(status=nm.Status.SUCCEEDED)
     assert (
-        vm.vmi.status == VirtualMachineInstance.Status.SCHEDULING
-    ), f"VMI phase should be 'Scheduling', it status is: '{vm.vmi.status}"
+        unscheduled_node_vm.vmi.status == VirtualMachineInstance.Status.SCHEDULING
+    ), f"VMI phase should be 'Scheduling', it status is: '{unscheduled_node_vm.vmi.status}"
     virt_utils.wait_for_node_schedulable_status(node=vm_node, status=True)
-    vm.vmi.wait_for_status(status=VirtualMachineInstance.Status.RUNNING)
-    vmi_node_name = vm.vmi.virt_launcher_pod.node.name
+    unscheduled_node_vm.vmi.wait_for_status(
+        status=VirtualMachineInstance.Status.RUNNING
+    )
+    vmi_node_name = unscheduled_node_vm.vmi.virt_launcher_pod.node.name
     assert (
         vmi_node_name == vm_node.name
-    ), f"VMI is running on {vmi_node_name} and not on the selected node {vm.node_selector}"
+    ), f"VMI is running on {vmi_node_name} and not on the selected node {unscheduled_node_vm.node_selector}"

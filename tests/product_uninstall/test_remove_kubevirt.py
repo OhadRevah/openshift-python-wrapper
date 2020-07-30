@@ -10,12 +10,6 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture()
-def kubevirt_resource(default_client):
-    for kv in KubeVirt.get(dyn_client=default_client):
-        return kv
-
-
-@pytest.fixture()
 def set_uninstall_strategy_remove_workloads(kubevirt_resource):
     with ResourceEditor(
         patches={kubevirt_resource: {"spec": {"uninstallStrategy": "RemoveWorkloads"}}}
@@ -24,7 +18,7 @@ def set_uninstall_strategy_remove_workloads(kubevirt_resource):
 
 
 @pytest.fixture()
-def vm(unprivileged_client, namespace):
+def remove_kubevirt_vm(unprivileged_client, namespace):
     name = f"remove-kubevirt-vm-{time.time()}"
     with VirtualMachineForTests(
         name=name,
@@ -49,21 +43,24 @@ def test_validate_default_uninstall_strategy(kubevirt_resource):
 @pytest.mark.run(after="test_validate_default_install_strategy")
 @pytest.mark.polarion("CNV-3718")
 @pytest.mark.destructive
-def test_block_removal(kubevirt_resource, vm):
+def test_block_removal(kubevirt_resource, remove_kubevirt_vm):
     with pytest.raises(BadRequestError):
         kubevirt_resource.delete()
 
     assert (
         kubevirt_resource.status == KubeVirt.Status.DEPLOYED
-        and vm.exists
-        and vm.vmi.status == vm.vmi.Status.RUNNING
+        and remove_kubevirt_vm.exists
+        and remove_kubevirt_vm.vmi.status == remove_kubevirt_vm.vmi.Status.RUNNING
     )
 
 
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-3684")
 def test_remove_workloads(
-    set_uninstall_strategy_remove_workloads, kubevirt_resource, vm, default_client
+    set_uninstall_strategy_remove_workloads,
+    kubevirt_resource,
+    remove_kubevirt_vm,
+    default_client,
 ):
     """WARNING: DESTRUCTIVE; DELETES ALL RUNNING CNV WORKLOADS"""
 
@@ -92,5 +89,8 @@ def test_remove_workloads(
 @pytest.mark.run(after="test_remove_workloads")
 @pytest.mark.polarion("CNV-3739")
 @pytest.mark.destructive
-def test_raise_vm_after_removal(vm):
-    assert vm.exists and vm.vmi.status == vm.vmi.Status.RUNNING
+def test_raise_vm_after_removal(remove_kubevirt_vm):
+    assert (
+        remove_kubevirt_vm.exists
+        and remove_kubevirt_vm.vmi.status == remove_kubevirt_vm.vmi.Status.RUNNING
+    )
