@@ -69,27 +69,29 @@ class TestUpgrade:
         self,
         vm_upgrade_a,
         vm_upgrade_b,
-        running_vm_a,
-        running_vm_b,
+        running_vm_upgrade_a,
+        running_vm_upgrade_b,
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
         upgrade_utils.assert_bridge_and_vms_on_same_node(
-            vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
+            vm_a=running_vm_upgrade_a,
+            vm_b=running_vm_upgrade_b,
+            bridge=bridge_on_one_node,
         )
         upgrade_utils.assert_node_is_marked_by_bridge(
-            bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
+            bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_upgrade_b
         )
 
     @pytest.mark.polarion("CNV-2745")
     @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
     def test_linux_bridge_before_upgrade(
-        self, vm_upgrade_a, vm_upgrade_b, running_vm_a, running_vm_b
+        self, vm_upgrade_a, vm_upgrade_b, running_vm_upgrade_a, running_vm_upgrade_b
     ):
         dst_ip_address = ip_interface(
-            running_vm_b.vmi.instance.status.interfaces[1].ipAddress
+            running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
         ).ip
-        assert_ping_successful(src_vm=running_vm_a, dst_ip=str(dst_ip_address))
+        assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-2991")
     @pytest.mark.run(after="test_linux_bridge_before_upgrade")
@@ -155,27 +157,29 @@ class TestUpgrade:
         self,
         vm_upgrade_a,
         vm_upgrade_b,
-        running_vm_a,
-        running_vm_b,
+        running_vm_upgrade_a,
+        running_vm_upgrade_b,
         upgrade_bridge_marker_nad,
         bridge_on_one_node,
     ):
         upgrade_utils.assert_bridge_and_vms_on_same_node(
-            vm_a=running_vm_a, vm_b=running_vm_b, bridge=bridge_on_one_node
+            vm_a=running_vm_upgrade_a,
+            vm_b=running_vm_upgrade_b,
+            bridge=bridge_on_one_node,
         )
         upgrade_utils.assert_node_is_marked_by_bridge(
-            bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_b
+            bridge_nad=upgrade_bridge_marker_nad, vm=running_vm_upgrade_b
         )
 
     @pytest.mark.polarion("CNV-2748")
     @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
     def test_linux_bridge_after_upgrade(
-        self, vm_upgrade_a, vm_upgrade_b, running_vm_a, running_vm_b
+        self, vm_upgrade_a, vm_upgrade_b, running_vm_upgrade_a, running_vm_upgrade_b
     ):
         dst_ip_address = ip_interface(
-            running_vm_b.vmi.instance.status.interfaces[1].ipAddress
+            running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
         ).ip
-        assert_ping_successful(src_vm=running_vm_a, dst_ip=str(dst_ip_address))
+        assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.run(after="test_upgrade")
     @pytest.mark.polarion("CNV-3682")

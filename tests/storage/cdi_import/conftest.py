@@ -5,7 +5,6 @@ CDI Import
 import logging
 
 import pytest
-from resources.configmap import ConfigMap
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.storage_class import StorageClass
@@ -13,15 +12,6 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def https_config_map(request, namespace):
-    data = request.param["data"] if request else None
-    with ConfigMap(
-        name="https-cert", namespace=namespace.name, cert_name="ca.pem", data=data,
-    ) as configmap:
-        yield configmap
 
 
 @pytest.fixture()

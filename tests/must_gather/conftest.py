@@ -64,7 +64,7 @@ def must_gather_image_url(cnv_current_version):
 def cnv_must_gather(
     tmpdir_factory,
     must_gather_image_url,
-    network_attachment_definition,
+    must_gather_nad,
     nodenetworkstate_with_bridge,
     running_vm,
 ):
@@ -132,7 +132,7 @@ def kubevirt_crd_resources(default_client, custom_resource_definitions):
 
 
 @pytest.fixture(scope="module")
-def network_attachment_definition(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
+def must_gather_nad(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
     with utilities.network.network_nad(
         nad_type=utilities.network.OVS
         if rhel7_workers
@@ -140,8 +140,8 @@ def network_attachment_definition(rhel7_workers, rhel7_ovs_bridge, hco_namespace
         nad_name="mgnad",
         interface_name=rhel7_ovs_bridge if rhel7_workers else "mgbr",
         namespace=hco_namespace,
-    ) as network_attachment_definition:
-        yield network_attachment_definition
+    ) as must_gather_nad:
+        yield must_gather_nad
 
 
 @pytest.fixture(scope="module")

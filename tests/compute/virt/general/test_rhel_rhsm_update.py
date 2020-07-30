@@ -43,28 +43,28 @@ def rhsm_created_secret(namespace):
 
 
 @pytest.fixture()
-def cloud_init_data():
+def rhsm_cloud_init_data():
     bootcmds = [
         f"mkdir /mnt/{SECRET_NAME}",
         f"mount /dev/$(lsblk --nodeps -no name,serial | grep {DISK_SERIAL} | cut -f1 -d' ') /mnt/{SECRET_NAME}",
         "subscription-manager config --rhsm.auto_enable_yum_plugins=0",
     ]
 
-    cloud_init_data = RHEL_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    rhsm_cloud_init_data = RHEL_CLOUD_INIT_PASSWORD
+    rhsm_cloud_init_data["bootcmd"] = bootcmds
 
-    return cloud_init_data
+    return rhsm_cloud_init_data
 
 
 @pytest.fixture()
-def vm(
+def rhsm_vm(
     request,
     unprivileged_client,
     rhel7_workers,
     namespace,
     data_volume_scope_function,
     network_configuration,
-    cloud_init_data,
+    rhsm_cloud_init_data,
 ):
     with vm_instance_from_template(
         request=request,
@@ -72,20 +72,20 @@ def vm(
         namespace=namespace,
         data_volume=data_volume_scope_function,
         network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
-    ) as vm:
+        cloud_init_data=rhsm_cloud_init_data,
+    ) as rhsm_vm:
         if rhel7_workers:
-            remove_eth0_default_gw(vm=vm, console_impl=console.RHEL)
-        yield vm
+            remove_eth0_default_gw(vm=rhsm_vm, console_impl=console.RHEL)
+        yield rhsm_vm
 
 
 @pytest.fixture()
-def registered_rhsm(vm):
+def registered_rhsm(rhsm_vm):
     LOGGER.info("Register the VM with RedHat Subscription Manager")
 
     vm_console_run_commands(
         console_impl=console.RHEL,
-        vm=vm,
+        vm=rhsm_vm,
         commands=[
             "sudo subscription-manager register "
             "--serverurl=subscription.rhsm.stage.redhat.com:443/subscription "
@@ -98,7 +98,7 @@ def registered_rhsm(vm):
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm",
+    "data_volume_scope_function, rhsm_vm",
     [
         pytest.param(
             {
@@ -130,12 +130,12 @@ def test_rhel_yum_update(
     namespace,
     rhsm_created_secret,
     data_volume_scope_function,
-    vm,
+    rhsm_vm,
     registered_rhsm,
 ):
     vm_console_run_commands(
         console_impl=console.RHEL,
-        vm=vm,
+        vm=rhsm_vm,
         commands=["sudo yum update -y curl"],
         timeout=180,
     )

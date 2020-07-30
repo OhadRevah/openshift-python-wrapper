@@ -30,7 +30,7 @@ pytestmark = pytest.mark.usefixtures("skip_when_no_unprivileged_client_available
 
 
 @pytest.fixture(scope="module")
-def service_account(dst_ns):
+def restricted_ns_service_account(dst_ns):
     with ServiceAccount(name="vm-service-account", namespace=dst_ns.name) as sa:
         yield sa
 
@@ -92,7 +92,7 @@ def allow_unprivileged_client_to_manage_vms_on_dst_ns(
 def test_create_vm_with_cloned_data_volume_positive(
     namespace,
     dst_ns,
-    service_account,
+    restricted_ns_service_account,
     unprivileged_client,
     allow_unprivileged_client_to_manage_vms_on_dst_ns,
     data_volume_clone_settings,
@@ -103,8 +103,8 @@ def test_create_vm_with_cloned_data_volume_positive(
         permissions_to_resources=["datavolumes", "datavolumes/source"],
         binding_name="role_bind_src",
         namespace=namespace.name,
-        subjects_kind=service_account.kind,
-        subjects_name=service_account.name,
+        subjects_kind=restricted_ns_service_account.kind,
+        subjects_name=restricted_ns_service_account.name,
         subjects_namespace=dst_ns.name,
     ):
         with set_permissions(
@@ -113,15 +113,15 @@ def test_create_vm_with_cloned_data_volume_positive(
             permissions_to_resources=["datavolumes", "datavolumes/source"],
             binding_name="role_bind_dst",
             namespace=dst_ns.name,
-            subjects_kind=service_account.kind,
-            subjects_name=service_account.name,
+            subjects_kind=restricted_ns_service_account.kind,
+            subjects_name=restricted_ns_service_account.name,
             subjects_namespace=dst_ns.name,
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
             with VirtualMachineForTests(
                 name="vm-for-test",
                 namespace=dst_ns.name,
-                service_accounts=[service_account.name],
+                service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
                 data_volume_template={
                     "metadata": dv_clone_dict["metadata"],
@@ -144,7 +144,7 @@ def test_create_vm_with_cloned_data_volume_positive(
 def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions_negative(
     namespace,
     dst_ns,
-    service_account,
+    restricted_ns_service_account,
     unprivileged_client,
     unprivileged_user_username,
     allow_unprivileged_client_to_manage_vms_on_dst_ns,
@@ -179,7 +179,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
                 with VirtualMachineForTests(
                     name="vm-for-test",
                     namespace=dst_ns.name,
-                    service_accounts=[service_account.name],
+                    service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
                     data_volume_template={
                         "metadata": dv_clone_dict["metadata"],
@@ -199,8 +199,12 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
     ],
     indirect=True,
 )
-def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permission_negative(
-    namespace, dst_ns, service_account, unprivileged_client, data_volume_clone_settings,
+def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing_cloning_permission_negative(
+    namespace,
+    dst_ns,
+    restricted_ns_service_account,
+    unprivileged_client,
+    data_volume_clone_settings,
 ):
     with set_permissions(
         role_name="datavolume-cluster-role-src",
@@ -208,8 +212,8 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
         permissions_to_resources=["datavolumes"],
         binding_name="role_bind_src",
         namespace=namespace.name,
-        subjects_kind=service_account.kind,
-        subjects_name=service_account.name,
+        subjects_kind=restricted_ns_service_account.kind,
+        subjects_name=restricted_ns_service_account.name,
         subjects_namespace=dst_ns.name,
     ):
         with set_permissions(
@@ -218,8 +222,8 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
             permissions_to_resources=["datavolumes"],
             binding_name="role_bind_dst",
             namespace=dst_ns.name,
-            subjects_kind=service_account.kind,
-            subjects_name=service_account.name,
+            subjects_kind=restricted_ns_service_account.kind,
+            subjects_name=restricted_ns_service_account.name,
             subjects_namespace=dst_ns.name,
         ):
             with pytest.raises(
@@ -230,7 +234,7 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
                 with VirtualMachineForTests(
                     name="vm-for-test",
                     namespace=dst_ns.name,
-                    service_accounts=[service_account.name],
+                    service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
                     data_volume_template={
                         "metadata": dv_clone_dict["metadata"],
@@ -253,7 +257,7 @@ def test_create_vm_with_cloned_data_volume_service_account_missing_cloning_permi
 def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
     namespace,
     dst_ns,
-    service_account,
+    restricted_ns_service_account,
     unprivileged_client,
     unprivileged_user_username,
     data_volume_clone_settings,
@@ -263,8 +267,8 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
     with create_role_binding(
         name="service-account-can-create-pods-on-src",
         namespace=namespace.name,
-        subjects_kind=service_account.kind,
-        subjects_name=service_account.name,
+        subjects_kind=restricted_ns_service_account.kind,
+        subjects_name=restricted_ns_service_account.name,
         role_ref_kind=cluster_role_for_creating_pods.kind,
         role_ref_name=cluster_role_for_creating_pods.name,
         subjects_namespace=dst_ns.name,
@@ -272,8 +276,8 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
         with create_role_binding(
             name="service-account-can-create-pods-on-dst",
             namespace=dst_ns.name,
-            subjects_kind=service_account.kind,
-            subjects_name=service_account.name,
+            subjects_kind=restricted_ns_service_account.kind,
+            subjects_name=restricted_ns_service_account.name,
             role_ref_kind=cluster_role_for_creating_pods.kind,
             role_ref_name=cluster_role_for_creating_pods.name,
             subjects_namespace=dst_ns.name,
@@ -282,7 +286,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
             with VirtualMachineForTests(
                 name="vm-for-test",
                 namespace=dst_ns.name,
-                service_accounts=[service_account.name],
+                service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
                 data_volume_template={
                     "metadata": dv_clone_dict["metadata"],

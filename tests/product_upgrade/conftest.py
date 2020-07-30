@@ -25,7 +25,7 @@ MARKETPLACE_NAMESPACE = "openshift-marketplace"
 
 
 @pytest.fixture(scope="module", autouse=True)
-def bridge_on_all_nodes(
+def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
     network_utility_pods,
     nodes_active_nics,
@@ -109,7 +109,7 @@ def vm_upgrade_b(upgrade_bridge_marker_nad, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def running_vm_a(vm_upgrade_a):
+def running_vm_upgrade_a(vm_upgrade_a):
     vmi = vm_upgrade_a.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
@@ -117,7 +117,7 @@ def running_vm_a(vm_upgrade_a):
 
 
 @pytest.fixture(scope="module")
-def running_vm_b(vm_upgrade_b):
+def running_vm_upgrade_b(vm_upgrade_b):
     vmi = vm_upgrade_b.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
@@ -125,11 +125,11 @@ def running_vm_b(vm_upgrade_b):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def br1test_nad(namespace, bridge_on_all_nodes):
+def upgrade_br1test_nad(namespace, upgrade_bridge_on_all_nodes):
     with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name=bridge_on_all_nodes.bridge_name,
-        interface_name=bridge_on_all_nodes.bridge_name,
+        nad_name=upgrade_bridge_on_all_nodes.bridge_name,
+        interface_name=upgrade_bridge_on_all_nodes.bridge_name,
         namespace=namespace,
     ) as nad:
         yield nad
@@ -164,8 +164,10 @@ def dvs_for_upgrade(namespace, worker_node1):
 
 
 @pytest.fixture(scope="module")
-def vms_for_upgrade(unprivileged_client, bridge_on_all_nodes, dvs_for_upgrade):
-    networks = {bridge_on_all_nodes.bridge_name: bridge_on_all_nodes.bridge_name}
+def vms_for_upgrade(unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_upgrade):
+    networks = {
+        upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
+    }
     template_labels = {
         "os": py_config["latest_rhel_version"]["os_label"],
         "workload": "server",
