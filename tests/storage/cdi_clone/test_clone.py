@@ -181,6 +181,6 @@ def test_disk_image_after_clone(
         namespace=namespace.name,
         size=data_volume_multi_storage_scope_function.size,
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as cdv:
         utils.create_vm_and_verify_image_permission(dv=cdv)

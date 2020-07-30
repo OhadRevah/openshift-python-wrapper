@@ -280,7 +280,9 @@ def test_successful_import_basic_auth(
         source="http",
         dv_name="import-http-dv",
         namespace=namespace.name,
-        url=get_file_url(images_internal_http_server["http_auth"], file_name),
+        url=get_file_url(
+            url=images_internal_http_server["http_auth"], file_name=file_name
+        ),
         content_type=content_type,
         size="500Mi",
         secret=internal_http_secret,
@@ -307,7 +309,9 @@ def test_wrong_content_type(
         source="http",
         dv_name="import-http-dv",
         namespace=namespace.name,
-        url=get_file_url(images_internal_http_server["http"], Images.Cdi.QCOW2_IMG),
+        url=get_file_url(
+            url=images_internal_http_server["http"], file_name=Images.Cdi.QCOW2_IMG
+        ),
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
         storage_class=storage_class,
@@ -370,7 +374,7 @@ def test_import_invalid_qcow(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
-        url=get_file_url(images_internal_http_server["http"], file_name),
+        url=get_file_url(url=images_internal_http_server["http"], file_name=file_name),
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
@@ -414,7 +418,7 @@ def test_unpack_compressed(
         source="http",
         dv_name="unpack-compressed-dv",
         namespace=namespace.name,
-        url=get_file_url(images_internal_http_server["http"], file_name),
+        url=get_file_url(url=images_internal_http_server["http"], file_name=file_name),
         content_type=content_type,
         size="200Mi",
         storage_class=storage_class,
@@ -803,6 +807,6 @@ def test_disk_image_after_import(
         url=f"{utilities.storage.get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="2Gi",
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         utils.create_vm_and_verify_image_permission(dv=dv)

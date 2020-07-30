@@ -211,7 +211,7 @@ def https_config_map(namespace):
         name="https-cert",
         namespace=namespace.name,
         cert_name="ca.pem",
-        data=get_cert("https_cert"),
+        data=get_cert(server_type="https_cert"),
     ) as configmap:
         yield configmap
 
@@ -219,7 +219,9 @@ def https_config_map(namespace):
 @pytest.fixture()
 def registry_config_map(namespace):
     with ConfigMap(
-        name="registry-cert", namespace=namespace.name, data=get_cert("registry_cert")
+        name="registry-cert",
+        namespace=namespace.name,
+        data=get_cert(server_type="registry_cert"),
     ) as configmap:
         yield configmap
 

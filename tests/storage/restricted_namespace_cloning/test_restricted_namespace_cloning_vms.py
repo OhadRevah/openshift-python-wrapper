@@ -347,6 +347,6 @@ def test_disk_image_after_create_vm_with_restricted_clone(
                 source_pvc=data_volume_multi_storage_scope_function.pvc.name,
                 source_namespace=namespace.name,
                 client=unprivileged_client,
-                **storage_params(storage_class_matrix__function__),
+                **storage_params(storage_class_matrix=storage_class_matrix__function__),
             ) as cdv:
                 create_vm_and_verify_image_permission(dv=cdv)

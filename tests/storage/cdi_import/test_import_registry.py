@@ -51,7 +51,7 @@ def configmap_with_cert(namespace):
         name="registry-cm-cert",
         namespace=namespace.name,
         cert_name=py_config[py_config["region"]]["registry_cert"],
-        data=get_cert("registry_cert"),
+        data=get_cert(server_type="registry_cert"),
     ) as configmap:
         yield configmap
 
@@ -101,7 +101,7 @@ def test_private_registry_cirros(
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{file_name}",
         cert_configmap=registry_config_map.name,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -135,7 +135,7 @@ def test_disk_image_not_conform_to_registy_disk(
         dv_name=dv_name,
         namespace=namespace.name,
         url=url,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -164,7 +164,9 @@ def test_public_registry_multiple_data_volume(
                 url=DOCKERHUB_IMAGE,
                 size="5Gi",
                 content_type=DataVolume.ContentType.KUBEVIRT,
-                **utils.storage_params(storage_class_matrix__function__),
+                **utils.storage_params(
+                    storage_class_matrix=storage_class_matrix__function__
+                ),
             )
 
             dv_process = multiprocessing.Process(target=rdv.create)
@@ -222,7 +224,7 @@ def test_private_registry_insecured_configmap(
         dv_name="import-private-insecured-registry",
         namespace=namespace.name,
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -244,7 +246,7 @@ def test_private_registry_recover_after_missing_configmap(
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
         dv.wait()
@@ -266,7 +268,7 @@ def test_private_registry_with_untrusted_certificate(
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -286,7 +288,9 @@ def test_private_registry_with_untrusted_certificate(
             url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
-            **utils.storage_params(storage_class_matrix__function__),
+            **utils.storage_params(
+                storage_class_matrix=storage_class_matrix__function__
+            ),
         ) as dv:
             dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
             wait_for_importer_container_message(
@@ -354,7 +358,7 @@ def test_public_registry_data_volume(
         cert_configmap=cert_configmap,
         content_type=content_type,
         size=size,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -375,7 +379,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
         url=DOCKERHUB_IMAGE,
         content_type="",
         size="16Mi",
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -392,7 +396,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
         dv_name="import-registry-dockerhub-low-capacity-dv",
         namespace=namespace.name,
         url=DOCKERHUB_IMAGE,
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -415,7 +419,9 @@ def test_public_registry_data_volume_dockerhub_archive(
             namespace=namespace.name,
             url=DOCKERHUB_IMAGE,
             content_type=DataVolume.ContentType.ARCHIVE,
-            **utils.storage_params(storage_class_matrix__function__),
+            **utils.storage_params(
+                storage_class_matrix=storage_class_matrix__function__
+            ),
         ):
             return
 
@@ -441,7 +447,7 @@ def test_fqdn_name(
         f"{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
         size="1Gi",
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         # Import fails because FQDN is verified from the registry certificate and a substring is not supported.
         dv.wait_for_condition(
@@ -502,7 +508,7 @@ def test_inject_invalid_cert_to_configmap(
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
         size="1Gi",
-        **utils.storage_params(storage_class_matrix__function__),
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=600)
         wait_for_importer_container_message(
