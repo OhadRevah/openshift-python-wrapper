@@ -38,7 +38,7 @@ def get_worker_pod(network_utility_pods, worker_node):
 
 
 @pytest.fixture(scope="module")
-def vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
+def nmstate_vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -53,7 +53,7 @@ def vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client):
+def nmstate_vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -68,17 +68,17 @@ def vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def running_vma(vma):
-    vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vma.vmi)
-    return vma
+def running_nmstate_vma(nmstate_vma):
+    nmstate_vma.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=nmstate_vma.vmi)
+    return nmstate_vma
 
 
 @pytest.fixture(scope="module")
-def running_vmb(vmb):
-    vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmb.vmi)
-    return vmb
+def running_nmstate_vmb(nmstate_vmb):
+    nmstate_vmb.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=nmstate_vmb.vmi)
+    return nmstate_vmb
 
 
 @pytest.fixture(scope="module")

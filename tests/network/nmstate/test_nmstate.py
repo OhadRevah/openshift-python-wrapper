@@ -21,14 +21,14 @@ class TestWithDhcpOverBridge:
         network_utility_pods,
         bridges_on_management_ifaces_node1,
         bridges_on_management_ifaces_node2,
-        vma,
-        vmb,
-        running_vma,
-        running_vmb,
+        nmstate_vma,
+        nmstate_vmb,
+        running_nmstate_vma,
+        running_nmstate_vmb,
     ):
         assert_ping_successful(
-            src_vm=running_vma,
-            dst_ip=ip_interface(running_vmb.vmi.interfaces[0]["ipAddress"]).ip,
+            src_vm=running_nmstate_vma,
+            dst_ip=ip_interface(running_nmstate_vmb.vmi.interfaces[0]["ipAddress"]).ip,
         )
 
     @pytest.mark.polarion("CNV-3003")
@@ -38,13 +38,13 @@ class TestWithDhcpOverBridge:
         worker_nodes_ipv4_false_secondary_nics,
         bridges_on_management_ifaces_node1,
         bridges_on_management_ifaces_node2,
-        vma,
-        vmb,
-        running_vma,
-        running_vmb,
+        nmstate_vma,
+        nmstate_vmb,
+        running_nmstate_vma,
+        running_nmstate_vmb,
     ):
-        assert_ping_successful(src_vm=running_vma, dst_ip=REMOTE_IP)
-        assert_ping_successful(src_vm=running_vmb, dst_ip=REMOTE_IP)
+        assert_ping_successful(src_vm=running_nmstate_vma, dst_ip=REMOTE_IP)
+        assert_ping_successful(src_vm=running_nmstate_vmb, dst_ip=REMOTE_IP)
 
 
 # Test class should be run as last, because it should check connectivity after,
@@ -58,14 +58,14 @@ class TestAfterBridgeTeardown:
         self,
         skip_when_one_node,
         worker_nodes_ipv4_false_secondary_nics,
-        vma,
-        vmb,
-        running_vma,
-        running_vmb,
+        nmstate_vma,
+        nmstate_vmb,
+        running_nmstate_vma,
+        running_nmstate_vmb,
     ):
         assert_ping_successful(
-            src_vm=running_vma,
-            dst_ip=ip_interface(running_vmb.vmi.interfaces[0]["ipAddress"]).ip,
+            src_vm=running_nmstate_vma,
+            dst_ip=ip_interface(running_nmstate_vmb.vmi.interfaces[0]["ipAddress"]).ip,
         )
 
     @pytest.mark.polarion("CNV-3029")
@@ -73,10 +73,10 @@ class TestAfterBridgeTeardown:
         self,
         skip_when_one_node,
         worker_nodes_ipv4_false_secondary_nics,
-        vma,
-        vmb,
-        running_vma,
-        running_vmb,
+        nmstate_vma,
+        nmstate_vmb,
+        running_nmstate_vma,
+        running_nmstate_vmb,
     ):
-        assert_ping_successful(src_vm=running_vma, dst_ip=REMOTE_IP)
-        assert_ping_successful(src_vm=running_vmb, dst_ip=REMOTE_IP)
+        assert_ping_successful(src_vm=running_nmstate_vma, dst_ip=REMOTE_IP)
+        assert_ping_successful(src_vm=running_nmstate_vmb, dst_ip=REMOTE_IP)

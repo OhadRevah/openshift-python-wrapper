@@ -77,7 +77,9 @@ def mpls_nad(bridge_device_matrix__class__, network_interface, namespace):
 
 
 @pytest.fixture(scope="class")
-def all_nads(namespace, dot1q_nad, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad):
+def l2_bridge_all_nads(
+    namespace, dot1q_nad, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad
+):
     return [dot1q_nad.name, custom_eth_type_llpd_nad.name, dhcp_nad.name, mpls_nad.name]
 
 
@@ -224,7 +226,7 @@ def bridge_attached_vm(
 
 
 @pytest.fixture(scope="class")
-def vm_a(namespace, all_nads, unprivileged_client):
+def l2_bridge_vm_a(namespace, l2_bridge_all_nads, unprivileged_client):
     cloud_init_extra_user_data = {
         "runcmd": [
             "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
@@ -246,7 +248,7 @@ def vm_a(namespace, all_nads, unprivileged_client):
     yield from bridge_attached_vm(
         name="vm-fedora-1",
         namespace=namespace.name,
-        interfaces=all_nads,
+        interfaces=l2_bridge_all_nads,
         ip_addresses=interface_ip_addresses,
         cloud_init_extra_user_data=cloud_init_extra_user_data,
         mpls_local_tag=VMA_MPLS_ROUTE_TAG,
@@ -259,7 +261,7 @@ def vm_a(namespace, all_nads, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def vm_b(namespace, all_nads, unprivileged_client):
+def l2_bridge_vm_b(namespace, l2_bridge_all_nads, unprivileged_client):
     interface_ip_addresses = [
         "10.200.0.2",
         "10.200.2.2",
@@ -270,7 +272,7 @@ def vm_b(namespace, all_nads, unprivileged_client):
     yield from bridge_attached_vm(
         name="vm-fedora-2",
         namespace=namespace.name,
-        interfaces=all_nads,
+        interfaces=l2_bridge_all_nads,
         ip_addresses=interface_ip_addresses,
         mpls_local_tag=VMB_MPLS_ROUTE_TAG,
         mpls_local_ip=VMB_MPLS_LOOPBACK_IP,
@@ -283,21 +285,23 @@ def vm_b(namespace, all_nads, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def started_vmi_a(vm_a):
-    return running_vmi(vm=vm_a)
+def started_vmi_a(l2_bridge_vm_a):
+    return running_vmi(vm=l2_bridge_vm_a)
 
 
 @pytest.fixture(scope="class")
-def started_vmi_b(vm_b):
-    return running_vmi(vm=vm_b)
+def started_vmi_b(l2_bridge_vm_b):
+    return running_vmi(vm=l2_bridge_vm_b)
 
 
 @pytest.fixture(scope="class")
-def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
+def configured_l2_bridge_vm_a(
+    l2_bridge_vm_a, l2_bridge_vm_b, started_vmi_a, started_vmi_b
+):
     """
-    Waits until vm_a and vm_b are running and all interfaces are UP then
+    Waits until l2_bridge_vm_a and l2_bridge_vm_b are running and all interfaces are UP then
     runs dhcpd server. To avoid incorrect dhcpd IP address allocation
-    this commands are critical to run ONLY after vm_b is UP and configured
+    this commands are critical to run ONLY after l2_bridge_vm_b is UP and configured
     """
     wait_for_vm_interfaces(vmi=started_vmi_a)
 
@@ -305,21 +309,25 @@ def configured_vm_a(vm_a, vm_b, started_vmi_a, started_vmi_b):
     wait_for_vm_interfaces(vmi=started_vmi_b)
 
     vm_console_run_commands(
-        console_impl=console.Fedora, vm=vm_a, commands=["sudo systemctl start dhcpd"]
+        console_impl=console.Fedora,
+        vm=l2_bridge_vm_a,
+        commands=["sudo systemctl start dhcpd"],
     )
-    return vm_a
+    return l2_bridge_vm_a
 
 
 @pytest.fixture(scope="class")
-def configured_vm_b(vm_a, vm_b, started_vmi_b, configured_vm_a):
+def configured_l2_bridge_vm_b(
+    l2_bridge_vm_a, l2_bridge_vm_b, started_vmi_b, configured_l2_bridge_vm_a
+):
     """
-    Starts dhcp client in vm_b
+    Starts dhcp client in l2_bridge_vm_b
     """
     post_install_command = [
         "sudo nmcli connection modify eth3 ipv4.method auto",
         "sudo nmcli con up eth3",
     ]
     vm_console_run_commands(
-        console_impl=console.Fedora, vm=vm_b, commands=post_install_command
+        console_impl=console.Fedora, vm=l2_bridge_vm_b, commands=post_install_command
     )
-    return vm_b
+    return l2_bridge_vm_b

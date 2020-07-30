@@ -35,7 +35,7 @@ def count_veth_devices_on_host(pod):
 
 
 @pytest.fixture()
-def br1test_nad(namespace):
+def remove_vath_br1test_nad(namespace):
     with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR1TEST,
@@ -46,7 +46,7 @@ def br1test_nad(namespace):
 
 
 @pytest.fixture()
-def br2test_nad(namespace):
+def remove_vath_br2test_nad(namespace):
     with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR2TEST,
@@ -57,7 +57,7 @@ def br2test_nad(namespace):
 
 
 @pytest.fixture()
-def bridge_device(network_utility_pods, schedulable_nodes):
+def remove_vath_bridge_device(network_utility_pods, schedulable_nodes):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="veth-removed",
@@ -69,7 +69,7 @@ def bridge_device(network_utility_pods, schedulable_nodes):
 
 
 @pytest.fixture()
-def bridge_attached_vma(namespace, unprivileged_client):
+def remove_vath_bridge_attached_vma(namespace, unprivileged_client):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -86,7 +86,7 @@ def bridge_attached_vma(namespace, unprivileged_client):
 
 
 @pytest.fixture()
-def bridge_attached_vmb(namespace, unprivileged_client):
+def remove_vath_bridge_attached_vmb(namespace, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -106,16 +106,16 @@ def bridge_attached_vmb(namespace, unprivileged_client):
 def test_veth_removed_from_host_after_vm_deleted(
     skip_rhel7_workers,
     network_utility_pods,
-    br1test_nad,
-    br2test_nad,
-    bridge_device,
-    bridge_attached_vma,
-    bridge_attached_vmb,
+    remove_vath_br1test_nad,
+    remove_vath_br2test_nad,
+    remove_vath_bridge_device,
+    remove_vath_bridge_attached_vma,
+    remove_vath_bridge_attached_vmb,
 ):
     """
     Check that veth interfaces are removed from host after VM deleted
     """
-    for vm in (bridge_attached_vma, bridge_attached_vmb):
+    for vm in (remove_vath_bridge_attached_vma, remove_vath_bridge_attached_vmb):
         vmi_interfaces = vm.vmi.instance.status.interfaces or []
         for pod in network_utility_pods:
             if pod.node.name == vm.vmi.node.name:

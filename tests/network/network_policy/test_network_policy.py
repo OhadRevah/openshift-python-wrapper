@@ -105,7 +105,7 @@ def allow_http80_port(namespace_1):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace_1, worker_node1, unprivileged_client):
+def network_policy_vma(namespace_1, worker_node1, unprivileged_client):
     name = "vma"
     with VirtualMachineMasquerade(
         namespace=namespace_1.name,
@@ -118,7 +118,7 @@ def vma(namespace_1, worker_node1, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace_2, worker_node1, unprivileged_client):
+def network_policy_vmb(namespace_2, worker_node1, unprivileged_client):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace_2.name,
@@ -133,28 +133,33 @@ def vmb(namespace_2, worker_node1, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def running_vma(vma):
-    vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vma.vmi)
-    yield vma
+def running_network_policy_vma(network_policy_vma):
+    network_policy_vma.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=network_policy_vma.vmi)
+    yield network_policy_vma
 
 
 @pytest.fixture(scope="module")
-def running_vmb(vmb):
-    vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmb.vmi)
-    yield vmb
+def running_network_policy_vmb(network_policy_vmb):
+    network_policy_vmb.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=network_policy_vmb.vmi)
+    yield network_policy_vmb
 
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_deny_all_http(
-    skip_rhel7_workers, deny_all_http_ports, vma, vmb, running_vma, running_vmb
+    skip_rhel7_workers,
+    deny_all_http_ports,
+    network_policy_vma,
+    network_policy_vmb,
+    running_network_policy_vma,
+    running_network_policy_vmb,
 ):
-    dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
+    dst_ip = network_policy_vma.vmi.virt_launcher_pod.instance.status.podIP
     with pytest.raises(CommandExecFailed):
         vm_console_run_commands(
             console_impl=console.Fedora,
-            vm=vmb,
+            vm=network_policy_vmb,
             commands=[
                 f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]
             ],
@@ -164,12 +169,17 @@ def test_network_policy_deny_all_http(
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_allow_all_http(
-    skip_rhel7_workers, allow_all_http_ports, vma, vmb, running_vma, running_vmb
+    skip_rhel7_workers,
+    allow_all_http_ports,
+    network_policy_vma,
+    network_policy_vmb,
+    running_network_policy_vma,
+    running_network_policy_vmb,
 ):
-    dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
+    dst_ip = network_policy_vma.vmi.virt_launcher_pod.instance.status.podIP
     vm_console_run_commands(
         console_impl=console.Fedora,
-        vm=vmb,
+        vm=network_policy_vmb,
         commands=[
             f"curl --head {dst_ip}:{port} --connect-timeout 5" for port in [80, 81]
         ],
@@ -179,12 +189,17 @@ def test_network_policy_allow_all_http(
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_allow_http80(
-    skip_rhel7_workers, allow_http80_port, vma, vmb, running_vma, running_vmb
+    skip_rhel7_workers,
+    allow_http80_port,
+    network_policy_vma,
+    network_policy_vmb,
+    running_network_policy_vma,
+    running_network_policy_vmb,
 ):
-    dst_ip = vma.vmi.virt_launcher_pod.instance.status.podIP
+    dst_ip = network_policy_vma.vmi.virt_launcher_pod.instance.status.podIP
     vm_console_run_commands(
         console_impl=console.Fedora,
-        vm=vmb,
+        vm=network_policy_vmb,
         commands=[f"curl --head {dst_ip}:80 --connect-timeout 5"],
         timeout=10,
     )
@@ -192,7 +207,7 @@ def test_network_policy_allow_http80(
     with pytest.raises(CommandExecFailed):
         vm_console_run_commands(
             console_impl=console.Fedora,
-            vm=vmb,
+            vm=network_policy_vmb,
             commands=[f"curl --head {dst_ip}:81 --connect-timeout 5"],
             timeout=10,
         )

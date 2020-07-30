@@ -29,7 +29,7 @@ class TestL2LinuxBridge:
         "dst_ip",
         [
             pytest.param(
-                "configured_vm_b.dot1q_ip",
+                "configured_l2_bridge_vm_b.dot1q_ip",
                 marks=(
                     pytest.mark.polarion("CNV-2277"),
                     pytest.mark.bugzilla(
@@ -39,22 +39,24 @@ class TestL2LinuxBridge:
                 ),
             ),
             pytest.param(
-                "configured_vm_b.mpls_local_ip",
+                "configured_l2_bridge_vm_b.mpls_local_ip",
                 marks=(pytest.mark.polarion("CNV-2285")),
             ),
         ],
         ids=["dot1q", "mpls"],
     )
     def test_connectivity_l2_bridge(
-        self, namespace, dst_ip, configured_vm_a, configured_vm_b
+        self, namespace, dst_ip, configured_l2_bridge_vm_a, configured_l2_bridge_vm_b
     ):
         """
         Test VM to VM connectivity via dot1q/mpls
         """
-        assert_ping_successful(src_vm=configured_vm_a, dst_ip=eval(dst_ip))
+        assert_ping_successful(src_vm=configured_l2_bridge_vm_b, dst_ip=eval(dst_ip))
 
     @pytest.mark.polarion("CNV-2282")
-    def test_dhcp_broadcast(self, configured_vm_a, configured_vm_b, dhcp_nad):
+    def test_dhcp_broadcast(
+        self, configured_l2_bridge_vm_a, configured_l2_bridge_vm_b, dhcp_nad
+    ):
         """
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
         """
@@ -62,29 +64,32 @@ class TestL2LinuxBridge:
             timeout=120,
             sleep=2,
             func=get_vmi_ip_v4_by_name,
-            vmi=configured_vm_b.vmi,
+            vmi=configured_l2_bridge_vm_b.vmi,
             name=dhcp_nad.name,
         )
         for address in current_ip:
-            if str(address) == configured_vm_b.dhcp_pool_address:
+            if str(address) == configured_l2_bridge_vm_b.dhcp_pool_address:
                 return True
 
     @pytest.mark.polarion("CNV-2284")
     def test_custom_eth_type(
-        self, configured_vm_a, configured_vm_b, custom_eth_type_llpd_nad
+        self,
+        configured_l2_bridge_vm_a,
+        configured_l2_bridge_vm_b,
+        custom_eth_type_llpd_nad,
     ):
         """
         Test custom type field in ethernet header.
         """
-        with _open_console(vm=configured_vm_b) as vmb_console:
+        with _open_console(vm=configured_l2_bridge_vm_b) as vmb_console:
             vmb_console.sendline(
                 f"sudo tcpdump -i eth2 -nn -e -c 5  ether proto {CUSTOM_ETH_PROTOCOL}"
             )
 
-            with _open_console(vm=configured_vm_a) as vma_console:
+            with _open_console(vm=configured_l2_bridge_vm_a) as vma_console:
                 vma_console.sendline(
                     f"sudo nping -e eth2 --ether-type {CUSTOM_ETH_PROTOCOL} "
-                    f"{get_vmi_ip_v4_by_name(configured_vm_b.vmi, custom_eth_type_llpd_nad.name)} -c 10"
+                    f"{get_vmi_ip_v4_by_name(configured_l2_bridge_vm_b.vmi, custom_eth_type_llpd_nad.name)} -c 10"
                 )
                 vma_console.expect(
                     "[1]"
@@ -92,8 +97,10 @@ class TestL2LinuxBridge:
             vmb_console.expect(CUSTOM_ETH_PROTOCOL)
 
     @pytest.mark.polarion("CNV-2674")
-    def test_icmp_multicast(self, namespace, configured_vm_a, configured_vm_b):
+    def test_icmp_multicast(
+        self, namespace, configured_l2_bridge_vm_a, configured_l2_bridge_vm_b
+    ):
         """
         Test multicast traffic(ICMP) via linux bridge
         """
-        assert_ping_successful(src_vm=configured_vm_b, dst_ip="224.0.0.1")
+        assert_ping_successful(src_vm=configured_l2_bridge_vm_b, dst_ip="224.0.0.1")

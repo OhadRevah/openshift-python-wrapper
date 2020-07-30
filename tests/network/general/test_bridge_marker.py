@@ -22,7 +22,7 @@ def _get_name(suffix):
 
 
 @pytest.fixture()
-def bridge_network(namespace):
+def bridge_marker_bridge_network(namespace):
     with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BRIDGEMARKER1,
@@ -50,8 +50,8 @@ def bridge_networks(namespace):
 
 
 @pytest.fixture()
-def bridge_attached_vmi(namespace, bridge_network):
-    networks = {bridge_network.name: bridge_network.name}
+def bridge_attached_vmi(namespace, bridge_marker_bridge_network):
+    networks = {bridge_marker_bridge_network.name: bridge_marker_bridge_network.name}
     name = _get_name(suffix=f"bridge-vm-{time.time()}")
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -122,7 +122,7 @@ def _assert_failure_reason_is_bridge_missing(pod, bridge):
 
 @pytest.mark.polarion("CNV-2234")
 def test_bridge_marker_no_device(
-    skip_rhel7_workers, bridge_network, bridge_attached_vmi
+    skip_rhel7_workers, bridge_marker_bridge_network, bridge_attached_vmi
 ):
     """Check that VMI fails to start when bridge device is missing."""
     with pytest.raises(TimeoutExpiredError):
@@ -132,7 +132,9 @@ def test_bridge_marker_no_device(
 
     # validate the exact reason for VMI startup failure is missing bridge
     pod = bridge_attached_vmi.virt_launcher_pod
-    _assert_failure_reason_is_bridge_missing(pod=pod, bridge=bridge_network)
+    _assert_failure_reason_is_bridge_missing(
+        pod=pod, bridge=bridge_marker_bridge_network
+    )
 
 
 # note: the order of fixtures is important because we should first create the
