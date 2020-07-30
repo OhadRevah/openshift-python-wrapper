@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import re
 import shlex
 import subprocess
@@ -217,6 +218,7 @@ class VirtualMachineForTests(VirtualMachine):
             "labels", {}
         ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
 
+        iface_mac_number = random.randint(0, 255)
         for iface_name in self.interfaces:
             try:
                 # On cluster without SR-IOV deploy we will get NotImplementedError
@@ -229,10 +231,18 @@ class VirtualMachineForTests(VirtualMachine):
                 sriov_network_exists = False
 
             if sriov_network_exists:
+                # TODO : Remove hardcoded mac(iface_mac_number) when BZ 1868359 is fixed
+                # TODO : JIRA Task :  https://issues.redhat.com/browse/CNV-6349
                 spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                     "interfaces", []
-                ).append({"name": iface_name, "sriov": {}})
-
+                ).append(
+                    {
+                        "name": iface_name,
+                        "sriov": {},
+                        "macAddress": "02:00:b5:b5:b5:%02x" % (iface_mac_number),
+                    }
+                )
+                iface_mac_number += 1
             else:
                 spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                     "interfaces", []
