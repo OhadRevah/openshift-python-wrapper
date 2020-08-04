@@ -69,7 +69,7 @@ def lbodi_running_vmb(lbodi_vmb,):
 @pytest.fixture(scope="class")
 def lbodi_bond(
     skip_no_bond_support,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     worker_node1,
     worker_nodes_ipv4_false_secondary_nics,
@@ -81,7 +81,7 @@ def lbodi_bond(
         name="bond1nncp",
         bond_name="test-bond",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[0:2],
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
         node_selector=worker_node1.name,
@@ -92,12 +92,12 @@ def lbodi_bond(
 
 
 @pytest.fixture(scope="class")
-def lbodi_pod_with_bond(network_utility_pods, lbodi_bond):
+def lbodi_pod_with_bond(utility_pods, lbodi_bond):
     """
     Returns:
         The specific pod on the worker node with the bond
     """
-    for pod in network_utility_pods:
+    for pod in utility_pods:
         if pod.node.name == lbodi_bond.node_selector:
             return pod
 

@@ -83,10 +83,7 @@ def running_nmstate_vmb(nmstate_vmb):
 
 @pytest.fixture(scope="module")
 def bridges_on_management_ifaces_node1(
-    network_utility_pods,
-    nodes_active_nics,
-    node_management_iface_stats_node,
-    worker_node1,
+    utility_pods, nodes_active_nics, node_management_iface_stats_node, worker_node1,
 ):
     """
     This function will return a dictionary where  host node name of worker0 is the  key
@@ -95,13 +92,13 @@ def bridges_on_management_ifaces_node1(
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
     worker_pod = get_worker_pod(
-        network_utility_pods=network_utility_pods, worker_node=worker_node1
+        network_utility_pods=utility_pods, worker_node=worker_node1
     )
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node1.name}",
         interface_name="brext1",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
         nodes=[worker_node1],
         ports=[management_iface],
@@ -121,21 +118,18 @@ def bridges_on_management_ifaces_node1(
 
 @pytest.fixture(scope="module")
 def bridges_on_management_ifaces_node2(
-    network_utility_pods,
-    nodes_active_nics,
-    node_management_iface_stats_node,
-    worker_node2,
+    utility_pods, nodes_active_nics, node_management_iface_stats_node, worker_node2,
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
     worker_pod = get_worker_pod(
-        network_utility_pods=network_utility_pods, worker_node=worker_node2
+        network_utility_pods=utility_pods, worker_node=worker_node2
     )
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node2.name}",
         interface_name="brext2",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         node_selector=worker_node2.name,
         nodes=[worker_node2],
         ports=[management_iface],

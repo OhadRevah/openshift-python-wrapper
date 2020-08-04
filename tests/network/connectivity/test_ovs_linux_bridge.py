@@ -106,7 +106,7 @@ def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
 
 @pytest.fixture(scope="class")
 def ovs_linux_bond1(
-    network_utility_pods, nodes_active_nics, link_aggregation_mode_matrix__class__,
+    utility_pods, nodes_active_nics, link_aggregation_mode_matrix__class__,
 ):
     """
     Create BOND if setup support BOND
@@ -115,7 +115,7 @@ def ovs_linux_bond1(
         name="bond1nncp",
         bond_name="bond1",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         mode=link_aggregation_mode_matrix__class__,
         mtu=1450,
     ) as bond:
@@ -125,7 +125,7 @@ def ovs_linux_bond1(
 @pytest.fixture(scope="class")
 def ovs_linux_bridge_on_bond(
     bridge_device_matrix__class__,
-    network_utility_pods,
+    utility_pods,
     schedulable_nodes,
     ovs_linux_br1bond_nad,
     ovs_linux_bond1,
@@ -137,7 +137,7 @@ def ovs_linux_bridge_on_bond(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=[ovs_linux_bond1.bond_name],
     ) as br:

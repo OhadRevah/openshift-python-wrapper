@@ -102,7 +102,7 @@ class TestVlanInterface:
         skip_when_one_node,
         skip_rhel7_workers,
         skip_if_workers_vms,
-        network_utility_pods,
+        utility_pods,
         namespace,
         dhcp_client_nodes,
         vlan_iface_dhcp_client_1,
@@ -114,7 +114,7 @@ class TestVlanInterface:
         vlan_iface_dhcp_client_1.clean_up()
         vlan_iface_dhcp_client_2.clean_up()
         vlan_iface_name = vlan_iface_dhcp_client_1.iface_name
-        for pod in network_utility_pods:
+        for pod in utility_pods:
             if pod.node not in [node.name for node in dhcp_client_nodes]:
                 # Exclude the node that run the DHCP server VM
                 continue

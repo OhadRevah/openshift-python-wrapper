@@ -67,8 +67,8 @@ def get_interface_by_attribute(all_connections, att):
 
 
 @pytest.fixture(scope="module")
-def bond_and_privileged_pod(network_utility_pods):
-    for pod in network_utility_pods:
+def bond_and_privileged_pod(utility_pods):
+    for pod in utility_pods:
         all_connections = pod.execute(
             command=[
                 "bash",

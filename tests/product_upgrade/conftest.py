@@ -26,16 +26,13 @@ MARKETPLACE_NAMESPACE = "openshift-marketplace"
 
 @pytest.fixture(scope="module", autouse=True)
 def upgrade_bridge_on_all_nodes(
-    skip_if_no_multinic_nodes,
-    network_utility_pods,
-    nodes_active_nics,
-    schedulable_nodes,
+    skip_if_no_multinic_nodes, utility_pods, nodes_active_nics, schedulable_nodes,
 ):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         interface_name="br1upgrade",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=[
             utilities.network.get_hosts_common_ports(
@@ -47,12 +44,12 @@ def upgrade_bridge_on_all_nodes(
 
 
 @pytest.fixture(scope="module")
-def bridge_on_one_node(network_utility_pods, worker_node1):
+def bridge_on_one_node(utility_pods, worker_node1):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         interface_name="upg-br-mark",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
     ) as br:
         yield br

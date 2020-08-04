@@ -6,12 +6,12 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module", autouse="True")
-def net_add_op_bridge_device(network_utility_pods, schedulable_nodes):
+def net_add_op_bridge_device(utility_pods, schedulable_nodes):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="test-network-operator",
         interface_name="br1test",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
     ) as br_dev:
         yield br_dev

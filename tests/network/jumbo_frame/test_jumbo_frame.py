@@ -26,7 +26,7 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="class")
-def bond1(skip_no_bond_support, network_utility_pods, nodes_active_nics):
+def bond1(skip_no_bond_support, utility_pods, nodes_active_nics):
     """
     Create BOND if setup support BOND
     """
@@ -34,7 +34,7 @@ def bond1(skip_no_bond_support, network_utility_pods, nodes_active_nics):
         name="bond1nncp",
         bond_name="bond1",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         mode="active-backup",
         mtu=9000,
     ) as bond:
@@ -43,7 +43,7 @@ def bond1(skip_no_bond_support, network_utility_pods, nodes_active_nics):
 
 @pytest.fixture(scope="class")
 def bridge_on_bond(
-    bridge_device_matrix__class__, bond1, network_utility_pods, schedulable_nodes
+    bridge_device_matrix__class__, bond1, utility_pods, schedulable_nodes
 ):
     """
     Create bridge and attach the BOND to it
@@ -52,7 +52,7 @@ def bridge_on_bond(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         interface_name="br1bond",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=[bond1.bond_name],
     ) as br:
@@ -63,7 +63,7 @@ def bridge_on_bond(
 def nad(
     bridge_device_matrix__class__,
     namespace,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     network_interface,
 ):

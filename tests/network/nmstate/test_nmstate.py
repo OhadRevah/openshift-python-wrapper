@@ -18,7 +18,7 @@ class TestWithDhcpOverBridge:
         self,
         skip_when_one_node,
         worker_nodes_ipv4_false_secondary_nics,
-        network_utility_pods,
+        utility_pods,
         bridges_on_management_ifaces_node1,
         bridges_on_management_ifaces_node2,
         nmstate_vma,

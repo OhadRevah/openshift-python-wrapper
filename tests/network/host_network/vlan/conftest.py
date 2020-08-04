@@ -32,13 +32,11 @@ LOGGER = logging.getLogger(__name__)
 
 # VLAN on interface fixtures
 @pytest.fixture(scope="class")
-def vlan_iface_dhcp_client_1(
-    network_utility_pods, vlan_base_iface, vlan_tag_id, dhcp_client_1
-):
+def vlan_iface_dhcp_client_1(utility_pods, vlan_base_iface, vlan_tag_id, dhcp_client_1):
     nncp_name = "dhcp-vlan-client-1-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name=nncp_name,
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
@@ -56,13 +54,11 @@ def vlan_iface_dhcp_client_1(
 
 
 @pytest.fixture(scope="class")
-def vlan_iface_dhcp_client_2(
-    network_utility_pods, vlan_base_iface, vlan_tag_id, dhcp_client_2
-):
+def vlan_iface_dhcp_client_2(utility_pods, vlan_base_iface, vlan_tag_id, dhcp_client_2):
     nncp_name = "dhcp-vlan-client-2-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name=nncp_name,
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
@@ -82,14 +78,14 @@ def vlan_iface_dhcp_client_2(
 @pytest.fixture(scope="class")
 def vlan_iface_on_dhcp_client_2_with_different_tag(
     skip_if_no_multinic_nodes,
-    network_utility_pods,
+    utility_pods,
     vlan_base_iface,
     vlan_tag_id,
     dhcp_client_nodes,
     dhcp_client_2,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id + 1,
@@ -104,13 +100,13 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
 @pytest.fixture(scope="module")
 def vlan_iface_on_all_nodes(
     skip_if_no_multinic_nodes,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     vlan_tag_id,
     vlan_base_iface,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
@@ -170,14 +166,14 @@ def running_dhcp_server_vm(dhcp_server_vm):
 
 @pytest.fixture(scope="module")
 def dhcp_server_bridge(
-    dhcp_server_vlan_iface, network_utility_pods, schedulable_nodes, worker_node1
+    dhcp_server_vlan_iface, utility_pods, schedulable_nodes, worker_node1
 ):
     bridge_name = f"{dhcp_server_vlan_iface.iface_name}-br"
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"{bridge_name}-nncp",
         interface_name=bridge_name,
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=[dhcp_server_vlan_iface.iface_name],
         node_selector=worker_node1.name,
@@ -203,15 +199,11 @@ def dhcp_br_nad(dhcp_server_bridge, namespace):
 
 @pytest.fixture(scope="module")
 def dhcp_server_vlan_iface(
-    skip_if_no_multinic_nodes,
-    network_utility_pods,
-    worker_node1,
-    vlan_base_iface,
-    vlan_tag_id,
+    skip_if_no_multinic_nodes, utility_pods, worker_node1, vlan_base_iface, vlan_tag_id,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name="dhcp-server-vlan-nncp",
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id,
@@ -222,9 +214,9 @@ def dhcp_server_vlan_iface(
 
 # DHCP clients fixtures
 @pytest.fixture(scope="module")
-def dhcp_client_nodes(dhcp_server_vm, network_utility_pods):
+def dhcp_client_nodes(dhcp_server_vm, utility_pods):
     dhcp_client_nodes = []
-    for pod in network_utility_pods:
+    for pod in utility_pods:
         """
         Allow all nodes to be DHCP clients, except for the one hosting the DHCP server. The reason for this
         exception is a known limitation, where a VLAN DHCP client interface can't be served by a DHCP
@@ -260,7 +252,7 @@ def disabled_dhcp_client_2(vlan_iface_dhcp_client_2, dhcp_client_2):
 @pytest.fixture(scope="class")
 def vlan_iface_bond_dhcp_client_1(
     skip_if_no_multinic_nodes,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     dhcp_client_1,
     vlan_tag_id,
@@ -269,14 +261,14 @@ def vlan_iface_bond_dhcp_client_1(
         name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
         node_selector=dhcp_client_1.name,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
             name="dhcp-vlan-bond-client-1-nncp",
-            worker_pods=network_utility_pods,
+            worker_pods=utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
             tag=vlan_tag_id,
@@ -291,7 +283,7 @@ def vlan_iface_bond_dhcp_client_1(
 @pytest.fixture(scope="class")
 def vlan_iface_bond_dhcp_client_2(
     skip_if_no_multinic_nodes,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     dhcp_client_2,
     vlan_tag_id,
@@ -300,14 +292,14 @@ def vlan_iface_bond_dhcp_client_2(
         name="bond-dhcp-client-2-nncp",
         bond_name="bond4vlan",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
         node_selector=dhcp_client_2.name,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
             name="dhcp-vlan-bond-client-2-nncp",
-            worker_pods=network_utility_pods,
+            worker_pods=utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
             tag=vlan_tag_id,

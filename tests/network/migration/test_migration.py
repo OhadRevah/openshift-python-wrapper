@@ -147,16 +147,13 @@ def running_vmb(vmb):
 
 @pytest.fixture(scope="module", autouse=True)
 def bridge_on_all_nodes(
-    skip_if_no_multinic_nodes,
-    network_utility_pods,
-    nodes_active_nics,
-    schedulable_nodes,
+    skip_if_no_multinic_nodes, utility_pods, nodes_active_nics, schedulable_nodes,
 ):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="migration",
         interface_name=BR1TEST,
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=[
             utilities.network.get_hosts_common_ports(
@@ -283,7 +280,7 @@ def test_migration_with_masquerade(
     default_client,
     skip_rhel7_workers,
     skip_when_one_node,
-    network_utility_pods,
+    utility_pods,
     vma,
     vmb,
     running_vma,

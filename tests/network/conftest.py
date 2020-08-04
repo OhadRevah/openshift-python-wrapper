@@ -12,12 +12,12 @@ from utilities.network import get_hosts_common_ports
 
 
 @pytest.fixture(scope="session")
-def bond_supported(network_utility_pods, multi_nics_nodes, nodes_active_nics):
+def bond_supported(utility_pods, multi_nics_nodes, nodes_active_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
     return (
-        max([len(nodes_active_nics[i.node.name]) for i in network_utility_pods]) > 3
+        max([len(nodes_active_nics[i.node.name]) for i in utility_pods]) > 3
         if multi_nics_nodes
         else False
     )
@@ -77,7 +77,7 @@ def network_interface(
     ovs_worker_pods,
     schedulable_node_ips,
     multi_nics_nodes,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     schedulable_nodes,
 ):
@@ -94,7 +94,7 @@ def network_interface(
         interface_type=bridge_device_matrix__class__,
         nncp_name=f"{interface_name}-nncp",
         interface_name=interface_name,
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=ports,
         mtu=mtu,

@@ -592,27 +592,27 @@ def masters(nodes):
 
 
 @pytest.fixture(scope="session")
-def net_utility_daemonset(default_client):
+def utility_daemonset(default_client):
     """
-    Deploy network utility daemonset into the kube-system namespace.
+    Deploy utility daemonset into the kube-system namespace.
 
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     For example to create linux bridge and other components related to the host configuration.
     """
-    with NetUtilityDaemonSet(name="net-utility", namespace="kube-system") as ds:
+    with UtilityDaemonSet(name="utility", namespace="kube-system") as ds:
         ds.wait_until_deployed()
         yield ds
 
 
 @pytest.fixture(scope="session")
-def network_utility_pods(schedulable_nodes, net_utility_daemonset, default_client):
+def utility_pods(schedulable_nodes, utility_daemonset, default_client):
     """
-    Get network utility pods.
+    Get utility pods.
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
-    These pods have a label of cnv-test=net-utility and they are privileged pods with hostnetwork=true
+    These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
     # get only pods that running on schedulable_nodes.
-    pods = list(Pod.get(default_client, label_selector="cnv-test=net-utility"))
+    pods = list(Pod.get(default_client, label_selector="cnv-test=utility"))
     return [
         pod
         for pod in pods
@@ -621,10 +621,10 @@ def network_utility_pods(schedulable_nodes, net_utility_daemonset, default_clien
 
 
 @pytest.fixture(scope="session")
-def workers_ssh_executors(rhel7_workers, network_utility_pods):
+def workers_ssh_executors(rhel7_workers, utility_pods):
     executors = {}
     ssh_key = os.getenv("HOST_SSH_KEY")
-    for pod in network_utility_pods:
+    for pod in utility_pods:
         host = rrmngmnt.Host(ip=pod.instance.status.podIP)
         if ssh_key:
             host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(use_pkey=True)
@@ -640,14 +640,14 @@ def workers_ssh_executors(rhel7_workers, network_utility_pods):
 
 
 @pytest.fixture(scope="session")
-def node_physical_nics(default_client, network_utility_pods, workers_ssh_executors):
+def node_physical_nics(default_client, utility_pods, workers_ssh_executors):
     if is_openshift(default_client):
         return {
             node: workers_ssh_executors[node].network.all_interfaces()
             for node in workers_ssh_executors.keys()
         }
     else:
-        return network_interfaces_k8s(network_utility_pods)
+        return network_interfaces_k8s(utility_pods)
 
 
 def network_interfaces_k8s(network_utility_pods):
@@ -721,14 +721,12 @@ def skip_if_no_multinic_nodes(multi_nics_nodes):
         pytest.skip("Only run on multi NICs node")
 
 
-class NetUtilityDaemonSet(DaemonSet):
+class UtilityDaemonSet(DaemonSet):
     def to_dict(self):
         res = super().to_dict()
         res.update(
             generate_yaml_from_template(
-                file_=os.path.join(
-                    os.path.dirname(__file__), "net-utility-daemonset.yaml"
-                )
+                file_=os.path.join(os.path.dirname(__file__), "utility-daemonset.yaml")
             )
         )
         return res
@@ -781,7 +779,7 @@ def skip_upstream():
 @pytest.fixture(scope="session", autouse=True)
 def leftovers():
     secret = Secret(name="htpass-secret", namespace="openshift-config")
-    ds = NetUtilityDaemonSet(name="net-utility", namespace="kube-system")
+    ds = UtilityDaemonSet(name="utility", namespace="kube-system")
     for resource_ in (secret, ds):
         try:
             if resource_.instance:
@@ -791,8 +789,8 @@ def leftovers():
 
 
 @pytest.fixture(scope="session")
-def workers_type(network_utility_pods):
-    for pod in network_utility_pods:
+def workers_type(utility_pods):
+    for pod in utility_pods:
         out = pod.execute(
             command=["bash", "-c", "dmesg | grep 'Hypervisor detected' | wc -l"]
         )
@@ -847,10 +845,10 @@ def skip_ceph_on_rhel7_scope_module(storage_class_matrix__module__, rhel7_worker
 
 
 @pytest.fixture(scope="session")
-def rhel7_ovs_bridge(rhel7_workers, network_utility_pods):
+def rhel7_ovs_bridge(rhel7_workers, utility_pods):
     if rhel7_workers:
         # All RHEL workers should be with the same configuration, gating info from the first worker.
-        connections = network_utility_pods[0].execute(
+        connections = utility_pods[0].execute(
             command=["nmcli", "-t", "connection", "show"]
         )
         for connection in connections.splitlines():
@@ -1254,7 +1252,7 @@ def skip_not_openshift(default_client):
 
 @pytest.fixture(scope="session")
 def worker_nodes_ipv4_false_secondary_nics(
-    nodes_active_nics, schedulable_nodes, network_utility_pods
+    nodes_active_nics, schedulable_nodes, utility_pods
 ):
     """
     Function removes ipv4 from secondary nics.
@@ -1265,7 +1263,7 @@ def worker_nodes_ipv4_false_secondary_nics(
             name=f"disable-ipv4-{worker_node.name}",
             node_selector=worker_node.name,
             ipv4_dhcp=False,
-            worker_pods=network_utility_pods,
+            worker_pods=utility_pods,
             interfaces_name=worker_nics[1:],
             node_active_nics=worker_nics,
         ):

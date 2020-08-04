@@ -146,7 +146,7 @@ def must_gather_nad(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
 
 @pytest.fixture(scope="module")
 def nodenetworkstate_with_bridge(
-    rhel7_workers, rhel7_ovs_bridge, network_utility_pods, schedulable_nodes
+    rhel7_workers, rhel7_ovs_bridge, utility_pods, schedulable_nodes
 ):
     if rhel7_workers:
         yield rhel7_ovs_bridge
@@ -155,7 +155,7 @@ def nodenetworkstate_with_bridge(
             interface_type=utilities.network.LINUX_BRIDGE,
             nncp_name="must-gather-br",
             interface_name="mgbr",
-            network_utility_pods=network_utility_pods,
+            network_utility_pods=utility_pods,
             nodes=schedulable_nodes,
         ) as br:
             yield br

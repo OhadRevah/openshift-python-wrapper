@@ -19,16 +19,13 @@ from . import utils as kmp_utils
 
 @pytest.fixture(scope="module")
 def bridge_device(
-    skip_if_no_multinic_nodes,
-    nodes_active_nics,
-    network_utility_pods,
-    schedulable_nodes,
+    skip_if_no_multinic_nodes, nodes_active_nics, utility_pods, schedulable_nodes,
 ):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="kubemacpool",
         interface_name="br1test",
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
         ports=[
             utilities.network.get_hosts_common_ports(

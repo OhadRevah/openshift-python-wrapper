@@ -57,12 +57,12 @@ def remove_vath_br2test_nad(namespace):
 
 
 @pytest.fixture()
-def remove_vath_bridge_device(network_utility_pods, schedulable_nodes):
+def remove_vath_bridge_device(utility_pods, schedulable_nodes):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="veth-removed",
         interface_name=BR1TEST,
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
     ) as dev:
         yield dev
@@ -105,7 +105,7 @@ def remove_vath_bridge_attached_vmb(namespace, unprivileged_client):
 @pytest.mark.polarion("CNV-681")
 def test_veth_removed_from_host_after_vm_deleted(
     skip_rhel7_workers,
-    network_utility_pods,
+    utility_pods,
     remove_vath_br1test_nad,
     remove_vath_br2test_nad,
     remove_vath_bridge_device,
@@ -117,7 +117,7 @@ def test_veth_removed_from_host_after_vm_deleted(
     """
     for vm in (remove_vath_bridge_attached_vma, remove_vath_bridge_attached_vmb):
         vmi_interfaces = vm.vmi.instance.status.interfaces or []
-        for pod in network_utility_pods:
+        for pod in utility_pods:
             if pod.node.name == vm.vmi.node.name:
                 _delete_vm_and_compare_veth(
                     pod=pod, vm=vm, vmi_interfaces=vmi_interfaces

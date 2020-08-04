@@ -34,7 +34,7 @@ def bond_modes_nad(bridge_device_matrix__class__, namespace):
 @pytest.fixture(scope="class")
 def bond_modes_bond(
     link_aggregation_mode_no_connectivity_matrix__class__,
-    network_utility_pods,
+    utility_pods,
     nodes_active_nics,
     worker_node1,
 ):
@@ -45,7 +45,7 @@ def bond_modes_bond(
         name="bondnncp",
         bond_name="test-bond",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
-        worker_pods=network_utility_pods,
+        worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         mtu=1450,
         node_selector=worker_node1.name,
@@ -56,7 +56,7 @@ def bond_modes_bond(
 @pytest.fixture(scope="class")
 def bond_modes_bridge(
     bridge_device_matrix__class__,
-    network_utility_pods,
+    utility_pods,
     worker_node1,
     bond_modes_nad,
     bond_modes_bond,
@@ -68,7 +68,7 @@ def bond_modes_bridge(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         interface_name=bond_modes_nad.bridge_name,
-        network_utility_pods=network_utility_pods,
+        network_utility_pods=utility_pods,
         ports=[bond_modes_bond.bond_name],
         node_selector=worker_node1.name,
     ) as br:

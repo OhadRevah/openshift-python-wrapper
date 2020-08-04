@@ -5,21 +5,21 @@ metadata:
     deprecated.daemonset.template.generation: "0"
   creationTimestamp: null
   labels:
-    cnv-test: net-utility
+    cnv-test: utility
     tier: node
-  name: net-utility
+  name: utility
   namespace: kube-system
 spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      cnv-test: net-utility
+      cnv-test: utility
       tier: node
   template:
     metadata:
       creationTimestamp: null
       labels:
-        cnv-test: net-utility
+        cnv-test: utility
         tier: node
     spec:
       containers:
