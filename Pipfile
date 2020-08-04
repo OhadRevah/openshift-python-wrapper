@@ -31,7 +31,7 @@ importlib-metadata = "*"
 importlib-resources = "*"
 ovirt-python-sdk = "*"
 click = "*"
-ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper.git"}
+ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper.git"}
 
 [requires]
 python_version = "3"

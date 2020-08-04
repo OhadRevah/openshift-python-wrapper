@@ -3,17 +3,37 @@
 This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
-The infra for the tests can be found in https://gitlab.cee.redhat.com/myakove/ocp-python-wrapper
-flake8 plugins defined in .flake8 can bo found in https://gitlab.cee.redhat.com/myakove/flake8-python-plugins
+The infra for the tests can be found in https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper
+flake8 plugins defined in .flake8 can bo found in https://gitlab.cee.redhat.com/cnv-qe/flake8-python-plugins
+
+## Contribute to ocp-python-wrapper
+Go to: https://gitlab.cee.redhat.com/cnv-qe and request to join the group.
+clone ocp-python-wrapper repo.
+```bash
+git clone git@gitlab.cee.redhat.com:cnv-qe/ocp-python-wrapper.git
+```
+We don't use fork since we use gitlab-runner to run our CI,
+and once you fork the project CI will try to run on the fork where is no runner.
+
+Make a merge request:
+```bash
+cd ocp-python-wrapper
+git checkout -b <name-your-local-branch>
+<make your changes>
+git add <changed files>
+git commit
+git push origin <name-your-local-branch>
+```
+Go to: https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper and create a merge request.
 
 ## Use unmerged merged-request
 To run the tests with unmerged merged-request from ocp-python-wrapper use the script "install-resources-mr.py"
 ```bash
 # Should be executed from cnv-tests folder.
-python install-resources-mr.py -u <gitlab username> -b <unmerged branch name to fetch>
+python install-resources-mr.py -u cnv-qe -b <unmerged branch name to fetch>
 ```
 
-# Prerequirements
+## Prerequirements
 
 Following binaries are needed:
 
