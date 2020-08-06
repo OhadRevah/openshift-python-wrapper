@@ -95,6 +95,22 @@ class TestUpgrade:
         ).ip
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
+    @pytest.mark.polarion("CNV-2745")
+    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    def test_kubemacpool_before_upgrade(
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_upgrade_a,
+        running_vm_upgrade_b,
+        kubemacpool_range,
+    ):
+        upgrade_utils.assert_mac_in_range(
+            vm_a=running_vm_upgrade_a,
+            vm_b=running_vm_upgrade_b,
+            kubemacpool_range=kubemacpool_range,
+        )
+
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
     @pytest.mark.run(after="test_linux_bridge_before_upgrade")
@@ -212,8 +228,24 @@ class TestUpgrade:
         ).ip
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.polarion("CNV-2746")
+    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    def test_kubemacpool_after_upgrade(
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_upgrade_a,
+        running_vm_upgrade_b,
+        kubemacpool_range,
+    ):
+        upgrade_utils.assert_mac_in_range(
+            vm_a=running_vm_upgrade_a,
+            vm_b=running_vm_upgrade_b,
+            kubemacpool_range=kubemacpool_range,
+        )
+
     @pytest.mark.polarion("CNV-3682")
+    @pytest.mark.run(after="test_upgrade")
     def test_machine_type_after_upgrade(
         self, vms_for_upgrade, vms_for_upgrade_dict_before
     ):
