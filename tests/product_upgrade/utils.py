@@ -441,21 +441,12 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
         default_client=default_client, hco_namespace=hco_namespace.name, pods_type="all"
     )
 
-    if cnv_upgrade_path["upgrade_path"] == "x-stream":
-        LOGGER.info("Update subscription channel for x-stream upgrade.")
-        update_subscription_channel(
-            default_client=default_client,
-            hco_namespace=hco_namespace.name,
-            target_version=cnv_upgrade_path["target_channel"],
-        )
-
-    if cnv_upgrade_path["upgrade_path"] == "y-stream":
-        LOGGER.info("Update subscription channel for y-stream upgrade.")
-        update_subscription_channel(
-            default_client=default_client,
-            hco_namespace=hco_namespace.name,
-            target_version=cnv_upgrade_path["target_channel"],
-        )
+    LOGGER.info("Update subscription channel and source.")
+    update_subscription_channel(
+        default_client=default_client,
+        hco_namespace=hco_namespace.name,
+        target_version=cnv_upgrade_path["target_channel"],
+    )
 
     LOGGER.info("Approve the install plan to trigger the upgrade.")
     approve_install_plan(
