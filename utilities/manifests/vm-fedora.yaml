@@ -10,8 +10,6 @@ spec:
   template:
     metadata:
       creationTimestamp: null
-      annotations:
-        ansible: '{"ansible_user": "fedora", "ansible_ssh_pass": "fedora", "ansible_become": true, "ansible_become_method": "sudo"}'
     spec:
       domain:
         cpu:

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4242b6b410bbcb299a9a9374a49e53df1b38d55e0fbac748583828e1bd00fdc9"
+            "sha256": "dd0ec5a7cd51a592df7e3eb6e51926550a6838075c9969054d66d62796cb2842"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -473,10 +473,6 @@
             ],
             "index": "pypi",
             "version": "==6.0.1"
-        },
-        "pytest-ansible": {
-            "git": "https://github.com/ansible/pytest-ansible.git",
-            "ref": "d33c025f070a9c870220a157cc5a999fda68de44"
         },
         "pytest-jira": {
             "hashes": [

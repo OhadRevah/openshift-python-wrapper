@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -36,20 +35,6 @@ class Console(object):
         self.cmd = self._generate_cmd()
 
     def connect(self):
-        # No login credentials provided, attempt autodetection
-        # and fill in the missing details
-        if not all((self.username, self.password)):
-            LOGGER.debug(f"Login autodetection for {self.vm.name}")
-            raw = self.vm.vmi.instance["metadata"]["annotations"]["ansible"]
-            data = json.loads(raw)
-            if not self.username and "ansible_user" in data:
-                self.username = data["ansible_user"]
-            if not self.password and "ansible_ssh_pass" in data:
-                self.password = data["ansible_ssh_pass"]
-            LOGGER.info(
-                f"Login autodetection for {self.vm.name} - {self.username}:{self.password}"
-            )
-
         LOGGER.info(f"Connect to {self.vm.name} console")
         self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
 

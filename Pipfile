@@ -21,7 +21,6 @@ sh = "*"
 pytest-ordering = "*"
 ansible = {editable = true, git = "https://github.com/ansible/ansible.git",ref = "devel"}
 jinja2 = "*"
-pytest-ansible = {git = "https://github.com/ansible/pytest-ansible.git"}
 requests = "*"
 xmltodict = "*"
 pytest-jira = "==0.3.11"
