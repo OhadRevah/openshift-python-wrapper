@@ -36,6 +36,9 @@ python install-resources-mr.py -u cnv-qe -b <unmerged branch name to fetch>
 ## Prerequirements
 
 Following binaries are needed:
+```bash
+sudo yum install python3-devel libcurl-devel libxml-devel libxslt-devel libxml++-devel libxml2-devel
+```
 
 ##jq
 Install using sudo yum install
