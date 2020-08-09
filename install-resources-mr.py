@@ -15,7 +15,7 @@ def install_mr(branch):
     mr_branch = f"cnv-qe/{ocp_python_wrapper_name}-{branch}"
     ocp_cloned_path = os.path.join(tmp_dir, ocp_python_wrapper_name)
     ocp_python_wrapper_git = (
-        f"git@gitlab.cee.redhat.com:cnv-qe/{ocp_python_wrapper_name}.git"
+        f"https://gitlab.cee.redhat.com/cnv-qe/{ocp_python_wrapper_name}.git"
     )
     current_dir = os.path.abspath(path=os.curdir)
     os.chdir(path=tmp_dir)
