@@ -1,4 +1,3 @@
-import getpass
 import os
 import shutil
 
@@ -6,21 +5,17 @@ import click
 
 
 @click.command()
-@click.option(
-    "--user", "-u", help="Gitlab username. If not provided, will use `whoami`"
-)
 @click.option("--branch", "-b", help="Gitlab branch to fetch", required=True)
-def install_mr(user, branch):
+def install_mr(branch):
     """
     Install ocp-python-wrapper (resources) merge-requests from gitlab into pipenv cnv-tests.
     """
     tmp_dir = "/tmp"
     ocp_python_wrapper_name = "ocp-python-wrapper"
-    mr_branch = f"{user}/{ocp_python_wrapper_name}-{branch}"
+    mr_branch = f"cnv-qe/{ocp_python_wrapper_name}-{branch}"
     ocp_cloned_path = os.path.join(tmp_dir, ocp_python_wrapper_name)
-    user = user or getpass.getuser()
     ocp_python_wrapper_git = (
-        f"git@gitlab.cee.redhat.com:{user}/{ocp_python_wrapper_name}.git"
+        f"git@gitlab.cee.redhat.com:cnv-qe/{ocp_python_wrapper_name}.git"
     )
     current_dir = os.path.abspath(path=os.curdir)
     os.chdir(path=tmp_dir)
