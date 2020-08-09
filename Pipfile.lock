@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "eb83a73ab675b757eeda3da8b5ab83512999260c8c65412e942f56d95466ba73"
+            "sha256": "4242b6b410bbcb299a9a9374a49e53df1b38d55e0fbac748583828e1bd00fdc9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -19,7 +19,7 @@
         "ansible": {
             "editable": true,
             "git": "https://github.com/ansible/ansible.git",
-            "ref": "4bd7580dd7f41ca484fde21dda94d2dd856108b0"
+            "ref": "4f54fb8d439ea8a41dfe1084fbc6d8e0e3f42264"
         },
         "attrs": {
             "hashes": [
@@ -40,6 +40,7 @@
                 "sha256:0258f143f3de96b7c14f762c770f5fc56ccd72f8a1857a451c1cd9a655d9ac89",
                 "sha256:0b0069c752ec14172c5f78208f1863d7ad6755a6fae6fe76ec2c80d13be41e42",
                 "sha256:19a4b72a6ae5bb467fea018b825f0a7d917789bcfe893e53f15c92805d187294",
+                "sha256:436a487dec749bca7e6e72498a75a5fa2433bda13bac91d023e18df9089ae0b8",
                 "sha256:5432dd7b34107ae8ed6c10a71b4397f1c853bd39a4d6ffa7e35f40584cffd161",
                 "sha256:6305557019906466fc42dbc53b46da004e72fd7a551c044a827e572c82191752",
                 "sha256:69361315039878c0680be456640f8705d76cb4a3a3fe1e057e0f261b74be4b31",
@@ -161,10 +162,10 @@
         },
         "google-auth": {
             "hashes": [
-                "sha256:25c97cec5d4f6821f3ab67eb25b264fb00fda8fb9e2f05869bfa93dfcb8b50ee",
-                "sha256:c6e9735a2ee829a75b546702e460489db5cc35567a27fabd70b7c459f11efd58"
+                "sha256:2f34dd810090d0d4c9d5787c4ad7b4413d1fbfb941e13682c7a2298d3b6cdcc8",
+                "sha256:ce1fb80b5c6d3dd038babcc43e221edeafefc72d983b3dc28b67b996f76f00b9"
             ],
-            "version": "==1.20.0"
+            "version": "==1.20.1"
         },
         "idna": {
             "hashes": [
@@ -208,7 +209,6 @@
                 "sha256:5a8f159ca8b22b9a0a1f2a28befe5ad2b703339afb58c2ffe0d7c8d7a3af5999",
                 "sha256:b70974aaa2674b05eb86a910c02ed09956a33f2dd6c71afc60f0b128a77e7f28"
             ],
-            "index": "pypi",
             "version": "==7.17.0"
         },
         "ipython-genutils": {
@@ -303,7 +303,7 @@
         },
         "ocp-python-wrapper": {
             "git": "https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper.git",
-            "ref": "0784783d0016006490e1315ca60c898a8bc7efd2"
+            "ref": "d0f2b828b4371331b87639c881ad5a1d11a6880d"
         },
         "openshift": {
             "hashes": [
