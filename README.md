@@ -30,7 +30,7 @@ Go to: https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper and create a merg
 To run the tests with unmerged merged-request from ocp-python-wrapper use the script "install-resources-mr.py"
 ```bash
 # Should be executed from cnv-tests folder.
-python install-resources-mr.py -u cnv-qe -b <unmerged branch name to fetch>
+python install-resources-mr.py -b <unmerged branch name to fetch>
 ```
 
 ## Prerequirements
