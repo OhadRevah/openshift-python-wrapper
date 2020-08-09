@@ -1,10 +1,8 @@
 import logging
-import random
 from collections import namedtuple
 from ipaddress import ip_interface
 from itertools import chain
 
-import netaddr
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.network.utils import nmcli_add_con_cmds
@@ -119,52 +117,6 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
         mac_pool.append_macs(vm=vm)
         yield vm
         mac_pool.remove_macs(vm=vm)
-
-
-class MacPool:
-    """
-    Class to manage the mac addresses pool.
-    to get this class, use mac_pool fixture.
-    whenever you create a VM, before yield, call: mac_pool.append_macs(vm)
-    and after yield, call: mac_pool.remove_macs(vm).
-    """
-
-    def __init__(self, kmp_range):
-        self.range_start = self.mac_to_int(mac=kmp_range["RANGE_START"])
-        self.range_end = self.mac_to_int(mac=kmp_range["RANGE_END"])
-        self.pool = range(self.range_start, self.range_end + 1)
-        self.used_macs = []
-
-    def get_mac_from_pool(self):
-        return self.mac_sampler(func=random.choice, seq=self.pool)
-
-    def mac_sampler(self, func, *args, **kwargs):
-        sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
-        for sample in sampler:
-            mac = self.int_to_mac(num=sample)
-            if mac not in self.used_macs:
-                return mac
-
-    @staticmethod
-    def mac_to_int(mac):
-        return int(netaddr.EUI(mac))
-
-    @staticmethod
-    def int_to_mac(num):
-        mac = netaddr.EUI(num)
-        mac.dialect = netaddr.mac_unix_expanded
-        return str(mac)
-
-    def append_macs(self, vm):
-        for iface in vm.get_interfaces():
-            self.used_macs.append(iface["macAddress"])
-
-    def remove_macs(self, vm):
-        for iface in vm.get_interfaces():
-            self.used_macs.remove(iface["macAddress"])
-
-    def mac_is_within_range(self, mac):
-        return self.mac_to_int(mac) in self.pool
 
 
 class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):

@@ -1367,3 +1367,11 @@ def bugzilla_connection_params(pytestconfig):
     for params in parser.items("DEFAULT"):
         params_dict[params[0]] = params[1]
     return params_dict
+
+
+@pytest.fixture(scope="module")
+def kubemacpool_range(hco_namespace):
+    default_pool = ConfigMap(
+        namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
+    )
+    return default_pool.instance["data"]

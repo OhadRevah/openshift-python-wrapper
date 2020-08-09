@@ -1,13 +1,13 @@
 import pytest
 import tests.network.utils as network_utils
 import utilities.network
-from resources.configmap import ConfigMap
 from resources.daemonset import DaemonSet
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.resource import ResourceEditor
 from tests.network.utils import running_vmi
 from utilities.infra import create_ns
+from utilities.network import MacPool
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -120,16 +120,8 @@ def all_nads(
 
 
 @pytest.fixture(scope="module")
-def kubemacpool_range(hco_namespace):
-    default_pool = ConfigMap(
-        namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
-    )
-    return default_pool.instance["data"]
-
-
-@pytest.fixture(scope="module")
 def mac_pool(kubemacpool_range):
-    return kmp_utils.MacPool(kmp_range=kubemacpool_range)
+    return MacPool(kmp_range=kubemacpool_range)
 
 
 @pytest.fixture(scope="class")
