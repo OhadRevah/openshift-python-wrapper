@@ -7,6 +7,7 @@ import urllib.request
 from contextlib import contextmanager
 
 import requests
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 from resources.cluster_role import ClusterRole
 from resources.configmap import ConfigMap
@@ -409,3 +410,13 @@ def storage_params(storage_class_matrix):
         "volume_mode": storage_class_matrix[storage_class]["volume_mode"],
         "access_modes": storage_class_matrix[storage_class]["access_mode"],
     }
+
+
+def get_importer_pod(
+    dyn_client, namespace,
+):
+    pods = list(Pod.get(dyn_client=dyn_client, namespace=namespace))
+    for pod in pods:
+        if pod.name.startswith("importer"):
+            return pod
+    raise ResourceNotFoundError

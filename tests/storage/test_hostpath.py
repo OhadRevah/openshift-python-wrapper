@@ -453,6 +453,7 @@ def test_hostpath_upload_dv_with_token(
     ],
 )
 def test_hostpath_registry_import_dv(
+    default_client,
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
     hpp_storage_class,
@@ -479,10 +480,13 @@ def test_hostpath_registry_import_dv(
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
-        dv.importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
+        importer_pod = storage_utils.get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
+        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
         assert_selected_node_annotation(
             pvc_node_name=dv.scratch_pvc.selected_node,
-            pod_node_name=dv.importer_pod.instance.spec.nodeName,
+            pod_node_name=importer_pod.instance.spec.nodeName,
             type_="scratch",
         )
         assert_provision_on_node_annotation(
@@ -549,6 +553,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
 
 @pytest.mark.polarion("CNV-3328")
 def test_hostpath_import_scratch_dv_without_specify_node_wffc(
+    default_client,
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
     namespace,
@@ -570,8 +575,12 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
-        dv.importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
-        pod_node_name = dv.importer_pod.instance.spec.nodeName
+        importer_pod = storage_utils.get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
+        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=30)
+
+        pod_node_name = importer_pod.instance.spec.nodeName
         pvc_node_name = dv.pvc.selected_node
         assert_selected_node_annotation(
             pvc_node_name=pvc_node_name, pod_node_name=pod_node_name, type_="target"

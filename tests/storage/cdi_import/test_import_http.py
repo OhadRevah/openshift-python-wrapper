@@ -17,6 +17,7 @@ from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
+from tests.storage.utils import get_importer_pod
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, Images, get_bug_status
 from utilities.virt import CIRROS_IMAGE, validate_windows_guest_agent_info
@@ -308,7 +309,10 @@ def test_successful_import_basic_auth(
 
 @pytest.mark.polarion("CNV-2144")
 def test_wrong_content_type(
-    namespace, storage_class_matrix__module__, images_internal_http_server
+    default_client,
+    namespace,
+    storage_class_matrix__module__,
+    images_internal_http_server,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
@@ -328,8 +332,11 @@ def test_wrong_content_type(
             timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_2
+            importer_pod=importer_pod, msg=ErrorMsg.EXIT_STATUS_2
         )
 
 
@@ -368,6 +375,7 @@ def test_wrong_content_type(
     ],
 )
 def test_import_invalid_qcow(
+    default_client,
     namespace,
     storage_class_matrix__module__,
     images_internal_http_server,
@@ -400,8 +408,11 @@ def test_import_invalid_qcow(
             timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=error_message
+            importer_pod=importer_pod, msg=error_message
         )
 
 
@@ -424,6 +435,7 @@ def test_import_invalid_qcow(
 )
 # TODO: It's now a negative test but once https://jira.coreos.com/browse/CNV-1553 implement, here needs to be changed.
 def test_unpack_compressed(
+    default_client,
     namespace,
     storage_class_matrix__module__,
     images_internal_http_server,
@@ -446,8 +458,11 @@ def test_unpack_compressed(
             timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_2
+            importer_pod=importer_pod, msg=ErrorMsg.EXIT_STATUS_2
         )
 
 
@@ -498,6 +513,7 @@ def test_certconfigmap(
     indirect=["https_config_map"],
 )
 def test_certconfigmap_incorrect_cert(
+    default_client,
     namespace,
     storage_class_matrix__module__,
     images_internal_http_server,
@@ -522,8 +538,11 @@ def test_certconfigmap_incorrect_cert(
             timeout=60,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod,
+            importer_pod=importer_pod,
             msg=ErrorMsg.CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY,
         )
 
@@ -735,6 +754,7 @@ def test_disk_falloc(
     indirect=True,
 )
 def test_vm_from_dv_on_different_node(
+    default_client,
     skip_when_one_node,
     skip_access_mode_rwo,
     skip_non_shared_storage,
@@ -748,14 +768,13 @@ def test_vm_from_dv_on_different_node(
     data_volume_multi_storage_scope_function.pvc.wait_for_status(
         status=PersistentVolumeClaim.Status.BOUND, timeout=30
     )
-    data_volume_multi_storage_scope_function.importer_pod.wait_for_status(
-        status=Pod.Status.RUNNING, timeout=30
+    importer_pod = get_importer_pod(
+        dyn_client=default_client,
+        namespace=data_volume_multi_storage_scope_function.namespace,
     )
-    importer_pod_node_name = (
-        data_volume_multi_storage_scope_function.importer_pod.node.name
-    )
+    importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=30)
     nodes = list(
-        filter(lambda node: importer_pod_node_name != node.name, schedulable_nodes)
+        filter(lambda node: importer_pod.node.name != node.name, schedulable_nodes)
     )
     data_volume_multi_storage_scope_function.wait_for_status(
         status=DataVolume.Status.SUCCEEDED, timeout=300
@@ -765,7 +784,7 @@ def test_vm_from_dv_on_different_node(
         vm_name=Images.Rhel.RHEL8_2_IMG,
         node_selector=nodes[0].name,
     ) as vm_dv:
-        assert vm_dv.vmi.node.name != importer_pod_node_name
+        assert vm_dv.vmi.node.name != importer_pod.node.name
 
 
 @pytest.mark.parametrize(

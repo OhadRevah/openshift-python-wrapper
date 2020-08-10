@@ -11,6 +11,7 @@ from resources.datavolume import DataVolume
 from resources.resource import ResourceEditor
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
+from tests.storage.utils import get_importer_pod
 from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, get_cert
 from utilities.virt import VirtualMachineForTests
 
@@ -128,7 +129,7 @@ def test_private_registry_cirros(
     ],
 )
 def test_disk_image_not_conform_to_registy_disk(
-    dv_name, url, error_msg, namespace, storage_class_matrix__function__
+    default_client, dv_name, url, error_msg, namespace, storage_class_matrix__function__
 ):
     with utilities.storage.create_dv(
         source="registry",
@@ -142,8 +143,11 @@ def test_disk_image_not_conform_to_registy_disk(
             timeout=300,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=error_msg,
+            importer_pod=importer_pod, msg=error_msg,
         )
 
 
@@ -257,6 +261,7 @@ def test_private_registry_recover_after_missing_configmap(
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
     skip_upstream,
+    default_client,
     namespace,
     images_private_registry_server,
     registry_config_map,
@@ -293,8 +298,11 @@ def test_private_registry_with_untrusted_certificate(
             ),
         ) as dv:
             dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
+            importer_pod = get_importer_pod(
+                dyn_client=default_client, namespace=dv.namespace
+            )
             wait_for_importer_container_message(
-                importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
+                importer_pod=importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
             )
 
 
@@ -369,7 +377,7 @@ def test_public_registry_data_volume(
 # we can overcome by updaing to the right requested volume size and import successfully
 @pytest.mark.polarion("CNV-2024")
 def test_public_registry_data_volume_dockerhub_low_capacity(
-    namespace, storage_class_matrix__function__
+    default_client, namespace, storage_class_matrix__function__
 ):
     # negative flow - low capacity volume
     with utilities.storage.create_dv(
@@ -386,8 +394,11 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
             timeout=300,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.LARGER_PVC_REQUIRED,
+            importer_pod=importer_pod, msg=ErrorMsg.LARGER_PVC_REQUIRED,
         )
 
     # positive flow
@@ -491,6 +502,7 @@ def test_fqdn_name(
     indirect=["update_configmap_with_cert"],
 )
 def test_inject_invalid_cert_to_configmap(
+    default_client,
     dv_name,
     configmap_with_cert,
     update_configmap_with_cert,
@@ -511,6 +523,9 @@ def test_inject_invalid_cert_to_configmap(
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=600)
+        importer_pod = get_importer_pod(
+            dyn_client=default_client, namespace=dv.namespace
+        )
         wait_for_importer_container_message(
-            importer_pod=dv.importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
+            importer_pod=importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
         )
