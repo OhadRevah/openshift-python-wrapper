@@ -787,6 +787,7 @@ def test_vm_from_dv_on_different_node(
         assert vm_dv.vmi.node.name != importer_pod.node.name
 
 
+@pytest.mark.tier3
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
     [

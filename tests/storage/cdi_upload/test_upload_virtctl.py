@@ -359,6 +359,7 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
     assert f"PVC {empty_pvc.name} not available for upload" in out
 
 
+@pytest.mark.tier3
 @pytest.mark.parametrize(
     ("uploaded_dv", "vm_params"),
     [

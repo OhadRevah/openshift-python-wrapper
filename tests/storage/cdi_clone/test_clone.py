@@ -12,6 +12,7 @@ from tests.storage import utils
 from utilities.infra import Images
 
 
+@pytest.mark.tier3
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_class",
     [
@@ -97,6 +98,7 @@ def test_successful_vm_restart_with_cloned_dv(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.tier3
 @pytest.mark.parametrize(
     ("data_volume_multi_storage_scope_function", "vm_params"),
     [
