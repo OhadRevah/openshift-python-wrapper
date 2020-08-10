@@ -1244,6 +1244,7 @@ def vm_instance_from_template(
         diskless_vm=params.get("diskless_vm"),
         cpu_model=params.get("cpu_model") or vm_cpu_model,
         ssh=params.get("ssh"),
+        disk_options_vm=params.get("disk_io_option"),
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True, timeout=params.get("vm_wait_timeout", TIMEOUT))

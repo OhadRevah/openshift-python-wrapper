@@ -15,7 +15,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
-from utilities.virt import check_ssh_connection, wait_for_console
+from utilities.virt import check_ssh_connection, get_guest_os_info, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -158,7 +158,7 @@ class TestCommonTemplatesRhel:
             not in BUG_STATUS_CLOSED
             and "rhel-7-7" in [*rhel_os_matrix__class__][0]
         ):
-            common_templates_utils.wait_for_guest_os_info(
+            get_guest_os_info(
                 vmi=vm_object_from_template_multi_rhel_os_multi_storage_scope_class.vmi
             )
 

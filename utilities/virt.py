@@ -191,6 +191,7 @@ class VirtualMachineForTests(VirtualMachine):
         diskless_vm=False,
         running=False,
         run_strategy=None,
+        disk_io_options=None,
     ):
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -234,6 +235,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.is_vm_from_template = False
         self.running = running
         self.run_strategy = run_strategy
+        self.disk_io_options = disk_io_options
 
     def __enter__(self):
         super().__enter__()
@@ -329,6 +331,16 @@ class VirtualMachineForTests(VirtualMachine):
         if self.diskless_vm:
             spec.get("domain", {}).get("devices", {}).pop("disks", None)
 
+        if self.disk_io_options:
+            disks_spec = (
+                spec.setdefault("domain", {})
+                .setdefault("devices", {})
+                .setdefault("disks", [])
+            )
+            for disk in disks_spec:
+                if disk["name"] == "rootdisk":
+                    disk["io"] = self.disk_io_options
+                    break
         return res
 
     def update_vm_memory_configuration(self, spec):
@@ -638,6 +650,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         termination_grace_period=False,
         diskless_vm=False,
         run_strategy=None,
+        disk_options_vm=None,
     ):
         super().__init__(
             name=name,
@@ -658,6 +671,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             data_volume_template=data_volume_template,
             diskless_vm=diskless_vm,
             run_strategy=run_strategy,
+            disk_io_options=disk_options_vm,
         )
         self.template_labels = labels
         self.data_volume = data_volume
@@ -1351,3 +1365,20 @@ def import_vm(
         resource_mapping_namespace=resource_mapping_namespace,
     ) as vmimport:
         yield vmimport
+
+
+# TODO: Remove once bug 1886453 is fixed
+def get_guest_os_info(vmi):
+    sampler = TimeoutSampler(
+        timeout=360,
+        sleep=5,
+        func=lambda: vmi.instance.status.guestOSInfo,
+    )
+
+    try:
+        for sample in sampler:
+            if sample.get("id"):
+                return dict(sample)
+    except TimeoutExpiredError:
+        LOGGER.error("VMI doesn't have guest agent data")
+        raise

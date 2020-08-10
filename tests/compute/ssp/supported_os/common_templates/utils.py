@@ -18,6 +18,7 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.compute.utils import rrmngmnt_host, vm_started
 from utilities.virt import (
     execute_winrm_cmd,
+    get_guest_os_info,
     run_virtctl_command,
     vm_console_run_commands,
     wait_for_windows_vm,
@@ -107,7 +108,7 @@ def check_vm_xml_hyperv(vm):
     assert hyperv_features["spinlocks"]["@state"] == "on"
     assert int(hyperv_features["spinlocks"]["@retries"]) == 8191
     # The below entries do not appear in Windows hyperV
-    guest_os_info = wait_for_guest_os_info(vmi=vm.vmi)
+    guest_os_info = get_guest_os_info(vmi=vm.vmi)
     if "Windows" not in guest_os_info["name"]:
         assert hyperv_features["stimer"]["@state"] == "on"
         assert hyperv_features["vpindex"]["@state"] == "on"
@@ -442,7 +443,7 @@ def validate_user_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_po
 
 def validate_os_info_vmi_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
     host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    vmi_info = wait_for_guest_os_info(vmi=vm.vmi)
+    vmi_info = get_guest_os_info(vmi=vm.vmi)
     linux_info = get_linux_os_info(rrmngmnt_host=host)["os"]
     del linux_info["machine"]  # VMI describe doesn't have machine info
     linux_info["version"] = linux_info["version"].split(" ")[0]
@@ -538,7 +539,7 @@ def validate_user_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
 
 
 def validate_os_info_vmi_vs_windows_os(vm, winrm_pod, helper_vm=False):
-    vmi_info = wait_for_guest_os_info(vmi=vm.vmi)
+    vmi_info = get_guest_os_info(vmi=vm.vmi)
     assert vmi_info, "VMI doesn't have guest agent data"
     vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
     cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
@@ -914,22 +915,3 @@ def wait_for_virtctl_output(cmd, namespace):
             return output
         else:
             LOGGER.warning("Retrying to get guest-agent info via virtctl")
-
-
-# TODO: Remove once bug 1886453 is fixed
-def wait_for_guest_os_info(vmi):
-    sampler = TimeoutSampler(
-        timeout=360,
-        sleep=5,
-        func=lambda: vmi.instance.status.guestOSInfo,
-    )
-
-    try:
-        for sample in sampler:
-            if sample.get("id"):
-                return dict(sample)
-            else:
-                LOGGER.warning("Retrying to fetch VMI guestOSInfo")
-    except TimeoutExpiredError:
-        LOGGER.error("VMI doesn't have guest agent data")
-        raise
