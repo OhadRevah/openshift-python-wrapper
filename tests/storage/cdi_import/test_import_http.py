@@ -116,10 +116,15 @@ def test_empty_url(namespace, storage_class_matrix__module__):
 
 @pytest.mark.polarion("CNV-2145")
 def test_successful_import_archive(
-    namespace, storage_class_matrix__module__, images_internal_http_server
+    namespace,
+    storage_class_matrix__module__,
+    images_internal_http_server,
+    skip_block_volumemode_scope_module,
 ):
+    """"Skip block volume mode - archive does not support block mode DVs,\
+        https://github.com/kubevirt/containerized-data-importer/blob/master/doc/supported_operations.md"""
+
     url = get_file_url(url=images_internal_http_server["http"], file_name=TAR_IMG)
-    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-http-dv",
@@ -127,8 +132,7 @@ def test_successful_import_archive(
         url=url,
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -137,7 +141,7 @@ def test_successful_import_archive(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
-            volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+            volume_mode=dv.volume_mode,
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
@@ -184,9 +188,12 @@ def test_successful_import_secure_archive(
     storage_class_matrix__module__,
     images_internal_http_server,
     internal_http_configmap,
+    skip_block_volumemode_scope_module,
 ):
+    """"Skip block volume mode - archive does not support block mode DVs,\
+        https://github.com/kubevirt/containerized-data-importer/blob/master/doc/supported_operations.md"""
+
     url = get_file_url(url=images_internal_http_server["https"], file_name=TAR_IMG)
-    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
         dv_name="import-https-dv",
@@ -195,8 +202,7 @@ def test_successful_import_secure_archive(
         cert_configmap=internal_http_configmap.name,
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
         pvc = dv.pvc
@@ -205,7 +211,7 @@ def test_successful_import_secure_archive(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
-            volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+            volume_mode=dv.volume_mode,
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING)
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
