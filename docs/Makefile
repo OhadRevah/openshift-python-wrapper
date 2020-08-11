@@ -9,7 +9,6 @@ SOURCEDIR     = source
 BUILDDIR      = build
 SPHINXAPIDOC  = sphinx-apidoc
 UTILITIESDIR  = ../utilities
-RESOURCES     = ../resources
 TESTS         = ../tests
 
 # Put it first so that "make" without argument is like "make help".
@@ -22,5 +21,4 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXAPIDOC) -T -f -o "$(SOURCEDIR)/rst" "$(UTILITIESDIR)"
-	@$(SPHINXAPIDOC) -T -f -o "$(SOURCEDIR)/rst" "$(RESOURCES)"
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
