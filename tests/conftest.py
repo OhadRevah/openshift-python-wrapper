@@ -47,7 +47,12 @@ from resources.virtual_machine import (
 )
 from utilities import console
 from utilities.infra import ClusterHosts, create_ns
-from utilities.network import OVS, EthernetNetworkConfigurationPolicy, network_nad
+from utilities.network import (
+    OVS,
+    EthernetNetworkConfigurationPolicy,
+    MacPool,
+    network_nad,
+)
 from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -1310,7 +1315,7 @@ def kubevirt_config_cm():
     return ConfigMap(name="kubevirt-config", namespace=py_config["hco_namespace"])
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def hco_namespace(default_client):
     return list(
         Namespace.get(
@@ -1381,9 +1386,10 @@ def bugzilla_connection_params(pytestconfig):
     return params_dict
 
 
-@pytest.fixture(scope="module")
-def kubemacpool_range(hco_namespace):
-    default_pool = ConfigMap(
-        namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
+@pytest.fixture(scope="session")
+def mac_pool(hco_namespace):
+    return MacPool(
+        kmp_range=ConfigMap(
+            namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
+        ).instance["data"]
     )
-    return default_pool.instance["data"]

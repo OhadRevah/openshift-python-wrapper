@@ -6,6 +6,7 @@ from itertools import chain
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.network.utils import nmcli_add_con_cmds
+from utilities.network import get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -175,31 +176,14 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
         return res
 
 
-def compare_ifaces_config(vm, vmi):
-    """Compares vm and vmi interface configuration"""
-    vm_temp_spec = vm.instance["spec"]["template"]["spec"]
-    vm_interfaces = vm_temp_spec["domain"]["devices"]["interfaces"]
-    vmi_interfaces = vmi.instance["spec"]["domain"]["devices"]["interfaces"]
-    return vm_interfaces == vmi_interfaces
+def assert_macs_preseved(vm):
+    for iface in vm.get_interfaces():
+        assert iface.macAddress == get_vmi_mac_address_by_iface_name(
+            vmi=vm.vmi, iface_name=iface.name
+        )
 
 
-class IfaceNotFound(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"Interface not found for NAD {self.name}"
-
-
-def get_vmi_iface_mac_address_by_name(vmi, name):
-    for iface in vmi.interfaces:
-        if iface.name == name:
-            return iface.mac
-    raise IfaceNotFound(name)
-
-
-def compare_macs(vmi, expected_mac, iface_name):
-    actual_vmi_interface_mac_address = get_vmi_iface_mac_address_by_name(
-        vmi=vmi, name=iface_name
+def assert_manual_mac_configured(vm, iface_config):
+    assert iface_config.mac_address == get_vmi_mac_address_by_iface_name(
+        vmi=vm.vmi, iface_name=iface_config.name
     )
-    return actual_vmi_interface_mac_address == expected_mac

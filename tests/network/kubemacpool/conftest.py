@@ -7,7 +7,6 @@ from resources.namespace import Namespace
 from resources.resource import ResourceEditor
 from tests.network.utils import running_vmi
 from utilities.infra import create_ns
-from utilities.network import MacPool
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -117,11 +116,6 @@ def all_nads(
         manual_mac_out_of_pool_nad.name,
         automatic_mac_tuning_net_nad.name,
     ]
-
-
-@pytest.fixture(scope="module")
-def mac_pool(kubemacpool_range):
-    return MacPool(kmp_range=kubemacpool_range)
 
 
 @pytest.fixture(scope="class")

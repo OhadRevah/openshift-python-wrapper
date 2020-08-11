@@ -712,3 +712,18 @@ class MacPool:
 
     def mac_is_within_range(self, mac):
         return self.mac_to_int(mac) in self.pool
+
+
+class IfaceNotFound(Exception):
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return f"Interface not found for NAD {self.name}"
+
+
+def get_vmi_mac_address_by_iface_name(vmi, iface_name):
+    for iface in vmi.interfaces:
+        if iface.name == iface_name:
+            return iface.mac
+    raise IfaceNotFound(name=iface_name)
