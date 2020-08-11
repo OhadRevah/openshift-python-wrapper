@@ -397,9 +397,7 @@ def create_vm_and_verify_image_permission(dv):
             command=["ls", "-l", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
         )
         assert "disk.img" in output
-        # Note: we will update the permission to 660 instead of 644
-        # After the patch deliver to upstream of Jira https://issues.redhat.com/browse/CNV-5109
-        assert "-rw-r--r--." in output
+        assert "-rw-rw----." in output
         assert "qemu qemu" in output
 
 
