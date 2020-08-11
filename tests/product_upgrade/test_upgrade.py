@@ -6,6 +6,7 @@ import tests.product_upgrade.utils as upgrade_utils
 from resources.datavolume import DataVolume
 from tests.network.utils import assert_ping_successful
 from utilities import console
+from utilities.network import get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     check_ssh_connection,
     enable_ssh_service_in_vm,
@@ -103,13 +104,15 @@ class TestUpgrade:
         vm_upgrade_b,
         running_vm_upgrade_a,
         running_vm_upgrade_b,
-        kubemacpool_range,
+        mac_pool,
+        upgrade_bridge_marker_nad,
     ):
-        upgrade_utils.assert_mac_in_range(
-            vm_a=running_vm_upgrade_a,
-            vm_b=running_vm_upgrade_b,
-            kubemacpool_range=kubemacpool_range,
-        )
+        for vm in (running_vm_upgrade_a, running_vm_upgrade_b):
+            assert mac_pool.mac_is_within_range(
+                mac=get_vmi_mac_address_by_iface_name(
+                    vmi=vm.vmi, iface_name=upgrade_bridge_marker_nad.name
+                )
+            )
 
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
@@ -236,13 +239,15 @@ class TestUpgrade:
         vm_upgrade_b,
         running_vm_upgrade_a,
         running_vm_upgrade_b,
-        kubemacpool_range,
+        mac_pool,
+        upgrade_bridge_marker_nad,
     ):
-        upgrade_utils.assert_mac_in_range(
-            vm_a=running_vm_upgrade_a,
-            vm_b=running_vm_upgrade_b,
-            kubemacpool_range=kubemacpool_range,
-        )
+        for vm in (running_vm_upgrade_a, running_vm_upgrade_b):
+            assert mac_pool.mac_is_within_range(
+                mac=get_vmi_mac_address_by_iface_name(
+                    vmi=vm.vmi, iface_name=upgrade_bridge_marker_nad.name
+                )
+            )
 
     @pytest.mark.polarion("CNV-3682")
     @pytest.mark.run(after="test_upgrade")

@@ -2,7 +2,6 @@ import logging
 import re
 from multiprocessing import Process
 
-import netaddr
 from openshift.dynamic.exceptions import (
     InternalServerError,
     NotFoundError,
@@ -20,7 +19,6 @@ from resources.resource import Resource, ResourceEditor
 from resources.subscription import Subscription
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from utilities.network import MacPool
 from utilities.virt import run_command, wait_for_vm_interfaces
 
 
@@ -65,13 +63,6 @@ def assert_node_is_marked_by_bridge(bridge_nad, vm):
     for bridge_annotation in bridge_nad.instance.metadata.annotations.values():
         assert bridge_annotation in vm.vmi.node.instance.status.capacity.keys()
         assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
-
-
-def assert_mac_in_range(vm_a, vm_b, kubemacpool_range):
-    for vm in [vm_a, vm_b]:
-        assert MacPool(kmp_range=kubemacpool_range).mac_is_within_range(
-            mac=netaddr.EUI(vm.vmi.interfaces[1].mac)
-        )
 
 
 # Upgrade-related functions
