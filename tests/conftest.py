@@ -90,6 +90,12 @@ PODS_TO_COLLECT_INFO = [
     "virt-template-validator",
     "cdi-importer",
 ]
+TESTS_MARKERS = [
+    "smoke",
+    "destructive",
+    "ci",
+    "tier3",
+]
 
 
 def _get_client():
@@ -169,13 +175,18 @@ def pytest_collection_modifyitems(session, config, items):
             test_id = marker.args[0]
             item.user_properties.append(("jira", test_id))
 
-        for _upgrade_resilience_item in item.iter_markers(name="upgrade_resilience"):
+        for _ in item.iter_markers(name="upgrade_resilience"):
             item.user_properties.append(
                 (
                     "polarion-parameter-upgrade_resilience",
                     config.getoption("upgrade_resilience"),
                 )
             )
+
+        # Add tier2 marker for tests without any marker.
+        markers = [mark.name for mark in list(item.iter_markers())]
+        if not [mark for mark in markers if mark in TESTS_MARKERS]:
+            item.add_marker("tier2")
 
     #  Collect only 'upgrade' tests when running pytest with --upgrade
     upgrade_tests = [item for item in items if "upgrade" in item.keywords]
