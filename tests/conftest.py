@@ -1103,8 +1103,8 @@ def vm_instance_from_template(
     unprivileged_client,
     namespace,
     data_volume,
-    network_configuration,
-    cloud_init_data,
+    network_configuration=None,
+    cloud_init_data=None,
     node_selector=None,
 ):
     """ Create a VM from template and start it (start step could be skipped by setting
@@ -1127,13 +1127,14 @@ def vm_instance_from_template(
         memory=params.get("memory"),
         network_model=params.get("network_model"),
         network_multiqueue=params.get("network_multiqueue"),
-        networks=network_configuration if network_configuration else None,
+        networks=network_configuration,
         interfaces=sorted(network_configuration.keys())
         if network_configuration
         else None,
-        cloud_init_data=cloud_init_data if cloud_init_data else None,
+        cloud_init_data=cloud_init_data,
         attached_secret=params.get("attached_secret"),
         node_selector=node_selector,
+        diskless_vm=params.get("diskless_vm"),
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True)

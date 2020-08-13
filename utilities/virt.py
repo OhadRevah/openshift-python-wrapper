@@ -143,6 +143,7 @@ class VirtualMachineForTests(VirtualMachine):
         termination_grace_period=None,
         smm_enabled=None,
         efi_params=None,
+        diskless_vm=False,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -181,6 +182,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.termination_grace_period = termination_grace_period
         self.smm_enabled = smm_enabled
         self.efi_params = efi_params
+        self.diskless_vm = diskless_vm
 
     def __enter__(self):
         super().__enter__()
@@ -437,6 +439,9 @@ class VirtualMachineForTests(VirtualMachine):
         if self.termination_grace_period:
             spec["terminationGracePeriodSeconds"] = self.termination_grace_period
 
+        if self.diskless_vm:
+            spec.get("domain", {}).get("devices", {}).pop("disks", None)
+
         return res
 
     def ssh_enable(self):
@@ -481,6 +486,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         node_selector=None,
         attached_secret=None,
         termination_grace_period=None,
+        diskless_vm=False,
     ):
         super().__init__(
             name=name,
@@ -498,6 +504,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             attached_secret=attached_secret,
             template_dv=template_dv,
             termination_grace_period=termination_grace_period,
+            diskless_vm=diskless_vm,
         )
         self.template_labels = labels
         self.template_dv = template_dv
