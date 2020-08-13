@@ -191,7 +191,7 @@ def pytest_collection_modifyitems(session, config, items):
         # Add tier2 marker for tests without any marker.
         markers = [mark.name for mark in list(item.iter_markers())]
         if not [mark for mark in markers if mark in TESTS_MARKERS]:
-            item.add_marker("tier2")
+            item.add_marker(marker="tier2")
 
     #  Collect only 'upgrade' tests when running pytest with --upgrade
     upgrade_tests = [item for item in items if "upgrade" in item.keywords]
