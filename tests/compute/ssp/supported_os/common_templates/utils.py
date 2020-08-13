@@ -56,7 +56,7 @@ def vm_os_version(vm, console_impl):
     # The os version in /etc/redhat-release is formated as <os major version>.<minor version>
     # For example: 7.6
     os = re.search(r"(\w+-)?(\d+(-\d+)?)", vm.name).group(2)
-    command = [f"cat /etc/redhat-release | grep {os.replace('-', '.')} | wc -l"]
+    command = [f"cat /etc/redhat-release | grep {os.replace('-', '.')}"]
 
     vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
 
