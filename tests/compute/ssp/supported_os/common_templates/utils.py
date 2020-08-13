@@ -788,7 +788,7 @@ def get_cnv_os_info(vm):
 
 
 def get_cnv_fs_info(vm):
-    fs_info = get_guest_info_from_subresource(vm)["fsInfo"]
+    fs_info = get_guest_info_from_subresource(vm=vm)["fsInfo"]
     for disk in fs_info["disks"]:
         if disk["mountPoint"] in ("/", "C:\\"):
             return fsinfo_disk_dict(

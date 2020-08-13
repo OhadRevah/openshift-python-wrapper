@@ -92,7 +92,7 @@ class TestUpgrade:
         self, vm_upgrade_a, vm_upgrade_b, running_vm_upgrade_a, running_vm_upgrade_b
     ):
         dst_ip_address = ip_interface(
-            running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
+            address=running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
         ).ip
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
@@ -227,7 +227,7 @@ class TestUpgrade:
         self, vm_upgrade_a, vm_upgrade_b, running_vm_upgrade_a, running_vm_upgrade_b
     ):
         dst_ip_address = ip_interface(
-            running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
+            address=running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
         ).ip
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 

@@ -148,7 +148,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
 
         self.mpls_local_tag = mpls_local_tag
         self.ip_addresses = ip_addresses
-        self.mpls_local_ip = ip_interface(mpls_local_ip).ip
+        self.mpls_local_ip = ip_interface(address=mpls_local_ip).ip
         self.dhcp_pool_address = dhcp_pool_address
         self.mpls_dest_ip = mpls_dest_ip
         self.mpls_dest_tag = mpls_dest_tag

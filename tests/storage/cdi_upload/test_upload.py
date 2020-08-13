@@ -279,7 +279,7 @@ def test_successful_concurrent_uploads(
     dvs_processes = []
     storage_class = [*storage_class_matrix__module__][0]
     volume_mode = storage_class_matrix__module__[storage_class]["volume_mode"]
-    available_pv = PersistentVolume(namespace).max_available_pvs
+    available_pv = PersistentVolume(name=namespace).max_available_pvs
     for dv in range(available_pv):
         dv_process = multiprocessing.Process(
             target=_upload_image,
