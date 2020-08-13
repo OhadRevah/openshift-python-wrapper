@@ -4,7 +4,7 @@ This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
 The infra for the tests can be found in https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper
-flake8 plugins defined in .flake8 can bo found in https://gitlab.cee.redhat.com/cnv-qe/flake8-python-plugins
+flake8 plugins defined in .flake8 can be found in https://gitlab.cee.redhat.com/cnv-qe/flake8-python-plugins
 
 ## Contribute to ocp-python-wrapper
 Go to: https://gitlab.cee.redhat.com/cnv-qe and request to join the group.
