@@ -194,9 +194,7 @@ def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
     )
     with open(template_log, "r") as fd:
         data = fd.read()
-    assert len(template_resource) == data.count(
-        f"apiVersion: {template_resource[0].api_version}"
-    )
+    assert len(template_resource) == data.count(f"kind: {template_resource[0].kind}")
 
 
 @pytest.mark.polarion("CNV-2730")
