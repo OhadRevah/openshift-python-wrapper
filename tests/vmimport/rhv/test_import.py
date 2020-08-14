@@ -1,4 +1,5 @@
 import logging
+from subprocess import STDOUT, check_output
 
 import ovirtsdk4.types
 import pytest
@@ -50,11 +51,28 @@ def cm_notemplate():
 
 
 @pytest.fixture(scope="module")
-def rhv_provider():
+def rhv_cert_file(tmpdir_factory):
+    cert = check_output(
+        [
+            "/bin/sh",
+            "-c",
+            f"openssl s_client -connect {py_config['rhv_fqdn']}:443 -showcerts < /dev/null",
+        ],
+        stderr=STDOUT,
+    )
+
+    cert_file = tmpdir_factory.mktemp("RHV").join("rhe_cert.crt")
+    cert_file.write(cert)
+    return cert_file.strpath
+
+
+@pytest.fixture(scope="module")
+def rhv_provider(rhv_cert_file):
     with rhv.RHV(
-        url=py_config["rhv_url"],
+        url=py_config["rhv_api_url"],
         username=py_config["rhv_username"],
         password=py_config["rhv_password"],
+        ca_file=rhv_cert_file,
     ) as provider:
         if not provider.api.test():
             pytest.skip(
@@ -118,7 +136,7 @@ def check_vm_config(vm, rhv_provider, source_vm_name, source_vm_cluster):
 )
 @pytest.mark.polarion("CNV-4381")
 def test_vm_import(secret, namespace, rhv_provider, cm_notemplate):
-    source_vm_name = "cirros-vm-for-tests"
+    source_vm_name = "v2v-cirros-vm-for-tests"
     source_vm_cluster = "iscsi"
     target_vm_name = "test"
     with create_vm_import(
@@ -151,7 +169,7 @@ def test_vm_import_cancelation(
     secret, namespace, rhv_provider, default_client, cm_notemplate
 ):
     import_name = "import-vm-cancel"
-    source_vm_name = "cirros-vm-no-nics"
+    source_vm_name = "v2v-cirros-vm-no-nics"
     source_vm_cluster = "iscsi"
     target_vm_name = "test-cancel"
     with create_vm_import(
@@ -184,7 +202,7 @@ def test_vm_import_cancelation(
 
 @pytest.mark.polarion("CNV-4391")
 def test_running_vm_import(default_client, namespace, rhv_provider, secret):
-    source_vm_name = "cirros-vm-running"
+    source_vm_name = "v2v-cirros-vm-running"
     source_vm_cluster = "iscsi"
     with create_vm_import(
         name="import-running-vm",
@@ -216,7 +234,7 @@ def test_two_disks_and_nics_vm_import(bridge_network, cm_notemplate, namespace, 
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
-        vm_name="cirros-vm-for-test-2disks",
+        vm_name="v2v-cirros-vm-for-test-2disks",
         cluster_name="iscsi",
         target_vm_name=target_vm_name,
         ovirt_mappings=utils.network_mappings(

@@ -20,7 +20,8 @@ template_defaults = {
 default_storage_class = "nfs"
 default_volume_mode = "Filesystem"
 
-rhv_url = "https://rhev-blue-01.rdu2.scalelab.redhat.com/ovirt-engine/api"
+rhv_fqdn = "rhev-blue-01.rdu2.scalelab.redhat.com"
+rhv_api_url = f"https://{rhv_fqdn}/ovirt-engine/api"
 rhv_username = "admin@internal"
 rhv_password = "qum5net"
 
