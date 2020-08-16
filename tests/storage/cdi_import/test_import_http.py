@@ -772,19 +772,20 @@ def test_vm_from_dv_on_different_node(
         dyn_client=default_client,
         namespace=data_volume_multi_storage_scope_function.namespace,
     )
+    importer_node_name = importer_pod.node.name
     importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=30)
     nodes = list(
         filter(lambda node: importer_pod.node.name != node.name, schedulable_nodes)
     )
     data_volume_multi_storage_scope_function.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED, timeout=300
+        status=DataVolume.Status.SUCCEEDED, timeout=720
     )
     with utils.create_vm_from_dv(
         dv=data_volume_multi_storage_scope_function,
         vm_name=Images.Rhel.RHEL8_2_IMG,
         node_selector=nodes[0].name,
     ) as vm_dv:
-        assert vm_dv.vmi.node.name != importer_pod.node.name
+        assert vm_dv.vmi.node.name != importer_node_name
 
 
 @pytest.mark.tier3
