@@ -5,6 +5,7 @@ verify_ssl = true
 
 [packages]
 ipdb = "*"
+ipython = "==7.16.1"  # pipenv fail to install on python 3.6.8 when version > 7.16.1
 openshift = "*"
 kubernetes = "*"
 pexpect = "*"
@@ -16,7 +17,7 @@ netaddr = "*"
 bcrypt = "*"
 pytest-marker-bugzilla = "*"
 pytest-testconfig = "*"
-python-bugzilla = "==2.3.0"  # pipenv fail to install on python 3.6.8 if version is > 2.3.0
+python-bugzilla = "==2.3.0"  # pipenv fail to install on python 3.6.8 when version > 2.3.0
 sh = "*"
 pytest-ordering = "*"
 ansible = {editable = true, git = "https://github.com/ansible/ansible.git",ref = "devel"}
