@@ -462,8 +462,6 @@ class VirtualMachineForTests(VirtualMachine):
 
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
-    # TODO: remove when bug 1861297 is fixed
-    #  termination_grace_period is set to 30 because currently the templates set is to 0 (force stop)
     def __init__(
         self,
         name,
@@ -482,7 +480,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cloud_init_data=None,
         node_selector=None,
         attached_secret=None,
-        termination_grace_period=30,
+        termination_grace_period=None,
     ):
         super().__init__(
             name=name,
