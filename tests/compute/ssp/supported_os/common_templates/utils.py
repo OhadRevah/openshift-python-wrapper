@@ -21,7 +21,6 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.utils import vm_started
 from utilities.virt import (
     execute_winrm_cmd,
-    get_windows_os_release,
     run_virtctl_command,
     vm_console_run_commands,
     wait_for_windows_vm,
@@ -372,173 +371,6 @@ def check_default_and_validation_memory(
         )
 
 
-def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
-    """ Compare OS data from guest agent subresource vs Windows guest OS data. """
-    cnv_os_info = get_cnv_os_info(vm=vm)
-    guest_os_info = get_windows_os_info(
-        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
-    )
-
-    assert (
-        cnv_os_info["guestAgentVersion"] == guest_os_info["guestAgentVersion"]
-    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
-    assert (
-        cnv_os_info["hostname"] == guest_os_info["hostname"]
-    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
-    assert (
-        cnv_os_info["timezone"].split(",")[0] in guest_os_info["timezone"]
-    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
-    for key, val in cnv_os_info["os"].items():
-        if key != "id":
-            assert (
-                val.split("_")[1] if "machine" in key else val in guest_os_info["os"]
-            ), f"Data mismatch! CNV data {val} not in OS data {guest_os_info}"
-
-
-def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
-    """ Compare FS data from guest agent subresource vs Windows guest OS data. """
-    cnv_fs_info = None
-    guest_fs_info = get_windows_fs_info(
-        vm=vm,
-        winrmcli_pod=winrmcli_pod,
-        helper_vm=helper_vm,
-    )
-
-    cnv_fs_info_sampler = TimeoutSampler(
-        timeout=330,
-        sleep=5,
-        func=get_cnv_fs_info,
-        vm=vm,
-    )
-
-    try:
-        for sample in cnv_fs_info_sampler:
-            if sample:
-                cnv_fs_info = sample
-                if [str(val) in guest_fs_info for val in sample.values()]:
-                    return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Data mismatch! CNV data {cnv_fs_info} not in OS data {guest_fs_info}"
-        )
-        raise
-
-
-def get_windows_os_info(vm, winrmcli_pod, helper_vm=False):
-    """ Gets Windows OS info via winrm-cli. """
-    ga_ver = get_windows_guest_agent_version(
-        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
-    ).strip()
-    hostname = get_windows_hostname(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
-    os_release = get_windows_os_release(
-        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
-    )
-    timezone = get_windows_timezone(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
-
-    return {
-        "guestAgentVersion": re.search(r"[0-9]+\.[0-9]+\.[0-9]+", ga_ver).group(0),
-        "hostname": hostname.strip().split("=")[1],
-        "os": os_release,
-        "timezone": timezone,
-    }
-
-
-def get_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
-    """ Gets Windows filesystem info via winrm-cli. """
-    disk_name = get_windows_volume_list(
-        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
-    )
-    disk_space = (
-        get_windows_volume_space(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
-        .strip()
-        .split("\r\n")
-    )
-    fs_type = get_windows_volume_info(
-        vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm
-    )
-
-    return f"{disk_name} {windows_disk_space_extractor(disk_space)} {fs_type}"
-
-
-def get_windows_guest_agent_version(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = 'wmic datafile \\"C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe\\" get Version /value'
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def get_windows_hostname(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = "wmic os get CSName /value"
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def get_windows_timezone(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = 'powershell -command "Get-TimeZone"'
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def get_windows_volume_list(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = "fsutil volume list"
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def get_windows_volume_space(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = "fsutil volume diskfree C:"
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def get_windows_volume_info(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = "fsutil fsinfo volumeinfo C:"
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def windows_disk_space_extractor(fsinfo_list):
-    disk_space = [x.split(": ")[1].split()[0].replace(",", "") for x in fsinfo_list]
-    used = round((int(disk_space[1]) - int(disk_space[0])) / 1024 ** 3, 1)
-    total = round(int(disk_space[1]) / 1024 ** 4, 1)
-    return f"used {used}, total {total}\n"
-
-
 def execute_virsh_qemu_agent_command(vm, command):
     domain = f"{vm.namespace}_{vm.vmi.name}"
     output = vm.vmi.virt_launcher_pod.execute(
@@ -643,9 +475,116 @@ def validate_os_info_vmi_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
     del linux_info["machine"]  # VMI describe doesn't have machine info
     linux_info["version"] = linux_info["version"].split(" ")[0]
 
+    assert vmi_info == linux_info, f"Data mismatch! VMI: {vmi_info}\nOS: {linux_info}"
+
+
+def validate_os_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
+    virtctl_info = get_virtctl_os_info(vm=vm)
+    cnv_info = get_cnv_os_info(vm=vm)
+    libvirt_info = get_libvirt_os_info(vm=vm)
+    windows_info = get_windows_os_info(vm=vm, winrm_pod=winrm_pod, helper_vm=helper_vm)
+
+    data_mismatch = []
+    if virtctl_info["guestAgentVersion"] != windows_info["guestAgentVersion"]:
+        data_mismatch.append("GA version mismatch")
+    if virtctl_info["hostname"] != windows_info["hostname"]:
+        data_mismatch.append("hostname mismatch")
+    if virtctl_info["timezone"].split(",")[0] not in windows_info["timezone"]:
+        data_mismatch.append("timezone mismatch")
+    for key, val in virtctl_info["os"].items():
+        if key != "id":
+            if not (
+                val.split("_")[1] if "machine" in key else val in windows_info["os"]
+            ):
+                data_mismatch.append(f"OS data mismatch - {key}")
+
+    assert not data_mismatch, (
+        f"Data mismatch {data_mismatch}!"
+        f"\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {windows_info}"
+    )
+
+
+def validate_fs_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
+    def _get_fs_info(vm, winrm_pod, helper_vm):
+        virtctl_info = get_virtctl_fs_info(vm=vm)
+        cnv_info = get_cnv_fs_info(vm=vm)
+        libvirt_info = get_libvirt_fs_info(vm=vm)
+        windows_info = get_windows_fs_info(
+            vm=vm, winrm_pod=winrm_pod, helper_vm=helper_vm
+        )
+        return virtctl_info, cnv_info, libvirt_info, windows_info
+
+    fs_info_sampler = TimeoutSampler(
+        timeout=330,
+        sleep=30,
+        func=_get_fs_info,
+        vm=vm,
+        winrm_pod=winrm_pod,
+        helper_vm=helper_vm,
+    )
+
+    try:
+        for virtctl_info, cnv_info, libvirt_info, windows_info in fs_info_sampler:
+            if virtctl_info:
+                if all([str(val) in windows_info for val in virtctl_info.values()]):
+                    return
+
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {windows_info}"
+        )
+        raise
+
+
+def validate_user_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
+    virtctl_info = get_virtctl_user_info(vm=vm)
+    cnv_info = get_cnv_user_info(vm=vm)
+    libvirt_info = get_libvirt_user_info(vm=vm)
+    windows_info = execute_winrm_cmd(
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrm_pod,
+        cmd="quser",
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+    data_mismatch = []
+    if virtctl_info["userName"].lower() not in windows_info:
+        data_mismatch.append("user name mismatch")
+    if (
+        datetime.utcfromtimestamp(virtctl_info["loginTime"]).strftime("%-m/%d/%Y")
+        not in windows_info
+    ):
+        data_mismatch.append("login time mismatch")
+
+    assert not data_mismatch, (
+        f"Data mismatch {data_mismatch}!"
+        f"\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {windows_info}"
+    )
+
+
+def validate_os_info_vmi_vs_windows_os(vm, winrm_pod, helper_vm=False):
+    vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
+    assert vmi_info, "VMI doesn't have guest agent data"
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
+    windows_info = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+    data_mismatch = []
+    for key, val in vmi_info.items():
+        if key != "id":
+            if not (val.split("r")[0] if "version" in key else val in windows_info):
+                data_mismatch.append(f"OS data mismatch - {key}")
+
     assert (
-        vmi_info == linux_info
-    ), f"Data mismatch! VMI data {vmi_info}, OS data {linux_info}"
+        not data_mismatch
+    ), f"Data mismatch {data_mismatch}!\nVMI: {vmi_info}\nOS: {windows_info}"
 
 
 # Guest agent info gather functions.
@@ -674,7 +613,8 @@ def get_virtctl_os_info(vm):
     # virtctl gusetosinfo also returns filesystem and user info (if any active user is logged in)
     # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
     # fsInfo and userList values are checked in other tests
-    del data["fsInfo"]
+    data.pop("fsInfo", None)
+    data.pop("userList", None)
     return data
 
 
@@ -699,7 +639,7 @@ def get_cnv_os_info(vm):
     """
     data = vm.vmi.guest_os_info
     # subresource gusetosinfo also returns filesystem and user info (if any active user is logged in)
-    # here they are deleted for easy compare vs data from get_linux_os_info()
+    # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
     # fsInfo and userList values are checked in other tests
     data.pop("fsInfo", None)
     data.pop("userList", None)
@@ -754,6 +694,49 @@ def get_linux_os_info(rrmngmnt_host):
             "id": os_release["ID"],
         },
         "timezone": f"{timezone.name}, {int(timezone.offset) * 36}",
+    }
+
+
+def get_windows_os_info(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    ga_ver_cmd = 'wmic datafile \\"C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe\\" get Version /value'
+    ga_ver = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=ga_ver_cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    ).strip()
+    hostname_cmd = "wmic os get CSName /value"
+    hostname = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=hostname_cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+    os_release_cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
+    os_release = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=os_release_cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+    timezone_cmd = 'powershell -command "Get-TimeZone"'
+    timezone = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=timezone_cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+    return {
+        "guestAgentVersion": guest_agent_version_parser(version_string=ga_ver),
+        "hostname": hostname.strip().split("=")[1],
+        "os": os_release,
+        "timezone": timezone,
     }
 
 
@@ -813,6 +796,40 @@ def get_linux_fs_info(rrmngmnt_host):
         "usedGB": convert_disk_size(value=int(disks[3]), si_prefix=False),
         "totalGB": convert_disk_size(value=int(disks[2]), si_prefix=False),
     }
+
+
+def get_windows_fs_info(vm, winrm_pod, helper_vm=False):
+    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
+    disk_name_cmd = "fsutil volume list"
+    disk_name = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=disk_name_cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+    disk_space_cmd = "fsutil volume diskfree C:"
+    disk_space = (
+        execute_winrm_cmd(
+            vmi_ip=vmi_ip,
+            winrmcli_pod=winrm_pod,
+            cmd=disk_space_cmd,
+            target_vm=vm,
+            helper_vm=helper_vm,
+        )
+        .strip()
+        .split("\r\n")
+    )
+    fs_type_cmd = "fsutil fsinfo volumeinfo C:"
+    fs_type = execute_winrm_cmd(
+        vmi_ip=vmi_ip,
+        winrmcli_pod=winrm_pod,
+        cmd=fs_type_cmd,
+        target_vm=vm,
+        helper_vm=helper_vm,
+    )
+
+    return f"{disk_name} {windows_disk_space_parser(disk_space)} {fs_type}"
 
 
 def get_virtctl_user_info(vm):
@@ -895,57 +912,15 @@ def guest_agent_version_parser(version_string):
     return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", version_string).group(0)
 
 
-# TODO: remove after windows patch is done.
-def validate_cnv_os_info_vs_libvirt_os_info(vm):
-    """ Compare OS data from guest agent subresource vs libvirt data. """
-
-    def _get_cnv_os_info_vs_libvirt_os_info(vm):
-        cnv_os_info = get_cnv_os_info(vm=vm)
-        libvirt_os_info = get_libvirt_os_info(vm=vm)
-        return {"cnv_os_info": cnv_os_info, "libvirt_os_info": libvirt_os_info}
-
-    os_info_sampler = TimeoutSampler(
-        timeout=330,
-        sleep=5,
-        func=_get_cnv_os_info_vs_libvirt_os_info,
-        vm=vm,
-    )
-
-    try:
-        for sample in os_info_sampler:
-            if sample:
-                if sample["cnv_os_info"] == sample["libvirt_os_info"]:
-                    return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Data mismatch! CNV data {sample['cnv_os_info']} not in Libvirt data {sample['libvirt_os_info']}"
-        )
-        raise
-
-
-# TODO: remove after windows patch is done.
-def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
-    """ Compare FS data from guest agent subresource vs libvirt data. """
-
-    def _get_cnv_fs_info_vs_libvirt_fs_info(vm):
-        cnv_fs_info = get_cnv_fs_info(vm=vm)
-        libvirt_fs_info = get_libvirt_fs_info(vm=vm)
-        return {"cnv_fs_info": cnv_fs_info, "libvirt_fs_info": libvirt_fs_info}
-
-    fs_info_sampler = TimeoutSampler(
-        timeout=330,
-        sleep=5,
-        func=_get_cnv_fs_info_vs_libvirt_fs_info,
-        vm=vm,
-    )
-
-    try:
-        for sample in fs_info_sampler:
-            if sample:
-                if sample["cnv_fs_info"] == sample["libvirt_fs_info"]:
-                    return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Data mismatch! CNV data {sample['cnv_fs_info']} not in Libvirt data {sample['libvirt_fs_info']}"
-        )
-        raise
+def windows_disk_space_parser(fsinfo_list):
+    # fsinfo_list contains strings of total free and total bytes in format:
+    # ['Total free bytes        :  81,103,310,848 ( 75.5 GB)',
+    #  'Total bytes             : 249,381,777,408 (232.3 GB)',
+    #  'Total quota free bytes  :  81,103,310,848 ( 75.5 GB)']
+    disk_space = {
+        "total": re.sub(",", "", re.search(r": (\S*)", fsinfo_list[1]).group(1)),
+        "free": re.sub(",", "", re.search(r": (\S*)", fsinfo_list[0]).group(1)),
+    }
+    used = round((int(disk_space["total"]) - int(disk_space["free"])) / 1000 ** 3)
+    total = round(int(disk_space["total"]) / 1000 ** 3)
+    return f"used {used}, total {total}\n"

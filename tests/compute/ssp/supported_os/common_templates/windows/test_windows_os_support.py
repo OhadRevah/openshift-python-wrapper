@@ -73,61 +73,65 @@ class TestCommonTemplatesWindows:
     @pytest.mark.polarion("CNV-3512")
     def test_vmi_guest_agent_info(
         self,
-        skip_upstream,
-        unprivileged_client,
-        namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test Guest OS agent info. """
-        utilities.virt.validate_vmi_ga_info_vs_windows_os_info(
+        common_templates_utils.validate_os_info_vmi_vs_windows_os(
             vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            winrmcli_pod=winrmcli_pod_scope_class,
+            winrm_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-4196")
-    def test_guest_agent_subresource_os_info(
+    def test_virtctl_guest_agent_os_info(
         self,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        skip_guest_agent_on_win12,
+        windows_os_matrix__class__,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
-        windows_os_matrix__class__,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        common_templates_utils.validate_os_info_virtctl_vs_windows_os(
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            winrm_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
         )
-        # win-12 doesn't support powershell commands
-        if "win-12" not in [*windows_os_matrix__class__][0]:
-            common_templates_utils.validate_cnv_os_info_vs_windows_os_info(
-                vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-                winrmcli_pod=winrmcli_pod_scope_class,
-                helper_vm=bridge_attached_helper_vm,
-            )
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-4197")
-    def test_guest_agent_subresource_fs_info(
+    def test_virtctl_guest_agent_fs_info(
         self,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        skip_guest_agent_on_win12,
+        windows_os_matrix__class__,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
-        windows_os_matrix__class__,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        common_templates_utils.validate_cnv_fs_info_vs_libvirt_fs_info(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        common_templates_utils.validate_fs_info_virtctl_vs_windows_os(
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            winrm_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
         )
-        # win-12 doesn't support fsutil commands
-        if "win-12" not in [*windows_os_matrix__class__][0]:
-            common_templates_utils.validate_cnv_fs_info_vs_windows_fs_info(
-                vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-                winrmcli_pod=winrmcli_pod_scope_class,
-                helper_vm=bridge_attached_helper_vm,
-            )
+
+    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.polarion("CNV-4552")
+    def test_virtctl_guest_agent_user_info(
+        self,
+        skip_guest_agent_on_win12,
+        windows_os_matrix__class__,
+        winrmcli_pod_scope_class,
+        bridge_attached_helper_vm,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+    ):
+        common_templates_utils.validate_user_info_virtctl_vs_windows_os(
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            winrm_pod=winrmcli_pod_scope_class,
+            helper_vm=bridge_attached_helper_vm,
+        )
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3303")

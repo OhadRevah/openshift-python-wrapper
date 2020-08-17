@@ -279,3 +279,9 @@ def exposed_vm_service_multi_storage_scope_function(
 def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
     if "rhel-6" in [*rhel_os_matrix__class__][0]:
         pytest.skip("RHEL6 does not have guest agent")
+
+
+@pytest.fixture()
+def skip_guest_agent_on_win12(windows_os_matrix__class__):
+    if "win-12" in [*windows_os_matrix__class__][0]:
+        pytest.skip("win-12 doesn't support powershell commands")
