@@ -8,7 +8,6 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
 
 @pytest.fixture(scope="class")
 def data_volume_rhel_os(
-    skip_ceph_on_rhel7,
     namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
@@ -24,7 +23,6 @@ def data_volume_rhel_os(
 
 @pytest.fixture(scope="class")
 def data_volume_windows_os(
-    skip_ceph_on_rhel7,
     namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
@@ -40,7 +38,6 @@ def data_volume_windows_os(
 
 @pytest.fixture(scope="class")
 def data_volume_fedora_os(
-    skip_ceph_on_rhel7,
     namespace,
     storage_class_matrix__class__,
     schedulable_nodes,

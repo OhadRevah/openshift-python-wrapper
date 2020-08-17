@@ -128,6 +128,11 @@ def pytest_addoption(parser):
     parser.addoption("--windows-os-matrix", help="Windows OS matrix to use")
     parser.addoption("--fedora-os-matrix", help="Fedora OS matrix to use")
     parser.addoption(
+        "--rhel7-workers",
+        help="If running on cluster with RHEL7 workers",
+        action="store_true",
+    )
+    parser.addoption(
         "--upgrade_resilience",
         action="store_true",
         help="If provided, run upgrade with disruptions",
@@ -290,9 +295,16 @@ def pytest_runtest_logreport(report):
 
 
 def pytest_sessionstart(session):
+    py_config_scs = py_config.get("storage_class_matrix", {})
+    # Only HPP storage is supported when running with RHEL7 workers.
+    if session.config.getoption("rhel7_workers"):
+        py_config_scs = [
+            sc for sc in py_config_scs if [*sc][0] == "hostpath-provisioner"
+        ]
+
     # Save the default storage_class_matrix before it is updated
     # with runtime storage_class_matrix value(s)
-    py_config["system_storage_class_matrix"] = py_config["storage_class_matrix"]
+    py_config["system_storage_class_matrix"] = py_config_scs
 
     matrix_addoptions = [
         matrix
@@ -838,40 +850,14 @@ def skip_if_workers_vms(workers_type):
 
 # RHEL 7 specific fixtures
 @pytest.fixture(scope="session")
-def rhel7_workers(worker_node1):
-    # Check only the first Node since mixed rchos and RHEL7 workers in cluster is not supported.
-    return re.search(
-        r"^Red Hat Enterprise Linux Server 7\.\d",
-        worker_node1.instance.status.nodeInfo.osImage,
-    )
+def rhel7_workers(pytestconfig):
+    return pytestconfig.getoption("rhel7_workers")
 
 
 @pytest.fixture(scope="session")
 def skip_rhel7_workers(rhel7_workers):
     if rhel7_workers:
         pytest.skip(msg="Test should skip on RHEL7 workers")
-
-
-def _skip_ceph_on_rhel7(storage_class, rhel7_workers):
-    if storage_class.get("rook-ceph-block"):
-        if rhel7_workers:
-            pytest.skip(
-                msg="Rook-ceph configuration is not supported on RHEL7 workers",
-            )
-
-
-@pytest.fixture(scope="class")
-def skip_ceph_on_rhel7(storage_class_matrix__class__, rhel7_workers):
-    _skip_ceph_on_rhel7(
-        storage_class=storage_class_matrix__class__, rhel7_workers=rhel7_workers
-    )
-
-
-@pytest.fixture(scope="module")
-def skip_ceph_on_rhel7_scope_module(storage_class_matrix__module__, rhel7_workers):
-    _skip_ceph_on_rhel7(
-        storage_class=storage_class_matrix__module__, rhel7_workers=rhel7_workers
-    )
 
 
 @pytest.fixture(scope="session")
@@ -906,9 +892,7 @@ def rhel7_psi_network_config():
 
 
 @pytest.fixture(scope="class")
-def network_attachment_definition(
-    skip_ceph_on_rhel7, rhel7_ovs_bridge, namespace, rhel7_workers
-):
+def network_attachment_definition(rhel7_ovs_bridge, namespace, rhel7_workers):
     if rhel7_workers:
         with network_nad(
             nad_type=OVS,
@@ -923,7 +907,7 @@ def network_attachment_definition(
 
 @pytest.fixture(scope="class")
 def network_configuration(
-    skip_ceph_on_rhel7, rhel7_workers, network_attachment_definition,
+    rhel7_workers, network_attachment_definition,
 ):
     if rhel7_workers:
         return {network_attachment_definition.name: network_attachment_definition.name}
@@ -931,11 +915,7 @@ def network_configuration(
 
 @pytest.fixture()
 def data_volume_multi_storage_scope_function(
-    request,
-    skip_ceph_on_rhel7,
-    namespace,
-    storage_class_matrix__class__,
-    schedulable_nodes,
+    request, namespace, storage_class_matrix__class__, schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
@@ -947,11 +927,7 @@ def data_volume_multi_storage_scope_function(
 
 @pytest.fixture(scope="class")
 def data_volume_multi_storage_scope_class(
-    request,
-    skip_ceph_on_rhel7,
-    namespace,
-    storage_class_matrix__class__,
-    schedulable_nodes,
+    request, namespace, storage_class_matrix__class__, schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
@@ -963,11 +939,7 @@ def data_volume_multi_storage_scope_class(
 
 @pytest.fixture(scope="module")
 def data_volume_multi_storage_scope_module(
-    request,
-    skip_ceph_on_rhel7_scope_module,
-    namespace,
-    storage_class_matrix__module__,
-    schedulable_nodes,
+    request, namespace, storage_class_matrix__module__, schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
@@ -1009,7 +981,7 @@ def data_volume_scope_module(request, namespace, schedulable_nodes):
 
 @pytest.fixture(scope="class")
 def cloud_init_data(
-    request, skip_ceph_on_rhel7, workers_type, rhel7_workers, rhel7_psi_network_config,
+    request, workers_type, rhel7_workers, rhel7_psi_network_config,
 ):
     if rhel7_workers:
         bootcmds = nmcli_add_con_cmds(
@@ -1033,7 +1005,6 @@ def cloud_init_data(
 @pytest.fixture(scope="class")
 def bridge_attached_helper_vm(
     workers_type,
-    skip_ceph_on_rhel7,
     rhel7_workers,
     worker_node1,
     namespace,
