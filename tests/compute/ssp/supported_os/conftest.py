@@ -273,3 +273,9 @@ def exposed_vm_service_multi_storage_scope_function(
     vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
         service_name=request.param["service_name"], port=request.param["service_port"]
     )
+
+
+@pytest.fixture()
+def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
+    if "rhel-6" in [*rhel_os_matrix__class__][0]:
+        pytest.skip("RHEL6 does not have guest agent")

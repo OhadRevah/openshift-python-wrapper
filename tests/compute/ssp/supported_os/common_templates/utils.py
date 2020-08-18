@@ -12,6 +12,7 @@ import bitmath
 import rrmngmnt
 import utilities.network
 from openshift.dynamic.exceptions import NotFoundError
+from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
@@ -393,12 +394,26 @@ def check_default_and_validation_memory(
 
 def validate_cnv_os_info_vs_libvirt_os_info(vm):
     """ Compare OS data from guest agent subresource vs libvirt data. """
-    cnv_os_info = get_cnv_os_info(vm=vm)
-    libvirt_os_info = get_libvirt_os_info(vm=vm)
 
-    assert (
-        cnv_os_info == libvirt_os_info
-    ), f"Data mismatch! CNV data {cnv_os_info}, Libvirt data {libvirt_os_info}"
+    def _get_cnv_os_info_vs_libvirt_os_info(vm):
+        cnv_os_info = get_cnv_os_info(vm=vm)
+        libvirt_os_info = get_libvirt_os_info(vm=vm)
+        return {"cnv_os_info": cnv_os_info, "libvirt_os_info": libvirt_os_info}
+
+    os_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=_get_cnv_os_info_vs_libvirt_os_info, vm=vm,
+    )
+
+    try:
+        for sample in os_info_sampler:
+            if sample:
+                if sample["cnv_os_info"] == sample["libvirt_os_info"]:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {sample['cnv_os_info']} not in Libvirt data {sample['libvirt_os_info']}"
+        )
+        raise
 
 
 def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
@@ -821,3 +836,15 @@ def rrmngmnt_host(usr, passwd, ip, port):
     host._set_executor_user(user=host_user)
     host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
     return host
+
+
+def restart_qemu_guest_agent_service(vm, console_impl):
+    ver = vm.vmi.virt_launcher_pod.execute(
+        command=["/usr/libexec/qemu-kvm", "--version", "|", "grep", "kvm"],
+        container="compute",
+    )
+    if version.parse(ver.split()[3]) >= version.parse("5.1.0"):
+        return
+
+    cmd = ["sudo systemctl restart qemu-guest-agent"]
+    vm_console_run_commands(console_impl=console_impl, vm=vm, commands=cmd)

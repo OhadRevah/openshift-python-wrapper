@@ -14,7 +14,6 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import check_ssh_connection, wait_for_console
 
 
@@ -180,12 +179,9 @@ class TestCommonTemplatesRhel:
         vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         schedulable_node_ips,
         rhel7_workers,
+        skip_guest_agent_on_rhel6,
     ):
         """ Test Guest OS agent info. """
-
-        if "rhel-6" in [*rhel_os_matrix__class__][0]:
-            pytest.skip("RHEL6 does not have guest agent")
-
         common_templates_utils.validate_vmi_ga_info_vs_linux_os_info(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             ssh_ip=common_templates_utils.get_vm_accessible_ip(
@@ -203,9 +199,6 @@ class TestCommonTemplatesRhel:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-4195")
-    @pytest.mark.bugzilla(
-        1845127, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_guest_agent_subresource_os_info(
         self,
         rhel_os_matrix__class__,
@@ -213,10 +206,13 @@ class TestCommonTemplatesRhel:
         schedulable_node_ips,
         rhel7_workers,
         data_volume_multi_rhel_os_multi_storage_scope_class,
+        skip_guest_agent_on_rhel6,
     ):
-        if "rhel-6" in [*rhel_os_matrix__class__][0]:
-            pytest.skip("RHEL6 does not have guest agent")
-
+        # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
+        common_templates_utils.restart_qemu_guest_agent_service(
+            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            console_impl=console.RHEL,
+        )
         common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )

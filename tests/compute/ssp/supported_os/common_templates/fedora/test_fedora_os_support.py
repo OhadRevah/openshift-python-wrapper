@@ -13,7 +13,6 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import vm_started
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import check_ssh_connection, wait_for_console
 
 
@@ -223,9 +222,6 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3573")
-    @pytest.mark.bugzilla(
-        1845127, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_guest_agent_subresource_os_info(
         self,
         fedora_os_matrix__class__,
@@ -234,6 +230,11 @@ class TestCommonTemplatesFedora:
         rhel7_workers,
         data_volume_multi_fedora_os_multi_storage_scope_class,
     ):
+        # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
+        common_templates_utils.restart_qemu_guest_agent_service(
+            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+            console_impl=console.Fedora,
+        )
         common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
