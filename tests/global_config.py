@@ -40,6 +40,7 @@ rhv_fqdn = "rhev-blue-01.rdu2.scalelab.redhat.com"
 rhv_api_url = f"https://{rhv_fqdn}/ovirt-engine/api"
 rhv_username = "admin@internal"
 rhv_password = "qum5net"
+source_cluster_name = "iscsi"
 
 windows_username = "Administrator"
 windows_password = "Heslo123"
