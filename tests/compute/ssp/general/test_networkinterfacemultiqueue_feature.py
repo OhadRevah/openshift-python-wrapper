@@ -43,7 +43,7 @@ def _update_and_validate_vm_cpu_spec(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
     [
         (
             {
@@ -70,68 +70,92 @@ class TestLatestRHEL:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
-        self, vm_instance_from_template_scope_class,
+        self, vm_instance_from_template_multi_storage_scope_class,
     ):
-        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
+        wait_for_vm_interfaces(
+            vmi=vm_instance_from_template_multi_storage_scope_class.vmi
+        )
         wait_for_console(
-            vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
-    def test_feature_disabled(self, vm_instance_from_template_scope_class):
+    def test_feature_disabled(
+        self, vm_instance_from_template_multi_storage_scope_class
+    ):
         _update_and_validate_vm_cpu_spec(
-            vm=vm_instance_from_template_scope_class, network_multiqueue=False
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            network_multiqueue=False,
         )
-        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
+        wait_for_vm_interfaces(
+            vmi=vm_instance_from_template_multi_storage_scope_class.vmi
+        )
         wait_for_console(
-            vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
-    def test_four_cores(self, vm_instance_from_template_scope_class):
+    def test_four_cores(self, vm_instance_from_template_multi_storage_scope_class):
         _update_and_validate_vm_cpu_spec(
-            vm=vm_instance_from_template_scope_class, cores=4
+            vm=vm_instance_from_template_multi_storage_scope_class, cores=4
         )
-        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
+        wait_for_vm_interfaces(
+            vmi=vm_instance_from_template_multi_storage_scope_class.vmi
+        )
         wait_for_console(
-            vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
-    def test_four_sockets(self, vm_instance_from_template_scope_class):
+    def test_four_sockets(self, vm_instance_from_template_multi_storage_scope_class):
         _update_and_validate_vm_cpu_spec(
-            vm=vm_instance_from_template_scope_class, sockets=4
+            vm=vm_instance_from_template_multi_storage_scope_class, sockets=4
         )
-        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
+        wait_for_vm_interfaces(
+            vmi=vm_instance_from_template_multi_storage_scope_class.vmi
+        )
         wait_for_console(
-            vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
-    def test_four_threads(self, vm_instance_from_template_scope_class):
+    def test_four_threads(self, vm_instance_from_template_multi_storage_scope_class):
         _update_and_validate_vm_cpu_spec(
-            vm=vm_instance_from_template_scope_class, threads=4
+            vm=vm_instance_from_template_multi_storage_scope_class, threads=4
         )
-        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
+        wait_for_vm_interfaces(
+            vmi=vm_instance_from_template_multi_storage_scope_class.vmi
+        )
         wait_for_console(
-            vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_two_cores_two_sockets_two_threads(
-        self, vm_instance_from_template_scope_class
+        self, vm_instance_from_template_multi_storage_scope_class
     ):
         _update_and_validate_vm_cpu_spec(
-            vm=vm_instance_from_template_scope_class, cores=4, sockets=2, threads=2
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            cores=4,
+            sockets=2,
+            threads=2,
         )
-        wait_for_vm_interfaces(vmi=vm_instance_from_template_scope_class.vmi)
+        wait_for_vm_interfaces(
+            vmi=vm_instance_from_template_multi_storage_scope_class.vmi
+        )
         wait_for_console(
-            vm=vm_instance_from_template_scope_class, console_impl=console.RHEL
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            console_impl=console.RHEL,
         )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
     [
         (
             {
@@ -163,12 +187,12 @@ class TestLatestWindows:
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
         self,
-        vm_instance_from_template_scope_class,
+        vm_instance_from_template_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         wait_for_windows_vm(
-            vm=vm_instance_from_template_scope_class,
+            vm=vm_instance_from_template_multi_storage_scope_class,
             version=self.WIN_VER,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
@@ -177,15 +201,18 @@ class TestLatestWindows:
     @pytest.mark.polarion("CNV-3221")
     def test_four_cores_two_sockets_two_threads(
         self,
-        vm_instance_from_template_scope_class,
+        vm_instance_from_template_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         _update_and_validate_vm_cpu_spec(
-            vm=vm_instance_from_template_scope_class, cores=4, sockets=2, threads=2,
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            cores=4,
+            sockets=2,
+            threads=2,
         )
         wait_for_windows_vm(
-            vm=vm_instance_from_template_scope_class,
+            vm=vm_instance_from_template_multi_storage_scope_class,
             version=self.WIN_VER,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,

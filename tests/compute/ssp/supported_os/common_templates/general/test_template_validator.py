@@ -18,7 +18,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_object_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_object_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {"dv_name": "dv-rhel-min-memory-validatio", "image": FAILED_VM_IMAGE},
@@ -37,12 +37,13 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     indirect=True,
 )
 def test_template_validation_min_memory(
-    data_volume_multi_storage_scope_function, vm_object_from_template_scope_function
+    data_volume_multi_storage_scope_function,
+    vm_object_from_template_multi_storage_scope_function,
 ):
     LOGGER.info("Test template validator - minimum required memory")
 
     with pytest.raises(UnprocessibleEntityError) as vm_exception:
-        vm_object_from_template_scope_function.create()
+        vm_object_from_template_multi_storage_scope_function.create()
 
         assert (
             "This VM requires more memory" in vm_exception.value.body.decode()

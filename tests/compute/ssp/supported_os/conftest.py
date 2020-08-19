@@ -7,7 +7,7 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 @pytest.fixture(scope="class")
-def data_volume_rhel_os(
+def data_volume_multi_rhel_os_multi_storage_scope_class(
     namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
@@ -22,7 +22,7 @@ def data_volume_rhel_os(
 
 
 @pytest.fixture(scope="class")
-def data_volume_windows_os(
+def data_volume_multi_windows_os_multi_storage_scope_class(
     namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
@@ -37,7 +37,7 @@ def data_volume_windows_os(
 
 
 @pytest.fixture(scope="class")
-def data_volume_fedora_os(
+def data_volume_multi_fedora_os_multi_storage_scope_class(
     namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
@@ -63,7 +63,7 @@ def vm_object_from_template(
     """ Instantiate a VM object
 
     The call to this function is triggered by calling either
-    vm_object_from_template_scope_function or vm_object_from_template_scope_class.
+    vm_object_from_template_multi_storage_scope_function or vm_object_from_template_multi_storage_scope_class.
     """
 
     param_dict = request.param if request else {}
@@ -105,7 +105,7 @@ def vm_object_from_template(
 
 
 @pytest.fixture()
-def vm_object_from_template_scope_function(
+def vm_object_from_template_multi_storage_scope_function(
     request,
     unprivileged_client,
     namespace,
@@ -124,7 +124,7 @@ def vm_object_from_template_scope_function(
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_scope_class(
+def vm_object_from_template_multi_storage_scope_class(
     request,
     unprivileged_client,
     namespace,
@@ -143,11 +143,11 @@ def vm_object_from_template_scope_class(
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_rhel_os(
+def vm_object_from_template_multi_rhel_os_multi_storage_scope_class(
     unprivileged_client,
     namespace,
     rhel_os_matrix__class__,
-    data_volume_rhel_os,
+    data_volume_multi_rhel_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -155,19 +155,19 @@ def vm_object_from_template_rhel_os(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=rhel_os_matrix__class__,
-        data_volume_object=data_volume_rhel_os,
+        data_volume_object=data_volume_multi_rhel_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_windows_os(
+def vm_object_from_template_multi_windows_os_multi_storage_scope_class(
     request,
     unprivileged_client,
     namespace,
     windows_os_matrix__class__,
-    data_volume_windows_os,
+    data_volume_multi_windows_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -176,19 +176,19 @@ def vm_object_from_template_windows_os(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=windows_os_matrix__class__,
-        data_volume_object=data_volume_windows_os,
+        data_volume_object=data_volume_multi_windows_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_fedora_os(
+def vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
     request,
     unprivileged_client,
     namespace,
     fedora_os_matrix__class__,
-    data_volume_fedora_os,
+    data_volume_multi_fedora_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -197,65 +197,79 @@ def vm_object_from_template_fedora_os(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=fedora_os_matrix__class__,
-        data_volume_object=data_volume_fedora_os,
+        data_volume_object=data_volume_multi_fedora_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
-def vm_ssh_service(vm_object_from_template):
+def vm_ssh_service(vm):
     """ Manages (creation and deletion) of a service to enable SSH access to the VM
 
     The call to this function is triggered by calling either
-    vm_ssh_service_scope_function or
-    vm_ssh_service_scope_class.
+    vm_ssh_service_multi_storage_scope_function or
+    vm_ssh_service_multi_storage_scope_class.
     """
 
-    vm_object_from_template.ssh_enable()
+    vm.ssh_enable()
     yield
-    vm_object_from_template.ssh_service.delete(wait=True)
+    vm.ssh_service.delete(wait=True)
 
 
 @pytest.fixture()
-def vm_ssh_service_scope_function(
-    rhel7_workers, vm_instance_from_template_scope_function
+def vm_ssh_service_multi_storage_scope_function(
+    rhel7_workers, vm_instance_from_template_multi_storage_scope_function
 ):
     # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
     if rhel7_workers:
         yield
     else:
-        yield from vm_ssh_service(vm_instance_from_template_scope_function)
+        yield from vm_ssh_service(
+            vm_instance_from_template_multi_storage_scope_function
+        )
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_scope_class(rhel7_workers, vm_object_from_template_scope_class):
+def vm_ssh_service_multi_storage_scope_class(
+    rhel7_workers, vm_object_from_template_multi_storage_scope_class
+):
     # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
     if rhel7_workers:
         yield
     else:
-        yield from vm_ssh_service(vm_object_from_template_scope_class)
+        yield from vm_ssh_service(vm_object_from_template_multi_storage_scope_class)
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_rhel_os(rhel7_workers, vm_object_from_template_rhel_os):
+def vm_ssh_service_multi_rhel_os_scope_class(
+    rhel7_workers, vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+):
     # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
     if rhel7_workers:
         yield
     else:
-        yield from vm_ssh_service(vm_object_from_template_rhel_os)
+        yield from vm_ssh_service(
+            vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+        )
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_fedora_os(rhel7_workers, vm_object_from_template_fedora_os):
+def vm_ssh_service_multi_fedora_os_scope_class(
+    rhel7_workers, vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+):
     # SSH expose service is not needed in RHEL7, VMs are accessed via brcnv
     if rhel7_workers:
         yield
     else:
-        yield from vm_ssh_service(vm_object_from_template_fedora_os)
+        yield from vm_ssh_service(
+            vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        )
 
 
 @pytest.fixture()
-def exposed_vm_service(request, vm_instance_from_template_scope_function):
-    vm_instance_from_template_scope_function.custom_service_enable(
+def exposed_vm_service_multi_storage_scope_function(
+    request, vm_instance_from_template_multi_storage_scope_function
+):
+    vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
         service_name=request.param["service_name"], port=request.param["service_port"]
     )

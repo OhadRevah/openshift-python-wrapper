@@ -50,7 +50,9 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=Fal
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    "data_volume_multi_storage_scope_function,"
+    "vm_instance_from_template_multi_storage_scope_function,"
+    "started_windows_vm",
     [
         pytest.param(
             {
@@ -79,7 +81,7 @@ def test_tablet_usb_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,
     started_windows_vm,
@@ -88,16 +90,20 @@ def test_tablet_usb_tablet_device(
     LOGGER.info("Test tablet device - USB bus.")
 
     check_windows_vm_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
         helper_vm=bridge_attached_helper_vm,
     )
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    "data_volume_multi_storage_scope_function,"
+    "vm_instance_from_template_multi_storage_scope_function,"
+    "started_windows_vm",
     [
         pytest.param(
             {
@@ -126,7 +132,7 @@ def test_tablet_virtio_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,
     started_windows_vm,
@@ -138,20 +144,24 @@ def test_tablet_virtio_tablet_device(
     LOGGER.info("Test tablet device - virtio bus.")
 
     check_windows_vm_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Stopped",
         helper_vm=bridge_attached_helper_vm,
     )
 
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )
 
 
 @pytest.mark.bugzilla(
     1827705, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    "data_volume_multi_storage_scope_function,"
+    "vm_instance_from_template_multi_storage_scope_function,"
+    "started_windows_vm",
     [
         pytest.param(
             {
@@ -177,7 +187,7 @@ def test_windows_server_default_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,
     started_windows_vm,
@@ -189,17 +199,21 @@ def test_windows_server_default_tablet_device(
     LOGGER.info("Test Windows Server tablet device - default table device.")
 
     check_windows_vm_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
         helper_vm=bridge_attached_helper_vm,
     )
 
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    "data_volume_multi_storage_scope_function,"
+    "vm_instance_from_template_multi_storage_scope_function,"
+    "started_windows_vm",
     [
         pytest.param(
             {
@@ -225,7 +239,7 @@ def test_windows_desktop_default_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,
     started_windows_vm,
@@ -237,10 +251,12 @@ def test_windows_desktop_default_tablet_device(
     LOGGER.info("Test Windows Desktop tablet device - default table device.")
 
     check_windows_vm_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
         helper_vm=bridge_attached_helper_vm,
     )
 
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )

@@ -11,8 +11,8 @@ from tests.compute.ssp.supported_os.common_templates import utils
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, "
-    "started_windows_vm, exposed_vm_service",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function, "
+    "started_windows_vm, exposed_vm_service_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -43,10 +43,10 @@ def test_migrate_vm_windows(
     skip_migration_access_mode_rwo,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     started_windows_vm,
-    exposed_vm_service,
+    exposed_vm_service_multi_storage_scope_function,
     schedulable_node_ips,
 ):
     """ Test CNV common templates with Windows
@@ -57,13 +57,13 @@ def test_migrate_vm_windows(
 
     assert utils.check_telnet_connection(
         ip=list(schedulable_node_ips.values())[0],
-        port=vm_instance_from_template_scope_function.custom_service_port,
+        port=vm_instance_from_template_multi_storage_scope_function.custom_service_port,
     ), "Failed to login via Telnet"
 
-    utils.migrate_vm(vm=vm_instance_from_template_scope_function)
+    utils.migrate_vm(vm=vm_instance_from_template_multi_storage_scope_function)
 
     utilities.virt.wait_for_windows_vm(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         version=py_config["latest_windows_version"]["os_version"],
         winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,
@@ -71,5 +71,5 @@ def test_migrate_vm_windows(
 
     assert utils.check_telnet_connection(
         ip=list(schedulable_node_ips.values())[0],
-        port=vm_instance_from_template_scope_function.custom_service_port,
+        port=vm_instance_from_template_multi_storage_scope_function.custom_service_port,
     ), "Failed to login via Telnet after migration"

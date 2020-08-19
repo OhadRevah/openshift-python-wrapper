@@ -14,7 +14,7 @@ from utilities.virt import check_ssh_connection, wait_for_console
 
 @pytest.mark.smoke
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -41,8 +41,8 @@ def test_migrate_vm_rhel(
     skip_migration_access_mode_rwo,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
-    vm_ssh_service_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
+    vm_ssh_service_multi_storage_scope_function,
     schedulable_node_ips,
 ):
     """ Test CNV common templates with RHEL
@@ -52,28 +52,31 @@ def test_migrate_vm_rhel(
     """
 
     wait_for_console(
-        vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
+        vm=vm_instance_from_template_multi_storage_scope_function,
+        console_impl=console.RHEL,
     )
 
     utilities.virt.enable_ssh_service_in_vm(
-        vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
+        vm=vm_instance_from_template_multi_storage_scope_function,
+        console_impl=console.RHEL,
     )
 
     assert check_ssh_connection(
         ip=list(schedulable_node_ips.values())[0],
-        port=vm_instance_from_template_scope_function.ssh_node_port,
+        port=vm_instance_from_template_multi_storage_scope_function.ssh_node_port,
         console_impl=console.RHEL,
     ), "Failed to login via SSH"
 
-    utils.migrate_vm(vm=vm_instance_from_template_scope_function)
+    utils.migrate_vm(vm=vm_instance_from_template_multi_storage_scope_function)
 
     wait_for_console(
-        vm=vm_instance_from_template_scope_function, console_impl=console.RHEL
+        vm=vm_instance_from_template_multi_storage_scope_function,
+        console_impl=console.RHEL,
     )
 
     # Verify successful SSH connection after migration
     assert check_ssh_connection(
         ip=list(schedulable_node_ips.values())[0],
-        port=vm_instance_from_template_scope_function.ssh_node_port,
+        port=vm_instance_from_template_multi_storage_scope_function.ssh_node_port,
         console_impl=console.RHEL,
     ), "Failed to login via SSH after migration"

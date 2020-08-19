@@ -1082,7 +1082,7 @@ def vm_instance_from_template(
     request.param['start_vm'] to False.
 
     The call to this function is triggered by calling either
-    vm_instance_from_template_scope_function or vm_instance_from_template_scope_class.
+    vm_instance_from_template_multi_storage_scope_function or vm_instance_from_template_multi_storage_scope_class.
 
     Prerequisite - a DV must be created prior to VM creation.
     """
@@ -1116,7 +1116,7 @@ def vm_instance_from_template(
 
 
 @pytest.fixture()
-def vm_instance_from_template_scope_function(
+def vm_instance_from_template_multi_storage_scope_function(
     request,
     unprivileged_client,
     namespace,
@@ -1141,7 +1141,7 @@ def vm_instance_from_template_scope_function(
 
 
 @pytest.fixture(scope="class")
-def vm_instance_from_template_scope_class(
+def vm_instance_from_template_multi_storage_scope_class(
     request,
     unprivileged_client,
     namespace,
@@ -1225,12 +1225,12 @@ def winrmcli_pod_scope_class(rhel7_workers, namespace, sa_ready):
 @pytest.fixture()
 def started_windows_vm(
     request,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,
 ):
     wait_for_windows_vm(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         version=request.param["os_version"],
         winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,

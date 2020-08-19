@@ -96,7 +96,7 @@ def test_remove_cdi_dv(
 
 @pytest.mark.destructive
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -121,7 +121,7 @@ def test_remove_cdi_dv(
 def test_remove_cdi_vm(
     skip_test_if_no_hpp_sc,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     cdi,
 ):
     """
@@ -135,12 +135,12 @@ def test_remove_cdi_vm(
 
     assert (
         cdi.status == CDI.Status.DEPLOYED
-        and vm_instance_from_template_scope_function.exists
+        and vm_instance_from_template_multi_storage_scope_function.exists
     )
 
     # Remove VirtualMachine and DataVolume, then CDI can be deleted and created again
-    vm_instance_from_template_scope_function.delete()
-    vm_instance_from_template_scope_function.wait_deleted(timeout=300)
+    vm_instance_from_template_multi_storage_scope_function.delete()
+    vm_instance_from_template_multi_storage_scope_function.wait_deleted(timeout=300)
     data_volume_multi_storage_scope_function.delete()
     data_volume_multi_storage_scope_function.wait_deleted(timeout=300)
     cdi.delete()

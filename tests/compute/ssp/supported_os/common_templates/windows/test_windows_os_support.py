@@ -19,7 +19,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "vm_object_from_template_windows_os", [({"cpu_threads": 2})], indirect=True,
+    "vm_object_from_template_multi_windows_os_multi_storage_scope_class",
+    [({"cpu_threads": 2})],
+    indirect=True,
 )
 class TestCommonTemplatesWindows:
     @pytest.mark.run("first")
@@ -30,13 +32,15 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
-        vm_object_from_template_windows_os.create(wait=True)
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class.create(
+            wait=True
+        )
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-3785")
@@ -46,16 +50,18 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         """ Test CNV common templates VM initiation """
 
-        vm_started(vm=vm_object_from_template_windows_os)
+        vm_started(
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        )
         utilities.virt.wait_for_windows_vm(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
             ],
@@ -71,14 +77,14 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         """ Test Guest OS agent info. """
         common_templates_utils.validate_vmi_ga_info_vs_windows_os_info(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
@@ -87,18 +93,18 @@ class TestCommonTemplatesWindows:
     @pytest.mark.polarion("CNV-4196")
     def test_guest_agent_subresource_os_info(
         self,
-        vm_object_from_template_windows_os,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
         windows_os_matrix__class__,
     ):
         common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
-            vm=vm_object_from_template_windows_os
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
         # win-12 doesn't support powershell commands
         if "win-12" not in [*windows_os_matrix__class__][0]:
             common_templates_utils.validate_cnv_os_info_vs_windows_os_info(
-                vm=vm_object_from_template_windows_os,
+                vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
                 winrmcli_pod=winrmcli_pod_scope_class,
                 helper_vm=bridge_attached_helper_vm,
             )
@@ -107,18 +113,18 @@ class TestCommonTemplatesWindows:
     @pytest.mark.polarion("CNV-4197")
     def test_guest_agent_subresource_fs_info(
         self,
-        vm_object_from_template_windows_os,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
         windows_os_matrix__class__,
     ):
         common_templates_utils.validate_cnv_fs_info_vs_libvirt_fs_info(
-            vm=vm_object_from_template_windows_os
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
         # win-12 doesn't support fsutil commands
         if "win-12" not in [*windows_os_matrix__class__][0]:
             common_templates_utils.validate_cnv_fs_info_vs_windows_fs_info(
-                vm=vm_object_from_template_windows_os,
+                vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
                 winrmcli_pod=winrmcli_pod_scope_class,
                 helper_vm=bridge_attached_helper_vm,
             )
@@ -134,17 +140,15 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
-
-        domain_label = vm_object_from_template_windows_os.body["spec"]["template"][
-            "metadata"
-        ]["labels"]["kubevirt.io/domain"]
-        assert (
-            domain_label == vm_object_from_template_windows_os.name
-        ), f"Wrong domain label: {domain_label}"
+        vm = vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        domain_label = vm.body["spec"]["template"]["metadata"]["labels"][
+            "kubevirt.io/domain"
+        ]
+        assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
     @pytest.mark.run(after="test_create_vm")
     @pytest.mark.polarion("CNV-2776")
@@ -154,18 +158,18 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
 
         LOGGER.info("Verify VM HyperV values.")
         common_templates_utils.check_vm_xml_hyperv(
-            vm=vm_object_from_template_windows_os
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
         common_templates_utils.check_windows_vm_hvinfo(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
@@ -179,14 +183,14 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
 
         common_templates_utils.add_activate_windows_license(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrm_pod=winrmcli_pod_scope_class,
             license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "license"
@@ -196,7 +200,7 @@ class TestCommonTemplatesWindows:
 
         LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
         common_templates_utils.check_windows_activated_license(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="stop_start",
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
@@ -214,14 +218,14 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
 
         common_templates_utils.add_activate_windows_license(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrm_pod=winrmcli_pod_scope_class,
             license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "license"
@@ -231,7 +235,7 @@ class TestCommonTemplatesWindows:
 
         LOGGER.info("Verify VM activation mode is not changed after reboot.")
         common_templates_utils.check_windows_activated_license(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             reset_action="reboot",
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
@@ -248,10 +252,12 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        common_templates_utils.check_machine_type(vm=vm_object_from_template_windows_os)
+        common_templates_utils.check_machine_type(
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        )
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3087")
@@ -261,26 +267,30 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         winrmcli_pod_scope_class,
         bridge_attached_helper_vm,
     ):
         """ Test VM pause and unpause """
 
         pre_pause_processid = common_templates_utils.start_and_fetch_processid_on_windows_vm(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             process_name="mspaint.exe",
             helper_vm=bridge_attached_helper_vm,
         )
         LOGGER.info(f"Pre pause processid is: {pre_pause_processid}")
-        vm_object_from_template_windows_os.vmi.pause(wait=True)
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.pause(
+            wait=True
+        )
 
-        vm_object_from_template_windows_os.vmi.unpause(wait=True)
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.unpause(
+            wait=True
+        )
 
         common_templates_utils.wait_for_windows_vm(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
             ],
@@ -288,7 +298,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
         post_pause_processid = common_templates_utils.fetch_processid_from_windows_vm(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             process_name="mspaint.exe",
             helper_vm=bridge_attached_helper_vm,
@@ -305,11 +315,11 @@ class TestCommonTemplatesWindows:
         smbios_from_kubevirt_config_cm,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         ssp_utils.check_vm_xml_smbios(
-            vm=vm_object_from_template_windows_os,
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             cm_values=smbios_from_kubevirt_config_cm,
         )
 
@@ -321,10 +331,12 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_windows_os,
-        vm_object_from_template_windows_os,
+        data_volume_multi_windows_os_multi_storage_scope_class,
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
 
-        if not common_templates_utils.vm_deleted(vm=vm_object_from_template_windows_os):
+        if not common_templates_utils.vm_deleted(
+            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        ):
             pytest.xfail("VM was not created, nothing to delete.")

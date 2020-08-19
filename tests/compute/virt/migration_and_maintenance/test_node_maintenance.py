@@ -107,13 +107,16 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
 
 @pytest.fixture()
 def windows_initial_boot_time(
-    vm_instance_from_template_scope_function, winrmcli_pod, bridge_attached_helper_vm
+    vm_instance_from_template_multi_storage_scope_function,
+    winrmcli_pod,
+    bridge_attached_helper_vm,
 ):
     LOGGER.info(
-        f"Windows VM {vm_instance_from_template_scope_function.vmi.name} is booting up, it may take up to 20 minutess."
+        f"Windows VM {vm_instance_from_template_multi_storage_scope_function.vmi.name} "
+        f"is booting up, it may take up to 20 minutess."
     )
     boot_time = check_windows_boot_time(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod,
         helper_vm=bridge_attached_helper_vm,
     )
@@ -123,7 +126,9 @@ def windows_initial_boot_time(
 
 @pytest.fixture()
 def winrmcli_pod(
-    rhel7_workers, vm_instance_from_template_scope_function, schedulable_nodes
+    rhel7_workers,
+    vm_instance_from_template_multi_storage_scope_function,
+    schedulable_nodes,
 ):
     # For RHEL7 workers, helper_vm is used
     if rhel7_workers:
@@ -133,7 +138,7 @@ def winrmcli_pod(
         node_for_winrmcli = list(
             filter(
                 lambda n: n.name
-                != vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node.name,
+                != vm_instance_from_template_multi_storage_scope_function.vmi.virt_launcher_pod.node.name,
                 schedulable_nodes,
             )
         )
@@ -141,7 +146,7 @@ def winrmcli_pod(
 
         with WinRMcliPod(
             name="winrmcli-pod",
-            namespace=vm_instance_from_template_scope_function.namespace,
+            namespace=vm_instance_from_template_multi_storage_scope_function.namespace,
             node_selector=node_for_winrmcli[0].name,
         ) as winrm_pod:
             winrm_pod.wait_for_status(status=winrm_pod.Status.RUNNING, timeout=60)
@@ -194,7 +199,7 @@ def test_node_drain_using_console_fedora(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class, vm_instance_from_template_scope_class",
+    "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
     [
         pytest.param(
             {
@@ -221,39 +226,41 @@ def test_node_drain_using_console_fedora(
 class TestNodeMaintenanceRHEL:
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
-        self, vm_instance_from_template_scope_class, default_client
+        self, vm_instance_from_template_multi_storage_scope_class, default_client
     ):
-        source_pod = vm_instance_from_template_scope_class.vmi.virt_launcher_pod
+        source_pod = (
+            vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod
+        )
         source_node = source_pod.node
 
         with running_sleep_in_linux(
-            vm_cli=console.RHEL(vm=vm_instance_from_template_scope_class)
+            vm_cli=console.RHEL(vm=vm_instance_from_template_multi_storage_scope_class)
         ):
             with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
                 check_draining_process(
                     default_client=default_client,
                     source_pod=source_pod,
-                    vm=vm_instance_from_template_scope_class,
+                    vm=vm_instance_from_template_multi_storage_scope_class,
                 )
                 nm.wait_for_status(status=nm.Status.SUCCEEDED)
             virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
 
     @pytest.mark.polarion("CNV-2292")
     def test_node_drain_using_console_rhel(
-        self, vm_instance_from_template_scope_class, default_client
+        self, vm_instance_from_template_multi_storage_scope_class, default_client
     ):
         drain_using_console(
             default_client=default_client,
-            source_node=vm_instance_from_template_scope_class.vmi.virt_launcher_pod.node,
-            source_pod=vm_instance_from_template_scope_class.vmi.virt_launcher_pod,
-            vm=vm_instance_from_template_scope_class,
-            vm_cli=console.RHEL(vm=vm_instance_from_template_scope_class),
+            source_node=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
+            source_pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
+            vm=vm_instance_from_template_multi_storage_scope_class,
+            vm_cli=console.RHEL(vm=vm_instance_from_template_multi_storage_scope_class),
         )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -278,7 +285,7 @@ def test_node_drain_template_windows(
     skip_when_one_node,
     skip_migration_access_mode_rwo,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod,
     bridge_attached_helper_vm,
     windows_initial_boot_time,
@@ -286,9 +293,9 @@ def test_node_drain_template_windows(
 ):
     drain_using_console_windows(
         default_client=default_client,
-        source_node=vm_instance_from_template_scope_function.vmi.virt_launcher_pod.node,
-        source_pod=vm_instance_from_template_scope_function.vmi.virt_launcher_pod,
-        vm=vm_instance_from_template_scope_function,
+        source_node=vm_instance_from_template_multi_storage_scope_function.vmi.virt_launcher_pod.node,
+        source_pod=vm_instance_from_template_multi_storage_scope_function.vmi.virt_launcher_pod,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod,
         windows_initial_boot_time=windows_initial_boot_time,
         helper_vm=bridge_attached_helper_vm,

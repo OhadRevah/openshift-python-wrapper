@@ -790,7 +790,9 @@ def test_vm_from_dv_on_different_node(
 
 @pytest.mark.tier3
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function, started_windows_vm",
+    "data_volume_multi_storage_scope_function,"
+    "vm_instance_from_template_multi_storage_scope_function,"
+    "started_windows_vm",
     [
         pytest.param(
             {
@@ -818,13 +820,13 @@ def test_successful_vm_from_imported_dv_windows(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod_scope_function,
     bridge_attached_helper_vm,
     started_windows_vm,
 ):
     validate_windows_guest_agent_info(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod_scope_function,
         helper_vm=bridge_attached_helper_vm,
     )

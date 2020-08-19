@@ -22,7 +22,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -51,21 +51,23 @@ def test_tablet_virtio_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
 ):
 
     LOGGER.info("Test tablet device - virtio bus.")
 
     utils.check_vm_system_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         console_impl=console.RHEL,
         expected_device="Virtio",
     )
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -94,21 +96,23 @@ def test_tablet_usb_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
 ):
 
     LOGGER.info("Test tablet device -  USB bus.")
 
     utils.check_vm_system_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         console_impl=console.RHEL,
         expected_device="USB",
     )
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -137,21 +141,23 @@ def test_tablet_default_bus_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_instance_from_template_scope_function,
+    vm_instance_from_template_multi_storage_scope_function,
 ):
 
     LOGGER.info("Test tablet device - default device bus - USB.")
 
     utils.check_vm_system_tablet_device(
-        vm=vm_instance_from_template_scope_function,
+        vm=vm_instance_from_template_multi_storage_scope_function,
         console_impl=console.RHEL,
         expected_device="USB",
     )
-    utils.check_vm_xml_tablet_device(vm=vm_instance_from_template_scope_function)
+    utils.check_vm_xml_tablet_device(
+        vm=vm_instance_from_template_multi_storage_scope_function
+    )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_object_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_object_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -218,13 +224,13 @@ def test_tablet_invalid_usb_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_object_from_template_scope_function,
+    vm_object_from_template_multi_storage_scope_function,
 ):
 
     LOGGER.info("Test tablet device - wrong device bus.")
 
     with pytest.raises(UnprocessibleEntityError) as vm_exception:
-        vm_object_from_template_scope_function.create()
+        vm_object_from_template_multi_storage_scope_function.create()
 
         assert (
             "Input device can have only virtio or usb bus"
@@ -233,7 +239,7 @@ def test_tablet_invalid_usb_tablet_device(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_object_from_template_scope_function",
+    "data_volume_multi_storage_scope_function, vm_object_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -262,13 +268,13 @@ def test_tablet_invalid_type_tablet_device(
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    vm_object_from_template_scope_function,
+    vm_object_from_template_multi_storage_scope_function,
 ):
 
     LOGGER.info("Test tablet device - wrong device type.")
 
     with pytest.raises(UnprocessibleEntityError) as vm_exception:
-        vm_object_from_template_scope_function.create()
+        vm_object_from_template_multi_storage_scope_function.create()
 
         assert (
             "Input Device Can Have Only Tablet Type" in vm_exception.value.body.decode()
