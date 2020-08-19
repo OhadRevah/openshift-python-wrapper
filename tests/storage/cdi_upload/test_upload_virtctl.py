@@ -366,16 +366,14 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
         pytest.param(
             {
                 "dv_size": "38Gi",
-                "remote_name": py_config["latest_windows_version"]["image"],
-                "image_file": Images.Windows.WIN19_IMG,
+                "remote_name": py_config["latest_windows_version"]["image_path"],
+                "image_file": py_config["latest_windows_version"]["image_name"],
             },
             {
                 "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
                 "os_version": py_config["latest_windows_version"]["os_version"],
             },

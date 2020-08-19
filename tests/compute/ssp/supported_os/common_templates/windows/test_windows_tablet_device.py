@@ -57,15 +57,13 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=Fal
         pytest.param(
             {
                 "dv_name": "dv-windows-usb-tablet-device-vm",
-                "image": py_config["latest_windows_version"]["image"],
+                "image": py_config["latest_windows_version"]["image_path"],
             },
             {
                 "vm_name": "windows-usb-tablet-device-vm",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "tablet", "bus": "usb"}
@@ -108,15 +106,13 @@ def test_tablet_usb_tablet_device(
         pytest.param(
             {
                 "dv_name": "dv-windows-virtio-tablet-device-vm",
-                "image": py_config["latest_windows_version"]["image"],
+                "image": py_config["latest_windows_version"]["image_path"],
             },
             {
                 "vm_name": "windows-virtio-tablet-device-vm",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "win_tablet", "type": "tablet", "bus": "virtio"}
@@ -166,15 +162,13 @@ def test_tablet_virtio_tablet_device(
         pytest.param(
             {
                 "dv_name": "dv-windows-server-default-tablet",
-                "image": py_config["latest_windows_version"]["image"],
+                "image": py_config["latest_windows_version"]["image_path"],
             },
             {
                 "vm_name": "windows-server-default-tablet-device",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
@@ -218,7 +212,7 @@ def test_windows_server_default_tablet_device(
         pytest.param(
             {
                 "dv_name": "dv-windows-desktop-default-tablet",
-                "image": WINDOWS_DESKTOP_VERSION["image"],
+                "image": WINDOWS_DESKTOP_VERSION["image_path"],
             },
             {
                 "vm_name": "windows-desktop-default-tablet-device",

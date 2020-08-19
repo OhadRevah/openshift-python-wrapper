@@ -110,11 +110,9 @@ def test_successful_vm_restart_with_cloned_dv(
             },
             {
                 "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
                 "os_version": py_config["latest_windows_version"]["os_version"],
             },

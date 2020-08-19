@@ -265,15 +265,13 @@ class TestNodeMaintenanceRHEL:
         pytest.param(
             {
                 "dv_name": "dv-windows-template-node-maintenance",
-                "image": py_config["latest_windows_version"]["image"],
+                "image": py_config["latest_windows_version"]["image_path"],
             },
             {
                 "vm_name": "windows-template-node-maintenance",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
             },
             marks=pytest.mark.polarion("CNV-2048"),

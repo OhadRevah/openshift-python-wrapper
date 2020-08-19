@@ -82,7 +82,7 @@ def data_volume(
     source = params_dict.get("source", "http")
     if os_matrix:
         os_matrix_key = [*os_matrix][0]
-        image = os_matrix[os_matrix_key]["image"]
+        image = os_matrix[os_matrix_key]["image_path"]
         dv_name = os_matrix_key
     else:
         image = params_dict.get("image", "")

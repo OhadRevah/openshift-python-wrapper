@@ -41,11 +41,7 @@ def diskless_vm(
             },
             {
                 "vm_name": "rhel-diskless-vm",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "diskless_vm": True,
                 "start_vm": False,
             },
@@ -59,11 +55,9 @@ def diskless_vm(
             },
             {
                 "vm_name": "windows-diskless-vm",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "diskless_vm": True,
                 "start_vm": False,
             },

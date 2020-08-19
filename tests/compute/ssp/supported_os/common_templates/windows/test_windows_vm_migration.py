@@ -17,17 +17,15 @@ from tests.compute.ssp.supported_os.common_templates import utils
         pytest.param(
             {
                 "dv_name": "dv-windows-migrate-vm",
-                "image": py_config["latest_windows_version"]["image"],
+                "image": py_config["latest_windows_version"]["image_path"],
             },
             {
                 "vm_name": "windows-migrate-vm",
                 "start_vm": True,
                 "guest_agent": False,
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},

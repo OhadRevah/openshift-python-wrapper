@@ -27,16 +27,12 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
         pytest.param(
             {
                 "dv_name": "dv-rhel-virtio-tablet-device-vm",
-                "image": py_config["latest_rhel_version"]["image"],
+                "image": py_config["latest_rhel_version"]["image_path"],
             },
             {
                 "vm_name": "rhel-virtio-tablet-device-vm",
                 "start_vm": True,
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"bus": "virtio", "name": "tablet", "type": "tablet"}
                 ),
@@ -72,16 +68,12 @@ def test_tablet_virtio_tablet_device(
         pytest.param(
             {
                 "dv_name": "dv-rhel-usb-tablet-device-vm",
-                "image": py_config["latest_rhel_version"]["image"],
+                "image": py_config["latest_rhel_version"]["image_path"],
             },
             {
                 "vm_name": "rhel-usb-tablet-device-vm",
                 "start_vm": True,
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "my_tablet", "type": "tablet", "bus": "usb"}
                 ),
@@ -117,16 +109,12 @@ def test_tablet_usb_tablet_device(
         pytest.param(
             {
                 "dv_name": "dv-rhel-default-tablet-device-vm",
-                "image": py_config["latest_rhel_version"]["image"],
+                "image": py_config["latest_rhel_version"]["image_path"],
             },
             {
                 "vm_name": "rhel-default-tablet-device-vm",
                 "start_vm": True,
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "tablet"}
                 ),
@@ -167,11 +155,7 @@ def test_tablet_default_bus_tablet_device(
             },
             {
                 "vm_name": "rhel-ps2-tablet-device-vm",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "tablet", "bus": "ps2"}
                 ),
@@ -186,11 +170,7 @@ def test_tablet_default_bus_tablet_device(
             },
             {
                 "vm_name": "rhel-zen-tablet-device-vm",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "tablet", "bus": "zen"}
                 ),
@@ -205,11 +185,7 @@ def test_tablet_default_bus_tablet_device(
             },
             {
                 "vm_name": "rhel-tranition-tablet-device-vm",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "tablet", "bus": "virtio-transitional"}
                 ),
@@ -249,11 +225,7 @@ def test_tablet_invalid_usb_tablet_device(
             },
             {
                 "vm_name": "rhel-keyboard-tablet-device-vm",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "keyboard", "bus": "usb"}
                 ),

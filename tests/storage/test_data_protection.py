@@ -106,11 +106,7 @@ def test_remove_cdi_dv(
             {
                 "vm_name": "cnv-3649-vm",
                 "start_vm": True,
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "small",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "guest_agent": False,
             },
             marks=(pytest.mark.polarion("CNV-3649")),

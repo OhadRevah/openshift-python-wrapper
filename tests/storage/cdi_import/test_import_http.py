@@ -802,11 +802,9 @@ def test_vm_from_dv_on_different_node(
             },
             {
                 "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "cpu_threads": 2,
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},

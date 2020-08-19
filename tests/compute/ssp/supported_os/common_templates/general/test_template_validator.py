@@ -24,11 +24,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
             {"dv_name": "dv-rhel-min-memory-validatio", "image": FAILED_VM_IMAGE},
             {
                 "vm_name": "rhel-min-memory-validation",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "memory": "0.5G",
             },
             marks=pytest.mark.polarion("CNV-2960"),

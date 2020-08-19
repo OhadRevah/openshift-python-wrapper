@@ -19,16 +19,12 @@ from utilities.virt import check_ssh_connection, wait_for_console
         pytest.param(
             {
                 "dv_name": "dv-rhel-migrate-vm",
-                "image": py_config["latest_rhel_version"]["image"],
+                "image": py_config["latest_rhel_version"]["image_path"],
             },
             {
                 "vm_name": "rhel-migrate-vm",
                 "start_vm": True,
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
             },
             marks=pytest.mark.polarion("CNV-3038"),
         ),

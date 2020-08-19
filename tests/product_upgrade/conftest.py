@@ -145,7 +145,7 @@ def dvs_for_upgrade(namespace, worker_node1):
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
-            url=f"{get_images_external_http_server()}{py_config['latest_rhel_version']['image']}",
+            url=f"{get_images_external_http_server()}{py_config['latest_rhel_version']['image_path']}",
             size="25Gi",
             hostpath_node=worker_node1.name
             if storage_class == "hostpath-provisioner"
@@ -166,11 +166,7 @@ def vms_for_upgrade(unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_up
     networks = {
         upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
     }
-    template_labels = {
-        "os": py_config["latest_rhel_version"]["os_label"],
-        "workload": "server",
-        "flavor": "tiny",
-    }
+    template_labels = py_config["latest_rhel_version"]["template_labels"]
     vms_list = []
     for dv in dvs_for_upgrade:
         vm = VirtualMachineForTestsFromTemplate(

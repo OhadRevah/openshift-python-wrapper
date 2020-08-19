@@ -5,6 +5,22 @@ from utilities.infra import Images
 
 global config
 
+
+def _generate_latest_os_dict(os_list):
+    """
+    Args:
+        os_list (list): [rhel|windows|fedora]_os_matrix - a list of dicts
+
+    Returns:
+        dict: Latest supported OS else raises an exception.
+    """
+    for os_dict in os_list:
+        for os_values in os_dict.values():
+            if os_values.get("latest"):
+                return os_values
+    assert False, f"No OS is makred as 'latest': {os_list}"
+
+
 no_unprivileged_client = False
 distribution = "downstream"
 hco_namespace = "openshift-cnv"
@@ -25,19 +41,6 @@ rhv_api_url = f"https://{rhv_fqdn}/ovirt-engine/api"
 rhv_username = "admin@internal"
 rhv_password = "qum5net"
 
-latest_rhel_version = {
-    "os_label": "rhel8.2",
-    "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
-}
-latest_windows_version = {
-    "os_label": "win2k19",
-    "os_version": "19",
-    "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
-}
-latest_fedora_version = {
-    "os_label": "fedora32",
-    "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
-}
 windows_username = "Administrator"
 windows_password = "Heslo123"
 
@@ -90,7 +93,8 @@ link_aggregation_mode_no_connectivity_matrix = [
 rhel_os_matrix = [
     {
         "rhel-6-10": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL6_IMG),
+            "image_name": Images.Rhel.RHEL6_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL6_IMG),
             "template_labels": {
                 "os": "rhel6.0",
                 "workload": "server",
@@ -100,7 +104,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-7-6": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_6_IMG),
+            "image_name": Images.Rhel.RHEL7_6_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_6_IMG),
             "template_labels": {
                 "os": "rhel7.6",
                 "workload": "server",
@@ -110,7 +115,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-7-7": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_7_IMG),
+            "image_name": Images.Rhel.RHEL7_7_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_7_IMG),
             "template_labels": {
                 "os": "rhel7.7",
                 "workload": "server",
@@ -120,7 +126,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-7-8": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
+            "image_name": Images.Rhel.RHEL7_8_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
             "template_labels": {
                 "os": "rhel7.8",
                 "workload": "server",
@@ -130,7 +137,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-7-9": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
+            "image_name": Images.Rhel.RHEL7_9_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
             # TODO: Modify to 7.9 once it is added to templates
             "template_labels": {
                 "os": "rhel7.8",
@@ -141,7 +149,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-8-0": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_0_IMG),
+            "image_name": Images.Rhel.RHEL8_0_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_0_IMG),
             "template_labels": {
                 "os": "rhel8.0",
                 "workload": "server",
@@ -151,7 +160,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-8-1": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_1_IMG),
+            "image_name": Images.Rhel.RHEL8_1_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_1_IMG),
             "template_labels": {
                 "os": "rhel8.1",
                 "workload": "server",
@@ -161,7 +171,9 @@ rhel_os_matrix = [
     },
     {
         "rhel-8-2": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
+            "image_name": Images.Rhel.RHEL8_2_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_IMG),
+            "latest": True,
             "template_labels": {
                 "os": "rhel8.2",
                 "workload": "server",
@@ -171,7 +183,8 @@ rhel_os_matrix = [
     },
     {
         "rhel-8-3": {
-            "image": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_3_IMG),
+            "image_name": Images.Rhel.RHEL8_3_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_3_IMG),
             # TODO: Modify to 8.3 once it is added to templates
             "template_labels": {
                 "os": "rhel8.2",
@@ -186,7 +199,8 @@ windows_os_matrix = [
     {
         "win-10": {
             "os_version": "10",
-            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
+            "image_name": Images.Windows.WIM10_IMG,
+            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
             "template_labels": {
                 "os": "win10",
                 "workload": "desktop",
@@ -198,7 +212,8 @@ windows_os_matrix = [
     {
         "win-12": {
             "os_version": "12",
-            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
+            "image_name": Images.Windows.WIN12_IMG,
+            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
             "template_labels": {
                 "os": "win2k12r2",
                 "workload": "server",
@@ -210,7 +225,8 @@ windows_os_matrix = [
     {
         "win-16": {
             "os_version": "16",
-            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
+            "image_name": Images.Windows.WIN16_IMG,
+            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
             "template_labels": {
                 "os": "win2k16",
                 "workload": "server",
@@ -222,7 +238,9 @@ windows_os_matrix = [
     {
         "win-19": {
             "os_version": "19",
-            "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
+            "image_name": Images.Windows.WIN19_IMG,
+            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
+            "latest": True,
             "template_labels": {
                 "os": "win2k19",
                 "workload": "server",
@@ -236,7 +254,8 @@ windows_os_matrix = [
 fedora_os_matrix = [
     {
         "fedora-31": {
-            "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA31_IMG),
+            "image_name": Images.Fedora.FEDORA31_IMG,
+            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA31_IMG),
             "template_labels": {
                 "os": "fedora31",
                 "workload": "server",
@@ -246,7 +265,9 @@ fedora_os_matrix = [
     },
     {
         "fedora-32": {
-            "image": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
+            "image_name": Images.Fedora.FEDORA32_IMG,
+            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
+            "latest": True,
             "template_labels": {
                 "os": "fedora32",
                 "workload": "server",
@@ -255,6 +276,10 @@ fedora_os_matrix = [
         }
     },
 ]
+
+latest_rhel_version = _generate_latest_os_dict(os_list=rhel_os_matrix)
+latest_windows_version = _generate_latest_os_dict(os_list=windows_os_matrix)
+latest_fedora_version = _generate_latest_os_dict(os_list=fedora_os_matrix)
 
 for _dir in dir():
     val = locals()[_dir]

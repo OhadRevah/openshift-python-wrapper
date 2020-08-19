@@ -47,13 +47,13 @@ def _update_and_validate_vm_cpu_spec(
     [
         (
             {
-                "dv_name": f'dv-{py_config["latest_rhel_version"]["os_label"]}',
-                "image": py_config["latest_rhel_version"]["image"],
+                "dv_name": f'dv-{py_config["latest_rhel_version"]["template_labels"]["os"]}',
+                "image": py_config["latest_rhel_version"]["image_path"],
             },
             {
-                "vm_name": py_config["latest_rhel_version"]["os_label"],
+                "vm_name": py_config["latest_rhel_version"]["template_labels"]["os"],
                 "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
+                    "os": py_config["latest_rhel_version"]["template_labels"]["os"],
                     "workload": "desktop",
                     "flavor": "large",
                 },
@@ -159,16 +159,14 @@ class TestLatestRHEL:
     [
         (
             {
-                "dv_name": f'dv-{py_config["latest_windows_version"]["os_label"]}',
-                "image": py_config["latest_windows_version"]["image"],
+                "dv_name": f'dv-{py_config["latest_windows_version"]["template_labels"]["os"]}',
+                "image": py_config["latest_windows_version"]["image_path"],
             },
             {
-                "vm_name": py_config["latest_windows_version"]["os_label"],
-                "template_labels": {
-                    "os": py_config["latest_windows_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "medium",
-                },
+                "vm_name": py_config["latest_windows_version"]["template_labels"]["os"],
+                "template_labels": py_config["latest_windows_version"][
+                    "template_labels"
+                ],
                 "network_model": "virtio",
                 "network_multiqueue": True,
             },

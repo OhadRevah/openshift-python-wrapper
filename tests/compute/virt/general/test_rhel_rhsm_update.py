@@ -103,16 +103,12 @@ def registered_rhsm(rhsm_vm):
         pytest.param(
             {
                 "dv_name": "dv-rhel-rhsm-vm",
-                "image": py_config["latest_rhel_version"]["image"],
+                "image": py_config["latest_rhel_version"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "rhel-rhsm-vm",
-                "template_labels": {
-                    "os": py_config["latest_rhel_version"]["os_label"],
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "attached_secret": {
                     "volume_name": "rhsm-secret-vol",
                     "serial": DISK_SERIAL,
