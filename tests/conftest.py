@@ -689,12 +689,12 @@ def node_physical_nics(default_client, utility_pods, workers_ssh_executors):
             for node in workers_ssh_executors.keys()
         }
     else:
-        return network_interfaces_k8s(utility_pods)
+        return network_interfaces_k8s(utility_pods=utility_pods)
 
 
-def network_interfaces_k8s(network_utility_pods):
+def network_interfaces_k8s(utility_pods):
     interfaces = {}
-    for pod in network_utility_pods:
+    for pod in utility_pods:
         node = pod.instance.spec.nodeName
         output = pod.execute(
             ["bash", "-c", "ls -la /sys/class/net | grep pci | grep -o '[^/]*$'"]

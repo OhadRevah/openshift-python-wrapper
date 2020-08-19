@@ -948,7 +948,7 @@ def execute_winrm_cmd(
             -username {py_config['windows_username']} -password {py_config['windows_password']} \
             \"{cmd}\"",
         ]
-        return winrmcli_pod.execute(winrmcli_cmd, timeout=timeout)
+        return winrmcli_pod.execute(command=winrmcli_cmd, timeout=timeout)
 
 
 def execute_winrm_in_vm(target_vm, helper_vm, cmd):

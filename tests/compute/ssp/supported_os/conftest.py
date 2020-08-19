@@ -225,7 +225,7 @@ def vm_ssh_service_multi_storage_scope_function(
         yield
     else:
         yield from vm_ssh_service(
-            vm_instance_from_template_multi_storage_scope_function
+            vm=vm_instance_from_template_multi_storage_scope_function
         )
 
 
@@ -237,7 +237,7 @@ def vm_ssh_service_multi_storage_scope_class(
     if rhel7_workers:
         yield
     else:
-        yield from vm_ssh_service(vm_object_from_template_multi_storage_scope_class)
+        yield from vm_ssh_service(vm=vm_object_from_template_multi_storage_scope_class)
 
 
 @pytest.fixture(scope="class")
@@ -249,7 +249,7 @@ def vm_ssh_service_multi_rhel_os_scope_class(
         yield
     else:
         yield from vm_ssh_service(
-            vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
 
@@ -262,7 +262,7 @@ def vm_ssh_service_multi_fedora_os_scope_class(
         yield
     else:
         yield from vm_ssh_service(
-            vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
 
