@@ -96,9 +96,7 @@ PODS_TO_COLLECT_INFO = [
     "cdi-importer",
 ]
 TESTS_MARKERS = [
-    "smoke",
     "destructive",
-    "ci",
     "tier3",
 ]
 
