@@ -169,6 +169,7 @@ class TestLatestRHEL:
                 ],
                 "network_model": "virtio",
                 "network_multiqueue": True,
+                "wait_for_interfaces_timeout": 1500,
             },
         )
     ],

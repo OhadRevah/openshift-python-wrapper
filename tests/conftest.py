@@ -1109,7 +1109,9 @@ def vm_instance_from_template(
             vm.start(wait=True)
             vm.vmi.wait_until_running()
             if params.get("guest_agent", True):
-                wait_for_vm_interfaces(vmi=vm.vmi)
+                wait_for_vm_interfaces(
+                    vmi=vm.vmi, timeout=params.get("wait_for_interfaces_timeout", 720)
+                )
         yield vm
 
 
