@@ -238,7 +238,7 @@ def test_node_sriov_resource(
     )
 
 
-@pytest.mark.polarion("CNV-2810")
+@pytest.mark.polarion("CNV-2801")
 def test_nmstate_config_data(cnv_must_gather, default_client):
     utils.check_list_of_resources(
         default_client=default_client,
