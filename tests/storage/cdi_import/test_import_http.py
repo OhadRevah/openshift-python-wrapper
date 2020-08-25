@@ -582,16 +582,13 @@ def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_funct
                 )
 
 
-@pytest.mark.polarion("CNV-2151")
-def test_successful_blank_disk_import(namespace, storage_class_matrix__module__):
-    storage_class = [*storage_class_matrix__module__][0]
+def blank_disk_import(namespace, storage_params, dv_name):
     with utilities.storage.create_dv(
         source="blank",
-        dv_name=f"cnv-2151-{storage_class}",
+        dv_name=dv_name,
         namespace=namespace.name,
-        size="500Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        size="100Mi",
+        **utils.storage_params(storage_class_matrix=storage_params),
     ) as dv:
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
@@ -603,37 +600,27 @@ def test_successful_blank_disk_import(namespace, storage_class_matrix__module__)
             status=DataVolume.Condition.Status.TRUE,
             timeout=60,
         )
-        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
-
-
-def blank_disk_import(namespace, storage_class, volume_mode, dv_name):
-    with utilities.storage.create_dv(
-        source="blank",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        size="100Mi",
-        storage_class=storage_class,
-        volume_mode=volume_mode,
-    ) as dv:
-        dv.wait(timeout=180)
         with utils.create_vm_from_dv(
             dv=dv, image=CIRROS_IMAGE, vm_name=f"vm-{dv_name}"
         ) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
-@pytest.mark.polarion("CNV-2001")
+@pytest.mark.parametrize(
+    "number_of_threads",
+    [
+        pytest.param(1, marks=(pytest.mark.polarion("CNV-2151")),),
+        pytest.param(4, marks=(pytest.mark.polarion("CNV-2001")),),
+    ],
+)
 def test_successful_concurrent_blank_disk_import(
-    namespace, storage_class_matrix__module__
+    namespace, storage_class_matrix__module__, number_of_threads,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
-    volume_mode = storage_class_matrix__module__[storage_class]["volume_mode"]
     dv_processes = []
-    for dv in range(4):
+    for dv in range(number_of_threads):
         dv_process = multiprocessing.Process(
             target=blank_disk_import,
-            args=(namespace, storage_class, volume_mode, f"dv{dv}"),
+            args=(namespace, storage_class_matrix__module__, f"dv{dv}"),
         )
         dv_process.start()
         dv_processes.append(dv_process)
