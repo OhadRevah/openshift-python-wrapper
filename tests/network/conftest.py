@@ -42,6 +42,18 @@ def index_number():
 
 
 @pytest.fixture(scope="session")
+def vlan_id(index_number):
+    # set vlan id based on tlv lab.
+    # current supported range is between 1000-1019.
+    # with this change it should work with both rdu and tlv labs.
+    vlan_upper_range = 1020
+    vlan_id = 999 + next(index_number)
+    if vlan_id > vlan_upper_range:
+        raise ValueError(f"VLAN ID: {vlan_id} is out of range")
+    return vlan_id
+
+
+@pytest.fixture(scope="session")
 def ovs_worker_pods(schedulable_nodes, default_client):
     """
     Get ovs-* pods, of worker (schedulable) nodes only, from openshift-sdn namespace.
