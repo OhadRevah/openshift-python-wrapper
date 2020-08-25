@@ -42,7 +42,7 @@ def index_number():
 
 
 @pytest.fixture(scope="session")
-def vlan_id(index_number):
+def vlan_tag_id(index_number):
     # set vlan id based on tlv lab.
     # current supported range is between 1000-1019.
     # with this change it should work with both rdu and tlv labs.

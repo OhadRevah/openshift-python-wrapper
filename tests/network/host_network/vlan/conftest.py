@@ -317,9 +317,3 @@ def vlan_base_iface(worker_node1, nodes_active_nics):
     # Select the last NIC from the list as a way to ensure that the selected NIC
     # is not already used (e.g. as a bond's slave).
     return nodes_active_nics[worker_node1.name][-1]
-
-
-@pytest.fixture(scope="module")
-def vlan_tag_id(index_number):
-    # 1000 is the range start of available VLAN tag IDs.
-    return 1000 + next(index_number)
