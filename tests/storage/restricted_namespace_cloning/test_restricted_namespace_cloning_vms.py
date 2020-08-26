@@ -3,6 +3,7 @@ Restricted namespace cloning
 """
 
 import logging
+import time
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -119,7 +120,7 @@ def test_create_vm_with_cloned_data_volume_positive(
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
             with VirtualMachineForTests(
-                name="vm-for-test",
+                name=f"vm-for-test-{time.time()}",
                 namespace=dst_ns.name,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
@@ -177,7 +178,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
             ):
                 dv_clone_dict = data_volume_clone_settings.to_dict()
                 with VirtualMachineForTests(
-                    name="vm-for-test",
+                    name=f"vm-for-test-{time.time()}",
                     namespace=dst_ns.name,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
@@ -232,7 +233,7 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
             ):
                 dv_clone_dict = data_volume_clone_settings.to_dict()
                 with VirtualMachineForTests(
-                    name="vm-for-test",
+                    name=f"vm-for-test-{time.time()}",
                     namespace=dst_ns.name,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
@@ -284,7 +285,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
             with VirtualMachineForTests(
-                name="vm-for-test",
+                name=f"vm-for-test-{time.time()}",
                 namespace=dst_ns.name,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
@@ -300,7 +301,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
 @pytest.mark.parametrize(
     (
         "namespace",
-        "data_volume_multi_storage_scope_function",
+        "data_volume_multi_storage_scope_module",
         "permissions_src",
         "permissions_dst",
     ),
@@ -313,13 +314,13 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
             marks=(pytest.mark.polarion("CNV-4034")),
         )
     ],
-    indirect=["namespace", "data_volume_multi_storage_scope_function"],
+    indirect=["namespace", "data_volume_multi_storage_scope_module"],
 )
 def test_disk_image_after_create_vm_with_restricted_clone(
-    skip_block_volumemode_scope_class,
-    storage_class_matrix__class__,
+    skip_block_volumemode_scope_module,
+    storage_class_matrix__module__,
     namespace,
-    data_volume_multi_storage_scope_function,
+    data_volume_multi_storage_scope_module,
     dst_ns,
     unprivileged_client,
     permissions_src,
@@ -352,10 +353,10 @@ def test_disk_image_after_create_vm_with_restricted_clone(
                 namespace=dst_ns.name,
                 source="pvc",
                 size="500Mi",
-                source_pvc=data_volume_multi_storage_scope_function.pvc.name,
+                source_pvc=data_volume_multi_storage_scope_module.pvc.name,
                 source_namespace=namespace.name,
                 client=unprivileged_client,
-                **storage_params(storage_class_matrix=storage_class_matrix__class__),
+                **storage_params(storage_class_matrix=storage_class_matrix__module__),
             ) as cdv:
                 cdv.wait()
                 create_vm_and_verify_image_permission(dv=cdv)
