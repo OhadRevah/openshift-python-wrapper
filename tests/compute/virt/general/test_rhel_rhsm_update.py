@@ -94,6 +94,7 @@ def registered_rhsm(rhsm_vm):
             f"--password=`sudo cat /mnt/{SECRET_NAME}/password` "
             "--auto-attach"
         ],
+        timeout=180,
     )
 
 
