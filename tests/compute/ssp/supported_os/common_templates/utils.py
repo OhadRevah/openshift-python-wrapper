@@ -847,4 +847,10 @@ def restart_qemu_guest_agent_service(vm, console_impl):
         return
 
     cmd = ["sudo systemctl restart qemu-guest-agent"]
-    vm_console_run_commands(console_impl=console_impl, vm=vm, commands=cmd)
+    if "7.7" in vm.vmi.os_version:
+        vm_console_run_commands(
+            console_impl=console_impl, vm=vm, commands=cmd, verify_commands_output=False
+        )
+        console_impl(vm=vm).force_disconnect()
+    else:
+        vm_console_run_commands(console_impl=console_impl, vm=vm, commands=cmd)

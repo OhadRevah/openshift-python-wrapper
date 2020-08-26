@@ -772,9 +772,6 @@ class Prometheus(object):
 def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
     LOGGER.info("Enable SSH in VM.")
 
-    rhel_7_7 = "7.7" in vm.vmi.os_version
-    vm_console = None
-
     enable_ssh_command = [
         r"sudo sed -iE "
         r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
@@ -784,14 +781,6 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
     vm_console_run_commands(
         console_impl=console_impl, vm=vm, commands=enable_ssh_command,
     )
-
-    # Workaround for RHEL 7.7 - console may not be successfully logged out
-    if rhel_7_7:
-        vm_console = console_impl(vm=vm)
-        vm_console.console_eof_sampler(
-            pexpect.spawn, vm_console.cmd, [], vm_console.timeout
-        )
-        vm_console.disconnect()
 
     if systemctl_support:
         ssh_service_restart_cmd = ["sudo systemctl restart sshd"]
@@ -806,8 +795,9 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
         verify_commands_output=False,
     )
 
-    if rhel_7_7:
-        vm_console.disconnect()
+    # RHEL 7-7 has issue with running "sudo systemctl" command and disconnecting right after it
+    if "7.7" in vm.vmi.os_version:
+        console_impl(vm=vm).force_disconnect()
 
     wait_for_ssh_service(
         vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
