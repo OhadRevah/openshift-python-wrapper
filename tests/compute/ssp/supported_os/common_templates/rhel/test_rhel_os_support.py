@@ -172,13 +172,17 @@ class TestCommonTemplatesRhel:
     def test_vmi_guest_agent_info(
         self,
         skip_upstream,
-        skip_guest_agent_on_rhel6,
+        unprivileged_client,
+        namespace,
         rhel_os_matrix__class__,
+        data_volume_multi_rhel_os_multi_storage_scope_class,
+        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         schedulable_node_ips,
         rhel7_workers,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        skip_guest_agent_on_rhel6,
     ):
-        common_templates_utils.validate_os_info_vmi_vs_linux_os(
+        """ Test Guest OS agent info. """
+        common_templates_utils.validate_vmi_ga_info_vs_linux_os_info(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
@@ -195,20 +199,24 @@ class TestCommonTemplatesRhel:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-4195")
-    def test_virtctl_guest_agent_os_info(
+    def test_guest_agent_subresource_os_info(
         self,
-        skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
+        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         schedulable_node_ips,
         rhel7_workers,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        data_volume_multi_rhel_os_multi_storage_scope_class,
+        skip_guest_agent_on_rhel6,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
         common_templates_utils.restart_qemu_guest_agent_service(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             console_impl=console.RHEL,
         )
-        common_templates_utils.validate_os_info_virtctl_vs_linux_os(
+        common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
+            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+        )
+        common_templates_utils.validate_cnv_os_info_vs_linux_os_info(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
@@ -222,34 +230,6 @@ class TestCommonTemplatesRhel:
             ssh_usr=console.RHEL.USERNAME,
             ssh_pass=console.RHEL.PASSWORD,
         )
-
-    @pytest.mark.run(after="test_expose_ssh")
-    @pytest.mark.polarion("CNV-4550")
-    def test_virtctl_guest_agent_user_info(
-        self,
-        skip_guest_agent_on_rhel6,
-        rhel_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-    ):
-        with console.RHEL(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
-        ):
-            common_templates_utils.validate_user_info_virtctl_vs_linux_os(
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                    rhel7_workers=rhel7_workers,
-                    schedulable_node_ips=schedulable_node_ips,
-                    vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                ),
-                ssh_port=common_templates_utils.get_vm_ssh_port(
-                    rhel7_workers=rhel7_workers,
-                    vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                ),
-                ssh_usr=console.RHEL.USERNAME,
-                ssh_pass=console.RHEL.PASSWORD,
-            )
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3671")

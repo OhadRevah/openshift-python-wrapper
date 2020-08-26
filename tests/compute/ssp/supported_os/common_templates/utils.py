@@ -3,11 +3,9 @@
 import json
 import logging
 import re
-import shlex
 import socket
 import tarfile
 import urllib.request
-from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree
 
 import bitmath
@@ -21,7 +19,6 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.utils import vm_started
 from utilities.virt import (
     execute_winrm_cmd,
-    run_virtctl_command,
     vm_console_run_commands,
     wait_for_windows_vm,
 )
@@ -395,6 +392,90 @@ def check_default_and_validation_memory(
         )
 
 
+def validate_cnv_os_info_vs_libvirt_os_info(vm):
+    """ Compare OS data from guest agent subresource vs libvirt data. """
+
+    def _get_cnv_os_info_vs_libvirt_os_info(vm):
+        cnv_os_info = get_cnv_os_info(vm=vm)
+        libvirt_os_info = get_libvirt_os_info(vm=vm)
+        return {"cnv_os_info": cnv_os_info, "libvirt_os_info": libvirt_os_info}
+
+    os_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=_get_cnv_os_info_vs_libvirt_os_info, vm=vm,
+    )
+
+    try:
+        for sample in os_info_sampler:
+            if sample:
+                if sample["cnv_os_info"] == sample["libvirt_os_info"]:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {sample['cnv_os_info']} not in Libvirt data {sample['libvirt_os_info']}"
+        )
+        raise
+
+
+def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
+    """ Compare FS data from guest agent subresource vs libvirt data. """
+
+    def _get_cnv_fs_info_vs_libvirt_fs_info(vm):
+        cnv_fs_info = get_cnv_fs_info(vm=vm)
+        libvirt_fs_info = get_libvirt_fs_info(vm=vm)
+        return {"cnv_fs_info": cnv_fs_info, "libvirt_fs_info": libvirt_fs_info}
+
+    fs_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=_get_cnv_fs_info_vs_libvirt_fs_info, vm=vm,
+    )
+
+    try:
+        for sample in fs_info_sampler:
+            if sample:
+                if sample["cnv_fs_info"] == sample["libvirt_fs_info"]:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {sample['cnv_fs_info']} not in Libvirt data {sample['libvirt_fs_info']}"
+        )
+        raise
+
+
+def validate_cnv_os_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    """ Compare OS data from guest agent subresource vs Linux guest OS data. """
+    cnv_os_info = get_cnv_os_info(vm=vm)
+    guest_os_info = get_linux_os_info(
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
+    )
+
+    assert (
+        cnv_os_info == guest_os_info
+    ), f"Data mismatch! CNV data {cnv_os_info}, OS data {guest_os_info}"
+
+
+def validate_cnv_fs_info_vs_linux_fs_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    """ Compare FS data from guest agent subresource vs Linux guest OS data. """
+    cnv_fs_info = None
+    guest_fs_info = get_linux_fs_info(
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port,
+    )
+
+    cnv_fs_info_sampler = TimeoutSampler(
+        timeout=330, sleep=5, func=get_cnv_fs_info, vm=vm,
+    )
+
+    try:
+        for sample in cnv_fs_info_sampler:
+            if sample:
+                cnv_fs_info = sample
+                if guest_fs_info == sample:
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch! CNV data {cnv_fs_info} not in OS data {guest_fs_info}"
+        )
+        raise
+
+
 def validate_cnv_os_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
     """ Compare OS data from guest agent subresource vs Windows guest OS data. """
     cnv_os_info = get_cnv_os_info(vm=vm)
@@ -442,6 +523,19 @@ def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
         raise
 
 
+def validate_vmi_ga_info_vs_linux_os_info(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    """ Compare OS data from VMI object vs Linux guest OS data. """
+    vmi_info = dict(vm.vmi.guest_os_info)
+    os_info = get_linux_os_info(
+        ssh_usr=ssh_usr, ssh_pass=ssh_pass, ssh_ip=ssh_ip, ssh_port=ssh_port
+    )["os"]
+    del os_info["machine"]  # VMI describe doesn't have machine info
+    os_info["version"] = os_info["version"].split(" ")[0]
+
+    assert vmi_info, "VMI doesn't have guest agent data!"
+    assert vmi_info == os_info, f"Data mismatch! VMI data {vmi_info}, OS data {os_info}"
+
+
 def validate_vmi_ga_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
     """ Compare OS data from VMI object vs Windows guest OS data. """
     vmi_info = dict(vm.vmi.guest_os_info)
@@ -467,7 +561,7 @@ def get_windows_os_info(vm, winrmcli_pod, helper_vm=False):
     timezone = get_windows_timezone(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
 
     return {
-        "guestAgentVersion": re.search(r"[0-9]+\.[0-9]+\.[0-9]+", ga_ver).group(0),
+        "guestAgentVersion": guest_version_extractor(ga_ver),
         "hostname": hostname.strip().split("=")[1],
         "os": os_release,
         "timezone": timezone,
@@ -575,6 +669,65 @@ def get_windows_volume_info(vm, winrm_pod, helper_vm=False):
     )
 
 
+def get_linux_os_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
+    ga_ver = get_linux_guest_agent_version(rrmngmnt_host=host)
+    hostname = host.network.hostname
+    os_release = host.os.release_info
+    kernel = host.os.kernel_info
+    timezone = host.os.timezone
+
+    return {
+        "guestAgentVersion": ga_ver,
+        "hostname": hostname,
+        "os": {
+            "name": os_release["NAME"],
+            "kernelRelease": kernel.release,
+            "version": os_release["VERSION"],
+            "prettyName": os_release["PRETTY_NAME"],
+            "versionId": os_release["VERSION_ID"],
+            "kernelVersion": kernel.version,
+            "machine": kernel.type,
+            "id": os_release["ID"],
+        },
+        "timezone": f"{timezone.name}, {int(timezone.offset) * 36}",
+    }
+
+
+def get_linux_fs_info(ssh_usr, ssh_pass, ssh_ip, ssh_port):
+    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
+    return get_linux_filesystem(rrmngmnt_host=host)
+
+
+def get_linux_guest_agent_version(rrmngmnt_host):
+    cmd = ["yum", "list", "-q", "installed", "qemu-g*"]
+    rc, out, err = rrmngmnt_host.run_command(command=cmd)
+    return guest_version_extractor(version_string=out)
+
+
+def get_linux_filesystem(rrmngmnt_host):
+    cmd = ["df", "-TB1", "|", "grep", "/dev/vd"]
+    rc, out, err = rrmngmnt_host.run_command(command=cmd)
+    disks = out.strip().split()
+    return fsinfo_disk_dict(
+        name=disks[0].split("/dev/")[1],
+        mount=disks[6],
+        fstype=disks[1],
+        used=disks[3],
+        total=disks[2],
+    )
+
+
+def fsinfo_disk_dict(name, mount, fstype, used, total):
+    return {
+        "diskName": name,
+        "mountPoint": mount,
+        "fileSystemType": fstype,
+        "usedBytes": round(int(used) / 1024 ** 3, 1),
+        "totalBytes": round(int(total) / 1024 ** 4, 1),
+    }
+
+
 def windows_disk_space_extractor(fsinfo_list):
     disk_space = [x.split(": ")[1].split()[0].replace(",", "") for x in fsinfo_list]
     used = round((int(disk_space[1]) - int(disk_space[0])) / 1024 ** 3, 1)
@@ -589,6 +742,77 @@ def execute_virsh_qemu_agent_command(vm, command):
         container="compute",
     )
     return json.loads(output)["return"]
+
+
+def guest_version_extractor(version_string):
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", version_string).group(0)
+
+
+def get_libvirt_os_info(vm):
+    agentinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-info")
+    hostname = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-host-name")
+    osinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-osinfo")
+    timezone = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-timezone")
+
+    return {
+        "guestAgentVersion": agentinfo["version"],
+        "hostname": hostname["host-name"],
+        "os": {
+            "name": osinfo["name"],
+            "kernelRelease": osinfo["kernel-release"],
+            "version": osinfo["version"],
+            "prettyName": osinfo["pretty-name"],
+            "versionId": osinfo["version-id"],
+            "kernelVersion": osinfo["kernel-version"],
+            "machine": osinfo["machine"],
+            "id": osinfo["id"],
+        },
+        "timezone": f"{timezone['zone']}, {timezone['offset']}",
+    }
+
+
+def get_libvirt_fs_info(vm):
+    fsinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-fsinfo")
+    for disk in fsinfo:
+        if disk["mountpoint"] in ("/", "C:\\"):
+            return fsinfo_disk_dict(
+                name=disk["name"],
+                mount=disk["mountpoint"],
+                fstype=disk["type"],
+                used=disk["used-bytes"],
+                total=disk["total-bytes"],
+            )
+
+
+def get_guest_info_from_subresource(vm):
+    response = vm.vmi.client.client.request(
+        "GET",
+        f"{vm.vmi._subresource_api_url}/guestosinfo",
+        headers=vm.vmi.client.configuration.api_key,
+    )
+    # dict format:
+    # {"guestAgentVersion", "hostname", "os", "timezone", "fsInfo"}
+    return json.loads(response.data)
+
+
+def get_cnv_os_info(vm):
+    os_info = get_guest_info_from_subresource(vm=vm)
+    # "fsInfo" key removed for easier comparison vs libvirt os info and guest os info
+    del os_info["fsInfo"]
+    return os_info
+
+
+def get_cnv_fs_info(vm):
+    fs_info = get_guest_info_from_subresource(vm=vm)["fsInfo"]
+    for disk in fs_info["disks"]:
+        if disk["mountPoint"] in ("/", "C:\\"):
+            return fsinfo_disk_dict(
+                name=disk["diskName"],
+                mount=disk["mountPoint"],
+                fstype=disk["fileSystemType"],
+                used=disk["usedBytes"],
+                total=disk["totalBytes"],
+            )
 
 
 def check_machine_type(vm):
@@ -624,307 +848,3 @@ def restart_qemu_guest_agent_service(vm, console_impl):
 
     cmd = ["sudo systemctl restart qemu-guest-agent"]
     vm_console_run_commands(console_impl=console_impl, vm=vm, commands=cmd)
-
-
-# Guest agent data comparison functions.
-def validate_os_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    def _get_os_info(vm, rrmngmnt_host):
-        virtctl_info = get_virtctl_os_info(vm=vm)
-        cnv_info = get_cnv_os_info(vm=vm)
-        libvirt_info = get_libvirt_os_info(vm=vm)
-        linux_info = get_linux_os_info(rrmngmnt_host=rrmngmnt_host)
-        return virtctl_info, cnv_info, libvirt_info, linux_info
-
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    os_info_sampler = TimeoutSampler(
-        timeout=330, sleep=30, func=_get_os_info, vm=vm, rrmngmnt_host=host
-    )
-    check_guest_agent_sampler_data(sampler=os_info_sampler)
-
-
-def validate_fs_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    def _get_fs_info(vm, rrmngmnt_host):
-        virtctl_info = get_virtctl_fs_info(vm=vm)
-        cnv_info = get_cnv_fs_info(vm=vm)
-        libvirt_info = get_libvirt_fs_info(vm=vm)
-        linux_info = get_linux_fs_info(rrmngmnt_host=rrmngmnt_host)
-        return virtctl_info, cnv_info, libvirt_info, linux_info
-
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    fs_info_sampler = TimeoutSampler(
-        timeout=330, sleep=30, func=_get_fs_info, vm=vm, rrmngmnt_host=host
-    )
-    check_guest_agent_sampler_data(sampler=fs_info_sampler)
-
-
-def validate_user_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    def _get_user_info(vm, rrmngmnt_host):
-        virtctl_info = get_virtctl_user_info(vm=vm)
-        cnv_info = get_cnv_user_info(vm=vm)
-        libvirt_info = get_libvirt_user_info(vm=vm)
-        linux_info = get_linux_user_info(rrmngmnt_host=rrmngmnt_host)
-        return virtctl_info, cnv_info, libvirt_info, linux_info
-
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    user_info_sampler = TimeoutSampler(
-        timeout=30, sleep=10, func=_get_user_info, vm=vm, rrmngmnt_host=host
-    )
-    check_guest_agent_sampler_data(sampler=user_info_sampler)
-
-
-def validate_os_info_vmi_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
-    assert vmi_info, "VMI doesn't have guest agent data"
-    linux_info = get_linux_os_info(rrmngmnt_host=host)["os"]
-    del linux_info["machine"]  # VMI describe doesn't have machine info
-    linux_info["version"] = linux_info["version"].split(" ")[0]
-
-    assert (
-        vmi_info == linux_info
-    ), f"Data mismatch! VMI data {vmi_info}, OS data {linux_info}"
-
-
-# Guest agent info gather functions.
-def get_virtctl_os_info(vm):
-    """
-    Returns OS data dict in format:
-    {
-        "guestAgentVersion": guestAgentVersion,
-        "hostname": hostname,
-        "os": {
-            "name": name,
-            "kernelRelease": kernelRelease,
-            "version": version,
-            "prettyName": prettyName,
-            "versionId": versionId,
-            "kernelVersion": kernelVersion,
-            "machine": machine,
-            "id": id,
-        },
-        "timezone": timezone",
-    }
-    """
-    cmd = ["guestosinfo", vm.name]
-    _, out = run_virtctl_command(command=cmd, namespace=vm.namespace)
-    data = json.loads(out)
-    # virtctl gusetosinfo also returns filesystem and user info (if any active user is logged in)
-    # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
-    # fsInfo and userList values are checked in other tests
-    del data["fsInfo"]
-    return data
-
-
-def get_cnv_os_info(vm):
-    """
-    Returns OS data dict in format:
-    {
-        "guestAgentVersion": guestAgentVersion,
-        "hostname": hostname,
-        "os": {
-            "name": name,
-            "kernelRelease": kernelRelease,
-            "version": version,
-            "prettyName": prettyName,
-            "versionId": versionId,
-            "kernelVersion": kernelVersion,
-            "machine": machine,
-            "id": id,
-        },
-        "timezone": timezone",
-    }
-    """
-    data = vm.vmi.guest_os_info
-    # subresource gusetosinfo also returns filesystem and user info (if any active user is logged in)
-    # here they are deleted for easy compare vs data from get_linux_os_info()
-    # fsInfo and userList values are checked in other tests
-    del data["fsInfo"]
-    return data
-
-
-def get_libvirt_os_info(vm):
-    agentinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-info")
-    hostname = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-host-name")
-    osinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-osinfo")
-    timezone = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-timezone")
-
-    return {
-        "guestAgentVersion": agentinfo["version"],
-        "hostname": hostname["host-name"],
-        "os": {
-            "name": osinfo["name"],
-            "kernelRelease": osinfo["kernel-release"],
-            "version": osinfo["version"],
-            "prettyName": osinfo["pretty-name"],
-            "versionId": osinfo["version-id"],
-            "kernelVersion": osinfo["kernel-version"],
-            "machine": osinfo["machine"],
-            "id": osinfo["id"],
-        },
-        "timezone": f"{timezone['zone']}, {timezone['offset']}",
-    }
-
-
-def get_linux_os_info(rrmngmnt_host):
-    ga_ver = get_linux_guest_agent_version(rrmngmnt_host=rrmngmnt_host)
-    hostname = rrmngmnt_host.network.hostname
-    os_release = rrmngmnt_host.os.release_info
-    kernel = rrmngmnt_host.os.kernel_info
-    timezone = rrmngmnt_host.os.timezone
-
-    return {
-        "guestAgentVersion": ga_ver,
-        "hostname": hostname,
-        "os": {
-            "name": os_release["NAME"],
-            "kernelRelease": kernel.release,
-            "version": os_release["VERSION"],
-            "prettyName": os_release["PRETTY_NAME"],
-            "versionId": os_release["VERSION_ID"],
-            "kernelVersion": kernel.version,
-            "machine": kernel.type,
-            "id": os_release["ID"],
-        },
-        "timezone": f"{timezone.name}, {int(timezone.offset) * 36}",
-    }
-
-
-def get_virtctl_fs_info(vm):
-    """
-    Returns FS data dict in format:
-    {
-        "name": name,
-        "mount": mount,
-        "fsType": fsType,
-        "usedGB": usedGB,
-        "totalGB": totalGB,
-    }
-    """
-    cmd = ["fslist", vm.name]
-    _, out = run_virtctl_command(command=cmd, namespace=vm.namespace)
-    return guest_agent_disk_info_parser(disk_info=json.loads(out)["items"])
-
-
-def get_cnv_fs_info(vm):
-    """
-    Returns FS data dict in format:
-    {
-        "name": name,
-        "mount": mount,
-        "fsType": fsType,
-        "usedGB": usedGB,
-        "totalGB": totalGB,
-    }
-    """
-    return guest_agent_disk_info_parser(disk_info=vm.vmi.guest_fs_info["items"])
-
-
-def get_libvirt_fs_info(vm):
-    """
-    Returns FS data dict in format:
-    {
-        "name": name,
-        "mount": mount,
-        "fsType": fsType,
-        "usedGB": usedGB,
-        "totalGB": totalGB,
-    }
-    """
-    fsinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-fsinfo")
-    return guest_agent_disk_info_parser(disk_info=fsinfo)
-
-
-def get_linux_fs_info(rrmngmnt_host):
-    cmd = shlex.split("df -TB1 | grep /dev/vd")
-    _, out, _ = rrmngmnt_host.run_command(command=cmd)
-    disks = out.strip().split()
-    return {
-        "name": disks[0].split("/dev/")[1],
-        "mount": disks[6],
-        "fsType": disks[1],
-        "usedGB": convert_disk_size(value=int(disks[3]), si_prefix=False),
-        "totalGB": convert_disk_size(value=int(disks[2]), si_prefix=False),
-    }
-
-
-def get_virtctl_user_info(vm):
-    cmd = ["userlist", vm.name]
-    _, out = run_virtctl_command(command=cmd, namespace=vm.namespace)
-    for user in json.loads(out)["items"]:
-        return {
-            "userName": user["userName"],
-            "loginTime": int(user["loginTime"]),
-        }
-
-
-def get_cnv_user_info(vm):
-    for user in vm.vmi.guest_user_info["items"]:
-        return {
-            "userName": user["userName"],
-            "loginTime": int(user["loginTime"]),
-        }
-
-
-def get_libvirt_user_info(vm):
-    userinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-users")
-    for user in userinfo:
-        return {
-            "userName": user["user"],
-            "loginTime": int(user["login-time"]),
-        }
-
-
-def get_linux_user_info(rrmngmnt_host):
-    cmd = shlex.split("lastlog | grep tty; who | awk \"'{print$3}'\"")
-    _, out, _ = rrmngmnt_host.run_command(command=cmd)
-    users = out.strip().split()
-    date = datetime.strptime(f"{users[8]} {users[5]}", "%Y-%m-%d %H:%M:%S")
-    timestamp = date.replace(
-        tzinfo=timezone(timedelta(seconds=int(rrmngmnt_host.os.timezone.offset) * 36))
-    ).timestamp()
-    return {
-        "userName": users[0],
-        "loginTime": int(timestamp),
-    }
-
-
-# Guest OS data gather functions.
-def get_linux_guest_agent_version(rrmngmnt_host):
-    cmd = shlex.split("yum list -q installed qemu-g*")
-    _, out, _ = rrmngmnt_host.run_command(command=cmd)
-    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", out).group(0)
-
-
-# Guest agent test related functions.
-def guest_agent_disk_info_parser(disk_info):
-    for disk in disk_info:
-        if disk.get("mountpoint", disk.get("mountPoint")) in ("/", "C:\\"):
-            return {
-                "name": disk.get("name", disk.get("diskName")),
-                "mount": disk.get("mountpoint", disk.get("mountPoint")),
-                "fsType": disk.get("type", disk.get("fileSystemType")),
-                "usedGB": convert_disk_size(
-                    value=disk.get("used-bytes", disk.get("usedBytes"))
-                ),
-                "totalGB": convert_disk_size(
-                    value=disk.get("total-bytes", disk.get("totalBytes"))
-                ),
-            }
-
-
-def check_guest_agent_sampler_data(sampler):
-    try:
-        for virtctl_info, cnv_info, libvirt_info, linux_info in sampler:
-            if virtctl_info:
-                if virtctl_info == linux_info:
-                    return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {linux_info}"
-        )
-        raise
-
-
-def convert_disk_size(value, si_prefix=True):
-    value = bitmath.Byte(bytes=value)
-    return round(float(value.to_GB() if si_prefix else value.to_GiB()))
