@@ -65,6 +65,7 @@ fcfn_exclude_functions =
     intersection,
     keys,
     resource_stream,
+    random,
 
 enable-extensions =
     PID,
