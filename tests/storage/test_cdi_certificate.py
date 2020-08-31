@@ -6,11 +6,13 @@ Automatic refresh of CDI certificates test suite
 
 import datetime
 import logging
+import subprocess
 import time
 
 import pytest
 import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
+from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.resource import ResourceEditor
 from resources.secret import Secret
@@ -35,6 +37,24 @@ CDI_SECRETS = [
     "cdi-uploadserver-client-signer",
     "cdi-uploadserver-signer",
 ]
+
+
+def x509_cert_is_valid(cert, seconds):
+    """
+    Checks if the certificate expires within the next {seconds} seconds.
+    """
+    try:
+        subprocess.check_output(
+            f"openssl x509 -checkend {seconds}",
+            input=cert,
+            shell=True,
+            universal_newlines=True,
+        )
+    except subprocess.CalledProcessError as e:
+        if "Certificate will expire" in e.output:
+            return False
+        raise e
+    return True
 
 
 @pytest.fixture(scope="module")
@@ -69,6 +89,34 @@ def valid_cdi_certificates(secrets):
                 assert (
                     start_timestamp <= current_timestamp <= end_timestamp
                 ), f"Certificate of {cdi_secret} expired"
+
+
+@pytest.fixture()
+def valid_aggregated_api_client_cert():
+    """
+    Performing the following steps will determine whether the extension-apiserver-authentication cert
+    has been renewed within the valid time frame
+    """
+    LOGGER.debug("Use 'valid_aggregated_api_client_cert' fixture...")
+    kube_system_ns = "kube-system"
+    aggregated_cm = "extension-apiserver-authentication"
+    cert_end = "-----END CERTIFICATE-----\n"
+    cm_data = ConfigMap(namespace=kube_system_ns, name=aggregated_cm).instance["data"]
+    for cert_attr, cert_data in cm_data.items():
+        if "ca-file" not in cert_attr:
+            continue
+        # Multiple certs can exist in one dict value (client-ca-file, for example)
+        cert_list = [
+            cert + cert_end
+            for cert in cert_data.split(cert_end)
+            if cert not in ("", cert_end)
+        ]
+        for cert in cert_list:
+            # Check if certificate won't expire in next 10 minutes
+            if not x509_cert_is_valid(cert=cert, seconds=10 * 60):
+                raise pytest.fail(
+                    f"Certificate located in: {cert_attr} expires in less than 10 minutes"
+                )
 
 
 @pytest.fixture()
@@ -202,3 +250,31 @@ def test_import_clone_after_certs_renewal(
         cdv.wait(timeout=180)
         with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:
             wait_for_console(vm=vm, console_impl=console.Cirros)
+
+
+@pytest.mark.polarion("CNV-3977")
+def test_upload_after_validate_aggregated_api_cert(
+    valid_aggregated_api_client_cert,
+    namespace,
+    storage_class_matrix__class__,
+    download_image,
+):
+    """
+    Check that upload is successful after verifying validity of aggregated api client certificate
+    """
+    dv_name = f"cnv-3977-{time.time()}"
+    res, out = storage_utils.virtctl_upload_dv(
+        namespace=namespace.name,
+        name=dv_name,
+        size="1Gi",
+        image_path=LOCAL_QCOW2_IMG_PATH,
+        storage_class=[*storage_class_matrix__class__][0],
+        insecure=True,
+    )
+    LOGGER.info(out)
+    assert res
+    assert "Processing completed successfully" in out
+    dv = DataVolume(namespace=namespace.name, name=dv_name)
+    dv.wait(timeout=60)
+    with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
+        storage_utils.check_disk_count_in_vm(vm=vm)
