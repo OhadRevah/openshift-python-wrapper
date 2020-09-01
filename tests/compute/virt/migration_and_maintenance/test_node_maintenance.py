@@ -176,7 +176,7 @@ def check_draining_process(default_client, source_pod, vm):
     for migration_job in VirtualMachineInstanceMigration.get(default_client):
         if migration_job.instance.spec.vmiName == vm.name:
             migration_job.wait_for_status(
-                status=migration_job.Status.SUCCEEDED, timeout=900
+                status=migration_job.Status.SUCCEEDED, timeout=1800
             )
 
     source_pod.wait_deleted()
@@ -236,14 +236,16 @@ class TestNodeMaintenanceRHEL:
         with running_sleep_in_linux(
             vm_cli=console.RHEL(vm=vm_instance_from_template_multi_storage_scope_class)
         ):
-            with NodeMaintenance(name="node-maintenance-job", node=source_node) as nm:
+            with NodeMaintenance(
+                name="node-maintenance-job", node=source_node, timeout=600
+            ) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
                 check_draining_process(
                     default_client=default_client,
                     source_pod=source_pod,
                     vm=vm_instance_from_template_multi_storage_scope_class,
                 )
-                nm.wait_for_status(status=nm.Status.SUCCEEDED)
+                nm.wait_for_status(status=nm.Status.SUCCEEDED, timeout=360)
             virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
 
     @pytest.mark.polarion("CNV-2292")
