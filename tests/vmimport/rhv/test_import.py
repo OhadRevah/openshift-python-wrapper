@@ -16,6 +16,8 @@ from resources.virtual_machine_import import ResourceMappingItem, VirtualMachine
 from tests.vmimport.rhv import utils
 from utilities.virt import create_vm_import
 
+from .utils import Source
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +48,6 @@ def rhv_cert_file(tmpdir_factory):
         ],
         stderr=STDOUT,
     )
-
     cert_file = tmpdir_factory.mktemp("RHV").join("rhe_cert.crt")
     cert_file.write(cert)
     return cert_file.strpath
@@ -83,7 +84,7 @@ def secret(namespace, rhv_provider):
         yield secret
 
 
-def check_vm_status(rhv_provider, source_vm_name, source_vm_cluster, state):
+def check_source_vm_status(rhv_provider, source_vm_name, source_vm_cluster, state):
     samples = TimeoutSampler(
         timeout=600,
         sleep=1,
@@ -96,34 +97,98 @@ def check_vm_status(rhv_provider, source_vm_name, source_vm_cluster, state):
             break
 
 
-def check_vm_config(vm, rhv_provider, source_vm_name, source_vm_cluster):
-    source_vm = rhv_provider.vm(name=source_vm_name, cluster=source_vm_cluster)
-    source_vm_nic = rhv_provider.vm_nics(vm=source_vm)[0]
-    spec = vm.spec.template.spec
-    domain = spec.domain
-    interfaces = domain.devices.interfaces
-
-    cpu = domain.cpu
-    assert cpu.cores == 1
-    assert cpu.sockets == 1
-    assert cpu.threads == 1
-
-    assert domain.firmware.bootloader.bios
-    assert domain.machine.type == "q35"
-
-    assert len(interfaces) == 1
-    assert interfaces[0].macAddress == source_vm_nic.mac.address
-
-    assert len(spec.volumes) == 1
-
-
 def import_name(vm_name):
     return f"{vm_name}-import"
 
 
+def check_cnv_vm_network_config(
+    vm, rhv_provider, source_vm_name, source_vm_cluster, expected_vm_config
+):
+    cnv_vm_network_interfaces = vm.instance.spec.template.spec.domain.devices.interfaces
+    number_of_cnv_vm_network_interfaces = (
+        len(cnv_vm_network_interfaces) if cnv_vm_network_interfaces is not None else 0
+    )
+
+    assert (
+        number_of_cnv_vm_network_interfaces == expected_vm_config["network_interfaces"]
+    ), "Wrong number of network interfaces"
+
+    failed_assert_msgs = []
+    for nic_index, source_vm_nic in enumerate(
+        rhv_provider.vm_nics(
+            vm=rhv_provider.vm(name=source_vm_name, cluster=source_vm_cluster)
+        )
+    ):
+        cnv_vm_mac = cnv_vm_network_interfaces[nic_index].macAddress
+        source_vm_mac = source_vm_nic.mac.address
+        if cnv_vm_mac != source_vm_mac:
+            failed_assert_msgs.append(
+                f"mac address for nic {source_vm_nic.name} check failed, Expected:{source_vm_mac}, Actual: {cnv_vm_mac}"
+            )
+
+    assert not failed_assert_msgs, f"Failed verifications: {failed_assert_msgs}"
+
+
+def check_cnv_vm_cpu_config(vm, expected_vm_config):
+
+    machine = vm.instance.spec.template.spec.domain.machine
+    cpu = vm.instance.spec.template.spec.domain.cpu
+
+    failed_assert_msgs = []
+    for check, value in zip(
+        ["cpu_cores", "cpu_sockets", "cpu_threads", "machine_type"],
+        [cpu.cores, cpu.sockets, cpu.threads, machine.type],
+    ):
+        if value != expected_vm_config[check]:
+            failed_assert_msgs.append(
+                f"vm {check} check failed, Expected: {expected_vm_config[check]}, Actual: {value}"
+            )
+
+    assert not failed_assert_msgs, f"Failed verifications: {failed_assert_msgs}"
+
+
+def check_cnv_vm_data_volumes(vm, expected_vm_config):
+    cnv_vm_number_of_vol = (
+        len(vm.instance.spec.template.spec.volumes)
+        if vm.instance.spec.template.spec.volumes is not None
+        else 0
+    )
+    assert (
+        cnv_vm_number_of_vol == expected_vm_config["volumes"]
+    ), "wrong number of data volumes"
+
+
+def check_cnv_vm_config(
+    vm, rhv_provider, source_vm_name, source_vm_cluster, expected_vm_config,
+):
+    assert vm.exists, f"vm {source_vm_name} does not exist."
+
+    assert (
+        vm.instance.metadata.name == expected_vm_config["name"]
+    ), "vm name check failed"
+
+    check_cnv_vm_cpu_config(vm=vm, expected_vm_config=expected_vm_config)
+
+    check_cnv_vm_network_config(
+        vm=vm,
+        rhv_provider=rhv_provider,
+        source_vm_name=source_vm_name,
+        expected_vm_config=expected_vm_config,
+        source_vm_cluster=source_vm_cluster,
+    )
+
+    check_cnv_vm_data_volumes(vm=vm, expected_vm_config=expected_vm_config)
+
+    assert (
+        vm.instance.spec.template.spec.domain.firmware.bootloader.bios
+    ), "vm bootloader_bios check failed"
+
+
 @pytest.mark.polarion("CNV-4381")
 def test_vm_import(secret, namespace, rhv_provider, source_cluster_name):
-    vm_name = "v2v-cirros-vm-for-tests"
+    vm_config = Source.vms["cirros"]
+    vm_name = vm_config["name"]
+
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
@@ -138,22 +203,20 @@ def test_vm_import(secret, namespace, rhv_provider, source_cluster_name):
         vmimport.wait(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING
         )
-        vm = vmimport.vm
-        assert vm.exists
-        assert vm.instance["metadata"]["name"] == vm_name
-        check_vm_config(
-            vm=vm.instance,
+        check_cnv_vm_config(
+            vm=vmimport.vm,
             rhv_provider=rhv_provider,
             source_vm_name=vm_name,
             source_vm_cluster=source_cluster_name,
+            expected_vm_config=vm_config,
         )
 
 
 @pytest.mark.polarion("CNV-4392")
-def test_vm_import_cancelation(
+def test_cancel_vm_import(
     secret, namespace, rhv_provider, default_client, source_cluster_name
 ):
-    vm_name = "v2v-cirros-vm-no-nics"
+    vm_name = Source.vms["cirros-no-nics"]["name"]
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
@@ -187,7 +250,7 @@ def test_vm_import_cancelation(
 def test_running_vm_import(
     default_client, namespace, rhv_provider, secret, source_cluster_name
 ):
-    vm_name = "v2v-cirros-vm-running"
+    vm_name = Source.vms["cirros-running"]["name"]
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
@@ -202,7 +265,7 @@ def test_running_vm_import(
         vmimport.wait(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING,
         )
-        check_vm_status(
+        check_source_vm_status(
             rhv_provider=rhv_provider,
             source_vm_name=vm_name,
             source_vm_cluster=source_cluster_name,
@@ -212,9 +275,10 @@ def test_running_vm_import(
 
 @pytest.mark.polarion("CNV-4387")
 def test_two_disks_and_nics_vm_import(
-    bridge_network, namespace, secret, source_cluster_name
+    bridge_network, namespace, secret, source_cluster_name, rhv_provider
 ):
-    vm_name = "v2v-cirros-vm-for-test-2disks"
+    vm_config = Source.vms["cirros-2disks2nics"]
+    vm_name = vm_config["name"]
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
@@ -231,13 +295,15 @@ def test_two_disks_and_nics_vm_import(
                 ),
             ]
         ),
+        start_vm=True,
     ) as vmimport:
-        vmimport.wait()
-        vm = vmimport.vm
-        assert vm.exists
-        assert vm.instance.metadata.name == vm_name
-
-        spec = vm.instance.spec.template.spec
-        interfaces = spec.domain.devices.interfaces
-        assert len(interfaces) == 2
-        assert len(spec.volumes) == 2
+        vmimport.wait(
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
+        )
+        check_cnv_vm_config(
+            vm=vmimport.vm,
+            rhv_provider=rhv_provider,
+            source_vm_name=vm_name,
+            source_vm_cluster=source_cluster_name,
+            expected_vm_config=vm_config,
+        )
