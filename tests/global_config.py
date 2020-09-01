@@ -65,6 +65,10 @@ EMEA = {
     "registry_cert": "emea_registry.crt",
 }
 
+nic_models_matrix = [
+    "virtio",
+    "e1000e",
+]
 bridge_device_matrix = ["linux-bridge"]
 storage_class_matrix = [
     {

@@ -16,13 +16,16 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="module")
-def pod_net_vma(worker_node1, namespace, unprivileged_client):
+def pod_net_vma(
+    worker_node1, namespace, unprivileged_client, nic_models_matrix__module__,
+):
     name = "vma"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node1.name,
         client=unprivileged_client,
+        network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
@@ -31,13 +34,16 @@ def pod_net_vma(worker_node1, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def pod_net_vmb(worker_node2, namespace, unprivileged_client):
+def pod_net_vmb(
+    worker_node2, namespace, unprivileged_client, nic_models_matrix__module__,
+):
     name = "vmb"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node2.name,
         client=unprivileged_client,
+        network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
