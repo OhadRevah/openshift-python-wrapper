@@ -199,13 +199,12 @@ class TestCommonTemplatesFedora:
     def test_vmi_guest_agent_info(
         self,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         schedulable_node_ips,
         rhel7_workers,
+        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test Guest OS agent info. """
-        common_templates_utils.validate_vmi_ga_info_vs_linux_os_info(
+        common_templates_utils.validate_os_info_vmi_vs_linux_os(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
@@ -222,23 +221,19 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3573")
-    def test_guest_agent_subresource_os_info(
+    def test_virtctl_guest_agent_os_info(
         self,
         fedora_os_matrix__class__,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         schedulable_node_ips,
         rhel7_workers,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
+        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
         common_templates_utils.restart_qemu_guest_agent_service(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
         )
-        common_templates_utils.validate_cnv_os_info_vs_libvirt_os_info(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
-        )
-        common_templates_utils.validate_cnv_os_info_vs_linux_os_info(
+        common_templates_utils.validate_os_info_virtctl_vs_linux_os(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
@@ -255,18 +250,14 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.run(after="test_expose_ssh")
     @pytest.mark.polarion("CNV-3574")
-    def test_guest_agent_subresource_fs_info(
+    def test_virtctl_guest_agent_fs_info(
         self,
         fedora_os_matrix__class__,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         schedulable_node_ips,
         rhel7_workers,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
+        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        common_templates_utils.validate_cnv_fs_info_vs_libvirt_fs_info(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
-        )
-        common_templates_utils.validate_cnv_fs_info_vs_linux_fs_info(
+        common_templates_utils.validate_fs_info_virtctl_vs_linux_os(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             ssh_ip=common_templates_utils.get_vm_accessible_ip(
                 rhel7_workers=rhel7_workers,
@@ -280,6 +271,33 @@ class TestCommonTemplatesFedora:
             ssh_usr=console.Fedora.USERNAME,
             ssh_pass=console.Fedora.PASSWORD,
         )
+
+    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.polarion("CNV-4549")
+    def test_virtctl_guest_agent_user_info(
+        self,
+        fedora_os_matrix__class__,
+        schedulable_node_ips,
+        rhel7_workers,
+        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+    ):
+        with console.Fedora(
+            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        ):
+            common_templates_utils.validate_user_info_virtctl_vs_linux_os(
+                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+                ssh_ip=common_templates_utils.get_vm_accessible_ip(
+                    rhel7_workers=rhel7_workers,
+                    schedulable_node_ips=schedulable_node_ips,
+                    vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+                ),
+                ssh_port=common_templates_utils.get_vm_ssh_port(
+                    rhel7_workers=rhel7_workers,
+                    vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+                ),
+                ssh_usr=console.Fedora.USERNAME,
+                ssh_pass=console.Fedora.PASSWORD,
+            )
 
     @pytest.mark.run(after="test_start_vm")
     @pytest.mark.polarion("CNV-3668")
