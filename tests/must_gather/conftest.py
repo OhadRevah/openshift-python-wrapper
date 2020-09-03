@@ -174,13 +174,10 @@ def running_hco_containers(default_client, hco_namespace):
 
 @pytest.fixture(scope="module")
 def skip_when_no_sriov(default_client):
-    # TODO: remove once sriov is supported in downstream
-    if py_config["distribution"] == "downstream":
-        pytest.skip(msg="Skipping sriov tests in downstream.")
     for crd in list(CustomResourceDefinition.get(default_client)):
         if crd.name == "sriovnetworknodestates.sriovnetwork.openshift.io":
             return
-    raise MissingResourceException(CustomResourceDefinition)
+    pytest.skip(msg="Cluster without SR-IOV support")
 
 
 @pytest.fixture(scope="module")
