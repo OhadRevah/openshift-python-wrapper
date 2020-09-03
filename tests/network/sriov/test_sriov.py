@@ -9,12 +9,14 @@ from tests.network.utils import (
     assert_ping_successful,
     nmcli_add_con_cmds,
 )
+from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 from utilities.network import get_vmi_ip_v4_by_name, sriov_network_dict
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    vm_console_run_commands,
     wait_for_vm_interfaces,
 )
 
@@ -37,17 +39,17 @@ def iface_search_mac(bugzilla_connection_params):
 @pytest.fixture(scope="class")
 def skip_insufficient_sriov_workers(sriov_workers):
     """
-    This function will make sure atleast 2 worker nodes has SR-IOV capability
-    else tests will be skip
+    This function will make sure at least 2 worker nodes has SRIOV capability
+    else tests will be skip.
     """
     if len(sriov_workers) < 2:
-        pytest.skip(msg="Test requires at least 2 sriov worker nodes")
+        pytest.skip(msg="Test requires at least 2 SRIOV worker nodes")
 
 
 @pytest.fixture(scope="class")
 def sriov_workers_node1(sriov_workers):
     """
-    Get first worker nodes with sriov capabilities
+    Get first worker nodes with SRIOV capabilities
     """
     return sriov_workers[0]
 
@@ -55,7 +57,7 @@ def sriov_workers_node1(sriov_workers):
 @pytest.fixture(scope="class")
 def sriov_workers_node2(sriov_workers):
     """
-    Get second worker nodes with sriov capabilities
+    Get second worker nodes with SRIOV capabilities
     """
     return sriov_workers[1]
 
@@ -63,7 +65,7 @@ def sriov_workers_node2(sriov_workers):
 @pytest.fixture(scope="class")
 def sriov_network(sriov_node_policy, namespace):
     """
-    Create a sriov network linked to sriov policy.
+    Create a SRIOV network linked to SRIOV policy.
     """
     with SriovNetwork(
         name="sriov-test-network",
@@ -75,16 +77,16 @@ def sriov_network(sriov_node_policy, namespace):
 
 
 @pytest.fixture(scope="class")
-def sriov_network_vlan(sriov_node_policy, namespace, vlan_id):
+def sriov_network_vlan(sriov_node_policy, namespace, vlan_tag_id):
     """
-    Create a sriov network linked to sriov policy.
+    Create a SRIOV network linked to SRIOV policy.
     """
     with SriovNetwork(
         name="sriov-test-network-vlan",
         resource_name=sriov_node_policy.resource_name,
         policy_namespace=py_config["sriov_namespace"],
         network_namespace=namespace.name,
-        vlan=vlan_id,
+        vlan=vlan_tag_id,
     ) as sriov_network:
         yield sriov_network
 
@@ -229,6 +231,11 @@ def running_sriov_vm4(sriov_vm4):
     return vmi
 
 
+@pytest.fixture(scope="class")
+def vm4_interfaces(running_sriov_vm4):
+    return running_sriov_vm4.interfaces
+
+
 @pytest.mark.usefixtures(
     "skip_rhel7_workers", "skip_if_no_sriov_workers", "skip_insufficient_sriov_workers"
 )
@@ -276,3 +283,18 @@ class TestPingConnectivity:
                 vmi=running_sriov_vm4, name=sriov_network_vlan.name
             ),
         )
+
+    @pytest.mark.polarion("CNV-4768")
+    def test_sriov_interfaces_post_reboot(
+        self, sriov_vm4, running_sriov_vm4, vm4_interfaces
+    ):
+        vm_console_run_commands(
+            console_impl=console.Fedora,
+            vm=sriov_vm4,
+            commands=["sudo reboot -f -r now"],
+            verify_commands_output=False,
+        )
+
+        wait_for_vm_interfaces(vmi=running_sriov_vm4)
+        # Check only the second interface (SRIOV interface).
+        assert running_sriov_vm4.interfaces[1] == vm4_interfaces[1]
