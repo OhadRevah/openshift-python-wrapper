@@ -99,8 +99,8 @@ def check_resource(resource, resource_name, temp_dir, resource_path, checks):
     )
 
 
-def check_node_resource(temp_dir, cmd, node_gather_pods, results_file):
-    for pod in node_gather_pods:
+def check_node_resource(temp_dir, cmd, utility_pods, results_file):
+    for pod in utility_pods:
         cmd_output = pod.execute(command=cmd)
         file_name = f"{temp_dir}/nodes/{pod.node.name}/{results_file}"
         with open(file_name) as result_file:

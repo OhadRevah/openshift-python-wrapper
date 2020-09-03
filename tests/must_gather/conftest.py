@@ -16,31 +16,17 @@ import yaml
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
-from resources.daemonset import DaemonSet
 from resources.pod import Pod
-from resources.service_account import ServiceAccount
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    generate_yaml_from_template,
 )
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-class NodeGatherDaemonSet(DaemonSet):
-    def to_dict(self):
-        res = super().to_dict()
-        res.update(
-            generate_yaml_from_template(
-                file_=os.path.join(os.path.dirname(__file__), "node-gather-ds.yaml")
-            )
-        )
-        return res
 
 
 class MissingResourceException(Exception):
@@ -82,39 +68,6 @@ def cnv_must_gather(
         yield must_gather_log_dir
     finally:
         shutil.rmtree(path)
-
-
-@pytest.fixture(scope="module")
-def node_gather_namespace(kmp_vm_label, default_client):
-    yield from create_ns(
-        name="node-gather", kmp_vm_label=kmp_vm_label, admin_client=default_client
-    )
-
-
-@pytest.fixture(scope="module")
-def node_gather_serviceaccount(node_gather_namespace):
-    with ServiceAccount(name="node-gather", namespace=node_gather_namespace.name) as sa:
-        yield sa
-
-
-@pytest.fixture(scope="module")
-def node_gather_daemonset(node_gather_namespace, node_gather_serviceaccount):
-    with NodeGatherDaemonSet(
-        name="node-gather-daemonset", namespace=node_gather_namespace.name
-    ) as ds:
-        ds.wait_until_deployed()
-        yield ds
-
-
-@pytest.fixture(scope="module")
-def node_gather_pods(default_client, node_gather_daemonset):
-    yield list(
-        Pod.get(
-            default_client,
-            namespace=node_gather_daemonset.namespace,
-            label_selector="cnv-test=must-gather",
-        )
-    )
 
 
 @pytest.fixture(scope="module")
