@@ -141,7 +141,6 @@ class VirtualMachineForTests(VirtualMachine):
         attached_secret=None,
         cpu_placement=False,
         template_dv=None,
-        termination_grace_period=None,
         smm_enabled=None,
         efi_params=None,
         diskless_vm=False,
@@ -180,7 +179,6 @@ class VirtualMachineForTests(VirtualMachine):
         self.attached_secret = attached_secret
         self.cpu_placement = cpu_placement
         self.template_dv = template_dv
-        self.termination_grace_period = termination_grace_period
         self.smm_enabled = smm_enabled
         self.efi_params = efi_params
         self.diskless_vm = diskless_vm
@@ -446,9 +444,6 @@ class VirtualMachineForTests(VirtualMachine):
                 }
             )
 
-        if self.termination_grace_period:
-            spec["terminationGracePeriodSeconds"] = self.termination_grace_period
-
         if self.diskless_vm:
             spec.get("domain", {}).get("devices", {}).pop("disks", None)
 
@@ -495,7 +490,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cloud_init_data=None,
         node_selector=None,
         attached_secret=None,
-        termination_grace_period=None,
+        termination_grace_period=False,
         diskless_vm=False,
     ):
         super().__init__(
@@ -513,7 +508,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             node_selector=node_selector,
             attached_secret=attached_secret,
             template_dv=template_dv,
-            termination_grace_period=termination_grace_period,
             diskless_vm=diskless_vm,
         )
         self.template_labels = labels
@@ -521,21 +515,33 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.vm_dict = vm_dict
         self.cpu_threads = cpu_threads
         self.node_selector = node_selector
+        self.termination_grace_period = termination_grace_period
 
     def to_dict(self):
         self.body = self.process_template()
         res = super().to_dict()
+
         if self.vm_dict:
             res = merge_dicts(source_dict=self.vm_dict, target_dict=res)
+
+        spec = res["spec"]["template"]["spec"]
+
         # For hpp, DV and VM must reside on the same node
         if (
             self.template_dv.storage_class == "hostpath-provisioner"
             and not self.node_selector
         ):
-            res["spec"]["template"]["spec"]["nodeSelector"] = {
+            spec["nodeSelector"] = {
                 "kubernetes.io/hostname": self.template_dv.hostpath_node
                 or self.template_dv.pvc.selected_node
             }
+
+        # terminationGracePeriodSeconds for Windows is set to 1hr; this may affect VMI deletion
+        # If termination_grace_period == True, do not change the value in the template, else
+        # terminationGracePeriodSeconds will be set to 180
+        if not self.termination_grace_period:
+            spec["terminationGracePeriodSeconds"] = 180
+
         return res
 
     def process_template(self):
