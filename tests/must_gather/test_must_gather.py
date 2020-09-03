@@ -376,7 +376,7 @@ def test_data_collected_from_virt_launcher(
         )
 
     # Make sure that gathered data roughly matches expected format.
-    assert re.search(format_regex, gathered_data, re.MULTILINE), (
+    assert re.search(format_regex, gathered_data, re.MULTILINE | re.IGNORECASE), (
         "Gathered data are not matching expected format.\n"
         f"Expected format:\n{format_regex}\n "
         f"Gathered data:\n{gathered_data}"
