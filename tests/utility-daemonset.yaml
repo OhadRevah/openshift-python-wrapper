@@ -56,6 +56,10 @@ spec:
           name: ovs-run
         - mountPath: /run/dbus/system_bus_socket
           name: dbus-socket
+        - mountPath: /host/dev
+          name: dev
+        - mountPath: /host/etc
+          name: etc
       dnsPolicy: ClusterFirst
       hostNetwork: true
       restartPolicy: Always
@@ -71,5 +75,13 @@ spec:
           path: /run/dbus/system_bus_socket
           type: Socket
         name: dbus-socket
+      - hostPath:
+          path: /dev
+          type: Directory
+        name: dev
+      - hostPath:
+          path: /etc
+          type: Directory
+        name: etc
   updateStrategy:
     type: OnDelete
