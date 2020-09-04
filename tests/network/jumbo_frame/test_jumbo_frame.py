@@ -26,13 +26,14 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="class")
-def bond1(skip_no_bond_support, utility_pods, nodes_active_nics):
+def bond1(index_number, skip_no_bond_support, utility_pods, nodes_active_nics):
     """
     Create BOND if setup support BOND
     """
+    bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name="bond1nncp",
-        bond_name="bond1",
+        name=f"bond{bond_idx}nncp",
+        bond_name=f"bond{bond_idx}",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
         worker_pods=utility_pods,
         mode="active-backup",

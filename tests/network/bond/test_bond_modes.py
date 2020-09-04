@@ -33,6 +33,7 @@ def bond_modes_nad(bridge_device_matrix__class__, namespace):
 
 @pytest.fixture(scope="class")
 def bond_modes_bond(
+    index_number,
     link_aggregation_mode_no_connectivity_matrix__class__,
     utility_pods,
     nodes_active_nics,
@@ -41,9 +42,10 @@ def bond_modes_bond(
     """
     Create BOND if setup support BOND
     """
+    bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name="bondnncp",
-        bond_name="test-bond",
+        name=f"bond{bond_idx}nncp",
+        bond_name=f"bond{bond_idx}",
         slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
