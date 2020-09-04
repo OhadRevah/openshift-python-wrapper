@@ -112,6 +112,10 @@ class TestBondModes:
 
     @pytest.mark.polarion("CNV-4383")
     def test_vm_started(self, bond_modes_vm):
-        bond_modes_vm.start(wait=True)
+        # TODO: Remove when issue if fixed.
+        # When BOND mode is 802.3ad, it is takes more time to the VM to run.
+        # We get an error: failed to configure vmi network for migration target: Link not found
+        # Increase timeout till we investigate this issue.
+        bond_modes_vm.start(wait=True, timeout=600)
         bond_modes_vm.vmi.wait_until_running()
         wait_for_vm_interfaces(vmi=bond_modes_vm.vmi)
