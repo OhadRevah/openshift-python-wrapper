@@ -64,7 +64,7 @@ into /etc/yum.repos and install openshift-clients
 
 ```bash
 pip3 install pipenv
-pipenv install
+pipenv install --skip-lock
 ```
 
 # Getting started

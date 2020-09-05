@@ -121,3 +121,6 @@ docs/source/rst
 
 # IntelliJ project folder
 .idea/
+
+# Pipenv
+Pipfile.lock
