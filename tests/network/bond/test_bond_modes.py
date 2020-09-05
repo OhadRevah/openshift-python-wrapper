@@ -102,7 +102,7 @@ def bond_modes_vm(
 class TestBondModes:
     @pytest.mark.polarion("CNV-4382")
     def test_bond_created(self, workers_ssh_executors, bond_modes_bond):
-        bonding_path = "/sys/class/net/test-bond/bonding"
+        bonding_path = f"/sys/class/net/{bond_modes_bond.bond_name}/bonding"
         _exec = workers_ssh_executors[bond_modes_bond.node_selector]
         mode = _exec.run_command(command=shlex.split(f"cat {bonding_path}/mode"))[1]
         slaves = _exec.run_command(command=shlex.split(f"cat {bonding_path}/slaves"))[1]
