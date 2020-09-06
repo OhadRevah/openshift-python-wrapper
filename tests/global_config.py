@@ -198,6 +198,18 @@ rhel_os_matrix = [
             },
         }
     },
+    {
+        "rhel-8-4": {
+            "image_name": Images.Rhel.RHEL8_4_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_4_IMG),
+            # TODO: Modify to 8.4 once it is added to templates
+            "template_labels": {
+                "os": "rhel8.2",
+                "workload": "server",
+                "flavor": "tiny",
+            },
+        }
+    },
 ]
 
 windows_os_matrix = [

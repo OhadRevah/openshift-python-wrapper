@@ -34,6 +34,7 @@ class Images:
         RHEL8_2_IMG = "rhel-82.qcow2"
         RHEL8_2_EFI_IMG = "rhel-82-efi.qcow2"
         RHEL8_3_IMG = "rhel-83.qcow2"
+        RHEL8_4_IMG = "rhel-84.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/rhel-images"
 
     class Windows:
