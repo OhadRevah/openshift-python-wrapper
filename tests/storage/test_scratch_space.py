@@ -2,6 +2,7 @@
 
 import logging
 import threading
+from multiprocessing.pool import ThreadPool
 
 import pytest
 import utilities.storage
@@ -12,7 +13,7 @@ from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import get_images_external_http_server, get_images_https_server
 
 
@@ -33,9 +34,60 @@ def scratch_space_secret(namespace):
         yield scratch_space_secret
 
 
-@pytest.mark.polarion("CNV-2327")
+@pytest.fixture()
+def dv_name(request):
+    return request.param["dv_name"]
+
+
+@pytest.fixture()
+def scratch_bound_reached(namespace, dv_name):
+    thread_pool = ThreadPool(processes=1)
+    return thread_pool.apply_async(
+        func=scratch_pvc_bound,
+        kwds={
+            "scratch_pvc": DataVolume(
+                name=dv_name, namespace=namespace.name
+            ).scratch_pvc
+        },
+    )
+
+
+def scratch_pvc_bound(scratch_pvc):
+    """
+    Used to sample scratch pvc status in the background,
+    in order to avoid 'missing' it and assuring 'Bound' status was reached on it
+    """
+    sampler = TimeoutSampler(
+        timeout=60,
+        sleep=1,
+        func=lambda: scratch_pvc.exists
+        and scratch_pvc.status == PersistentVolumeClaim.Status.BOUND,
+    )
+    for sample in sampler:
+        if sample:
+            return True
+
+
+@pytest.mark.bugzilla(
+    1878499, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
+@pytest.mark.parametrize(
+    "dv_name",
+    [
+        pytest.param(
+            {"dv_name": "scratch-space-upload-qcow2-https"},
+            marks=(pytest.mark.polarion("CNV-2327")),
+        ),
+    ],
+    indirect=True,
+)
 def test_upload_https_scratch_space_delete_pvc(
-    skip_upstream, namespace, storage_class_matrix__module__, tmpdir
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    dv_name,
+    scratch_bound_reached,
+    tmpdir,
 ):
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
@@ -43,16 +95,14 @@ def test_upload_https_scratch_space_delete_pvc(
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="upload",
-        dv_name="scratch-space-upload-qcow2-https",
+        dv_name=dv_name,
         namespace=namespace.name,
         size="3Gi",
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
-        )
-        dv.scratch_pvc.delete()
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
             name="scratch-space-upload-qcow2-https",
@@ -70,29 +120,47 @@ def test_upload_https_scratch_space_delete_pvc(
             )
             for sample in sampler:
                 if sample == 200:
+                    dv.scratch_pvc.delete()
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
 
 
-@pytest.mark.polarion("CNV-2328")
+@pytest.mark.bugzilla(
+    1878499, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
+@pytest.mark.parametrize(
+    "dv_name",
+    [
+        pytest.param(
+            {"dv_name": "scratch-space-import-qcow2-https"},
+            marks=(pytest.mark.polarion("CNV-2328")),
+        ),
+    ],
+    indirect=True,
+)
 def test_import_https_scratch_space_delete_pvc(
-    skip_upstream, namespace, storage_class_matrix__module__, https_config_map
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    https_config_map,
+    dv_name,
+    scratch_bound_reached,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     with storage_utils.create_dv(
         source="http",
-        dv_name="scratch-space-import-qcow2-https",
+        dv_name=dv_name,
         namespace=namespace.name,
         url=f"{get_images_https_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         cert_configmap=https_config_map.name,
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
-        )
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
+        dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
         dv.scratch_pvc.delete()
         dv.wait()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
@@ -188,6 +256,7 @@ def test_scratch_space_import_https_data_volume(
     storage_class_matrix__module__,
     https_config_map,
     dv_name,
+    scratch_bound_reached,
     file_name,
 ):
     storage_class = [*storage_class_matrix__module__][0]
@@ -200,9 +269,8 @@ def test_scratch_space_import_https_data_volume(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
-        )
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
         dv.wait()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
@@ -226,7 +294,12 @@ def test_scratch_space_import_https_data_volume(
     ],
 )
 def test_scratch_space_import_http_data_volume(
-    skip_upstream, namespace, storage_class_matrix__module__, dv_name, file_name
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    dv_name,
+    file_name,
+    scratch_bound_reached,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
@@ -237,9 +310,8 @@ def test_scratch_space_import_http_data_volume(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
-        )
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
         dv.wait()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
@@ -269,6 +341,7 @@ def test_scratch_space_import_http_basic_auth_data_volume(
     scratch_space_secret,
     dv_name,
     file_name,
+    scratch_bound_reached,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
@@ -280,9 +353,8 @@ def test_scratch_space_import_http_basic_auth_data_volume(
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         secret=scratch_space_secret,
     ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
-        )
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
         dv.wait()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
@@ -418,7 +490,13 @@ def test_no_scratch_space_import_http(
     ],
 )
 def test_scratch_space_upload_data_volume(
-    skip_upstream, namespace, storage_class_matrix__module__, tmpdir, file_name, dv_name
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    tmpdir,
+    file_name,
+    dv_name,
+    scratch_bound_reached,
 ):
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{Images.Cirros.DIR}/{file_name}"
@@ -432,6 +510,8 @@ def test_scratch_space_upload_data_volume(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
         with UploadTokenRequest(
             name="cnv-2315", namespace=namespace.name, pvc_name=dv.pvc.name
@@ -447,36 +527,43 @@ def test_scratch_space_upload_data_volume(
             )
             for sample in sampler:
                 if sample == 200:
-                    dv.scratch_pvc.wait_for_status(
-                        status=PersistentVolumeClaim.Status.BOUND, timeout=300
-                    )
                     dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
 
 
-@pytest.mark.polarion("CNV-2319")
+@pytest.mark.parametrize(
+    "dv_name",
+    [
+        pytest.param(
+            {"dv_name": "scratch-space-import-registry"},
+            marks=(pytest.mark.polarion("CNV-2319")),
+        ),
+    ],
+    indirect=True,
+)
 def test_scratch_space_import_registry_data_volume(
     skip_upstream,
     namespace,
     storage_class_matrix__module__,
     images_private_registry_server,
     registry_config_map,
+    dv_name,
+    scratch_bound_reached,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="registry",
-        dv_name="scratch-space-import-registry",
+        dv_name=dv_name,
         namespace=namespace.name,
         url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
-        )
+        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
+        scratch_bound_reached.get()
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
             status=DataVolume.Condition.Status.TRUE,
@@ -514,12 +601,13 @@ def create_dv_and_vm_no_scratch_space(
         storage_class=storage_class,
         volume_mode=volume_mode,
     ) as dv:
-        thread = threading.Thread(target=dv.wait())
+        thread = threading.Thread(target=dv.wait)
         thread.daemon = True
         thread.start()
         try:
             assert dv.scratch_pvc.instance()
         except NotFoundError:
             pass
+        thread.join()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
