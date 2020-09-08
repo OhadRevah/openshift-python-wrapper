@@ -9,8 +9,8 @@ scenarios:
     - podAction:
         matches:
           - labels:
-              namespace: "openshift-cnv"
-              selector: "kubevirt.io/virt-api"
+              namespace: "openshift-apiserver"
+              selector: "app=openshift-apiserver"
 
         # The actions will be executed in the order specified
         actions:
