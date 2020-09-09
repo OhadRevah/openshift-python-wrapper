@@ -2,6 +2,7 @@
 
 import difflib
 import os
+import re
 
 import yaml
 from openshift.dynamic.client import ResourceField
@@ -111,6 +112,35 @@ class NodeResourceException(Exception):
         )
 
 
+def remove_veth_ifaces(raw_str):
+    raw_ifaces = re.split(r"(^\d+:|\n\d+:)", raw_str)
+    # re.split can produce unnecessary empty strings so delete them:
+    raw_ifaces = list(filter(None, raw_ifaces))
+    clean_ifaces = [
+        f"{num}{iface}"
+        for num, iface in zip(raw_ifaces[::2], raw_ifaces[1::2])
+        if "veth" not in iface
+    ]
+    return "".join(clean_ifaces)
+
+
+def clean_ip_data(raw_str):
+    """
+    Remove data that can cause diffs we want to ignore:
+    - veth interfaces can come and go any time and their names are random
+    - properties 'dynamic' and 'noprefixroute' sometimes appear in different order
+    - line with 'valid_lft' and 'preferred_lft' info shows different times when not set to 'forever'
+    - inet6 info is inconsistent. try again with it when dual-stack is supported
+    """
+    clean_str = remove_veth_ifaces(raw_str=raw_str)
+    clean_str = clean_str.replace("dynamic", "").replace("noprefixroute", "")
+    return [
+        line
+        for line in clean_str.splitlines(keepends=True)
+        if "valid_lft" not in line and "inet6" not in line
+    ]
+
+
 def compare_node_data(file_content, cmd_output, compare_method):
     if compare_method == "simple_compare":
         diff = list(
@@ -119,10 +149,18 @@ def compare_node_data(file_content, cmd_output, compare_method):
                 cmd_output.splitlines(keepends=True),
             )
         )
-        if any(line.startswith(("- ", "+ ")) for line in diff):
-            raise NodeResourceException(diff)
-        return
-    raise NotImplementedError(f"{compare_method} not implemented")
+    elif compare_method == "ip_compare":
+        diff = list(
+            difflib.ndiff(
+                clean_ip_data(raw_str=file_content),
+                clean_ip_data(raw_str=cmd_output),
+            )
+        )
+    else:
+        raise NotImplementedError(f"{compare_method} not implemented")
+
+    if any(line.startswith(("- ", "+ ")) for line in diff):
+        raise NodeResourceException(diff)
 
 
 def check_node_resource(temp_dir, cmd, utility_pods, results_file, compare_method):
