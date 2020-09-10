@@ -54,14 +54,14 @@ def vlan_tag_id(index_number):
 
 
 @pytest.fixture(scope="session")
-def ovs_worker_pods(schedulable_nodes, default_client):
+def ovs_worker_pods(schedulable_nodes, admin_client):
     """
     Get ovs-* pods, of worker (schedulable) nodes only, from openshift-sdn namespace.
     """
 
     def _ovs_pods(namespace, label):
         # First get all ovs-* pods.
-        return list(Pod.get(default_client, namespace=namespace, label_selector=label))
+        return list(Pod.get(admin_client, namespace=namespace, label_selector=label))
 
     def _worker_pods(pods):
         # Now filter only the pods that run on worker nodes.

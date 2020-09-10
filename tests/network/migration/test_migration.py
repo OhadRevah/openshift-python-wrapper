@@ -277,7 +277,7 @@ def test_ssh_vm_migration(
 
 @pytest.mark.polarion("CNV-2061")
 def test_migration_with_masquerade(
-    default_client,
+    admin_client,
     skip_rhel7_workers,
     skip_when_one_node,
     utility_pods,

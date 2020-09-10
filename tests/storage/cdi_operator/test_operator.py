@@ -6,7 +6,7 @@ from resources.pod import Pod
 
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-2512")
-def test_cr_deletion(default_client, cdi):
+def test_cr_deletion(admin_client, cdi):
     # Ensure 'Deployed' status
     assert cdi.status == CDI.Status.DEPLOYED
 
@@ -22,7 +22,7 @@ def test_cr_deletion(default_client, cdi):
     # Get CDI pods
     cdi_pods = list(
         Pod.get(
-            dyn_client=default_client,
+            dyn_client=admin_client,
             namespace=py_config["hco_namespace"],
             label_selector="cdi.kubevirt.io",
         )

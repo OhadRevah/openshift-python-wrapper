@@ -60,7 +60,7 @@ def test_remove_workloads(
     set_uninstall_strategy_remove_workloads,
     kubevirt_resource,
     remove_kubevirt_vm,
-    default_client,
+    admin_client,
 ):
     """WARNING: DESTRUCTIVE; DELETES ALL RUNNING CNV WORKLOADS"""
 
@@ -76,7 +76,7 @@ def test_remove_workloads(
     for sample in TimeoutSampler(
         timeout=180,
         sleep=5,
-        func=lambda: list(VirtualMachine.get(dyn_client=default_client))
+        func=lambda: list(VirtualMachine.get(dyn_client=admin_client))
         or kubevirt_resource.instance.uid == old_uid,
     ):
         if not sample:

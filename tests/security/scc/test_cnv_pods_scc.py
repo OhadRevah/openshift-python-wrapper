@@ -27,8 +27,8 @@ POD_SCC_WHITELIST = [
 
 
 @pytest.fixture(scope="module")
-def cnv_pods(default_client):
-    yield list(Pod.get(dyn_client=default_client, namespace=py_config["hco_namespace"]))
+def cnv_pods(admin_client):
+    yield list(Pod.get(dyn_client=admin_client, namespace=py_config["hco_namespace"]))
 
 
 @pytest.mark.polarion("CNV-4438")

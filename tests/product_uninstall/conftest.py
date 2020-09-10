@@ -3,6 +3,6 @@ from resources.kubevirt import KubeVirt
 
 
 @pytest.fixture()
-def kubevirt_resource(default_client):
-    for kv in KubeVirt.get(dyn_client=default_client):
+def kubevirt_resource(admin_client):
+    for kv in KubeVirt.get(dyn_client=admin_client):
         return kv

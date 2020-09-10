@@ -277,7 +277,7 @@ def bad_kmp_containers(kmp_deployment):
 
 @pytest.fixture()
 def kmp_crash_loop(
-    default_client, hco_namespace, cnao_down, kmp_deployment, bad_kmp_containers
+    admin_client, hco_namespace, cnao_down, kmp_deployment, bad_kmp_containers
 ):
     with ResourceEditor(
         patches={
@@ -288,18 +288,18 @@ def kmp_crash_loop(
     ):
         kmp_utils.wait_for_pods_deletion(
             pods=kmp_utils.get_pods(
-                dyn_client=default_client,
+                dyn_client=admin_client,
                 namespace=hco_namespace,
                 label=kmp_utils.KMP_PODS_LABEL,
             )
         )
         kmp_utils.wait_for_kmp_pods_creation(
-            dyn_client=default_client,
+            dyn_client=admin_client,
             namespace=hco_namespace,
             replicas=kmp_deployment.instance.spec.replicas,
         )
         kmp_utils.wait_for_kmp_pods_to_be_in_crashloop(
-            dyn_client=default_client, namespace=hco_namespace,
+            dyn_client=admin_client, namespace=hco_namespace,
         )
         yield
 
@@ -318,9 +318,9 @@ def ovnkube_node_daemonset(ovn_ns):
 
 
 @pytest.fixture()
-def deleted_ovnkube_node_pod(default_client, ovn_ns):
+def deleted_ovnkube_node_pod(admin_client, ovn_ns):
     pods = kmp_utils.get_pods(
-        dyn_client=default_client, namespace=ovn_ns, label="app=ovnkube-node"
+        dyn_client=admin_client, namespace=ovn_ns, label="app=ovnkube-node"
     )
     assert pods, "No ovnkube-node pods were found"
     pods[0].delete(wait=True)

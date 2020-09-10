@@ -4,11 +4,11 @@ from resources.custom_resource_definition import CustomResourceDefinition
 
 
 @pytest.fixture(scope="module")
-def all_crd_resources(default_client):
+def all_crd_resources(admin_client):
     """
     Returns List of CustomResourceDefinitions Resources.
     """
-    return list(CustomResourceDefinition.get(default_client, group="kubevirt.io"))
+    return list(CustomResourceDefinition.get(admin_client, group="kubevirt.io"))
 
 
 @pytest.mark.polarion("CNV-4695")

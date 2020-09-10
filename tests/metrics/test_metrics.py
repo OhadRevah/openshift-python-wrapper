@@ -45,8 +45,8 @@ def vm_metric_2(namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def number_of_vmis_exists(default_client):
-    return len(list(VirtualMachineInstance.get(default_client)))
+def number_of_vmis_exists(admin_client):
+    return len(list(VirtualMachineInstance.get(admin_client)))
 
 
 def check_vmi_metric(prometheus):

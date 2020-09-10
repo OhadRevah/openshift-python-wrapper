@@ -214,7 +214,7 @@ def test_vm_import(secret, namespace, rhv_provider, source_cluster_name):
 
 @pytest.mark.polarion("CNV-4392")
 def test_cancel_vm_import(
-    secret, namespace, rhv_provider, default_client, source_cluster_name
+    secret, namespace, rhv_provider, admin_client, source_cluster_name
 ):
     vm_name = Source.vms["cirros-no-nics"]["name"]
     with create_vm_import(
@@ -240,7 +240,7 @@ def test_cancel_vm_import(
     ).wait_deleted()
     for resource in (Secret, ConfigMap):
         for resource_object in resource.get(
-            dyn_client=default_client,
+            dyn_client=admin_client,
             label_selector=utils.make_labels(import_name(vm_name=vm_name)),
         ):
             resource_object.wait_deleted()
@@ -248,7 +248,7 @@ def test_cancel_vm_import(
 
 @pytest.mark.polarion("CNV-4391")
 def test_running_vm_import(
-    default_client, namespace, rhv_provider, secret, source_cluster_name
+    admin_client, namespace, rhv_provider, secret, source_cluster_name
 ):
     vm_name = Source.vms["cirros-running"]["name"]
     with create_vm_import(

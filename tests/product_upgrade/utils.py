@@ -69,14 +69,14 @@ def assert_node_is_marked_by_bridge(bridge_nad, vm):
 
 
 def wait_for_operator_replacement(
-    default_client, hco_namespace, operator_name, old_operator_pod
+    dyn_client, hco_namespace, operator_name, old_operator_pod
 ):
 
     operator_sampler = TimeoutSampler(
         timeout=TIMEOUT_10MIN,
         sleep=1,
         func=get_operator_by_name,
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         operator_name=operator_name,
     )
@@ -90,11 +90,7 @@ def wait_for_operator_replacement(
 
 
 def pod_status_and_image(
-    default_client,
-    hco_namespace,
-    operators_version,
-    old_operators_pods,
-    delete_pod=False,
+    dyn_client, hco_namespace, operators_version, old_operators_pods, delete_pod=False,
 ):
     """
     Wait for a new operator pod to be created.
@@ -109,7 +105,7 @@ def pod_status_and_image(
 
     if old_operators_pod:
         new_operator_pod = wait_for_operator_replacement(
-            default_client=default_client,
+            dyn_client=dyn_client,
             hco_namespace=hco_namespace,
             operator_name=oper_name,
             old_operator_pod=old_operators_pod[0],
@@ -117,9 +113,7 @@ def pod_status_and_image(
     # For new operators which did not exist in a previous version
     else:
         new_operator_pod = get_operator_by_name(
-            default_client=default_client,
-            hco_namespace=hco_namespace,
-            operator_name=oper_name,
+            dyn_client=dyn_client, hco_namespace=hco_namespace, operator_name=oper_name,
         )
 
     LOGGER.info(
@@ -137,7 +131,7 @@ def pod_status_and_image(
                 new_operator_pod.delete(wait=True, force=True)
                 # Operator pod is deleted, fetching a new pod
                 new_operator_pod = get_operator_by_name(
-                    default_client=default_client,
+                    dyn_client=dyn_client,
                     hco_namespace=hco_namespace,
                     operator_name=oper_name,
                 )
@@ -151,7 +145,7 @@ def pod_status_and_image(
 
 
 def check_pods_status_and_images(
-    default_client, hco_namespace, old_operators_pods, operators_versions, delete_pods
+    dyn_client, hco_namespace, old_operators_pods, operators_versions, delete_pods
 ):
     LOGGER.info(
         "Check that all operators PODs have been replaced and have new images version and have status ready."
@@ -164,7 +158,7 @@ def check_pods_status_and_images(
         p = Process(
             target=pod_status_and_image,
             kwargs={
-                "default_client": default_client,
+                "dyn_client": dyn_client,
                 "hco_namespace": hco_namespace,
                 "operators_version": operators_version,
                 "old_operators_pods": old_operators_pods,
@@ -187,25 +181,25 @@ def get_operators_names_and_images(csv):
     return operators_versions
 
 
-def get_new_csv(default_client, hco_namespace, hco_target_version):
+def get_new_csv(dyn_client, hco_namespace, hco_target_version):
     for csv in ClusterServiceVersion.get(
-        dyn_client=default_client, namespace=hco_namespace
+        dyn_client=dyn_client, namespace=hco_namespace
     ):
         if csv.name == hco_target_version:
             return csv
 
 
-def get_clusterversion(default_client):
-    for cvo in ClusterVersion.get(dyn_client=default_client):
+def get_clusterversion(dyn_client):
+    for cvo in ClusterVersion.get(dyn_client=dyn_client):
         return cvo
 
 
-def wait_for_csv(default_client, hco_namespace, hco_target_version):
+def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
         timeout=TIMEOUT_10MIN,
         sleep=1,
         func=get_new_csv,
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
@@ -231,10 +225,10 @@ def upgrade_path(cnv_upgrade_dict):
         return "z-stream", target_channel
 
 
-def update_subscription_channel(default_client, hco_namespace, target_version):
+def update_subscription_channel(dyn_client, hco_namespace, target_version):
     LOGGER.info("Change subscription channel.")
     for subscription in Subscription.get(
-        dyn_client=default_client, namespace=hco_namespace
+        dyn_client=dyn_client, namespace=hco_namespace
     ):
         if subscription.name == "hco-operatorhub":
             ResourceEditor(
@@ -246,8 +240,8 @@ def update_subscription_channel(default_client, hco_namespace, target_version):
             ).update()
 
 
-def get_install_plan(default_client, hco_namespace, hco_target_version):
-    for ip in InstallPlan.get(dyn_client=default_client, namespace=hco_namespace):
+def get_install_plan(dyn_client, hco_namespace, hco_target_version):
+    for ip in InstallPlan.get(dyn_client=dyn_client, namespace=hco_namespace):
         if hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]:
             return ip
 
@@ -263,12 +257,12 @@ def approve_install_plan(install_plan):
     )
 
 
-def wait_for_install_plan(default_client, hco_namespace, hco_target_version):
+def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
     samples = TimeoutSampler(
         timeout=120,
         sleep=1,
         func=get_install_plan,
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
@@ -277,12 +271,12 @@ def wait_for_install_plan(default_client, hco_namespace, hco_target_version):
             return sample
 
 
-def get_cluster_pods(default_client, hco_namespace, pods_type):
+def get_cluster_pods(dyn_client, hco_namespace, pods_type):
     """
     Returns a list of cluster pods:
     pods_type - operator/tier-2 (non-operator) /all
     """
-    pods = list(Pod.get(dyn_client=default_client, namespace=hco_namespace))
+    pods = list(Pod.get(dyn_client=dyn_client, namespace=hco_namespace))
     cluster_pods = []
     for pod in pods:
         # Operator pods
@@ -299,16 +293,14 @@ def get_cluster_pods(default_client, hco_namespace, pods_type):
     return cluster_pods
 
 
-def get_operator_by_name(default_client, hco_namespace, operator_name):
-    pods = list(Pod.get(dyn_client=default_client, namespace=hco_namespace))
+def get_operator_by_name(dyn_client, hco_namespace, operator_name):
+    pods = list(Pod.get(dyn_client=dyn_client, namespace=hco_namespace))
     operator_pod = list(filter(lambda x: operator_name in x.name, pods))[0]
     return operator_pod
 
 
-def get_images_from_manifest(default_client, hco_namespace, target_version):
-    for package in PackageManifest.get(
-        dyn_client=default_client, namespace=hco_namespace
-    ):
+def get_images_from_manifest(dyn_client, hco_namespace, target_version):
+    for package in PackageManifest.get(dyn_client=dyn_client, namespace=hco_namespace):
         if package.name == "kubevirt-hyperconverged":
             return [
                 channel.currentCSVDesc.relatedImages
@@ -317,14 +309,14 @@ def get_images_from_manifest(default_client, hco_namespace, target_version):
             ][0]
 
 
-def check_tier2_pods_images(default_client, hco_namespace, hco_target_version):
+def check_tier2_pods_images(dyn_client, hco_namespace, hco_target_version):
     updated_images_list = get_images_from_manifest(
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         target_version=hco_target_version,
     )
     cluster_pods = get_cluster_pods(
-        default_client=default_client, hco_namespace=hco_namespace, pods_type="tier-2"
+        dyn_client=dyn_client, hco_namespace=hco_namespace, pods_type="tier-2"
     )
 
     unreplaced_pods = [
@@ -338,12 +330,12 @@ def check_tier2_pods_images(default_client, hco_namespace, hco_target_version):
     ), f"The following pods images were not replaced: {unreplaced_pods}"
 
 
-def get_hyperconverged_cr(default_client, namespace):
-    for cr in HyperConverged.get(dyn_client=default_client, namespace=namespace):
+def get_hyperconverged_cr(dyn_client, namespace):
+    for cr in HyperConverged.get(dyn_client=dyn_client, namespace=namespace):
         return cr
 
 
-def wait_for_hco_conditions(default_client, namespace):
+def wait_for_hco_conditions(dyn_client, namespace):
     upgrade_conditions = {
         "Available": Resource.Condition.Status.TRUE,
         "Progressing": Resource.Condition.Status.FALSE,
@@ -358,7 +350,7 @@ def wait_for_hco_conditions(default_client, namespace):
         sleep=5,
         func=get_hyperconverged_cr,
         exceptions=NotFoundError,
-        default_client=default_client,
+        dyn_client=dyn_client,
         namespace=namespace,
     )
 
@@ -418,32 +410,30 @@ def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
         raise
 
 
-def verify_cnv_pods_are_running(default_client, hco_namespace):
+def verify_cnv_pods_are_running(dyn_client, hco_namespace):
     cnv_pods = get_cluster_pods(
-        default_client=default_client, hco_namespace=hco_namespace.name, pods_type="all"
+        dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
     )
     failed_pods = [pod.name for pod in cnv_pods if pod.status != Pod.Status.RUNNING]
     assert not failed_pods, f"Some CNV pods are not running: {failed_pods}"
 
 
-def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilience):
+def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience):
     LOGGER.info(f"CNV upgrade: {cnv_upgrade_path}")
     hco_target_version = (
         f"kubevirt-hyperconverged-operator.v{cnv_upgrade_path['target_version']}"
     )
     LOGGER.info("Get all operators PODs before upgrade")
     old_operators_pods = get_cluster_pods(
-        default_client=default_client,
-        hco_namespace=hco_namespace.name,
-        pods_type="operator",
+        dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="operator",
     )
     all_old_pods = get_cluster_pods(
-        default_client=default_client, hco_namespace=hco_namespace.name, pods_type="all"
+        dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
     )
 
     LOGGER.info("Update subscription channel and source.")
     update_subscription_channel(
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         target_version=cnv_upgrade_path["target_channel"],
     )
@@ -451,7 +441,7 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
     LOGGER.info("Approve the install plan to trigger the upgrade.")
     approve_install_plan(
         install_plan=wait_for_install_plan(
-            default_client=default_client,
+            dyn_client=dyn_client,
             hco_namespace=hco_namespace.name,
             hco_target_version=hco_target_version,
         )
@@ -459,7 +449,7 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
 
     LOGGER.info("Wait for a new CSV")
     new_csv = wait_for_csv(
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         hco_target_version=hco_target_version,
     )
@@ -474,7 +464,7 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
 
     LOGGER.info("Wait for operators replacement.")
     check_pods_status_and_images(
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         old_operators_pods=old_operators_pods,
         operators_versions=operators_versions,
@@ -482,11 +472,11 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
     )
 
     LOGGER.info("Wait for HCO conditions after upgrade")
-    wait_for_hco_conditions(default_client=default_client, namespace=hco_namespace.name)
+    wait_for_hco_conditions(dyn_client=dyn_client, namespace=hco_namespace.name)
 
     LOGGER.info("Wait for HCO operator to be ready")
     hco_operator_pod = get_operator_by_name(
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         operator_name="hco-operator",
     )
@@ -497,13 +487,11 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
     )
 
     LOGGER.info("Wait for number of replicas = number of updated replicas")
-    for deploy in Deployment.get(default_client, namespace=hco_namespace.name):
+    for deploy in Deployment.get(dyn_client, namespace=hco_namespace.name):
         deploy.wait_until_avail_replicas(timeout=TIMEOUT_10MIN)
 
     LOGGER.info("Wait for the new HCO to be available.")
-    for hco in HyperConverged.get(
-        dyn_client=default_client, namespace=hco_namespace.name
-    ):
+    for hco in HyperConverged.get(dyn_client=dyn_client, namespace=hco_namespace.name):
         hco.wait_for_condition(
             condition=Pod.Condition.AVAILABLE, status=Pod.Condition.Status.TRUE
         )
@@ -519,7 +507,7 @@ def upgrade_cnv(default_client, hco_namespace, cnv_upgrade_path, upgrade_resilie
 
     LOGGER.info("Verify tier-2 pods images were updated")
     check_tier2_pods_images(
-        default_client=default_client,
+        dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         hco_target_version=hco_target_version,
     )
@@ -537,7 +525,7 @@ def extract_ocp_version(ocp_image):
     )
 
 
-def wait_until_ocp_upgrade_complete(ocp_image, default_client):
+def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
     LOGGER.info("Wait for upgrade to complete")
 
     upgrade_conditions = {
@@ -553,7 +541,7 @@ def wait_until_ocp_upgrade_complete(ocp_image, default_client):
         sleep=10,
         func=get_clusterversion,
         exceptions=(NotFoundError, ResourceNotFoundError, InternalServerError,),
-        default_client=default_client,
+        dyn_client=dyn_client,
     )
 
     try:
@@ -580,7 +568,7 @@ def wait_until_ocp_upgrade_complete(ocp_image, default_client):
         raise
 
 
-def upgrade_ocp(ocp_image, default_client):
+def upgrade_ocp(ocp_image, dyn_client):
     assert run_command(
         command=[
             "oc",
@@ -593,4 +581,4 @@ def upgrade_ocp(ocp_image, default_client):
         ]
     )[1], "OCP upgrade command failed."
 
-    wait_until_ocp_upgrade_complete(ocp_image=ocp_image, default_client=default_client)
+    wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)

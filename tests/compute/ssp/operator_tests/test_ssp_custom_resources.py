@@ -10,8 +10,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="class")
-def crd_resources(default_client):
-    return CustomResourceDefinition.get(dyn_client=default_client)
+def crd_resources(admin_client):
+    return CustomResourceDefinition.get(dyn_client=admin_client)
 
 
 @pytest.fixture(scope="class")

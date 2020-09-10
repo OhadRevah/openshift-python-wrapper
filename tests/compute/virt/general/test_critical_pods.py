@@ -13,11 +13,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def virt_pods(request, default_client):
+def virt_pods(request, admin_client):
     podprefix = request.param
     pods_list = list(
         Pod.get(
-            default_client,
+            admin_client,
             namespace=py_config["hco_namespace"],
             label_selector=f"kubevirt.io={podprefix}",
         )

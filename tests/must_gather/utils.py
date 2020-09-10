@@ -68,7 +68,7 @@ def compare_resources(resource_instance, temp_dir, resource_path, checks):
 
 
 def check_list_of_resources(
-    default_client,
+    dyn_client,
     resource_type,
     temp_dir,
     resource_path,
@@ -78,7 +78,7 @@ def check_list_of_resources(
     filter_resource=None,
 ):
     for resource_instance in resource_type.get(
-        default_client, namespace=namespace, label_selector=label_selector
+        dyn_client, namespace=namespace, label_selector=label_selector
     ):
         if filter_resource is None or filter_resource in resource_instance.name:
             compare_resources(
@@ -174,7 +174,7 @@ def check_logs(cnv_must_gather, running_hco_containers, label_selector, namespac
 
 
 def compare_webhook_svc_contents(
-    webhook_resources, cnv_must_gather, default_client, checks
+    webhook_resources, cnv_must_gather, dyn_client, checks
 ):
     for webhook_resource in webhook_resources:
         if webhook_resource.kind == "MutatingWebhookConfiguration":
@@ -194,9 +194,7 @@ def compare_webhook_svc_contents(
         webhooks_svc_namespace = webhooks_resource_instance[0]["clientConfig"][
             "service"
         ]["namespace"]
-        svc_resources = list(
-            Service.get(default_client, namespace=webhooks_svc_namespace)
-        )
+        svc_resources = list(Service.get(dyn_client, namespace=webhooks_svc_namespace))
         for svc_resource in svc_resources:
             if webhooks_svc_name == svc_resource.name:
                 compare_resource_values(

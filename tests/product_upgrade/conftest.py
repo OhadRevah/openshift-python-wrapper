@@ -231,16 +231,16 @@ def operator_source(registry_secret):
 
 
 @pytest.fixture()
-def operatorhub_no_default_sources(default_client, cnv_upgrade):
+def operatorhub_no_default_sources(admin_client, cnv_upgrade):
     if cnv_upgrade:
-        for source in OperatorHub.get(dyn_client=default_client):
+        for source in OperatorHub.get(dyn_client=admin_client):
             ResourceEditor(
                 patches={source: {"spec": {"disableAllDefaultSources": True}}}
             ).update()
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade_path(default_client, cnv_upgrade, pytestconfig, cnv_current_version):
+def cnv_upgrade_path(admin_client, cnv_upgrade, pytestconfig, cnv_current_version):
     if cnv_upgrade:
         cnv_target_version = pytestconfig.option.cnv_version
         # Upgrade only if a newer CNV version is requested

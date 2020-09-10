@@ -71,12 +71,12 @@ def cnv_must_gather(
 
 
 @pytest.fixture(scope="module")
-def custom_resource_definitions(default_client):
-    yield list(CustomResourceDefinition.get(default_client))
+def custom_resource_definitions(admin_client):
+    yield list(CustomResourceDefinition.get(admin_client))
 
 
 @pytest.fixture(scope="module")
-def kubevirt_crd_resources(default_client, custom_resource_definitions):
+def kubevirt_crd_resources(admin_client, custom_resource_definitions):
     kubevirt_resources = []
     for resource in custom_resource_definitions:
         if "kubevirt.io" in resource.instance.spec.group:
@@ -115,9 +115,9 @@ def nodenetworkstate_with_bridge(
 
 
 @pytest.fixture(scope="module")
-def running_hco_containers(default_client, hco_namespace):
+def running_hco_containers(admin_client, hco_namespace):
     pods = []
-    for pod in Pod.get(default_client, namespace=py_config["hco_namespace"]):
+    for pod in Pod.get(admin_client, namespace=py_config["hco_namespace"]):
         for container in pod.instance["status"].get("containerStatuses", []):
             if container["ready"]:
                 pods.append((pod, container))
@@ -126,22 +126,20 @@ def running_hco_containers(default_client, hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def skip_when_no_sriov(default_client):
-    for crd in list(CustomResourceDefinition.get(default_client)):
+def skip_when_no_sriov(admin_client):
+    for crd in list(CustomResourceDefinition.get(admin_client)):
         if crd.name == "sriovnetworknodestates.sriovnetwork.openshift.io":
             return
     pytest.skip(msg="Cluster without SR-IOV support")
 
 
 @pytest.fixture(scope="module")
-def node_gather_unprivileged_namespace(
-    unprivileged_client, kmp_vm_label, default_client
-):
+def node_gather_unprivileged_namespace(unprivileged_client, kmp_vm_label, admin_client):
     yield from create_ns(
         client=unprivileged_client,
         name="node-gather-unprivileged",
         kmp_vm_label=kmp_vm_label,
-        admin_client=default_client,
+        admin_client=admin_client,
     )
 
 
@@ -161,18 +159,18 @@ def running_vm(node_gather_unprivileged_namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="function")
-def resource_type(request, default_client):
+def resource_type(request, admin_client):
     resource_type = request.param
-    if not next(resource_type.get(default_client), None):
+    if not next(resource_type.get(admin_client), None):
         raise MissingResourceException(resource_type.__name__)
     return resource_type
 
 
 @pytest.fixture(scope="module")
-def running_sriov_network_operator_containers(default_client):
+def running_sriov_network_operator_containers(admin_client):
     pods_and_containers = []
     for pod in Pod.get(
-        default_client, namespace=mg_utils.SRIOV_NETWORK_OPERATOR_NAMESPACE
+        admin_client, namespace=mg_utils.SRIOV_NETWORK_OPERATOR_NAMESPACE
     ):
         for container in pod.instance["status"].get("containerStatuses", []):
             if container["ready"]:
@@ -182,7 +180,7 @@ def running_sriov_network_operator_containers(default_client):
 
 
 @pytest.fixture(scope="function")
-def config_map_by_name(request, default_client):
+def config_map_by_name(request, admin_client):
     cm_name, cm_namespace = request.param
     return ConfigMap(name=cm_name, namespace=cm_namespace)
 

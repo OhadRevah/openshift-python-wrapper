@@ -76,10 +76,10 @@ pytestmark = pytest.mark.bugzilla(
     indirect=["resource_type"],
 )
 def test_resource_type(
-    cnv_must_gather, default_client, resource_type, resource_path, checks
+    cnv_must_gather, admin_client, resource_type, resource_path, checks
 ):
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=resource_type,
         temp_dir=cnv_must_gather,
         resource_path=resource_path,
@@ -172,9 +172,9 @@ def test_namespace(cnv_must_gather, namespace):
         ),
     ],
 )
-def test_pods(cnv_must_gather, default_client, label_selector, resource_namespace):
+def test_pods(cnv_must_gather, admin_client, label_selector, resource_namespace):
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=Pod,
         temp_dir=cnv_must_gather,
         resource_path="namespaces/{namespace}/pods/{name}/{name}.yaml",
@@ -185,9 +185,9 @@ def test_pods(cnv_must_gather, default_client, label_selector, resource_namespac
 
 
 @pytest.mark.polarion("CNV-2727")
-def test_template_in_openshift_ns_data(cnv_must_gather, default_client):
+def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
     template_resource = list(
-        Template.get(default_client, singular_name="template", namespace="openshift")
+        Template.get(admin_client, singular_name="template", namespace="openshift")
     )
     template_log = os.path.join(
         cnv_must_gather, "namespaces/openshift/templates/openshift.yaml"
@@ -239,9 +239,9 @@ def test_node_sriov_resource(
 
 
 @pytest.mark.polarion("CNV-2801")
-def test_nmstate_config_data(cnv_must_gather, default_client):
+def test_nmstate_config_data(cnv_must_gather, admin_client):
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=NodeNetworkState,
         temp_dir=cnv_must_gather,
         resource_path="cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
@@ -427,9 +427,9 @@ def test_gathered_config_maps(
 
 
 @pytest.mark.polarion("CNV-2723")
-def test_apiservice_resources(cnv_must_gather, default_client):
+def test_apiservice_resources(cnv_must_gather, admin_client):
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=APIService,
         temp_dir=cnv_must_gather,
         resource_path="apiservices/{name}.yaml",
@@ -439,17 +439,17 @@ def test_apiservice_resources(cnv_must_gather, default_client):
 
 
 @pytest.mark.polarion("CNV-2726")
-def test_webhookconfig_resources(cnv_must_gather, default_client):
+def test_webhookconfig_resources(cnv_must_gather, admin_client):
     checks = (("metadata", "name"), ("metadata", "uid"))
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=ValidatingWebhookConfiguration,
         temp_dir=cnv_must_gather,
         resource_path="webhooks/validating/{name}/validatingwebhookconfiguration.yaml",
         checks=checks,
     )
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=MutatingWebhookConfiguration,
         temp_dir=cnv_must_gather,
         resource_path="webhooks/mutating/{name}/mutatingwebhookconfiguration.yaml",
@@ -457,22 +457,22 @@ def test_webhookconfig_resources(cnv_must_gather, default_client):
     )
 
     for webhook_resources in [
-        list(ValidatingWebhookConfiguration.get(default_client)),
-        list(MutatingWebhookConfiguration.get(default_client)),
+        list(ValidatingWebhookConfiguration.get(admin_client)),
+        list(MutatingWebhookConfiguration.get(admin_client)),
     ]:
         utils.compare_webhook_svc_contents(
             webhook_resources=webhook_resources,
             cnv_must_gather=cnv_must_gather,
-            default_client=default_client,
+            dyn_client=admin_client,
             checks=checks,
         )
 
 
 @pytest.mark.polarion("CNV-2724")
-def test_crd_resources(default_client, cnv_must_gather, kubevirt_crd_resources):
+def test_crd_resources(admin_client, cnv_must_gather, kubevirt_crd_resources):
     for kubevirt_crd_resource in kubevirt_crd_resources:
         crd_name = kubevirt_crd_resource.name
-        resource_objs = default_client.resources.get(
+        resource_objs = admin_client.resources.get(
             kind=kubevirt_crd_resource.instance.spec.names.kind
         )
         resource_items = resource_objs.get().to_dict()["items"]
@@ -497,19 +497,19 @@ def test_crd_resources(default_client, cnv_must_gather, kubevirt_crd_resources):
 
 
 @pytest.mark.polarion("CNV-2939")
-def test_imagestreamtag_resources(default_client, cnv_must_gather):
+def test_imagestreamtag_resources(admin_client, cnv_must_gather):
     namespace = "openshift"
     istag_dir = os.path.join(
         cnv_must_gather, f"namespaces/{namespace}/image.openshift.io/imagestreamtags/",
     )
 
     assert len(os.listdir(istag_dir)) == len(
-        list(ImageStreamTag.get(default_client, namespace=namespace))
+        list(ImageStreamTag.get(admin_client, namespace=namespace))
     )
     checks = (("metadata", "name"), ("metadata", "uid"))
 
     utils.check_list_of_resources(
-        default_client=default_client,
+        dyn_client=admin_client,
         resource_type=ImageStreamTag,
         temp_dir=cnv_must_gather,
         resource_path="namespaces/{namespace}/image.openshift.io/imagestreamtags/{name}.yaml",

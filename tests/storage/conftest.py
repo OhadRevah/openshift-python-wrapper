@@ -29,10 +29,10 @@ LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 
 
 @pytest.fixture()
-def cdi_resources(request, default_client):
+def cdi_resources(request, admin_client):
     rcs_object = request.param["resource"]
     LOGGER.info(f"Get all resources with kind: {rcs_object.kind}")
-    resource_list = list(rcs_object.get(dyn_client=default_client))
+    resource_list = list(rcs_object.get(dyn_client=admin_client))
     return [rcs for rcs in resource_list if rcs.name.startswith("cdi-")]
 
 
@@ -92,8 +92,8 @@ def images_private_registry_server():
 
 
 @pytest.fixture()
-def upload_proxy_route(default_client):
-    routes = Route.get(default_client)
+def upload_proxy_route(admin_client):
+    routes = Route.get(admin_client)
     upload_route = None
     for route in routes:
         if route.exposed_service == "cdi-uploadproxy":
@@ -103,11 +103,11 @@ def upload_proxy_route(default_client):
 
 
 @pytest.fixture(scope="session")
-def default_sc(default_client):
+def default_sc(admin_client):
     """
     Get default Storage Class defined
     """
-    for sc in StorageClass.get(default_client):
+    for sc in StorageClass.get(admin_client):
         if (
             sc.instance.metadata.get("annotations", {}).get(
                 "storageclass.kubernetes.io/is-default-class"
@@ -127,11 +127,11 @@ def skip_no_default_sc(default_sc):
 
 
 @pytest.fixture(scope="session")
-def hpp_storage_class(default_client):
+def hpp_storage_class(admin_client):
     """
     Get the HPP storage class if configured
     """
-    for sc in StorageClass.get(default_client):
+    for sc in StorageClass.get(admin_client):
         if sc.instance.metadata.get("name") == StorageClass.Types.HOSTPATH:
             return sc
 

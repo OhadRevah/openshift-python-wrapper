@@ -54,7 +54,7 @@ def test_node_maintenance_job_rhel(
     nodes,
     data_volume_scope_function,
     unscheduled_node_vm,
-    default_client,
+    admin_client,
 ):
     """ Test VM scheduling on a node under maintenance.
     1. Start node maintenance job

@@ -53,17 +53,15 @@ def drain_node_console(node):
         run(f"oc adm uncordon {node.name}", shell=True)
 
 
-def drain_using_console(default_client, source_node, source_pod, vm, vm_cli):
+def drain_using_console(dyn_client, source_node, source_pod, vm, vm_cli):
     with running_sleep_in_linux(vm_cli=vm_cli):
         with drain_node_console(node=source_node):
-            check_draining_process(
-                default_client=default_client, source_pod=source_pod, vm=vm
-            )
+            check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
         virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
 
 
 def drain_using_console_windows(
-    default_client,
+    dyn_client,
     source_node,
     source_pod,
     vm,
@@ -73,9 +71,7 @@ def drain_using_console_windows(
 ):
 
     with drain_node_console(node=source_node):
-        check_draining_process(
-            default_client=default_client, source_pod=source_pod, vm=vm
-        )
+        check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
         boot_time_after_migration = check_windows_boot_time(
             vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
         )
@@ -170,10 +166,10 @@ def check_windows_boot_time(vm, winrmcli_pod, timeout=1200, helper_vm=False):
             return str(pod_output)
 
 
-def check_draining_process(default_client, source_pod, vm):
+def check_draining_process(dyn_client, source_pod, vm):
     source_node = source_pod.node
     virt_utils.wait_for_node_schedulable_status(node=source_node, status=False)
-    for migration_job in VirtualMachineInstanceMigration.get(default_client):
+    for migration_job in VirtualMachineInstanceMigration.get(dyn_client):
         if migration_job.instance.spec.vmiName == vm.name:
             migration_job.wait_for_status(
                 status=migration_job.Status.SUCCEEDED, timeout=1800
@@ -186,11 +182,11 @@ def check_draining_process(default_client, source_pod, vm):
 
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
-    skip_when_one_node, default_client, vm_container_disk_fedora,
+    skip_when_one_node, admin_client, vm_container_disk_fedora,
 ):
 
     drain_using_console(
-        default_client=default_client,
+        dyn_client=admin_client,
         source_node=vm_container_disk_fedora.vmi.virt_launcher_pod.node,
         source_pod=vm_container_disk_fedora.vmi.virt_launcher_pod,
         vm=vm_container_disk_fedora,
@@ -226,7 +222,7 @@ def test_node_drain_using_console_fedora(
 class TestNodeMaintenanceRHEL:
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
-        self, vm_instance_from_template_multi_storage_scope_class, default_client
+        self, vm_instance_from_template_multi_storage_scope_class, admin_client
     ):
         source_pod = (
             vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod
@@ -241,7 +237,7 @@ class TestNodeMaintenanceRHEL:
             ) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
                 check_draining_process(
-                    default_client=default_client,
+                    dyn_client=admin_client,
                     source_pod=source_pod,
                     vm=vm_instance_from_template_multi_storage_scope_class,
                 )
@@ -250,10 +246,10 @@ class TestNodeMaintenanceRHEL:
 
     @pytest.mark.polarion("CNV-2292")
     def test_node_drain_using_console_rhel(
-        self, vm_instance_from_template_multi_storage_scope_class, default_client
+        self, vm_instance_from_template_multi_storage_scope_class, admin_client
     ):
         drain_using_console(
-            default_client=default_client,
+            dyn_client=admin_client,
             source_node=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
             source_pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
             vm=vm_instance_from_template_multi_storage_scope_class,
@@ -289,10 +285,10 @@ def test_node_drain_template_windows(
     winrmcli_pod,
     bridge_attached_helper_vm,
     windows_initial_boot_time,
-    default_client,
+    admin_client,
 ):
     drain_using_console_windows(
-        default_client=default_client,
+        dyn_client=admin_client,
         source_node=vm_instance_from_template_multi_storage_scope_function.vmi.virt_launcher_pod.node,
         source_pod=vm_instance_from_template_multi_storage_scope_function.vmi.virt_launcher_pod,
         vm=vm_instance_from_template_multi_storage_scope_function,

@@ -14,7 +14,7 @@ from utilities.virt import (
 
 
 @pytest.fixture()
-def cpu_module(default_client):
+def cpu_module(admin_client):
     """
     Get the cpu module supported on nodes (query node with feature.node.kubernetes.io/cpu-model-{module})
     Skip the test if no node has the following CPU module:
@@ -23,7 +23,7 @@ def cpu_module(default_client):
     cpu_module = ["Haswell", "Haswell-noTSX", "Westmere", "IvyBridge", "SandyBridge"]
     for cpu in cpu_module:
         node_with_cpu = Node.get(
-            default_client,
+            admin_client,
             label_selector=f"feature.node.kubernetes.io/cpu-model-{cpu}=true",
         )
         if len(list(node.name for node in node_with_cpu)) > 1:

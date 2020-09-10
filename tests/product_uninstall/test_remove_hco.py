@@ -23,8 +23,8 @@ CDI_EVENT = "ErrCDIUninstall"
 
 
 @pytest.fixture()
-def hyperconverged_resource(default_client):
-    for hco in HyperConverged.get(dyn_client=default_client):
+def hyperconverged_resource(admin_client):
+    for hco in HyperConverged.get(dyn_client=admin_client):
         return hco
 
 
@@ -44,14 +44,14 @@ def remove_hco_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def delete_events_before_test(default_client):
+def delete_events_before_test(admin_client):
     Event.delete_events(
-        dyn_client=default_client,
+        dyn_client=admin_client,
         namespace=py_config["hco_namespace"],
         field_selector=f"reason={VIRT_EVENT}",
     )
     Event.delete_events(
-        dyn_client=default_client,
+        dyn_client=admin_client,
         namespace=py_config["hco_namespace"],
         field_selector=f"reason={CDI_EVENT}",
     )
@@ -70,7 +70,7 @@ class TestRemoveHCO:
     @pytest.mark.polarion("CNV-3916")
     def test_block_removal(
         self,
-        default_client,
+        admin_client,
         delete_events_before_test,
         hyperconverged_resource,
         remove_hco_vm,
@@ -111,9 +111,7 @@ class TestRemoveHCO:
 
         # (5) check that there is a warning event
         ok, msg = assert_event(
-            default_client=default_client,
-            event_reason=VIRT_EVENT,
-            start_time=start_time,
+            dyn_client=admin_client, event_reason=VIRT_EVENT, start_time=start_time,
         )
         assert ok, msg
 
@@ -135,11 +133,11 @@ class TestRemoveHCO:
     @pytest.mark.run(after="test_remove_vm")
     @pytest.mark.polarion("CNV-4098")
     def test_assert_event_dv(
-        self, default_client, kubevirt_resource, start_time, data_volume_scope_class
+        self, admin_client, kubevirt_resource, start_time, data_volume_scope_class
     ):
         kubevirt_resource.wait_deleted()
         ok, msg = assert_event(
-            default_client=default_client, event_reason=CDI_EVENT, start_time=start_time
+            dyn_client=admin_client, event_reason=CDI_EVENT, start_time=start_time
         )
         assert ok, msg
 
@@ -157,13 +155,13 @@ class TestRemoveHCO:
     # Restore HCO for the next tests
     @pytest.mark.run(after="test_remove_dv")
     @pytest.mark.polarion("CNV-4093")
-    def test_restore_hco(self, default_client, data_volume_scope_class):
+    def test_restore_hco(self, admin_client, data_volume_scope_class):
 
         LOGGER.info("Recreating HCO")
         with HyperConverged(
             name="kubevirt-hyperconverged",
             namespace=py_config["hco_namespace"],
-            client=default_client,
+            client=admin_client,
             teardown=False,
         ) as hco:
             LOGGER.info("Waiting for all HCO conditions to detect that it is deployed")
@@ -189,9 +187,9 @@ class TestRemoveHCO:
 
 
 # assert that a certain event was emitted
-def assert_event(default_client, event_reason, start_time):
+def assert_event(dyn_client, event_reason, start_time):
     for event in Event.get(
-        default_client,
+        dyn_client,
         namespace=py_config["hco_namespace"],
         field_selector=f"involvedObject.kind==ClusterServiceVersion,type==Warning,reason={event_reason}",
         timeout=10,

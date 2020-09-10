@@ -25,9 +25,9 @@ EXPECTED_LINK_MAP = {
 
 
 @pytest.fixture()
-def csv(default_client):
+def csv(admin_client):
     for csv in ClusterServiceVersion.get(
-        dyn_client=default_client, namespace="openshift-cnv"
+        dyn_client=admin_client, namespace="openshift-cnv"
     ):
         return csv
 

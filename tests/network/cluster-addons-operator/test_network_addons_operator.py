@@ -29,8 +29,8 @@ def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
 
 
 @pytest.fixture(scope="module")
-def net_add_op_config_cr(default_client):
-    nac = NetworkAddonsConfig.get(default_client)
+def net_add_op_config_cr(admin_client):
+    nac = NetworkAddonsConfig.get(admin_client)
     nac_list = list(nac)
     assert nac_list, "There should be one NetworkAddonsConfig CR."
     yield nac_list[0]

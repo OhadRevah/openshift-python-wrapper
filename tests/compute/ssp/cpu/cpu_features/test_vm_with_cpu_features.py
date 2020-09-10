@@ -150,7 +150,7 @@ def cpu_features_vm_require_pcid(namespace, unprivileged_client):
 
 
 @pytest.fixture()
-def config_map_with_cpu_discovery(default_client):
+def config_map_with_cpu_discovery(admin_client):
     config_map_namespace = py_config["hco_namespace"]
     cpu_node_discovery = "CPUNodeDiscovery"
 
@@ -176,9 +176,9 @@ def config_map_with_cpu_discovery(default_client):
 
 
 @pytest.fixture()
-def nodes_with_no_pciid_label(default_client):
+def nodes_with_no_pciid_label(admin_client):
     nodes_with_cpu_feature = Node.get(
-        dyn_client=default_client,
+        dyn_client=admin_client,
         label_selector="feature.node.kubernetes.io/cpu-feature-pcid=true",
     )
 

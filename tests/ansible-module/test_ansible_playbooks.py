@@ -47,49 +47,49 @@ def ansible_config_environ():
 
 
 @pytest.fixture(scope="module", autouse=True)
-def cleanup(default_client):
+def cleanup(admin_client):
     default_ns = "default"
-    vms = list(VirtualMachine.get(default_client, namespace=default_ns))
+    vms = list(VirtualMachine.get(admin_client, namespace=default_ns))
     vmirs = list(
-        VirtualMachineInstanceReplicaSet.get(default_client, namespace=default_ns)
+        VirtualMachineInstanceReplicaSet.get(admin_client, namespace=default_ns)
     )
-    vmis = list(VirtualMachineInstance.get(default_client, namespace=default_ns))
-    vmips = list(VirtualMachineInstancePreset.get(default_client, namespace=default_ns))
-    pvcs = list(PersistentVolumeClaim.get(default_client, namespace=default_ns))
+    vmis = list(VirtualMachineInstance.get(admin_client, namespace=default_ns))
+    vmips = list(VirtualMachineInstancePreset.get(admin_client, namespace=default_ns))
+    pvcs = list(PersistentVolumeClaim.get(admin_client, namespace=default_ns))
     try:
         templates = list(
-            Template.get(default_client, singular_name="template", namespace=default_ns)
+            Template.get(admin_client, singular_name="template", namespace=default_ns)
         )
     except NotImplementedError as e:
         # Templates are only present if tests run with openshift provider
         LOGGER.warning(e)
         templates = []
     yield
-    for vm in VirtualMachine.get(default_client, namespace=default_ns):
+    for vm in VirtualMachine.get(admin_client, namespace=default_ns):
         if vm not in vms:
             vm.delete(wait=True)
 
     for vmir in VirtualMachineInstanceReplicaSet.get(
-        default_client, namespace=default_ns
+        admin_client, namespace=default_ns
     ):
         if vmir not in vmirs:
             vmir.delete(wait=True)
 
-    for vmi in VirtualMachineInstance.get(default_client, namespace=default_ns):
+    for vmi in VirtualMachineInstance.get(admin_client, namespace=default_ns):
         if vmi not in vmis:
             vmi.delete(wait=True)
 
-    for vmip in VirtualMachineInstancePreset.get(default_client, namespace=default_ns):
+    for vmip in VirtualMachineInstancePreset.get(admin_client, namespace=default_ns):
         if vmip not in vmips:
             vmip.delete(wait=True)
 
-    for pvc in PersistentVolumeClaim.get(default_client, namespace=default_ns):
+    for pvc in PersistentVolumeClaim.get(admin_client, namespace=default_ns):
         if pvc not in pvcs:
             pvc.delete(wait=True)
 
     try:
         for template in Template.get(
-            default_client, singular_name="template", namespace=default_ns
+            admin_client, singular_name="template", namespace=default_ns
         ):
             if template not in templates:
                 template.delete(wait=True)

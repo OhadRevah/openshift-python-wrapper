@@ -461,7 +461,7 @@ def junitxml_polarion(record_testsuite_property):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def default_client():
+def admin_client():
     """
     Get DynamicClient
     """
@@ -469,7 +469,7 @@ def default_client():
 
 
 @pytest.fixture(scope="session")
-def unprivileged_secret(default_client):
+def unprivileged_secret(admin_client):
     if py_config["distribution"] == "upstream" or py_config.get(
         "no_unprivileged_client"
     ):
@@ -488,7 +488,7 @@ def unprivileged_secret(default_client):
 
 
 @pytest.fixture(scope="session")
-def unprivileged_client(default_client, unprivileged_secret):
+def unprivileged_client(admin_client, unprivileged_secret):
     """
     Provides none privilege API client
     """
@@ -534,7 +534,7 @@ def unprivileged_client(default_client, unprivileged_secret):
             os.environ["KUBECONFIG"] = ""
 
         if login_to_account(
-            api_address=default_client.configuration.host,
+            api_address=admin_client.configuration.host,
             user=UNPRIVILEGED_USER,
             password=UNPRIVILEGED_PASSWORD,
         ):  # Login to unprivileged account
@@ -543,9 +543,9 @@ def unprivileged_client(default_client, unprivileged_secret):
             )  # Get token
             token_auth = {
                 "api_key": {"authorization": f"Bearer {token}"},
-                "host": default_client.configuration.host,
+                "host": admin_client.configuration.host,
                 "verify_ssl": True,
-                "ssl_ca_cert": default_client.configuration.ssl_ca_cert,
+                "ssl_ca_cert": admin_client.configuration.ssl_ca_cert,
             }
             configuration = kubernetes.client.Configuration()
             for k, v in token_auth.items():
@@ -555,7 +555,7 @@ def unprivileged_client(default_client, unprivileged_secret):
                 os.environ["KUBECONFIG"] = kubeconfig_env
 
             login_to_account(
-                api_address=default_client.configuration.host, user=current_user.strip()
+                api_address=admin_client.configuration.host, user=current_user.strip()
             )  # Get back to admin account
 
             k8s_client = kubernetes.client.ApiClient(configuration)
@@ -570,7 +570,7 @@ def unprivileged_client(default_client, unprivileged_secret):
                     os.environ["KUBECONFIG"] = ""
 
                 login_to_account(
-                    api_address=default_client.configuration.host,
+                    api_address=admin_client.configuration.host,
                     user=UNPRIVILEGED_USER,
                     password=UNPRIVILEGED_PASSWORD,
                 )  # Login to unprivileged account
@@ -581,7 +581,7 @@ def unprivileged_client(default_client, unprivileged_secret):
                     os.environ["KUBECONFIG"] = kubeconfig_env
 
                 login_to_account(
-                    api_address=default_client.configuration.host,
+                    api_address=admin_client.configuration.host,
                     user=current_user.strip(),
                 )  # Get back to admin account
 
@@ -606,8 +606,8 @@ def skip_when_one_node(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def nodes(default_client):
-    yield list(Node.get(dyn_client=default_client))
+def nodes(admin_client):
+    yield list(Node.get(dyn_client=admin_client))
 
 
 @pytest.fixture(scope="session")
@@ -632,7 +632,7 @@ def masters(nodes):
 
 
 @pytest.fixture(scope="session")
-def utility_daemonset(default_client):
+def utility_daemonset(admin_client):
     """
     Deploy utility daemonset into the kube-system namespace.
 
@@ -645,14 +645,14 @@ def utility_daemonset(default_client):
 
 
 @pytest.fixture(scope="session")
-def utility_pods(schedulable_nodes, utility_daemonset, default_client):
+def utility_pods(schedulable_nodes, utility_daemonset, admin_client):
     """
     Get utility pods.
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
     These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
     # get only pods that running on schedulable_nodes.
-    pods = list(Pod.get(default_client, label_selector="cnv-test=utility"))
+    pods = list(Pod.get(admin_client, label_selector="cnv-test=utility"))
     return [
         pod
         for pod in pods
@@ -680,8 +680,8 @@ def workers_ssh_executors(rhel7_workers, utility_pods):
 
 
 @pytest.fixture(scope="session")
-def node_physical_nics(default_client, utility_pods, workers_ssh_executors):
-    if is_openshift(default_client):
+def node_physical_nics(admin_client, utility_pods, workers_ssh_executors):
+    if is_openshift(admin_client):
         return {
             node: workers_ssh_executors[node].network.all_interfaces()
             for node in workers_ssh_executors.keys()
@@ -773,10 +773,10 @@ class UtilityDaemonSet(DaemonSet):
 
 
 @pytest.fixture(scope="session")
-def kmp_vm_label(default_client):
+def kmp_vm_label(admin_client):
     kmp_vm_webhook = "mutatevirtualmachines.kubemacpool.io"
     kmp_webhook_config = MutatingWebhookConfiguration(
-        client=default_client, name="kubemacpool-mutator"
+        client=admin_client, name="kubemacpool-mutator"
     )
 
     for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
@@ -787,7 +787,7 @@ def kmp_vm_label(default_client):
 
 
 @pytest.fixture(scope="module")
-def namespace(request, unprivileged_client, default_client, kmp_vm_label):
+def namespace(request, unprivileged_client, admin_client, kmp_vm_label):
     """ Generate namespace from the test's module name """
     client = True
     if hasattr(request, "param"):
@@ -802,7 +802,7 @@ def namespace(request, unprivileged_client, default_client, kmp_vm_label):
     yield from create_ns(
         client=unprivileged_client if client else None,
         name=name.split("-", 1)[-1],
-        admin_client=default_client,
+        admin_client=admin_client,
         kmp_vm_label=kmp_vm_label,
     )
 
@@ -1244,11 +1244,11 @@ def is_openshift(client):
 
 
 @pytest.fixture(scope="session")
-def skip_not_openshift(default_client):
+def skip_not_openshift(admin_client):
     """
     Skip test if tests run on kubernetes (and not openshift)
     """
-    if not is_openshift(default_client):
+    if not is_openshift(admin_client):
         pytest.skip("Skipping test requiring OpenShift")
 
 
@@ -1275,9 +1275,9 @@ def worker_nodes_ipv4_false_secondary_nics(
 
 
 @pytest.fixture(scope="session")
-def cnv_current_version(default_client):
+def cnv_current_version(admin_client):
     for csv in ClusterServiceVersion.get(
-        dyn_client=default_client, namespace=py_config["hco_namespace"]
+        dyn_client=admin_client, namespace=py_config["hco_namespace"]
     ):
         return csv.instance.spec.version
 
@@ -1288,10 +1288,10 @@ def kubevirt_config_cm():
 
 
 @pytest.fixture(scope="session")
-def hco_namespace(default_client):
+def hco_namespace(admin_client):
     return list(
         Namespace.get(
-            dyn_client=default_client,
+            dyn_client=admin_client,
             field_selector=f"metadata.name=={py_config['hco_namespace']}",
         )
     )[0]

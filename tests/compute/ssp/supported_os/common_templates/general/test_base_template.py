@@ -60,11 +60,11 @@ def get_windows_templates_list():
 
 
 @pytest.fixture(scope="module")
-def base_templates(default_client):
+def base_templates(admin_client):
     """ Return templates list by label """
     yield list(
         Template.get(
-            default_client,
+            admin_client,
             singular_name=Template.singular_name,
             label_selector="template.kubevirt.io/type=base",
         )

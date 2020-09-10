@@ -151,22 +151,20 @@ def assert_selected_node_annotation(pvc_node_name, pod_node_name, type_="source"
     ), f"No 'volume.kubernetes.io/selected-node' annotation found on {type_} PVC / node names differ"
 
 
-def get_pod_by_name_prefix(default_client, pod_prefix, namespace):
+def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace):
     pods = [
         pod
-        for pod in Pod.get(dyn_client=default_client, namespace=namespace)
+        for pod in Pod.get(dyn_client=dyn_client, namespace=namespace)
         if pod.name.startswith(pod_prefix)
     ]
     return pods[0] if pods else None
 
 
-def _get_pod_and_scratch_pvc(default_client, namespace, pod_prefix, pvc_suffix):
-    pvcs = list(
-        PersistentVolumeClaim.get(dyn_client=default_client, namespace=namespace)
-    )
+def _get_pod_and_scratch_pvc(dyn_client, namespace, pod_prefix, pvc_suffix):
+    pvcs = list(PersistentVolumeClaim.get(dyn_client=dyn_client, namespace=namespace))
     matched_pvcs = [pvc for pvc in pvcs if pvc.name.endswith(pvc_suffix)]
     matched_pod = get_pod_by_name_prefix(
-        default_client=default_client, pod_prefix=pod_prefix, namespace=namespace
+        dyn_client=dyn_client, pod_prefix=pod_prefix, namespace=namespace
     )
     return {
         "pod": matched_pod,
@@ -174,21 +172,21 @@ def _get_pod_and_scratch_pvc(default_client, namespace, pod_prefix, pvc_suffix):
     }
 
 
-def get_pod_and_scratch_pvc_nodes(default_client, namespace):
+def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
     """
     Returns scratch pvc and pod nodes using sampling.
     This is essential in order to get hold of the resources before they are finished and not accessible.
 
     Args:
         namespace: namespace to search in
-        default_client: open connection to remote cluster
+        dyn_client: open connection to remote cluster
     """
     LOGGER.info("Waiting for cdi-upload worker pod and scratch pvc")
     sampler = TimeoutSampler(
         timeout=30,
         sleep=5,
         func=_get_pod_and_scratch_pvc,
-        default_client=default_client,
+        dyn_client=dyn_client,
         namespace=namespace,
         pod_prefix="cdi-upload",
         pvc_suffix="scratch",
@@ -368,7 +366,7 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
 def test_hpp_upload_virtctl(
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
-    default_client,
+    admin_client,
     namespace,
     tmpdir,
 ):
@@ -384,7 +382,7 @@ def test_hpp_upload_virtctl(
     thread_pool = ThreadPool(processes=1)
     async_result = thread_pool.apply_async(
         func=get_pod_and_scratch_pvc_nodes,
-        kwds={"default_client": default_client, "namespace": namespace.name},
+        kwds={"dyn_client": admin_client, "namespace": namespace.name},
     )
     # Start virtctl upload process, meanwhile, resources are sampled
     virtctl_upload = storage_utils.virtctl_upload(
@@ -453,7 +451,7 @@ def test_hostpath_upload_dv_with_token(
     ],
 )
 def test_hostpath_registry_import_dv(
-    default_client,
+    admin_client,
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
     hpp_storage_class,
@@ -481,7 +479,7 @@ def test_hostpath_registry_import_dv(
             status=PersistentVolumeClaim.Status.BOUND, timeout=300
         )
         importer_pod = storage_utils.get_importer_pod(
-            dyn_client=default_client, namespace=dv.namespace
+            dyn_client=admin_client, namespace=dv.namespace
         )
         importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
         assert_selected_node_annotation(
@@ -513,7 +511,7 @@ def test_hostpath_registry_import_dv(
 )
 def test_hostpath_clone_dv_without_annotation_wffc(
     skip_when_hpp_no_waitforfirstconsumer,
-    default_client,
+    admin_client,
     namespace,
     data_volume_scope_function,
 ):
@@ -534,9 +532,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     ) as target_dv:
         target_dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND)
         upload_target_pod = get_pod_by_name_prefix(
-            default_client=default_client,
-            pod_prefix="cdi-upload",
-            namespace=namespace.name,
+            dyn_client=admin_client, pod_prefix="cdi-upload", namespace=namespace.name,
         )
         upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
         assert_selected_node_annotation(
@@ -553,7 +549,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
 
 @pytest.mark.polarion("CNV-3328")
 def test_hostpath_import_scratch_dv_without_specify_node_wffc(
-    default_client,
+    admin_client,
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
     namespace,
@@ -576,7 +572,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
     ) as dv:
         dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
         importer_pod = storage_utils.get_importer_pod(
-            dyn_client=default_client, namespace=dv.namespace
+            dyn_client=admin_client, namespace=dv.namespace
         )
         importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=30)
 
@@ -685,9 +681,9 @@ def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
 
 
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_operator_pod(skip_test_if_no_hpp_sc, default_client):
+def test_hpp_operator_pod(skip_test_if_no_hpp_sc, admin_client):
     hpp_operator_pod = get_pod_by_name_prefix(
-        default_client=default_client,
+        dyn_client=admin_client,
         pod_prefix="hostpath-provisioner-operator",
         namespace=py_config["hco_namespace"],
     )

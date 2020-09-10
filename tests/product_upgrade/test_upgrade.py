@@ -120,7 +120,7 @@ class TestUpgrade:
     def test_upgrade(
         self,
         pytestconfig,
-        default_client,
+        admin_client,
         hco_namespace,
         cnv_upgrade_path,
         operatorhub_no_default_sources,
@@ -128,12 +128,12 @@ class TestUpgrade:
     ):
         if pytestconfig.option.upgrade == "ocp":
             upgrade_utils.upgrade_ocp(
-                ocp_image=pytestconfig.option.ocp_image, default_client=default_client
+                ocp_image=pytestconfig.option.ocp_image, dyn_client=admin_client
             )
 
         if pytestconfig.option.upgrade == "cnv":
             upgrade_utils.upgrade_cnv(
-                default_client=default_client,
+                dyn_client=admin_client,
                 hco_namespace=hco_namespace,
                 cnv_upgrade_path=cnv_upgrade_path,
                 upgrade_resilience=pytestconfig.option.upgrade_resilience,
@@ -141,10 +141,10 @@ class TestUpgrade:
 
     @pytest.mark.polarion("CNV-4509")
     @pytest.mark.run(after="test_upgrade")
-    def test_cnv_pods_running_after_upgrade(self, default_client, hco_namespace):
+    def test_cnv_pods_running_after_upgrade(self, admin_client, hco_namespace):
         LOGGER.info("Verify CNV pods running after upgrade.")
         upgrade_utils.verify_cnv_pods_are_running(
-            default_client=default_client, hco_namespace=hco_namespace
+            dyn_client=admin_client, hco_namespace=hco_namespace
         )
 
     @pytest.mark.polarion("CNV-4510")

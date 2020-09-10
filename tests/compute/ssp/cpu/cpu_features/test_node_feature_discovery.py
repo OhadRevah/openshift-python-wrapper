@@ -64,15 +64,13 @@ def obsolete_cpus_list(config_map_cpu_model_dict):
 
 
 @pytest.fixture()
-def libvirt_min_cpu_features_list(
-    config_map_cpu_model_dict, cpu_test_vm, default_client
-):
+def libvirt_min_cpu_features_list(config_map_cpu_model_dict, cpu_test_vm, admin_client):
     """
     Extract minimal CPU model features from libvirt/cpu_map xml.
     """
-    exec_pod = list(
-        Pod.get(dyn_client=default_client, namespace=cpu_test_vm.namespace)
-    )[0]
+    exec_pod = list(Pod.get(dyn_client=admin_client, namespace=cpu_test_vm.namespace))[
+        0
+    ]
     stdout = exec_pod.execute(
         command=[
             "cat",

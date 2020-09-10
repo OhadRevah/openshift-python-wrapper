@@ -30,7 +30,7 @@ def configmap_smbios_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def smbios_defaults(default_client, cnv_current_version):
+def smbios_defaults(admin_client, cnv_current_version):
     smbios_defaults = {
         "Family": "Red Hat",
         "Product": "Container-native virtualization",
