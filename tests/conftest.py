@@ -101,8 +101,10 @@ TESTS_MARKERS = [
 ]
 
 
-def _get_client():
-    return DynamicClient(client=kubernetes.config.new_client_from_config())
+def _get_admin_client():
+    return DynamicClient(
+        client=kubernetes.config.new_client_from_config(context="admin")
+    )
 
 
 def _separator(symbol_, val=None):
@@ -349,7 +351,7 @@ def pytest_exception_interact(node, call, report):
         return
 
     try:
-        dyn_client = _get_client()
+        dyn_client = _get_admin_client()
         test_dir = os.path.join(TEST_COLLECT_INFO_DIR, node.name, call.when)
         pods_dir = os.path.join(test_dir, "Pods")
         os.makedirs(test_dir, exist_ok=True)
@@ -465,7 +467,7 @@ def admin_client():
     """
     Get DynamicClient
     """
-    return _get_client()
+    return _get_admin_client()
 
 
 @pytest.fixture(scope="session")
