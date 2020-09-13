@@ -31,6 +31,7 @@ importlib-resources = "*"
 ovirt-python-sdk = "*"
 click = "*"
 ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper.git"}
+docker="*"
 
 [requires]
 python_version = "3"
