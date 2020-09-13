@@ -62,4 +62,13 @@ class Source:
             "network_interfaces": 1,
             "volumes": 1,
         },
+        "vm63chars": {
+            "name": "v2v-cirros-for-tests-char63long".ljust(63, "s"),
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 1,
+        },
     }

@@ -184,9 +184,15 @@ def check_cnv_vm_config(
     ), "vm bootloader_bios check failed"
 
 
-@pytest.mark.polarion("CNV-4381")
-def test_vm_import(secret, namespace, rhv_provider, source_cluster_name):
-    vm_config = Source.vms["cirros"]
+@pytest.mark.parametrize(
+    "vm_key",
+    [
+        pytest.param("cirros", marks=(pytest.mark.polarion("CNV-4381")),),
+        pytest.param("vm63chars", marks=(pytest.mark.polarion("CNV-4592")),),
+    ],
+)
+def test_vm_import(secret, namespace, rhv_provider, source_cluster_name, vm_key):
+    vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
 
     with create_vm_import(
