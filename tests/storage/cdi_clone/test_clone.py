@@ -12,6 +12,9 @@ from tests.storage import utils
 from utilities.infra import Images
 
 
+WINDOWS_CLONE_TIMEOUT = 40 * 60
+
+
 @pytest.mark.tier3
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_class",
@@ -35,6 +38,7 @@ from utilities.infra import Images
 )
 def test_successful_clone_of_large_image(
     skip_upstream,
+    skip_if_workers_vms,
     storage_class_matrix__class__,
     namespace,
     data_volume_multi_storage_scope_class,
@@ -61,7 +65,7 @@ def test_successful_clone_of_large_image(
         cdv.wait_for_condition(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=2400,
+            timeout=WINDOWS_CLONE_TIMEOUT,
         )
 
 
@@ -123,6 +127,7 @@ def test_successful_vm_restart_with_cloned_dv(
 )
 def test_successful_vm_from_cloned_dv_windows(
     skip_upstream,
+    skip_if_workers_vms,
     unprivileged_client,
     network_configuration,
     cloud_init_data,
@@ -140,7 +145,7 @@ def test_successful_vm_from_cloned_dv_windows(
         storage_class=data_volume_multi_storage_scope_function.storage_class,
         volume_mode=data_volume_multi_storage_scope_function.volume_mode,
     ) as cdv:
-        cdv.wait(timeout=1600)
+        cdv.wait(timeout=WINDOWS_CLONE_TIMEOUT)
         assert cdv.pvc.bound()
         utils.create_windows_vm_validate_guest_agent_info(
             cloud_init_data=cloud_init_data,
