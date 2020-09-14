@@ -8,10 +8,10 @@ import logging
 import pytest
 import tests.compute.ssp.utils as ssp_utils
 import utilities.virt
+from tests.compute import utils as compute_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
-from tests.compute.utils import vm_started
 from utilities.infra import BUG_STATUS_CLOSED
 
 
@@ -57,7 +57,7 @@ class TestCommonTemplatesWindows:
     ):
         """ Test CNV common templates VM initiation """
 
-        vm_started(
+        compute_utils.vm_started(
             vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
         utilities.virt.wait_for_windows_vm(
@@ -274,7 +274,7 @@ class TestCommonTemplatesWindows:
     ):
         """ Test VM pause and unpause """
 
-        pre_pause_processid = common_templates_utils.start_and_fetch_processid_on_windows_vm(
+        pre_pause_processid = compute_utils.start_and_fetch_processid_on_windows_vm(
             vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             process_name="mspaint.exe",
@@ -297,7 +297,7 @@ class TestCommonTemplatesWindows:
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
-        post_pause_processid = common_templates_utils.fetch_processid_from_windows_vm(
+        post_pause_processid = compute_utils.fetch_processid_from_windows_vm(
             vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             process_name="mspaint.exe",

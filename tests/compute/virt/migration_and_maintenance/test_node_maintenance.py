@@ -12,6 +12,7 @@ from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
+from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
 from utilities import console
 from utilities.infra import Images
@@ -42,7 +43,7 @@ def running_sleep_in_linux(vm_cli):
 @contextmanager
 def drain_node_console(node):
     try:
-        LOGGER.info(f"Cordon node {node.name}")
+        LOGGER.info(f"Drain the node {node.name}")
         run(
             f"nohup oc adm drain {node.name} --delete-local-data --ignore-daemonsets=true --force &",
             shell=True,
@@ -61,24 +62,26 @@ def drain_using_console(dyn_client, source_node, source_pod, vm, vm_cli):
 
 
 def drain_using_console_windows(
-    dyn_client,
-    source_node,
-    source_pod,
-    vm,
-    winrmcli_pod,
-    windows_initial_boot_time,
-    helper_vm=False,
+    dyn_client, source_node, source_pod, vm, winrmcli_pod, helper_vm=False,
 ):
-
+    process_name = "mspaint.exe"
+    pre_migrate_processid = compute_utils.start_and_fetch_processid_on_windows_vm(
+        vm=vm,
+        winrmcli_pod=winrmcli_pod,
+        process_name=process_name,
+        helper_vm=helper_vm,
+    )
     with drain_node_console(node=source_node):
         check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
-        boot_time_after_migration = check_windows_boot_time(
-            vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm
+        post_migrate_processid = compute_utils.fetch_processid_from_windows_vm(
+            vm=vm,
+            winrmcli_pod=winrmcli_pod,
+            process_name=process_name,
+            helper_vm=helper_vm,
         )
-        LOGGER.info(f"Windows boot time after migration: {boot_time_after_migration}")
         assert (
-            boot_time_after_migration == windows_initial_boot_time
-        ), f"Initial time: {windows_initial_boot_time}. Time after migration: {boot_time_after_migration}"
+            post_migrate_processid == pre_migrate_processid
+        ), f"Post migrate processid is: {post_migrate_processid}. Pre migrate processid is: {pre_migrate_processid}"
 
     virt_utils.wait_for_node_schedulable_status(
         node=vm.vmi.virt_launcher_pod.node, status=True,
@@ -99,25 +102,6 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         yield vm
-
-
-@pytest.fixture()
-def windows_initial_boot_time(
-    vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod,
-    bridge_attached_helper_vm,
-):
-    LOGGER.info(
-        f"Windows VM {vm_instance_from_template_multi_storage_scope_function.vmi.name} "
-        f"is booting up, it may take up to 20 minutess."
-    )
-    boot_time = check_windows_boot_time(
-        vm=vm_instance_from_template_multi_storage_scope_function,
-        winrmcli_pod=winrmcli_pod,
-        helper_vm=bridge_attached_helper_vm,
-    )
-    LOGGER.info(f"VM initial boot time: {boot_time}")
-    yield boot_time
 
 
 @pytest.fixture()
@@ -284,7 +268,6 @@ def test_node_drain_template_windows(
     vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod,
     bridge_attached_helper_vm,
-    windows_initial_boot_time,
     admin_client,
 ):
     drain_using_console_windows(
@@ -293,6 +276,5 @@ def test_node_drain_template_windows(
         source_pod=vm_instance_from_template_multi_storage_scope_function.vmi.virt_launcher_pod,
         vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod,
-        windows_initial_boot_time=windows_initial_boot_time,
         helper_vm=bridge_attached_helper_vm,
     )
