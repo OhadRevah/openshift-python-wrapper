@@ -97,6 +97,7 @@ PODS_TO_COLLECT_INFO = [
 ]
 TESTS_MARKERS = [
     "destructive",
+    "chaos",
     "tier3",
 ]
 
