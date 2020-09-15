@@ -102,9 +102,7 @@ TESTS_MARKERS = [
 
 
 def _get_admin_client():
-    return DynamicClient(
-        client=kubernetes.config.new_client_from_config(context="admin")
-    )
+    return DynamicClient(client=kubernetes.config.new_client_from_config())
 
 
 def _separator(symbol_, val=None):
