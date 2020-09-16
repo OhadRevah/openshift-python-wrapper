@@ -235,7 +235,7 @@ def test_cdiconfig_changing_storage_class_default(
             with ConfigMap(
                 name="https-cert-configmap",
                 namespace=namespace.name,
-                data=get_cert(server_type="https_cert"),
+                data={"tlsregistry.crt": get_cert(server_type="https_cert")},
             ) as configmap:
                 with utilities.storage.create_dv(
                     source="http",

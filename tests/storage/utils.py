@@ -45,7 +45,7 @@ def import_image_to_dv(dv_name, images_https_server_name, volume_mode, storage_n
     with ConfigMap(
         name="https-cert-configmap",
         namespace=storage_ns_name,
-        data=get_cert(server_type="https_cert"),
+        data={"tlsregistry.crt": get_cert(server_type="https_cert")},
     ) as configmap:
         with create_dv(
             source="http",

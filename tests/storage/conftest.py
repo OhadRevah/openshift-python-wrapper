@@ -43,7 +43,7 @@ def internal_http_configmap(namespace):
         with ConfigMap(
             name="internal-https-configmap",
             namespace=namespace.name,
-            data=cert_content.read(),
+            data={"tlsregistry.crt": cert_content.read()},
         ) as configmap:
             yield configmap
 
@@ -208,12 +208,12 @@ def cdi():
 @pytest.fixture()
 def https_config_map(request, namespace):
     data = (
-        request.param["data"]
+        {"ca.pem": request.param["data"]}
         if hasattr(request, "param")
-        else get_cert(server_type="https_cert")
+        else {"ca.pem": get_cert(server_type="https_cert")}
     )
     with ConfigMap(
-        name="https-cert", namespace=namespace.name, cert_name="ca.pem", data=data,
+        name="https-cert", namespace=namespace.name, data=data,
     ) as configmap:
         yield configmap
 
@@ -223,7 +223,7 @@ def registry_config_map(namespace):
     with ConfigMap(
         name="registry-cert",
         namespace=namespace.name,
-        data=get_cert(server_type="registry_cert"),
+        data={"tlsregistry.crt": get_cert(server_type="registry_cert")},
     ) as configmap:
         yield configmap
 

@@ -38,7 +38,9 @@ def disable_tls_registry(configmap_with_cert):
         {
             cdi_insecure_registries: {
                 "data": {
-                    configmap_with_cert.cert_name: f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443",
+                    py_config[py_config["region"]][
+                        "registry_cert"
+                    ]: f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443",
                 }
             }
         }
@@ -51,22 +53,26 @@ def configmap_with_cert(namespace):
     with ConfigMap(
         name="registry-cm-cert",
         namespace=namespace.name,
-        cert_name=py_config[py_config["region"]]["registry_cert"],
-        data=get_cert(server_type="registry_cert"),
+        data={
+            py_config[py_config["region"]]["registry_cert"]: get_cert(
+                server_type="registry_cert"
+            )
+        },
     ) as configmap:
         yield configmap
 
 
 @pytest.fixture()
 def update_configmap_with_cert(request, configmap_with_cert):
+    cert_name = py_config[py_config["region"]]["registry_cert"]
     LOGGER.debug("Use 'update_configmap_with_cert' fixture...")
     injected_content = request.param["injected_content"]
     ResourceEditor(
         {
             configmap_with_cert: {
                 "data": {
-                    configmap_with_cert.cert_name: f"{configmap_with_cert.data[:50]}{injected_content}"
-                    f"{configmap_with_cert.data[50:]}"
+                    cert_name: f"{configmap_with_cert.data[cert_name][:50]}{injected_content}"
+                    f"{configmap_with_cert.data[cert_name][50:]}"
                 }
             }
         }
