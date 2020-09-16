@@ -11,27 +11,17 @@ distribution = "upstream"
 hco_namespace = "kubevirt-hyperconverged"
 sriov_namespace = "sriov-network-operator"
 
-test_guest_performance = {"bandwidth": 2.5}
-test_performance_over_pod_network = {"bandwidth": 2.5}
 template_defaults = {
     "linux_bridge_cni_name": "bridge",
     "bridge_tuning_name": "tuning",
 }
 
 default_storage_class = "local"
-default_volume_mode = "Filesystem"
 
-region = "USA"
-
-bridge_device_matrix = ["linux-bridge"]
 storage_class_matrix = [
     {"local": {"volume_mode": "Filesystem", "access_mode": "ReadWriteOnce"}},
 ]
-link_aggregation_mode_matrix = [
-    "active-backup",
-    "balance-tlb",
-    "balance-alb",
-]
+
 
 for _dir in dir():
     val = locals()[_dir]
