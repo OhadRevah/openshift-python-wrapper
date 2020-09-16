@@ -35,8 +35,12 @@ LOGGER = logging.getLogger(__name__)
 K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"
 CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
-FEDORA_CLOUD_INIT_PASSWORD = {"password": "fedora", "chpasswd": "{ expire: False }"}
-RHEL_CLOUD_INIT_PASSWORD = {"password": "redhat", "chpasswd": "{ expire: " "False }"}
+FEDORA_CLOUD_INIT_PASSWORD = {
+    "userData": {"password": "fedora", "chpasswd": "{ expire: False }"}
+}
+RHEL_CLOUD_INIT_PASSWORD = {
+    "userData": {"password": "redhat", "chpasswd": "{ expire: " "False }"}
+}
 
 
 def wait_for_vm_interfaces(vmi, timeout=720):
@@ -82,18 +86,51 @@ def wait_for_vm_interfaces(vmi, timeout=720):
         raise
 
 
-def _generate_cloud_init_user_data(user_data):
-    data = "#cloud-config\n"
-    for k, v in user_data.items():
-        if isinstance(v, list):
-            list_len = len(v) - 1
-            data += f"{k}:\n    "
-            for i, item in enumerate(v):
-                data += f"- {item}\n{'' if i == list_len else '    '}"
-        else:
-            data += f"{k}: {v}\n"
+def generate_cloud_init_data(data):
+    """
+    Generate cloud init data from a dictionary.
 
-    return data
+    Args:
+        data (dict): cloud init data to set under desired section.
+
+    Returns:
+        str: A generated str for cloud init.
+
+    Example:
+        data = {
+            "networkData": {
+                "version": 2,
+                "ethernets": {
+                    "eth0": {
+                        "dhcp4": True,
+                        "addresses": "[ fd10:0:2::2/120 ]",
+                        "gateway6": "fd10:0:2::1",
+                    }
+                }
+            }
+        }
+        data.update(FEDORA_CLOUD_INIT_PASSWORD)
+
+        with VirtualMachineForTests(
+            namespace="namespace",
+            name="vm",
+            body=fedora_vm_body("vm"),
+            cloud_init_data=data,
+        ) as vm:
+            pass
+    """
+    dict_data = {}
+    for section, _data in data.items():
+        str_data = ""
+        generated_data = yaml.dump(_data)
+        if section == "userData":
+            str_data += "#cloud-config\n"
+
+        for line in generated_data.splitlines():
+            line = line.replace("'", "")
+            str_data += f"{line}\n"
+        dict_data[section] = str_data
+    return dict_data
 
 
 def merge_dicts(source_dict, target_dict):
@@ -277,16 +314,12 @@ class VirtualMachineForTests(VirtualMachine):
             cloud_init_volume_type = self.cloud_init_type or "cloudInitNoCloud"
 
             if not cloud_init_volume:
-                spec["volumes"].append(
-                    {
-                        "name": "cloudinitdisk",
-                        cloud_init_volume_type: {"userData": None},
-                    }
-                )
+                spec["volumes"].append({"name": "cloudinitdisk"})
                 cloud_init_volume = spec["volumes"][-1]
-            cloud_init_volume[cloud_init_volume_type][
-                "userData"
-            ] = _generate_cloud_init_user_data(user_data=self.cloud_init_data)
+
+            cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
+                data=self.cloud_init_data
+            )
             disks_spec = (
                 spec.setdefault("domain", {})
                 .setdefault("devices", {})

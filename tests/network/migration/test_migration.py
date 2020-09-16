@@ -92,7 +92,7 @@ def vma(namespace, unprivileged_client):
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
@@ -113,7 +113,7 @@ def vmb(namespace, unprivileged_client):
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,

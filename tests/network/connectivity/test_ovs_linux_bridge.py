@@ -167,7 +167,7 @@ def ovs_linux_bridge_attached_vma(
     bootcmds.extend(nmcli_add_con_cmds("eth2", "10.200.1.1"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "10.200.2.1"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -202,7 +202,7 @@ def ovs_linux_bridge_attached_vmb(
     bootcmds.extend(nmcli_add_con_cmds("eth2", "10.200.1.2"))
     bootcmds.extend(nmcli_add_con_cmds("eth3", "10.200.2.2"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -231,7 +231,9 @@ def ovs_linux_bond_bridge_attached_vma(
     networks[ovs_linux_br1bond_nad.name] = ovs_linux_br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(iface="eth1", ip="10.200.3.1")
+    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
+        iface="eth1", ip="10.200.3.1"
+    )
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -260,7 +262,9 @@ def ovs_linux_bond_bridge_attached_vmb(
     networks[ovs_linux_br1bond_nad.name] = ovs_linux_br1bond_nad.name
 
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(iface="eth1", ip="10.200.3.2")
+    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
+        iface="eth1", ip="10.200.3.2"
+    )
 
     with VirtualMachineForTests(
         namespace=namespace.name,

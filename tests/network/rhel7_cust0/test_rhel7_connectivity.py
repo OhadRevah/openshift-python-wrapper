@@ -47,7 +47,7 @@ def rhel7_bridge_attached_vma(worker_node1, namespace, unprivileged_client, rhel
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -71,7 +71,7 @@ def rhel7_bridge_attached_vmb(worker_node2, namespace, unprivileged_client, rhel
     bootcmds = []
     bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     with VirtualMachineForTests(
         namespace=namespace.name,

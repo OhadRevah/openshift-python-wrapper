@@ -104,7 +104,7 @@ def _cloud_init_data(
         f"{ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true"
     )
 
-    data["bootcmd"] = bootcmds
+    data["userData"]["bootcmd"] = bootcmds
 
     runcmd = [
         "modprobe mpls_router",  # In order to test mpls we need to load driver
@@ -119,11 +119,12 @@ def _cloud_init_data(
         "nmcli connection up eth2",
         "ip route add 224.0.0.0/4 dev eth2",
     ]
-    data["runcmd"] = runcmd
+    data["userData"]["runcmd"] = runcmd
 
     if cloud_init_extra_user_data:
         update_cloud_init_extra_user_data(
-            cloud_init_data=data, cloud_init_extra_user_data=cloud_init_extra_user_data
+            cloud_init_data=data["userData"],
+            cloud_init_extra_user_data=cloud_init_extra_user_data,
         )
     return data
 

@@ -51,7 +51,7 @@ def rhsm_cloud_init_data():
     ]
 
     rhsm_cloud_init_data = RHEL_CLOUD_INIT_PASSWORD
-    rhsm_cloud_init_data["bootcmd"] = bootcmds
+    rhsm_cloud_init_data["userData"]["bootcmd"] = bootcmds
 
     return rhsm_cloud_init_data
 

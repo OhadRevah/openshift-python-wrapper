@@ -96,7 +96,7 @@ def sriov_vm1(
     name = "sriov-vm1"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(
+    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
         iface=iface_search_mac, ip="10.200.1.1"
     )
 
@@ -129,7 +129,7 @@ def sriov_vm2(
     name = "sriov-vm2"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(
+    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
         iface=iface_search_mac, ip="10.200.1.2"
     )
 
@@ -166,7 +166,7 @@ def sriov_vm3(
     name = "sriov-vm3"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network_vlan)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(
+    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
         iface=iface_search_mac, ip="10.200.3.1"
     )
 
@@ -203,7 +203,7 @@ def sriov_vm4(
     name = "sriov-vm4"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network_vlan)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["bootcmd"] = nmcli_add_con_cmds(
+    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
         iface=iface_search_mac, ip="10.200.3.2"
     )
 

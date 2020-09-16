@@ -103,14 +103,14 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
             for iface in ("eth%d" % idx for idx in range(1, 5))
         )
     )
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
     runcmd = [
         # 2 kernel flags are used to disable wrong arp behavior
         "sysctl -w net.ipv4.conf.all.arp_ignore=1",
         # Send arp reply only if ip belongs to the interface
         "sysctl -w net.ipv4.conf.all.arp_announce=2",
     ]
-    cloud_init_data["runcmd"] = runcmd
+    cloud_init_data["userData"]["runcmd"] = runcmd
 
     with VirtualMachineWithMultipleAttachments(
         namespace=namespace.name,

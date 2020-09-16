@@ -1016,7 +1016,7 @@ def cloud_init_data(
             if "rhel" in request.fspath.strpath
             else FEDORA_CLOUD_INIT_PASSWORD
         )
-        cloud_init_data["bootcmd"] = bootcmds
+        cloud_init_data["userData"]["bootcmd"] = bootcmds
 
         return cloud_init_data
 
@@ -1046,11 +1046,11 @@ def bridge_attached_helper_vm(
         )
 
         cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-        cloud_init_data["bootcmd"] = bootcmds
+        cloud_init_data["userData"]["bootcmd"] = bootcmds
 
         # On PSI, set DHCP server configuration
         if workers_type == ClusterHosts.Type.VIRTUAL:
-            cloud_init_data["runcmd"] = [
+            cloud_init_data["userData"]["runcmd"] = [
                 "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
                 f"\\nauthoritative;\\nsubnet {rhel7_psi_network_config['subnet']} "
                 "netmask 255.255.255.0 {"

@@ -73,7 +73,7 @@ def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
 def cloud_init(ip_address):
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     bootcmds = nmcli_add_con_cmds(iface="eth1", ip=ip_address)
-    cloud_init_data["bootcmd"] = bootcmds
+    cloud_init_data["userData"]["bootcmd"] = bootcmds
     return cloud_init_data
 
 
