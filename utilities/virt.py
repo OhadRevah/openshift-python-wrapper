@@ -5,6 +5,7 @@ import random
 import re
 import shlex
 import subprocess
+import time
 from contextlib import contextmanager
 
 import jinja2
@@ -145,8 +146,9 @@ class VirtualMachineForTests(VirtualMachine):
         efi_params=None,
         diskless_vm=False,
     ):
+        self.name = f"{name}-{time.time()}"
         super().__init__(
-            name=name, namespace=namespace, client=client, teardown=teardown
+            name=self.name, namespace=namespace, client=client, teardown=teardown
         )
         self.body = body
         self.interfaces = interfaces or []
@@ -204,7 +206,9 @@ class VirtualMachineForTests(VirtualMachine):
         res = super().to_dict()
         if self.body:
             if self.body.get("metadata"):
+                # We must set name in Template, since we use a unique name here we override it.
                 res["metadata"] = self.body["metadata"]
+                res["metadata"]["name"] = self.name
 
             res["spec"] = self.body["spec"]
 

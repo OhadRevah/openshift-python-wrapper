@@ -1,5 +1,3 @@
-import time
-
 import pytest
 from openshift.dynamic.exceptions import BadRequestError
 from resources.kubevirt import KubeVirt
@@ -19,7 +17,7 @@ def set_uninstall_strategy_remove_workloads(kubevirt_resource):
 
 @pytest.fixture()
 def remove_kubevirt_vm(unprivileged_client, namespace):
-    name = f"remove-kubevirt-vm-{time.time()}"
+    name = "remove-kubevirt-vm"
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,

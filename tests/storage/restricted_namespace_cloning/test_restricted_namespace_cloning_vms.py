@@ -3,7 +3,6 @@ Restricted namespace cloning
 """
 
 import logging
-import time
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -120,7 +119,7 @@ def test_create_vm_with_cloned_data_volume_positive(
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
             with VirtualMachineForTests(
-                name=f"vm-for-test-{time.time()}",
+                name="vm-for-test",
                 namespace=dst_ns.name,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
@@ -178,7 +177,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
             ):
                 dv_clone_dict = data_volume_clone_settings.to_dict()
                 with VirtualMachineForTests(
-                    name=f"vm-for-test-{time.time()}",
+                    name="vm-for-test",
                     namespace=dst_ns.name,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
@@ -233,7 +232,7 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
             ):
                 dv_clone_dict = data_volume_clone_settings.to_dict()
                 with VirtualMachineForTests(
-                    name=f"vm-for-test-{time.time()}",
+                    name="vm-for-test",
                     namespace=dst_ns.name,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
@@ -285,7 +284,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
             with VirtualMachineForTests(
-                name=f"vm-for-test-{time.time()}",
+                name="vm-for-test",
                 namespace=dst_ns.name,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,

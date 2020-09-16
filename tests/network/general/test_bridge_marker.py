@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import time
 
 import pytest
 import utilities.network
@@ -52,7 +51,7 @@ def bridge_networks(namespace):
 @pytest.fixture()
 def bridge_attached_vmi(namespace, bridge_marker_bridge_network):
     networks = {bridge_marker_bridge_network.name: bridge_marker_bridge_network.name}
-    name = _get_name(suffix=f"bridge-vm-{time.time()}")
+    name = _get_name(suffix="bridge-vm")
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
@@ -67,7 +66,7 @@ def bridge_attached_vmi(namespace, bridge_marker_bridge_network):
 @pytest.fixture()
 def multi_bridge_attached_vmi(namespace, bridge_networks, unprivileged_client):
     networks = {b.name: b.name for b in bridge_networks}
-    name = _get_name(suffix=f"multi-bridge-vm-{time.time()}")
+    name = _get_name(suffix="multi-bridge-vm")
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,

@@ -2,7 +2,6 @@
 
 import logging
 import os
-import time
 import urllib.request
 from contextlib import contextmanager
 
@@ -150,7 +149,7 @@ def create_vm_from_dv(
     dv, vm_name="cirros-vm", image=None, start=True, node_selector=None, memory=None,
 ):
     with VirtualMachineForTests(
-        name=f"{vm_name}-{time.time()}",
+        name=vm_name,
         namespace=dv.namespace,
         dv=dv,
         image=image,

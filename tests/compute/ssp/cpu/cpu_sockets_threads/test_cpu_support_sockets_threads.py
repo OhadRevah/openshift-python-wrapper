@@ -2,8 +2,6 @@
 Test cpu support for sockets and threads
 """
 
-import time
-
 import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
@@ -65,7 +63,7 @@ def vm_with_cpu_support(request, namespace, unprivileged_client):
     """
     VM with CPU support (cores,sockets,threads)
     """
-    name = f"vm-cpu-support-{time.time()}"
+    name = "vm-cpu-support"
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,

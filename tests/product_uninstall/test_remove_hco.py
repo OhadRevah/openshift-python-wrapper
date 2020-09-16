@@ -1,5 +1,4 @@
 import logging
-import time
 from datetime import datetime
 
 import pytest
@@ -30,7 +29,7 @@ def hyperconverged_resource(admin_client):
 
 @pytest.fixture(scope="module")
 def remove_hco_vm(unprivileged_client, namespace):
-    name = f"remove-hco-vm-{time.time()}"
+    name = "remove-hco-vm"
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
