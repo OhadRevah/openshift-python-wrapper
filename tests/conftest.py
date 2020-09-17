@@ -781,7 +781,11 @@ def kmp_vm_label(admin_client):
 
     for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
         if webhook["name"] == kmp_vm_webhook:
-            return webhook["namespaceSelector"]["matchLabels"]
+            return {
+                ldict["key"]: ldict["values"][0]
+                for ldict in webhook["namespaceSelector"]["matchExpressions"]
+                if ldict["key"] == kmp_vm_webhook
+            }
 
     raise Exception(f"Webhook {kmp_vm_webhook} was not found")
 
