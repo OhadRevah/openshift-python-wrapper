@@ -713,7 +713,8 @@ def get_cnv_os_info(vm):
     # subresource gusetosinfo also returns filesystem and user info (if any active user is logged in)
     # here they are deleted for easy compare vs data from get_linux_os_info()
     # fsInfo and userList values are checked in other tests
-    del data["fsInfo"]
+    data.pop("fsInfo", None)
+    data.pop("userList", None)
     return data
 
 

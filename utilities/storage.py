@@ -91,7 +91,7 @@ def data_volume(
         "dv_name": dv_name,
         "namespace": namespace.name,
         "source": source,
-        "size": params_dict.get("dv_size", "38Gi" if "win" in image else "25Gi"),
+        "size": params_dict.get("dv_size", "50Gi" if "win" in image else "25Gi"),
         "storage_class": params_dict.get("storage_class", storage_class),
         "access_modes": params_dict.get(
             "access_modes", storage_class_dict[storage_class]["access_mode"]
