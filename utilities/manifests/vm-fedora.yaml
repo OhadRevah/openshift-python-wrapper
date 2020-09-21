@@ -6,7 +6,6 @@ metadata:
     kubevirt.io/vm: {{ name }}
   name: {{ name }}
 spec:
-  running: false
   template:
     metadata:
       creationTimestamp: null

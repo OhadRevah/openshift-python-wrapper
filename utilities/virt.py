@@ -183,6 +183,8 @@ class VirtualMachineForTests(VirtualMachine):
         smm_enabled=None,
         efi_params=None,
         diskless_vm=False,
+        running=False,
+        run_strategy=None,
     ):
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -223,6 +225,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.efi_params = efi_params
         self.diskless_vm = diskless_vm
         self.is_vm_from_template = False
+        self.running = running
+        self.run_strategy = run_strategy
 
     def __enter__(self):
         super().__enter__()
@@ -255,8 +259,11 @@ class VirtualMachineForTests(VirtualMachine):
             "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
         )
 
-        if "running" not in res["spec"]:
-            res["spec"]["running"] = False
+        if self.run_strategy:
+            res["spec"].pop("running", None)
+            res["spec"]["runStrategy"] = self.run_strategy
+        else:
+            res["spec"]["running"] = self.running
 
         spec = res["spec"]["template"]["spec"]
         res["spec"]["template"].setdefault("metadata", {}).setdefault(
