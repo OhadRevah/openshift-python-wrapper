@@ -34,6 +34,7 @@ from resources.oauth import OAuth
 from resources.persistent_volume import PersistentVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
+from resources.resource import TIMEOUT
 from resources.secret import Secret
 from resources.service_account import ServiceAccount
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
@@ -1159,7 +1160,7 @@ def vm_instance_from_template(
         diskless_vm=params.get("diskless_vm"),
     ) as vm:
         if params.get("start_vm", True):
-            vm.start(wait=True)
+            vm.start(wait=True, timeout=params.get("vm_wait_timeout", TIMEOUT))
             vm.vmi.wait_until_running()
             if params.get("guest_agent", True):
                 wait_for_vm_interfaces(
