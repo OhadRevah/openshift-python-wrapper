@@ -454,8 +454,11 @@ class VirtualMachineForTests(VirtualMachine):
         return res
 
     def ssh_enable(self):
+        # Service name cannot contain a period, replace with hyphen if exists in VM name
         self.ssh_service = SSHServiceForVirtualMachineForTests(
-            name=f"ssh-{self.name}", namespace=self.namespace, vm_name=self.name
+            name=f"ssh-{self.name.replace('.', '-')}",
+            namespace=self.namespace,
+            vm_name=self.name,
         )
         self.ssh_service.create(wait=True)
         self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
