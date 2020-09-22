@@ -60,6 +60,8 @@ spec:
           name: dev
         - mountPath: /host/etc
           name: etc
+        - mountPath: /host/var
+          name: var
       dnsPolicy: ClusterFirst
       hostNetwork: true
       restartPolicy: Always
@@ -83,5 +85,9 @@ spec:
           path: /etc
           type: Directory
         name: etc
+      - hostPath:
+          path: /var
+          type: Directory
+        name: var
   updateStrategy:
     type: OnDelete

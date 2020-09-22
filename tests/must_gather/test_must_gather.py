@@ -210,6 +210,13 @@ def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
             marks=(pytest.mark.polarion("CNV-2730")),
             id="test_nodes_bridge_data",
         ),
+        pytest.param(
+            ["/bin/bash", "-c", "ls -l /host/var/lib/cni/bin"],
+            "var-lib-cni-bin",
+            "simple_compare",
+            marks=(pytest.mark.polarion("CNV-2810")),
+            id="test_nodes_cni_bin_data",
+        ),
     ],
 )
 def test_node_resource(
