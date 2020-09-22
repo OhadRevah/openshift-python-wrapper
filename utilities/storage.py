@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
+from resources.storage_class import StorageClass
 from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 
 
@@ -116,7 +117,7 @@ def data_volume(
         "content_type": DataVolume.ContentType.KUBEVIRT,
         # In hpp, volume must reside on the same worker as the VM
         "hostpath_node": schedulable_nodes[0].name
-        if storage_class == "hostpath-provisioner"
+        if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
         else None,
     }
     if source == "http":
@@ -181,6 +182,14 @@ def get_storage_class_dict_from_matrix(storage_class):
     if not matching_storage_classes:
         raise ValueError(f"{storage_class} not found in {storages}")
     return matching_storage_classes[0]
+
+
+def sc_is_hpp_with_immediate_volume_binding(sc):
+    return (
+        sc == "hostpath-provisioner"
+        and StorageClass(name=sc).instance["volumeBindingMode"]
+        == StorageClass.VolumeBindingMode.Immediate
+    )
 
 
 class HttpDeployment(Deployment):

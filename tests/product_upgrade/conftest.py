@@ -16,7 +16,10 @@ from utilities.network import (
     get_hosts_common_ports,
     network_nad,
 )
-from utilities.storage import get_images_external_http_server
+from utilities.storage import (
+    get_images_external_http_server,
+    sc_is_hpp_with_immediate_volume_binding,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -150,7 +153,7 @@ def dvs_for_upgrade(namespace, worker_node1):
             url=f"{get_images_external_http_server()}{py_config['latest_rhel_version']['image_path']}",
             size="25Gi",
             hostpath_node=worker_node1.name
-            if storage_class == "hostpath-provisioner"
+            if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
             else None,
         )
         dv.create()
