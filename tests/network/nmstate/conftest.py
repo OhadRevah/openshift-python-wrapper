@@ -83,7 +83,10 @@ def running_nmstate_vmb(nmstate_vmb):
 
 @pytest.fixture(scope="module")
 def bridges_on_management_ifaces_node1(
-    utility_pods, nodes_active_nics, node_management_iface_stats_node, worker_node1,
+    utility_pods,
+    nodes_active_nics,
+    node_management_iface_stats_node,
+    worker_node1,
 ):
     """
     This function will return a dictionary where  host node name of worker0 is the  key
@@ -118,7 +121,10 @@ def bridges_on_management_ifaces_node1(
 
 @pytest.fixture(scope="module")
 def bridges_on_management_ifaces_node2(
-    utility_pods, nodes_active_nics, node_management_iface_stats_node, worker_node2,
+    utility_pods,
+    nodes_active_nics,
+    node_management_iface_stats_node,
+    worker_node2,
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]

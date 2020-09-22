@@ -26,7 +26,9 @@ pytestmark = pytest.mark.usefixtures("skip_when_no_unprivileged_client_available
     "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
-            NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            marks=pytest.mark.polarion("CNV-2688"),
         ),
     ],
     indirect=True,
@@ -61,7 +63,9 @@ def test_unprivileged_user_clone_same_namespace_negative(
     "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
-            NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            marks=pytest.mark.polarion("CNV-2688"),
         ),
     ],
     indirect=True,
@@ -105,7 +109,9 @@ def test_unprivileged_user_clone_same_namespace_positive(
     "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
-            NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            marks=pytest.mark.polarion("CNV-2688"),
         ),
     ],
     indirect=True,
@@ -331,7 +337,9 @@ def test_user_permissions_negative(
     "namespace, data_volume_multi_storage_scope_module",
     [
         pytest.param(
-            NAMESPACE_PARAMS, DV_PARAMS, marks=pytest.mark.polarion("CNV-2688"),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            marks=pytest.mark.polarion("CNV-2688"),
         ),
     ],
     indirect=True,

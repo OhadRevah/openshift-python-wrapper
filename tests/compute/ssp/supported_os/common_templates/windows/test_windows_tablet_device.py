@@ -133,7 +133,7 @@ def test_tablet_virtio_tablet_device(
     bridge_attached_helper_vm,
     started_windows_vm,
 ):
-    """ Verify that when a Windows VM is configured with virtio tablet input
+    """Verify that when a Windows VM is configured with virtio tablet input
     device(virtio drivers do not support tablet device), the VM is running.
     """
 
@@ -186,7 +186,7 @@ def test_windows_server_default_tablet_device(
     bridge_attached_helper_vm,
     started_windows_vm,
 ):
-    """ Verify that when a Windows Server VM is configured by default with
+    """Verify that when a Windows Server VM is configured by default with
     tablet device
     """
 
@@ -238,7 +238,7 @@ def test_windows_desktop_default_tablet_device(
     bridge_attached_helper_vm,
     started_windows_vm,
 ):
-    """ Verify that when a Desktop Windows VM is configured by default with
+    """Verify that when a Desktop Windows VM is configured by default with
     tablet device
     """
 

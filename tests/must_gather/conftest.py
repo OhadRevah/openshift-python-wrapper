@@ -188,6 +188,7 @@ def config_map_by_name(request, admin_client):
 @pytest.fixture(scope="module")
 def config_maps_file(hco_namespace, cnv_must_gather):
     with open(
-        f"{cnv_must_gather}/namespaces/{hco_namespace.name}/core/configmaps.yaml", "r",
+        f"{cnv_must_gather}/namespaces/{hco_namespace.name}/core/configmaps.yaml",
+        "r",
     ) as config_map_file:
         return yaml.safe_load(config_map_file)

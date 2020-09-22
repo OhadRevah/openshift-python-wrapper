@@ -86,7 +86,7 @@ def get_vm_ssh_port(rhel7_workers, vm):
 
 
 def check_telnet_connection(ip, port):
-    """ Verifies successful telnet connection
+    """Verifies successful telnet connection
     Args:
         ip (str): host IP
         port (int): host port
@@ -111,7 +111,9 @@ def check_telnet_connection(ip, port):
 
 def migrate_vm(vm):
     with VirtualMachineInstanceMigration(
-        name=vm.name, namespace=vm.namespace, vmi=vm.vmi,
+        name=vm.name,
+        namespace=vm.namespace,
+        vmi=vm.vmi,
     ) as mig:
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
 
@@ -189,7 +191,7 @@ def check_vm_system_tablet_device(vm, console_impl, expected_device):
 
 
 def check_vm_xml_tablet_device(vm):
-    """ Verifies vm tablet device info in VM XML vs VM instance attributes
+    """Verifies vm tablet device info in VM XML vs VM instance attributes
     values.
     """
 
@@ -277,7 +279,10 @@ def check_windows_activated_license(
     if "reboot" in reset_action:
         reboot_vm(vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm)
     wait_for_windows_vm(
-        vm=vm, version=version, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm,
+        vm=vm,
+        version=version,
+        winrmcli_pod=winrmcli_pod,
+        helper_vm=helper_vm,
     )
     assert is_windows_activated(
         vm, winrmcli_pod, helper_vm
@@ -285,7 +290,7 @@ def check_windows_activated_license(
 
 
 def add_activate_windows_license(vm, winrm_pod, license_key, helper_vm=False):
-    """ Add Windows license to the VM, activate it online and verify that
+    """Add Windows license to the VM, activate it online and verify that
     the activation was successful.
     """
 
@@ -293,7 +298,9 @@ def add_activate_windows_license(vm, winrm_pod, license_key, helper_vm=False):
         vm=vm, winrmcli_pod=winrm_pod, windows_license=license_key, helper_vm=helper_vm
     )
     activate_windows_online(
-        vm=vm, winrmcli_pod=winrm_pod, helper_vm=helper_vm,
+        vm=vm,
+        winrmcli_pod=winrm_pod,
+        helper_vm=helper_vm,
     )
     assert is_windows_activated(vm=vm, winrmcli_pod=winrm_pod, helper_vm=helper_vm), (
         "VM license is not " "activated."
@@ -391,11 +398,16 @@ def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
     """ Compare FS data from guest agent subresource vs Windows guest OS data. """
     cnv_fs_info = None
     guest_fs_info = get_windows_fs_info(
-        vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm,
+        vm=vm,
+        winrmcli_pod=winrmcli_pod,
+        helper_vm=helper_vm,
     )
 
     cnv_fs_info_sampler = TimeoutSampler(
-        timeout=330, sleep=5, func=get_cnv_fs_info, vm=vm,
+        timeout=330,
+        sleep=5,
+        func=get_cnv_fs_info,
+        vm=vm,
     )
 
     try:
@@ -916,7 +928,10 @@ def validate_cnv_os_info_vs_libvirt_os_info(vm):
         return {"cnv_os_info": cnv_os_info, "libvirt_os_info": libvirt_os_info}
 
     os_info_sampler = TimeoutSampler(
-        timeout=330, sleep=5, func=_get_cnv_os_info_vs_libvirt_os_info, vm=vm,
+        timeout=330,
+        sleep=5,
+        func=_get_cnv_os_info_vs_libvirt_os_info,
+        vm=vm,
     )
 
     try:
@@ -941,7 +956,10 @@ def validate_cnv_fs_info_vs_libvirt_fs_info(vm):
         return {"cnv_fs_info": cnv_fs_info, "libvirt_fs_info": libvirt_fs_info}
 
     fs_info_sampler = TimeoutSampler(
-        timeout=330, sleep=5, func=_get_cnv_fs_info_vs_libvirt_fs_info, vm=vm,
+        timeout=330,
+        sleep=5,
+        func=_get_cnv_fs_info_vs_libvirt_fs_info,
+        vm=vm,
     )
 
     try:

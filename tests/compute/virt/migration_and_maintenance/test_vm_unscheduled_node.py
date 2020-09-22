@@ -56,7 +56,7 @@ def test_node_maintenance_job_rhel(
     unscheduled_node_vm,
     admin_client,
 ):
-    """ Test VM scheduling on a node under maintenance.
+    """Test VM scheduling on a node under maintenance.
     1. Start node maintenance job
     2. Once node status is 'Ready,SchedulingDisabled', start a VM (on the
     selected node) and check that VMI phase is 'scheduling'

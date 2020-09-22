@@ -97,7 +97,8 @@ def data_volume(
             "access_modes", storage_class_dict[storage_class]["access_mode"]
         ),
         "volume_mode": params_dict.get(
-            "volume_mode", storage_class_dict[storage_class]["volume_mode"],
+            "volume_mode",
+            storage_class_dict[storage_class]["volume_mode"],
         ),
         "content_type": DataVolume.ContentType.KUBEVIRT,
         # In hpp, volume must reside on the same worker as the VM

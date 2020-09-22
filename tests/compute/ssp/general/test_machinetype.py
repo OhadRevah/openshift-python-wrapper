@@ -44,7 +44,12 @@ def updated_configmap_machine_type(request, kubevirt_config_cm):
 
 @pytest.mark.parametrize(
     "vm",
-    [pytest.param({"vm_name": "default"}, marks=pytest.mark.polarion("CNV-3312"),)],
+    [
+        pytest.param(
+            {"vm_name": "default"},
+            marks=pytest.mark.polarion("CNV-3312"),
+        )
+    ],
     indirect=True,
 )
 def test_default_machine_type(machine_type_from_kubevirt_config_cm, vm):
@@ -72,13 +77,16 @@ def test_pc_q35_vm_machine_type(vm, expected):
     "vm",
     [
         pytest.param(
-            {"vm_name": "machine-type-mig"}, marks=pytest.mark.polarion("CNV-3323"),
+            {"vm_name": "machine-type-mig"},
+            marks=pytest.mark.polarion("CNV-3323"),
         )
     ],
     indirect=True,
 )
 def test_migrate_vm(
-    skip_rhel7_workers, machine_type_from_kubevirt_config_cm, vm,
+    skip_rhel7_workers,
+    machine_type_from_kubevirt_config_cm,
+    vm,
 ):
     with VirtualMachineInstanceMigration(
         name=vm.name, namespace=vm.namespace, vmi=vm.vmi
@@ -102,10 +110,12 @@ def test_migrate_vm(
     indirect=True,
 )
 def test_machine_type_after_cm_update(
-    machine_type_from_kubevirt_config_cm, vm, updated_configmap_machine_type,
+    machine_type_from_kubevirt_config_cm,
+    vm,
+    updated_configmap_machine_type,
 ):
-    """ Test machine type change in ConfigMap; existing VM does not get new
-    value after restart or migration """
+    """Test machine type change in ConfigMap; existing VM does not get new
+    value after restart or migration"""
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm

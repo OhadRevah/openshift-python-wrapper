@@ -257,7 +257,10 @@ def pytest_generate_tests(metafunc):
                 ids.append(f"#{matrix_param}#")
 
         metafunc.parametrize(
-            fixture_name, matrix_params, ids=ids, scope=scope[0],
+            fixture_name,
+            matrix_params,
+            ids=ids,
+            scope=scope[0],
         )
 
 
@@ -910,7 +913,8 @@ def network_attachment_definition(rhel7_ovs_bridge, namespace, rhel7_workers):
 
 @pytest.fixture(scope="class")
 def network_configuration(
-    rhel7_workers, network_attachment_definition,
+    rhel7_workers,
+    network_attachment_definition,
 ):
     if rhel7_workers:
         return {network_attachment_definition.name: network_attachment_definition.name}
@@ -918,7 +922,10 @@ def network_configuration(
 
 @pytest.fixture()
 def data_volume_multi_storage_scope_function(
-    request, namespace, storage_class_matrix__class__, schedulable_nodes,
+    request,
+    namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
@@ -930,7 +937,10 @@ def data_volume_multi_storage_scope_function(
 
 @pytest.fixture(scope="class")
 def data_volume_multi_storage_scope_class(
-    request, namespace, storage_class_matrix__class__, schedulable_nodes,
+    request,
+    namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
@@ -942,7 +952,10 @@ def data_volume_multi_storage_scope_class(
 
 @pytest.fixture(scope="module")
 def data_volume_multi_storage_scope_module(
-    request, namespace, storage_class_matrix__module__, schedulable_nodes,
+    request,
+    namespace,
+    storage_class_matrix__module__,
+    schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
@@ -984,7 +997,10 @@ def data_volume_scope_module(request, namespace, schedulable_nodes):
 
 @pytest.fixture(scope="class")
 def cloud_init_data(
-    request, workers_type, rhel7_workers, rhel7_psi_network_config,
+    request,
+    workers_type,
+    rhel7_workers,
+    rhel7_psi_network_config,
 ):
     if rhel7_workers:
         bootcmds = nmcli_add_con_cmds(
@@ -1081,7 +1097,7 @@ def vm_instance_from_template(
     cloud_init_data=None,
     node_selector=None,
 ):
-    """ Create a VM from template and start it (start step could be skipped by setting
+    """Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
 
     The call to this function is triggered by calling either
@@ -1129,7 +1145,7 @@ def vm_instance_from_template_multi_storage_scope_function(
     network_configuration,
     cloud_init_data,
 ):
-    """ Calls vm_instance_from_template contextmanager
+    """Calls vm_instance_from_template contextmanager
 
     Creates a VM from template and starts it (if requested).
     """
@@ -1154,7 +1170,7 @@ def vm_instance_from_template_multi_storage_scope_class(
     network_configuration,
     cloud_init_data,
 ):
-    """ Calls vm_instance_from_template contextmanager
+    """Calls vm_instance_from_template contextmanager
 
     Creates a VM from template and starts it (if requested).
     """
@@ -1189,7 +1205,7 @@ def sa_ready(namespace):
 
 
 def winrmcli_pod(namespace):
-    """ Deploy winrm-cli Pod into the same namespace.
+    """Deploy winrm-cli Pod into the same namespace.
 
     The call to this function is triggered by calling either
     winrmcli_pod_scope_module or winrmcli_pod_scope_class.
@@ -1333,7 +1349,8 @@ def skip_if_no_sriov_workers(sriov_workers):
 @pytest.fixture(scope="session")
 def sriov_node_state(sriov_workers):
     return SriovNetworkNodeState(
-        name=sriov_workers[0].name, policy_namespace=py_config["sriov_namespace"],
+        name=sriov_workers[0].name,
+        policy_namespace=py_config["sriov_namespace"],
     )
 
 

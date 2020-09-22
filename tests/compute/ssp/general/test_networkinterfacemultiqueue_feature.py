@@ -70,7 +70,8 @@ class TestLatestRHEL:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
-        self, vm_instance_from_template_multi_storage_scope_class,
+        self,
+        vm_instance_from_template_multi_storage_scope_class,
     ):
         wait_for_vm_interfaces(
             vmi=vm_instance_from_template_multi_storage_scope_class.vmi

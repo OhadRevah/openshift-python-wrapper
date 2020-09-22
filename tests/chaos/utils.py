@@ -51,7 +51,9 @@ class BackgroundLoop(threading.Thread):
     @staticmethod
     def _migrate(vm):
         with VirtualMachineInstanceMigration(
-            name=vm.name, namespace=vm.namespace, vmi=vm.vmi,
+            name=vm.name,
+            namespace=vm.namespace,
+            vmi=vm.vmi,
         ) as mig:
             mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
 

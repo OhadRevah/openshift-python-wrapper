@@ -487,7 +487,8 @@ def test_crd_resources(admin_client, cnv_must_gather, kubevirt_crd_resources):
                 )
             else:
                 resource_file = os.path.join(
-                    cnv_must_gather, f"cluster-scoped-resources/{crd_name}/{name}.yaml",
+                    cnv_must_gather,
+                    f"cluster-scoped-resources/{crd_name}/{name}.yaml",
                 )
 
             with open(resource_file) as resource_file:
@@ -500,7 +501,8 @@ def test_crd_resources(admin_client, cnv_must_gather, kubevirt_crd_resources):
 def test_imagestreamtag_resources(admin_client, cnv_must_gather):
     namespace = "openshift"
     istag_dir = os.path.join(
-        cnv_must_gather, f"namespaces/{namespace}/image.openshift.io/imagestreamtags/",
+        cnv_must_gather,
+        f"namespaces/{namespace}/image.openshift.io/imagestreamtags/",
     )
 
     assert len(os.listdir(istag_dir)) == len(

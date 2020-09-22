@@ -60,7 +60,7 @@ def vm_object_from_template(
     request=None,
     os_matrix=None,
 ):
-    """ Instantiate a VM object
+    """Instantiate a VM object
 
     The call to this function is triggered by calling either
     vm_object_from_template_multi_storage_scope_function or vm_object_from_template_multi_storage_scope_class.
@@ -204,7 +204,7 @@ def vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
 
 
 def vm_ssh_service(vm):
-    """ Manages (creation and deletion) of a service to enable SSH access to the VM
+    """Manages (creation and deletion) of a service to enable SSH access to the VM
 
     The call to this function is triggered by calling either
     vm_ssh_service_multi_storage_scope_function or

@@ -194,14 +194,18 @@ def test_successful_upload_token_validity(
     )
     dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
     with UploadTokenRequest(
-        name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
+        name=dv.name,
+        namespace=namespace.name,
+        pvc_name=dv.pvc.name,
     ) as utr:
         token = utr.create().status.token
         wait_for_upload_response_code(
             token=shuffle(token), data="test", response_code=HTTP_UNAUTHORIZED
         )
     with UploadTokenRequest(
-        name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
+        name=dv.name,
+        namespace=namespace.name,
+        pvc_name=dv.pvc.name,
     ) as utr:
         token = utr.create().status.token
         wait_for_upload_response_code(
@@ -241,7 +245,9 @@ def test_successful_upload_token_expiry(
     dv = data_volume_multi_storage_scope_function
     dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
     with UploadTokenRequest(
-        name=dv.name, namespace=namespace.name, pvc_name=dv.pvc.name,
+        name=dv.name,
+        namespace=namespace.name,
+        pvc_name=dv.pvc.name,
     ) as utr:
         token = utr.create().status.token
         LOGGER.info("Wait until token expires ...")
@@ -269,7 +275,9 @@ def _upload_image(
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=300)
         with UploadTokenRequest(
-            name=dv_name, namespace=namespace.name, pvc_name=dv.pvc.name,
+            name=dv_name,
+            namespace=namespace.name,
+            pvc_name=dv.pvc.name,
         ) as utr:
             token = utr.create().status.token
             sleep(5)
@@ -281,7 +289,10 @@ def _upload_image(
 
 @pytest.mark.polarion("CNV-2015")
 def test_successful_concurrent_uploads(
-    skip_upstream, upload_file_path, namespace, storage_class_matrix__module__,
+    skip_upstream,
+    upload_file_path,
+    namespace,
+    storage_class_matrix__module__,
 ):
     dvs_processes = []
     storage_class = [*storage_class_matrix__module__][0]
@@ -364,7 +375,9 @@ def test_successful_upload_missing_file_in_transit(
     indirect=True,
 )
 def test_print_response_body_on_error_upload(
-    namespace, download_specified_image, data_volume_multi_storage_scope_function,
+    namespace,
+    download_specified_image,
+    data_volume_multi_storage_scope_function,
 ):
     """
     Check that CDI now reports validation failures as part of the body response
@@ -372,7 +385,9 @@ def test_print_response_body_on_error_upload(
     """
     dv = data_volume_multi_storage_scope_function
     with UploadTokenRequest(
-        name=dv.name, namespace=dv.namespace, pvc_name=dv.pvc.name,
+        name=dv.name,
+        namespace=dv.namespace,
+        pvc_name=dv.pvc.name,
     ) as utr:
         token = utr.create().status.token
         LOGGER.debug("Start upload an image asynchronously ...")

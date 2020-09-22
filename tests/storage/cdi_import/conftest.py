@@ -59,7 +59,7 @@ def importer_container_status_reason(pod):
     """
     Get status for why importer pod container is waiting or terminated
     (for container status running there is no 'reason' key)
-     """
+    """
     container_state = pod.instance.status.containerStatuses[0].state
     if container_state.waiting:
         return container_state.waiting.reason

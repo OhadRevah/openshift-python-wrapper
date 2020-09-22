@@ -202,7 +202,11 @@ def test_upload_proxy_url_overridden(
 
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
-    skip_test_if_no_hpp_sc, cdi_config, namespace, hpp_storage_class, default_sc,
+    skip_test_if_no_hpp_sc,
+    cdi_config,
+    namespace,
+    hpp_storage_class,
+    default_sc,
 ):
     def _get_update_dict(default, storage_class):
         return {

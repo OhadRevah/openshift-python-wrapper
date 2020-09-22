@@ -52,8 +52,11 @@ def test_cm_smbios_defaults(
 
 @pytest.mark.polarion("CNV-4325")
 def test_vm_smbios_default_values(
-    skip_upstream, smbios_from_kubevirt_config_cm, configmap_smbios_vm,
+    skip_upstream,
+    smbios_from_kubevirt_config_cm,
+    configmap_smbios_vm,
 ):
     ssp_utils.check_vm_xml_smbios(
-        vm=configmap_smbios_vm, cm_values=smbios_from_kubevirt_config_cm,
+        vm=configmap_smbios_vm,
+        cm_values=smbios_from_kubevirt_config_cm,
     )

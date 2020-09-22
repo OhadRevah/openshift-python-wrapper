@@ -199,7 +199,11 @@ def dhcp_br_nad(dhcp_server_bridge, namespace):
 
 @pytest.fixture(scope="module")
 def dhcp_server_vlan_iface(
-    skip_if_no_multinic_nodes, utility_pods, worker_node1, vlan_base_iface, vlan_tag_id,
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    worker_node1,
+    vlan_base_iface,
+    vlan_tag_id,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name="dhcp-server-vlan-nncp",

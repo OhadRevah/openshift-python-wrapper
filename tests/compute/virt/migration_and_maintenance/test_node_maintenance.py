@@ -62,7 +62,12 @@ def drain_using_console(dyn_client, source_node, source_pod, vm, vm_cli):
 
 
 def drain_using_console_windows(
-    dyn_client, source_node, source_pod, vm, winrmcli_pod, helper_vm=False,
+    dyn_client,
+    source_node,
+    source_pod,
+    vm,
+    winrmcli_pod,
+    helper_vm=False,
 ):
     process_name = "mspaint.exe"
     pre_migrate_processid = compute_utils.start_and_fetch_processid_on_windows_vm(
@@ -84,7 +89,8 @@ def drain_using_console_windows(
         ), f"Post migrate processid is: {post_migrate_processid}. Pre migrate processid is: {pre_migrate_processid}"
 
     virt_utils.wait_for_node_schedulable_status(
-        node=vm.vmi.virt_launcher_pod.node, status=True,
+        node=vm.vmi.virt_launcher_pod.node,
+        status=True,
     )
 
 
@@ -166,7 +172,9 @@ def check_draining_process(dyn_client, source_pod, vm):
 
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
-    skip_when_one_node, admin_client, vm_container_disk_fedora,
+    skip_when_one_node,
+    admin_client,
+    vm_container_disk_fedora,
 ):
 
     drain_using_console(

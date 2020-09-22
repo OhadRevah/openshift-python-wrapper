@@ -47,7 +47,7 @@ def test_migrate_vm_windows(
     exposed_vm_service_multi_storage_scope_function,
     schedulable_node_ips,
 ):
-    """ Test CNV common templates with Windows
+    """Test CNV common templates with Windows
 
     Verify VM is migrated and previously-created expose service (winrm)
     can be accessed.

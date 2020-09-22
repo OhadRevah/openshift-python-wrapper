@@ -17,7 +17,10 @@ from utilities.virt import (
 
 @pytest.fixture(scope="module")
 def pod_net_vma(
-    worker_node1, namespace, unprivileged_client, nic_models_matrix__module__,
+    worker_node1,
+    namespace,
+    unprivileged_client,
+    nic_models_matrix__module__,
 ):
     name = "vma"
     with VirtualMachineForTests(
@@ -35,7 +38,10 @@ def pod_net_vma(
 
 @pytest.fixture(scope="module")
 def pod_net_vmb(
-    worker_node2, namespace, unprivileged_client, nic_models_matrix__module__,
+    worker_node2,
+    namespace,
+    unprivileged_client,
+    nic_models_matrix__module__,
 ):
     name = "vmb"
     with VirtualMachineForTests(

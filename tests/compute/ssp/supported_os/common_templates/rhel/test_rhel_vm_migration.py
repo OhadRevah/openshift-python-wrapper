@@ -41,7 +41,7 @@ def test_migrate_vm_rhel(
     vm_ssh_service_multi_storage_scope_function,
     schedulable_node_ips,
 ):
-    """ Test CNV common templates with RHEL
+    """Test CNV common templates with RHEL
 
     Verify VM is migrated and previously-created expose service (SSH)
     can be accessed.

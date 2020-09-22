@@ -44,7 +44,11 @@ def vm_network_config(mac_pool, all_nads, end_ip, mac_uid):
 
 def get_pods(dyn_client, namespace, label=None):
     return list(
-        Pod.get(dyn_client=dyn_client, namespace=namespace.name, label_selector=label,)
+        Pod.get(
+            dyn_client=dyn_client,
+            namespace=namespace.name,
+            label_selector=label,
+        )
     )
 
 

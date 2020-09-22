@@ -53,7 +53,10 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-2191")
 def test_successful_virtctl_upload_no_route(
-    skip_not_openshift, namespace, tmpdir, uploadproxy_route_deleted,
+    skip_not_openshift,
+    namespace,
+    tmpdir,
+    uploadproxy_route_deleted,
 ):
     route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
     with pytest.raises(NotFoundError):
@@ -292,7 +295,9 @@ def test_virtctl_image_upload_with_exist_pvc(
     LOGGER.info(out)
     assert "Processing completed successfully" in out
     with VirtualMachineForTests(
-        name="cnv-3727-vm", namespace=empty_pvc.namespace, pvc=empty_pvc,
+        name="cnv-3727-vm",
+        namespace=empty_pvc.namespace,
+        pvc=empty_pvc,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running(timeout=300)

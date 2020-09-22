@@ -19,7 +19,10 @@ SMALL_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 @pytest.fixture()
 def diskless_vm(
-    request, unprivileged_client, namespace, data_volume_scope_function,
+    request,
+    unprivileged_client,
+    namespace,
+    data_volume_scope_function,
 ):
     with vm_instance_from_template(
         request=request,

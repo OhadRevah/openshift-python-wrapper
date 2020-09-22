@@ -79,7 +79,11 @@ def bond_modes_bridge(
 
 @pytest.fixture(scope="class")
 def bond_modes_vm(
-    worker_node1, namespace, unprivileged_client, bond_modes_nad, bond_modes_bridge,
+    worker_node1,
+    namespace,
+    unprivileged_client,
+    bond_modes_nad,
+    bond_modes_bridge,
 ):
     name = "bond-vm"
     networks = OrderedDict()

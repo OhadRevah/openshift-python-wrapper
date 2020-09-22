@@ -213,7 +213,9 @@ def https_config_map(request, namespace):
         else {"ca.pem": get_cert(server_type="https_cert")}
     )
     with ConfigMap(
-        name="https-cert", namespace=namespace.name, data=data,
+        name="https-cert",
+        namespace=namespace.name,
+        data=data,
     ) as configmap:
         yield configmap
 
@@ -230,7 +232,10 @@ def registry_config_map(namespace):
 
 @pytest.fixture()
 def uploaded_dv(
-    request, namespace, storage_class_matrix__class__, tmpdir,
+    request,
+    namespace,
+    storage_class_matrix__class__,
+    tmpdir,
 ):
     storage_class = [*storage_class_matrix__class__][0]
     image_file = request.param.get("image_file")

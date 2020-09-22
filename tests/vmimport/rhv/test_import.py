@@ -159,7 +159,11 @@ def check_cnv_vm_data_volumes(vm, expected_vm_config):
 
 
 def check_cnv_vm_config(
-    vm, rhv_provider, source_vm_name, source_vm_cluster, expected_vm_config,
+    vm,
+    rhv_provider,
+    source_vm_name,
+    source_vm_cluster,
+    expected_vm_config,
 ):
     assert vm.exists, f"vm {source_vm_name} does not exist."
 
@@ -187,8 +191,14 @@ def check_cnv_vm_config(
 @pytest.mark.parametrize(
     "vm_key",
     [
-        pytest.param("cirros", marks=(pytest.mark.polarion("CNV-4381")),),
-        pytest.param("vm63chars", marks=(pytest.mark.polarion("CNV-4592")),),
+        pytest.param(
+            "cirros",
+            marks=(pytest.mark.polarion("CNV-4381")),
+        ),
+        pytest.param(
+            "vm63chars",
+            marks=(pytest.mark.polarion("CNV-4592")),
+        ),
     ],
 )
 def test_vm_import(secret, namespace, rhv_provider, source_cluster_name, vm_key):
@@ -242,7 +252,8 @@ def test_cancel_vm_import(
     vm_disk_id = rhv_provider.vm_disk_attachments(vm=source_vm)[0].id
     VirtualMachine(name=vm_name, namespace=namespace.name).wait_deleted()
     DataVolume(
-        name=f"{import_name(vm_name=vm_name)}-{vm_disk_id}", namespace=namespace.name,
+        name=f"{import_name(vm_name=vm_name)}-{vm_disk_id}",
+        namespace=namespace.name,
     ).wait_deleted()
     for resource in (Secret, ConfigMap):
         for resource_object in resource.get(
@@ -297,7 +308,9 @@ def test_two_disks_and_nics_vm_import(
             items=[
                 utils.POD_MAPPING,
                 ResourceMappingItem(
-                    target_name="mybridge", target_type="multus", source_name="vm/vm",
+                    target_name="mybridge",
+                    target_type="multus",
+                    source_name="vm/vm",
                 ),
             ]
         ),

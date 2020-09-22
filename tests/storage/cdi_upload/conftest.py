@@ -23,7 +23,8 @@ def upload_file_path(request, tmpdir):
     remote_image_name = params.get("remote_image_name", Images.Cirros.QCOW2_IMG)
     local_name = f"{tmpdir}/{remote_image_name}"
     storage_utils.downloaded_image(
-        remote_name=f"{remote_image_dir}/{remote_image_name}", local_name=local_name,
+        remote_name=f"{remote_image_dir}/{remote_image_name}",
+        local_name=local_name,
     )
     yield local_name
 

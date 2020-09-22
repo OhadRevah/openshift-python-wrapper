@@ -99,7 +99,11 @@ class TestConnectivity:
 class TestNegatives:
     @pytest.mark.polarion("CNV-4199")
     def test_opted_out_ns(
-        self, mac_pool, opted_out_ns, opted_out_ns_nad, opted_out_ns_vm,
+        self,
+        mac_pool,
+        opted_out_ns,
+        opted_out_ns_nad,
+        opted_out_ns_vm,
     ):
         assert not mac_pool.mac_is_within_range(
             mac=get_vmi_mac_address_by_iface_name(
@@ -109,7 +113,11 @@ class TestNegatives:
 
     @pytest.mark.polarion("CNV-4217")
     def test_wrong_label_ns(
-        self, mac_pool, wrong_label_ns, wrong_label_ns_nad, wrong_label_ns_vm,
+        self,
+        mac_pool,
+        wrong_label_ns,
+        wrong_label_ns_nad,
+        wrong_label_ns_vm,
     ):
         assert not mac_pool.mac_is_within_range(
             mac=get_vmi_mac_address_by_iface_name(

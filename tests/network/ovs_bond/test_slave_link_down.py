@@ -23,5 +23,6 @@ def test_connectivity_over_pod_network(
     for vm, ip in zip([running_ovs_bond_vma, running_ovs_bond_vmb], [vmb_ip, vma_ip]):
 
         network_utils.assert_ping_successful(
-            src_vm=vm, dst_ip=ip_interface(ip).ip,
+            src_vm=vm,
+            dst_ip=ip_interface(ip).ip,
         )

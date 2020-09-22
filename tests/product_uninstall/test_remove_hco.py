@@ -63,7 +63,9 @@ def start_time():
 
 @pytest.mark.destructive
 @pytest.mark.parametrize(
-    "data_volume_scope_class", [pytest.param(DV_PARAMS)], indirect=True,
+    "data_volume_scope_class",
+    [pytest.param(DV_PARAMS)],
+    indirect=True,
 )
 class TestRemoveHCO:
     @pytest.mark.polarion("CNV-3916")
@@ -77,22 +79,22 @@ class TestRemoveHCO:
         start_time,
     ):
         """
-       testcase to verify that HCO can really not be deleted when VMs and/or DVs are still defined.
+        testcase to verify that HCO can really not be deleted when VMs and/or DVs are still defined.
 
-       test plan:
+        test plan:
 
-        1. create a VM (vm fixture)
-        2. create an additional DV (data_volume fixture)
-        3. delete HCO CR
-        4. check that HCO CR is still there pending for deletion
-        5. check that we have an event on the CSV object to alert the user
-        6. delete the VM
-        7. check that HCO CR is still there
-        8. delete the DV
-        9. check that HCO CR and all the other CNV related CRs are gone
+         1. create a VM (vm fixture)
+         2. create an additional DV (data_volume fixture)
+         3. delete HCO CR
+         4. check that HCO CR is still there pending for deletion
+         5. check that we have an event on the CSV object to alert the user
+         6. delete the VM
+         7. check that HCO CR is still there
+         8. delete the DV
+         9. check that HCO CR and all the other CNV related CRs are gone
 
-        After the test:
-        Restore HCO after deletion
+         After the test:
+         Restore HCO after deletion
         """
         LOGGER.info(f"HCO deletion time (UTC): {start_time}")
 
@@ -110,7 +112,9 @@ class TestRemoveHCO:
 
         # (5) check that there is a warning event
         ok, msg = assert_event(
-            dyn_client=admin_client, event_reason=VIRT_EVENT, start_time=start_time,
+            dyn_client=admin_client,
+            event_reason=VIRT_EVENT,
+            start_time=start_time,
         )
         assert ok, msg
 

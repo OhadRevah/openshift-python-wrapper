@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def vm_started(vm, wait_for_interfaces=True):
-    """ Start a VM and wait for its status to be 'Running'
+    """Start a VM and wait for its status to be 'Running'
 
     If wait_for_interfaces - wait for interfaces to be up.
     """

@@ -152,7 +152,9 @@ def test_numa(vm_numa):
 
 @pytest.mark.polarion("CNV-4309")
 def test_numa_with_sriov(
-    skip_if_no_sriov_workers, vm_numa_sriov, workers_ssh_executors,
+    skip_if_no_sriov_workers,
+    vm_numa_sriov,
+    workers_ssh_executors,
 ):
     cpu_alloc = get_numa_cpu_allocation(
         vm_cpus=get_vm_cpu_list(vm=vm_numa_sriov),

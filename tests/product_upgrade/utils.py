@@ -33,7 +33,11 @@ def wait_for_dvs_import_completed(dvs_list):
         return all(map(lambda dv: dv.status == DataVolume.Status.SUCCEEDED, dvs_list))
 
     LOGGER.info("Wait for DVs import to end.")
-    samples = TimeoutSampler(timeout=1200, sleep=10, func=_dvs_import_completed,)
+    samples = TimeoutSampler(
+        timeout=1200,
+        sleep=10,
+        func=_dvs_import_completed,
+    )
     for sample in samples:
         if sample:
             return
@@ -90,7 +94,11 @@ def wait_for_operator_replacement(
 
 
 def pod_status_and_image(
-    dyn_client, hco_namespace, operators_version, old_operators_pods, delete_pod=False,
+    dyn_client,
+    hco_namespace,
+    operators_version,
+    old_operators_pods,
+    delete_pod=False,
 ):
     """
     Wait for a new operator pod to be created.
@@ -113,7 +121,9 @@ def pod_status_and_image(
     # For new operators which did not exist in a previous version
     else:
         new_operator_pod = get_operator_by_name(
-            dyn_client=dyn_client, hco_namespace=hco_namespace, operator_name=oper_name,
+            dyn_client=dyn_client,
+            hco_namespace=hco_namespace,
+            operator_name=oper_name,
         )
 
     LOGGER.info(
@@ -395,7 +405,10 @@ def get_nodes_status(nodes):
 def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
     nodes_status_after_upgrade = None
     nodes_sampler = TimeoutSampler(
-        timeout=600, sleep=5, func=get_nodes_status, nodes=nodes,
+        timeout=600,
+        sleep=5,
+        func=get_nodes_status,
+        nodes=nodes,
     )
 
     try:
@@ -425,7 +438,9 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
     )
     LOGGER.info("Get all operators PODs before upgrade")
     old_operators_pods = get_cluster_pods(
-        dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="operator",
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        pods_type="operator",
     )
     all_old_pods = get_cluster_pods(
         dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
@@ -540,7 +555,11 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
         timeout=TIMEOUT_60MIN,
         sleep=10,
         func=get_clusterversion,
-        exceptions=(NotFoundError, ResourceNotFoundError, InternalServerError,),
+        exceptions=(
+            NotFoundError,
+            ResourceNotFoundError,
+            InternalServerError,
+        ),
         dyn_client=dyn_client,
     )
 

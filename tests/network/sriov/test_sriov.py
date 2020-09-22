@@ -235,7 +235,12 @@ def running_sriov_vm4(sriov_vm4):
 class TestPingConnectivity:
     @pytest.mark.polarion("CNV-3963")
     def test_sriov_basic_connectivity(
-        self, sriov_network, sriov_vm1, sriov_vm2, running_sriov_vm1, running_sriov_vm2,
+        self,
+        sriov_network,
+        sriov_vm1,
+        sriov_vm2,
+        running_sriov_vm1,
+        running_sriov_vm2,
     ):
 
         assert_ping_successful(

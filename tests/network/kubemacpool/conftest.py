@@ -18,7 +18,10 @@ from . import utils as kmp_utils
 
 @pytest.fixture(scope="module")
 def bridge_device(
-    skip_if_no_multinic_nodes, nodes_active_nics, utility_pods, schedulable_nodes,
+    skip_if_no_multinic_nodes,
+    nodes_active_nics,
+    utility_pods,
+    schedulable_nodes,
 ):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
@@ -120,7 +123,11 @@ def all_nads(
 
 @pytest.fixture(scope="class")
 def vm_a(
-    namespace, all_nads, bridge_device, mac_pool, unprivileged_client,
+    namespace,
+    all_nads,
+    bridge_device,
+    mac_pool,
+    unprivileged_client,
 ):
     requested_network_config = kmp_utils.vm_network_config(
         mac_pool=mac_pool, all_nads=all_nads, end_ip=1, mac_uid="1"
@@ -136,7 +143,11 @@ def vm_a(
 
 @pytest.fixture(scope="class")
 def vm_b(
-    namespace, all_nads, bridge_device, mac_pool, unprivileged_client,
+    namespace,
+    all_nads,
+    bridge_device,
+    mac_pool,
+    unprivileged_client,
 ):
     requested_network_config = kmp_utils.vm_network_config(
         mac_pool=mac_pool, all_nads=all_nads, end_ip=2, mac_uid="2"
@@ -299,7 +310,8 @@ def kmp_crash_loop(
             replicas=kmp_deployment.instance.spec.replicas,
         )
         kmp_utils.wait_for_kmp_pods_to_be_in_crashloop(
-            dyn_client=admin_client, namespace=hco_namespace,
+            dyn_client=admin_client,
+            namespace=hco_namespace,
         )
         yield
 

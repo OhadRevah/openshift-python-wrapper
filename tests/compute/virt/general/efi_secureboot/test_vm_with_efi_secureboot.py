@@ -54,7 +54,9 @@ def validate_efi_vm_and_vm_xml(vm):
     Verify EFI directory structure exists and VM XML is secureBoot enabled.
     """
     vm_console_run_commands(
-        console_impl=console.RHEL, vm=vm, commands=["ls -ld /sys/firmware/efi"],
+        console_impl=console.RHEL,
+        vm=vm,
+        commands=["ls -ld /sys/firmware/efi"],
     )
 
     LOGGER.info("Verify VM XML - EFI secureBoot values.")

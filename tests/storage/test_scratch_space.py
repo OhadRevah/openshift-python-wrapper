@@ -434,7 +434,11 @@ def test_no_scratch_space_import_http_basic_auth(
     ],
 )
 def test_no_scratch_space_import_http(
-    skip_upstream, namespace, storage_class_matrix__module__, dv_name, file_name,
+    skip_upstream,
+    namespace,
+    storage_class_matrix__module__,
+    dv_name,
+    file_name,
 ):
     storage_class = [*storage_class_matrix__module__][0]
     create_dv_and_vm_no_scratch_space(

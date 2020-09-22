@@ -38,7 +38,9 @@ def verify_label(cdi_resources):
     "cdi_resources",
     [
         pytest.param(
-            {"resource": Pod}, marks=(pytest.mark.polarion("CNV-1034")), id="cdi-pods",
+            {"resource": Pod},
+            marks=(pytest.mark.polarion("CNV-1034")),
+            id="cdi-pods",
         ),
         pytest.param(
             {"resource": ServiceAccount},
@@ -66,7 +68,9 @@ def verify_label(cdi_resources):
             id="cdi-crd",
         ),
         pytest.param(
-            {"resource": Role}, marks=(pytest.mark.polarion("CNV-3483")), id="cdi-role",
+            {"resource": Role},
+            marks=(pytest.mark.polarion("CNV-3483")),
+            id="cdi-role",
         ),
         pytest.param(
             {"resource": RoleBinding},

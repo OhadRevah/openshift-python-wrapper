@@ -147,7 +147,10 @@ def running_vmb(vmb):
 
 @pytest.fixture(scope="module", autouse=True)
 def bridge_on_all_nodes(
-    skip_if_no_multinic_nodes, utility_pods, nodes_active_nics, schedulable_nodes,
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    nodes_active_nics,
+    schedulable_nodes,
 ):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,

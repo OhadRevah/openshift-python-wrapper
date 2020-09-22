@@ -146,7 +146,12 @@ def check_disk_count_in_vm(vm):
 
 @contextmanager
 def create_vm_from_dv(
-    dv, vm_name="cirros-vm", image=None, start=True, node_selector=None, memory=None,
+    dv,
+    vm_name="cirros-vm",
+    image=None,
+    start=True,
+    node_selector=None,
+    memory=None,
 ):
     with VirtualMachineForTests(
         name=vm_name,
@@ -412,7 +417,8 @@ def storage_params(storage_class_matrix):
 
 
 def get_importer_pod(
-    dyn_client, namespace,
+    dyn_client,
+    namespace,
 ):
     pods = list(Pod.get(dyn_client=dyn_client, namespace=namespace))
     for pod in pods:

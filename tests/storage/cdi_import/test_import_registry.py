@@ -151,7 +151,8 @@ def test_disk_image_not_conform_to_registy_disk(
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
         wait_for_importer_container_message(
-            importer_pod=importer_pod, msg=error_msg,
+            importer_pod=importer_pod,
+            msg=error_msg,
         )
 
 
@@ -306,7 +307,8 @@ def test_private_registry_with_untrusted_certificate(
                 dyn_client=admin_client, namespace=dv.namespace
             )
             wait_for_importer_container_message(
-                importer_pod=importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
+                importer_pod=importer_pod,
+                msg=ErrorMsg.EXIT_STATUS_1,
             )
 
 
@@ -400,7 +402,8 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
         wait_for_importer_container_message(
-            importer_pod=importer_pod, msg=ErrorMsg.LARGER_PVC_REQUIRED,
+            importer_pod=importer_pod,
+            msg=ErrorMsg.LARGER_PVC_REQUIRED,
         )
 
     # positive flow
@@ -527,5 +530,6 @@ def test_inject_invalid_cert_to_configmap(
         dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=600)
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
         wait_for_importer_container_message(
-            importer_pod=importer_pod, msg=ErrorMsg.EXIT_STATUS_1,
+            importer_pod=importer_pod,
+            msg=ErrorMsg.EXIT_STATUS_1,
         )

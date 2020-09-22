@@ -348,7 +348,8 @@ def test_wrong_content_type(
             marks=(
                 pytest.mark.polarion("CNV-2553"),
                 pytest.mark.bugzilla(
-                    1827793, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+                    1827793,
+                    skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
                 ),
             ),
         ),
@@ -601,12 +602,20 @@ def blank_disk_import(namespace, storage_params, dv_name):
 @pytest.mark.parametrize(
     "number_of_threads",
     [
-        pytest.param(1, marks=(pytest.mark.polarion("CNV-2151")),),
-        pytest.param(4, marks=(pytest.mark.polarion("CNV-2001")),),
+        pytest.param(
+            1,
+            marks=(pytest.mark.polarion("CNV-2151")),
+        ),
+        pytest.param(
+            4,
+            marks=(pytest.mark.polarion("CNV-2001")),
+        ),
     ],
 )
 def test_successful_concurrent_blank_disk_import(
-    namespace, storage_class_matrix__module__, number_of_threads,
+    namespace,
+    storage_class_matrix__module__,
+    number_of_threads,
 ):
     dv_processes = []
     for dv in range(number_of_threads):

@@ -283,7 +283,11 @@ def test_hpp_specify_node_immediate(
     ],
 )
 def test_hostpath_http_import_dv(
-    skip_when_hpp_no_immediate, namespace, dv_name, image_name, worker_node1,
+    skip_when_hpp_no_immediate,
+    namespace,
+    dv_name,
+    image_name,
+    worker_node1,
 ):
     """
     Check that CDI importing from HTTP endpoint works well with hostpath-provisioner
@@ -304,7 +308,8 @@ def test_hostpath_http_import_dv(
 
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
-    skip_when_hpp_no_waitforfirstconsumer, namespace,
+    skip_when_hpp_no_waitforfirstconsumer,
+    namespace,
 ):
     """
     Check that in the condition of the volumeBindingMode of hostpath-provisioner StorageClass is 'WaitForFirstConsumer',
@@ -334,7 +339,9 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 
 @pytest.mark.polarion("CNV-3280")
 def test_hpp_pvc_specify_node_waitforfirstconsumer(
-    skip_when_hpp_no_waitforfirstconsumer, namespace, worker_node1,
+    skip_when_hpp_no_waitforfirstconsumer,
+    namespace,
+    worker_node1,
 ):
     """
     Check that kubevirt.io/provisionOnNode annotation works in WaitForFirstConsumer mode.
@@ -416,7 +423,8 @@ def test_hostpath_upload_dv_with_token(
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     storage_utils.downloaded_image(
-        remote_name=remote_name, local_name=local_name,
+        remote_name=remote_name,
+        local_name=local_name,
     )
     with create_dv(
         source="upload",
@@ -532,7 +540,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     ) as target_dv:
         target_dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND)
         upload_target_pod = get_pod_by_name_prefix(
-            dyn_client=admin_client, pod_prefix="cdi-upload", namespace=namespace.name,
+            dyn_client=admin_client,
+            pod_prefix="cdi-upload",
+            namespace=namespace.name,
         )
         upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
         assert_selected_node_annotation(
@@ -542,7 +552,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         )
         target_dv.wait(timeout=300)
         with storage_utils.create_vm_from_dv(
-            dv=target_dv, vm_name="fedora-vm", memory="1Gi",
+            dv=target_dv,
+            vm_name="fedora-vm",
+            memory="1Gi",
         ) as vm:
             wait_for_console(vm=vm, console_impl=console.Fedora)
 

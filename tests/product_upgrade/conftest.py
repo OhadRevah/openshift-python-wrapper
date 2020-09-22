@@ -27,7 +27,10 @@ MARKETPLACE_NAMESPACE = "openshift-marketplace"
 
 @pytest.fixture(scope="module", autouse=True)
 def upgrade_bridge_on_all_nodes(
-    skip_if_no_multinic_nodes, utility_pods, nodes_active_nics, schedulable_nodes,
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    nodes_active_nics,
+    schedulable_nodes,
 ):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
