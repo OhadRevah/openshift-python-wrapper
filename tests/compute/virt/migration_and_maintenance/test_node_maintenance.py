@@ -45,7 +45,7 @@ def drain_node_console(node):
     try:
         LOGGER.info(f"Drain the node {node.name}")
         run(
-            f"nohup oc adm drain {node.name} --delete-local-data --ignore-daemonsets=true --force &",
+            f"nohup oc adm drain {node.name} --delete-local-data --ignore-daemonsets=true &",
             shell=True,
         )
         yield
