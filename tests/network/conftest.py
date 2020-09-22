@@ -10,6 +10,10 @@ from resources.network_addons_config import NetworkAddonsConfig
 from resources.pod import Pod
 
 from tests.network.utils import network_device
+from utilities.network import get_ipv6_address, ip_version_data_from_matrix
+
+
+IPV6_STR = "ipv6"
 
 
 @pytest.fixture(scope="session")
@@ -112,3 +116,46 @@ def network_addons_config(admin_client):
     nac = list(NetworkAddonsConfig.get(dyn_client=admin_client))
     assert nac, "There should be one NetworkAddonsConfig CR."
     yield nac[0]
+
+
+@pytest.fixture(scope="session")
+def dual_stack_cluster(admin_client):
+    virt_handler_pod = list(
+        Pod.get(
+            dyn_client=admin_client,
+            label_selector="kubevirt.io=virt-handler",
+        )
+    )[0]
+
+    return get_ipv6_address(cnv_resource=virt_handler_pod) is not None
+
+
+@pytest.fixture()
+def skip_ipv6_if_not_dual_stack_cluster(
+    request,
+    dual_stack_cluster,
+):
+    if (
+        ip_version_data_from_matrix(request=request) == IPV6_STR
+        and not dual_stack_cluster
+    ):
+        pytest.skip(msg="IPv6 is not supported in this cluster")
+
+
+@pytest.fixture(scope="module")
+def ipv6_network_data(
+    request,
+    dual_stack_cluster,
+):
+    # dhcp4 should be enabled if it's a dual-stack flow, i.e. both IPv4 and IPv6 should be enabled
+    # on the primary interface. The value returned from ip_version_data_from_matrix indicates that.
+    if dual_stack_cluster:
+        return {
+            "ethernets": {
+                "eth0": {
+                    "dhcp4": ip_version_data_from_matrix(request) is not None,
+                    "addresses": ["fd10:0:2::2/120"],
+                    "gateway6": "fd10:0:2::1",
+                },
+            },
+        }

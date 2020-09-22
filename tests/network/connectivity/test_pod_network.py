@@ -7,21 +7,23 @@ import pytest
 from pytest_testconfig import config as py_config
 
 import utilities.network
+from tests.network.conftest import IPV6_STR
 from tests.network.connectivity import utils
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def pod_net_vma(
+    skip_ipv6_if_not_dual_stack_cluster,
     worker_node1,
     namespace,
     unprivileged_client,
     nic_models_matrix__module__,
+    cloud_init_ipv6_network_data,
 ):
     name = "vma"
     with VirtualMachineForTests(
@@ -31,18 +33,20 @@ def pod_net_vma(
         client=unprivileged_client,
         network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+        cloud_init_data=cloud_init_ipv6_network_data,
     ) as vm:
         vm.start(wait=True)
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def pod_net_vmb(
+    skip_ipv6_if_not_dual_stack_cluster,
     worker_node2,
     namespace,
     unprivileged_client,
     nic_models_matrix__module__,
+    cloud_init_ipv6_network_data,
 ):
     name = "vmb"
     with VirtualMachineForTests(
@@ -52,28 +56,36 @@ def pod_net_vmb(
         client=unprivileged_client,
         network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+        cloud_init_data=cloud_init_ipv6_network_data,
     ) as vm:
         vm.start(wait=True)
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def pod_net_running_vma(pod_net_vma):
     pod_net_vma.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=pod_net_vma.vmi)
     return pod_net_vma
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def pod_net_running_vmb(pod_net_vmb):
     pod_net_vmb.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=pod_net_vmb.vmi)
     return pod_net_vmb
 
 
+@pytest.fixture(scope="module")
+def cloud_init_ipv6_network_data(ipv6_network_data):
+    return utilities.network.compose_cloud_init_data_dict(
+        ipv6_network_data=ipv6_network_data
+    )
+
+
 @pytest.mark.polarion("CNV-2332")
 def test_connectivity_over_pod_network(
+    ip_stack_version_matrix__module__,
     skip_when_one_node,
     skip_rhel7_workers,
     pod_net_vma,
@@ -85,9 +97,22 @@ def test_connectivity_over_pod_network(
     """
     Check connectivity
     """
+    if ip_stack_version_matrix__module__ == IPV6_STR:
+        dst_ip = utilities.network.get_ipv6_address(
+            cnv_resource=pod_net_running_vmb.vmi
+        )
+        if not dst_ip:
+            raise Exception(
+                f"Cannot get valid IPv6 address from {pod_net_running_vmb.vmi.name}."
+            )
+    else:
+        dst_ip = ip_interface(
+            address=pod_net_running_vmb.vmi.interfaces[0]["ipAddress"]
+        ).ip
+
     utilities.network.assert_ping_successful(
         src_vm=pod_net_running_vma,
-        dst_ip=ip_interface(pod_net_running_vmb.vmi.interfaces[0]["ipAddress"]).ip,
+        dst_ip=dst_ip,
     )
 
 

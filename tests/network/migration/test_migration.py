@@ -13,12 +13,13 @@ from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
-    cloud_init_network_data,
+    compose_cloud_init_data_dict,
+    get_ipv6_ip_str,
     get_vmi_ip_v4_by_name,
+    ip_version_data_from_matrix,
     network_nad,
 )
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     enable_ssh_service_in_vm,
     fedora_vm_body,
@@ -33,6 +34,13 @@ LOGGER = logging.getLogger(__name__)
 
 def http_port_accessible(vm, server_ip, server_port):
     connection_timeout = 30
+
+    # For IPv6 - significantly longer timeout should be used. The reason is that it takes time for the *IPv6
+    # MAC table* to learn the new MAC address for the default gateway, which is the pod bridge.
+    if get_ipv6_ip_str(dst_ip=server_ip):
+        server_ip = f"'[{server_ip}]'"
+        connection_timeout = 120
+
     vm_console_run_commands(
         console_impl=console.Fedora,
         vm=vm,
@@ -82,11 +90,13 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace, unprivileged_client):
+def vma(namespace, unprivileged_client, ipv6_network_data):
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = compose_cloud_init_data_dict(
+        network_data=network_data_data,
+        ipv6_network_data=ipv6_network_data,
+    )
 
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
@@ -101,11 +111,13 @@ def vma(namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace, unprivileged_client):
+def vmb(namespace, unprivileged_client, ipv6_network_data):
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = compose_cloud_init_data_dict(
+        network_data=network_data_data,
+        ipv6_network_data=ipv6_network_data,
+    )
 
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
@@ -172,8 +184,17 @@ def restarted_vm(vma):
 
 
 @pytest.fixture()
-def http_service(namespace, running_vma, running_vmb):
-    running_vmb.custom_service_enable(service_name="http-masquerade-migration", port=80)
+def http_service(request, namespace, running_vma, running_vmb):
+    ip_family = ip_version_data_from_matrix(request=request)
+
+    # ipFamily value casing in Service is 'IPv#', so set the letter casing accordingly.
+    ip_family = ip_family.replace(ip_family[:2], ip_family[:2].upper())
+
+    running_vmb.custom_service_enable(
+        service_name=f"http-masquerade-migration-{ip_family.lower()}",
+        port=80,
+        ip_family=ip_family,
+    )
 
     # Check that http service on port 80 can be accessed by cluster IP
     # before vmi migration.
@@ -292,9 +313,11 @@ def test_connectivity_after_migration_and_restart(
 
 @pytest.mark.polarion("CNV-2061")
 def test_migration_with_masquerade(
+    ip_stack_version_matrix__module__,
     admin_client,
     skip_rhel7_workers,
     skip_when_one_node,
+    skip_ipv6_if_not_dual_stack_cluster,
     utility_pods,
     vma,
     vmb,
@@ -311,6 +334,7 @@ def test_migration_with_masquerade(
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert running_vmb.vmi.instance.status.nodeName != vmi_node_before_migration
         assert running_vmb.vmi.instance.status.migrationState.completed
+
         http_port_accessible(
             vm=running_vma,
             server_ip=running_vmb.custom_service.service_ip,

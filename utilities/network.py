@@ -17,6 +17,7 @@ from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities import console
+from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
 
 
 LOGGER = logging.getLogger(__name__)
@@ -719,10 +720,13 @@ def cloud_init_network_data(data):
 
 
 def console_ping(src_vm, dst_ip, packetsize=None):
-    ping_cmd = f"ping -w 3 {dst_ip}"
+    ping_ipv6 = "-6 " if get_ipv6_ip_str(dst_ip=dst_ip) else ""
+
+    ping_cmd = f"ping {ping_ipv6}-w 3 {dst_ip}"
     if packetsize:
         ping_cmd += f" -s {packetsize} -M do"
     with console.Fedora(vm=src_vm) as src_vm_console:
+        LOGGER.info(f'From {src_vm.name} console sending "{ping_cmd}"')
         src_vm_console.sendline(ping_cmd)
         while True:
             line = src_vm_console.readline()
@@ -734,3 +738,67 @@ def console_ping(src_vm, dst_ip, packetsize=None):
 
 def assert_ping_successful(src_vm, dst_ip, packetsize=None):
     assert console_ping(src_vm, dst_ip, packetsize)[0] == b"0"
+
+
+def get_ipv6_address(cnv_resource):
+    """
+    Attempt to find an IPv6 address in one of 2 possible resources - VirtualMachineInstance or Pod.
+
+    Args:
+        cnv_resource (Resource): VirtualMachineInstance or Pod
+
+    Returns:
+        str: First found IPv6 address, or None.
+    """
+    try:
+        # Assume the resource type is VMI.
+        addr_list = cnv_resource.interfaces[0]["ipAddresses"]
+    except AttributeError:
+        # Base assumption failed - so now assume the resource type is Pod.
+        addr_list = [ip_addr["ip"] for ip_addr in cnv_resource.instance.status.podIPs]
+
+    ipv6_list = [ip for ip in addr_list if get_ipv6_ip_str(dst_ip=ip)]
+    return ipv6_list[0] if ipv6_list else None
+
+
+def get_ipv6_ip_str(dst_ip):
+    """
+    Return the IPv6 address string if the input address is an IPv6 address, else None.
+    """
+    try:
+        return ipaddress.IPv6Address(address=dst_ip)
+    except ipaddress.AddressValueError:
+        return
+
+
+def ip_version_data_from_matrix(request):
+    """
+    Check if fixture ip_stack_version_matrix__<scope>__ is used in the flow, to indicate whether
+    it's a dual-stack test or not.
+
+    Args:
+        request (fixtures.SubRequest): Test's parameterized request.
+
+    Returns:
+        str: The IP family (IPv4 or IPv6) is the matrix fixture is used, else None.
+    """
+    ip_stack_matrix_fixture = [
+        fix_name
+        for fix_name in request.fixturenames
+        if "ip_stack_version_matrix__" in fix_name
+    ]
+    if not ip_stack_matrix_fixture:
+        return
+    return request.getfixturevalue(ip_stack_matrix_fixture[0])
+
+
+def compose_cloud_init_data_dict(network_data=None, ipv6_network_data=None):
+    init_data = FEDORA_CLOUD_INIT_PASSWORD
+    interfaces_data = {"ethernets": {}}
+    for data_input in [network_data, ipv6_network_data]:
+        if data_input:
+            interfaces_data["ethernets"].update(data_input["ethernets"])
+
+    if interfaces_data["ethernets"]:
+        init_data.update(cloud_init_network_data(data=interfaces_data))
+    return init_data

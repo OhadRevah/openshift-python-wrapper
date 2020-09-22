@@ -598,11 +598,17 @@ class VirtualMachineForTests(VirtualMachine):
         self.ssh_service.create(wait=True)
 
     def custom_service_enable(
-        self, service_name, port, service_type=Service.Type.CLUSTER_IP, service_ip=None
+        self,
+        service_name,
+        port,
+        service_type=Service.Type.CLUSTER_IP,
+        service_ip=None,
+        ip_family=None,
     ):
         """
         service_type is set with K8S default service type (ClusterIP)
         service_ip - relevant for node port; default will be set to vm node IP
+        ip_family - IP family (IPv4/6)
         To use the service: custom_service.service_ip and custom_service.service_port
         """
         self.custom_service = ServiceForVirtualMachineForTests(
@@ -612,6 +618,7 @@ class VirtualMachineForTests(VirtualMachine):
             port=port,
             service_type=service_type,
             target_ip=service_ip,
+            ip_family=ip_family,
         )
         self.custom_service.create(wait=True)
 
@@ -934,6 +941,7 @@ class ServiceForVirtualMachineForTests(Service):
         port,
         service_type=Service.Type.CLUSTER_IP,
         target_ip=None,
+        ip_family=None,
         teardown=True,
         rhel7_workers=False,
     ):
@@ -944,6 +952,7 @@ class ServiceForVirtualMachineForTests(Service):
         self.service_type = service_type
         self.target_ip = target_ip
         self.rhel7_workers = rhel7_workers
+        self.ip_family = ip_family
 
     def to_dict(self):
         res = super().to_dict()
@@ -952,6 +961,7 @@ class ServiceForVirtualMachineForTests(Service):
             "selector": {"kubevirt.io/domain": self.vm.name},
             "sessionAffinity": "None",
             "type": self.service_type,
+            "ipFamily": self.ip_family or "IPv4",
         }
         return res
 

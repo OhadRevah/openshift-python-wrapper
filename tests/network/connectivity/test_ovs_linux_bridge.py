@@ -6,24 +6,25 @@ from collections import OrderedDict
 import pytest
 from pytest_testconfig import config as py_config
 
+from tests.network.conftest import IPV6_STR
 from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import assert_no_ping
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     assert_ping_successful,
-    cloud_init_network_data,
+    compose_cloud_init_data_dict,
+    get_ipv6_address,
     get_vmi_ip_v4_by_name,
     network_nad,
 )
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
 
 
-def _masquerade_vmib_ip(vmib, bridge):
+def _masquerade_vmib_ip(vmib, bridge, ipv6_testing):
     # Using masquerade we can just ping vmb pods ip
     masquerade_interface = [
         i
@@ -31,6 +32,8 @@ def _masquerade_vmib_ip(vmib, bridge):
         if i["name"] == bridge and "masquerade" in i.keys()
     ]
     if masquerade_interface:
+        if ipv6_testing:
+            return get_ipv6_address(cnv_resource=vmib)
         return vmib.virt_launcher_pod.instance.status.podIP
 
     return get_vmi_ip_v4_by_name(vmi=vmib, name=bridge)
@@ -97,6 +100,7 @@ def ovs_linux_bridge_attached_vma(
     ovs_linux_nad,
     ovs_linux_br1vlan100_nad,
     ovs_linux_br1vlan200_nad,
+    ipv6_network_data,
 ):
     name = "vma"
     networks = OrderedDict()
@@ -110,8 +114,11 @@ def ovs_linux_bridge_attached_vma(
             "eth3": {"addresses": ["10.200.2.1/24"]},
         }
     }
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+
+    cloud_init_data = compose_cloud_init_data_dict(
+        network_data=network_data_data,
+        ipv6_network_data=ipv6_network_data,
+    )
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -135,6 +142,7 @@ def ovs_linux_bridge_attached_vmb(
     ovs_linux_nad,
     ovs_linux_br1vlan100_nad,
     ovs_linux_br1vlan300_nad,
+    ipv6_network_data,
 ):
     name = "vmb"
     networks = OrderedDict()
@@ -149,8 +157,10 @@ def ovs_linux_bridge_attached_vmb(
         }
     }
 
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = compose_cloud_init_data_dict(
+        network_data=network_data_data,
+        ipv6_network_data=ipv6_network_data,
+    )
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -182,7 +192,9 @@ def ovs_linux_bridge_attached_running_vmib(ovs_linux_bridge_attached_vmb):
     return vmi
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers", "skip_when_one_node")
+@pytest.mark.usefixtures(
+    "skip_rhel7_workers", "skip_when_one_node", "skip_ipv6_if_not_dual_stack_cluster"
+)
 class TestConnectivity:
     @pytest.mark.parametrize(
         "bridge",
@@ -203,6 +215,7 @@ class TestConnectivity:
         self,
         skip_if_no_multinic_nodes,
         bridge,
+        ip_stack_version_matrix__module__,
         rhel7_workers,
         namespace,
         network_interface,
@@ -215,9 +228,20 @@ class TestConnectivity:
             # https://bugzilla.redhat.com/show_bug.cgi?id=1787576
             pytest.skip(msg="Masquerade not working on RHEL7 workers.")
 
+        ipv6_testing = ip_stack_version_matrix__module__ == IPV6_STR
+        if ipv6_testing:
+            if bridge != "default":
+                pytest.skip(
+                    msg="IPv6 is only supported on default interface, and shouldn't be covered in this test."
+                )
+
         assert_ping_successful(
             src_vm=ovs_linux_bridge_attached_running_vmia,
-            dst_ip=_masquerade_vmib_ip(ovs_linux_bridge_attached_running_vmib, bridge),
+            dst_ip=_masquerade_vmib_ip(
+                vmib=ovs_linux_bridge_attached_running_vmib,
+                bridge=bridge,
+                ipv6_testing=ipv6_testing,
+            ),
         )
 
     @pytest.mark.polarion("CNV-2072")

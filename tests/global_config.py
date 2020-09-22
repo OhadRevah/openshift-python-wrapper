@@ -377,6 +377,11 @@ latest_rhel_version = _generate_latest_os_dict(os_list=rhel_os_matrix)
 latest_windows_version = _generate_latest_os_dict(os_list=windows_os_matrix)
 latest_fedora_version = _generate_latest_os_dict(os_list=fedora_os_matrix)
 
+ip_stack_version_matrix = [
+    "ipv4",
+    "ipv6",
+]
+
 for _dir in dir():
     val = locals()[_dir]
     if not (
