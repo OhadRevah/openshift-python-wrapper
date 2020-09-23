@@ -5,7 +5,7 @@ from resources.network_addons_config import NetworkAddonsConfig
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
-@pytest.fixture(scope="module", autouse="True")
+@pytest.fixture(scope="module")
 def net_add_op_bridge_device(utility_pods, schedulable_nodes):
     with network_utils.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
@@ -17,7 +17,7 @@ def net_add_op_bridge_device(utility_pods, schedulable_nodes):
         yield br_dev
 
 
-@pytest.fixture(scope="module", autouse="True")
+@pytest.fixture(scope="module")
 def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
     with utilities.network.network_nad(
         nad_type=utilities.network.LINUX_BRIDGE,
