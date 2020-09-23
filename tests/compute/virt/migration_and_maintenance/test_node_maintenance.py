@@ -11,6 +11,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
 from resources.pod import Pod
+from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
@@ -174,6 +175,36 @@ def check_draining_process(dyn_client, source_pod, vm):
     ), f"Source Node: {source_node.name} and Target Node: {target_node.name} should be different"
 
 
+def get_migration_job(dyn_client, namespace):
+    for migration_job in VirtualMachineInstanceMigration.get(
+        dyn_client=dyn_client, namespace=namespace
+    ):
+        return migration_job
+
+
+@pytest.fixture()
+def no_migration_job(admin_client, vm_instance_from_template_multi_storage_scope_class):
+    migration_job = get_migration_job(
+        dyn_client=admin_client,
+        namespace=vm_instance_from_template_multi_storage_scope_class.namespace,
+    )
+    if migration_job:
+        migration_job.delete(wait=True)
+
+
+def migration_job_sampler(dyn_client, namespace):
+    samples = TimeoutSampler(
+        timeout=30,
+        sleep=2,
+        func=get_migration_job,
+        dyn_client=dyn_client,
+        namespace=namespace,
+    )
+    for sample in samples:
+        if sample:
+            return
+
+
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
     skip_when_one_node,
@@ -256,6 +287,42 @@ class TestNodeMaintenanceRHEL:
             vm_cli=console.RHEL(vm=vm_instance_from_template_multi_storage_scope_class),
         )
 
+    @pytest.mark.polarion("CNV-4995")
+    def test_migration_when_multiple_nodes_unschedulable_using_console_rhel(
+        self,
+        vm_instance_from_template_multi_storage_scope_class,
+        schedulable_nodes,
+        admin_client,
+    ):
+        """Test VMI migration, when multiple nodes are unschedulable.
+
+        In our BM or PSI setups, we mostly use only 3 worker nodes,
+        the OCS pods would need at-least 2 nodes up and running, to
+        avoid violation of the ceph pod's disruption budget.
+        Hence we simulating this case here, with Cordon 1 node and
+        Drain 1 node, instead of Draining 2 Worker nodes.
+
+        1. Start a VMI
+        2. Cordon a Node, other than the current running VMI Node.
+        3. Drain the Node, on which the VMI is present.
+        4. Make sure the VMI is migrated to the other node.
+        """
+        vm = vm_instance_from_template_multi_storage_scope_class
+        cordon_nodes = node_filter(
+            pod=vm.vmi.virt_launcher_pod,
+            schedulable_nodes=schedulable_nodes,
+        )
+        with node_mgmt_console(node=cordon_nodes[0], node_mgmt="cordon"):
+            drain_using_console(
+                dyn_client=admin_client,
+                source_node=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
+                source_pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
+                vm=vm_instance_from_template_multi_storage_scope_class,
+                vm_cli=console.RHEL(
+                    vm=vm_instance_from_template_multi_storage_scope_class
+                ),
+            )
+
 
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
@@ -286,16 +353,37 @@ class TestNodeCordonAndDrain:
     @pytest.mark.polarion("CNV-2048")
     def test_node_drain_template_windows(
         self,
+        no_migration_job,
         vm_instance_from_template_multi_storage_scope_class,
         winrmcli_pod_nodeselector_scope_class,
         bridge_attached_helper_vm,
         admin_client,
     ):
+        vm = vm_instance_from_template_multi_storage_scope_class
         drain_using_console_windows(
             dyn_client=admin_client,
-            source_node=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
-            source_pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
-            vm=vm_instance_from_template_multi_storage_scope_class,
+            source_node=vm.vmi.virt_launcher_pod.node,
+            source_pod=vm.vmi.virt_launcher_pod,
+            vm=vm,
             winrmcli_pod=winrmcli_pod_nodeselector_scope_class,
             helper_vm=bridge_attached_helper_vm,
         )
+
+    @pytest.mark.bugzilla(
+        1881676, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
+    @pytest.mark.polarion("CNV-4906")
+    def test_node_cordon_template_windows(
+        self,
+        no_migration_job,
+        vm_instance_from_template_multi_storage_scope_class,
+        admin_client,
+    ):
+        vm = vm_instance_from_template_multi_storage_scope_class
+        with node_mgmt_console(node=vm.vmi.virt_launcher_pod.node, node_mgmt="cordon"):
+            with pytest.raises(TimeoutExpiredError):
+                migration_job_sampler(
+                    dyn_client=admin_client,
+                    namespace=vm.namespace,
+                )
+                pytest.fail("Cordon of a Node should not trigger VMI migration.")
