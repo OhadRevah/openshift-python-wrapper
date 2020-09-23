@@ -15,6 +15,7 @@ import utilities.network
 import yaml
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
+from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -548,6 +549,15 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         # terminationGracePeriodSeconds will be set to 180
         if not self.termination_grace_period:
             spec["terminationGracePeriodSeconds"] = 180
+
+        # TODO: remove once bug 1881658 is resolved
+        # The PVC should not have the DV as ownerReferences
+        pvc_dict = self.template_dv.pvc.instance.to_dict()
+        if pvc_dict["metadata"].get("ownerReferences"):
+            pvc_dict["metadata"]["ownerReferences"][0]["kind"] = "PersistentVolumeClaim"
+        ResourceEditor(
+            {self.template_dv.pvc: {"metadata": pvc_dict["metadata"]}}
+        ).update()
 
         return res
 
