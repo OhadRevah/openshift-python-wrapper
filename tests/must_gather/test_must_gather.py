@@ -219,12 +219,6 @@ def test_node_resource(cnv_must_gather, utility_pods):
             marks=(pytest.mark.polarion("CNV-3045")),
             id="test_dev_vfio_on_node",
         ),
-        pytest.param(
-            ["cat", "/host/etc/pcidp/config.json"],
-            "pcidp_config.json",
-            marks=(pytest.mark.polarion("CNV-3046")),
-            id="test_pcidp_config_on_node",
-        ),
     ],
 )
 def test_node_sriov_resource(
