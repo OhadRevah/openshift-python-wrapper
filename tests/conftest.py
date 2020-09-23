@@ -1205,14 +1205,14 @@ def sa_ready(namespace):
             return
 
 
-def winrmcli_pod(namespace):
+def winrmcli_pod(namespace, **kwargs):
     """Deploy winrm-cli Pod into the same namespace.
 
     The call to this function is triggered by calling either
     winrmcli_pod_scope_module or winrmcli_pod_scope_class.
     """
 
-    with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name) as pod:
+    with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name, **kwargs) as pod:
         pod.wait_for_status(status=pod.Status.RUNNING, timeout=90)
         yield pod
 
