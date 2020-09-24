@@ -14,6 +14,7 @@ import requests
 import utilities.network
 import yaml
 from pytest_testconfig import config as py_config
+from resources.datavolume import DataVolume
 from resources.pod import Pod
 from resources.resource import ResourceEditor
 from resources.route import Route
@@ -166,20 +167,19 @@ class VirtualMachineForTests(VirtualMachine):
         cpu_threads=None,
         memory=None,
         label=None,
-        dv=None,
         cloud_init_data=None,
         machine_type=None,
         image=None,
         ssh=False,
         network_model=None,
         network_multiqueue=None,
+        pvc=None,
+        data_volume=None,
         data_volume_template=None,
         teardown=True,
         cloud_init_type=None,
-        pvc=None,
         attached_secret=None,
         cpu_placement=False,
-        template_dv=None,
         smm_enabled=None,
         efi_params=None,
         diskless_vm=False,
@@ -203,7 +203,6 @@ class VirtualMachineForTests(VirtualMachine):
         self.cpu_threads = cpu_threads
         self.memory = memory
         self.label = label
-        self.dv = dv
         self.cloud_init_data = cloud_init_data
         self.machine_type = machine_type
         self.image = image
@@ -219,7 +218,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.pvc = pvc
         self.attached_secret = attached_secret
         self.cpu_placement = cpu_placement
-        self.template_dv = template_dv
+        self.data_volume = data_volume
         self.smm_enabled = smm_enabled
         self.efi_params = efi_params
         self.diskless_vm = diskless_vm
@@ -250,6 +249,10 @@ class VirtualMachineForTests(VirtualMachine):
                 res["metadata"]["name"] = self.name
 
             res["spec"] = self.body["spec"]
+
+        is_vm_from_template = (
+            "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
+        )
 
         if "running" not in res["spec"]:
             res["spec"]["running"] = False
@@ -340,14 +343,6 @@ class VirtualMachineForTests(VirtualMachine):
         if self.node_selector:
             spec["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
 
-        # For storage class that is not ReadWriteMany - evictionStrategy should be
-        # removed from the VM
-        if (
-            self.template_dv
-            and "ReadWriteMany" not in self.template_dv.instance.spec.pvc.accessModes
-        ):
-            spec.pop("evictionStrategy", None)
-
         if self.eviction:
             spec["evictionStrategy"] = "LiveMigrate"
 
@@ -416,22 +411,52 @@ class VirtualMachineForTests(VirtualMachine):
                 {"name": "containerdisk", "containerDisk": {"image": self.image}}
             )
 
-        if self.dv:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "disks", []
-            ).append({"disk": {"bus": "virtio"}, "name": "dv-disk"})
-            spec.setdefault("volumes", []).append(
-                {"name": "dv-disk", "dataVolume": {"name": self.dv.name}}
+        # DV/PVC info may be taken from self.data_volume_template, self.data_volume or self.pvc
+        if self.data_volume_template or self.data_volume or self.pvc:
+            storage_class, access_mode, node_selector = self.get_storage_configuration()
+
+            # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
+            if DataVolume.AccessMode.RWX not in access_mode:
+                spec.pop("evictionStrategy", None)
+
+            # For HPP - DV/PVC and VM must reside on the same node
+            if storage_class == "hostpath-provisioner" and not self.node_selector:
+                spec["nodeSelector"] = {"kubernetes.io/hostname": node_selector}
+
+            # Needed only for VMs which are not created from common templates
+            if not is_vm_from_template:
+                if self.pvc:
+                    pvc_disk_name = f"{self.pvc.name}-pvc-disk"
+                    spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                        "disks", []
+                    ).append({"disk": {"bus": "virtio"}, "name": pvc_disk_name})
+                    spec.setdefault("volumes", []).append(
+                        {
+                            "name": pvc_disk_name,
+                            "persistentVolumeClaim": {"claimName": self.pvc.name},
+                        }
+                    )
+                # self.data_volume / self.data_volume_template
+                else:
+                    data_volume_name = (
+                        self.data_volume.name
+                        if self.data_volume
+                        else self.data_volume_template["metadata"]["name"]
+                    )
+                    spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                        "disks", []
+                    ).append({"disk": {"bus": "virtio"}, "name": "dv-disk"})
+                    spec.setdefault("volumes", []).append(
+                        {
+                            "name": "dv-disk",
+                            "dataVolume": {"name": data_volume_name},
+                        }
+                    )
+
+        if self.data_volume_template:
+            res["spec"].setdefault("dataVolumeTemplates", []).append(
+                self.data_volume_template
             )
-            # For hpp - DV and VM must reside on the same node
-            if (
-                self.dv.storage_class == "hostpath-provisioner"
-                and not self.node_selector
-            ):
-                spec["nodeSelector"] = {
-                    "kubernetes.io/hostname": self.dv.hostpath_node
-                    or self.dv.pvc.selected_node
-                }
 
         if self.smm_enabled is not None:
             spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
@@ -447,23 +472,6 @@ class VirtualMachineForTests(VirtualMachine):
             spec.setdefault("domain", {}).setdefault("machine", {})[
                 "type"
             ] = self.machine_type
-
-        if self.data_volume_template:
-            res["spec"].setdefault("dataVolumeTemplates", []).append(
-                self.data_volume_template
-            )
-
-        if self.pvc:
-            pvc_disk_name = f"{self.pvc.name}-pvc-disk"
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "disks", []
-            ).append({"disk": {"bus": "virtio"}, "name": pvc_disk_name})
-            spec.setdefault("volumes", []).append(
-                {
-                    "name": pvc_disk_name,
-                    "persistentVolumeClaim": {"claimName": self.pvc.name},
-                }
-            )
 
         if self.attached_secret:
             volume_name = self.attached_secret["volume_name"]
@@ -511,6 +519,35 @@ class VirtualMachineForTests(VirtualMachine):
             0
         ]["nodePort"]
 
+    def get_storage_configuration(self):
+        node_annotation = "kubevirt.io/provisionOnNode"
+        storage_class = (
+            self.data_volume.storage_class
+            if self.data_volume
+            else self.pvc.instance.spec.storageClassName
+            if self.pvc
+            else self.data_volume_template["spec"]["pvc"]["storageClassName"]
+        )
+        access_mode = (
+            self.data_volume.instance.spec.pvc.accessModes
+            if self.data_volume
+            else self.pvc.instance.spec.accessModes
+            if self.pvc
+            else self.data_volume_template["spec"]["pvc"]["accessModes"]
+        )
+        node_selector = (
+            self.data_volume.pvc.selected_node
+            or self.data_volume.pvc.instance.metadata.annotations.get(node_annotation)
+            if self.data_volume
+            else self.pvc.instance.metadata.annotations.get(node_annotation)
+            if self.pvc
+            else self.data_volume_template["metadata"]
+            .setdefault("annotations", {})
+            .get(node_annotation)
+        )
+
+        return storage_class, access_mode, node_selector
+
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def __init__(
@@ -519,7 +556,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         namespace,
         client,
         labels,
-        template_dv,
+        data_volume,
         networks=None,
         interfaces=None,
         ssh=False,
@@ -548,11 +585,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
             attached_secret=attached_secret,
-            template_dv=template_dv,
+            data_volume=data_volume,
             diskless_vm=diskless_vm,
         )
         self.template_labels = labels
-        self.template_dv = template_dv
+        self.data_volume = data_volume
         self.vm_dict = vm_dict
         self.cpu_threads = cpu_threads
         self.node_selector = node_selector
@@ -567,16 +604,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
         spec = res["spec"]["template"]["spec"]
 
-        # For hpp, DV and VM must reside on the same node
-        if (
-            self.template_dv.storage_class == "hostpath-provisioner"
-            and not self.node_selector
-        ):
-            spec["nodeSelector"] = {
-                "kubernetes.io/hostname": self.template_dv.hostpath_node
-                or self.template_dv.pvc.selected_node
-            }
-
         # terminationGracePeriodSeconds for Windows is set to 1hr; this may affect VMI deletion
         # If termination_grace_period == True, do not change the value in the template, else
         # terminationGracePeriodSeconds will be set to 180
@@ -585,11 +612,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
         # TODO: remove once bug 1881658 is resolved
         # The PVC should not have the DV as ownerReferences
-        pvc_dict = self.template_dv.pvc.instance.to_dict()
+        pvc_dict = self.data_volume.pvc.instance.to_dict()
         if pvc_dict["metadata"].get("ownerReferences"):
             pvc_dict["metadata"]["ownerReferences"][0]["kind"] = "PersistentVolumeClaim"
         ResourceEditor(
-            {self.template_dv.pvc: {"metadata": pvc_dict["metadata"]}}
+            {self.data_volume.pvc: {"metadata": pvc_dict["metadata"]}}
         ).update()
 
         return res
@@ -597,7 +624,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def process_template(self):
         template_instance = self.get_template_by_labels()
         resources_list = template_instance.process(
-            **{"NAME": self.name, "PVCNAME": self.template_dv.name}
+            **{"NAME": self.name, "PVCNAME": self.data_volume.name}
         )
         for resource in resources_list:
             if (

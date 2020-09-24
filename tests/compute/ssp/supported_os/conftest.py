@@ -89,7 +89,7 @@ def vm_object_from_template(
         name=vm_name,
         namespace=namespace.name,
         client=unprivileged_client,
-        template_dv=data_volume_object,
+        data_volume=data_volume_object,
         labels=labels,
         vm_dict=param_dict.get("vm_dict"),
         cpu_threads=param_dict.get("cpu_threads"),

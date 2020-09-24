@@ -177,7 +177,7 @@ def vms_for_upgrade(unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_up
             namespace=dv.namespace,
             client=unprivileged_client,
             labels=Template.generate_template_labels(**template_labels),
-            template_dv=dv,
+            data_volume=dv,
             networks=networks,
             interfaces=sorted(networks.keys()),
         )

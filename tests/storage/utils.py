@@ -156,7 +156,7 @@ def create_vm_from_dv(
     with VirtualMachineForTests(
         name=vm_name,
         namespace=dv.namespace,
-        dv=dv,
+        data_volume=dv,
         image=image,
         node_selector=node_selector,
         memory=memory,

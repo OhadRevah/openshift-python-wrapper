@@ -168,7 +168,9 @@ def test_dv_delete_from_vm(valid_cdi_certificates, namespace):
             "metadata": {"name": f"{dv.name}"},
             "spec": {
                 "pvc": {
-                    "accessModes": ["ReadWriteOnce"],
+                    "storageClassName": py_config["default_storage_class"],
+                    "volumeMode": py_config["default_volume_mode"],
+                    "accessModes": [DataVolume.AccessMode.RWO],
                     "resources": {"requests": {"storage": "1Gi"}},
                 },
                 "source": {
@@ -178,7 +180,6 @@ def test_dv_delete_from_vm(valid_cdi_certificates, namespace):
                 },
             },
         },
-        dv=dv,
     ) as vm:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
         dv.delete()

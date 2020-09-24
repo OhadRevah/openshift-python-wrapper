@@ -1111,7 +1111,7 @@ def vm_instance_from_template(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**params["template_labels"]),
-        template_dv=data_volume,
+        data_volume=data_volume,
         vm_dict=params.get("vm_dict"),
         cpu_threads=params.get("cpu_threads"),
         memory=params.get("memory"),

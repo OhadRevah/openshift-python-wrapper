@@ -32,7 +32,7 @@ def efi_secureboot_vm(request, namespace, unprivileged_client, data_volume_scope
         name="rhel-efi-secureboot-default",
         namespace=namespace.name,
         client=unprivileged_client,
-        dv=data_volume_scope_class,
+        data_volume=data_volume_scope_class,
         cpu_cores=VM_CPU,
         memory=f"{VM_MEMORY}Gi",
         smm_enabled=True,

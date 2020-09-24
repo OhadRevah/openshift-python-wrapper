@@ -33,7 +33,7 @@ class TestUpgrade:
     @pytest.mark.run(after="test_is_vm_running_before_upgrade")
     def test_migration_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
+            if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
             upgrade_utils.migrate_vm_and_validate(vm=vm, when="before")
@@ -187,7 +187,7 @@ class TestUpgrade:
     @pytest.mark.run(after="test_vm_console_after_upgrade")
     def test_migration_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            if vm.template_dv.access_modes == DataVolume.AccessMode.RWO:
+            if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
             upgrade_utils.migrate_vm_and_validate(vm=vm, when="after")

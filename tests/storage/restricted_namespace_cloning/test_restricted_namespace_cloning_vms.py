@@ -57,6 +57,7 @@ def data_volume_clone_settings(
         source_pvc=data_volume_multi_storage_scope_module.name,
         source_namespace=namespace.name,
         volume_mode=data_volume_multi_storage_scope_module.volume_mode,
+        access_modes=data_volume_multi_storage_scope_module.access_modes,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
         size=data_volume_multi_storage_scope_module.size,
         hostpath_node=data_volume_multi_storage_scope_module.hostpath_node,
@@ -127,7 +128,6 @@ def test_create_vm_with_cloned_data_volume_positive(
                     "metadata": dv_clone_dict["metadata"],
                     "spec": dv_clone_dict["spec"],
                 },
-                dv=data_volume_clone_settings,
             ) as vm:
                 vm.start(wait=True)
 
@@ -185,7 +185,6 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
                         "metadata": dv_clone_dict["metadata"],
                         "spec": dv_clone_dict["spec"],
                     },
-                    dv=data_volume_clone_settings,
                 ):
                     return
 
@@ -240,7 +239,6 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
                         "metadata": dv_clone_dict["metadata"],
                         "spec": dv_clone_dict["spec"],
                     },
-                    dv=data_volume_clone_settings,
                 ):
                     return
 
@@ -292,7 +290,6 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
                     "metadata": dv_clone_dict["metadata"],
                     "spec": dv_clone_dict["spec"],
                 },
-                dv=data_volume_clone_settings,
             ) as vm:
                 vm.start(wait=True)
 
