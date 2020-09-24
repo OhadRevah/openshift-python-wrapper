@@ -147,7 +147,8 @@ class VirtualMachineForTests(VirtualMachine):
         efi_params=None,
         diskless_vm=False,
     ):
-        self.name = f"{name}-{time.time()}"
+        # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
+        self.name = f"{name}-{time.time()}".replace(".", "-")
         super().__init__(
             name=self.name, namespace=namespace, client=client, teardown=teardown
         )
@@ -455,9 +456,8 @@ class VirtualMachineForTests(VirtualMachine):
         return res
 
     def ssh_enable(self):
-        # Service name cannot contain a period, replace with hyphen if exists in VM name
         self.ssh_service = SSHServiceForVirtualMachineForTests(
-            name=f"ssh-{self.name.replace('.', '-')}",
+            name=f"ssh-{self.name}",
             namespace=self.namespace,
             vm_name=self.name,
         )
