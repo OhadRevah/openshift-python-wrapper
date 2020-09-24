@@ -588,7 +588,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         namespace,
         client,
         labels,
-        data_volume,
+        data_volume=None,
+        data_volume_template=None,
         networks=None,
         interfaces=None,
         ssh=False,
@@ -618,10 +619,12 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             node_selector=node_selector,
             attached_secret=attached_secret,
             data_volume=data_volume,
+            data_volume_template=data_volume_template,
             diskless_vm=diskless_vm,
         )
         self.template_labels = labels
         self.data_volume = data_volume
+        self.data_volume_template = data_volume_template
         self.vm_dict = vm_dict
         self.cpu_threads = cpu_threads
         self.node_selector = node_selector
@@ -645,12 +648,16 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
         # TODO: remove once bug 1881658 is resolved
         # The PVC should not have the DV as ownerReferences
-        pvc_dict = self.data_volume.pvc.instance.to_dict()
-        if pvc_dict["metadata"].get("ownerReferences"):
-            pvc_dict["metadata"]["ownerReferences"][0]["kind"] = "PersistentVolumeClaim"
-        ResourceEditor(
-            {self.data_volume.pvc: {"metadata": pvc_dict["metadata"]}}
-        ).update()
+        # Relevant if using current 2.5 templates with PersistentVolumeClaim
+        if not self.data_volume_template:
+            pvc_dict = self.data_volume.pvc.instance.to_dict()
+            if pvc_dict["metadata"].get("ownerReferences"):
+                pvc_dict["metadata"]["ownerReferences"][0][
+                    "kind"
+                ] = "PersistentVolumeClaim"
+            ResourceEditor(
+                {self.data_volume.pvc: {"metadata": pvc_dict["metadata"]}}
+            ).update()
 
         return res
 
@@ -672,9 +679,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             }
             return os_password_dict[os_name]
 
+        # TODO: Remove "placeholder_pvc" PVC when common templates have built-in data volume templates support (2.6)
         template_kwargs = {
             "NAME": self.name,
-            "PVCNAME": self.data_volume.name,
+            "PVCNAME": self.data_volume.name if self.data_volume else "placeholder_pvc",
         }
 
         # Add password to VM for Non-Windows VMs
@@ -695,14 +703,31 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 resource["kind"] == VirtualMachine.kind
                 and resource["metadata"]["name"] == self.name
             ):
+                spec = resource["spec"]["template"]["spec"]
                 # Template have bridge pod network that wont work for migration.
                 # Replacing the bridge pod network with masquerade.
                 # https://bugzilla.redhat.com/show_bug.cgi?id=1751869
-                interfaces_dict = resource["spec"]["template"]["spec"]["domain"][
-                    "devices"
-                ]["interfaces"][0]
+                interfaces_dict = spec["domain"]["devices"]["interfaces"][0]
                 if "bridge" in interfaces_dict:
                     interfaces_dict["masquerade"] = interfaces_dict.pop("bridge")
+
+                # TODO: Remove when common templates have built-in data volume templates support (2.6)
+                # Delete "persistentVolumeClaim" volume from VM spec
+                if self.data_volume_template:
+                    spec["volumes"] = [
+                        volume
+                        for volume in spec["volumes"]
+                        if "persistentVolumeClaim" not in volume
+                    ]
+                    spec.setdefault("volumes", []).append(
+                        {
+                            "name": "rootdisk",
+                            "dataVolume": {
+                                "name": self.data_volume_template["metadata"]["name"]
+                            },
+                        }
+                    )
+
                 return resource
 
         raise ValueError(f"Template not found for {self.name}")

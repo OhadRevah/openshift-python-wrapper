@@ -34,6 +34,7 @@ bridge_tuning = "cnv-tuning"
 
 default_storage_class = "nfs"
 default_volume_mode = "Filesystem"
+golden_images_namespace = "openshift-virtualization-os-images"
 
 provider_matrix = [
     {

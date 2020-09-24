@@ -80,6 +80,11 @@ def data_volume(
     # Values can be extracted from request.param or from
     # rhel_os_matrix or windows_os_matrix (passed as os_matrix)
     source = params_dict.get("source", "http")
+
+    # DV namespace may not be in the same namespace as the originating test
+    # If a namespace is passes in request.param, use it instead of the test's namespace
+    dv_namespace = params_dict.get("dv_namespace", namespace.name)
+
     if os_matrix:
         os_matrix_key = [*os_matrix][0]
         image = os_matrix[os_matrix_key]["image_path"]
@@ -91,7 +96,7 @@ def data_volume(
         dv_size = params_dict.get("dv_size")
     dv_kwargs = {
         "dv_name": dv_name,
-        "namespace": namespace.name,
+        "namespace": dv_namespace,
         "source": source,
         "size": dv_size,
         "storage_class": params_dict.get("storage_class", storage_class),
