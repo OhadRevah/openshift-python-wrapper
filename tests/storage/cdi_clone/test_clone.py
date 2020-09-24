@@ -8,11 +8,38 @@ import pytest
 import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
+from resources.storage_class import StorageClass
+from resources.utils import TimeoutSampler
+from resources.volume_snapshot import VolumeSnapshot, VolumeSnapshotClass
 from tests.storage import utils
 from utilities.infra import Images
 
 
 WINDOWS_CLONE_TIMEOUT = 40 * 60
+
+
+@pytest.fixture()
+def skip_smart_clone_not_supported_by_sc(storage_class_matrix__class__, admin_client):
+    sc_instance = StorageClass(name=[*storage_class_matrix__class__][0]).instance
+    for vsc in VolumeSnapshotClass.get(dyn_client=admin_client):
+        if vsc.instance.get("driver") == sc_instance.get("provisioner"):
+            return
+
+    pytest.skip(
+        f"Smart clone via snapshots not supported by {sc_instance.metadata.get('name')}"
+    )
+
+
+def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
+    for sample in TimeoutSampler(
+        timeout=20,
+        sleep=1,
+        func=lambda: snapshot.exists
+        and snapshot.instance["spec"]["source"]["persistentVolumeClaimName"]
+        == source_pvc_name,
+    ):
+        if sample:
+            break
 
 
 @pytest.mark.tier3
@@ -190,3 +217,57 @@ def test_disk_image_after_clone(
     ) as cdv:
         cdv.wait()
         utils.create_vm_and_verify_image_permission(dv=cdv)
+
+
+@pytest.mark.parametrize(
+    "data_volume_multi_storage_scope_class",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+            },
+            marks=(pytest.mark.polarion("CNV-3545")),
+        ),
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+            },
+            marks=(pytest.mark.polarion("CNV-3552"), pytest.mark.tier3()),
+        ),
+    ],
+    indirect=True,
+)
+def test_successful_snapshot_clone(
+    skip_upstream,
+    skip_smart_clone_not_supported_by_sc,
+    storage_class_matrix__class__,
+    namespace,
+    data_volume_multi_storage_scope_class,
+):
+    with utilities.storage.create_dv(
+        source="pvc",
+        dv_name="dv-target",
+        namespace=namespace.name,
+        size=data_volume_multi_storage_scope_class.size,
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__class__),
+    ) as cdv:
+        cdv.wait_for_status(
+            status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,
+            timeout=300,
+        )
+        snapshot = VolumeSnapshot(name=cdv.name, namespace=namespace.name)
+        verify_source_pvc_of_volume_snapshot(
+            source_pvc_name=data_volume_multi_storage_scope_class.pvc.name,
+            snapshot=snapshot,
+        )
+        cdv.wait()
+        if "win" not in data_volume_multi_storage_scope_class.url.split("/")[-1]:
+            with utils.create_vm_from_dv(dv=cdv) as vm_dv:
+                utils.check_disk_count_in_vm(vm=vm_dv)
+        assert (
+            cdv.pvc.instance.metadata.annotations.get("k8s.io/SmartCloneRequest")
+            == "true"
+            and not snapshot.exists
+        ), "Snapshot was not cleaned up/smart clone annotation does not exist on target PVC"
