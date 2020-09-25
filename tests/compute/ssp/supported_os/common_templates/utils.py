@@ -55,11 +55,11 @@ def reboot_vm(vm, winrmcli_pod, helper_vm=False):
 def vm_os_version(vm, console_impl):
     """ Verify VM os version using console """
 
-    # vm.name format is <os type>-<os major version>-<minor version>
-    # For example: rhel-7-6
-    # The os version in /etc/redhat-release is formated as <os major version>.<minor version>
-    # For example: 7.6
-    os = re.search(r"(\w+-)?(\d+(-\d+)?)", vm.name).group(2)
+    # vm.name format is <os type>-<os major version>[-<minor version>-]<random>-<random>
+    # For example: fedora-32-1601036283-2909632 or rhel-8-2-1601034311-6416788
+    # The os version in /etc/redhat-release is formated as <os major version>.[<minor version>]
+    # For example: 7.6 or 32 (for Fedora)
+    os = re.search(r"(\w+-)?(\d+(-\d+)?)(-\d+-\d+)$", vm.name).group(2)
     command = [f"cat /etc/redhat-release | grep {os.replace('-', '.')}"]
 
     vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
