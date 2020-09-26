@@ -1,12 +1,7 @@
 import logging
-from subprocess import STDOUT, check_output
 
 import ovirtsdk4.types
 import pytest
-import utilities.network
-import yaml
-from providers.rhv import rhv
-from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.secret import Secret
@@ -22,73 +17,15 @@ from .utils import ResourceMappingItem, Source
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module")
-def source_cluster_name():
-    return py_config["source_cluster_name"]
+def import_name(vm_name):
+    return f"{vm_name}-import"
 
 
-@pytest.fixture(scope="module")
-def bridge_network(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name="mybridge",
-        interface_name="br1test",
-        namespace=namespace,
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="module")
-def rhv_cert_file(tmpdir_factory):
-    cert = check_output(
-        [
-            "/bin/sh",
-            "-c",
-            f"openssl s_client -connect {py_config['rhv_fqdn']}:443 -showcerts < /dev/null",
-        ],
-        stderr=STDOUT,
-    )
-    cert_file = tmpdir_factory.mktemp("RHV").join("rhe_cert.crt")
-    cert_file.write(cert)
-    return cert_file.strpath
-
-
-@pytest.fixture(scope="module")
-def rhv_provider(rhv_cert_file):
-    with rhv.RHV(
-        url=py_config["rhv_api_url"],
-        username=py_config["rhv_username"],
-        password=py_config["rhv_password"],
-        ca_file=rhv_cert_file,
-    ) as provider:
-        if not provider.api.test():
-            pytest.skip(
-                msg=f"Skipping VM import tests: oVirt {provider.url} is not available."
-            )
-        yield provider
-
-
-@pytest.fixture(scope="module")
-def secret(namespace, rhv_provider):
-    string_data = {
-        "apiUrl": rhv_provider.url,
-        "username": rhv_provider.username,
-        "password": rhv_provider.password,
-        "caCert": open(rhv_provider.ca_file, "r").read(),
-    }
-    with Secret(
-        name="ovirt-secret",
-        namespace=namespace.name,
-        string_data={"ovirt": yaml.dump(string_data)},
-    ) as secret:
-        yield secret
-
-
-def check_source_vm_status(rhv_provider, source_vm_name, source_vm_cluster, state):
+def check_source_vm_status(provider, source_vm_name, source_vm_cluster, state):
     samples = TimeoutSampler(
         timeout=600,
         sleep=1,
-        func=rhv_provider.vm,
+        func=provider.vm,
         name=source_vm_name,
         cluster=source_vm_cluster,
     )
@@ -97,12 +34,8 @@ def check_source_vm_status(rhv_provider, source_vm_name, source_vm_cluster, stat
             break
 
 
-def import_name(vm_name):
-    return f"{vm_name}-import"
-
-
 def check_cnv_vm_network_config(
-    vm, rhv_provider, source_vm_name, source_vm_cluster, expected_vm_config
+    vm, provider, source_vm_name, source_vm_cluster, expected_vm_config
 ):
     cnv_vm_network_interfaces = vm.instance.spec.template.spec.domain.devices.interfaces
     number_of_cnv_vm_network_interfaces = (
@@ -115,15 +48,14 @@ def check_cnv_vm_network_config(
 
     failed_assert_msgs = []
     for nic_index, source_vm_nic in enumerate(
-        rhv_provider.vm_nics(
-            vm=rhv_provider.vm(name=source_vm_name, cluster=source_vm_cluster)
-        )
+        provider.vm_nics(vm=provider.vm(name=source_vm_name, cluster=source_vm_cluster))
     ):
         cnv_vm_mac = cnv_vm_network_interfaces[nic_index].macAddress
         source_vm_mac = source_vm_nic.mac.address
         if cnv_vm_mac != source_vm_mac:
             failed_assert_msgs.append(
-                f"mac address for nic {source_vm_nic.name} check failed, Expected:{source_vm_mac}, Actual: {cnv_vm_mac}"
+                f"mac address for nic {source_vm_nic.name} check failed, "
+                f"Expected:{source_vm_mac}, Actual: {cnv_vm_mac}"
             )
 
     assert not failed_assert_msgs, f"Failed verifications: {failed_assert_msgs}"
@@ -160,7 +92,7 @@ def check_cnv_vm_data_volumes(vm, expected_vm_config):
 
 def check_cnv_vm_config(
     vm,
-    rhv_provider,
+    provider,
     source_vm_name,
     source_vm_cluster,
     expected_vm_config,
@@ -175,7 +107,7 @@ def check_cnv_vm_config(
 
     check_cnv_vm_network_config(
         vm=vm,
-        rhv_provider=rhv_provider,
+        provider=provider,
         source_vm_name=source_vm_name,
         expected_vm_config=expected_vm_config,
         source_vm_cluster=source_vm_cluster,
@@ -201,9 +133,10 @@ def check_cnv_vm_config(
         ),
     ],
 )
-def test_vm_import(secret, namespace, rhv_provider, source_cluster_name, vm_key):
+def test_vm_import(namespace, provider_data, provider, secret, vm_key):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
+    cluster_name = provider_data["cluster_name"]
 
     with create_vm_import(
         name=import_name(vm_name=vm_name),
@@ -211,7 +144,7 @@ def test_vm_import(secret, namespace, rhv_provider, source_cluster_name, vm_key)
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
         vm_name=vm_name,
-        cluster_name=source_cluster_name,
+        cluster_name=cluster_name,
         target_vm_name=vm_name,
         start_vm=True,
         ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
@@ -221,25 +154,25 @@ def test_vm_import(secret, namespace, rhv_provider, source_cluster_name, vm_key)
         )
         check_cnv_vm_config(
             vm=vmimport.vm,
-            rhv_provider=rhv_provider,
+            provider=provider,
             source_vm_name=vm_name,
-            source_vm_cluster=source_cluster_name,
+            source_vm_cluster=cluster_name,
             expected_vm_config=vm_config,
         )
 
 
 @pytest.mark.polarion("CNV-4392")
-def test_cancel_vm_import(
-    secret, namespace, rhv_provider, admin_client, source_cluster_name
-):
+def test_cancel_vm_import(admin_client, namespace, provider_data, provider, secret):
     vm_name = Source.vms["cirros-no-nics"]["name"]
+    cluster_name = provider_data["cluster_name"]
+
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
         vm_name=vm_name,
-        cluster_name=source_cluster_name,
+        cluster_name=cluster_name,
         target_vm_name=vm_name,
     ) as vmimport:
         vmimport.wait(
@@ -248,8 +181,8 @@ def test_cancel_vm_import(
         )
     # We need to use assert wait because it takes some time until the resources
     # are deleted.
-    source_vm = rhv_provider.vm(name=vm_name, cluster=source_cluster_name)
-    vm_disk_id = rhv_provider.vm_disk_attachments(vm=source_vm)[0].id
+    source_vm = provider.vm(name=vm_name, cluster=cluster_name)
+    vm_disk_id = provider.vm_disk_attachments(vm=source_vm)[0].id
     VirtualMachine(name=vm_name, namespace=namespace.name).wait_deleted()
     DataVolume(
         name=f"{import_name(vm_name=vm_name)}-{vm_disk_id}",
@@ -264,17 +197,17 @@ def test_cancel_vm_import(
 
 
 @pytest.mark.polarion("CNV-4391")
-def test_running_vm_import(
-    admin_client, namespace, rhv_provider, secret, source_cluster_name
-):
+def test_running_vm_import(namespace, provider_data, provider, secret):
     vm_name = Source.vms["cirros-running"]["name"]
+    cluster_name = provider_data["cluster_name"]
+
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
         vm_name=vm_name,
-        cluster_name=source_cluster_name,
+        cluster_name=cluster_name,
         target_vm_name=vm_name,
         start_vm=True,
         ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
@@ -283,26 +216,28 @@ def test_running_vm_import(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING,
         )
         check_source_vm_status(
-            rhv_provider=rhv_provider,
+            provider=provider,
             source_vm_name=vm_name,
-            source_vm_cluster=source_cluster_name,
+            source_vm_cluster=cluster_name,
             state=ovirtsdk4.types.VmStatus.DOWN,
         )
 
 
 @pytest.mark.polarion("CNV-4387")
 def test_two_disks_and_nics_vm_import(
-    bridge_network, namespace, secret, source_cluster_name, rhv_provider
+    bridge_network, namespace, provider_data, provider, secret
 ):
     vm_config = Source.vms["cirros-2disks2nics"]
     vm_name = vm_config["name"]
+    cluster_name = provider_data["cluster_name"]
+
     with create_vm_import(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
         vm_name=vm_name,
-        cluster_name=source_cluster_name,
+        cluster_name=cluster_name,
         target_vm_name=vm_name,
         ovirt_mappings=utils.network_mappings(
             items=[
@@ -321,8 +256,8 @@ def test_two_disks_and_nics_vm_import(
         )
         check_cnv_vm_config(
             vm=vmimport.vm,
-            rhv_provider=rhv_provider,
+            provider=provider,
             source_vm_name=vm_name,
-            source_vm_cluster=source_cluster_name,
+            source_vm_cluster=cluster_name,
             expected_vm_config=vm_config,
         )

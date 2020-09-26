@@ -34,11 +34,19 @@ bridge_tuning = "cnv-tuning"
 default_storage_class = "nfs"
 default_volume_mode = "Filesystem"
 
-rhv_fqdn = "rhev-blue-01.rdu2.scalelab.redhat.com"
-rhv_api_url = f"https://{rhv_fqdn}/ovirt-engine/api"
-rhv_username = "admin@internal"
-rhv_password = "qum5net"
-source_cluster_name = "iscsi"
+provider_matrix = [
+    {
+        "rhv44": {
+            "type": "rhv",
+            "version": "4.4",
+            "fqdn": "rhev-blue-01.rdu2.scalelab.redhat.com",
+            "api_url": "https://rhev-blue-01.rdu2.scalelab.redhat.com/ovirt-engine/api",
+            "username": "admin@internal",
+            "password": "qum5net",
+            "cluster_name": "iscsi",
+        }
+    },
+]
 
 windows_username = "Administrator"
 windows_password = "Heslo123"
