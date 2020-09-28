@@ -52,6 +52,8 @@ fcfn_exclude_functions =
     datetime,
     resource_stream,
     random,
+    pytestconfig,
+    prev_eq_func,
 
 enable-extensions =
     PID,

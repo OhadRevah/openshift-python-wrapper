@@ -147,9 +147,9 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
     def default_masquerade_iface_config(self):
         pod_iface_config = self.vmi.instance["status"]["interfaces"][0]
         return IfaceTuple(
-            ip_interface(pod_iface_config["ipAddress"]).ip,
-            "auto",
-            pod_iface_config["name"],
+            ip_address=ip_interface(pod_iface_config["ipAddress"]).ip,
+            mac_address="auto",
+            name=pod_iface_config["name"],
         )
 
     @property

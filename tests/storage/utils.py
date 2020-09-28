@@ -295,7 +295,7 @@ def upload_image(token, data, asynchronous=False):
         fd_data = data
 
     return requests.post(
-        uploadproxy_url, data=fd_data, headers=headers, verify=False
+        url=uploadproxy_url, data=fd_data, headers=headers, verify=False
     ).status_code
 
 
