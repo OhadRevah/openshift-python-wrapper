@@ -127,4 +127,4 @@ def get_bug_status(bugzilla_connection_params, bug):
         user=bugzilla_connection_params["bugzilla_username"],
         api_key=bugzilla_connection_params["bugzilla_api_key"],
     )
-    return bzapi.getbug(bug).status
+    return bzapi.getbug(objid=bug).status
