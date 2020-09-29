@@ -5,7 +5,6 @@ must gather test
 """
 
 import logging
-import os
 import shutil
 from subprocess import check_output
 
@@ -64,7 +63,7 @@ def cnv_must_gather(
         )
         LOGGER.info(f"Running: {must_gather_cmd}")
         check_output(must_gather_cmd, shell=True)
-        must_gather_log_dir = os.path.join(path, os.listdir(path)[0])
+        must_gather_log_dir = mg_utils.get_log_dir(path=path)
         yield must_gather_log_dir
     finally:
         shutil.rmtree(path)

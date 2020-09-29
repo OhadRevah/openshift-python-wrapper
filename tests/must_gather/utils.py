@@ -200,3 +200,11 @@ def compare_webhook_svc_contents(
                 compare_resource_values(
                     resource=svc_resource, path=service_file, checks=checks
                 )
+
+
+def get_log_dir(path):
+    for item in os.listdir(path):
+        new_path = os.path.join(path, item)
+        if os.path.isdir(new_path):
+            return new_path
+    raise FileNotFoundError(f"No log directory was created in '{path}'")
