@@ -1,16 +1,17 @@
 """
-Sriov Tests
+SRIOV Tests
 """
+
 import pytest
 from pytest_testconfig import config as py_config
 from resources.sriov_network import SriovNetwork
+from resources.utils import TimeoutSampler
 from tests.network.utils import (
     assert_no_ping,
     assert_ping_successful,
     nmcli_add_con_cmds,
 )
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 from utilities.network import get_vmi_ip_v4_by_name, sriov_network_dict
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -21,19 +22,23 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="class")
-def iface_search_mac(bugzilla_connection_params):
-    # TODO : Remove iface_search_mac when BZ 1868359 is fixed.
-    # TODO : JIRA Task :  https://issues.redhat.com/browse/CNV-6349
-    # Interface will fallback to eth1 automatically when bug is closed/verified/on_qa.
-    if (
-        get_bug_status(
-            bugzilla_connection_params=bugzilla_connection_params, bug=1868359
-        )
-        not in BUG_STATUS_CLOSED
-    ):
-        return "$(ip --brief l | grep '02:00:b5:b5:b5:' | cut -f1 -d' ')"
-    return "eth1"
+SRIOV_NAMESPACE = py_config["sriov_namespace"]
+
+
+def _ping_sampler(node_exec, command, positive):
+    """
+    Wait until PING is return or not based on positive value.
+    """
+    sampler = TimeoutSampler(
+        timeout=60, sleep=1, func=node_exec.run_command, command=command
+    )
+    for sample in sampler:
+        rc = sample[0]
+        if rc and not positive:
+            return
+
+        if not rc and positive:
+            return
 
 
 @pytest.fixture(scope="class")
@@ -70,7 +75,7 @@ def sriov_network(sriov_node_policy, namespace):
     with SriovNetwork(
         name="sriov-test-network",
         resource_name=sriov_node_policy.resource_name,
-        policy_namespace=py_config["sriov_namespace"],
+        policy_namespace=SRIOV_NAMESPACE,
         network_namespace=namespace.name,
     ) as sriov_network:
         yield sriov_network
@@ -84,7 +89,7 @@ def sriov_network_vlan(sriov_node_policy, namespace, vlan_tag_id):
     with SriovNetwork(
         name="sriov-test-network-vlan",
         resource_name=sriov_node_policy.resource_name,
-        policy_namespace=py_config["sriov_namespace"],
+        policy_namespace=SRIOV_NAMESPACE,
         network_namespace=namespace.name,
         vlan=vlan_tag_id,
     ) as sriov_network:
@@ -92,14 +97,12 @@ def sriov_network_vlan(sriov_node_policy, namespace, vlan_tag_id):
 
 
 @pytest.fixture(scope="class")
-def sriov_vm1(
-    sriov_workers_node1, namespace, unprivileged_client, sriov_network, iface_search_mac
-):
+def sriov_vm1(sriov_workers_node1, namespace, unprivileged_client, sriov_network):
     name = "sriov-vm1"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface=iface_search_mac, ip="10.200.1.1"
+        iface="eth1", ip="10.200.1.1"
     )
 
     with VirtualMachineForTests(
@@ -125,14 +128,12 @@ def running_sriov_vm1(sriov_vm1):
 
 
 @pytest.fixture(scope="class")
-def sriov_vm2(
-    sriov_workers_node2, namespace, unprivileged_client, sriov_network, iface_search_mac
-):
+def sriov_vm2(sriov_workers_node2, namespace, unprivileged_client, sriov_network):
     name = "sriov-vm2"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface=iface_search_mac, ip="10.200.1.2"
+        iface="eth1", ip="10.200.1.2"
     )
 
     with VirtualMachineForTests(
@@ -163,13 +164,12 @@ def sriov_vm3(
     namespace,
     unprivileged_client,
     sriov_network_vlan,
-    iface_search_mac,
 ):
     name = "sriov-vm3"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network_vlan)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface=iface_search_mac, ip="10.200.3.1"
+        iface="eth1", ip="10.200.3.1"
     )
 
     with VirtualMachineForTests(
@@ -200,13 +200,12 @@ def sriov_vm4(
     namespace,
     unprivileged_client,
     sriov_network_vlan,
-    iface_search_mac,
 ):
     name = "sriov-vm4"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network_vlan)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface=iface_search_mac, ip="10.200.3.2"
+        iface="eth1", ip="10.200.3.2"
     )
 
     with VirtualMachineForTests(
@@ -237,7 +236,17 @@ def vm4_interfaces(running_sriov_vm4):
 
 
 @pytest.mark.usefixtures(
-    "skip_rhel7_workers", "skip_if_no_sriov_workers", "skip_insufficient_sriov_workers"
+    "skip_rhel7_workers",
+    "skip_if_no_sriov_workers",
+    "skip_insufficient_sriov_workers",
+    "sriov_vm1",
+    "sriov_vm2",
+    "sriov_vm3",
+    "sriov_vm4",
+    "running_sriov_vm1",
+    "running_sriov_vm2",
+    "running_sriov_vm3",
+    "running_sriov_vm4",
 )
 class TestPingConnectivity:
     @pytest.mark.polarion("CNV-3963")
@@ -286,14 +295,23 @@ class TestPingConnectivity:
 
     @pytest.mark.polarion("CNV-4768")
     def test_sriov_interfaces_post_reboot(
-        self, sriov_vm4, running_sriov_vm4, vm4_interfaces
+        self, workers_ssh_executors, sriov_vm4, running_sriov_vm4, vm4_interfaces
     ):
         vm_console_run_commands(
             console_impl=console.Fedora,
             vm=sriov_vm4,
-            commands=["sudo reboot -f -r now"],
+            commands=["sudo reboot -f now"],
             verify_commands_output=False,
         )
+
+        pod_ip = str(get_vmi_ip_v4_by_name(vmi=running_sriov_vm4, name="default"))
+        node_exec = workers_ssh_executors[running_sriov_vm4.node.name]
+        command = ["ping", "-c", "1", pod_ip]
+        # Make sure the VM is down.
+        _ping_sampler(node_exec=node_exec, command=command, positive=False)
+
+        # Make sure the VM is up, otherwise we will get an old VM interfaces data.
+        _ping_sampler(node_exec=node_exec, command=command, positive=True)
 
         wait_for_vm_interfaces(vmi=running_sriov_vm4)
         # Check only the second interface (SRIOV interface).
