@@ -5,6 +5,7 @@ Upload using virtctl
 """
 
 import logging
+import time
 
 import pytest
 import tests.storage.utils as storage_utils
@@ -198,15 +199,14 @@ def test_virtctl_image_upload_with_exist_dv_image(
     )
 
 
-# Negative case
 @pytest.mark.polarion("CNV-3728")
 def test_virtctl_image_upload_pvc(
     download_image, namespace, storage_class_matrix__module__
 ):
     """
-    Check that virtctl can NOT create a new PVC and upload an image to it
+    Check that virtctl can create a new PVC and upload an image to it
     """
-    pvc_name = "cnv-3728"
+    pvc_name = f"cnv-3728-{time.time()}"
     res, out = storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         pvc=True,
@@ -217,8 +217,9 @@ def test_virtctl_image_upload_pvc(
         insecure=True,
     )
     LOGGER.info(out)
-    assert not res
-    assert f'persistentvolumeclaims "{pvc_name}" not found' in out
+    assert res
+    pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
+    assert pvc.bound()
 
 
 @pytest.mark.polarion("CNV-3725")
