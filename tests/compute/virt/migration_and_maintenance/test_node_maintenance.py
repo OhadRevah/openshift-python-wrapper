@@ -10,7 +10,6 @@ from subprocess import run
 import pytest
 from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
-from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
@@ -20,7 +19,6 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     WinRMcliPod,
-    execute_winrm_cmd,
     fedora_vm_body,
 )
 
@@ -137,23 +135,6 @@ def winrmcli_pod(
         ) as winrm_pod:
             winrm_pod.wait_for_status(status=winrm_pod.Status.RUNNING, timeout=60)
             yield winrm_pod
-
-
-def check_windows_boot_time(vm, winrmcli_pod, timeout=1200, helper_vm=False):
-    pod_output_samples = TimeoutSampler(
-        timeout=timeout,
-        sleep=15,
-        func=execute_winrm_cmd,
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        target_vm=vm,
-        helper_vm=helper_vm,
-        cmd="wmic os get lastbootuptime",
-    )
-
-    for pod_output in pod_output_samples:
-        if "LastBootUpTime" in str(pod_output):
-            return str(pod_output)
 
 
 def check_draining_process(dyn_client, source_pod, vm):
