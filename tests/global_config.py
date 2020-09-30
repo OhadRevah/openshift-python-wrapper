@@ -224,6 +224,7 @@ windows_os_matrix = [
             "os_version": "10",
             "image_name": Images.Windows.WIM10_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
+            "dv_size": "50Gi",
             "template_labels": {
                 "os": "win10",
                 "workload": "desktop",

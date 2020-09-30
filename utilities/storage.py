@@ -84,14 +84,16 @@ def data_volume(
         os_matrix_key = [*os_matrix][0]
         image = os_matrix[os_matrix_key]["image_path"]
         dv_name = os_matrix_key
+        dv_size = os_matrix[os_matrix_key].get("dv_size")
     else:
         image = params_dict.get("image", "")
         dv_name = params_dict.get("dv_name").replace(".", "-").lower()
+        dv_size = params_dict.get("dv_size")
     dv_kwargs = {
         "dv_name": dv_name,
         "namespace": namespace.name,
         "source": source,
-        "size": params_dict.get("dv_size", "38Gi" if "win" in image else "25Gi"),
+        "size": dv_size or ("38Gi" if "win" in image else "25Gi"),
         "storage_class": params_dict.get("storage_class", storage_class),
         "access_modes": params_dict.get(
             "access_modes", storage_class_dict[storage_class]["access_mode"]
@@ -123,7 +125,7 @@ def data_volume(
                 )
                 dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
             else:
-                dv.wait(timeout=2400 if "win" in image else 1200)
+                dv.wait(timeout=3000 if "win" in image else 1200)
         yield dv
 
 
