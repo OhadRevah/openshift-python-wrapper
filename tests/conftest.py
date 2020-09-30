@@ -95,11 +95,7 @@ PODS_TO_COLLECT_INFO = [
     "virt-template-validator",
     "cdi-importer",
 ]
-TESTS_MARKERS = [
-    "destructive",
-    "chaos",
-    "tier3",
-]
+TESTS_MARKERS = ["destructive", "chaos", "tier3"]
 
 
 def _get_admin_client():

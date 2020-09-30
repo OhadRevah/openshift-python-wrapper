@@ -58,6 +58,7 @@ HYPERV_DICT = {
     indirect=True,
 )
 @pytest.mark.smoke
+@pytest.mark.ocp_interop
 class TestCommonTemplatesFedora:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3351")
