@@ -1,7 +1,8 @@
 import logging
 
 from resources.utils import TimeoutExpiredError, TimeoutSampler
-from tests.network.utils import nmcli_add_con_cmds, update_cloud_init_extra_user_data
+from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
+from utilities.network import cloud_init_network_data
 from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
 
 
@@ -14,25 +15,25 @@ SAMPLING_INTERVAL = 1
 
 
 def dhcp_server_cloud_init_data(dhcp_iface_ip_addr):
-    cloud_init_extra_user_data = {
-        "runcmd": [
-            "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
-            f"\\nauthoritative;\\nsubnet {DHCP_IP_SUBNET}.0 netmask 255.255.255.0 "
-            "{\\noption subnet-mask 255.255.255.0;\\nrange  "
-            f"{DHCP_IP_RANGE_START} {DHCP_IP_RANGE_END};"
-            "\\n}' > /etc/dhcp/dhcpd.conf\""
-        ]
+    # TODO: Move it to cloud init.
+    # https://cloudinit.readthedocs.io/en/latest/topics/examples.html#writing-out-arbitrary-files
+    dhcpd_data = DHCP_SERVER_CONF_FILE.format(
+        DHCP_IP_SUBNET=DHCP_IP_SUBNET,
+        DHCP_IP_RANGE_START=DHCP_IP_RANGE_START,
+        DHCP_IP_RANGE_END=DHCP_IP_RANGE_END,
+    )
+    cloud_init_extra_user_data = {"runcmd": [dhcpd_data]}
+    network_data_data = {
+        "ethernets": {"eth1": {"addresses": [f"{dhcp_iface_ip_addr}/24"]}}
     }
-
-    data = FEDORA_CLOUD_INIT_PASSWORD
-
-    bootcmds = nmcli_add_con_cmds(iface="eth1", ip=dhcp_iface_ip_addr)
-    data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     update_cloud_init_extra_user_data(
-        cloud_init_data=data, cloud_init_extra_user_data=cloud_init_extra_user_data
+        cloud_init_data=cloud_init_data["userData"],
+        cloud_init_extra_user_data=cloud_init_extra_user_data,
     )
-    return data
+    return cloud_init_data
 
 
 def set_ipv4_dhcp_client(vlan_iface_nncp, enabled, selected_node=None):

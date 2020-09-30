@@ -6,13 +6,13 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.sriov_network import SriovNetwork
 from resources.utils import TimeoutSampler
-from tests.network.utils import (
-    assert_no_ping,
-    assert_ping_successful,
-    nmcli_add_con_cmds,
-)
+from tests.network.utils import assert_no_ping, assert_ping_successful
 from utilities import console
-from utilities.network import get_vmi_ip_v4_by_name, sriov_network_dict
+from utilities.network import (
+    cloud_init_network_data,
+    get_vmi_ip_v4_by_name,
+    sriov_network_dict,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -100,10 +100,9 @@ def sriov_network_vlan(sriov_node_policy, namespace, vlan_tag_id):
 def sriov_vm1(sriov_workers_node1, namespace, unprivileged_client, sriov_network):
     name = "sriov-vm1"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.1.1/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.1.1"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -131,10 +130,9 @@ def running_sriov_vm1(sriov_vm1):
 def sriov_vm2(sriov_workers_node2, namespace, unprivileged_client, sriov_network):
     name = "sriov-vm2"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.1.2/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.1.2"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -167,10 +165,9 @@ def sriov_vm3(
 ):
     name = "sriov-vm3"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network_vlan)
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.3.1/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.3.1"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -203,10 +200,9 @@ def sriov_vm4(
 ):
     name = "sriov-vm4"
     networks = sriov_network_dict(namespace=namespace, network=sriov_network_vlan)
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.3.2/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.3.2"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,

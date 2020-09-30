@@ -4,9 +4,13 @@ VM to VM connectivity
 from collections import OrderedDict
 
 import pytest
-import utilities.network
-from tests.network.utils import assert_ping_successful, nmcli_add_con_cmds
-from utilities.network import get_vmi_ip_v4_by_name, network_nad
+from tests.network.utils import assert_ping_successful
+from utilities.network import (
+    OVS,
+    cloud_init_network_data,
+    get_vmi_ip_v4_by_name,
+    network_nad,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -32,7 +36,7 @@ def _masquerade_vmib_ip(vmib, bridge):
 def rhel7_nad(rhel7_ovs_bridge, namespace):
     with network_nad(
         namespace=namespace,
-        nad_type=utilities.network.OVS,
+        nad_type=OVS,
         nad_name="br1test-nad",
         interface_name=rhel7_ovs_bridge,
     ) as nad:
@@ -44,10 +48,9 @@ def rhel7_bridge_attached_vma(worker_node1, namespace, unprivileged_client, rhel
     name = "vma"
     networks = OrderedDict()
     networks[rhel7_nad.name] = rhel7_nad.name
-    bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -68,10 +71,9 @@ def rhel7_bridge_attached_vmb(worker_node2, namespace, unprivileged_client, rhel
     name = "vmb"
     networks = OrderedDict()
     networks[rhel7_nad.name] = rhel7_nad.name
-    bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,

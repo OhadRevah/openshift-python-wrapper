@@ -4,15 +4,11 @@ VM to VM connectivity with  custom MTU (jumbo frame)
 from collections import OrderedDict
 
 import pytest
-from tests.network.utils import (
-    assert_no_ping,
-    assert_ping_successful,
-    network_device,
-    nmcli_add_con_cmds,
-)
+from tests.network.utils import assert_no_ping, assert_ping_successful, network_device
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
+    cloud_init_network_data,
     get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
     network_nad,
@@ -96,11 +92,9 @@ def bridge_attached_vma(worker_node1, namespace, unprivileged_client, nad):
     name = "vma"
     networks = OrderedDict()
     networks[nad.name] = nad.name
-
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.0.1"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -121,11 +115,9 @@ def bridge_attached_vmb(worker_node2, namespace, unprivileged_client, nad):
     name = "vmb"
     networks = OrderedDict()
     networks[nad.name] = nad.name
-
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.0.2"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -148,11 +140,9 @@ def bond_bridge_attached_vma(
     name = "bond-vma"
     networks = OrderedDict()
     networks[br1bond_nad.name] = br1bond_nad.name
-
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.1.1/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.1.1"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -175,11 +165,9 @@ def bond_bridge_attached_vmb(
     name = "bond-vmb"
     networks = OrderedDict()
     networks[br1bond_nad.name] = br1bond_nad.name
-
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.1.2/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = nmcli_add_con_cmds(
-        iface="eth1", ip="10.200.1.2"
-    )
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with VirtualMachineForTests(
         namespace=namespace.name,

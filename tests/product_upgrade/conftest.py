@@ -3,7 +3,6 @@ from copy import deepcopy
 import pytest
 import tests.network.utils as network_utils
 import tests.product_upgrade.utils as upgrade_utils
-import utilities.network
 from pytest_testconfig import py_config
 from resources.datavolume import DataVolume
 from resources.operator_hub import OperatorHub
@@ -11,7 +10,12 @@ from resources.operator_source import OperatorSource
 from resources.resource import ResourceEditor
 from resources.secret import Secret
 from resources.template import Template
-from tests.network.utils import nmcli_add_con_cmds
+from utilities.network import (
+    LINUX_BRIDGE,
+    cloud_init_network_data,
+    get_hosts_common_ports,
+    network_nad,
+)
 from utilities.storage import get_images_external_http_server
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -33,16 +37,12 @@ def upgrade_bridge_on_all_nodes(
     schedulable_nodes,
 ):
     with network_utils.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+        interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         interface_name="br1upgrade",
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
-        ports=[
-            utilities.network.get_hosts_common_ports(
-                nodes_available_nics=nodes_available_nics
-            )[1]
-        ],
+        ports=[get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[1]],
     ) as br:
         yield br
 
@@ -50,7 +50,7 @@ def upgrade_bridge_on_all_nodes(
 @pytest.fixture(scope="module")
 def bridge_on_one_node(utility_pods, worker_node1):
     with network_utils.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+        interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         interface_name="upg-br-mark",
         network_utility_pods=utility_pods,
@@ -61,8 +61,8 @@ def bridge_on_one_node(utility_pods, worker_node1):
 
 @pytest.fixture(scope="module")
 def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
         nad_name=bridge_on_one_node.bridge_name,
         interface_name=bridge_on_one_node.bridge_name,
         namespace=namespace,
@@ -71,10 +71,9 @@ def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
 
 
 def cloud_init(ip_address):
+    network_data_data = {"ethernets": {"eth1": {"addresses": [f"{ip_address}/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    bootcmds = nmcli_add_con_cmds(iface="eth1", ip=ip_address)
-    cloud_init_data["userData"]["bootcmd"] = bootcmds
-    return cloud_init_data
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
 
 @pytest.fixture(scope="module")
@@ -127,8 +126,8 @@ def running_vm_upgrade_b(vm_upgrade_b):
 
 @pytest.fixture(scope="module", autouse=True)
 def upgrade_br1test_nad(namespace, upgrade_bridge_on_all_nodes):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
         nad_name=upgrade_bridge_on_all_nodes.bridge_name,
         interface_name=upgrade_bridge_on_all_nodes.bridge_name,
         namespace=namespace,

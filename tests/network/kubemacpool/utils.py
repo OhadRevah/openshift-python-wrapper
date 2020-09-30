@@ -1,12 +1,10 @@
 import logging
 from collections import namedtuple
 from ipaddress import ip_interface
-from itertools import chain
 
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
-from tests.network.utils import nmcli_add_con_cmds
-from utilities.network import get_vmi_mac_address_by_iface_name
+from utilities.network import cloud_init_network_data, get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -96,14 +94,15 @@ def wait_for_kmp_pods_to_be_in_crashloop(dyn_client, namespace):
 
 
 def create_vm(name, namespace, iface_config, client, mac_pool):
+    network_data_data = {}
+    _data = {
+        iface: {"addresses": [f"{iface_config[iface].ip_address}/24"]}
+        for iface in ("eth%d" % idx for idx in range(1, 5))
+    }
+    network_data_data["ethernets"] = _data
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    bootcmds = list(
-        chain.from_iterable(
-            nmcli_add_con_cmds(iface=iface, ip=iface_config[iface].ip_address)
-            for iface in ("eth%d" % idx for idx in range(1, 5))
-        )
-    )
-    cloud_init_data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+
     runcmd = [
         # 2 kernel flags are used to disable wrong arp behavior
         "sysctl -w net.ipv4.conf.all.arp_ignore=1",

@@ -2,9 +2,9 @@
 from ipaddress import ip_interface
 
 import pytest
-from tests.network.utils import nmcli_add_con_cmds, update_cloud_init_extra_user_data
+from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
 from utilities import console
-from utilities.network import network_nad
+from utilities.network import cloud_init_network_data, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -26,7 +26,7 @@ VMA_MPLS_LOOPBACK_IP = "10.200.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
 VMB_MPLS_LOOPBACK_IP = "10.200.200.1/32"
 VMB_MPLS_ROUTE_TAG = 200
-VMB_DHCP_ADDRESS = "10.200.3.3"
+DHCP_IP_RANGE_START = DHCP_IP_RANGE_END = "10.200.3.3"
 DOT1Q_VLAN_ID = 10
 
 
@@ -84,6 +84,7 @@ def l2_bridge_all_nads(
 
 
 def _cloud_init_data(
+    vm_name,
     ip_addresses,
     mpls_local_ip,
     mpls_local_tag,
@@ -92,19 +93,32 @@ def _cloud_init_data(
     mpls_route_next_hop,
     cloud_init_extra_user_data,
 ):
-    data = FEDORA_CLOUD_INIT_PASSWORD
+    network_data_data = {
+        "ethernets": {
+            "eth1": {"addresses": [f"{ip_addresses[0]}/24"]},
+            "eth2": {"addresses": [f"{ip_addresses[1]}/24"]},
+            "eth4": {"addresses": [f"{ip_addresses[3]}/24"]},
+        },
+        "vlans": {
+            "eth1.10": {
+                "addresses": [f"{ip_addresses[4]}/24"],
+                "id": 10,
+                "link": "eth1",
+            }
+        },
+    }
+    # Only DHCP server VM (vm-fedora-1) should have IP on eth3 interface
+    if vm_name == "vm-fedora-1":
+        network_data_data["ethernets"]["eth3"] = {
+            "addresses": [f"{ip_addresses[2]}/24"]
+        }
 
-    bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", ip_addresses[0]))
-    bootcmds.extend(nmcli_add_con_cmds("eth2", ip_addresses[1]))
-    bootcmds.extend(nmcli_add_con_cmds("eth3", ip_addresses[2]))
-    bootcmds.extend(nmcli_add_con_cmds("eth4", ip_addresses[3]))
-    bootcmds.append(
-        "nmcli conn add con-name VLAN_10 type vlan ifname eth1.10 ipv4.method manual ipv4.addresses "
-        f"{ip_addresses[4]}/24 dev eth1 vlan.id {DOT1Q_VLAN_ID} ipv6.method ignore autoconnect true"
-    )
+    # DHCP client VM (vm-fedora-2) should be with dhcp=false, will be activated in test 'test_dhcp_broadcast'.
+    if vm_name == "vm-fedora-2":
+        network_data_data["ethernets"]["eth3"] = {"dhcp4": False}
 
-    data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     runcmd = [
         "modprobe mpls_router",  # In order to test mpls we need to load driver
@@ -119,14 +133,15 @@ def _cloud_init_data(
         "nmcli connection up eth2",
         "ip route add 224.0.0.0/4 dev eth2",
     ]
-    data["userData"]["runcmd"] = runcmd
+    cloud_init_data["userData"]["runcmd"] = runcmd
 
     if cloud_init_extra_user_data:
         update_cloud_init_extra_user_data(
-            cloud_init_data=data["userData"],
+            cloud_init_data=cloud_init_data["userData"],
             cloud_init_extra_user_data=cloud_init_extra_user_data,
         )
-    return data
+
+    return cloud_init_data
 
 
 class VirtualMachineAttachedToBridge(VirtualMachineForTests):
@@ -200,6 +215,7 @@ def bridge_attached_vm(
     client=None,
 ):
     cloud_init_data = _cloud_init_data(
+        vm_name=name,
         ip_addresses=ip_addresses,
         mpls_local_ip=mpls_local_ip,
         mpls_local_tag=mpls_local_tag,
@@ -228,13 +244,14 @@ def bridge_attached_vm(
 
 @pytest.fixture(scope="class")
 def l2_bridge_vm_a(namespace, l2_bridge_all_nads, unprivileged_client):
+    dhcpd_data = DHCP_SERVER_CONF_FILE.format(
+        DHCP_IP_SUBNET="10.200.3",
+        DHCP_IP_RANGE_START=DHCP_IP_RANGE_START,
+        DHCP_IP_RANGE_END=DHCP_IP_RANGE_END,
+    )
     cloud_init_extra_user_data = {
         "runcmd": [
-            "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
-            "\\nauthoritative;\\nsubnet 10.200.3.0 netmask 255.255.255.0 {"
-            "\\noption subnet-mask 255.255.255.0;\\nrange  "
-            f"{VMB_DHCP_ADDRESS} {VMB_DHCP_ADDRESS};"
-            "\\n}' > /etc/dhcp/dhcpd.conf\"",  # Inject dhcp configuration to dhcpd.conf
+            dhcpd_data,
             "sysctl net.ipv4.icmp_echo_ignore_broadcasts=0",  # Enable multicast support
         ]
     }
@@ -277,7 +294,7 @@ def l2_bridge_vm_b(namespace, l2_bridge_all_nads, unprivileged_client):
         ip_addresses=interface_ip_addresses,
         mpls_local_tag=VMB_MPLS_ROUTE_TAG,
         mpls_local_ip=VMB_MPLS_LOOPBACK_IP,
-        dhcp_pool_address=VMB_DHCP_ADDRESS,
+        dhcp_pool_address=DHCP_IP_RANGE_START,
         mpls_dest_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_tag=VMA_MPLS_ROUTE_TAG,
         mpls_route_next_hop="10.200.4.1",
@@ -324,9 +341,10 @@ def configured_l2_bridge_vm_b(
     """
     Starts dhcp client in l2_bridge_vm_b
     """
+    # TODO: Extract connection name from nmcli command by device name.
     post_install_command = [
-        "sudo nmcli connection modify eth3 ipv4.method auto",
-        "sudo nmcli con up eth3",
+        "sudo nmcli connection modify 'System eth3' ipv4.method auto",
+        "sudo nmcli connection up 'System eth3'",
     ]
     vm_console_run_commands(
         console_impl=console.Fedora, vm=l2_bridge_vm_b, commands=post_install_command

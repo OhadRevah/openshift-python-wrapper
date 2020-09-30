@@ -7,12 +7,16 @@ import logging
 
 import pytest
 import tests.network.utils as network_utils
-import utilities.network
 from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
-from tests.network.utils import nmcli_add_con_cmds
 from utilities import console
-from utilities.network import get_vmi_ip_v4_by_name
+from utilities.network import (
+    LINUX_BRIDGE,
+    cloud_init_network_data,
+    get_hosts_common_ports,
+    get_vmi_ip_v4_by_name,
+    network_nad,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -88,11 +92,9 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
 @pytest.fixture(scope="module")
 def vma(namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
-    bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.1"))
-
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
@@ -109,11 +111,9 @@ def vma(namespace, unprivileged_client):
 @pytest.fixture(scope="module")
 def vmb(namespace, unprivileged_client):
     networks = {BR1TEST: BR1TEST}
-    bootcmds = []
-    bootcmds.extend(nmcli_add_con_cmds("eth1", "10.200.0.2"))
-
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data["userData"]["bootcmd"] = bootcmds
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     with BridgedFedoraVirtualMachine(
         namespace=namespace.name,
@@ -153,24 +153,20 @@ def bridge_on_all_nodes(
     schedulable_nodes,
 ):
     with network_utils.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+        interface_type=LINUX_BRIDGE,
         nncp_name="migration",
         interface_name=BR1TEST,
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
-        ports=[
-            utilities.network.get_hosts_common_ports(
-                nodes_available_nics=nodes_available_nics
-            )[1]
-        ],
+        ports=[get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[1]],
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="module", autouse=True)
 def br1test_nad(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
         nad_name=BR1TEST,
         interface_name=BR1TEST,
         namespace=namespace,

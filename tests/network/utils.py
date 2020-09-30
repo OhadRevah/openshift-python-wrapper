@@ -10,6 +10,17 @@ from utilities.network import NETWORK_DEVICE_TYPE, SRIOV
 
 
 LOGGER = logging.getLogger(__name__)
+DHCP_SERVER_CONF_FILE = """
+cat <<EOF >> /etc/dhcp/dhcpd.conf
+default-lease-time 3600;
+max-lease-time 7200;
+authoritative;
+subnet {DHCP_IP_SUBNET}.0 netmask 255.255.255.0 {{
+option subnet-mask 255.255.255.0;
+range {DHCP_IP_RANGE_START} {DHCP_IP_RANGE_END};
+}}
+EOF
+"""
 
 
 def _console_ping(src_vm, dst_ip, packetsize=None):
@@ -32,15 +43,6 @@ def assert_ping_successful(src_vm, dst_ip, packetsize=None):
 
 def assert_no_ping(src_vm, dst_ip, packetsize=None):
     assert _console_ping(src_vm, dst_ip, packetsize)[0] == b"100"
-
-
-def nmcli_add_con_cmds(iface, ip):
-    return [
-        f"nmcli con add type ethernet con-name {iface} ifname {iface}",
-        f"nmcli con mod {iface} ipv4.addresses {ip}/24 "
-        f"ipv4.method manual connection.autoconnect-priority 1 ipv6.method ignore",
-        f"nmcli con up {iface}",
-    ]
 
 
 def running_vmi(vm):
