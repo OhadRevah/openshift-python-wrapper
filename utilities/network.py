@@ -725,3 +725,29 @@ def get_vmi_mac_address_by_iface_name(vmi, iface_name):
         if iface.name == iface_name:
             return iface.mac
     raise IfaceNotFound(name=iface_name)
+
+
+def cloud_init_network_data(data):
+    """
+    Generate cloud init network data.
+    https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v2.html
+
+    data (dict): Dict of interface name and ip addresses.
+
+    Examples:
+        data = {
+            "ethernets": {
+                "eth1": {"addresses": ["192.168.10.1/24"]},
+                "vlans": {
+                    "eth1.10": {"addresses": ["192.168.10.3/24"], "id": 1000, "link": "eth1"}
+                },
+            }
+        }
+        cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+        network_data = cloud_init_network_data(data=data)
+        cloud_init_data.update(network_data)
+    """
+    network_data = {"networkData": {"version": 2}}
+    network_data["networkData"].update(data)
+
+    return network_data
