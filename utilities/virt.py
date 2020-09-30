@@ -222,6 +222,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.smm_enabled = smm_enabled
         self.efi_params = efi_params
         self.diskless_vm = diskless_vm
+        self.is_vm_from_template = False
 
     def __enter__(self):
         super().__enter__()
@@ -250,7 +251,7 @@ class VirtualMachineForTests(VirtualMachine):
 
             res["spec"] = self.body["spec"]
 
-        is_vm_from_template = (
+        self.is_vm_from_template = (
             "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
         )
 
@@ -262,6 +263,66 @@ class VirtualMachineForTests(VirtualMachine):
             "labels", {}
         ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
 
+        spec = self.update_vm_network_configuration(spec=spec)
+        spec = self.update_vm_cpu_configuration(spec=spec)
+
+        if self.cloud_init_data:
+            spec = self.update_vm_cloud_init_data(spec=spec)
+
+        for sa in self.service_accounts:
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {}, "name": sa})
+            spec.setdefault("volumes", []).append(
+                {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
+            )
+
+        # Memory must be set.
+        if self.memory or not self.body:
+            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
+                "requests", {}
+            )["memory"] = (self.memory or "64M")
+
+        if self.label:
+            # Windows templates are missing spec -> template -> metadata -> labels path
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1769692
+            # Once fixed, setdefault to 'template' and 'metadata' should be removed.
+            res.setdefault("spec", {}).setdefault("template", {}).setdefault(
+                "metadata", {}
+            ).setdefault("labels", {})["kubevirt.io/vm"] = self.label
+
+        # Create rng device so the vm will able to use /dev/rnd without
+        # waiting for entropy collecting.
+        res.setdefault("spec", {}).setdefault("template", {}).setdefault(
+            "spec", {}
+        ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
+
+        res, spec = self.update_vm_storage_configuration(res=res, spec=spec)
+
+        if self.smm_enabled is not None:
+            spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
+                "smm", {}
+            )["enabled"] = self.smm_enabled
+
+        if self.efi_params is not None:
+            spec.setdefault("domain", {}).setdefault("firmware", {}).setdefault(
+                "bootloader", {}
+            )["efi"] = self.efi_params
+
+        if self.machine_type:
+            spec.setdefault("domain", {}).setdefault("machine", {})[
+                "type"
+            ] = self.machine_type
+
+        if self.attached_secret:
+            spec = self.update_vm_secret_configuration(spec=spec)
+
+        if self.diskless_vm:
+            spec.get("domain", {}).get("devices", {}).pop("disks", None)
+
+        return res
+
+    def update_vm_network_configuration(self, spec):
         iface_mac_number = random.randint(0, 255)
         for iface_name in self.interfaces:
             try:
@@ -307,39 +368,36 @@ class VirtualMachineForTests(VirtualMachine):
                 {"networkInterfaceMultiqueue": self.network_multiqueue}
             )
 
-        if self.cloud_init_data:
-            cloud_init_volume = {}
-            for vol in spec.setdefault("volumes", []):
-                if vol["name"] == "cloudinitdisk":
-                    cloud_init_volume = vol
-                    break
+        return spec
 
-            cloud_init_volume_type = self.cloud_init_type or "cloudInitNoCloud"
+    def update_vm_cloud_init_data(self, spec):
+        cloud_init_volume = {}
+        for vol in spec.setdefault("volumes", []):
+            if vol["name"] == "cloudinitdisk":
+                cloud_init_volume = vol
+                break
 
-            if not cloud_init_volume:
-                spec["volumes"].append({"name": "cloudinitdisk"})
-                cloud_init_volume = spec["volumes"][-1]
+        cloud_init_volume_type = self.cloud_init_type or "cloudInitNoCloud"
 
-            cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
-                data=self.cloud_init_data
-            )
-            disks_spec = (
-                spec.setdefault("domain", {})
-                .setdefault("devices", {})
-                .setdefault("disks", [])
-            )
+        if not cloud_init_volume:
+            spec["volumes"].append({"name": "cloudinitdisk"})
+            cloud_init_volume = spec["volumes"][-1]
 
-            if not [disk for disk in disks_spec if disk["name"] == "cloudinitdisk"]:
-                disks_spec.append({"disk": {"bus": "virtio"}, "name": "cloudinitdisk"})
+        cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
+            data=self.cloud_init_data
+        )
+        disks_spec = (
+            spec.setdefault("domain", {})
+            .setdefault("devices", {})
+            .setdefault("disks", [])
+        )
 
-        for sa in self.service_accounts:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "disks", []
-            ).append({"disk": {}, "name": sa})
-            spec.setdefault("volumes", []).append(
-                {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
-            )
+        if not [disk for disk in disks_spec if disk["name"] == "cloudinitdisk"]:
+            disks_spec.append({"disk": {"bus": "virtio"}, "name": "cloudinitdisk"})
 
+        return spec
+
+    def update_vm_cpu_configuration(self, spec):
         if self.node_selector:
             spec["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
 
@@ -382,26 +440,9 @@ class VirtualMachineForTests(VirtualMachine):
                 "dedicatedCpuPlacement"
             ] = True
 
-        # Memory must be set.
-        if self.memory or not self.body:
-            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
-                "requests", {}
-            )["memory"] = (self.memory or "64M")
+        return spec
 
-        if self.label:
-            # Windows templates are missing spec -> template -> metadata -> labels path
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1769692
-            # Once fixed, setdefault to 'template' and 'metadata' should be removed.
-            res.setdefault("spec", {}).setdefault("template", {}).setdefault(
-                "metadata", {}
-            ).setdefault("labels", {})["kubevirt.io/vm"] = self.label
-
-        # Create rng device so the vm will able to use /dev/rnd without
-        # waiting for entropy collecting.
-        res.setdefault("spec", {}).setdefault("template", {}).setdefault(
-            "spec", {}
-        ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
-
+    def update_vm_storage_configuration(self, res, spec):
         # image must be set before DV in order to boot from it.
         if self.image:
             spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
@@ -424,7 +465,7 @@ class VirtualMachineForTests(VirtualMachine):
                 spec["nodeSelector"] = {"kubernetes.io/hostname": node_selector}
 
             # Needed only for VMs which are not created from common templates
-            if not is_vm_from_template:
+            if not self.is_vm_from_template:
                 if self.pvc:
                     pvc_disk_name = f"{self.pvc.name}-pvc-disk"
                     spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
@@ -458,43 +499,27 @@ class VirtualMachineForTests(VirtualMachine):
                 self.data_volume_template
             )
 
-        if self.smm_enabled is not None:
-            spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
-                "smm", {}
-            )["enabled"] = self.smm_enabled
+        return res, spec
 
-        if self.efi_params is not None:
-            spec.setdefault("domain", {}).setdefault("firmware", {}).setdefault(
-                "bootloader", {}
-            )["efi"] = self.efi_params
+    def update_vm_secret_configuration(self, spec):
+        volume_name = self.attached_secret["volume_name"]
+        spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+            "disks", []
+        ).append(
+            {
+                "disk": {},
+                "name": volume_name,
+                "serial": self.attached_secret["serial"],
+            }
+        )
+        spec.setdefault("volumes", []).append(
+            {
+                "name": volume_name,
+                "secret": {"secretName": self.attached_secret["secret_name"]},
+            }
+        )
 
-        if self.machine_type:
-            spec.setdefault("domain", {}).setdefault("machine", {})[
-                "type"
-            ] = self.machine_type
-
-        if self.attached_secret:
-            volume_name = self.attached_secret["volume_name"]
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "disks", []
-            ).append(
-                {
-                    "disk": {},
-                    "name": volume_name,
-                    "serial": self.attached_secret["serial"],
-                }
-            )
-            spec.setdefault("volumes", []).append(
-                {
-                    "name": volume_name,
-                    "secret": {"secretName": self.attached_secret["secret_name"]},
-                }
-            )
-
-        if self.diskless_vm:
-            spec.get("domain", {}).get("devices", {}).pop("disks", None)
-
-        return res
+        return spec
 
     def ssh_enable(self):
         self.ssh_service = SSHServiceForVirtualMachineForTests(
