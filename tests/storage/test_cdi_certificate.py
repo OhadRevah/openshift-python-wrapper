@@ -198,21 +198,22 @@ def test_upload_after_certs_renewal(
     Check that CDI can do upload operation after certs get refreshed
     """
     dv_name = f"cnv-3667-{time.time()}"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_QCOW2_IMG_PATH,
         storage_class=[*storage_class_matrix__class__][0],
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert res
-    assert "Processing completed successfully" in out
-    dv = DataVolume(namespace=namespace.name, name=dv_name)
-    dv.wait(timeout=60)
-    with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-        wait_for_console(vm=vm, console_impl=console.Cirros)
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        assert "Processing completed successfully" in out
+        dv = DataVolume(namespace=namespace.name, name=dv_name)
+        dv.wait(timeout=60)
+        with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
+            wait_for_console(vm=vm, console_impl=console.Cirros)
 
 
 @pytest.mark.parametrize(
@@ -264,18 +265,19 @@ def test_upload_after_validate_aggregated_api_cert(
     Check that upload is successful after verifying validity of aggregated api client certificate
     """
     dv_name = f"cnv-3977-{time.time()}"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_QCOW2_IMG_PATH,
         storage_class=[*storage_class_matrix__class__][0],
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert res
-    assert "Processing completed successfully" in out
-    dv = DataVolume(namespace=namespace.name, name=dv_name)
-    dv.wait(timeout=60)
-    with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-        storage_utils.check_disk_count_in_vm(vm=vm)
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        assert "Processing completed successfully" in out
+        dv = DataVolume(namespace=namespace.name, name=dv_name)
+        dv.wait(timeout=60)
+        with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
+            storage_utils.check_disk_count_in_vm(vm=vm)

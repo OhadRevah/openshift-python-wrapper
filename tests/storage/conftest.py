@@ -244,29 +244,30 @@ def uploaded_dv(
     downloaded_image(
         remote_name=request.param.get("remote_name"), local_name=local_path
     )
-    res, out = virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size=request.param.get("dv_size"),
         storage_class=storage_class,
         image_path=local_path,
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert res
-    dv = DataVolume(namespace=namespace.name, name=dv_name)
-    dv.wait(timeout=60)
-    assert dv.pvc.bound()
-    yield dv
-    dv.delete(wait=True)
-    # We do not want 11-30G~ files in /tmp
-    # Pytest will only cleanup every 3 tmpdir calls
-    try:
-        LOGGER.info("Deleting image file from tmpdir")
-        os.remove(os.path.join(tmpdir, image_file))
-    except OSError as e:
-        LOGGER.error(e)
-        raise
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        dv = DataVolume(namespace=namespace.name, name=dv_name)
+        dv.wait(timeout=60)
+        assert dv.pvc.bound()
+        yield dv
+        dv.delete(wait=True)
+        # We do not want 11-30G~ files in /tmp
+        # Pytest will only cleanup every 3 tmpdir calls
+        try:
+            LOGGER.info("Deleting image file from tmpdir")
+            os.remove(os.path.join(tmpdir, image_file))
+        except OSError as e:
+            LOGGER.error(e)
+            raise
 
 
 @pytest.fixture()

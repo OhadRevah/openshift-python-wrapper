@@ -11,6 +11,7 @@ from pytest_testconfig import config as py_config
 from resources.cluster_role import ClusterRole
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
+from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.role_binding import RoleBinding
 from resources.route import Route
@@ -215,6 +216,7 @@ def virtctl_upload(
     return run_virtctl_command(command=command, namespace=namespace)
 
 
+@contextmanager
 def virtctl_upload_dv(
     namespace,
     name,
@@ -263,7 +265,11 @@ def virtctl_upload_dv(
     if no_create:
         command.append("--no-create")
 
-    return run_virtctl_command(command=command, namespace=namespace)
+    yield run_virtctl_command(command=command, namespace=namespace)
+    if pvc:
+        PersistentVolumeClaim(namespace=namespace, name=name).delete(wait=True)
+    else:
+        DataVolume(namespace=namespace, name=name).delete(wait=True)
 
 
 def downloaded_image(remote_name, local_name):

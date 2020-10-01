@@ -5,7 +5,6 @@ Upload using virtctl
 """
 
 import logging
-import time
 
 import pytest
 import tests.storage.utils as storage_utils
@@ -38,17 +37,17 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2192"
-    virtctl_upload = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         image_path=local_name,
         insecure=True,
-    )
-    assert virtctl_upload
-    LOGGER.info(f"{virtctl_upload}")
-    assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
+    ) as virtctl_upload:
+        assert virtctl_upload
+        LOGGER.info(f"{virtctl_upload}")
+        assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
 @pytest.mark.destructive
@@ -68,18 +67,19 @@ def test_successful_virtctl_upload_no_route(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2191"
-    virtctl_upload, virtctl_upload_out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         image_path=local_name,
         insecure=True,
-    )
-    LOGGER.info(f"{virtctl_upload_out}")
-    assert (
-        virtctl_upload is False
-    ), "virtctl image-upload command successful, must fail with a non-zero rc"
+    ) as res:
+        virtctl_upload, virtctl_upload_out = res
+        LOGGER.info(f"{virtctl_upload_out}")
+        assert (
+            virtctl_upload is False
+        ), "virtctl image-upload command successful, must fail with a non-zero rc"
 
 
 @pytest.mark.polarion("CNV-2217")
@@ -95,17 +95,17 @@ def test_image_upload_with_overridden_url(
     storage_utils.downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
-    virtctl_upload = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         image_path=local_name,
         insecure=True,
-    )
-    assert virtctl_upload
-    LOGGER.info(f"{virtctl_upload}")
-    assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
+    ) as virtctl_upload:
+        assert virtctl_upload
+        LOGGER.info(f"{virtctl_upload}")
+        assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
 @pytest.mark.polarion("CNV-3031")
@@ -121,17 +121,18 @@ def test_virtctl_image_upload_with_ca(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_path
     )
     pvc_name = "cnv-3031"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
         storage_class=py_config["default_storage_class"],
         image_path=local_path,
-    )
-    LOGGER.info(out)
-    assert res
-    pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
-    assert pvc.bound()
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
+        assert pvc.bound()
 
 
 @pytest.mark.polarion("CNV-3724")
@@ -143,21 +144,22 @@ def test_virtctl_image_upload_dv(
     """
     storage_class = [*storage_class_matrix__module__][0]
     dv_name = f"cnv-3724-{storage_class}"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_PATH,
         storage_class=storage_class,
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert res
-    assert "Processing completed successfully" in out
-    dv = DataVolume(namespace=namespace.name, name=dv_name)
-    dv.wait(timeout=60)
-    with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-        wait_for_console(vm=vm, console_impl=console.Cirros)
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        assert "Processing completed successfully" in out
+        dv = DataVolume(namespace=namespace.name, name=dv_name)
+        dv.wait(timeout=60)
+        with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
+            wait_for_console(vm=vm, console_impl=console.Cirros)
 
 
 @pytest.mark.parametrize(
@@ -182,7 +184,7 @@ def test_virtctl_image_upload_with_exist_dv_image(
     """
     Check that virtctl fails gracefully when attempting to upload an image to a data volume that already has disk.img
     """
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=data_volume_multi_storage_scope_function.name,
         size="1Gi",
@@ -190,13 +192,14 @@ def test_virtctl_image_upload_with_exist_dv_image(
         storage_class=[*storage_class_matrix__class__][0],
         insecure=True,
         no_create=True,
-    )
-    LOGGER.info(out)
-    assert not res
-    assert (
-        f"PVC {data_volume_multi_storage_scope_function.name} already successfully imported/cloned/updated"
-        in out
-    )
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert not status
+        assert (
+            f"PVC {data_volume_multi_storage_scope_function.name} already successfully imported/cloned/updated"
+            in out
+        )
 
 
 @pytest.mark.polarion("CNV-3728")
@@ -206,8 +209,8 @@ def test_virtctl_image_upload_pvc(
     """
     Check that virtctl can create a new PVC and upload an image to it
     """
-    pvc_name = f"cnv-3728-{time.time()}"
-    res, out = storage_utils.virtctl_upload_dv(
+    pvc_name = "cnv-3728"
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         pvc=True,
         name=pvc_name,
@@ -215,11 +218,12 @@ def test_virtctl_image_upload_pvc(
         image_path=LOCAL_PATH,
         storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert res
-    pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
-    assert pvc.bound()
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
+        assert pvc.bound()
 
 
 @pytest.mark.polarion("CNV-3725")
@@ -240,7 +244,7 @@ def test_virtctl_image_upload_with_exist_dv(
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
-        res, out = storage_utils.virtctl_upload_dv(
+        with storage_utils.virtctl_upload_dv(
             namespace=namespace.name,
             name=dv.name,
             size="1Gi",
@@ -248,11 +252,12 @@ def test_virtctl_image_upload_with_exist_dv(
             insecure=True,
             storage_class=storage_class,
             no_create=True,
-        )
-        LOGGER.info(out)
-        assert "Processing completed successfully" in out
-        with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-            wait_for_console(vm=vm, console_impl=console.Cirros)
+        ) as res:
+            status, out = res
+            LOGGER.info(out)
+            assert "Processing completed successfully" in out
+            with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
+                wait_for_console(vm=vm, console_impl=console.Cirros)
 
 
 @pytest.fixture()
@@ -284,7 +289,7 @@ def test_virtctl_image_upload_with_exist_pvc(
     Check that virtctl can upload an local disk image to an existing empty PVC
     """
     storage_class = [*storage_class_matrix__module__][0]
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=empty_pvc.name,
         size="1Gi",
@@ -292,17 +297,18 @@ def test_virtctl_image_upload_with_exist_pvc(
         storage_class=storage_class,
         insecure=True,
         no_create=True,
-    )
-    LOGGER.info(out)
-    assert "Processing completed successfully" in out
-    with VirtualMachineForTests(
-        name="cnv-3727-vm",
-        namespace=empty_pvc.namespace,
-        pvc=empty_pvc,
-    ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running(timeout=300)
-        wait_for_console(vm=vm, console_impl=console.Cirros)
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert "Processing completed successfully" in out
+        with VirtualMachineForTests(
+            name="cnv-3727-vm",
+            namespace=empty_pvc.namespace,
+            pvc=empty_pvc,
+        ) as vm:
+            vm.start(wait=True)
+            vm.vmi.wait_until_running(timeout=300)
+            wait_for_console(vm=vm, console_impl=console.Cirros)
 
 
 @pytest.mark.polarion("CNV-3729")
@@ -314,29 +320,33 @@ def test_virtctl_image_upload_with_exist_pvc_image(
     """
     storage_class = [*storage_class_matrix__module__][0]
     pvc_name = f"cnv-3729-{storage_class}"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
         image_path=LOCAL_PATH,
         storage_class=storage_class,
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert "Processing completed successfully" in out
-
-    res_new, out_new = storage_utils.virtctl_upload_dv(
-        namespace=namespace.name,
-        name=pvc_name,
-        size="1Gi",
-        image_path=LOCAL_PATH,
-        storage_class=storage_class,
-        insecure=True,
-        no_create=True,
-    )
-    LOGGER.info(out_new)
-    assert not res_new
-    assert f"PVC {pvc_name} already successfully imported/cloned/updated" in out_new
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert "Processing completed successfully" in out
+        with storage_utils.virtctl_upload_dv(
+            namespace=namespace.name,
+            name=pvc_name,
+            size="1Gi",
+            image_path=LOCAL_PATH,
+            storage_class=storage_class,
+            insecure=True,
+            no_create=True,
+        ) as res_new:
+            status_new, out_new = res_new
+            LOGGER.info(out_new)
+            assert not status_new
+            assert (
+                f"PVC {pvc_name} already successfully imported/cloned/updated"
+                in out_new
+            )
 
 
 @pytest.mark.polarion("CNV-3730")
@@ -352,17 +362,18 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
     - PVC with the same name already exists.
     """
     storage_class = [*storage_class_matrix__module__][0]
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=empty_pvc.name,
         size="1Gi",
         image_path=LOCAL_PATH,
         storage_class=storage_class,
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert not res
-    assert f"PVC {empty_pvc.name} not available for upload" in out
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert not status
+        assert f"PVC {empty_pvc.name} not available for upload" in out
 
 
 @pytest.mark.tier3
@@ -421,18 +432,19 @@ def test_disk_image_after_upload_virtctl(
 ):
     storage_class = [*storage_class_matrix__module__][0]
     dv_name = f"cnv-4033-{storage_class}"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_PATH,
         storage_class=storage_class,
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert res
-    dv = DataVolume(namespace=namespace.name, name=dv_name)
-    storage_utils.create_vm_and_verify_image_permission(dv=dv)
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert status
+        dv = DataVolume(namespace=namespace.name, name=dv_name)
+        storage_utils.create_vm_and_verify_image_permission(dv=dv)
 
 
 @pytest.mark.parametrize(
@@ -457,14 +469,15 @@ def test_print_response_body_on_error_upload_virtctl(
     """
     storage_class = [*storage_class_matrix__module__][0]
     dv_name = f"cnv-4512-{storage_class}"
-    res, out = storage_utils.virtctl_upload_dv(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="3G",
         image_path=download_specified_image,
         storage_class=storage_class,
         insecure=True,
-    )
-    LOGGER.info(out)
-    assert not res
-    assert ErrorMsg.LARGER_PVC_REQUIRED in out
+    ) as res:
+        status, out = res
+        LOGGER.info(out)
+        assert not status
+        assert ErrorMsg.LARGER_PVC_REQUIRED in out
