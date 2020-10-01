@@ -129,7 +129,12 @@ def test_private_registry_cirros(
             "cnv-2340",
             "docker://quay.io/openshift-cnv/qe-cnv-tests-registry-fedora29-qcow2-rootdir",
             ErrorMsg.NOT_EXIST_IN_IMAGE_DIR,
-            marks=(pytest.mark.polarion("CNV-2340")),
+            marks=(
+                pytest.mark.polarion("CNV-2340"),
+                pytest.mark.bugzilla(
+                    1884278, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
             id="import-registry-fedora29-qcow-rootdir",
         ),
     ],
@@ -190,7 +195,9 @@ def test_public_registry_multiple_data_volume(
             dv.wait()
 
         for vm in [vm for vm in dvs]:
-            rvm = VirtualMachineForTests(name=vm.name, namespace=namespace.name, dv=vm)
+            rvm = VirtualMachineForTests(
+                name=vm.name, namespace=namespace.name, data_volume=vm
+            )
             rvm.create(wait=True)
             vms.append(rvm)
 
@@ -308,7 +315,7 @@ def test_private_registry_with_untrusted_certificate(
             )
             wait_for_importer_container_message(
                 importer_pod=importer_pod,
-                msg=ErrorMsg.EXIT_STATUS_1,
+                msg=ErrorMsg.CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY,
             )
 
 
@@ -345,7 +352,12 @@ def test_private_registry_with_untrusted_certificate(
             None,
             DataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2026")),
+            marks=(
+                pytest.mark.polarion("CNV-2026"),
+                pytest.mark.bugzilla(
+                    1884278, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
     ],
     ids=[
@@ -419,9 +431,6 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
-@pytest.mark.bugzilla(
-    1725372, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-2150")
 def test_public_registry_data_volume_dockerhub_archive(
     namespace, storage_class_matrix__function__
@@ -531,5 +540,5 @@ def test_inject_invalid_cert_to_configmap(
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
         wait_for_importer_container_message(
             importer_pod=importer_pod,
-            msg=ErrorMsg.EXIT_STATUS_1,
+            msg=ErrorMsg.CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY,
         )
