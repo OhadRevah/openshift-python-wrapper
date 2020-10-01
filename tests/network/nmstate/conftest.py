@@ -24,7 +24,9 @@ def node_management_iface_stats_node(nodes_active_nics, worker_node1, worker_nod
     """
     node_stats = {}
     for worker in worker_node1, worker_node2:
-        node_stats[worker.name] = {"iface_name": nodes_active_nics[worker.name][0]}
+        node_stats[worker.name] = {
+            "iface_name": nodes_active_nics[worker.name]["occupied"][0]
+        }
     return node_stats
 
 
@@ -84,7 +86,6 @@ def running_nmstate_vmb(nmstate_vmb):
 @pytest.fixture(scope="module")
 def bridges_on_management_ifaces_node1(
     utility_pods,
-    nodes_active_nics,
     node_management_iface_stats_node,
     worker_node1,
 ):
@@ -122,7 +123,6 @@ def bridges_on_management_ifaces_node1(
 @pytest.fixture(scope="module")
 def bridges_on_management_ifaces_node2(
     utility_pods,
-    nodes_active_nics,
     node_management_iface_stats_node,
     worker_node2,
 ):

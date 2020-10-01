@@ -12,12 +12,12 @@ from utilities.network import get_hosts_common_ports
 
 
 @pytest.fixture(scope="session")
-def bond_supported(utility_pods, multi_nics_nodes, nodes_active_nics):
+def bond_supported(utility_pods, multi_nics_nodes, nodes_available_nics):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
     return (
-        max([len(nodes_active_nics[i.node.name]) for i in utility_pods]) > 3
+        max([len(nodes_available_nics[i.node.name]) for i in utility_pods]) > 3
         if multi_nics_nodes
         else False
     )
@@ -90,13 +90,13 @@ def network_interface(
     schedulable_node_ips,
     multi_nics_nodes,
     utility_pods,
-    nodes_active_nics,
+    nodes_available_nics,
     schedulable_nodes,
 ):
     params = request.param if hasattr(request, "param") else {}
     mtu = params.get("mtu")
     ports = (
-        [get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1]]
+        [get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0]]
         if multi_nics_nodes
         else []
     )

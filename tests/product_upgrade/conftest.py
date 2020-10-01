@@ -29,7 +29,7 @@ MARKETPLACE_NAMESPACE = "openshift-marketplace"
 def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_active_nics,
+    nodes_available_nics,
     schedulable_nodes,
 ):
     with network_utils.network_device(
@@ -40,7 +40,7 @@ def upgrade_bridge_on_all_nodes(
         nodes=schedulable_nodes,
         ports=[
             utilities.network.get_hosts_common_ports(
-                nodes_active_nics=nodes_active_nics
+                nodes_available_nics=nodes_available_nics
             )[1]
         ],
     ) as br:

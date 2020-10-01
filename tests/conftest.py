@@ -719,51 +719,39 @@ def nodes_active_nics(schedulable_nodes, node_physical_nics):
     Get nodes active NICs.
     First NIC is management NIC
     """
-
-    def _insert_first(ifaces, primary, iface):
-        if primary:
-            ifaces.insert(0, iface.name)
-        else:
-            ifaces.append(iface.name)
-
     nodes_nics = {}
     for node in schedulable_nodes:
-        ifaces = []
+        nodes_nics[node.name] = {"available": [], "occupied": []}
         nns = NodeNetworkState(name=node.name)
-        default_routes = [
-            route for route in nns.routes.running if route.destination == "0.0.0.0/0"
-        ]
-        lowest_metric = min([route.metric for route in default_routes])
-        primary_iface_name = [
-            route["next-hop-interface"]
-            for route in default_routes
-            if route.metric == lowest_metric
-        ]
+        for node_iface in nns.interfaces:
+            if node_iface.name not in node_physical_nics[node.name]:
+                continue
 
-        for iface in nns.interfaces:
-            primary = primary_iface_name == iface.name
-            if iface.type == "ethernet":
-                # In OVN deployment we get extra auto generated OVN interfaces so we need to exclude them
-                if iface.name not in node_physical_nics[node.name]:
-                    continue
-
-                _insert_first(ifaces=ifaces, primary=primary, iface=iface)
-
-            if iface.type == "ovs-bridge":
-                if iface.state == "up":
-                    _insert_first(ifaces=ifaces, primary=primary, iface=iface)
-
-        nodes_nics[node.name] = ifaces
+            if (
+                node_iface["ipv4"]["address"]
+                and node_iface["ipv4"]["dhcp"]
+                and node_iface["state"] == "up"
+            ):
+                nodes_nics[node.name]["occupied"].append(node_iface.name)
+            else:
+                nodes_nics[node.name]["available"].append(node_iface.name)
 
     return nodes_nics
 
 
 @pytest.fixture(scope="session")
-def multi_nics_nodes(nodes_active_nics):
+def nodes_available_nics(nodes_active_nics):
+    return {
+        node: nodes_active_nics[node]["available"] for node in nodes_active_nics.keys()
+    }
+
+
+@pytest.fixture(scope="session")
+def multi_nics_nodes(nodes_available_nics):
     """
-    Check if nodes has more then 1 active NIC
+    Check if nodes has more than 1 available NIC
     """
-    return min(len(nics) for nics in nodes_active_nics.values()) > 2
+    return min(len(nics) for nics in nodes_available_nics.values()) > 2
 
 
 @pytest.fixture(scope="session")
@@ -1282,19 +1270,19 @@ def skip_not_openshift(admin_client):
 
 @pytest.fixture(scope="session")
 def worker_nodes_ipv4_false_secondary_nics(
-    nodes_active_nics, schedulable_nodes, utility_pods
+    nodes_available_nics, schedulable_nodes, utility_pods
 ):
     """
     Function removes ipv4 from secondary nics.
     """
     for worker_node in schedulable_nodes:
-        worker_nics = nodes_active_nics[worker_node.name]
+        worker_nics = nodes_available_nics[worker_node.name]
         with EthernetNetworkConfigurationPolicy(
             name=f"disable-ipv4-{worker_node.name}",
             node_selector=worker_node.name,
             ipv4_dhcp=False,
             worker_pods=utility_pods,
-            interfaces_name=worker_nics[1:],
+            interfaces_name=worker_nics,
             node_active_nics=worker_nics,
         ):
             LOGGER.info(

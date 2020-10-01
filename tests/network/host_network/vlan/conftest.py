@@ -101,7 +101,6 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
 def vlan_iface_on_all_nodes(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_active_nics,
     vlan_tag_id,
     vlan_base_iface,
 ):
@@ -257,14 +256,14 @@ def disabled_dhcp_client_2(vlan_iface_dhcp_client_2, dhcp_client_2):
 def vlan_iface_bond_dhcp_client_1(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_active_nics,
+    nodes_available_nics,
     dhcp_client_1,
     vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
-        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
+        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -288,14 +287,14 @@ def vlan_iface_bond_dhcp_client_1(
 def vlan_iface_bond_dhcp_client_2(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_active_nics,
+    nodes_available_nics,
     dhcp_client_2,
     vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-2-nncp",
         bond_name="bond4vlan",
-        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
+        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -317,7 +316,7 @@ def vlan_iface_bond_dhcp_client_2(
 
 # General fixtures
 @pytest.fixture(scope="module")
-def vlan_base_iface(worker_node1, nodes_active_nics):
+def vlan_base_iface(worker_node1, nodes_available_nics):
     # Select the last NIC from the list as a way to ensure that the selected NIC
     # is not already used (e.g. as a bond's slave).
-    return nodes_active_nics[worker_node1.name][-1]
+    return nodes_available_nics[worker_node1.name][-1]

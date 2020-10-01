@@ -36,7 +36,7 @@ def bond_modes_bond(
     index_number,
     link_aggregation_mode_no_connectivity_matrix__class__,
     utility_pods,
-    nodes_active_nics,
+    nodes_available_nics,
     worker_node1,
 ):
     """
@@ -46,7 +46,7 @@ def bond_modes_bond(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
+        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         mtu=1450,

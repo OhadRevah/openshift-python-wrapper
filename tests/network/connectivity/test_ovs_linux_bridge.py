@@ -108,7 +108,7 @@ def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
 def ovs_linux_bond1(
     index_number,
     utility_pods,
-    nodes_active_nics,
+    nodes_available_nics,
     link_aggregation_mode_matrix__class__,
 ):
     """
@@ -118,7 +118,7 @@ def ovs_linux_bond1(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[1:3],
+        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_matrix__class__,
         mtu=1450,

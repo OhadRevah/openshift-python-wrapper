@@ -637,11 +637,11 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         return res
 
 
-def get_hosts_common_ports(nodes_active_nics):
+def get_hosts_common_ports(nodes_available_nics):
     """
-    Get list of common ports from nodes_active_nics.
+    Get list of common ports from nodes_available_nics.
 
-    nodes_active_nics like
+    nodes_available_nics like
     [['ens3', 'ens4', 'ens6', 'ens5'],
     ['ens3', 'ens8', 'ens6', 'ens7'],
     ['ens3', 'ens8', 'ens6', 'ens7']]
@@ -649,11 +649,11 @@ def get_hosts_common_ports(nodes_active_nics):
     will return ['ens3', 'ens6']
     """
     # Exclude primary NIC from the set (nics[1:])
-    nics_list = [nics[1:] for nics in nodes_active_nics.values()]
+    nics_list = [nics[1:] for nics in nodes_available_nics.values()]
     nics_list = list(set.intersection(*[set(list) for list in nics_list]))
 
     # Insert the primary NIC to be the first in the list
-    nics_list.insert(0, nodes_active_nics[[*nodes_active_nics][0]][0])
+    nics_list.insert(0, nodes_available_nics[[*nodes_available_nics][0]][0])
 
     LOGGER.info(f"Hosts common NICs: {nics_list}")
     return nics_list

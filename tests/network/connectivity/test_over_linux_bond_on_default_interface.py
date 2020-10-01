@@ -76,6 +76,7 @@ def lbodi_bond(
     skip_no_bond_support,
     utility_pods,
     nodes_active_nics,
+    nodes_available_nics,
     worker_node1,
     worker_nodes_ipv4_false_secondary_nics,
 ):
@@ -86,7 +87,12 @@ def lbodi_bond(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=get_hosts_common_ports(nodes_active_nics=nodes_active_nics)[0:2],
+        slaves=get_hosts_common_ports(
+            nodes_available_nics=[
+                [nodes_active_nics[worker_node1.name]["occupied"][0]]
+                + [nodes_available_nics[0]]
+            ]
+        )[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
