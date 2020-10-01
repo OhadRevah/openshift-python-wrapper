@@ -19,8 +19,12 @@ WINDOWS_CLONE_TIMEOUT = 40 * 60
 
 
 @pytest.fixture()
-def skip_smart_clone_not_supported_by_sc(storage_class_matrix__class__, admin_client):
-    sc_instance = StorageClass(name=[*storage_class_matrix__class__][0]).instance
+def skip_smart_clone_not_supported_by_sc(
+    data_volume_multi_storage_scope_function, admin_client
+):
+    sc_instance = StorageClass(
+        name=data_volume_multi_storage_scope_function.storage_class
+    ).instance
     for vsc in VolumeSnapshotClass.get(dyn_client=admin_client):
         if vsc.instance.get("driver") == sc_instance.get("provisioner"):
             return
@@ -44,7 +48,7 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
 
 @pytest.mark.tier3
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class",
+    "data_volume_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -66,18 +70,17 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
 def test_successful_clone_of_large_image(
     skip_upstream,
     skip_if_workers_vms,
-    storage_class_matrix__class__,
     namespace,
-    data_volume_multi_storage_scope_class,
+    data_volume_multi_storage_scope_function,
 ):
-    storage_class = [*storage_class_matrix__class__][0]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_multi_storage_scope_class.size,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
+        size=data_volume_multi_storage_scope_function.size,
+        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
@@ -97,7 +100,7 @@ def test_successful_clone_of_large_image(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class",
+    "data_volume_multi_storage_scope_function",
     [
         {
             "dv_name": "dv-source",
@@ -110,18 +113,17 @@ def test_successful_clone_of_large_image(
 @pytest.mark.polarion("CNV-2148")
 def test_successful_vm_restart_with_cloned_dv(
     skip_upstream,
-    storage_class_matrix__class__,
     namespace,
-    data_volume_multi_storage_scope_class,
+    data_volume_multi_storage_scope_function,
 ):
-    storage_class = [*storage_class_matrix__class__][0]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_multi_storage_scope_class.size,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
+        size=data_volume_multi_storage_scope_function.size,
+        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait(timeout=600)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
@@ -171,6 +173,7 @@ def test_successful_vm_from_cloned_dv_windows(
         size=data_volume_multi_storage_scope_function.size,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
         volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait(timeout=WINDOWS_CLONE_TIMEOUT)
         assert cdv.pvc.bound()
@@ -203,7 +206,6 @@ def test_successful_vm_from_cloned_dv_windows(
 def test_disk_image_after_clone(
     skip_block_volumemode_scope_class,
     namespace,
-    storage_class_matrix__class__,
     data_volume_multi_storage_scope_function,
     unprivileged_client,
 ):
@@ -213,14 +215,16 @@ def test_disk_image_after_clone(
         namespace=namespace.name,
         size=data_volume_multi_storage_scope_function.size,
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__class__),
+        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait()
         utils.create_vm_and_verify_image_permission(dv=cdv)
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class",
+    "data_volume_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -242,16 +246,17 @@ def test_disk_image_after_clone(
 def test_successful_snapshot_clone(
     skip_upstream,
     skip_smart_clone_not_supported_by_sc,
-    storage_class_matrix__class__,
     namespace,
-    data_volume_multi_storage_scope_class,
+    data_volume_multi_storage_scope_function,
 ):
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_multi_storage_scope_class.size,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__class__),
+        size=data_volume_multi_storage_scope_function.size,
+        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,
@@ -259,15 +264,15 @@ def test_successful_snapshot_clone(
         )
         snapshot = VolumeSnapshot(name=cdv.name, namespace=namespace.name)
         verify_source_pvc_of_volume_snapshot(
-            source_pvc_name=data_volume_multi_storage_scope_class.pvc.name,
+            source_pvc_name=data_volume_multi_storage_scope_function.pvc.name,
             snapshot=snapshot,
         )
         cdv.wait()
-        if "win" not in data_volume_multi_storage_scope_class.url.split("/")[-1]:
+        if "win" not in data_volume_multi_storage_scope_function.url.split("/")[-1]:
             with utils.create_vm_from_dv(dv=cdv) as vm_dv:
                 utils.check_disk_count_in_vm(vm=vm_dv)
         assert (
             cdv.pvc.instance.metadata.annotations.get("k8s.io/SmartCloneRequest")
             == "true"
-            and not snapshot.exists
-        ), "Snapshot was not cleaned up/smart clone annotation does not exist on target PVC"
+        ), "Smart clone annotation does not exist on target PVC"
+        snapshot.wait_deleted()
