@@ -626,6 +626,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.cpu_threads = cpu_threads
         self.node_selector = node_selector
         self.termination_grace_period = termination_grace_period
+        self.cloud_init_data = cloud_init_data
 
     def to_dict(self):
         self.body = self.process_template()
@@ -654,10 +655,41 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         return res
 
     def process_template(self):
+        def _extract_os_from_template():
+            return re.search(
+                r".*/([a-z]+)",
+                [
+                    label
+                    for label in self.template_labels
+                    if Template.Labels.OS in label
+                ][0],
+            ).group(1)
+
+        def _get_os_password(os_name):
+            os_password_dict = {
+                "rhel": console.RHEL.PASSWORD,
+                "fedora": console.Fedora.PASSWORD,
+            }
+            return os_password_dict[os_name]
+
+        template_kwargs = {
+            "NAME": self.name,
+            "PVCNAME": self.data_volume.name,
+        }
+
+        # Add password to VM for Non-Windows VMs
+        if not self.cloud_init_data or not self.cloud_init_data.setdefault(
+            "userData", {}
+        ).get("password"):
+            # Extract OS from template labels
+            template_os = _extract_os_from_template()
+            if "win" not in template_os:
+                template_kwargs["CLOUD_USER_PASSWORD"] = _get_os_password(
+                    os_name=template_os
+                )
+
         template_instance = self.get_template_by_labels()
-        resources_list = template_instance.process(
-            **{"NAME": self.name, "PVCNAME": self.data_volume.name}
-        )
+        resources_list = template_instance.process(**template_kwargs)
         for resource in resources_list:
             if (
                 resource["kind"] == VirtualMachine.kind
