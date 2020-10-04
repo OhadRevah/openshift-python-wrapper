@@ -10,11 +10,8 @@ no_unprivileged_client = True
 distribution = "upstream"
 hco_namespace = "kubevirt-hyperconverged"
 sriov_namespace = "sriov-network-operator"
-
-template_defaults = {
-    "linux_bridge_cni_name": "bridge",
-    "bridge_tuning_name": "tuning",
-}
+linux_bridge_cni = "bridge"
+bridge_tuning = "tuning"
 
 default_storage_class = "local"
 

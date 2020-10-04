@@ -576,10 +576,8 @@ def network_nad(
         "vlan": vlan,
     }
     if nad_type == LINUX_BRIDGE:
-        cni_type = py_config["template_defaults"]["linux_bridge_cni_name"]
-        tuning_type = (
-            py_config["template_defaults"]["bridge_tuning_name"] if tuning else None
-        )
+        cni_type = py_config["linux_bridge_cni"]
+        tuning_type = py_config["bridge_tuning"] if tuning else None
         kwargs["namespace"] = namespace.name
         kwargs["cni_type"] = cni_type
         kwargs["tuning_type"] = tuning_type

@@ -28,10 +28,8 @@ sriov_namespace = "openshift-sriov-network-operator"
 
 test_guest_performance = {"bandwidth": 2.5}
 test_performance_over_pod_network = {"bandwidth": 2.5}
-template_defaults = {
-    "linux_bridge_cni_name": "cnv-bridge",
-    "bridge_tuning_name": "cnv-tuning",
-}
+linux_bridge_cni = "cnv-bridge"
+bridge_tuning = "cnv-tuning"
 
 default_storage_class = "nfs"
 default_volume_mode = "Filesystem"
