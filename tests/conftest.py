@@ -751,7 +751,7 @@ def multi_nics_nodes(nodes_available_nics):
     """
     Check if nodes has more than 1 available NIC
     """
-    return min(len(nics) for nics in nodes_available_nics.values()) > 2
+    return min(len(nics) for nics in nodes_available_nics.values()) >= 2
 
 
 @pytest.fixture(scope="session")
