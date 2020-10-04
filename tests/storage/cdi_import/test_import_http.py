@@ -20,7 +20,7 @@ from tests.storage.cdi_import.conftest import wait_for_importer_container_messag
 from tests.storage.utils import get_importer_pod
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, Images, get_bug_status
-from utilities.virt import CIRROS_IMAGE, validate_windows_guest_agent_info
+from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
 
 
 LOGGER = logging.getLogger(__name__)
@@ -811,7 +811,7 @@ def test_successful_vm_from_imported_dv_windows(
     bridge_attached_helper_vm,
     started_windows_vm,
 ):
-    validate_windows_guest_agent_info(
+    validate_vmi_ga_info_vs_windows_os_info(
         vm=vm_instance_from_template_multi_storage_scope_function,
         winrmcli_pod=winrmcli_pod_scope_function,
         helper_vm=bridge_attached_helper_vm,

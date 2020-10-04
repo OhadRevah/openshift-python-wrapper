@@ -28,7 +28,7 @@ from utilities.storage import (
 from utilities.virt import (
     VirtualMachineForTests,
     run_virtctl_command,
-    validate_windows_guest_agent_info,
+    validate_vmi_ga_info_vs_windows_os_info,
     wait_for_windows_vm,
 )
 
@@ -192,7 +192,7 @@ def create_windows_vm_validate_guest_agent_info(
             timeout=1800,
             helper_vm=bridge_attached_helper_vm,
         )
-        validate_windows_guest_agent_info(
+        validate_vmi_ga_info_vs_windows_os_info(
             vm=vm_dv,
             winrmcli_pod=winrmcli_pod_scope_function,
             helper_vm=bridge_attached_helper_vm,

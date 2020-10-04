@@ -83,7 +83,7 @@ class TestCommonTemplatesWindows:
         bridge_attached_helper_vm,
     ):
         """ Test Guest OS agent info. """
-        common_templates_utils.validate_vmi_ga_info_vs_windows_os_info(
+        utilities.virt.validate_vmi_ga_info_vs_windows_os_info(
             vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             winrmcli_pod=winrmcli_pod_scope_class,
             helper_vm=bridge_attached_helper_vm,

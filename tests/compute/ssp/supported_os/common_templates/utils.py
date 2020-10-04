@@ -21,6 +21,7 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.utils import vm_started
 from utilities.virt import (
     execute_winrm_cmd,
+    get_windows_os_release,
     run_virtctl_command,
     vm_console_run_commands,
     wait_for_windows_vm,
@@ -423,19 +424,6 @@ def validate_cnv_fs_info_vs_windows_fs_info(vm, winrmcli_pod, helper_vm=False):
         raise
 
 
-def validate_vmi_ga_info_vs_windows_os_info(vm, winrmcli_pod, helper_vm=False):
-    """ Compare OS data from VMI object vs Windows guest OS data. """
-    vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
-    os_info = get_windows_os_release(vm=vm, winrm_pod=winrmcli_pod, helper_vm=helper_vm)
-
-    assert vmi_info, "VMI doesn't have guest agent data!"
-    for key, val in vmi_info.items():
-        if key != "id":
-            assert (
-                val.split("r")[0] if "version" in key else val in os_info
-            ), f"Data mismatch! VMI data {val} not in OS data {os_info}"
-
-
 def get_windows_os_info(vm, winrmcli_pod, helper_vm=False):
     """ Gets Windows OS info via winrm-cli. """
     ga_ver = get_windows_guest_agent_version(
@@ -487,18 +475,6 @@ def get_windows_guest_agent_version(vm, winrm_pod, helper_vm=False):
 def get_windows_hostname(vm, winrm_pod, helper_vm=False):
     vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
     cmd = "wmic os get CSName /value"
-    return execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-
-
-def get_windows_os_release(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     return execute_winrm_cmd(
         vmi_ip=vmi_ip,
         winrmcli_pod=winrm_pod,
