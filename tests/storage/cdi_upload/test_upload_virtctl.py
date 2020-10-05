@@ -179,7 +179,6 @@ def test_virtctl_image_upload_with_exist_dv_image(
     data_volume_multi_storage_scope_function,
     download_image,
     namespace,
-    storage_class_matrix__class__,
 ):
     """
     Check that virtctl fails gracefully when attempting to upload an image to a data volume that already has disk.img
@@ -189,7 +188,7 @@ def test_virtctl_image_upload_with_exist_dv_image(
         name=data_volume_multi_storage_scope_function.name,
         size="1Gi",
         image_path=LOCAL_PATH,
-        storage_class=[*storage_class_matrix__class__][0],
+        storage_class=data_volume_multi_storage_scope_function.storage_class,
         insecure=True,
         no_create=True,
     ) as res:

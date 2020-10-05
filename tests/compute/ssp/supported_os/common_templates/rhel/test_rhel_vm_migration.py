@@ -35,7 +35,7 @@ from utilities.virt import check_ssh_connection, wait_for_console
 def test_migrate_vm_rhel(
     skip_rhel7_workers,
     skip_upstream,
-    skip_migration_access_mode_rwo,
+    skip_access_mode_rwo_scope_function,
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,

@@ -919,13 +919,13 @@ def network_configuration(
 def data_volume_multi_storage_scope_function(
     request,
     namespace,
-    storage_class_matrix__class__,
+    storage_class_matrix__function__,
     schedulable_nodes,
 ):
     yield from data_volume(
         request=request,
         namespace=namespace,
-        storage_class_matrix=storage_class_matrix__class__,
+        storage_class_matrix=storage_class_matrix__function__,
         schedulable_nodes=schedulable_nodes,
     )
 
@@ -1388,3 +1388,23 @@ def mac_pool(hco_namespace):
             namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
         ).instance["data"]
     )
+
+
+def _skip_access_mode_rwo(storage_class_matrix):
+    if (
+        storage_class_matrix[[*storage_class_matrix][0]]["access_mode"]
+        == PersistentVolumeClaim.AccessMode.RWO
+    ):
+        pytest.skip(
+            msg="Skipping when access_mode is RWO; possible reason: cannot migrate VMI with non-shared PVCs"
+        )
+
+
+@pytest.fixture()
+def skip_access_mode_rwo_scope_function(storage_class_matrix__function__):
+    _skip_access_mode_rwo(storage_class_matrix=storage_class_matrix__function__)
+
+
+@pytest.fixture(scope="class")
+def skip_access_mode_rwo_scope_class(storage_class_matrix__class__):
+    _skip_access_mode_rwo(storage_class_matrix=storage_class_matrix__class__)

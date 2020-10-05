@@ -204,7 +204,7 @@ def test_successful_vm_from_cloned_dv_windows(
     indirect=True,
 )
 def test_disk_image_after_clone(
-    skip_block_volumemode_scope_class,
+    skip_block_volumemode_scope_function,
     namespace,
     data_volume_multi_storage_scope_function,
     unprivileged_client,

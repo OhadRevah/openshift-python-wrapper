@@ -5,7 +5,6 @@ CDI Import
 import logging
 
 import pytest
-from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.storage_class import StorageClass
 from resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -15,21 +14,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def skip_access_mode_rwo(storage_class_matrix__class__):
-    LOGGER.debug("Use 'skip_access_mode_rwo' fixture...")
-    if (
-        storage_class_matrix__class__[[*storage_class_matrix__class__][0]][
-            "access_mode"
-        ]
-        == PersistentVolumeClaim.AccessMode.RWO
-    ):
-        pytest.skip(msg="Skipping when access_mode is RWO")
-
-
-@pytest.fixture()
-def skip_non_shared_storage(storage_class_matrix__class__):
+def skip_non_shared_storage(storage_class_matrix__function__):
     LOGGER.debug("Use 'skip_non_shared_storage' fixture...")
-    if [*storage_class_matrix__class__][0] == StorageClass.Types.HOSTPATH:
+    if [*storage_class_matrix__function__][0] == StorageClass.Types.HOSTPATH:
         pytest.skip(msg="Skipping when storage is non-shared")
 
 

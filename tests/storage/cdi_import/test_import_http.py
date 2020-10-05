@@ -744,7 +744,7 @@ def test_disk_falloc(
 def test_vm_from_dv_on_different_node(
     admin_client,
     skip_when_one_node,
-    skip_access_mode_rwo,
+    skip_access_mode_rwo_scope_function,
     skip_non_shared_storage,
     schedulable_nodes,
     data_volume_multi_storage_scope_function,

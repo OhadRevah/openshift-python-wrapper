@@ -189,7 +189,7 @@ def test_node_drain_using_console_fedora(
 )
 @pytest.mark.usefixtures(
     "skip_when_one_node",
-    "skip_migration_access_mode_rwo",
+    "skip_access_mode_rwo_scope_class",
     "data_volume_multi_storage_scope_class",
 )
 class TestNodeMaintenanceRHEL:
@@ -252,7 +252,7 @@ class TestNodeMaintenanceRHEL:
 )
 def test_node_drain_template_windows(
     skip_when_one_node,
-    skip_migration_access_mode_rwo,
+    skip_access_mode_rwo_scope_function,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
     winrmcli_pod,
