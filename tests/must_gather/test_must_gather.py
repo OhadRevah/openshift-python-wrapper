@@ -197,38 +197,59 @@ def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
     assert len(template_resource) == data.count(f"kind: {template_resource[0].kind}")
 
 
-@pytest.mark.polarion("CNV-2730")
 @pytest.mark.bugzilla(
     1771916, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
-def test_node_resource(cnv_must_gather, utility_pods):
+@pytest.mark.parametrize(
+    "cmd, results_file, compare_method",
+    [
+        pytest.param(
+            ["ip", "-o", "link", "show", "type", "bridge"],
+            "bridge",
+            "simple_compare",
+            marks=(pytest.mark.polarion("CNV-2730")),
+            id="test_nodes_bridge_data",
+        ),
+    ],
+)
+def test_node_resource(
+    cnv_must_gather, utility_pods, cmd, results_file, compare_method
+):
     utils.check_node_resource(
         temp_dir=cnv_must_gather,
-        cmd=["ip", "-o", "link", "show", "type", "bridge"],
+        cmd=cmd,
         utility_pods=utility_pods,
-        results_file="bridge",
+        results_file=results_file,
+        compare_method=compare_method,
     )
 
 
 @pytest.mark.parametrize(
-    "command, results_file",
+    "command, results_file, compare_method",
     [
         pytest.param(
             ["ls", "-al", "/host/dev/vfio"],
             "dev_vfio",
+            "simple_compare",
             marks=(pytest.mark.polarion("CNV-3045")),
             id="test_dev_vfio_on_node",
         ),
     ],
 )
 def test_node_sriov_resource(
-    skip_when_no_sriov, cnv_must_gather, utility_pods, command, results_file
+    skip_when_no_sriov,
+    cnv_must_gather,
+    utility_pods,
+    command,
+    results_file,
+    compare_method,
 ):
     utils.check_node_resource(
         temp_dir=cnv_must_gather,
         cmd=command,
         utility_pods=utility_pods,
         results_file=results_file,
+        compare_method=compare_method,
     )
 
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import difflib
 import os
 
 import yaml
@@ -99,13 +100,42 @@ def check_resource(resource, resource_name, temp_dir, resource_path, checks):
     )
 
 
-def check_node_resource(temp_dir, cmd, utility_pods, results_file):
+class NodeResourceException(Exception):
+    def __init__(self, diff):
+        self.diff = diff
+
+    def __str__(self):
+        return (
+            "File content created by must-gather is different from the expected command output:\n"
+            f"{''.join(self.diff)}"
+        )
+
+
+def compare_node_data(file_content, cmd_output, compare_method):
+    if compare_method == "simple_compare":
+        diff = list(
+            difflib.ndiff(
+                file_content.splitlines(keepends=True),
+                cmd_output.splitlines(keepends=True),
+            )
+        )
+        if any(line.startswith(("- ", "+ ")) for line in diff):
+            raise NodeResourceException(diff)
+        return
+    raise NotImplementedError(f"{compare_method} not implemented")
+
+
+def check_node_resource(temp_dir, cmd, utility_pods, results_file, compare_method):
     for pod in utility_pods:
         cmd_output = pod.execute(command=cmd)
         file_name = f"{temp_dir}/nodes/{pod.node.name}/{results_file}"
         with open(file_name) as result_file:
             file_content = result_file.read()
-            assert file_content == cmd_output
+            compare_node_data(
+                file_content=file_content,
+                cmd_output=cmd_output,
+                compare_method=compare_method,
+            )
 
 
 def _pod_logfile_path(
