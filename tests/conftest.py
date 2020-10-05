@@ -1045,15 +1045,21 @@ def bridge_attached_helper_vm(
 
         # On PSI, set DHCP server configuration
         if workers_type == ClusterHosts.Type.VIRTUAL:
+            dhcpd_conf_file = f"""
+cat <<EOF >> /etc/dhcp/dhcpd.conf
+default-lease-time 3600;
+max-lease-time 7200;
+authoritative;
+subnet {rhel7_psi_network_config['subnet']} netmask 255.255.255.0 {{
+option subnet-mask 255.255.255.0;
+range {rhel7_psi_network_config['vm_address']} {rhel7_psi_network_config['vm_address']};
+option routers {rhel7_psi_network_config['default_gw']};
+option domain-name-servers {rhel7_psi_network_config['dns_server']};
+}}
+EOF
+"""
             cloud_init_data["userData"]["runcmd"] = [
-                "sh -c \"echo $'default-lease-time 3600;\\nmax-lease-time 7200;"
-                f"\\nauthoritative;\\nsubnet {rhel7_psi_network_config['subnet']} "
-                "netmask 255.255.255.0 {"
-                "\\noption subnet-mask 255.255.255.0;\\nrange  "
-                f"{rhel7_psi_network_config['vm_address']} {rhel7_psi_network_config['vm_address']};"
-                f"\\noption routers {rhel7_psi_network_config['default_gw']};\\n"
-                f"option domain-name-servers {rhel7_psi_network_config['dns_server']};"
-                "\\n}' > /etc/dhcp/dhcpd.conf\"",
+                dhcpd_conf_file,
                 "sysctl net.ipv4.icmp_echo_ignore_broadcasts=0",
                 "sudo systemctl enable dhcpd",
                 "sudo systemctl restart dhcpd",
