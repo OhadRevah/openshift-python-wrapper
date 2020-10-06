@@ -24,7 +24,7 @@ def install_mr(branch):
     os.system(command=f"git fetch {ocp_python_wrapper_git} {branch}")
     os.system(command=f"git checkout -b {mr_branch} FETCH_HEAD")
     os.chdir(path=current_dir)
-    os.system(f"pipenv run pip install -U {ocp_cloned_path}")
+    os.system(f"pip install -U {ocp_cloned_path}")
     shutil.rmtree(path=tmp_dir, ignore_errors=True)
 
 
