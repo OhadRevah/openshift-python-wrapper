@@ -36,6 +36,7 @@ class Images:
         RHEL8_3_IMG = "rhel-83.qcow2"
         RHEL8_4_IMG = "rhel-84.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/rhel-images"
+        DEFAULT_DV_SIZE = "20Gi"
 
     class Windows:
         WIM10_IMG = "win_10.qcow2"
@@ -45,6 +46,7 @@ class Images:
         WIN19_RAW = "win19.raw"
         DIR = f"{BASE_IMAGES_DIR}/windows-images"
         RAW_DIR = f"{DIR}/raw_images"
+        DEFAULT_DV_SIZE = "50Gi"
 
     class Fedora:
         FEDORA29_IMG = "Fedora-Cloud-Base-29-1.2.x86_64.qcow2"
@@ -53,6 +55,7 @@ class Images:
         FEDORA32_IMG = "Fedora-Cloud-Base-32-1.6.x86_64.qcow2"
         DISK_DEMO = "fedora-cloud-registry-disk-demo"
         DIR = f"{BASE_IMAGES_DIR}/fedora-images"
+        DEFAULT_DV_SIZE = "10Gi"
 
     class Cdi:
         QCOW2_IMG = "cirros-qcow2.img"

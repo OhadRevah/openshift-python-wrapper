@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
+from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -93,7 +94,12 @@ def data_volume(
         "dv_name": dv_name,
         "namespace": namespace.name,
         "source": source,
-        "size": dv_size or ("38Gi" if "win" in image else "25Gi"),
+        "size": dv_size
+        or (
+            Images.Windows.DEFAULT_DV_SIZE
+            if "win" in image
+            else Images.Rhel.DEFAULT_DV_SIZE
+        ),
         "storage_class": params_dict.get("storage_class", storage_class),
         "access_modes": params_dict.get(
             "access_modes", storage_class_dict[storage_class]["access_mode"]
