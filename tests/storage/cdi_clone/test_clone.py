@@ -54,6 +54,7 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
             {
                 "dv_name": "dv-source",
                 "image": f"{Images.Windows.DIR}/{Images.Windows.WIN19_IMG}",
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-1892")),
         ),
@@ -61,6 +62,7 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
             {
                 "dv_name": "dv-source",
                 "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-3409")),
         ),
@@ -140,6 +142,7 @@ def test_successful_vm_restart_with_cloned_dv(
                 "dv_name": "dv-source",
                 "source": "http",
                 "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             {
                 "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
@@ -230,6 +233,7 @@ def test_disk_image_after_clone(
             {
                 "dv_name": "dv-source",
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-3545")),
         ),
@@ -237,6 +241,7 @@ def test_disk_image_after_clone(
             {
                 "dv_name": "dv-source",
                 "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-3552"), pytest.mark.tier3()),
         ),

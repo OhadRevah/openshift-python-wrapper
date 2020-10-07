@@ -19,6 +19,7 @@ from utilities.infra import Images
 LOGGER = logging.getLogger(__name__)
 # Negative tests require a DV, however its content is not important (VM will not be created).
 FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
+FAILED_VM_DV_SIZE = Images.Cirros.DEFAULT_DV_SIZE
 
 
 @pytest.mark.parametrize(
@@ -28,6 +29,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
             {
                 "dv_name": "dv-rhel-virtio-tablet-device-vm",
                 "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": "rhel-virtio-tablet-device-vm",
@@ -69,6 +71,7 @@ def test_tablet_virtio_tablet_device(
             {
                 "dv_name": "dv-rhel-usb-tablet-device-vm",
                 "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": "rhel-usb-tablet-device-vm",
@@ -110,6 +113,7 @@ def test_tablet_usb_tablet_device(
             {
                 "dv_name": "dv-rhel-default-tablet-device-vm",
                 "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": "rhel-default-tablet-device-vm",
@@ -151,7 +155,7 @@ def test_tablet_default_bus_tablet_device(
             {
                 "dv_name": "dv-rhel-ps2-tablet-device-vm",
                 "image": FAILED_VM_IMAGE,
-                "dv_size": "1Gi",
+                "dv_size": FAILED_VM_DV_SIZE,
             },
             {
                 "vm_name": "rhel-ps2-tablet-device-vm",
@@ -166,7 +170,7 @@ def test_tablet_default_bus_tablet_device(
             {
                 "dv_name": "dv-rhel-zen-tablet-device-vm",
                 "image": FAILED_VM_IMAGE,
-                "dv_size": "1Gi",
+                "dv_size": FAILED_VM_DV_SIZE,
             },
             {
                 "vm_name": "rhel-zen-tablet-device-vm",
@@ -181,7 +185,7 @@ def test_tablet_default_bus_tablet_device(
             {
                 "dv_name": "dv-rhel-transition-tablet-device-vm",
                 "image": FAILED_VM_IMAGE,
-                "dv_size": "1Gi",
+                "dv_size": FAILED_VM_DV_SIZE,
             },
             {
                 "vm_name": "rhel-tranition-tablet-device-vm",
@@ -221,7 +225,7 @@ def test_tablet_invalid_usb_tablet_device(
             {
                 "dv_name": "dv-rhel-keyboard-tablet-device-vm",
                 "image": FAILED_VM_IMAGE,
-                "dv_size": "1Gi",
+                "dv_size": FAILED_VM_DV_SIZE,
             },
             {
                 "vm_name": "rhel-keyboard-tablet-device-vm",

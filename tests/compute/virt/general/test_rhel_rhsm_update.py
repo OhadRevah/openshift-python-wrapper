@@ -106,6 +106,7 @@ def registered_rhsm(rhsm_vm):
                 "dv_name": "dv-rhel-rhsm-vm",
                 "image": py_config["latest_rhel_version"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": "rhel-rhsm-vm",

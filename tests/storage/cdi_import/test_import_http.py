@@ -787,6 +787,7 @@ def test_vm_from_dv_on_different_node(
                 "dv_name": "dv-win-19",
                 "source": "http",
                 "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             {
                 "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",

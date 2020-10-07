@@ -41,6 +41,7 @@ def diskless_vm(
                 "dv_name": "dv-rhel-diskless-vm",
                 "image": SMALL_VM_IMAGE,
                 "storage_class": py_config["default_storage_class"],
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
             },
             {
                 "vm_name": "rhel-diskless-vm",
@@ -55,6 +56,7 @@ def diskless_vm(
                 "dv_name": "dv-windows-diskless-vm",
                 "image": SMALL_VM_IMAGE,
                 "storage_class": py_config["default_storage_class"],
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
             },
             {
                 "vm_name": "windows-diskless-vm",

@@ -186,6 +186,7 @@ def test_node_drain_using_console_fedora(
             {
                 "dv_name": "dv-rhel8-template-node-maintenance",
                 "image": f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
+                "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             },
             {
                 "vm_name": "rhel8-template-node-maintenance",
@@ -249,6 +250,7 @@ class TestNodeMaintenanceRHEL:
             {
                 "dv_name": "dv-win-template-node-cordon-and-drain",
                 "image": py_config["latest_windows_version"]["image_path"],
+                "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
             {
                 "vm_name": "wind-template-node-cordon-and-drain",

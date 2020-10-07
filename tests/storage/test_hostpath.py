@@ -509,7 +509,7 @@ def test_hostpath_registry_import_dv(
             {
                 "dv_name": "cnv-3516-source-dv",
                 "image": f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA30_IMG}",
-                "dv_size": "10Gi",
+                "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
                 "storage_class": StorageClass.Types.HOSTPATH,
             },
             marks=(pytest.mark.polarion("CNV-3516")),

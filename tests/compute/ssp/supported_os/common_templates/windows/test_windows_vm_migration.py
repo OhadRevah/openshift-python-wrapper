@@ -18,6 +18,7 @@ from tests.compute.ssp.supported_os.common_templates import utils
             {
                 "dv_name": "dv-windows-migrate-vm",
                 "image": py_config["latest_windows_version"]["image_path"],
+                "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
             {
                 "vm_name": "windows-migrate-vm",

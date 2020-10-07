@@ -101,6 +101,7 @@ def _update_vm_efi_spec(vm):
                 "dv_name": "dv-rhel-efi-secureboot-withdv",
                 "image": RHEL_EFI_IMG,
                 "storage_class": py_config["default_storage_class"],
+                "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             },
             {"efi_params": {"secureBoot": True}},
         ),

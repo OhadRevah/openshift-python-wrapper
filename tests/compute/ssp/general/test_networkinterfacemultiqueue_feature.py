@@ -49,6 +49,7 @@ def _update_and_validate_vm_cpu_spec(
             {
                 "dv_name": f'dv-{py_config["latest_rhel_version"]["template_labels"]["os"]}',
                 "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": py_config["latest_rhel_version"]["template_labels"]["os"],
@@ -162,6 +163,7 @@ class TestLatestRHEL:
             {
                 "dv_name": f'dv-{py_config["latest_windows_version"]["template_labels"]["os"]}',
                 "image": py_config["latest_windows_version"]["image_path"],
+                "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
             {
                 "vm_name": py_config["latest_windows_version"]["template_labels"]["os"],

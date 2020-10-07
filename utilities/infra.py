@@ -22,6 +22,7 @@ class Images:
         DISK_DEMO = "cirros-registry-disk-demo"
         DIR = f"{BASE_IMAGES_DIR}/cirros-images"
         MOD_AUTH_BASIC_DIR = f"{BASE_IMAGES_DIR}/mod-auth-basic/cirros-images"
+        DEFAULT_DV_SIZE = "3Gi"
 
     class Rhel:
         RHEL6_IMG = "rhel-610.qcow2"

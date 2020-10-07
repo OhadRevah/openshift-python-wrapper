@@ -169,6 +169,7 @@ def test_virtctl_image_upload_dv(
             {
                 "dv_name": "cnv-3726",
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-3726")),
         ),
@@ -381,7 +382,7 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
     [
         pytest.param(
             {
-                "dv_size": "38Gi",
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
                 "remote_name": py_config["latest_windows_version"]["image_path"],
                 "image_file": py_config["latest_windows_version"]["image_name"],
             },

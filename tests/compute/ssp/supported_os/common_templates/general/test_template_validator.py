@@ -21,7 +21,11 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     "data_volume_multi_storage_scope_function, vm_object_from_template_multi_storage_scope_function",
     [
         pytest.param(
-            {"dv_name": "dv-rhel-min-memory-validatio", "image": FAILED_VM_IMAGE},
+            {
+                "dv_name": "dv-rhel-min-memory-validation",
+                "image": FAILED_VM_IMAGE,
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
+            },
             {
                 "vm_name": "rhel-min-memory-validation",
                 "template_labels": py_config["latest_rhel_version"]["template_labels"],

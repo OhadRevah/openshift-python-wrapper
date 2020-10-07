@@ -21,6 +21,7 @@ from utilities.virt import check_ssh_connection, wait_for_console
             {
                 "dv_name": "dv-rhel-migrate-vm",
                 "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": "rhel-migrate-vm",

@@ -12,7 +12,7 @@ import re
 import pytest
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import execute_winrm_cmd
 
 
@@ -58,6 +58,7 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=Fal
             {
                 "dv_name": "dv-windows-usb-tablet-device-vm",
                 "image": py_config["latest_windows_version"]["image_path"],
+                "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
             {
                 "vm_name": "windows-usb-tablet-device-vm",
@@ -107,6 +108,7 @@ def test_tablet_usb_tablet_device(
             {
                 "dv_name": "dv-windows-virtio-tablet-device-vm",
                 "image": py_config["latest_windows_version"]["image_path"],
+                "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
             {
                 "vm_name": "windows-virtio-tablet-device-vm",
@@ -163,6 +165,7 @@ def test_tablet_virtio_tablet_device(
             {
                 "dv_name": "dv-windows-server-default-tablet",
                 "image": py_config["latest_windows_version"]["image_path"],
+                "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
             {
                 "vm_name": "windows-server-default-tablet-device",
@@ -213,6 +216,7 @@ def test_windows_server_default_tablet_device(
             {
                 "dv_name": "dv-windows-desktop-default-tablet",
                 "image": WINDOWS_DESKTOP_VERSION["image_path"],
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             {
                 "vm_name": "windows-desktop-default-tablet-device",
