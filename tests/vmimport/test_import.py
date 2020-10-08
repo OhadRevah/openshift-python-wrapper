@@ -22,13 +22,13 @@ def import_name(vm_name):
     return f"{vm_name}-import"
 
 
-def check_source_vm_status(provider, source_vm_name, source_vm_cluster, state):
+def check_source_vm_status(provider, provider_data, source_vm_name, state):
     samples = TimeoutSampler(
         timeout=600,
         sleep=1,
         func=provider.vm,
         name=source_vm_name,
-        cluster=provider["cluster_name"],
+        cluster=provider_data["cluster_name"],
     )
     for sample in samples:
         if sample.status == state:
@@ -36,7 +36,7 @@ def check_source_vm_status(provider, source_vm_name, source_vm_cluster, state):
 
 
 def check_cnv_vm_network_config(
-    vm, provider, source_vm_name, provider_data, expected_vm_config
+    vm, source_vm_name, expected_vm_config, provider_data, provider=None
 ):
     cnv_vm_network_interfaces = vm.instance.spec.template.spec.domain.devices.interfaces
     number_of_cnv_vm_network_interfaces = (
@@ -47,25 +47,27 @@ def check_cnv_vm_network_config(
         number_of_cnv_vm_network_interfaces == expected_vm_config["network_interfaces"]
     ), "Wrong number of network interfaces"
 
-    failed_assert_msgs = []
-    for nic_index, source_vm_nic in enumerate(
-        provider.vm_nics(
-            vm=provider.vm(name=source_vm_name, cluster=provider_data["cluster_name"])
-        )
-    ):
-        cnv_vm_mac = cnv_vm_network_interfaces[nic_index].macAddress
-        source_vm_mac = source_vm_nic.mac.address
-        if cnv_vm_mac != source_vm_mac:
-            failed_assert_msgs.append(
-                f"mac address for nic {source_vm_nic.name} check failed, "
-                f"Expected:{source_vm_mac}, Actual: {cnv_vm_mac}"
+    if provider:
+        failed_assert_msgs = []
+        for nic_index, source_vm_nic in enumerate(
+            provider.vm_nics(
+                vm=provider.vm(
+                    name=source_vm_name, cluster=provider_data["cluster_name"]
+                )
             )
+        ):
+            cnv_vm_mac = cnv_vm_network_interfaces[nic_index].macAddress
+            source_vm_mac = source_vm_nic.mac.address
+            if cnv_vm_mac != source_vm_mac:
+                failed_assert_msgs.append(
+                    f"mac address for nic {source_vm_nic.name} check failed, "
+                    f"Expected:{source_vm_mac}, Actual: {cnv_vm_mac}"
+                )
 
-    assert not failed_assert_msgs, f"Failed verifications: {failed_assert_msgs}"
+        assert not failed_assert_msgs, f"Failed verifications: {failed_assert_msgs}"
 
 
 def check_cnv_vm_cpu_config(vm, expected_vm_config):
-
     machine = vm.instance.spec.template.spec.domain.machine
     cpu = vm.instance.spec.template.spec.domain.cpu
 
@@ -153,7 +155,9 @@ def check_cnv_vm_config(
         ),
     ],
 )
-def test_vm_import(namespace, provider_data, provider, secret, vm_key):
+def test_vm_import(
+    namespace, provider_data, provider, secret, vm_key, providers_mapping_network_only
+):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
     cluster_name = provider_data["cluster_name"]
@@ -167,7 +171,8 @@ def test_vm_import(namespace, provider_data, provider, secret, vm_key):
         cluster_name=cluster_name,
         target_vm_name=vm_name,
         start_vm=True,
-        ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
+        provider_mappings=providers_mapping_network_only,
+        provider_type=provider_data["type"],
     ) as vmimport:
         vmimport.wait(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
@@ -194,6 +199,7 @@ def test_cancel_vm_import(admin_client, namespace, provider_data, provider, secr
         vm_name=vm_name,
         cluster_name=cluster_name,
         target_vm_name=vm_name,
+        provider_type=provider_data["type"],
     ) as vmimport:
         vmimport.wait(
             cond_reason=VirtualMachineImport.ProcessingConditionReason.COPYING_DISKS,
@@ -201,13 +207,17 @@ def test_cancel_vm_import(admin_client, namespace, provider_data, provider, secr
         )
     # We need to use assert wait because it takes some time until the resources
     # are deleted.
-    source_vm = provider.vm(name=vm_name, cluster=cluster_name)
-    vm_disk_id = provider.vm_disk_attachments(vm=source_vm)[0].id
+
     VirtualMachine(name=vm_name, namespace=namespace.name).wait_deleted()
-    DataVolume(
-        name=f"{import_name(vm_name=vm_name)}-{vm_disk_id}",
-        namespace=namespace.name,
-    ).wait_deleted()
+
+    if provider:
+        source_vm = provider.vm(name=vm_name, cluster=cluster_name)
+        vm_disk_id = provider.vm_disk_attachments(vm=source_vm)[0].id
+        DataVolume(
+            name=f"{import_name(vm_name=vm_name)}-{vm_disk_id}",
+            namespace=namespace.name,
+        ).wait_deleted()
+
     for resource in (Secret, ConfigMap):
         for resource_object in resource.get(
             dyn_client=admin_client,
@@ -217,7 +227,9 @@ def test_cancel_vm_import(admin_client, namespace, provider_data, provider, secr
 
 
 @pytest.mark.polarion("CNV-4391")
-def test_running_vm_import(namespace, provider_data, provider, secret):
+def test_running_vm_import(
+    namespace, provider_data, provider, providers_mapping_network_only, secret
+):
     vm_name = Source.vms["cirros-running"]["name"]
     cluster_name = provider_data["cluster_name"]
 
@@ -230,21 +242,35 @@ def test_running_vm_import(namespace, provider_data, provider, secret):
         cluster_name=cluster_name,
         target_vm_name=vm_name,
         start_vm=True,
-        ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
+        provider_mappings=providers_mapping_network_only,
+        provider_type=provider_data["type"],
     ) as vmimport:
         vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING,
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY,
         )
         check_source_vm_status(
             provider=provider,
+            provider_data=provider_data,
             source_vm_name=vm_name,
             state=ovirtsdk4.types.VmStatus.DOWN,
         )
 
 
+@pytest.mark.parametrize(
+    "providers_mapping_network_only",
+    [
+        pytest.param(Source.vms["cirros-2disks2nics"]["network_interfaces"]),
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-4387")
 def test_two_disks_and_nics_vm_import(
-    bridge_network, namespace, provider_data, provider, secret
+    bridge_network,
+    namespace,
+    provider_data,
+    provider,
+    secret,
+    providers_mapping_network_only,
 ):
     vm_config = Source.vms["cirros-2disks2nics"]
     vm_name = vm_config["name"]
@@ -258,16 +284,8 @@ def test_two_disks_and_nics_vm_import(
         vm_name=vm_name,
         cluster_name=cluster_name,
         target_vm_name=vm_name,
-        ovirt_mappings=utils.network_mappings(
-            items=[
-                utils.POD_MAPPING,
-                ResourceMappingItem(
-                    target_name="mybridge",
-                    target_type="multus",
-                    source_name="vm/vm",
-                ),
-            ]
-        ),
+        provider_mappings=providers_mapping_network_only,
+        provider_type=provider_data["type"],
         start_vm=True,
     ) as vmimport:
         vmimport.wait(
@@ -276,8 +294,8 @@ def test_two_disks_and_nics_vm_import(
         check_cnv_vm_config(
             vm=vmimport.vm,
             provider=provider,
-            source_vm_name=vm_name,
             provider_data=provider_data,
+            source_vm_name=vm_name,
             expected_vm_config=vm_config,
         )
 
@@ -290,7 +308,9 @@ def test_two_disks_and_nics_vm_import(
         pytest.param("notemplate", marks=(pytest.mark.polarion("CNV-4473"))),
     ],
 )
-def test_invalid_vm_import(provider, namespace, provider_data, secret, vm_key):
+def test_invalid_vm_import(
+    provider, namespace, provider_data, providers_mapping_network_only, secret, vm_key
+):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
     cluster_name = provider_data["cluster_name"]
@@ -304,7 +324,8 @@ def test_invalid_vm_import(provider, namespace, provider_data, secret, vm_key):
         cluster_name=cluster_name,
         target_vm_name=vm_name,
         start_vm=True,
-        ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
+        provider_mappings=providers_mapping_network_only,
+        provider_type=provider_data["type"],
     ) as vmimport:
         expected_import_status = vm_config["expected_import_status"]
         vmimport.wait(
@@ -335,7 +356,8 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
 
     expected_vm_config = Source.vms["cirros-3disks"]
     expected_vm_name = expected_vm_config["name"]
-    source_data_volumes_config = Source.vms["cirros-3disks"]["volumes_details"]
+    source_data_volumes_config = expected_vm_config["volumes_details"]
+    target_storage_class = "nfs"
     with import_vm(
         name=import_name(vm_name=expected_vm_name),
         namespace=namespace.name,
@@ -345,16 +367,17 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
         cluster_name=provider_data["cluster_name"],
         target_vm_name=expected_vm_name,
         start_vm=True,
-        ovirt_mappings=utils.ProviderMappings(
+        provider_type=provider_data["type"],
+        provider_mappings=utils.ProviderMappings(
             storage_mappings=[
                 ResourceMappingItem(
-                    target_name="nfs",  # disk1 is overridden by Storage Name
+                    target_name=target_storage_class,  # disk1 is overridden by Storage Name
                     source_name=source_data_volumes_config[1]["storage_name"],
                 ),
             ],
             disk_mappings=[
                 ResourceMappingItem(
-                    target_name="nfs",  # disk2 is overridden by DiskName
+                    target_name=target_storage_class,  # disk2 is overridden by DiskName
                     source_name=source_data_volumes_config[2]["disk_name"],
                 )
             ],
@@ -366,9 +389,8 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
         )
 
-        # we expect all volumes to have
-        # the same storage class
-        expected_vm_config["expected_storage_class"] = "nfs"
+        # we expect all volumes to have the same storage class
+        expected_vm_config["expected_storage_class"] = target_storage_class
         check_cnv_vm_config(
             vm=vmimport.vm,
             provider=provider,

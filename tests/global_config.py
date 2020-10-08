@@ -51,13 +51,25 @@ bridge_tuning = "cnv-tuning"
 provider_matrix = [
     {
         "rhv44": {
-            "type": "rhv",
+            "type": "ovirt",
             "version": "4.4",
             "fqdn": "rhev-blue-01.rdu2.scalelab.redhat.com",
             "api_url": "https://rhev-blue-01.rdu2.scalelab.redhat.com/ovirt-engine/api",
             "username": "admin@internal",
             "password": "qum5net",
             "cluster_name": "iscsi",
+        }
+    },
+    {
+        "vsphere65": {
+            "type": "vmware",
+            "version": "6.5",
+            "fqdn": "rhev-node-05.rdu2.scalelab.redhat.com",
+            "api_url": "https://rhev-node-05.rdu2.scalelab.redhat.com/sdk",
+            "username": "administrator@vsphere.local",
+            "password": "Heslo123!",
+            "cluster_name": "Cluster",
+            "thumbprint": "31:14:EB:9E:F1:78:68:10:A5:78:D1:A7:DF:BB:54:B7:1B:91:9F:30",
         }
     },
 ]

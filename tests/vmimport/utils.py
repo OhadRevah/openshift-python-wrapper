@@ -26,11 +26,6 @@ class ResourceMappingItem:
         self.target_type = target_type
 
 
-POD_MAPPING = ResourceMappingItem(
-    target_name="pod", target_type="pod", source_name="ovirtmgmt/ovirtmgmt"
-)
-
-
 def storage_mapping_by_source_vm_disks_storage_name(
     storage_classes, source_volumes_config
 ):
@@ -59,6 +54,10 @@ def make_labels(vmimport_name):
 
 
 class Source:
+    default_network_names = {
+        "ovirt": ["ovirtmgmt/ovirtmgmt", "vm/vm"],
+        "vmware": ["VM NETWORK", "VM NETWORK 2"],
+    }
     vms = {
         "cirros": {
             "name": "v2v-cirros-vm-for-tests",
