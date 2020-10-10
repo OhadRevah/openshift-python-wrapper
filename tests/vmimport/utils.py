@@ -1,3 +1,6 @@
+from resources.virtual_machine_import import VirtualMachineImport
+
+
 class OvirtMappings:
     def __init__(
         self, disk_mappings=None, network_mappings=None, storage_mappings=None
@@ -92,5 +95,47 @@ class Source:
             "machine_type": "q35",
             "network_interfaces": 1,
             "volumes": 1,
+        },
+        "usbenabled": {
+            "name": "v2v-cirros-vm-for-test-usb",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 1,
+            "expected_import_status": {
+                "reason": VirtualMachineImport.MappingRulesConditionReason.MAPPING_FAILED,
+                "status": VirtualMachineImport.Condition.Status.FALSE,
+                "type": VirtualMachineImport.Condition.MAPPING_RULES_VERIFIED,
+            },
+        },
+        "nodisk": {
+            "name": "v2v-cirros-vm-for-test-nodisk",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 1,
+            "expected_import_status": {
+                "reason": VirtualMachineImport.MappingRulesConditionReason.MAPPING_FAILED,
+                "status": VirtualMachineImport.Condition.Status.FALSE,
+                "type": VirtualMachineImport.Condition.MAPPING_RULES_VERIFIED,
+            },
+        },
+        "notemplate": {
+            "name": "v2v-for-tests-notemplate",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 1,
+            "expected_import_status": {
+                "reason": VirtualMachineImport.SucceededConditionReason.VMTEMPLATE_MATCHING_FAILED,
+                "status": VirtualMachineImport.Condition.Status.FALSE,
+                "type": VirtualMachineImport.Condition.SUCCEEDED,
+            },
         },
     }

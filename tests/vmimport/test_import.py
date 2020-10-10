@@ -261,3 +261,35 @@ def test_two_disks_and_nics_vm_import(
             source_vm_cluster=cluster_name,
             expected_vm_config=vm_config,
         )
+
+
+@pytest.mark.parametrize(
+    "vm_key",
+    [
+        pytest.param("usbenabled", marks=(pytest.mark.polarion("CNV-4398"))),
+        pytest.param("nodisk", marks=(pytest.mark.polarion("CNV-4468"))),
+        pytest.param("notemplate", marks=(pytest.mark.polarion("CNV-4473"))),
+    ],
+)
+def test_invalid_vm_import(provider, namespace, provider_data, secret, vm_key):
+    vm_config = Source.vms[vm_key]
+    vm_name = vm_config["name"]
+    cluster_name = provider_data["cluster_name"]
+
+    with create_vm_import(
+        name=import_name(vm_name=vm_name),
+        namespace=namespace.name,
+        provider_credentials_secret_name=secret.name,
+        provider_credentials_secret_namespace=secret.namespace,
+        vm_name=vm_name,
+        cluster_name=cluster_name,
+        target_vm_name=vm_name,
+        start_vm=True,
+        ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
+    ) as vmimport:
+        expected_import_status = vm_config["expected_import_status"]
+        vmimport.wait(
+            cond_reason=expected_import_status["reason"],
+            cond_status=expected_import_status["status"],
+            cond_type=expected_import_status["type"],
+        )
