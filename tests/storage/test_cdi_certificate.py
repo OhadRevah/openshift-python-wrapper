@@ -155,22 +155,32 @@ def refresh_cdi_certificates(secrets):
 
 
 @pytest.mark.polarion("CNV-3686")
-def test_dv_delete_from_vm(valid_cdi_certificates, namespace):
+def test_dv_delete_from_vm(
+    valid_cdi_certificates, namespace, storage_class_matrix__module__, worker_node1
+):
     """
     Check that create VM with dataVolumeTemplates, once DV is deleted, the owner VM will create one.
     This will trigger the import process so that cert code will be exercised one more time.
     """
     dv = DataVolume(namespace=namespace.name, name="cnv-3686-dv")
+    storage_class = [*storage_class_matrix__module__][0]
     with VirtualMachineForTests(
         name="cnv-3686-vm",
         namespace=namespace.name,
         data_volume_template={
-            "metadata": {"name": f"{dv.name}"},
+            "metadata": {
+                "name": f"{dv.name}",
+                "annotations": {"kubevirt.io/provisionOnNode": worker_node1.name},
+            },
             "spec": {
                 "pvc": {
-                    "storageClassName": py_config["default_storage_class"],
-                    "volumeMode": py_config["default_volume_mode"],
-                    "accessModes": [DataVolume.AccessMode.RWO],
+                    "storageClassName": storage_class,
+                    "volumeMode": storage_class_matrix__module__[storage_class][
+                        "volume_mode"
+                    ],
+                    "accessModes": [
+                        storage_class_matrix__module__[storage_class]["access_mode"]
+                    ],
                     "resources": {"requests": {"storage": "1Gi"}},
                 },
                 "source": {
@@ -192,18 +202,21 @@ def test_dv_delete_from_vm(valid_cdi_certificates, namespace):
 
 @pytest.mark.polarion("CNV-3667")
 def test_upload_after_certs_renewal(
-    refresh_cdi_certificates, download_image, namespace, storage_class_matrix__class__
+    refresh_cdi_certificates,
+    download_image,
+    namespace,
+    storage_class_matrix__module__,
 ):
     """
     Check that CDI can do upload operation after certs get refreshed
     """
-    dv_name = f"cnv-3667-{time.time()}"
+    dv_name = "cnv-3667"
     with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_QCOW2_IMG_PATH,
-        storage_class=[*storage_class_matrix__class__][0],
+        storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
         status, out = res
@@ -217,7 +230,7 @@ def test_upload_after_certs_renewal(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class",
+    "data_volume_multi_storage_scope_module",
     [
         pytest.param(
             {
@@ -233,21 +246,20 @@ def test_upload_after_certs_renewal(
 @pytest.mark.polarion("CNV-3678")
 def test_import_clone_after_certs_renewal(
     refresh_cdi_certificates,
-    data_volume_multi_storage_scope_class,
+    data_volume_multi_storage_scope_module,
     namespace,
-    storage_class_matrix__class__,
 ):
     """
     Check that CDI can do import and clone operation after certs get refreshed
     """
-    storage_class = [*storage_class_matrix__class__][0]
     with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_multi_storage_scope_class.size,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__class__[storage_class]["volume_mode"],
+        size=data_volume_multi_storage_scope_module.size,
+        storage_class=data_volume_multi_storage_scope_module.storage_class,
+        volume_mode=data_volume_multi_storage_scope_module.volume_mode,
+        access_modes=data_volume_multi_storage_scope_module.access_modes,
     ) as cdv:
         cdv.wait(timeout=180)
         with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:
@@ -258,19 +270,19 @@ def test_import_clone_after_certs_renewal(
 def test_upload_after_validate_aggregated_api_cert(
     valid_aggregated_api_client_cert,
     namespace,
-    storage_class_matrix__class__,
+    storage_class_matrix__module__,
     download_image,
 ):
     """
     Check that upload is successful after verifying validity of aggregated api client certificate
     """
-    dv_name = f"cnv-3977-{time.time()}"
+    dv_name = "cnv-3977"
     with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_QCOW2_IMG_PATH,
-        storage_class=[*storage_class_matrix__class__][0],
+        storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
         status, out = res
