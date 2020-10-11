@@ -730,7 +730,11 @@ def get_libvirt_os_info(vm):
 
 
 def get_linux_os_info(rrmngmnt_host):
-    ga_ver = get_linux_guest_agent_version(rrmngmnt_host=rrmngmnt_host)
+    ga_ver = guest_agent_version_parser(
+        version_string=rrmngmnt_host.run_command(
+            shlex.split("yum list -q installed qemu-g*")
+        )[1]
+    )
     hostname = rrmngmnt_host.network.hostname
     os_release = rrmngmnt_host.os.release_info
     kernel = rrmngmnt_host.os.kernel_info
@@ -852,13 +856,6 @@ def get_linux_user_info(rrmngmnt_host):
     }
 
 
-# Guest OS data gather functions.
-def get_linux_guest_agent_version(rrmngmnt_host):
-    cmd = shlex.split("yum list -q installed qemu-g*")
-    _, out, _ = rrmngmnt_host.run_command(command=cmd)
-    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", out).group(0)
-
-
 # Guest agent test related functions.
 def guest_agent_disk_info_parser(disk_info):
     for disk in disk_info:
@@ -892,6 +889,10 @@ def check_guest_agent_sampler_data(sampler):
 def convert_disk_size(value, si_prefix=True):
     value = bitmath.Byte(bytes=value)
     return round(float(value.to_GB() if si_prefix else value.to_GiB()))
+
+
+def guest_agent_version_parser(version_string):
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", version_string).group(0)
 
 
 # TODO: remove after windows patch is done.
