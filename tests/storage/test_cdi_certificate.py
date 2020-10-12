@@ -257,6 +257,7 @@ def test_import_clone_after_certs_renewal(
         dv_name="dv-target",
         namespace=namespace.name,
         size=data_volume_multi_storage_scope_module.size,
+        source_pvc=data_volume_multi_storage_scope_module.name,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
         volume_mode=data_volume_multi_storage_scope_module.volume_mode,
         access_modes=data_volume_multi_storage_scope_module.access_modes,
