@@ -762,12 +762,13 @@ def skip_if_no_multinic_nodes(multi_nics_nodes):
 
 class UtilityDaemonSet(DaemonSet):
     def to_dict(self):
+        from pkg_resources import resource_stream
+
+        yaml_file = resource_stream(
+            "utilities", "manifests/utility-daemonset.yaml"
+        ).name
         res = super().to_dict()
-        res.update(
-            generate_yaml_from_template(
-                file_=os.path.join(os.path.dirname(__file__), "utility-daemonset.yaml")
-            )
-        )
+        res.update(generate_yaml_from_template(file_=yaml_file))
         return res
 
 
