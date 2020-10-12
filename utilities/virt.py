@@ -123,7 +123,7 @@ def generate_cloud_init_data(data):
     dict_data = {}
     for section, _data in data.items():
         str_data = ""
-        generated_data = yaml.dump(_data)
+        generated_data = yaml.dump(_data, width=1000)
         if section == "userData":
             str_data += "#cloud-config\n"
 

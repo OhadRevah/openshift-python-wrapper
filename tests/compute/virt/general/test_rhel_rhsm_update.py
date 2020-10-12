@@ -46,7 +46,7 @@ def rhsm_created_secret(namespace):
 def rhsm_cloud_init_data():
     bootcmds = [
         f"mkdir /mnt/{SECRET_NAME}",
-        f"mount /dev/$(lsblk --nodeps -no name,serial | grep {DISK_SERIAL} | cut -f1 -d' ') /mnt/{SECRET_NAME}",
+        f'mount /dev/$(lsblk --nodeps -no name,serial | grep {DISK_SERIAL} | cut -f1 -d" ") /mnt/{SECRET_NAME}',
         "subscription-manager config --rhsm.auto_enable_yum_plugins=0",
     ]
 
