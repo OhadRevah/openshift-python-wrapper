@@ -111,6 +111,19 @@ def _separator(symbol_, val=None):
     return f"{symbol_ * sepa} {val} {symbol_ * sepa}"
 
 
+def _prepare_test_dir_log(item, prefix):
+    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
+        test_dir_log = os.path.join(
+            TEST_COLLECT_INFO_DIR,
+            item.fspath.dirname.split("/tests/")[-1],
+            item.fspath.basename.strip(".py"),
+            item.name,
+            prefix,
+        )
+        os.environ["TEST_DIR_LOG"] = test_dir_log
+        os.makedirs(test_dir_log, exist_ok=True)
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
@@ -238,6 +251,16 @@ def pytest_runtest_setup(item):
         if previousfailed is not None:
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
+    _prepare_test_dir_log(item=item, prefix="setup")
+
+
+def pytest_runtest_call(item):
+    _prepare_test_dir_log(item=item, prefix="call")
+
+
+def pytest_runtest_teardown(item):
+    _prepare_test_dir_log(item=item, prefix="teardown")
+
 
 def pytest_generate_tests(metafunc):
     scope_match = re.compile(r"__(module|class|function)__$")
@@ -356,41 +379,41 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def pytest_exception_interact(node, call, report):
-    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "1":
-        return
+    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
+        try:
+            dyn_client = _get_admin_client()
+            test_dir = os.environ.get("TEST_DIR_LOG")
+            pods_dir = os.path.join(test_dir, "Pods")
+            os.makedirs(test_dir, exist_ok=True)
+            os.makedirs(pods_dir, exist_ok=True)
 
-    try:
-        dyn_client = _get_admin_client()
-        test_dir = os.path.join(TEST_COLLECT_INFO_DIR, node.name, call.when)
-        pods_dir = os.path.join(test_dir, "Pods")
-        os.makedirs(test_dir, exist_ok=True)
-        os.makedirs(pods_dir, exist_ok=True)
+            for _resources in RESOURCES_TO_COLLECT_INFO:
+                resource_dir = os.path.join(test_dir, _resources.__name__)
+                for resource_obj in _resources.get(dyn_client=dyn_client):
+                    if not os.path.isdir(resource_dir):
+                        os.makedirs(resource_dir, exist_ok=True)
 
-        for _resources in RESOURCES_TO_COLLECT_INFO:
-            resource_dir = os.path.join(test_dir, _resources.__name__)
-            for resource_obj in _resources.get(dyn_client=dyn_client):
-                if not os.path.isdir(resource_dir):
-                    os.makedirs(resource_dir, exist_ok=True)
+                    with open(
+                        os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
+                    ) as fd:
+                        fd.write(resource_obj.instance.to_str())
 
-                with open(
-                    os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
-                ) as fd:
-                    fd.write(resource_obj.instance.to_str())
+            for pod in Pod.get(dyn_client=dyn_client):
+                kwargs = {}
+                for pod_prefix in PODS_TO_COLLECT_INFO:
+                    if pod.name.startswith(pod_prefix):
+                        if pod_prefix == "virt-launcher":
+                            kwargs = {"container": "compute"}
 
-        for pod in Pod.get(dyn_client=dyn_client):
-            kwargs = {}
-            for pod_prefix in PODS_TO_COLLECT_INFO:
-                if pod.name.startswith(pod_prefix):
-                    if pod_prefix == "virt-launcher":
-                        kwargs = {"container": "compute"}
+                        with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
+                            fd.write(pod.log(**kwargs))
 
-                    with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
-                        fd.write(pod.log(**kwargs))
-
-                    with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
-                        fd.write(pod.instance.to_str())
-    except Exception:
-        return
+                        with open(
+                            os.path.join(pods_dir, f"{pod.name}.yaml"), "w"
+                        ) as fd:
+                            fd.write(pod.instance.to_str())
+        except Exception:
+            return
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -402,7 +425,6 @@ def tests_log_file():
 @pytest.fixture(scope="session", autouse=True)
 def tests_collect_info_dir():
     shutil.rmtree(TEST_COLLECT_INFO_DIR, ignore_errors=True)
-    os.makedirs(TEST_COLLECT_INFO_DIR)
 
 
 def login_to_account(api_address, user, password=None):
