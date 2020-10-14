@@ -686,6 +686,12 @@ def utility_pods(schedulable_nodes, utility_daemonset, admin_client):
     """
     # get only pods that running on schedulable_nodes.
     pods = list(Pod.get(admin_client, label_selector="cnv-test=utility"))
+    missing_pods = [
+        node.name
+        for node in schedulable_nodes
+        if node.name not in [pod.node.name for pod in pods]
+    ]
+    assert not missing_pods, f"Missing utility pod for: {' '.join(missing_pods)}"
     return [
         pod
         for pod in pods
