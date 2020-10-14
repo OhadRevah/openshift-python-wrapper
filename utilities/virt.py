@@ -16,7 +16,6 @@ import yaml
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.pod import Pod
-from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -645,19 +644,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         # terminationGracePeriodSeconds will be set to 180
         if not self.termination_grace_period:
             spec["terminationGracePeriodSeconds"] = 180
-
-        # TODO: remove once bug 1881658 is resolved
-        # The PVC should not have the DV as ownerReferences
-        # Relevant if using current 2.5 templates with PersistentVolumeClaim
-        if not self.data_volume_template:
-            pvc_dict = self.data_volume.pvc.instance.to_dict()
-            if pvc_dict["metadata"].get("ownerReferences"):
-                pvc_dict["metadata"]["ownerReferences"][0][
-                    "kind"
-                ] = "PersistentVolumeClaim"
-            ResourceEditor(
-                {self.data_volume.pvc: {"metadata": pvc_dict["metadata"]}}
-            ).update()
 
         return res
 
