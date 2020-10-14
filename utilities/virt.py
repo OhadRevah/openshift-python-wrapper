@@ -1275,6 +1275,8 @@ def import_vm(
     provider_credentials_secret_name,
     provider_credentials_secret_namespace,
     target_vm_name,
+    resource_mapping_name=None,
+    resource_mapping_namespace=None,
     vm_id=None,
     vm_name=None,
     cluster_name=None,
@@ -1292,5 +1294,7 @@ def import_vm(
         ovirt_mappings=ovirt_mappings,
         vm_name=vm_name,
         cluster_name=cluster_name,
+        resource_mapping_name=resource_mapping_name,
+        resource_mapping_namespace=resource_mapping_namespace,
     ) as vmimport:
         yield vmimport

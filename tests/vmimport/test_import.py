@@ -4,6 +4,7 @@ import ovirtsdk4.types
 import pytest
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
+from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.secret import Secret
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -27,7 +28,7 @@ def check_source_vm_status(provider, source_vm_name, source_vm_cluster, state):
         sleep=1,
         func=provider.vm,
         name=source_vm_name,
-        cluster=source_vm_cluster,
+        cluster=provider["cluster_name"],
     )
     for sample in samples:
         if sample.status == state:
@@ -35,7 +36,7 @@ def check_source_vm_status(provider, source_vm_name, source_vm_cluster, state):
 
 
 def check_cnv_vm_network_config(
-    vm, provider, source_vm_name, source_vm_cluster, expected_vm_config
+    vm, provider, source_vm_name, provider_data, expected_vm_config
 ):
     cnv_vm_network_interfaces = vm.instance.spec.template.spec.domain.devices.interfaces
     number_of_cnv_vm_network_interfaces = (
@@ -48,7 +49,9 @@ def check_cnv_vm_network_config(
 
     failed_assert_msgs = []
     for nic_index, source_vm_nic in enumerate(
-        provider.vm_nics(vm=provider.vm(name=source_vm_name, cluster=source_vm_cluster))
+        provider.vm_nics(
+            vm=provider.vm(name=source_vm_name, cluster=provider_data["cluster_name"])
+        )
     ):
         cnv_vm_mac = cnv_vm_network_interfaces[nic_index].macAddress
         source_vm_mac = source_vm_nic.mac.address
@@ -89,12 +92,29 @@ def check_cnv_vm_data_volumes(vm, expected_vm_config):
         cnv_vm_number_of_vol == expected_vm_config["volumes"]
     ), "wrong number of data volumes"
 
+    # to keep it simple,
+    # we expect all cnv disks to be of the same
+    # storage class
+    if expected_vm_config.get("expected_storage_class"):
+        failed_assert_msgs = []
+        expected_storage_class = expected_vm_config["expected_storage_class"]
+        for dv in vm.instance.spec.template.spec.volumes:
+            pvc = PersistentVolumeClaim(namespace=vm.namespace, name=dv.dataVolume.name)
+            storage_class_name = pvc.instance.spec.storageClassName
+            if storage_class_name != expected_storage_class:
+                failed_assert_msgs.append(
+                    f"data volume {dv.dataVolume.name} storage class check failed, "
+                    f"Expected: {expected_storage_class},"
+                    f"Actual: {storage_class_name}"
+                )
+        assert not failed_assert_msgs, f"Failed verifications: {failed_assert_msgs}"
+
 
 def check_cnv_vm_config(
     vm,
     provider,
     source_vm_name,
-    source_vm_cluster,
+    provider_data,
     expected_vm_config,
 ):
     assert vm.exists, f"vm {source_vm_name} does not exist."
@@ -108,9 +128,9 @@ def check_cnv_vm_config(
     check_cnv_vm_network_config(
         vm=vm,
         provider=provider,
+        provider_data=provider_data,
         source_vm_name=source_vm_name,
         expected_vm_config=expected_vm_config,
-        source_vm_cluster=source_vm_cluster,
     )
 
     check_cnv_vm_data_volumes(vm=vm, expected_vm_config=expected_vm_config)
@@ -150,13 +170,13 @@ def test_vm_import(namespace, provider_data, provider, secret, vm_key):
         ovirt_mappings=utils.network_mappings(items=[utils.POD_MAPPING]),
     ) as vmimport:
         vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
         )
         check_cnv_vm_config(
             vm=vmimport.vm,
             provider=provider,
+            provider_data=provider_data,
             source_vm_name=vm_name,
-            source_vm_cluster=cluster_name,
             expected_vm_config=vm_config,
         )
 
@@ -218,7 +238,6 @@ def test_running_vm_import(namespace, provider_data, provider, secret):
         check_source_vm_status(
             provider=provider,
             source_vm_name=vm_name,
-            source_vm_cluster=cluster_name,
             state=ovirtsdk4.types.VmStatus.DOWN,
         )
 
@@ -258,7 +277,7 @@ def test_two_disks_and_nics_vm_import(
             vm=vmimport.vm,
             provider=provider,
             source_vm_name=vm_name,
-            source_vm_cluster=cluster_name,
+            provider_data=provider_data,
             expected_vm_config=vm_config,
         )
 
@@ -292,4 +311,68 @@ def test_invalid_vm_import(provider, namespace, provider_data, secret, vm_key):
             cond_reason=expected_import_status["reason"],
             cond_status=expected_import_status["status"],
             cond_type=expected_import_status["type"],
+        )
+
+
+@pytest.mark.parametrize(
+    "resource_mapping",
+    [
+        pytest.param(
+            Source.vms["cirros-3disks"]["volumes_details"],
+            marks=(pytest.mark.polarion("CNV-4393")),
+        ),
+    ],
+    indirect=True,
+)
+def test_vmimport_with_mixed_external_and_internal_storage_mappings(
+    provider, provider_data, namespace, secret, resource_mapping
+):
+
+    # Verify:
+    # 1. External Storage Mapping (Disk0 expected StorageClass: nfs)
+    # 2. Override 1 Storage Name with Internal Mapping  (Disk1 expected StorageClass: nfs)
+    # 3. Override 1 Disk name with InternalMapping  (Disk2 expected StorageClass: nfs)
+
+    expected_vm_config = Source.vms["cirros-3disks"]
+    expected_vm_name = expected_vm_config["name"]
+    source_data_volumes_config = Source.vms["cirros-3disks"]["volumes_details"]
+    with import_vm(
+        name=import_name(vm_name=expected_vm_name),
+        namespace=namespace.name,
+        provider_credentials_secret_name=secret.name,
+        provider_credentials_secret_namespace=secret.namespace,
+        vm_name=expected_vm_name,
+        cluster_name=provider_data["cluster_name"],
+        target_vm_name=expected_vm_name,
+        start_vm=True,
+        ovirt_mappings=utils.ProviderMappings(
+            storage_mappings=[
+                ResourceMappingItem(
+                    target_name="nfs",  # disk1 is overridden by Storage Name
+                    source_name=source_data_volumes_config[1]["storage_name"],
+                ),
+            ],
+            disk_mappings=[
+                ResourceMappingItem(
+                    target_name="nfs",  # disk2 is overridden by DiskName
+                    source_name=source_data_volumes_config[2]["disk_name"],
+                )
+            ],
+        ),
+        resource_mapping_name=resource_mapping.name,
+        resource_mapping_namespace=resource_mapping.namespace,
+    ) as vmimport:
+        vmimport.wait(
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
+        )
+
+        # we expect all volumes to have
+        # the same storage class
+        expected_vm_config["expected_storage_class"] = "nfs"
+        check_cnv_vm_config(
+            vm=vmimport.vm,
+            provider=provider,
+            provider_data=provider_data,
+            source_vm_name=expected_vm_name,
+            expected_vm_config=expected_vm_config,
         )

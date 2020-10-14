@@ -1,7 +1,7 @@
 from resources.virtual_machine_import import VirtualMachineImport
 
 
-class OvirtMappings:
+class ProviderMappings:
     def __init__(
         self, disk_mappings=None, network_mappings=None, storage_mappings=None
     ):
@@ -31,18 +31,27 @@ POD_MAPPING = ResourceMappingItem(
 )
 
 
-def network_mappings(items):
-    ovirtmappings = OvirtMappings(network_mappings=[])
-    for item in items:
-        ovirtmappings.network_mappings.append(
+def storage_mapping_by_source_vm_disks_storage_name(
+    storage_classes, source_volumes_config
+):
+    storage_mapping_items = []
+    for source_vm_volume_index, target_storage_class in enumerate(storage_classes):
+        storage_mapping_items.append(
             ResourceMappingItem(
-                target_name=item.target_name,
-                target_type=item.target_type,
-                source_name=item.source_name,
+                target_name=target_storage_class,
+                source_name=source_volumes_config[source_vm_volume_index][
+                    "storage_name"
+                ],
             )
         )
+    return storage_mapping_items
 
-    return ovirtmappings
+
+def network_mappings(items):
+    provider_mappings = ProviderMappings(network_mappings=[])
+    for item in items:
+        provider_mappings.network_mappings.append(item)
+    return provider_mappings
 
 
 def make_labels(vmimport_name):
@@ -109,6 +118,29 @@ class Source:
                 "status": VirtualMachineImport.Condition.Status.FALSE,
                 "type": VirtualMachineImport.Condition.MAPPING_RULES_VERIFIED,
             },
+        },
+        "cirros-3disks": {
+            "name": "v2v-cirros-vm-for-test-3disks",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 3,
+            "volumes_details": [
+                {
+                    "disk_name": "v2v-cirros-vm-for-test-3disks_v2v-fc",
+                    "storage_name": "v2v-fc",
+                },  # Rhv: storage domain, VMWare: datastore
+                {
+                    "disk_name": "v2v-cirros-vm-for-test-3disks_v2v-iscsi",
+                    "storage_name": "v2v-iscsi",
+                },
+                {
+                    "disk_name": "v2v-cirros-vm-for-test-3disks_hosted_storage",
+                    "storage_name": "hosted_storage",
+                },
+            ],
         },
         "nodisk": {
             "name": "v2v-cirros-vm-for-test-nodisk",

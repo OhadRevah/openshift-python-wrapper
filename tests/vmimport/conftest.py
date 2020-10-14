@@ -12,6 +12,9 @@ import utilities.network
 import yaml
 from providers.rhv import rhv
 from resources.secret import Secret
+from resources.virtual_machine_import import ResourceMapping
+from tests.vmimport import utils
+from tests.vmimport.utils import ProviderMappings
 
 
 LOGGER = logging.getLogger(__name__)
@@ -81,3 +84,21 @@ def secret(provider_data, namespace, provider):
             string_data={"ovirt": yaml.dump(string_data)},
         ) as secret:
             yield secret
+
+
+@pytest.fixture(scope="module")
+def resource_mapping(request, namespace):
+    with ResourceMapping(
+        name="resource-mapping",
+        namespace=namespace.name,
+        mapping={
+            "ovirt": ProviderMappings(
+                network_mappings=[utils.POD_MAPPING],
+                storage_mappings=utils.storage_mapping_by_source_vm_disks_storage_name(
+                    storage_classes=["nfs", "local-block", "hostpath-provisioner"],
+                    source_volumes_config=request.param,
+                ),
+            )
+        },
+    ) as resource_mapping:
+        yield resource_mapping
