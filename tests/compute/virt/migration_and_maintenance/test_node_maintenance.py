@@ -155,7 +155,7 @@ def check_draining_process(dyn_client, source_pod, vm):
             migration_job.wait_for_status(
                 status=migration_job.Status.SUCCEEDED, timeout=1800
             )
-    source_pod.wait_deleted()
+    source_pod.wait_deleted(timeout=480)
     target_node = vm.vmi.virt_launcher_pod.node
     LOGGER.info(f"The VMI is currently running on {target_node.name}")
     assert (
