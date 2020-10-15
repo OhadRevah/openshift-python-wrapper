@@ -571,6 +571,7 @@ class VirtualMachineForTests(VirtualMachine):
             or self.data_volume.pvc.instance.metadata.annotations.get(node_annotation)
             if self.data_volume
             else self.pvc.instance.metadata.annotations.get(node_annotation)
+            or self.pvc.selected_node
             if self.pvc
             else self.data_volume_template["metadata"]
             .setdefault("annotations", {})
