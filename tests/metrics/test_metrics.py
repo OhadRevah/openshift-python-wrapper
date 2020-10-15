@@ -82,7 +82,7 @@ class TestVMICountMetric:
     ):
         assert check_vmi_count_metric(number_of_vmis_exists + 2, prometheus)
 
-    @pytest.mark.polarion("CNV-3089")
+    @pytest.mark.polarion("CNV-3589")
     def test_vmi_count_metric_decrease(
         self,
         skip_not_openshift,
