@@ -9,7 +9,7 @@ from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 from tests.vmimport import utils
-from utilities.virt import create_vm_import
+from utilities.virt import import_vm
 
 from .utils import ResourceMappingItem, Source
 
@@ -138,7 +138,7 @@ def test_vm_import(namespace, provider_data, provider, secret, vm_key):
     vm_name = vm_config["name"]
     cluster_name = provider_data["cluster_name"]
 
-    with create_vm_import(
+    with import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
@@ -166,7 +166,7 @@ def test_cancel_vm_import(admin_client, namespace, provider_data, provider, secr
     vm_name = Source.vms["cirros-no-nics"]["name"]
     cluster_name = provider_data["cluster_name"]
 
-    with create_vm_import(
+    with import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
@@ -201,7 +201,7 @@ def test_running_vm_import(namespace, provider_data, provider, secret):
     vm_name = Source.vms["cirros-running"]["name"]
     cluster_name = provider_data["cluster_name"]
 
-    with create_vm_import(
+    with import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
@@ -231,7 +231,7 @@ def test_two_disks_and_nics_vm_import(
     vm_name = vm_config["name"]
     cluster_name = provider_data["cluster_name"]
 
-    with create_vm_import(
+    with import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
@@ -276,7 +276,7 @@ def test_invalid_vm_import(provider, namespace, provider_data, secret, vm_key):
     vm_name = vm_config["name"]
     cluster_name = provider_data["cluster_name"]
 
-    with create_vm_import(
+    with import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,

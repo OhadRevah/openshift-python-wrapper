@@ -1269,7 +1269,7 @@ def check_ssh_connection(ip, port, console_impl):
 
 
 @contextmanager
-def create_vm_import(
+def import_vm(
     name,
     namespace,
     provider_credentials_secret_name,
