@@ -552,7 +552,7 @@ def test_certconfigmap_incorrect_cert(
                 "cert_configmap": "wrong_name",
                 "wait": False,
             },
-            marks=pytest.mark.polarion("cnv-2815"),
+            marks=pytest.mark.polarion("CNV-2815"),
         ),
     ],
     indirect=True,
