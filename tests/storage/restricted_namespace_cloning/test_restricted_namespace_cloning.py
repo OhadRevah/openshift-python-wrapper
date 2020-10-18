@@ -12,6 +12,7 @@ from tests.storage.restricted_namespace_cloning.conftest import (
     NAMESPACE_PARAMS,
 )
 from tests.storage.utils import set_permissions
+from utilities.infra import ErrorMsg
 from utilities.storage import create_dv
 
 
@@ -42,7 +43,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
     storage_class = [*storage_class_matrix__module__][0]
     with pytest.raises(
         ApiException,
-        match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
+        match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
         with create_dv(
             dv_name="target-dv-cnv-2688",
@@ -126,7 +127,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
     storage_class = [*storage_class_matrix__module__][0]
     with pytest.raises(
         ApiException,
-        match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
+        match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
         with create_dv(
             dv_name="target-dv",
@@ -315,7 +316,7 @@ def test_user_permissions_negative(
         ):
             with pytest.raises(
                 ApiException,
-                match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
+                match=ErrorMsg.CANNOT_CREATE_RESOURCE,
             ):
                 with create_dv(
                     dv_name="target-dv",
@@ -366,7 +367,7 @@ def test_user_permissions_only_for_dst_ns_negative(
     ):
         with pytest.raises(
             ApiException,
-            match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
+            match=ErrorMsg.CANNOT_CREATE_RESOURCE,
         ):
             with create_dv(
                 dv_name="target-dv",

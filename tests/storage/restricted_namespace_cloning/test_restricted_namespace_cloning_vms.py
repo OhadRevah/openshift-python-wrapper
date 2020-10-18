@@ -20,6 +20,7 @@ from tests.storage.utils import (
     set_permissions,
     storage_params,
 )
+from utilities.infra import ErrorMsg
 from utilities.virt import VirtualMachineForTests
 
 
@@ -173,7 +174,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
         ):
             with pytest.raises(
                 ApiException,
-                match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
+                match=ErrorMsg.CANNOT_CREATE_RESOURCE,
             ):
                 dv_clone_dict = data_volume_clone_settings.to_dict()
                 with VirtualMachineForTests(
@@ -227,7 +228,7 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
         ):
             with pytest.raises(
                 ApiException,
-                match=r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*",
+                match=ErrorMsg.CANNOT_CREATE_RESOURCE,
             ):
                 dv_clone_dict = data_volume_clone_settings.to_dict()
                 with VirtualMachineForTests(

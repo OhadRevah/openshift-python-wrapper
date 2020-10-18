@@ -123,6 +123,7 @@ class ErrorMsg:
         "Unable to process data: qemu-img: curl: The requested URL returned error: "
         "416 Requested Range Not Satisfiable"
     )
+    CANNOT_CREATE_RESOURCE = r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*"
 
 
 def get_bug_status(bugzilla_connection_params, bug):
