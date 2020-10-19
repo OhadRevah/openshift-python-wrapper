@@ -8,7 +8,7 @@ from . import utils as kmp_utils
 
 
 @pytest.mark.usefixtures("skip_rhel7_workers")
-class KMPTestConnectivity:
+class TestKMPConnectivity:
     #: KMPTestConnectivity setup
     # .........                                                                    ..........
     # |       |---eth0:           : POD network                :auto:       eth0---|        |
