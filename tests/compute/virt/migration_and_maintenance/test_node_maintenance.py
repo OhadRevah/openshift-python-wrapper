@@ -10,12 +10,13 @@ from subprocess import run
 import pytest
 from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
+from resources.pod import Pod
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
 from tests.conftest import winrmcli_pod
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -144,6 +145,14 @@ def winrmcli_pod_nodeselector_scope_class(
         )
 
 
+def assert_pod_status_completed(source_pod):
+    source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=180)
+    assert (
+        source_pod.instance.status.containerStatuses[0].state.terminated.reason
+        == Pod.Status.COMPLETED
+    )
+
+
 def check_draining_process(dyn_client, source_pod, vm):
     source_node = source_pod.node
     LOGGER.info(f"The VMI was running on {source_node.name}")
@@ -155,8 +164,10 @@ def check_draining_process(dyn_client, source_pod, vm):
             migration_job.wait_for_status(
                 status=migration_job.Status.SUCCEEDED, timeout=1800
             )
-    source_pod.wait_deleted(timeout=480)
-    target_node = vm.vmi.virt_launcher_pod.node
+    assert_pod_status_completed(source_pod=source_pod)
+    target_pod = vm.vmi.virt_launcher_pod
+    target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
+    target_node = target_pod.node
     LOGGER.info(f"The VMI is currently running on {target_node.name}")
     assert (
         target_node != source_node
@@ -206,6 +217,9 @@ def test_node_drain_using_console_fedora(
     "data_volume_multi_storage_scope_class",
 )
 class TestNodeMaintenanceRHEL:
+    @pytest.mark.bugzilla(
+        1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
         self, vm_instance_from_template_multi_storage_scope_class, admin_client
