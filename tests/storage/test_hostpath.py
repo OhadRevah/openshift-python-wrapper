@@ -534,7 +534,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         namespace=namespace.name,
         source_namespace=data_volume_scope_function.namespace,
         source_pvc=data_volume_scope_function.pvc.name,
-        size="10Gi",
+        size=data_volume_scope_function.size,
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as target_dv:
@@ -634,7 +634,7 @@ def test_hostpath_clone_dv_with_annotation(
             source="pvc",
             dv_name="cnv-2770-target-dv",
             namespace=namespace.name,
-            size="1Gi",
+            size=source_dv.size,
             storage_class=StorageClass.Types.HOSTPATH,
             hostpath_node=worker_node1.name,
             volume_mode=DataVolume.VolumeMode.FILE,

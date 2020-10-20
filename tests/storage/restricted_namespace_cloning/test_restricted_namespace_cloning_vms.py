@@ -349,7 +349,7 @@ def test_disk_image_after_create_vm_with_restricted_clone(
                 dv_name="target-dv",
                 namespace=dst_ns.name,
                 source="pvc",
-                size="500Mi",
+                size=data_volume_multi_storage_scope_module.size,
                 source_pvc=data_volume_multi_storage_scope_module.pvc.name,
                 source_namespace=namespace.name,
                 client=unprivileged_client,

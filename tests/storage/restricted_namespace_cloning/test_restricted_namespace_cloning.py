@@ -48,7 +48,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
             dv_name="target-dv-cnv-2688",
             namespace=namespace.name,
             source="pvc",
-            size="500Mi",
+            size=data_volume_multi_storage_scope_module.size,
             storage_class=storage_class,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
             source_pvc=data_volume_multi_storage_scope_module.pvc.name,
@@ -93,7 +93,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
             dv_name="target-dv",
             namespace=namespace.name,
             source="pvc",
-            size="500Mi",
+            size=data_volume_multi_storage_scope_module.size,
             storage_class=storage_class,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
             source_pvc=data_volume_multi_storage_scope_module.pvc.name,
@@ -132,7 +132,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
             dv_name="target-dv",
             namespace=dst_ns.name,
             source="pvc",
-            size="500Mi",
+            size=data_volume_multi_storage_scope_module.size,
             storage_class=storage_class,
             volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
             source_pvc=data_volume_multi_storage_scope_module.pvc.name,
@@ -232,7 +232,7 @@ def test_user_permissions_positive(
                 dv_name="target-dv",
                 namespace=dst_ns.name,
                 source="pvc",
-                size="500Mi",
+                size=data_volume_multi_storage_scope_module.size,
                 storage_class=storage_class,
                 volume_mode=storage_class_matrix__module__[storage_class][
                     "volume_mode"
@@ -321,7 +321,7 @@ def test_user_permissions_negative(
                     dv_name="target-dv",
                     namespace=dst_ns.name,
                     source="pvc",
-                    size="500Mi",
+                    size=data_volume_multi_storage_scope_module.size,
                     storage_class=storage_class,
                     volume_mode=storage_class_matrix__module__[storage_class][
                         "volume_mode"
@@ -372,7 +372,7 @@ def test_user_permissions_only_for_dst_ns_negative(
                 dv_name="target-dv",
                 namespace=dst_ns.name,
                 source="pvc",
-                size="500Mi",
+                size=data_volume_multi_storage_scope_module.size,
                 storage_class=storage_class,
                 volume_mode=storage_class_matrix__module__[storage_class][
                     "volume_mode"

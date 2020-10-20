@@ -178,7 +178,7 @@ def test_cloner_pods_cdi_label(
             source="pvc",
             dv_name="dv-target",
             namespace=dv.namespace,
-            size="10Gi",
+            size=dv.size,
             storage_class=py_config["default_storage_class"],
             volume_mode=py_config["default_volume_mode"],
             access_modes=py_config["default_access_mode"],
