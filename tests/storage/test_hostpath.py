@@ -117,7 +117,7 @@ def verify_image_location_via_dv_pod_with_pvc(dv, worker_node):
         namespace=dv.namespace,
         name=f"{dv.name}-pod",
         pvc_name=dv.pvc.name,
-        volume_mode=py_config["default_volume_mode"],
+        volume_mode=dv.volume_mode,
     ) as pod:
         pod.wait_for_status(status="Running")
         LOGGER.debug("Check pod location...")
@@ -330,7 +330,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
-            volume_mode=DataVolume.VolumeMode.FILE,
+            volume_mode=pvc.volume_mode,
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING, timeout=180)
             pvc.wait_for_status(status=pvc.Status.BOUND, timeout=60)
@@ -363,7 +363,7 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
-            volume_mode=DataVolume.VolumeMode.FILE,
+            volume_mode=pvc.volume_mode,
         ) as pod:
             pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
             assert pod.instance.spec.nodeName == worker_node1.name

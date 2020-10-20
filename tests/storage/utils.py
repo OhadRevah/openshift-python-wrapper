@@ -38,7 +38,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 @contextmanager
-def import_image_to_dv(dv_name, images_https_server_name, volume_mode, storage_ns_name):
+def import_image_to_dv(
+    dv_name, images_https_server_name, volume_mode, storage_ns_name, access_mode
+):
     url = get_file_url_https_server(
         images_https_server=images_https_server_name, file_name=Images.Cirros.QCOW2_IMG
     )
@@ -55,6 +57,7 @@ def import_image_to_dv(dv_name, images_https_server_name, volume_mode, storage_n
             cert_configmap=configmap.name,
             volume_mode=volume_mode,
             storage_class=py_config["default_storage_class"],
+            access_modes=access_mode,
         ) as dv:
             yield dv
 

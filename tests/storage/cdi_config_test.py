@@ -28,6 +28,7 @@ def cdiconfig_update(
     dv_name,
     client,
     volume_mode=py_config["default_volume_mode"],
+    access_mode=py_config["default_access_mode"],
     images_https_server_name="",
     run_vm=False,
     tmpdir=None,
@@ -49,6 +50,7 @@ def cdiconfig_update(
                             dv_name=dv_name,
                             images_https_server_name=images_https_server_name,
                             volume_mode=volume_mode,
+                            access_mode=access_mode,
                             storage_ns_name=storage_ns_name,
                         ) as dv:
                             dv.wait()
@@ -62,9 +64,9 @@ def cdiconfig_update(
                             remote_name=remote_name, local_name=local_name
                         )
                         with utils.upload_image_to_dv(
-                            dv_name,
-                            volume_mode,
-                            storage_ns_name,
+                            dv_name=dv_name,
+                            volume_mode=volume_mode,
+                            storage_ns_name=storage_ns_name,
                             storage_class=storage_class_type,
                             client=client,
                         ) as dv:
@@ -90,6 +92,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         images_https_server_name=get_images_https_server(),
         storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
+        access_mode=DataVolume.AccessMode.RWO,
         run_vm=True,
         tmpdir=tmpdir,
         client=unprivileged_client,
@@ -107,6 +110,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
+        access_mode=DataVolume.AccessMode.RWO,
         images_https_server_name=get_images_https_server(),
         run_vm=True,
         client=unprivileged_client,
@@ -124,6 +128,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
+        access_mode=DataVolume.AccessMode.RWO,
         client=unprivileged_client,
     )
 
@@ -141,6 +146,7 @@ def test_cdiconfig_scratch_space_not_default(
         storage_ns_name=namespace.name,
         run_vm=True,
         volume_mode=DataVolume.VolumeMode.FILE,
+        access_mode=DataVolume.AccessMode.RWO,
         client=unprivileged_client,
     )
 

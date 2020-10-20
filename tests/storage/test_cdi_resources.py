@@ -122,6 +122,7 @@ def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
         dv_name="cnv-3475",
         images_https_server_name=get_images_https_server(),
         volume_mode=py_config["default_volume_mode"],
+        access_mode=py_config["default_access_mode"],
         storage_ns_name=namespace.name,
     ):
         is_cdi_worker_pod(
@@ -170,6 +171,7 @@ def test_cloner_pods_cdi_label(
         cert_configmap=https_config_map.name,
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
+        access_modes=py_config["default_access_mode"],
     ) as dv:
         dv.wait(timeout=300)
         with utils.create_dv(
@@ -179,6 +181,7 @@ def test_cloner_pods_cdi_label(
             size="10Gi",
             storage_class=py_config["default_storage_class"],
             volume_mode=py_config["default_volume_mode"],
+            access_modes=py_config["default_access_mode"],
         ) as dv1:
             dv1.wait_for_status(status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=600)
             is_cdi_worker_pod(

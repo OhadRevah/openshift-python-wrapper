@@ -18,7 +18,22 @@ def _generate_latest_os_dict(os_list):
         for os_values in os_dict.values():
             if os_values.get("latest"):
                 return os_values
-    assert False, f"No OS is makred as 'latest': {os_list}"
+    assert False, f"No OS is marked as 'latest': {os_list}"
+
+
+def _get_default_storage_class(sc_list):
+    """
+    Args:
+        sc_list (list): storage class dict - a list of dicts
+
+    Returns:
+        tuple: (default storage class name, default storage class dict) else raises an exception.
+    """
+    for sc_dict in sc_list:
+        for sc_name, sc_values in sc_dict.items():
+            if sc_values.get("default"):
+                return sc_name, sc_values
+    assert False, f"No SC is marked as 'default': {sc_list}"
 
 
 no_unprivileged_client = False
@@ -26,15 +41,12 @@ distribution = "downstream"
 hco_namespace = "openshift-cnv"
 sriov_namespace = "openshift-sriov-network-operator"
 machine_api_namespace = "openshift-machine-api"
+golden_images_namespace = "openshift-virtualization-os-images"
 
 test_guest_performance = {"bandwidth": 2.5}
 test_performance_over_pod_network = {"bandwidth": 2.5}
 linux_bridge_cni = "cnv-bridge"
 bridge_tuning = "cnv-tuning"
-
-default_storage_class = "nfs"
-default_volume_mode = "Filesystem"
-golden_images_namespace = "openshift-virtualization-os-images"
 
 provider_matrix = [
     {
@@ -90,9 +102,17 @@ storage_class_matrix = [
         "ocs-storagecluster-ceph-rbd": {
             "volume_mode": "Block",
             "access_mode": "ReadWriteMany",
+            "default": True,
         }
     },
 ]
+
+default_storage_class, default_storage_class_configuration = _get_default_storage_class(
+    sc_list=storage_class_matrix
+)
+default_volume_mode = default_storage_class_configuration["volume_mode"]
+default_access_mode = default_storage_class_configuration["access_mode"]
+
 link_aggregation_mode_matrix = [
     "active-backup",
     "balance-tlb",
