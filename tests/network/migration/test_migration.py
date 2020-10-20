@@ -7,7 +7,6 @@ import logging
 
 import pytest
 import tests.network.utils as network_utils
-from resources.service import Service
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from utilities import console
 from utilities.network import (
@@ -31,29 +30,13 @@ BR1TEST = "br1test"
 LOGGER = logging.getLogger(__name__)
 
 
-def http_port_accessible(vm, server_ip):
+def http_port_accessible(vm, server_ip, server_port):
     vm_console_run_commands(
         console_impl=console.Fedora,
         vm=vm,
-        commands=[f"curl --head {server_ip}:80 --connect-timeout 5"],
+        commands=[f"curl --head {server_ip}:{server_port} --connect-timeout 5"],
         timeout=10,
     )
-
-
-class HTTPService(Service):
-    def __init__(self, name, namespace, vmi, teardown=True):
-        super().__init__(name=name, namespace=namespace, teardown=teardown)
-        self._vmi = vmi
-
-    def to_dict(self):
-        res = super().to_dict()
-        res["spec"] = {
-            "ports": [{"port": 80, "protocol": "TCP", "targetPort": 80}],
-            "selector": {"special": self._vmi.name},
-            "sessionAffinity": "None",
-            "type": Service.Type.CLUSTER_IP,
-        }
-        return res
 
 
 class BridgedFedoraVirtualMachine(VirtualMachineForTests):
@@ -86,6 +69,11 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
         for iface in vm_interfaces:
             if "masquerade" in iface.keys():
                 iface["ports"] = [{"name": "http80", "port": 80, "protocol": "TCP"}]
+
+        res["spec"]["template"]["metadata"]["labels"].update(
+            {"kubevirt.io/domain": self.name}
+        )
+
         return res
 
 
@@ -176,16 +164,15 @@ def br1test_nad(namespace):
 
 @pytest.fixture()
 def http_service(namespace, running_vma, running_vmb):
-    with HTTPService(
-        name="http-masquerade-migration", namespace=namespace.name, vmi=running_vmb.vmi
-    ) as svc:
-        # Check that http service on port 80 can be accessed by cluster IP
-        # before vmi migration.
-        http_port_accessible(
-            vm=running_vma,
-            server_ip=running_vmb.vmi.virt_launcher_pod.instance.status.podIP,
-        )
-        yield svc
+    running_vmb.custom_service_enable(service_name="http-masquerade-migration", port=80)
+
+    # Check that http service on port 80 can be accessed by cluster IP
+    # before vmi migration.
+    http_port_accessible(
+        vm=running_vma,
+        server_ip=running_vmb.custom_service_ip,
+        server_port=running_vmb.custom_service_port,
+    )
 
 
 @pytest.fixture()
@@ -297,5 +284,6 @@ def test_migration_with_masquerade(
         assert running_vmb.vmi.instance.status.migrationState.completed
         http_port_accessible(
             vm=running_vma,
-            server_ip=running_vmb.vmi.virt_launcher_pod.instance.status.podIP,
+            server_ip=running_vmb.custom_service_ip,
+            server_port=running_vmb.custom_service_port,
         )
