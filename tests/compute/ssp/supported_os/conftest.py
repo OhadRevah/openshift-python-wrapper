@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+from resources.service import Service
 from resources.template import Template
 from utilities.storage import data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate
@@ -268,10 +269,15 @@ def vm_ssh_service_multi_fedora_os_scope_class(
 
 @pytest.fixture()
 def exposed_vm_service_multi_storage_scope_function(
-    request, vm_instance_from_template_multi_storage_scope_function
+    request,
+    vm_instance_from_template_multi_storage_scope_function,
+    schedulable_node_ips,
 ):
     vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
-        service_name=request.param["service_name"], port=request.param["service_port"]
+        service_name=request.param["service_name"],
+        port=request.param["service_port"],
+        service_type=Service.Type.NODE_PORT,
+        service_ip=list(schedulable_node_ips.values())[0],
     )
 
 

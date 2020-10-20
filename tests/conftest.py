@@ -47,7 +47,7 @@ from resources.virtual_machine import (
     VirtualMachineInstanceMigration,
 )
 from utilities import console
-from utilities.infra import ClusterHosts, create_ns
+from utilities.infra import ClusterHosts, create_ns, get_schedulable_nodes_ips
 from utilities.network import (
     OVS,
     EthernetNetworkConfigurationPolicy,
@@ -627,12 +627,7 @@ def schedulable_node_ips(schedulable_nodes):
     """
     Store all kubevirt.io/schedulable=true IPs
     """
-    node_ips = {}
-    for node in schedulable_nodes:
-        for addr in node.instance.status.addresses:
-            if addr.type == "InternalIP":
-                node_ips[node.name] = addr.address
-    return node_ips
+    return get_schedulable_nodes_ips(nodes=schedulable_nodes)
 
 
 @pytest.fixture(scope="session")

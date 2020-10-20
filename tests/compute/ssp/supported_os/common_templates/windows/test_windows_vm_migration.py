@@ -46,7 +46,6 @@ def test_migrate_vm_windows(
     winrmcli_pod_scope_function,
     started_windows_vm,
     exposed_vm_service_multi_storage_scope_function,
-    schedulable_node_ips,
 ):
     """Test CNV common templates with Windows
 
@@ -55,7 +54,7 @@ def test_migrate_vm_windows(
     """
 
     assert utils.check_telnet_connection(
-        ip=list(schedulable_node_ips.values())[0],
+        ip=vm_instance_from_template_multi_storage_scope_function.custom_service_ip,
         port=vm_instance_from_template_multi_storage_scope_function.custom_service_port,
     ), "Failed to login via Telnet"
 
@@ -69,6 +68,6 @@ def test_migrate_vm_windows(
     )
 
     assert utils.check_telnet_connection(
-        ip=list(schedulable_node_ips.values())[0],
+        ip=vm_instance_from_template_multi_storage_scope_function.custom_service_ip,
         port=vm_instance_from_template_multi_storage_scope_function.custom_service_port,
     ), "Failed to login via Telnet after migration"

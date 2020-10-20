@@ -135,3 +135,12 @@ def validate_file_exists_in_url(url):
 
     if file_name not in str(response.content):
         raise FileNotFoundInUrlError(url_request=response, file_name=file_name)
+
+
+def get_schedulable_nodes_ips(nodes):
+    node_ips = {}
+    for node in nodes:
+        for addr in node.instance.status.addresses:
+            if addr.type == "InternalIP":
+                node_ips[node.name] = addr.address
+    return node_ips

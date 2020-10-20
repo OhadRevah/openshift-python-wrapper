@@ -27,7 +27,7 @@ from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 from rrmngmnt import ssh, user
 from utilities import console
-from utilities.infra import ClusterHosts
+from utilities.infra import ClusterHosts, get_schedulable_nodes_ips
 
 
 LOGGER = logging.getLogger(__name__)
@@ -212,6 +212,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.ssh_node_port = None
         self.custom_service = None
         self.custom_service_port = None
+        self.custom_service_ip = None
         self.network_model = network_model
         self.network_multiqueue = network_multiqueue
         self.data_volume_template = data_volume_template
@@ -535,20 +536,40 @@ class VirtualMachineForTests(VirtualMachine):
         )
         self.ssh_service.create(wait=True)
         self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
-            "nodePort"
+            Service.Type.NODE_PORT
         ]
 
-    def custom_service_enable(self, service_name, port):
+    def custom_service_enable(
+        self, service_name, port, service_type=Service.Type.CLUSTER_IP, service_ip=None
+    ):
+        """
+        service_type is set with K8S default service type (ClusterIP)
+        service_ip - relevant for node port; default will be set to vm node IP
+        """
         self.custom_service = CustomServiceForVirtualMachineForTests(
             name=f"{service_name}-{self.name}",
             namespace=self.namespace,
             vm_name=self.name,
             port=port,
+            service_type=service_type,
         )
         self.custom_service.create(wait=True)
-        self.custom_service_port = self.custom_service.instance.attributes.spec.ports[
-            0
-        ]["nodePort"]
+
+        if service_type == Service.Type.CLUSTER_IP:
+            self.custom_service_port = (
+                self.custom_service.instance.attributes.spec.ports[0]["port"]
+            )
+            self.custom_service_ip = self.custom_service.instance.spec.clusterIP
+
+        if service_type == Service.Type.NODE_PORT:
+            # Service type is CamelCase, in VM but in attributes.spec.ports it is mixedCase
+            node_port = service_type[0].lower() + service_type[1:]
+            self.custom_service_port = (
+                self.custom_service.instance.attributes.spec.ports[0][node_port]
+            )
+            self.custom_service_ip = service_ip or get_schedulable_nodes_ips(
+                nodes=[self.instance.node]
+            )
 
     def get_storage_configuration(self):
         node_annotation = "kubevirt.io/provisionOnNode"
@@ -855,16 +876,17 @@ class SSHServiceForVirtualMachineForTests(Service):
             "ports": [{"port": 22, "protocol": "TCP"}],
             "selector": {"kubevirt.io/domain": self._vm_name},
             "sessionAffinity": "None",
-            "type": "NodePort",
+            "type": Service.Type.NODE_PORT,
         }
         return res
 
 
 class CustomServiceForVirtualMachineForTests(Service):
-    def __init__(self, name, namespace, vm_name, port, teardown=True):
+    def __init__(self, name, namespace, vm_name, port, service_type, teardown=True):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
         self._vm_name = vm_name
         self.port = port
+        self.service_type = service_type
 
     def to_dict(self):
         res = super().to_dict()
@@ -872,7 +894,7 @@ class CustomServiceForVirtualMachineForTests(Service):
             "ports": [{"port": self.port, "protocol": "TCP"}],
             "selector": {"kubevirt.io/domain": self._vm_name},
             "sessionAffinity": "None",
-            "type": "NodePort",
+            "type": self.service_type,
         }
         return res
 

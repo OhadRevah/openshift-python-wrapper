@@ -51,7 +51,7 @@ class HTTPService(Service):
             "ports": [{"port": 80, "protocol": "TCP", "targetPort": 80}],
             "selector": {"special": self._vmi.name},
             "sessionAffinity": "None",
-            "type": "ClusterIP",
+            "type": Service.Type.CLUSTER_IP,
         }
         return res
 
