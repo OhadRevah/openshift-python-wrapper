@@ -53,7 +53,9 @@ def _test_import_vm(
         resource_mapping_name=resource_mapping_name,
     ) as vmimport:
         vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING
+            if start_vm
+            else VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
         )
         vmimport.vm.vmi.wait_until_running()
         check_cnv_vm_config(
@@ -343,7 +345,7 @@ def test_two_disks_and_nics_vm_import(
         start_vm=True,
     ) as vmimport:
         vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_RUNNING
         )
         vmimport.vm.vmi.wait_until_running()
         check_cnv_vm_config(
