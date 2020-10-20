@@ -114,10 +114,12 @@ def _separator(symbol_, val=None):
 
 def _prepare_test_dir_log(item, prefix):
     if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
+        test_cls_name = item.cls.__name__ if item.cls else ""
         test_dir_log = os.path.join(
             TEST_COLLECT_INFO_DIR,
             item.fspath.dirname.split("/tests/")[-1],
             item.fspath.basename.strip(".py"),
+            test_cls_name,
             item.name,
             prefix,
         )
