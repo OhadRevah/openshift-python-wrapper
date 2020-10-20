@@ -219,3 +219,24 @@ class HttpDeployment(Deployment):
             }
         )
         return res
+
+
+class ErrorMsg:
+    """
+    error messages that might show in pod containers
+    """
+
+    EXIT_STATUS_2 = "Unable to process data: exit status 2"
+    CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY = "certificate signed by unknown authority"
+    DISK_IMAGE_IN_CONTAINER_NOT_FOUND = (
+        "Unable to process data: Failed to find VM disk image file in the container "
+        "image"
+    )
+    LARGER_PVC_REQUIRED = "A larger PVC is required"
+    INVALID_FORMAT_FOR_QCOW = "Unable to process data: Invalid format qcow for image "
+    COULD_NOT_OPEN_SIZE_TOO_BIG = "Unable to process data: qemu-img: Could not open '/data/disk.img': L1 size too big"
+    REQUESTED_RANGE_NOT_SATISFIABLE = (
+        "Unable to process data: qemu-img: curl: The requested URL returned error: "
+        "416 Requested Range Not Satisfiable"
+    )
+    CANNOT_CREATE_RESOURCE = r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*"

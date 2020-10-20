@@ -14,8 +14,8 @@ from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
 from utilities import console
-from utilities.infra import ErrorMsg, Images
-from utilities.storage import create_dv
+from utilities.infra import Images
+from utilities.storage import ErrorMsg, create_dv
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
 

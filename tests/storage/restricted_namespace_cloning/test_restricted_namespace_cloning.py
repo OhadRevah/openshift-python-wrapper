@@ -12,8 +12,7 @@ from tests.storage.restricted_namespace_cloning.conftest import (
     NAMESPACE_PARAMS,
 )
 from tests.storage.utils import set_permissions
-from utilities.infra import ErrorMsg
-from utilities.storage import create_dv
+from utilities.storage import ErrorMsg, create_dv
 
 
 LOGGER = logging.getLogger(__name__)

@@ -20,7 +20,7 @@ from tests.storage.utils import (
     set_permissions,
     storage_params,
 )
-from utilities.infra import ErrorMsg
+from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests
 
 

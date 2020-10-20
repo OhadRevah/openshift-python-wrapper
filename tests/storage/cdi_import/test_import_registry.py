@@ -12,7 +12,8 @@ from resources.resource import ResourceEditor
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
-from utilities.infra import BUG_STATUS_CLOSED, ErrorMsg, get_cert
+from utilities.infra import BUG_STATUS_CLOSED, get_cert
+from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests
 
 
