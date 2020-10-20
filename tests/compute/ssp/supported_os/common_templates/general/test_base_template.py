@@ -6,10 +6,13 @@ Base templates test
 
 import logging
 import os
+import re
 
 import pytest
+from pytest_testconfig import config as py_config
 from resources.template import Template
 from tests.compute.ssp.supported_os.common_templates import utils
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
@@ -48,10 +51,6 @@ def get_fedora_templates_list():
 
 def get_windows_templates_list():
     return [
-        "win2k12r2-desktop-large",
-        "win2k12r2-desktop-medium",
-        "win2k12r2-server-large",
-        "win2k12r2-server-medium",
         "windows-server-large",
         "windows-server-medium",
         "windows10-desktop-large",
@@ -62,13 +61,20 @@ def get_windows_templates_list():
 @pytest.fixture(scope="module")
 def base_templates(admin_client):
     """ Return templates list by label """
-    yield list(
+    common_templates_list = list(
         Template.get(
-            admin_client,
+            dyn_client=admin_client,
             singular_name=Template.singular_name,
             label_selector="template.kubevirt.io/type=base",
         )
     )
+    return [
+        template
+        for template in common_templates_list
+        if not template.instance.metadata.annotations.get(
+            "template.kubevirt.io/deprecated"
+        )
+    ]
 
 
 @pytest.mark.polarion("CNV-1069")
@@ -267,3 +273,48 @@ def test_common_templates_machine_type(
     assert (
         not unmatched_templates
     ), f"Templates with machine-type that do not match kubevirt cm: {unmatched_templates}"
+
+
+@pytest.mark.bugzilla(
+    1877834, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
+@pytest.mark.polarion("CNV-5002")
+def test_common_templates_golden_images_params(base_templates):
+    unmatched_templates = {}
+    for template in base_templates:
+        template_parameters_dict = template.instance.to_dict()["parameters"]
+        # Extract golden images parameters from template's parameters
+        golden_images_params = [
+            gi_params
+            for gi_params in template_parameters_dict
+            if gi_params["name"] in ["SRC_PVC_NAME", "SRC_PVC_NAMESPACE"]
+        ]
+        if not len(golden_images_params) == 2:
+            unmatched_templates.update(
+                {template.name: "Missing golden images parameters"}
+            )
+        for gi_params in golden_images_params:
+            # SRC_PVC_NAME conatins either:
+            # fedora latest OS (e.g fedora32)
+            # rhel latest major release (e.g rhel7)
+            # Windows relevant OS (e.g win2k19)
+            if (
+                gi_params["name"] == "SRC_PVC_NAME"
+                and re.match(r"^([a-z]+).*", template.name).group(1)[:3]
+                not in gi_params["value"]
+            ):
+                unmatched_templates.update(
+                    {template.name: f"SRC_PVC_NAME wrong value {gi_params['value']}"}
+                )
+            if (
+                gi_params["name"] == "SRC_PVC_NAMESPACE"
+                and gi_params["value"] != py_config["golden_images_namespace"]
+            ):
+                unmatched_templates.update(
+                    {
+                        template.name: f"SRC_PVC_NAMESPACE wrong namespace {gi_params['value']}"
+                    }
+                )
+    assert (
+        not unmatched_templates
+    ), f"The following templates fail on golden images verification: {unmatched_templates}"
