@@ -197,6 +197,33 @@ def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
     assert len(template_resource) == data.count(f"kind: {template_resource[0].kind}")
 
 
+@pytest.mark.polarion("CNV-2809")
+def test_node_nftables(skip_no_rhcos, cnv_must_gather, utility_pods):
+    for pod in utility_pods:
+        node_name = pod.node.name
+        nft_files = [
+            file
+            for file in os.listdir(f"{cnv_must_gather}/nodes/{node_name}")
+            if file.startswith("nft")
+        ]
+        nftables = pod.execute(
+            command=["bash", "-c", "nft list tables 2>/dev/null"]
+        ).splitlines()
+        utils.assert_nft_collection(
+            nft_files=nft_files, nftables=nftables, node_name=node_name
+        )
+        for table in nftables:
+            # table is a string of the form: "table {family} {name}"
+            family, name = table.split()[1:3]
+            utils.check_node_resource(
+                temp_dir=cnv_must_gather,
+                cmd=["bash", "-c", f"nft list {table} 2>/dev/null"],
+                utility_pod=pod,
+                results_file=f"nft-{family}-{name}",
+                compare_method="nft_compare",
+            )
+
+
 @pytest.mark.bugzilla(
     1771916, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
@@ -229,13 +256,14 @@ def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
 def test_node_resource(
     cnv_must_gather, utility_pods, cmd, results_file, compare_method
 ):
-    utils.check_node_resource(
-        temp_dir=cnv_must_gather,
-        cmd=cmd,
-        utility_pods=utility_pods,
-        results_file=results_file,
-        compare_method=compare_method,
-    )
+    for pod in utility_pods:
+        utils.check_node_resource(
+            temp_dir=cnv_must_gather,
+            cmd=cmd,
+            utility_pod=pod,
+            results_file=results_file,
+            compare_method=compare_method,
+        )
 
 
 @pytest.mark.parametrize(
@@ -258,13 +286,14 @@ def test_node_sriov_resource(
     results_file,
     compare_method,
 ):
-    utils.check_node_resource(
-        temp_dir=cnv_must_gather,
-        cmd=command,
-        utility_pods=utility_pods,
-        results_file=results_file,
-        compare_method=compare_method,
-    )
+    for pod in utility_pods:
+        utils.check_node_resource(
+            temp_dir=cnv_must_gather,
+            cmd=command,
+            utility_pod=pod,
+            results_file=results_file,
+            compare_method=compare_method,
+        )
 
 
 @pytest.mark.polarion("CNV-2801")

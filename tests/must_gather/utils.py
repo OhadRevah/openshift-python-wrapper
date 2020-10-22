@@ -141,6 +141,12 @@ def clean_ip_data(raw_str):
     ]
 
 
+def nft_chains(raw_str):
+    return [
+        line for line in raw_str.splitlines(keepends=True) if line.startswith("\tchain")
+    ]
+
+
 def compare_node_data(file_content, cmd_output, compare_method):
     if compare_method == "simple_compare":
         diff = list(
@@ -156,6 +162,13 @@ def compare_node_data(file_content, cmd_output, compare_method):
                 clean_ip_data(raw_str=cmd_output),
             )
         )
+    elif compare_method == "nft_compare":
+        diff = list(
+            difflib.ndiff(
+                nft_chains(raw_str=file_content),
+                nft_chains(raw_str=cmd_output),
+            )
+        )
     else:
         raise NotImplementedError(f"{compare_method} not implemented")
 
@@ -163,17 +176,16 @@ def compare_node_data(file_content, cmd_output, compare_method):
         raise NodeResourceException(diff)
 
 
-def check_node_resource(temp_dir, cmd, utility_pods, results_file, compare_method):
-    for pod in utility_pods:
-        cmd_output = pod.execute(command=cmd)
-        file_name = f"{temp_dir}/nodes/{pod.node.name}/{results_file}"
-        with open(file_name) as result_file:
-            file_content = result_file.read()
-            compare_node_data(
-                file_content=file_content,
-                cmd_output=cmd_output,
-                compare_method=compare_method,
-            )
+def check_node_resource(temp_dir, cmd, utility_pod, results_file, compare_method):
+    cmd_output = utility_pod.execute(command=cmd)
+    file_name = f"{temp_dir}/nodes/{utility_pod.node.name}/{results_file}"
+    with open(file_name) as result_file:
+        file_content = result_file.read()
+        compare_node_data(
+            file_content=file_content,
+            cmd_output=cmd_output,
+            compare_method=compare_method,
+        )
 
 
 def _pod_logfile_path(
@@ -276,3 +288,12 @@ def get_log_dir(path):
         if os.path.isdir(new_path):
             return new_path
     raise FileNotFoundError(f"No log directory was created in '{path}'")
+
+
+def assert_nft_collection(nft_files, nftables, node_name):
+    assert len(nft_files) == len(nftables), (
+        "difference in number of collected nftables\n"
+        f"node: {node_name}\n"
+        f"must-gather collected nftables: {nft_files}\n"
+        f"utility-pod collected nftables: {nftables}"
+    )

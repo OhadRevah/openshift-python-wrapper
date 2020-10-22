@@ -191,3 +191,14 @@ def config_maps_file(hco_namespace, cnv_must_gather):
         "r",
     ) as config_map_file:
         return yaml.safe_load(config_map_file)
+
+
+@pytest.fixture(scope="session")
+def rhcos_workers(workers_ssh_executors):
+    return list(workers_ssh_executors.values())[0].os.release_info["ID"] == "rhcos"
+
+
+@pytest.fixture(scope="session")
+def skip_no_rhcos(rhcos_workers):
+    if not rhcos_workers:
+        pytest.skip("test should run only on rhcos workers")
