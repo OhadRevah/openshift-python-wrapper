@@ -253,7 +253,10 @@ class TestNodeMaintenanceRHEL:
     )
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
-        self, vm_instance_from_template_multi_storage_scope_class, admin_client
+        self,
+        no_migration_job,
+        vm_instance_from_template_multi_storage_scope_class,
+        admin_client,
     ):
         source_pod = (
             vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod
@@ -277,7 +280,10 @@ class TestNodeMaintenanceRHEL:
 
     @pytest.mark.polarion("CNV-2292")
     def test_node_drain_using_console_rhel(
-        self, vm_instance_from_template_multi_storage_scope_class, admin_client
+        self,
+        no_migration_job,
+        vm_instance_from_template_multi_storage_scope_class,
+        admin_client,
     ):
         drain_using_console(
             dyn_client=admin_client,
@@ -290,6 +296,7 @@ class TestNodeMaintenanceRHEL:
     @pytest.mark.polarion("CNV-4995")
     def test_migration_when_multiple_nodes_unschedulable_using_console_rhel(
         self,
+        no_migration_job,
         vm_instance_from_template_multi_storage_scope_class,
         schedulable_nodes,
         admin_client,
