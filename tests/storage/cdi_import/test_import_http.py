@@ -20,7 +20,7 @@ from tests.storage.cdi_import.conftest import wait_for_importer_container_messag
 from tests.storage.utils import get_importer_pod
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, Images, get_bug_status
-from utilities.storage import ErrorMsg
+from utilities.storage import NON_EXIST_URL, ErrorMsg
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
 
 
@@ -78,7 +78,7 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
         source="http",
         dv_name="import-http-dv-negative",
         namespace=namespace.name,
-        url="https://noneexist.com",
+        url=NON_EXIST_URL,
         size="500Mi",
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
