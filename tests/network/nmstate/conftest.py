@@ -30,15 +30,6 @@ def node_management_iface_stats_node(nodes_active_nics, worker_node1, worker_nod
     return node_stats
 
 
-def get_worker_pod(network_utility_pods, worker_node):
-    """
-    This function will return pod  based on node specified as argument.
-    """
-    for pod in network_utility_pods:
-        if pod.node.name == worker_node.name:
-            return pod
-
-
 @pytest.fixture(scope="module")
 def nmstate_vma(schedulable_nodes, worker_node1, namespace, unprivileged_client):
     name = "vma"
@@ -95,7 +86,7 @@ def bridges_on_management_ifaces_node1(
     """
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
-    worker_pod = get_worker_pod(
+    worker_pod = network_utils.get_worker_pod(
         network_utility_pods=utility_pods, worker_node=worker_node1
     )
     with network_utils.network_device(
@@ -128,7 +119,7 @@ def bridges_on_management_ifaces_node2(
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
-    worker_pod = get_worker_pod(
+    worker_pod = network_utils.get_worker_pod(
         network_utility_pods=utility_pods, worker_node=worker_node2
     )
     with network_utils.network_device(

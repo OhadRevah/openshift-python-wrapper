@@ -122,3 +122,12 @@ def wait_for_address_on_iface(worker_pod, iface_name):
     except TimeoutExpiredError:
         LOGGER.error(log.format(iface_name=iface_name, sample=sample))
         raise
+
+
+def get_worker_pod(network_utility_pods, worker_node):
+    """
+    This function will return pod based on node specified as argument.
+    """
+    for pod in network_utility_pods:
+        if pod.node.name == worker_node.name:
+            return pod
