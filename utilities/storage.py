@@ -212,6 +212,13 @@ def sc_is_hpp_with_immediate_volume_binding(sc):
     )
 
 
+def sc_volume_binding_mode_is_wffc(sc):
+    return (
+        StorageClass(name=sc).instance["volumeBindingMode"]
+        == StorageClass.VolumeBindingMode.WaitForFirstConsumer
+    )
+
+
 @contextmanager
 def virtctl_upload_dv(
     namespace,

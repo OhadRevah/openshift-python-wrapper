@@ -28,6 +28,8 @@ from utilities.storage import (
     create_dv,
     downloaded_image,
     get_images_external_http_server,
+    get_storage_class_dict_from_matrix,
+    sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
 from utilities.virt import wait_for_console
@@ -47,12 +49,9 @@ def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
 
 
 @pytest.fixture(scope="module")
-def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc, hpp_storage_class):
+def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc):
     LOGGER.debug("Use 'skip_when_hpp_no_waitforfirstconsumer' fixture...")
-    if (
-        not hpp_storage_class.instance["volumeBindingMode"]
-        == StorageClass.VolumeBindingMode.WaitForFirstConsumer
-    ):
+    if not sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
         pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
@@ -117,7 +116,26 @@ def hpp_daemonset():
     )
 
 
-def verify_image_location_via_dv_pod_with_pvc(dv, worker_node):
+@pytest.fixture()
+def dv_kwargs(request, namespace, worker_node1):
+    storage_class_dict = get_storage_class_dict_from_matrix(
+        storage_class=StorageClass.Types.HOSTPATH
+    )
+    storage_class = [*storage_class_dict][0]
+    dv_kwargs = {
+        "dv_name": request.param.get("name"),
+        "namespace": namespace.name,
+        "url": request.param.get("url"),
+        "size": request.param.get("size"),
+        "storage_class": storage_class,
+        "volume_mode": storage_class_dict[storage_class]["volume_mode"],
+        "hostpath_node": worker_node1.name,
+    }
+
+    return dv_kwargs
+
+
+def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
     dv.wait()
     with PodWithPVC(
         namespace=dv.namespace,
@@ -127,18 +145,18 @@ def verify_image_location_via_dv_pod_with_pvc(dv, worker_node):
     ) as pod:
         pod.wait_for_status(status="Running")
         LOGGER.debug("Check pod location...")
-        assert pod.instance["spec"]["nodeName"] == worker_node.name
+        assert pod.instance["spec"]["nodeName"] == worker_node_name
         LOGGER.debug("Check image location...")
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
-def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node):
+def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node_name):
     dv.wait()
     with storage_utils.create_vm_from_dv(dv=dv) as vm:
         vm.vmi.wait_until_running()
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check pod location...")
-        assert v_pod.instance["spec"]["nodeName"] == worker_node.name
+        assert v_pod.instance["spec"]["nodeName"] == worker_node_name
         LOGGER.debug("Check image location...")
         assert "disk.img" in v_pod.execute(
             command=["ls", "-1", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
@@ -209,23 +227,31 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
 
 
 @pytest.mark.polarion("CNV-2817")
-def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, namespace, worker_node1):
+@pytest.mark.parametrize(
+    "dv_kwargs",
+    [
+        pytest.param(
+            {
+                "name": "cnv-2817",
+                "url": f"{get_images_external_http_server()}{py_config['latest_fedora_version']['image_path']}",
+                "size": Images.Fedora.DEFAULT_DV_SIZE,
+            },
+            marks=(pytest.mark.polarion("CNV-2327")),
+        ),
+    ],
+    indirect=True,
+)
+def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, namespace, dv_kwargs):
     """
     Check that after disk image is written to the PVC which has been provisioned on the specified node,
     Pod can use this image.
     """
-    with create_dv(
-        source="http",
-        dv_name="cnv-2817",
-        namespace=namespace.name,
-        url=f"{get_images_external_http_server()}{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}",
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        size="20Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
-        hostpath_node=worker_node1.name,
-    ) as dv:
-        verify_image_location_via_dv_pod_with_pvc(dv=dv, worker_node=worker_node1)
+    if sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
+        dv_kwargs.pop("hostpath_node")
+    with create_dv(**dv_kwargs) as dv:
+        verify_image_location_via_dv_pod_with_pvc(
+            dv=dv, worker_node_name=dv.pvc.selected_node or dv.hostpath_node
+        )
 
 
 @pytest.mark.polarion("CNV-3354")
@@ -309,7 +335,9 @@ def test_hostpath_http_import_dv(
         volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=worker_node1.name,
     ) as dv:
-        verify_image_location_via_dv_virt_launcher_pod(dv=dv, worker_node=worker_node1)
+        verify_image_location_via_dv_virt_launcher_pod(
+            dv=dv, worker_node_name=worker_node1.name
+        )
 
 
 @pytest.mark.polarion("CNV-3227")
@@ -344,14 +372,14 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 
 
 @pytest.mark.polarion("CNV-3280")
-def test_hpp_pvc_specify_node_waitforfirstconsumer(
-    skip_when_hpp_no_waitforfirstconsumer,
+def test_hpp_pvc_specify_node_immediate(
+    skip_when_hpp_no_immediate,
     namespace,
     worker_node1,
 ):
     """
-    Check that kubevirt.io/provisionOnNode annotation works in WaitForFirstConsumer mode.
-    Even in this mode, the annotation still causes an immediate bind on the specified node.
+    Check that kubevirt.io/provisionOnNode annotation works in Immediate mode.
+    The annotation causes an immediate bind on the specified node.
     """
     with PersistentVolumeClaim(
         name="cnv-3280",
@@ -420,9 +448,9 @@ def test_hpp_upload_virtctl(
 def test_hostpath_upload_dv_with_token(
     skip_test_if_no_hpp_sc,
     skip_when_cdiconfig_scratch_no_hpp,
+    skip_when_hpp_no_waitforfirstconsumer,
     namespace,
     tmpdir,
-    worker_node1,
 ):
     dv_name = "cnv-2769"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
@@ -437,7 +465,6 @@ def test_hostpath_upload_dv_with_token(
         namespace=namespace.name,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=worker_node1.name,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
@@ -445,7 +472,9 @@ def test_hostpath_upload_dv_with_token(
             storage_ns_name=dv.namespace, pvc_name=dv.pvc.name, data=local_name
         )
         dv.wait()
-        verify_image_location_via_dv_pod_with_pvc(dv=dv, worker_node=worker_node1)
+        verify_image_location_via_dv_pod_with_pvc(
+            dv=dv, worker_node_name=dv.pvc.selected_node
+        )
 
 
 @pytest.mark.parametrize(
@@ -471,11 +500,11 @@ def test_hostpath_registry_import_dv(
     namespace,
     dv_name,
     url,
-    worker_node1,
 ):
     """
-    Check that when importing image from public registry with kubevirt.io/provisionOnNode annotation works well.
-    On WaitForFirstConsumer Mode, the 'volume.kubernetes.io/selected-node' annotation will be added to scratch PVC.
+    Check that when importing image from public registry with WFFC binding mode
+    and without kubevirt.io/provisionOnNode annotation works well.
+    The 'volume.kubernetes.io/selected-node' annotation will be added to scratch PVC.
     """
     with create_dv(
         source="registry",
@@ -485,7 +514,6 @@ def test_hostpath_registry_import_dv(
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=worker_node1.name,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
@@ -500,11 +528,10 @@ def test_hostpath_registry_import_dv(
             pod_node_name=importer_pod.instance.spec.nodeName,
             type_="scratch",
         )
-        assert_provision_on_node_annotation(
-            pvc=dv.pvc, node_name=worker_node1.name, type_="import"
-        )
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
-        verify_image_location_via_dv_virt_launcher_pod(dv=dv, worker_node=worker_node1)
+        verify_image_location_via_dv_virt_launcher_pod(
+            dv=dv, worker_node_name=dv.pvc.selected_node
+        )
 
 
 @pytest.mark.parametrize(
@@ -612,10 +639,10 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
 
 @pytest.mark.polarion("CNV-2770")
 def test_hostpath_clone_dv_with_annotation(
-    skip_test_if_no_hpp_sc, namespace, worker_node1
+    skip_test_if_no_hpp_sc, skip_when_hpp_no_immediate, namespace, worker_node1
 ):
     """
-    Check that on WaitForFirstConsumer or Immediate binding mode,
+    Check that on Immediate binding mode,
     if the source/target DV is annotated to a specified node, CDI clone function works well.
     The PVCs will have an annotation 'kubevirt.io/provisionOnNode: <specified_node_name>'
     and bound immediately.
@@ -710,11 +737,15 @@ def test_hpp_operator_pod(skip_test_if_no_hpp_sc, admin_client):
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-3277")
 def test_hpp_operator_recreate_after_deletion(
-    skip_test_if_no_hpp_sc, hpp_operator_deployment
+    skip_test_if_no_hpp_sc, hpp_operator_deployment, hpp_storage_class
 ):
     """
     Check that Hostpath-provisioner operator will be created again by HCO after its deletion.
     The Deployment is deleted, then its RepliceSet and Pod will be deleted and created again.
     """
+    pre_delete_binding_mode = hpp_storage_class.instance["volumeBindingMode"]
     hpp_operator_deployment.delete()
     hpp_operator_deployment.wait_until_avail_replicas(timeout=300)
+    assert (
+        pre_delete_binding_mode == hpp_storage_class.instance["volumeBindingMode"]
+    ), "Pre delete binding mode differs from post delete"
