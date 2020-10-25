@@ -27,6 +27,7 @@ from utilities.virt import check_ssh_connection, wait_for_console
                 "vm_name": "rhel-migrate-vm",
                 "start_vm": True,
                 "template_labels": py_config["latest_rhel_version"]["template_labels"],
+                "set_vm_common_cpu": True,
             },
             marks=pytest.mark.polarion("CNV-3038"),
         ),

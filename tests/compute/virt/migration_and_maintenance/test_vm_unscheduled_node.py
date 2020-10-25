@@ -44,6 +44,7 @@ def unscheduled_node_vm(
                 "vm_name": "rhel-node-maintenance",
                 "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "start_vm": False,
+                "set_vm_common_cpu": True,
             },
         )
     ],

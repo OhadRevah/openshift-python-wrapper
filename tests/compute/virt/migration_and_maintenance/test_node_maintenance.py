@@ -237,6 +237,7 @@ def test_node_drain_using_console_fedora(
                     "workload": "server",
                     "flavor": "tiny",
                 },
+                "set_vm_common_cpu": True,
             },
         )
     ],
@@ -346,6 +347,7 @@ class TestNodeMaintenanceRHEL:
                     "template_labels"
                 ],
                 "cpu_threads": 2,
+                "set_vm_common_cpu": True,
             },
         ),
     ],

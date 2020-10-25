@@ -28,6 +28,7 @@ from tests.compute.ssp.supported_os.common_templates import utils
                     "template_labels"
                 ],
                 "cpu_threads": 2,
+                "set_vm_common_cpu": True,
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
             {"service_name": "telnet", "service_port": 5985},

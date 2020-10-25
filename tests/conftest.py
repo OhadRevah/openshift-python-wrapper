@@ -1125,6 +1125,7 @@ def vm_instance_from_template(
     network_configuration=None,
     cloud_init_data=None,
     node_selector=None,
+    vm_cpu_model=None,
 ):
     """Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
@@ -1155,6 +1156,7 @@ def vm_instance_from_template(
         attached_secret=params.get("attached_secret"),
         node_selector=node_selector,
         diskless_vm=params.get("diskless_vm"),
+        cpu_model=params.get("cpu_model") or vm_cpu_model,
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True, timeout=params.get("vm_wait_timeout", TIMEOUT))
@@ -1174,6 +1176,7 @@ def vm_instance_from_template_multi_storage_scope_function(
     data_volume_multi_storage_scope_function,
     network_configuration,
     cloud_init_data,
+    nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
 
@@ -1187,6 +1190,9 @@ def vm_instance_from_template_multi_storage_scope_function(
         data_volume=data_volume_multi_storage_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
+        vm_cpu_model=nodes_common_cpu_model
+        if request.param.get("set_vm_common_cpu")
+        else None,
     ) as vm:
         yield vm
 
@@ -1199,6 +1205,7 @@ def vm_instance_from_template_multi_storage_scope_class(
     data_volume_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
+    nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
 
@@ -1212,6 +1219,9 @@ def vm_instance_from_template_multi_storage_scope_class(
         data_volume=data_volume_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
+        vm_cpu_model=nodes_common_cpu_model
+        if request.param.get("set_vm_common_cpu")
+        else None,
     ) as vm:
         yield vm
 
@@ -1437,3 +1447,49 @@ def skip_access_mode_rwo_scope_function(storage_class_matrix__function__):
 @pytest.fixture(scope="class")
 def skip_access_mode_rwo_scope_class(storage_class_matrix__class__):
     _skip_access_mode_rwo(storage_class_matrix=storage_class_matrix__class__)
+
+
+def format_cpu_model_name(cpu_model_str):
+    # Example of CPU model name format:
+    # model name   : Intel Core Processor (Haswell, no TSX, IBRS)
+    # Example of CPU model format in VM spec: "Haswell-noTSX-IBRS
+    return re.sub(r", ", "-", re.search(r".*\((.*)\)", cpu_model_str).group(1)).replace(
+        " ", ""
+    )
+
+
+@pytest.fixture(scope="session")
+def nodes_common_cpu_model(utility_pods):
+    nodes_cpus_list = []
+    cmd = ["grep", "-m1", "model name", "/proc/cpuinfo"]
+    for pod in utility_pods:
+        nodes_cpus_list.append(pod.execute(command=cmd))
+
+    # All nodes have the same CPU
+    if len(set(nodes_cpus_list)) == 1:
+        return format_cpu_model_name(cpu_model_str=nodes_cpus_list[0])
+    else:
+        # Select the oldest CPU model, list ordered by model release, descending
+        # TODO: Add AMD models
+        cpus_models_list = [
+            "Skylake",
+            "Broadwell-IBRS",
+            "Broadwell",
+            "Haswell-noTSX-IBRS",
+            "Haswell-noTSX",
+            "Haswell",
+            "IvyBridge-IBRS",
+            "IvyBridge",
+            "SandyBridge-IBRS",
+            "SandyBridge",
+            "Westmere-IBRS",
+            "Westmere",
+        ]
+        cpu_index = 0
+        for node_cpu_model in nodes_cpus_list:
+            # Get the index of the node's CPU in cpus_models_list
+            node_cpu_index = cpus_models_list.index(
+                format_cpu_model_name(cpu_model_str=node_cpu_model)
+            )
+            cpu_index = node_cpu_index if node_cpu_index > cpu_index else cpu_index
+        return cpus_models_list[cpu_index]

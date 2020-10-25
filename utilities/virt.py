@@ -168,6 +168,7 @@ class VirtualMachineForTests(VirtualMachine):
         cpu_sockets=None,
         cpu_cores=None,
         cpu_threads=None,
+        cpu_model=None,
         memory=None,
         label=None,
         cloud_init_data=None,
@@ -206,6 +207,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.cpu_sockets = cpu_sockets
         self.cpu_cores = cpu_cores
         self.cpu_threads = cpu_threads
+        self.cpu_model = cpu_model
         self.memory = memory
         self.label = label
         self.cloud_init_data = cloud_init_data
@@ -451,6 +453,11 @@ class VirtualMachineForTests(VirtualMachine):
                 "dedicatedCpuPlacement"
             ] = True
 
+        if self.cpu_model:
+            spec.setdefault("domain", {}).setdefault("cpu", {})[
+                "model"
+            ] = self.cpu_model
+
         return spec
 
     def update_vm_storage_configuration(self, res, spec):
@@ -619,6 +626,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         ssh=False,
         vm_dict=None,
         cpu_threads=None,
+        cpu_model=None,
         memory=None,
         network_model=None,
         network_multiqueue=None,
@@ -638,6 +646,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             network_model=network_model,
             network_multiqueue=network_multiqueue,
             cpu_threads=cpu_threads,
+            cpu_model=cpu_model,
             memory=memory,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
