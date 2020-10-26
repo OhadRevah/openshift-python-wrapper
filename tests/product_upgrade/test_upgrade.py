@@ -261,3 +261,9 @@ class TestUpgrade:
                     "domain"
                 ]["machine"]["type"]
             )
+
+    @pytest.mark.polarion("CNV-4725")
+    @pytest.mark.run(after="test_upgrade")
+    def test_dv_api_version_after_upgrade(self, dvs_for_upgrade):
+        for dv in dvs_for_upgrade:
+            assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
