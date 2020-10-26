@@ -27,7 +27,11 @@ from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 from rrmngmnt import ssh, user
 from utilities import console
-from utilities.infra import ClusterHosts, get_schedulable_nodes_ips
+from utilities.infra import (
+    ClusterHosts,
+    camelcase_to_mixedcase,
+    get_schedulable_nodes_ips,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -536,7 +540,7 @@ class VirtualMachineForTests(VirtualMachine):
         )
         self.ssh_service.create(wait=True)
         self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
-            Service.Type.NODE_PORT
+            camelcase_to_mixedcase(camelcase_str=Service.Type.NODE_PORT)
         ]
 
     def custom_service_enable(
@@ -562,8 +566,7 @@ class VirtualMachineForTests(VirtualMachine):
             self.custom_service_ip = self.custom_service.instance.spec.clusterIP
 
         if service_type == Service.Type.NODE_PORT:
-            # Service type is CamelCase, in VM but in attributes.spec.ports it is mixedCase
-            node_port = service_type[0].lower() + service_type[1:]
+            node_port = camelcase_to_mixedcase(camelcase_str=service_type)
             self.custom_service_port = (
                 self.custom_service.instance.attributes.spec.ports[0][node_port]
             )

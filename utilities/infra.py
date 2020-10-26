@@ -144,3 +144,9 @@ def get_schedulable_nodes_ips(nodes):
             if addr.type == "InternalIP":
                 node_ips[node.name] = addr.address
     return node_ips
+
+
+def camelcase_to_mixedcase(camelcase_str):
+    # Utility to convert CamelCase to mixedCase
+    # Example: Service type may be NodePort but in VM attributes.spec.ports it is nodePort
+    return camelcase_str[0].lower() + camelcase_str[1:]
