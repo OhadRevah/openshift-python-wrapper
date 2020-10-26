@@ -838,3 +838,21 @@ def test_disk_image_after_import(
         **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
         utils.create_vm_and_verify_image_permission(dv=dv)
+
+
+@pytest.mark.polarion("CNV-4724")
+def test_dv_api_version_after_import(
+    images_internal_http_server,
+    namespace,
+    storage_class_matrix__module__,
+    unprivileged_client,
+):
+    with utilities.storage.create_dv(
+        dv_name="cnv-4724",
+        namespace=namespace.name,
+        url=f"{utilities.storage.get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        client=unprivileged_client,
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
+    ) as dv:
+        assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
