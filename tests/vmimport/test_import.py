@@ -398,3 +398,44 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
             source_vm_name=expected_vm_name,
             expected_vm_config=expected_vm_config,
         )
+
+
+@pytest.mark.parametrize(
+    "vm_key",
+    [
+        pytest.param(
+            "no-vnic-profile",
+            marks=(pytest.mark.polarion("CNV-4467")),
+        ),
+        pytest.param(
+            "cirros-no-nics",
+            marks=(pytest.mark.polarion("CNV-4469")),
+        ),
+    ],
+)
+def test_vm_import_no_mappings(namespace, provider_data, provider, secret, vm_key):
+    vm_config = Source.vms[vm_key]
+    vm_name = vm_config["name"]
+    cluster_name = provider_data["cluster_name"]
+
+    with import_vm(
+        name=import_name(vm_name=vm_name),
+        namespace=namespace.name,
+        provider_credentials_secret_name=secret.name,
+        provider_credentials_secret_namespace=secret.namespace,
+        vm_name=vm_name,
+        cluster_name=cluster_name,
+        target_vm_name=vm_name,
+        start_vm=True,
+        provider_type=provider_data["type"],
+    ) as vmimport:
+        vmimport.wait(
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
+        )
+        check_cnv_vm_config(
+            vm=vmimport.vm,
+            provider=provider,
+            provider_data=provider_data,
+            source_vm_name=vm_name,
+            expected_vm_config=vm_config,
+        )

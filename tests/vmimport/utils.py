@@ -169,4 +169,13 @@ class Source:
                 "type": VirtualMachineImport.Condition.SUCCEEDED,
             },
         },
+        "no-vnic-profile": {
+            "name": "v2v-cirros-vm-for-test-no-vnic-profile",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 1,
+        },
     }
