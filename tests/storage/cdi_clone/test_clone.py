@@ -8,30 +8,13 @@ import pytest
 import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
-from resources.storage_class import StorageClass
 from resources.utils import TimeoutSampler
-from resources.volume_snapshot import VolumeSnapshot, VolumeSnapshotClass
+from resources.volume_snapshot import VolumeSnapshot
 from tests.storage import utils
 from utilities.infra import Images
 
 
 WINDOWS_CLONE_TIMEOUT = 40 * 60
-
-
-@pytest.fixture()
-def skip_smart_clone_not_supported_by_sc(
-    data_volume_multi_storage_scope_function, admin_client
-):
-    sc_instance = StorageClass(
-        name=data_volume_multi_storage_scope_function.storage_class
-    ).instance
-    for vsc in VolumeSnapshotClass.get(dyn_client=admin_client):
-        if vsc.instance.get("driver") == sc_instance.get("provisioner"):
-            return
-
-    pytest.skip(
-        f"Smart clone via snapshots not supported by {sc_instance.metadata.get('name')}"
-    )
 
 
 def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):

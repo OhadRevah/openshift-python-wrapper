@@ -155,42 +155,51 @@ def test_uploader_pod_cdi_label(
 
 
 @pytest.mark.polarion("CNV-3476")
+@pytest.mark.parametrize(
+    "data_volume_multi_storage_scope_function",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
+            },
+        ),
+    ],
+    indirect=True,
+)
 def test_cloner_pods_cdi_label(
-    skip_upstream, admin_client, namespace, https_config_map
+    skip_upstream,
+    admin_client,
+    namespace,
+    data_volume_multi_storage_scope_function,
 ):
     # verify "cdi.kubevirt.io" label is included in cloning pods
-    url = storage_utils.get_file_url_https_server(
-        images_https_server=get_images_https_server(),
-        file_name=Images.Cirros.QCOW2_IMG,
-    )
+    if storage_utils.smart_clone_supported_by_sc(
+        sc=data_volume_multi_storage_scope_function.storage_class, client=admin_client
+    ):
+        pytest.skip(
+            f"Storage Class {data_volume_multi_storage_scope_function.storage_class} supports smart cloning; "
+            "CDI Worker pods will not be created for this operation, skipping test"
+        )
     with utils.create_dv(
-        source="http",
-        dv_name="dv-source",
-        namespace=namespace.name,
-        url=url,
-        cert_configmap=https_config_map.name,
-        storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
-        access_modes=py_config["default_access_mode"],
-    ) as dv:
-        dv.wait(timeout=300)
-        with utils.create_dv(
-            source="pvc",
-            dv_name="dv-target",
-            namespace=dv.namespace,
-            size=dv.size,
-            storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
-            access_modes=py_config["default_access_mode"],
-        ) as dv1:
-            dv1.wait_for_status(status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=600)
-            is_cdi_worker_pod(
-                dyn_client=admin_client,
-                pod_name="cdi-upload-dv-target",
-                storage_ns_name=dv.namespace,
-            )
-            is_cdi_worker_pod(
-                dyn_client=admin_client,
-                pod_name="-source-pod",
-                storage_ns_name=dv.namespace,
-            )
+        source="pvc",
+        dv_name="dv-target",
+        namespace=data_volume_multi_storage_scope_function.namespace,
+        size=data_volume_multi_storage_scope_function.size,
+        source_pvc=data_volume_multi_storage_scope_function.name,
+        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        access_modes=data_volume_multi_storage_scope_function.access_modes,
+    ) as cdv:
+        cdv.wait_for_status(status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=600)
+        is_cdi_worker_pod(
+            dyn_client=admin_client,
+            pod_name="cdi-upload-dv-target",
+            storage_ns_name=cdv.namespace,
+        )
+        is_cdi_worker_pod(
+            dyn_client=admin_client,
+            pod_name="-source-pod",
+            storage_ns_name=cdv.namespace,
+        )

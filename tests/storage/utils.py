@@ -16,8 +16,10 @@ from resources.pod import Pod
 from resources.role_binding import RoleBinding
 from resources.route import Route
 from resources.service import Service
+from resources.storage_class import StorageClass
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
+from resources.volume_snapshot import VolumeSnapshotClass
 from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.infra import Images, get_cert
@@ -434,3 +436,11 @@ def get_importer_pod(
         if pod.name.startswith("importer"):
             return pod
     raise ResourceNotFoundError
+
+
+def smart_clone_supported_by_sc(sc, client):
+    sc_instance = StorageClass(name=sc).instance
+    for vsc in VolumeSnapshotClass.get(dyn_client=client):
+        if vsc.instance.get("driver") == sc_instance.get("provisioner"):
+            return True
+    return False
