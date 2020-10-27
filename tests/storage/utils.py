@@ -205,22 +205,6 @@ def create_windows_vm_validate_guest_agent_info(
         )
 
 
-def virtctl_upload(
-    namespace, pvc_name, pvc_size, image_path, storage_class=None, insecure=False
-):
-    command = [
-        "image-upload",
-        f"--image-path={image_path}",
-        f"--pvc-size={pvc_size}",
-        f"--pvc-name={pvc_name}",
-    ]
-    if storage_class:
-        command.append(f"--storage-class={storage_class}")
-    if insecure:
-        command.append("--insecure")
-    return run_virtctl_command(command=command, namespace=namespace)
-
-
 @contextmanager
 def virtctl_upload_dv(
     namespace,

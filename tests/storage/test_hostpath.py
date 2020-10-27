@@ -392,23 +392,22 @@ def test_hpp_upload_virtctl(
         kwds={"dyn_client": admin_client, "namespace": namespace.name},
     )
     # Start virtctl upload process, meanwhile, resources are sampled
-    virtctl_upload = storage_utils.virtctl_upload(
+    with storage_utils.virtctl_upload_dv(
         namespace=namespace.name,
-        image_path=local_name,
-        pvc_size="25Gi",
-        pvc_name=pvc_name,
+        name=pvc_name,
+        size="25Gi",
         storage_class=StorageClass.Types.HOSTPATH,
+        image_path=local_name,
         insecure=True,
-    )
-    return_val = async_result.get()  # get return value from side thread
-    LOGGER.debug(virtctl_upload)
-    assert virtctl_upload
-    pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
-    assert pvc.bound()
-    assert all(
-        node == return_val.get("pod_node")
-        for node in (pvc.selected_node, return_val.get("scratch_pvc_node"))
-    ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC / node names differ"
+    ) as virtctl_upload:
+        return_val = async_result.get()  # get return value from side thread
+        assert virtctl_upload
+        pvc = PersistentVolumeClaim(name=pvc_name, namespace=namespace.name)
+        assert pvc.bound()
+        assert all(
+            node == return_val.get("pod_node")
+            for node in (pvc.selected_node, return_val.get("scratch_pvc_node"))
+        ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC / node names differ"
 
 
 @pytest.mark.polarion("CNV-2769")
