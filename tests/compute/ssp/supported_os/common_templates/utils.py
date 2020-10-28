@@ -11,13 +11,12 @@ from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree
 
 import bitmath
-import rrmngmnt
 import utilities.network
 from openshift.dynamic.exceptions import NotFoundError
 from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
-from tests.compute.utils import vm_started
+from tests.compute.utils import rrmngmnt_host, vm_started
 from utilities.virt import (
     execute_winrm_cmd,
     run_virtctl_command,
@@ -384,14 +383,6 @@ def check_machine_type(vm):
     assert (
         vm_machine_type != ""
     ), f"Machine type does not exist in VM: {vm_machine_type}"
-
-
-def rrmngmnt_host(usr, passwd, ip, port):
-    host = rrmngmnt.Host(ip=str(ip))
-    host_user = rrmngmnt.user.User(name=usr, password=passwd)
-    host._set_executor_user(user=host_user)
-    host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
-    return host
 
 
 def restart_qemu_guest_agent_service(vm, console_impl):

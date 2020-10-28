@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
+import rrmngmnt
 from resources.virtual_machine import VirtualMachineInstanceMigration
 from utilities.virt import (
     execute_winrm_cmd,
@@ -68,3 +69,11 @@ def migrate_vm(vm):
         vmi=vm.vmi,
     ) as mig:
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
+
+
+def rrmngmnt_host(usr, passwd, ip, port):
+    host = rrmngmnt.Host(ip=str(ip))
+    host_user = rrmngmnt.user.User(name=usr, password=passwd)
+    host._set_executor_user(user=host_user)
+    host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
+    return host

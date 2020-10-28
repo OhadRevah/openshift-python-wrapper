@@ -1167,6 +1167,7 @@ def vm_instance_from_template(
         node_selector=node_selector,
         diskless_vm=params.get("diskless_vm"),
         cpu_model=params.get("cpu_model") or vm_cpu_model,
+        ssh=params.get("ssh"),
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True, timeout=params.get("vm_wait_timeout", TIMEOUT))
