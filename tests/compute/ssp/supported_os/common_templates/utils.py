@@ -469,8 +469,7 @@ def validate_user_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_po
 
 def validate_os_info_vmi_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
     host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
-    assert vmi_info, "VMI doesn't have guest agent data"
+    vmi_info = wait_for_guest_os_info(vmi=vm.vmi)
     linux_info = get_linux_os_info(rrmngmnt_host=host)["os"]
     del linux_info["machine"]  # VMI describe doesn't have machine info
     linux_info["version"] = linux_info["version"].split(" ")[0]
@@ -514,6 +513,7 @@ def validate_fs_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
         )
         return virtctl_info, cnv_info, libvirt_info, windows_info
 
+    virtctl_info = cnv_info = libvirt_info = windows_info = None
     fs_info_sampler = TimeoutSampler(
         timeout=330,
         sleep=30,
@@ -608,8 +608,8 @@ def get_virtctl_os_info(vm):
     }
     """
     cmd = ["guestosinfo", vm.name]
-    _, out = run_virtctl_command(command=cmd, namespace=vm.namespace)
-    data = json.loads(out)
+    virtctl_output = wait_for_virtctl_output(cmd=cmd, namespace=vm.namespace)
+    data = json.loads(virtctl_output)
     # virtctl gusetosinfo also returns filesystem and user info (if any active user is logged in)
     # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
     # fsInfo and userList values are checked in other tests
@@ -752,8 +752,8 @@ def get_virtctl_fs_info(vm):
     }
     """
     cmd = ["fslist", vm.name]
-    _, out = run_virtctl_command(command=cmd, namespace=vm.namespace)
-    return guest_agent_disk_info_parser(disk_info=json.loads(out)["items"])
+    virtctl_output = wait_for_virtctl_output(cmd=cmd, namespace=vm.namespace)
+    return guest_agent_disk_info_parser(disk_info=json.loads(virtctl_output)["items"])
 
 
 def get_cnv_fs_info(vm):
@@ -834,8 +834,8 @@ def get_windows_fs_info(vm, winrm_pod, helper_vm=False):
 
 def get_virtctl_user_info(vm):
     cmd = ["userlist", vm.name]
-    _, out = run_virtctl_command(command=cmd, namespace=vm.namespace)
-    for user in json.loads(out)["items"]:
+    virtctl_output = wait_for_virtctl_output(cmd=cmd, namespace=vm.namespace)
+    for user in json.loads(virtctl_output)["items"]:
         return {
             "userName": user["userName"],
             "loginTime": int(user["loginTime"]),
@@ -891,6 +891,7 @@ def guest_agent_disk_info_parser(disk_info):
 
 
 def check_guest_agent_sampler_data(sampler):
+    virtctl_info = cnv_info = libvirt_info = linux_info = None
     try:
         for virtctl_info, cnv_info, libvirt_info, linux_info in sampler:
             if virtctl_info:
@@ -924,3 +925,37 @@ def windows_disk_space_parser(fsinfo_list):
     used = round((int(disk_space["total"]) - int(disk_space["free"])) / 1000 ** 3)
     total = round(int(disk_space["total"]) / 1000 ** 3)
     return f"used {used}, total {total}\n"
+
+
+# TODO: Remove once bug 1886453 is fixed
+def wait_for_virtctl_output(cmd, namespace):
+    for res, output in TimeoutSampler(
+        timeout=360,
+        sleep=5,
+        func=run_virtctl_command,
+        command=cmd,
+        namespace=namespace,
+    ):
+        if res:
+            return output
+        else:
+            LOGGER.warning("Retrying to get guest-agent info via virtctl")
+
+
+# TODO: Remove once bug 1886453 is fixed
+def wait_for_guest_os_info(vmi):
+    sampler = TimeoutSampler(
+        timeout=360,
+        sleep=5,
+        func=lambda: vmi.instance.status.guestOSInfo,
+    )
+
+    try:
+        for sample in sampler:
+            if sample.get("id"):
+                return dict(sample)
+            else:
+                LOGGER.warning("Retrying to fetch VMI guestOSInfo")
+    except TimeoutExpiredError:
+        LOGGER.error("VMI doesn't have guest agent data")
+        raise
