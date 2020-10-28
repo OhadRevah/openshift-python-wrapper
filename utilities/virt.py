@@ -635,6 +635,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         attached_secret=None,
         termination_grace_period=False,
         diskless_vm=False,
+        run_strategy=None,
     ):
         super().__init__(
             name=name,
@@ -654,6 +655,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             data_volume=data_volume,
             data_volume_template=data_volume_template,
             diskless_vm=diskless_vm,
+            run_strategy=run_strategy,
         )
         self.template_labels = labels
         self.data_volume = data_volume
