@@ -128,25 +128,34 @@ def _prepare_test_dir_log(item, prefix):
 
 
 def pytest_addoption(parser):
-    parser.addoption(
+    matrix_group = parser.getgroup(name="Matrix")
+    upgrade_group = parser.getgroup(name="Upgrade")
+    workers_group = parser.getgroup(name="Workers")
+
+    # Upgrade addoption
+    upgrade_group.addoption(
         "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
     )
-    parser.addoption("--cnv-version", help="CNV version to upgrade to")
-    parser.addoption("--ocp-image", help="OCP image to upgrade to")
-    parser.addoption("--storage-class-matrix", help="Storage class matrix to use")
-    parser.addoption("--bridge-device-matrix", help="Bridge device matrix to use")
-    parser.addoption("--rhel-os-matrix", help="RHEL OS matrix to use")
-    parser.addoption("--windows-os-matrix", help="Windows OS matrix to use")
-    parser.addoption("--fedora-os-matrix", help="Fedora OS matrix to use")
-    parser.addoption(
-        "--rhel7-workers",
-        help="If running on cluster with RHEL7 workers",
-        action="store_true",
-    )
-    parser.addoption(
+    upgrade_group.addoption("--cnv-version", help="CNV version to upgrade to")
+    upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
+    upgrade_group.addoption(
         "--upgrade_resilience",
         action="store_true",
         help="If provided, run upgrade with disruptions",
+    )
+
+    # Matrix addoption
+    matrix_group.addoption("--storage-class-matrix", help="Storage class matrix to use")
+    matrix_group.addoption("--bridge-device-matrix", help="Bridge device matrix to use")
+    matrix_group.addoption("--rhel-os-matrix", help="RHEL OS matrix to use")
+    matrix_group.addoption("--windows-os-matrix", help="Windows OS matrix to use")
+    matrix_group.addoption("--fedora-os-matrix", help="Fedora OS matrix to use")
+
+    # Workers addoption
+    workers_group.addoption(
+        "--rhel7-workers",
+        help="If running on cluster with RHEL7 workers",
+        action="store_true",
     )
 
 

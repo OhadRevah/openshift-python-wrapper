@@ -54,6 +54,7 @@ fcfn_exclude_functions =
     random,
     pytestconfig,
     prev_eq_func,
+    addoption,
 
 enable-extensions =
     PID,
