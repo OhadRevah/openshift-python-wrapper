@@ -33,6 +33,10 @@ To run the tests with unmerged merged-request from ocp-python-wrapper use the sc
 python install-resources-mr.py -b <unmerged branch name to fetch>
 ```
 
+## Cluster requiremets
+When running Windows tests, the cluster should have at least 16G RAM (XL deployment)
+and 50G volume size (default deployment configuration).
+
 ## Prerequirements
 
 Following binaries are needed:
