@@ -68,6 +68,15 @@ class Source:
             "network_interfaces": 1,
             "volumes": 1,
         },
+        "cirros2": {
+            "name": "v2v-cirros-vm-for-tests2",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 1,
+        },
         "cirros-no-nics": {
             "name": "v2v-cirros-vm-no-nics",
             "cpu_cores": 1,

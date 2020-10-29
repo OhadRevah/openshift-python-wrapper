@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 
 import ovirtsdk4.types
 import pytest
@@ -16,6 +17,46 @@ from .utils import ResourceMappingItem, Source
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _test_import_vm(
+    name,
+    namespace,
+    provider_credentials_secret_name,
+    provider_credentials_secret_namespace,
+    vm_name,
+    cluster_name,
+    target_vm_name,
+    provider_data,
+    provider_type,
+    vm_config,
+    start_vm=True,
+    provider=None,
+    provider_mappings=None,
+):
+    with import_vm(
+        name=name,
+        namespace=namespace,
+        provider_credentials_secret_name=provider_credentials_secret_name,
+        provider_credentials_secret_namespace=provider_credentials_secret_namespace,
+        vm_name=vm_name,
+        cluster_name=cluster_name,
+        target_vm_name=target_vm_name,
+        start_vm=start_vm,
+        provider_type=provider_type,
+        provider_mappings=provider_mappings,
+    ) as vmimport:
+        vmimport.wait(
+            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
+        )
+        vmimport.vm.vmi.wait_until_running()
+        check_cnv_vm_config(
+            vm=vmimport.vm,
+            provider=provider,
+            provider_data=provider_data,
+            source_vm_name=vm_name,
+            expected_vm_config=vm_config,
+        )
 
 
 def import_name(vm_name):
@@ -465,3 +506,36 @@ def test_vm_import_no_mappings(
             source_vm_name=vm_name,
             expected_vm_config=vm_config,
         )
+
+
+@pytest.mark.polarion("CNV-4397")
+def test_two_vms_parallel_import(
+    namespace, provider_data, provider, secret, providers_mapping_network_only
+):
+    vmimport_jobs = []
+    for vm in ["cirros", "cirros2"]:
+        vm_name = Source.vms[vm]["name"]
+        vm_import_kwargs = {
+            "name": import_name(vm_name=vm_name),
+            "namespace": namespace.name,
+            "provider_credentials_secret_name": secret.name,
+            "provider_credentials_secret_namespace": secret.namespace,
+            "vm_name": vm_name,
+            "cluster_name": provider_data["cluster_name"],
+            "target_vm_name": vm_name,
+            "provider_data": provider_data,
+            "provider_type": provider_data["type"],
+            "vm_config": Source.vms[vm],
+            "start_vm": True,
+            "provider": provider,
+            "provider_mappings": providers_mapping_network_only,
+        }
+        vmimport_proc = multiprocessing.Process(
+            target=_test_import_vm, kwargs=vm_import_kwargs
+        )
+        vmimport_jobs.append(vmimport_proc)
+        vmimport_proc.start()
+
+    for process in vmimport_jobs:
+        process.join()
+    assert set([process.exitcode for process in vmimport_jobs]) == {0}
