@@ -32,6 +32,7 @@ ovirt-python-sdk = "*"
 click = "*"
 ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper.git"}
 docker="*"
+pyvmomi="*"
 
 [requires]
 python_version = "3"

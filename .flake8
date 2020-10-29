@@ -55,6 +55,7 @@ fcfn_exclude_functions =
     pytestconfig,
     prev_eq_func,
     addoption,
+    CreateContainerView,
 
 enable-extensions =
     PID,

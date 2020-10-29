@@ -10,9 +10,11 @@ from subprocess import STDOUT, check_output
 import pytest
 import utilities.network
 import yaml
-from providers.rhv import rhv
+from providers import providers
 from resources.secret import Secret
+from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import ResourceMapping
+from tests.network.utils import network_device
 from tests.vmimport import utils
 from tests.vmimport.utils import ProviderMappings, ResourceMappingItem, Source
 
@@ -38,7 +40,32 @@ def bridge_network(namespace):
 
 
 @pytest.fixture(scope="module")
+def vm_import_bridge_device(
+    utility_pods,
+    schedulable_nodes,
+    skip_if_no_multinic_nodes,
+    nodes_available_nics,
+    bridge_network,
+):
+    ports = [
+        utilities.network.get_hosts_common_ports(
+            nodes_available_nics=nodes_available_nics
+        )[0]
+    ]
+    with network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
+        nncp_name=f"{bridge_network.name}-nncp",
+        interface_name=bridge_network.bridge_name,
+        network_utility_pods=utility_pods,
+        nodes=schedulable_nodes,
+        ports=ports,
+    ) as iface:
+        yield iface
+
+
+@pytest.fixture(scope="module")
 def cert_file(tmpdir_factory, provider_data):
+    cert = None
     provider_type = provider_data["type"]
     if provider_type == "ovirt":
         cert = check_output(
@@ -63,21 +90,26 @@ def cert_file(tmpdir_factory, provider_data):
 def provider(provider_data, cert_file):
     """currently, only rhv providers are supported"""
     """the tests can still run against vmware with some missing checks"""
+    _provider = None
+    _type = provider_data["type"]
+    if _type == "ovirt":
+        _provider = providers.RHV
 
-    if provider_data["type"] == "rhv":
-        with rhv.RHV(
-            url=provider_data["api_url"],
-            username=provider_data["username"],
-            password=provider_data["password"],
-            ca_file=cert_file,
-        ) as provider:
-            if not provider.api.test():
-                pytest.skip(
-                    msg=f"Skipping VM import tests: oVirt {provider.url} is not available."
-                )
-            yield provider
-    else:
+    if _type == "vmware":
+        # TODO: set 'provider = providers.VMWare' when VMWare implemented
         yield
+
+    with _provider(
+        url=provider_data["api_url"],
+        username=provider_data["username"],
+        password=provider_data["password"],
+        ca_file=cert_file,
+    ) as provider:
+        if not provider.test:
+            pytest.skip(
+                msg=f"Skipping VM import tests: {_type} {provider.url} is not available."
+            )
+        yield provider
 
 
 @pytest.fixture(scope="module")
@@ -140,3 +172,12 @@ def resource_mapping(request, namespace, pod_network, provider_data):
         },
     ) as resource_mapping:
         yield resource_mapping
+
+
+@pytest.fixture()
+def no_vms_in_namespace(admin_client, namespace):
+    yield
+    for vm in VirtualMachine.get(dyn_client=admin_client, namespace=namespace.name):
+        if vm.vmi.status == vm.vmi.Status.RUNNING:
+            vm.stop(wait=True)
+        vm.delete(wait=True)

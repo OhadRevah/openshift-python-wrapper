@@ -150,6 +150,7 @@ def pytest_addoption(parser):
     matrix_group.addoption("--rhel-os-matrix", help="RHEL OS matrix to use")
     matrix_group.addoption("--windows-os-matrix", help="Windows OS matrix to use")
     matrix_group.addoption("--fedora-os-matrix", help="Fedora OS matrix to use")
+    matrix_group.addoption("--provider-matrix", help="External provider matrix to use")
 
     # Workers addoption
     workers_group.addoption(
