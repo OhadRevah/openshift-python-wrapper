@@ -51,12 +51,12 @@ class TestUpgrade:
 
     @pytest.mark.polarion("CNV-4208")
     @pytest.mark.run(after="test_migration_before_upgrade")
-    def test_vm_ssh_before_upgrade(self, schedulable_node_ips, vms_for_upgrade):
+    def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             enable_ssh_service_in_vm(vm=vm, console_impl=console.RHEL)
             assert check_ssh_connection(
-                ip=list(schedulable_node_ips.values())[0],
-                port=vm.ssh_node_port,
+                ip=vm.ssh_service.service_ip,
+                port=vm.ssh_service.service_port,
                 console_impl=console.RHEL,
             ), "Failed to login via SSH"
 
@@ -174,11 +174,11 @@ class TestUpgrade:
 
     @pytest.mark.polarion("CNV-4209")
     @pytest.mark.run(after="test_is_vm_running_after_upgrade")
-    def test_vm_ssh_after_upgrade(self, schedulable_node_ips, vms_for_upgrade):
+    def test_vm_ssh_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert check_ssh_connection(
-                ip=list(schedulable_node_ips.values())[0],
-                port=vm.ssh_node_port,
+                ip=vm.ssh_service.service_ip,
+                port=vm.ssh_service.service_port,
                 console_impl=console.RHEL,
             ), "Failed to login via SSH"
 

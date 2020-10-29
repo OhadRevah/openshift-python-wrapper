@@ -170,8 +170,8 @@ def http_service(namespace, running_vma, running_vmb):
     # before vmi migration.
     http_port_accessible(
         vm=running_vma,
-        server_ip=running_vmb.custom_service_ip,
-        server_port=running_vmb.custom_service_port,
+        server_ip=running_vmb.custom_service.service_ip,
+        server_port=running_vmb.custom_service.service_port,
     )
 
 
@@ -284,6 +284,6 @@ def test_migration_with_masquerade(
         assert running_vmb.vmi.instance.status.migrationState.completed
         http_port_accessible(
             vm=running_vma,
-            server_ip=running_vmb.custom_service_ip,
-            server_port=running_vmb.custom_service_port,
+            server_ip=running_vmb.custom_service.service_ip,
+            server_port=running_vmb.custom_service.service_port,
         )

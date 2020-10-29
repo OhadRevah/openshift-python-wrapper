@@ -80,7 +80,7 @@ def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):
 
 
 def get_vm_ssh_port(rhel7_workers, vm):
-    return 22 if rhel7_workers else vm.ssh_node_port
+    return 22 if rhel7_workers else vm.ssh_service.service_port
 
 
 def check_telnet_connection(ip, port):

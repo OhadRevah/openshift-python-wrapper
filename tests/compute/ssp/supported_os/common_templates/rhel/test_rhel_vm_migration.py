@@ -61,8 +61,8 @@ def test_migrate_vm_rhel(
     )
 
     assert check_ssh_connection(
-        ip=list(schedulable_node_ips.values())[0],
-        port=vm_instance_from_template_multi_storage_scope_function.ssh_node_port,
+        ip=vm_instance_from_template_multi_storage_scope_function.ssh_service.service_ip,
+        port=vm_instance_from_template_multi_storage_scope_function.ssh_service.service_port,
         console_impl=console.RHEL,
     ), "Failed to login via SSH"
 
@@ -75,7 +75,7 @@ def test_migrate_vm_rhel(
 
     # Verify successful SSH connection after migration
     assert check_ssh_connection(
-        ip=list(schedulable_node_ips.values())[0],
-        port=vm_instance_from_template_multi_storage_scope_function.ssh_node_port,
+        ip=vm_instance_from_template_multi_storage_scope_function.ssh_service.service_ip,
+        port=vm_instance_from_template_multi_storage_scope_function.ssh_service.service_port,
         console_impl=console.RHEL,
     ), "Failed to login via SSH after migration"

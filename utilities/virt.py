@@ -219,10 +219,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.image = image
         self.ssh = ssh
         self.ssh_service = None
-        self.ssh_node_port = None
         self.custom_service = None
-        self.custom_service_port = None
-        self.custom_service_ip = None
         self.network_model = network_model
         self.network_multiqueue = network_multiqueue
         self.data_volume_template = data_volume_template
@@ -557,15 +554,16 @@ class VirtualMachineForTests(VirtualMachine):
         return spec
 
     def ssh_enable(self):
-        self.ssh_service = SSHServiceForVirtualMachineForTests(
-            name=f"ssh-{self.name}",
+        # To use the service: ssh_service.service_ip and ssh_service.service_port
+        # Name is restricted to 63 characters
+        self.ssh_service = ServiceForVirtualMachineForTests(
+            name=f"ssh-{self.name}"[:63],
             namespace=self.namespace,
-            vm_name=self.name,
+            vmi=self.vmi,
+            port=22,
+            service_type=Service.Type.NODE_PORT,
         )
-        self.ssh_service.create(wait=True)
-        self.ssh_node_port = self.ssh_service.instance.attributes.spec.ports[0][
-            camelcase_to_mixedcase(camelcase_str=Service.Type.NODE_PORT)
-        ]
+        self.ssh_service.create_svc()
 
     def custom_service_enable(
         self, service_name, port, service_type=Service.Type.CLUSTER_IP, service_ip=None
@@ -573,30 +571,17 @@ class VirtualMachineForTests(VirtualMachine):
         """
         service_type is set with K8S default service type (ClusterIP)
         service_ip - relevant for node port; default will be set to vm node IP
+        To use the service: custom_service.service_ip and custom_service.service_port
         """
-        self.custom_service = CustomServiceForVirtualMachineForTests(
-            name=f"{service_name}-{self.name}",
+        self.custom_service = ServiceForVirtualMachineForTests(
+            name=f"{service_name}-{self.name}"[:63],
             namespace=self.namespace,
-            vm_name=self.name,
+            vmi=self.vmi,
             port=port,
             service_type=service_type,
+            target_ip=service_ip,
         )
-        self.custom_service.create(wait=True)
-
-        if service_type == Service.Type.CLUSTER_IP:
-            self.custom_service_port = (
-                self.custom_service.instance.attributes.spec.ports[0]["port"]
-            )
-            self.custom_service_ip = self.custom_service.instance.spec.clusterIP
-
-        if service_type == Service.Type.NODE_PORT:
-            node_port = camelcase_to_mixedcase(camelcase_str=service_type)
-            self.custom_service_port = (
-                self.custom_service.instance.attributes.spec.ports[0][node_port]
-            )
-            self.custom_service_ip = service_ip or get_schedulable_nodes_ips(
-                nodes=[self.instance.node]
-            )
+        self.custom_service.create_svc()
 
     def get_storage_configuration(self):
         node_annotation = "kubevirt.io/provisionOnNode"
@@ -867,12 +852,12 @@ def run_virtctl_command(command, namespace=None):
     virtctl_cmd = ["virtctl"]
     kubeconfig = os.getenv("KUBECONFIG")
     if namespace:
-        virtctl_cmd = virtctl_cmd + ["-n", namespace]
+        virtctl_cmd += ["-n", namespace]
 
     if kubeconfig:
-        virtctl_cmd = virtctl_cmd + ["--kubeconfig", kubeconfig]
+        virtctl_cmd += ["--kubeconfig", kubeconfig]
 
-    virtctl_cmd = virtctl_cmd + command
+    virtctl_cmd += command
     return run_command(command=virtctl_cmd)
 
 
@@ -892,38 +877,56 @@ def kubernetes_taint_exists(node):
         )
 
 
-class SSHServiceForVirtualMachineForTests(Service):
-    def __init__(self, name, namespace, vm_name, teardown=True):
+class ServiceForVirtualMachineForTests(Service):
+    def __init__(
+        self,
+        name,
+        namespace,
+        vmi,
+        port,
+        service_type=Service.Type.CLUSTER_IP,
+        target_ip=None,
+        teardown=True,
+    ):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
-        self._vm_name = vm_name
-
-    def to_dict(self):
-        res = super().to_dict()
-        res["spec"] = {
-            "ports": [{"port": 22, "protocol": "TCP"}],
-            "selector": {"kubevirt.io/domain": self._vm_name},
-            "sessionAffinity": "None",
-            "type": Service.Type.NODE_PORT,
-        }
-        return res
-
-
-class CustomServiceForVirtualMachineForTests(Service):
-    def __init__(self, name, namespace, vm_name, port, service_type, teardown=True):
-        super().__init__(name=name, namespace=namespace, teardown=teardown)
-        self._vm_name = vm_name
+        self.vmi = vmi
+        self.vmi_name = vmi.name
         self.port = port
         self.service_type = service_type
+        self.target_ip = target_ip
+        self.service_ip = None
+        self.service_port = None
 
     def to_dict(self):
         res = super().to_dict()
         res["spec"] = {
             "ports": [{"port": self.port, "protocol": "TCP"}],
-            "selector": {"kubevirt.io/domain": self._vm_name},
+            "selector": {"kubevirt.io/domain": self.vmi_name},
             "sessionAffinity": "None",
             "type": self.service_type,
         }
         return res
+
+    def set_target_ip_port(self):
+        if self.service_type == Service.Type.CLUSTER_IP:
+            self.service_ip = self.instance.spec.clusterIP
+            self.service_port = self.instance.attributes.spec.ports[0]["port"]
+
+        if self.service_type == Service.Type.NODE_PORT:
+            node_port = camelcase_to_mixedcase(camelcase_str=self.service_type)
+            self.service_ip = (
+                self.target_ip
+                or get_schedulable_nodes_ips(nodes=[self.vmi.node])[self.vmi.node.name]
+            )
+            self.service_port = self.instance.attributes.spec.ports[0][node_port]
+
+    def create_svc(self):
+        self.create(wait=True)
+        self.set_target_ip_port()
+        return self
+
+    def __enter__(self):
+        return self.create_svc()
 
 
 class Prometheus(object):
