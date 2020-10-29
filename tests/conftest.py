@@ -20,6 +20,7 @@ import rrmngmnt
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
+from resources.cluster_role import ClusterRole
 from resources.cluster_service_version import ClusterServiceVersion
 from resources.configmap import ConfigMap
 from resources.daemonset import DaemonSet
@@ -35,6 +36,7 @@ from resources.persistent_volume import PersistentVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.resource import TIMEOUT, ResourceEditor
+from resources.role_binding import RoleBinding
 from resources.secret import Secret
 from resources.service_account import ServiceAccount
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
@@ -1529,3 +1531,42 @@ def nodes_common_cpu_model(utility_pods):
             node_cpu_index = cpus_models_list.index(node_cpu_model)
             cpu_index = node_cpu_index if node_cpu_index > cpu_index else cpu_index
         return cpus_models_list[cpu_index]
+
+
+@pytest.fixture(scope="session")
+def golden_images_namespace(
+    admin_client,
+):
+    for ns in Namespace.get(
+        name=py_config["golden_images_namespace"],
+        dyn_client=admin_client,
+    ):
+        return ns
+
+
+@pytest.fixture(scope="session")
+def golden_images_cluster_role_edit(
+    admin_client,
+):
+    for cluster_role in ClusterRole.get(
+        name="os-images.kubevirt.io:edit",
+        dyn_client=admin_client,
+    ):
+        return cluster_role
+
+
+@pytest.fixture()
+def golden_images_edit_rolebinding(
+    golden_images_namespace,
+    golden_images_cluster_role_edit,
+):
+    with RoleBinding(
+        name="role-bind-create-dv",
+        namespace=golden_images_namespace.name,
+        subjects_kind="User",
+        subjects_name="unprivileged-user",
+        subjects_namespace=golden_images_namespace.name,
+        role_ref_kind=golden_images_cluster_role_edit.kind,
+        role_ref_name=golden_images_cluster_role_edit.name,
+    ) as role_binding:
+        yield role_binding
