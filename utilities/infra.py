@@ -10,6 +10,9 @@ from resources.resource import ResourceEditor
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
 BASE_IMAGES_DIR = "cnv-tests"
+NON_EXIST_URL = "https://noneexist.com"
+EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
+INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
 
 
 class Images:
@@ -135,6 +138,11 @@ def validate_file_exists_in_url(url):
 
     if file_name not in str(response.content):
         raise FileNotFoundInUrlError(url_request=response, file_name=file_name)
+
+
+def url_excluded_from_validation(url):
+    # Negative URL test cases or internal http server
+    return url in EXCLUDED_FROM_URL_VALIDATION or INTERNAL_HTTP_SERVER_ADDRESS in url
 
 
 def get_schedulable_nodes_ips(nodes):

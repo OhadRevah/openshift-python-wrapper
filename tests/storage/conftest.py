@@ -25,7 +25,7 @@ from tests.storage.utils import (
     smart_clone_supported_by_sc,
     virtctl_upload_dv,
 )
-from utilities.infra import Images, get_cert
+from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, Images, get_cert
 from utilities.storage import HttpDeployment
 
 
@@ -83,11 +83,10 @@ def internal_http_service():
 
 @pytest.fixture(scope="session")
 def images_internal_http_server(internal_http_deployment, internal_http_service):
-    server_address = "internal-http.kube-system"
     return {
-        "http": f"http://{server_address}/",
-        "https": f"https://{server_address}/",
-        "http_auth": f"http://{server_address}:81/",
+        "http": f"http://{INTERNAL_HTTP_SERVER_ADDRESS}/",
+        "https": f"https://{INTERNAL_HTTP_SERVER_ADDRESS}/",
+        "http_auth": f"http://{INTERNAL_HTTP_SERVER_ADDRESS}:81/",
     }
 
 

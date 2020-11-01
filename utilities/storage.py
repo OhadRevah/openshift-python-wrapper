@@ -8,11 +8,10 @@ from contextlib import contextmanager
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
-from utilities.infra import validate_file_exists_in_url
+from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 
 
 LOGGER = logging.getLogger(__name__)
-NON_EXIST_URL = "https://noneexist.com"
 
 
 @contextmanager
@@ -35,7 +34,7 @@ def create_dv(
     teardown=True,
 ):
     if source in ("http", "https"):
-        if url != NON_EXIST_URL:
+        if not url_excluded_from_validation(url):
             # Make sure URL and the file exists
             validate_file_exists_in_url(url=url)
 
