@@ -169,7 +169,9 @@ class VirtualMachineForTests(VirtualMachine):
         cpu_cores=None,
         cpu_threads=None,
         cpu_model=None,
-        memory=None,
+        memory_requests=None,
+        memory_limits=None,
+        memory_guest=None,
         label=None,
         cloud_init_data=None,
         machine_type=None,
@@ -208,7 +210,9 @@ class VirtualMachineForTests(VirtualMachine):
         self.cpu_cores = cpu_cores
         self.cpu_threads = cpu_threads
         self.cpu_model = cpu_model
-        self.memory = memory
+        self.memory_requests = memory_requests
+        self.memory_limits = memory_limits
+        self.memory_guest = memory_guest
         self.label = label
         self.cloud_init_data = cloud_init_data
         self.machine_type = machine_type
@@ -278,6 +282,7 @@ class VirtualMachineForTests(VirtualMachine):
 
         spec = self.update_vm_network_configuration(spec=spec)
         spec = self.update_vm_cpu_configuration(spec=spec)
+        spec = self.update_vm_memory_configuration(spec=spec)
 
         if self.cloud_init_data:
             spec = self.update_vm_cloud_init_data(spec=spec)
@@ -289,12 +294,6 @@ class VirtualMachineForTests(VirtualMachine):
             spec.setdefault("volumes", []).append(
                 {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
             )
-
-        # Memory must be set.
-        if self.memory or not self.body:
-            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
-                "requests", {}
-            )["memory"] = (self.memory or "64M")
 
         if self.label:
             # Windows templates are missing spec -> template -> metadata -> labels path
@@ -334,6 +333,24 @@ class VirtualMachineForTests(VirtualMachine):
             spec.get("domain", {}).get("devices", {}).pop("disks", None)
 
         return res
+
+    def update_vm_memory_configuration(self, spec):
+        if self.memory_requests:
+            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
+                "requests", {}
+            )["memory"] = self.memory_requests
+
+        if self.memory_limits:
+            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
+                "limits", {}
+            )["memory"] = self.memory_limits
+
+        if self.memory_guest:
+            spec.setdefault("domain", {}).setdefault("memory", {})[
+                "guest"
+            ] = self.memory_guest
+
+        return spec
 
     def update_vm_network_configuration(self, spec):
         iface_mac_number = random.randint(0, 255)
@@ -627,7 +644,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         vm_dict=None,
         cpu_threads=None,
         cpu_model=None,
-        memory=None,
+        memory_requests=None,
         network_model=None,
         network_multiqueue=None,
         cloud_init_data=None,
@@ -648,7 +665,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             network_multiqueue=network_multiqueue,
             cpu_threads=cpu_threads,
             cpu_model=cpu_model,
-            memory=memory,
+            memory_requests=memory_requests,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
             attached_secret=attached_secret,

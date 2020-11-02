@@ -1155,7 +1155,7 @@ def vm_instance_from_template(
         data_volume_template=data_volume_template,
         vm_dict=params.get("vm_dict"),
         cpu_threads=params.get("cpu_threads"),
-        memory=params.get("memory"),
+        memory_requests=params.get("memory_requests"),
         network_model=params.get("network_model"),
         network_multiqueue=params.get("network_multiqueue"),
         networks=network_configuration,

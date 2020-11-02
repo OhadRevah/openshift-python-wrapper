@@ -34,7 +34,7 @@ def efi_secureboot_vm(request, namespace, unprivileged_client, data_volume_scope
         client=unprivileged_client,
         data_volume=data_volume_scope_class,
         cpu_cores=VM_CPU,
-        memory=f"{VM_MEMORY}Gi",
+        memory_requests=f"{VM_MEMORY}Gi",
         smm_enabled=True,
         efi_params=request.param.get("efi_params"),
     ) as vm:

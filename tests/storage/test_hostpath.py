@@ -553,7 +553,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         with storage_utils.create_vm_from_dv(
             dv=target_dv,
             vm_name="fedora-vm",
-            memory="1Gi",
+            memory_requests="1Gi",
         ) as vm:
             wait_for_console(vm=vm, console_impl=console.Fedora)
 

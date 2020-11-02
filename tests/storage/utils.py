@@ -157,7 +157,7 @@ def create_vm_from_dv(
     image=None,
     start=True,
     node_selector=None,
-    memory=None,
+    memory_requests=None,
 ):
     with VirtualMachineForTests(
         name=vm_name,
@@ -165,7 +165,7 @@ def create_vm_from_dv(
         data_volume=dv,
         image=image,
         node_selector=node_selector,
-        memory=memory,
+        memory_requests=memory_requests,
     ) as vm:
         if start:
             vm.start(wait=True)

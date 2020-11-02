@@ -94,7 +94,7 @@ def vm_object_from_template(
         labels=labels,
         vm_dict=param_dict.get("vm_dict"),
         cpu_threads=param_dict.get("cpu_threads"),
-        memory=param_dict.get("memory"),
+        memory_requests=param_dict.get("memory_requests"),
         network_model=network_model,
         network_multiqueue=network_multiqueue,
         networks=network_configuration if network_configuration else None,
