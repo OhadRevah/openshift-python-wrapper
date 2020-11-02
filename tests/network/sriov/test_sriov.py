@@ -6,9 +6,10 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.sriov_network import SriovNetwork
 from resources.utils import TimeoutSampler
-from tests.network.utils import assert_no_ping, assert_ping_successful
+from tests.network.utils import assert_no_ping
 from utilities import console
 from utilities.network import (
+    assert_ping_successful,
     cloud_init_network_data,
     get_vmi_ip_v4_by_name,
     sriov_network_dict,

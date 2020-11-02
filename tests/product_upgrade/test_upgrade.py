@@ -4,9 +4,8 @@ from ipaddress import ip_interface
 import pytest
 import tests.product_upgrade.utils as upgrade_utils
 from resources.datavolume import DataVolume
-from tests.network.utils import assert_ping_successful
 from utilities import console
-from utilities.network import get_vmi_mac_address_by_iface_name
+from utilities.network import assert_ping_successful, get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     check_ssh_connection,
     enable_ssh_service_in_vm,

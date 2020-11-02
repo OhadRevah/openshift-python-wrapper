@@ -4,9 +4,9 @@ VM to VM connectivity
 from collections import OrderedDict
 
 import pytest
-from tests.network.utils import assert_ping_successful
 from utilities.network import (
     OVS,
+    assert_ping_successful,
     cloud_init_network_data,
     get_vmi_ip_v4_by_name,
     network_nad,

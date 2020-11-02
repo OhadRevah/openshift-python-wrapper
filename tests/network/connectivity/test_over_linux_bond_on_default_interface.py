@@ -7,6 +7,7 @@ import subprocess
 
 import pytest
 import tests.network.utils as network_utils
+import utilities.network
 from resources.utils import TimeoutSampler
 from utilities.network import BondNodeNetworkConfigurationPolicy, get_hosts_common_ports
 from utilities.virt import (
@@ -157,7 +158,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
             [lbodi_running_vma, lbodi_running_vmb],
             [vmb_ip, vma_ip],
         ):
-            network_utils.assert_ping_successful(
+            utilities.network.assert_ping_successful(
                 src_vm=vm,
                 dst_ip=ip,
             )

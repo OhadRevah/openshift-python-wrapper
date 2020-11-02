@@ -4,7 +4,7 @@ VM to VM connectivity
 from ipaddress import ip_interface
 
 import pytest
-import tests.network.utils as network_utils
+import utilities.network
 from pytest_testconfig import config as py_config
 from tests.network.connectivity import utils
 from utilities.virt import (
@@ -84,7 +84,7 @@ def test_connectivity_over_pod_network(
     """
     Check connectivity
     """
-    network_utils.assert_ping_successful(
+    utilities.network.assert_ping_successful(
         src_vm=pod_net_running_vma,
         dst_ip=ip_interface(pod_net_running_vmb.vmi.interfaces[0]["ipAddress"]).ip,
     )

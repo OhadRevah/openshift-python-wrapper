@@ -1,12 +1,10 @@
 import contextlib
 import logging
-import re
 
 from resources.node_network_state import NodeNetworkState
 from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
-from utilities import console
-from utilities.network import NETWORK_DEVICE_TYPE, SRIOV
+from utilities.network import NETWORK_DEVICE_TYPE, SRIOV, console_ping
 
 
 LOGGER = logging.getLogger(__name__)
@@ -23,26 +21,8 @@ EOF
 """
 
 
-def _console_ping(src_vm, dst_ip, packetsize=None):
-    ping_cmd = f"ping -w 3 {dst_ip}"
-    if packetsize:
-        ping_cmd += f" -s {packetsize} -M do"
-    with console.Fedora(vm=src_vm) as src_vm_console:
-        src_vm_console.sendline(ping_cmd)
-        while True:
-            line = src_vm_console.readline()
-            m = re.search(b"([0-9]+)% packet loss, ", line)
-            if m is not None:
-                LOGGER.info(f"ping returned {m.string.strip()}")
-                return m.groups()
-
-
-def assert_ping_successful(src_vm, dst_ip, packetsize=None):
-    assert _console_ping(src_vm, dst_ip, packetsize)[0] == b"0"
-
-
 def assert_no_ping(src_vm, dst_ip, packetsize=None):
-    assert _console_ping(src_vm, dst_ip, packetsize)[0] == b"100"
+    assert console_ping(src_vm, dst_ip, packetsize)[0] == b"100"
 
 
 def running_vmi(vm):

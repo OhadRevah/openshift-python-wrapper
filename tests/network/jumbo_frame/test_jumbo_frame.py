@@ -4,10 +4,11 @@ VM to VM connectivity with  custom MTU (jumbo frame)
 from collections import OrderedDict
 
 import pytest
-from tests.network.utils import assert_no_ping, assert_ping_successful, network_device
+from tests.network.utils import assert_no_ping, network_device
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
+    assert_ping_successful,
     cloud_init_network_data,
     get_hosts_common_ports,
     get_vmi_ip_v4_by_name,

@@ -2,10 +2,9 @@ import contextlib
 
 import pytest
 from resources.utils import TimeoutSampler
-from tests.network.utils import assert_ping_successful
 from utilities.console import Fedora
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.network import get_vmi_ip_v4_by_name
+from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 
 
 CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge

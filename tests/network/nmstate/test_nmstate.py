@@ -2,7 +2,7 @@ import logging
 from ipaddress import ip_interface
 
 import pytest
-from tests.network.utils import assert_ping_successful
+from utilities.network import assert_ping_successful
 
 
 LOGGER = logging.getLogger(__name__)

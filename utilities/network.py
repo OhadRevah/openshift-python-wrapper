@@ -3,6 +3,7 @@ import ipaddress
 import json
 import logging
 import random
+import re
 
 import netaddr
 from openshift.dynamic.exceptions import ConflictError
@@ -14,6 +15,7 @@ from resources.resource import sub_resource_level
 from resources.sriov_network import SriovNetwork
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+from utilities import console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -751,3 +753,21 @@ def cloud_init_network_data(data):
     network_data["networkData"].update(data)
 
     return network_data
+
+
+def console_ping(src_vm, dst_ip, packetsize=None):
+    ping_cmd = f"ping -w 3 {dst_ip}"
+    if packetsize:
+        ping_cmd += f" -s {packetsize} -M do"
+    with console.Fedora(vm=src_vm) as src_vm_console:
+        src_vm_console.sendline(ping_cmd)
+        while True:
+            line = src_vm_console.readline()
+            m = re.search(b"([0-9]+)% packet loss, ", line)
+            if m is not None:
+                LOGGER.info(f"ping returned {m.string.strip()}")
+                return m.groups()
+
+
+def assert_ping_successful(src_vm, dst_ip, packetsize=None):
+    assert console_ping(src_vm, dst_ip, packetsize)[0] == b"0"
