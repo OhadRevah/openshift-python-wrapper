@@ -24,6 +24,7 @@ from resources.utils import TimeoutSampler
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import (
+    PodWithPVC,
     create_dv,
     downloaded_image,
     get_images_external_http_server,
@@ -118,7 +119,7 @@ def hpp_daemonset():
 
 def verify_image_location_via_dv_pod_with_pvc(dv, worker_node):
     dv.wait()
-    with storage_utils.PodWithPVC(
+    with PodWithPVC(
         namespace=dv.namespace,
         name=f"{dv.name}-pod",
         pvc_name=dv.pvc.name,
@@ -331,7 +332,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
         pvc.wait_for_status(
             status=pvc.Status.PENDING, timeout=60, stop_status=pvc.Status.BOUND
         )
-        with storage_utils.PodWithPVC(
+        with PodWithPVC(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,
@@ -364,7 +365,7 @@ def test_hpp_pvc_specify_node_waitforfirstconsumer(
         assert_provision_on_node_annotation(
             pvc=pvc, node_name=worker_node1.name, type_="regular"
         )
-        with storage_utils.PodWithPVC(
+        with PodWithPVC(
             namespace=pvc.namespace,
             name=f"{pvc.name}-pod",
             pvc_name=pvc.name,

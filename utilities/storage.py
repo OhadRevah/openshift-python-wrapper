@@ -11,6 +11,7 @@ from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
 from resources.persistent_volume_claim import PersistentVolumeClaim
+from resources.pod import Pod
 from resources.storage_class import StorageClass
 from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 from utilities.virt import run_virtctl_command
@@ -331,6 +332,53 @@ class ErrorMsg:
     )
     CANNOT_CREATE_RESOURCE = r".*cannot create resource.*|.*has insufficient permissions in clone source namespace.*"
     CANNOT_DELETE_RESOURCE = r".*cannot delete resource.*|.*has insufficient permissions in clone source namespace.*"
+
+
+class PodWithPVC(Pod):
+    def __init__(self, name, namespace, pvc_name, volume_mode, teardown=True):
+        super().__init__(name=name, namespace=namespace, teardown=teardown)
+        self._pvc_name = pvc_name
+        self._volume_mode = volume_mode
+
+    def to_dict(self):
+        res = super().to_dict()
+
+        if self._volume_mode == DataVolume.VolumeMode.BLOCK:
+            volume_path = {
+                "volumeDevices": [
+                    {"devicePath": "/pvc/disk.img", "name": self._pvc_name}
+                ]
+            }
+        else:
+            volume_path = {
+                "volumeMounts": [{"mountPath": "/pvc", "name": self._pvc_name}]
+            }
+
+        res.update(
+            {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "runner",
+                            "image": "quay.io/openshift-cnv/qe-cnv-tests-net-util-container",
+                            "command": [
+                                "/bin/bash",
+                                "-c",
+                                "echo ok > /tmp/healthy && sleep INF",
+                            ],
+                            **volume_path,
+                        }
+                    ],
+                    "volumes": [
+                        {
+                            "name": self._pvc_name,
+                            "persistentVolumeClaim": {"claimName": self._pvc_name},
+                        }
+                    ],
+                }
+            }
+        )
+        return res
 
 
 def data_volume_template_dict(

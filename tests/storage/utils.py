@@ -86,53 +86,6 @@ def upload_token_request(storage_ns_name, pvc_name, data):
                 break
 
 
-class PodWithPVC(Pod):
-    def __init__(self, name, namespace, pvc_name, volume_mode, teardown=True):
-        super().__init__(name=name, namespace=namespace, teardown=teardown)
-        self._pvc_name = pvc_name
-        self._volume_mode = volume_mode
-
-    def to_dict(self):
-        res = super().to_dict()
-
-        if self._volume_mode == DataVolume.VolumeMode.BLOCK:
-            volume_path = {
-                "volumeDevices": [
-                    {"devicePath": "/pvc/disk.img", "name": self._pvc_name}
-                ]
-            }
-        else:
-            volume_path = {
-                "volumeMounts": [{"mountPath": "/pvc", "name": self._pvc_name}]
-            }
-
-        res.update(
-            {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "runner",
-                            "image": "quay.io/openshift-cnv/qe-cnv-tests-net-util-container",
-                            "command": [
-                                "/bin/bash",
-                                "-c",
-                                "echo ok > /tmp/healthy && sleep INF",
-                            ],
-                            **volume_path,
-                        }
-                    ],
-                    "volumes": [
-                        {
-                            "name": self._pvc_name,
-                            "persistentVolumeClaim": {"claimName": self._pvc_name},
-                        }
-                    ],
-                }
-            }
-        )
-        return res
-
-
 def check_disk_count_in_vm(vm):
     with console.Cirros(vm=vm) as vm_console:
         LOGGER.info("Check disk count.")
