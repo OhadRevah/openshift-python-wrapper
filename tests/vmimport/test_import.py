@@ -33,6 +33,8 @@ def _test_import_vm(
     start_vm=True,
     provider=None,
     provider_mappings=None,
+    resource_mapping_name=None,
+    resource_mapping_namespace=None,
 ):
     with import_vm(
         name=name,
@@ -45,6 +47,8 @@ def _test_import_vm(
         start_vm=start_vm,
         provider_type=provider_type,
         provider_mappings=provider_mappings,
+        resource_mapping_namespace=resource_mapping_namespace,
+        resource_mapping_name=resource_mapping_name,
     ) as vmimport:
         vmimport.wait(
             cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
@@ -63,7 +67,7 @@ def import_name(vm_name):
     return f"{vm_name}-import"
 
 
-def check_source_vm_status(provider, provider_data, source_vm_name, state):
+def wait_for_source_vm_status(provider, provider_data, source_vm_name, state):
     samples = TimeoutSampler(
         timeout=600,
         sleep=1,
@@ -207,31 +211,22 @@ def test_vm_import(
 ):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
-    cluster_name = provider_data["cluster_name"]
 
-    with import_vm(
+    _test_import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
         vm_name=vm_name,
-        cluster_name=cluster_name,
+        cluster_name=provider_data["cluster_name"],
         target_vm_name=vm_name,
-        start_vm=True,
-        provider_mappings=providers_mapping_network_only,
+        provider_data=provider_data,
         provider_type=provider_data["type"],
-    ) as vmimport:
-        vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
-        )
-        vmimport.vm.vmi.wait_until_running()
-        check_cnv_vm_config(
-            vm=vmimport.vm,
-            provider=provider,
-            provider_data=provider_data,
-            source_vm_name=vm_name,
-            expected_vm_config=vm_config,
-        )
+        vm_config=vm_config,
+        start_vm=True,
+        provider=provider,
+        provider_mappings=providers_mapping_network_only,
+    )
 
 
 @pytest.mark.polarion("CNV-4392")
@@ -285,31 +280,31 @@ def test_running_vm_import(
     secret,
     no_vms_in_namespace,
 ):
-    vm_name = Source.vms["cirros-running"]["name"]
-    cluster_name = provider_data["cluster_name"]
+    vm_config = Source.vms["cirros-running"]
+    vm_name = vm_config["name"]
 
-    with import_vm(
+    _test_import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
         provider_credentials_secret_namespace=secret.namespace,
         vm_name=vm_name,
-        cluster_name=cluster_name,
+        cluster_name=provider_data["cluster_name"],
         target_vm_name=vm_name,
-        start_vm=True,
-        provider_mappings=providers_mapping_network_only,
+        provider_data=provider_data,
         provider_type=provider_data["type"],
-    ) as vmimport:
-        vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY,
-        )
-        vmimport.vm.vmi.wait_until_running()
-        check_source_vm_status(
-            provider=provider,
-            provider_data=provider_data,
-            source_vm_name=vm_name,
-            state=ovirtsdk4.types.VmStatus.DOWN,
-        )
+        vm_config=vm_config,
+        start_vm=True,
+        provider=provider,
+        provider_mappings=providers_mapping_network_only,
+    )
+
+    wait_for_source_vm_status(
+        provider=provider,
+        provider_data=provider_data,
+        source_vm_name=vm_name,
+        state=ovirtsdk4.types.VmStatus.DOWN,
+    )
 
 
 @pytest.mark.parametrize(
@@ -422,7 +417,11 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     expected_vm_name = expected_vm_config["name"]
     source_data_volumes_config = expected_vm_config["volumes_details"]
     target_storage_class = "nfs"
-    with import_vm(
+
+    # we expect all volumes to have the same storage class
+    expected_vm_config["expected_storage_class"] = target_storage_class
+
+    _test_import_vm(
         name=import_name(vm_name=expected_vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
@@ -448,20 +447,9 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
         ),
         resource_mapping_name=resource_mapping.name,
         resource_mapping_namespace=resource_mapping.namespace,
-    ) as vmimport:
-        vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
-        )
-        vmimport.vm.vmi.wait_until_running()
-        # we expect all volumes to have the same storage class
-        expected_vm_config["expected_storage_class"] = target_storage_class
-        check_cnv_vm_config(
-            vm=vmimport.vm,
-            provider=provider,
-            provider_data=provider_data,
-            source_vm_name=expected_vm_name,
-            expected_vm_config=expected_vm_config,
-        )
+        provider_data=provider_data,
+        vm_config=expected_vm_config,
+    )
 
 
 @pytest.mark.parametrize(
@@ -484,7 +472,7 @@ def test_vm_import_no_mappings(
     vm_name = vm_config["name"]
     cluster_name = provider_data["cluster_name"]
 
-    with import_vm(
+    _test_import_vm(
         name=import_name(vm_name=vm_name),
         namespace=namespace.name,
         provider_credentials_secret_name=secret.name,
@@ -494,18 +482,9 @@ def test_vm_import_no_mappings(
         target_vm_name=vm_name,
         start_vm=True,
         provider_type=provider_data["type"],
-    ) as vmimport:
-        vmimport.wait(
-            cond_reason=VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
-        )
-        vmimport.vm.vmi.wait_until_running()
-        check_cnv_vm_config(
-            vm=vmimport.vm,
-            provider=provider,
-            provider_data=provider_data,
-            source_vm_name=vm_name,
-            expected_vm_config=vm_config,
-        )
+        provider_data=provider_data,
+        vm_config=vm_config,
+    )
 
 
 @pytest.mark.polarion("CNV-4397")
