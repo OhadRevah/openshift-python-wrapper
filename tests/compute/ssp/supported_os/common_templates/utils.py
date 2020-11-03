@@ -117,7 +117,8 @@ def check_vm_xml_hyperv(vm):
     assert hyperv_features["spinlocks"]["@state"] == "on"
     assert int(hyperv_features["spinlocks"]["@retries"]) == 8191
     # The below entries do not appear in Windows hyperV
-    if "Windows" not in vm.vmi.instance.status.guestOSInfo.name:
+    guest_os_info = wait_for_guest_os_info(vmi=vm.vmi)
+    if "Windows" not in guest_os_info["name"]:
         assert hyperv_features["stimer"]["@state"] == "on"
         assert hyperv_features["vpindex"]["@state"] == "on"
         assert hyperv_features["synic"]["@state"] == "on"
@@ -541,8 +542,9 @@ def validate_user_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
     data_mismatch = []
     if virtctl_info["userName"].lower() not in windows_info:
         data_mismatch.append("user name mismatch")
+    # Windows date format - 11/4/2020 (-m/-d/Y)
     if (
-        datetime.utcfromtimestamp(virtctl_info["loginTime"]).strftime("%-m/%d/%Y")
+        datetime.utcfromtimestamp(virtctl_info["loginTime"]).strftime("%-m/%-d/%Y")
         not in windows_info
     ):
         data_mismatch.append("login time mismatch")
@@ -554,7 +556,7 @@ def validate_user_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
 
 
 def validate_os_info_vmi_vs_windows_os(vm, winrm_pod, helper_vm=False):
-    vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
+    vmi_info = wait_for_guest_os_info(vmi=vm.vmi)
     assert vmi_info, "VMI doesn't have guest agent data"
     vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
     cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
