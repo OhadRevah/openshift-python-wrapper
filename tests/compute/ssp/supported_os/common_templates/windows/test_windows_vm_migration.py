@@ -8,6 +8,7 @@ import pytest
 import utilities.virt
 from pytest_testconfig import config as py_config
 from tests.compute.ssp.supported_os.common_templates import utils
+from tests.compute.utils import migrate_vm
 
 
 @pytest.mark.parametrize(
@@ -59,7 +60,7 @@ def test_migrate_vm_windows(
         port=vm_instance_from_template_multi_storage_scope_function.custom_service_port,
     ), "Failed to login via Telnet"
 
-    utils.migrate_vm(vm=vm_instance_from_template_multi_storage_scope_function)
+    migrate_vm(vm=vm_instance_from_template_multi_storage_scope_function)
 
     utilities.virt.wait_for_windows_vm(
         vm=vm_instance_from_template_multi_storage_scope_function,

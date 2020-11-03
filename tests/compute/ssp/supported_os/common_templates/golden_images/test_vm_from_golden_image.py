@@ -2,7 +2,7 @@ import logging
 
 import pytest
 from pytest_testconfig import config as py_config
-from tests.compute.ssp.supported_os.common_templates import utils
+from tests.compute.utils import migrate_vm
 from utilities import console
 from utilities.virt import wait_for_console, wait_for_windows_vm
 
@@ -50,7 +50,7 @@ class TestRhelGoldenImages:
         skip_access_mode_rwo_scope_class,
         vm_instance_from_template_golden_image_multi_scope_class,
     ):
-        utils.migrate_vm(vm=vm_instance_from_template_golden_image_multi_scope_class)
+        migrate_vm(vm=vm_instance_from_template_golden_image_multi_scope_class)
 
         wait_for_console(
             vm=vm_instance_from_template_golden_image_multi_scope_class,

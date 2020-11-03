@@ -3,8 +3,8 @@
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.resource import ResourceEditor
-from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.ssp import utils as ssp_utils
+from tests.compute.utils import migrate_vm
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -88,10 +88,7 @@ def test_migrate_vm(
     machine_type_from_kubevirt_config_cm,
     vm,
 ):
-    with VirtualMachineInstanceMigration(
-        name=vm.name, namespace=vm.namespace, vmi=vm.vmi
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
+    migrate_vm(vm=vm)
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
@@ -127,10 +124,7 @@ def test_machine_type_after_cm_update(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
     )
 
-    with VirtualMachineInstanceMigration(
-        name=vm.name, namespace=vm.namespace, vmi=vm.vmi
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
+    migrate_vm(vm=vm)
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm

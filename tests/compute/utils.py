@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
+from resources.virtual_machine import VirtualMachineInstanceMigration
 from utilities.virt import (
     execute_winrm_cmd,
     vm_console_run_commands,
@@ -58,3 +59,12 @@ def fetch_processid_from_windows_vm(vm, winrmcli_pod, process_name, helper_vm=Fa
         target_vm=vm,
         helper_vm=helper_vm,
     )
+
+
+def migrate_vm(vm):
+    with VirtualMachineInstanceMigration(
+        name=vm.name,
+        namespace=vm.namespace,
+        vmi=vm.vmi,
+    ) as mig:
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)

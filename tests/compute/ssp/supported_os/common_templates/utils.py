@@ -17,7 +17,6 @@ from openshift.dynamic.exceptions import NotFoundError
 from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute.utils import vm_started
 from utilities.virt import (
     execute_winrm_cmd,
@@ -107,15 +106,6 @@ def check_telnet_connection(ip, port):
         if sample:
             sample.close()
             return True
-
-
-def migrate_vm(vm):
-    with VirtualMachineInstanceMigration(
-        name=vm.name,
-        namespace=vm.namespace,
-        vmi=vm.vmi,
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
 
 
 def check_vm_xml_hyperv(vm):
