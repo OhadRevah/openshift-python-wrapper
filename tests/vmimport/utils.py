@@ -56,7 +56,7 @@ def make_labels(vmimport_name):
 class Source:
     default_network_names = {
         "ovirt": ["ovirtmgmt/ovirtmgmt", "vm/vm"],
-        "vmware": ["VM NETWORK", "VM NETWORK 2"],
+        "vmware": ["VM Network", "Mgmt Network"],
     }
     vms = {
         "cirros": {
