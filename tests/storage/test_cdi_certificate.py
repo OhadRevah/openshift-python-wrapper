@@ -167,6 +167,7 @@ def test_dv_delete_from_vm(
     with VirtualMachineForTests(
         name="cnv-3686-vm",
         namespace=namespace.name,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={
             "metadata": {
                 "name": f"{dv.name}",

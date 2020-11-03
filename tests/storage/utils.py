@@ -157,7 +157,7 @@ def create_vm_from_dv(
     image=None,
     start=True,
     node_selector=None,
-    memory_requests=None,
+    memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
 ):
     with VirtualMachineForTests(
         name=vm_name,

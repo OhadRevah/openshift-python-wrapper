@@ -20,6 +20,7 @@ from tests.storage.utils import (
     set_permissions,
     storage_params,
 )
+from utilities.infra import Images
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests
 
@@ -125,6 +126,7 @@ def test_create_vm_with_cloned_data_volume_positive(
                 namespace=dst_ns.name,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
+                memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
                 data_volume_template={
                     "metadata": dv_clone_dict["metadata"],
                     "spec": dv_clone_dict["spec"],
@@ -182,6 +184,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
                     namespace=dst_ns.name,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
+                    memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
                     data_volume_template={
                         "metadata": dv_clone_dict["metadata"],
                         "spec": dv_clone_dict["spec"],
@@ -236,6 +239,7 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
                     namespace=dst_ns.name,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
+                    memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
                     data_volume_template={
                         "metadata": dv_clone_dict["metadata"],
                         "spec": dv_clone_dict["spec"],
@@ -287,6 +291,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
                 namespace=dst_ns.name,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
+                memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
                 data_volume_template={
                     "metadata": dv_clone_dict["metadata"],
                     "spec": dv_clone_dict["spec"],

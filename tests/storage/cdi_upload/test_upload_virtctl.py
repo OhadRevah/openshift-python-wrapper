@@ -304,6 +304,7 @@ def test_virtctl_image_upload_with_exist_pvc(
         with VirtualMachineForTests(
             name="cnv-3727-vm",
             namespace=empty_pvc.namespace,
+            memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             pvc=empty_pvc,
         ) as vm:
             vm.start(wait=True)
