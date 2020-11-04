@@ -10,19 +10,15 @@ from pyVmomi import vim
 class Provider(abc.ABC):
     def __init__(
         self,
-        url,
         username,
         password,
-        ca_file=None,
+        host,
         debug=False,
         log=None,
-        insecure=False,
     ):
-        self.url = url
         self.username = username
         self.password = password
-        self.ca_file = ca_file
-        self.insecure = insecure
+        self.host = host
         self.debug = debug
         self.log = log or logging.getLogger()
         self.api = None
@@ -48,12 +44,36 @@ class Provider(abc.ABC):
 
 
 class RHV(Provider):
+    """
+    https://github.com/oVirt/ovirt-engine-sdk/tree/master/sdk/examples
+    """
+
+    def __init__(
+        self,
+        host,
+        username,
+        password,
+        ca_file,
+        debug=False,
+        log=None,
+        insecure=False,
+    ):
+        super().__init__(
+            host=host,
+            username=username,
+            password=password,
+            debug=debug,
+            log=log,
+        )
+        self.insecure = insecure
+        self.ca_file = ca_file
+
     def disconnect(self):
         self.api.close()
 
     def connect(self):
         self.api = ovirtsdk4.Connection(
-            url=self.url,
+            url=self.host,
             username=self.username,
             password=self.password,
             ca_file=self.ca_file,
@@ -92,22 +112,43 @@ class RHV(Provider):
 
 
 class VMWare(Provider):
+    """
+    https://github.com/vmware/vsphere-automation-sdk-python
+    """
+
+    def __init__(
+        self,
+        host,
+        username,
+        password,
+        thumbprint,
+        debug=False,
+        log=None,
+    ):
+        super().__init__(
+            host=host,
+            username=username,
+            password=password,
+            debug=debug,
+            log=log,
+        )
+        self.thumbprint = thumbprint
+
     def disconnect(self):
         Disconnect(si=self.api)
 
     def connect(self):
-        params = {"host": self.url, "user": self.username, "pwd": self.password}
-        if self.ca_file:
-            # Use SmartConnect to connect
-            raise NotImplementedError("Connect with CA cert")
-        else:
-            self.api = SmartConnectNoSSL(**params)
-        return self
+
+        self.api = SmartConnectNoSSL(  # ssl cert check is not required
+            host=self.host,
+            user=self.username,
+            pwd=self.password,
+            thumbprint=self.thumbprint,
+        )
 
     @property
     def test(self):
-        # VMWare will fail in connect
-        return
+        return True
 
     @property
     def content(self):

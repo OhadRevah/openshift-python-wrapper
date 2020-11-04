@@ -22,6 +22,14 @@ from tests.vmimport.utils import ProviderMappings, ResourceMappingItem, Source
 LOGGER = logging.getLogger(__name__)
 
 
+def vmware_provider(provider_data):
+    return provider_data["type"] == "vmware"
+
+
+def rhv_provider(provider_data):
+    return provider_data["type"] == "ovirt"
+
+
 @pytest.fixture(scope="module")
 def provider_data(provider_matrix__module__):
     provider_key = [*provider_matrix__module__][0]
@@ -64,11 +72,9 @@ def vm_import_bridge_device(
 
 
 @pytest.fixture(scope="module")
-def cert_file(tmpdir_factory, provider_data):
-    cert = None
-    provider_type = provider_data["type"]
-    if provider_type == "ovirt":
-        cert = check_output(
+def ca_cert(provider_data):
+    if rhv_provider(provider_data):
+        return check_output(
             [
                 "/bin/sh",
                 "-c",
@@ -76,57 +82,80 @@ def cert_file(tmpdir_factory, provider_data):
             ],
             stderr=STDOUT,
         )
-    if provider_type == "vmware":
-        cert = provider_data["thumbprint"]
-
-    cert_file = tmpdir_factory.mktemp(provider_type.upper()).join(
-        f"{provider_type}_cert.crt"
-    )
-    cert_file.write(cert)
-    return cert_file.strpath
 
 
 @pytest.fixture(scope="module")
-def provider(provider_data, cert_file):
+def cert_file(tmpdir_factory, provider_data, ca_cert):
+    if rhv_provider(provider_data):
+        provider_type = provider_data["type"]
+        if provider_type == "ovirt":
+            cert_file = tmpdir_factory.mktemp(provider_type.upper()).join(
+                f"{provider_type}_cert.crt"
+            )
+            cert_file.write(ca_cert)
+            return cert_file.strpath
+
+
+@pytest.fixture(scope="module")
+def thumbprint(provider_data):
+    if vmware_provider(provider_data):
+        return check_output(
+            [
+                "/bin/sh",
+                "-c",
+                f"openssl s_client -connect {provider_data['fqdn']}:443 </dev/null 2>/dev/null | openssl x509 "
+                f"-fingerprint -noout -in /dev/stdin | cut -d '=' -f 2 | tr -d $'\n'",
+            ],
+            stderr=STDOUT,
+        )
+
+
+@pytest.fixture(scope="module")
+def provider(provider_data, cert_file, thumbprint):
     """currently, only rhv providers are supported"""
     """the tests can still run against vmware with some missing checks"""
     _provider = None
-    _type = provider_data["type"]
-    if _type == "ovirt":
+    provider_args = {
+        "username": provider_data["username"],
+        "password": provider_data["password"],
+    }
+
+    if rhv_provider(provider_data):
+        provider_args["host"] = provider_data["api_url"]
+        provider_args["ca_file"] = cert_file
         _provider = providers.RHV
 
-    if _type == "vmware":
-        # TODO: set 'provider = providers.VMWare' when VMWare implemented
-        yield
+    if vmware_provider(provider_data):
+        provider_args["host"] = provider_data["fqdn"]
+        provider_args["thumbprint"] = provider_data["thumbprint"]
+        _provider = providers.VMWare
 
-    with _provider(
-        url=provider_data["api_url"],
-        username=provider_data["username"],
-        password=provider_data["password"],
-        ca_file=cert_file,
-    ) as provider:
+    with _provider(**provider_args) as provider:
         if not provider.test:
             pytest.skip(
-                msg=f"Skipping VM import tests: {_type} {provider.url} is not available."
+                msg=f"Skipping VM import tests: {provider_args['host']} is not available."
             )
         yield provider
 
 
 @pytest.fixture(scope="module")
-def secret(provider_data, namespace, cert_file):
-    secret_type = provider_data["type"]
+def secret(provider_data, namespace, ca_cert, thumbprint):
+    provider_type = provider_data["type"]
     string_data = {
         "apiUrl": provider_data["api_url"],
         "username": provider_data["username"],
         "password": provider_data["password"],
-        "caCert"
-        if secret_type == "ovirt"
-        else "thumbprint": open(cert_file, "r").read(),
     }
+    if rhv_provider(provider_data):
+        string_data["caCert"] = ca_cert
+
+    if vmware_provider(provider_data):
+        string_data["thumbprint"] = thumbprint
+
     with Secret(
-        name=f"{secret_type}-secret",
+        name=f"{provider_type}-secret",
         namespace=namespace.name,
-        string_data={secret_type: yaml.dump(string_data)},
+        string_data={provider_type: yaml.dump(string_data)},
     ) as secret:
         yield secret
 
