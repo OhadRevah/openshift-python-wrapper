@@ -1,8 +1,8 @@
 from copy import deepcopy
 
 import pytest
+import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 import tests.network.utils as network_utils
-import tests.product_upgrade.utils as upgrade_utils
 from pytest_testconfig import py_config
 from resources.datavolume import DataVolume
 from resources.operator_hub import OperatorHub

@@ -2,7 +2,7 @@ import logging
 from ipaddress import ip_interface
 
 import pytest
-import tests.product_upgrade.utils as upgrade_utils
+import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from resources.datavolume import DataVolume
 from utilities import console
 from utilities.network import assert_ping_successful, get_vmi_mac_address_by_iface_name
