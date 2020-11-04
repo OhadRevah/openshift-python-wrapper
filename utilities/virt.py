@@ -813,27 +813,27 @@ class CommandExecFailed(Exception):
         return f"Command: {self.name} - exec failed."
 
 
-def run_command(command):
+def run_command(command, verify_stderr=True):
     """
     Run command locally.
 
     Args:
         command (list): Command to run.
+        verify_stderr (bool): Check command stderr.
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
-    if err:
-        LOGGER.error("Failed to run {cmd}. error: {err}".format(cmd=command, err=err))
-        return False, err
 
     if p.returncode != 0:
-        LOGGER.error(
-            "Failed to run {cmd}. rc: {rc}".format(cmd=command, rc=p.returncode)
-        )
+        LOGGER.error(f"Failed to run {command}. rc: {p.returncode}")
         return False, out.decode("utf-8")
+
+    if err and verify_stderr:
+        LOGGER.error(f"Failed to run {command}. error: {err}")
+        return False, err
 
     return True, out.decode("utf-8")
 

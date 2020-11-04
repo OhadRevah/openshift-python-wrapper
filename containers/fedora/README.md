@@ -32,12 +32,12 @@ This will install:
     kernel-modules
     nmap
     dhcp
-    stress
     sshpass
     podman
     ethtool
     libibverbs
     dpdk
+    stress-ng
 
 enable qemu-guest-agent and sshd services in the VM.
 If extra packages needed add them in user-data file.
