@@ -45,7 +45,7 @@ def node_mgmt_console(node, node_mgmt):
     try:
         LOGGER.info(f"{node_mgmt.capitalize()} the node {node.name}")
         extra_opts = (
-            "--delete-local-data --ignore-daemonsets=true"
+            "--delete-local-data --ignore-daemonsets=true --force"
             if node_mgmt == "drain"
             else ""
         )
