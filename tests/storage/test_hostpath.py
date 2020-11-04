@@ -23,7 +23,12 @@ from resources.storage_class import StorageClass
 from resources.utils import TimeoutSampler
 from utilities import console
 from utilities.infra import Images
-from utilities.storage import create_dv, get_images_external_http_server
+from utilities.storage import (
+    create_dv,
+    downloaded_image,
+    get_images_external_http_server,
+    virtctl_upload_dv,
+)
 from utilities.virt import wait_for_console
 
 
@@ -382,7 +387,7 @@ def test_hpp_upload_virtctl(
     """
     local_name = f"{tmpdir}/{Images.Fedora.FEDORA29_IMG}"
     remote_name = f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}"
-    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    downloaded_image(remote_name=remote_name, local_name=local_name)
     pvc_name = "cnv-2771"
 
     # Get pod and scratch pvc nodes, before they are inaccessible
@@ -392,7 +397,7 @@ def test_hpp_upload_virtctl(
         kwds={"dyn_client": admin_client, "namespace": namespace.name},
     )
     # Start virtctl upload process, meanwhile, resources are sampled
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="25Gi",
@@ -421,7 +426,7 @@ def test_hostpath_upload_dv_with_token(
     dv_name = "cnv-2769"
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=remote_name,
         local_name=local_name,
     )

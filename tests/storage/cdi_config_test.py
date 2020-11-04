@@ -14,7 +14,7 @@ from resources.storage_class import StorageClass
 from resources.utils import TimeoutSampler
 from tests.storage import utils
 from utilities.infra import Images, get_cert
-from utilities.storage import get_images_https_server
+from utilities.storage import downloaded_image, get_images_https_server
 
 
 LOGGER = logging.getLogger(__name__)
@@ -60,9 +60,7 @@ def cdiconfig_update(
                     elif source == "upload":
                         local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
                         remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
-                        utils.downloaded_image(
-                            remote_name=remote_name, local_name=local_name
-                        )
+                        downloaded_image(remote_name=remote_name, local_name=local_name)
                         with utils.upload_image_to_dv(
                             dv_name=dv_name,
                             volume_mode=volume_mode,

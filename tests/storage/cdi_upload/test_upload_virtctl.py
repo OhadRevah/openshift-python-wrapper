@@ -15,7 +15,7 @@ from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
 from utilities import console
 from utilities.infra import Images
-from utilities.storage import ErrorMsg, create_dv
+from utilities.storage import ErrorMsg, create_dv, downloaded_image, virtctl_upload_dv
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
 
@@ -33,11 +33,11 @@ def skip_no_reencrypt_route(upload_proxy_route):
 @pytest.mark.polarion("CNV-2192")
 def test_successful_virtctl_upload_no_url(namespace, tmpdir):
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2192"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
@@ -63,11 +63,11 @@ def test_successful_virtctl_upload_no_route(
         route.instance
 
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
     pvc_name = "cnv-2191"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
@@ -92,10 +92,10 @@ def test_image_upload_with_overridden_url(
 ):
     pvc_name = "cnv-2217"
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_name
     )
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
@@ -117,11 +117,11 @@ def test_virtctl_image_upload_with_ca(
     namespace,
 ):
     local_path = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_path
     )
     pvc_name = "cnv-3031"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
@@ -144,7 +144,7 @@ def test_virtctl_image_upload_dv(
     """
     storage_class = [*storage_class_matrix__module__][0]
     dv_name = f"cnv-3724-{storage_class}"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
@@ -184,7 +184,7 @@ def test_virtctl_image_upload_with_exist_dv_image(
     """
     Check that virtctl fails gracefully when attempting to upload an image to a data volume that already has disk.img
     """
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=data_volume_multi_storage_scope_function.name,
         size="1Gi",
@@ -210,7 +210,7 @@ def test_virtctl_image_upload_pvc(
     Check that virtctl can create a new PVC and upload an image to it
     """
     pvc_name = "cnv-3728"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         pvc=True,
         name=pvc_name,
@@ -244,7 +244,7 @@ def test_virtctl_image_upload_with_exist_dv(
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
-        with storage_utils.virtctl_upload_dv(
+        with virtctl_upload_dv(
             namespace=namespace.name,
             name=dv.name,
             size="1Gi",
@@ -289,7 +289,7 @@ def test_virtctl_image_upload_with_exist_pvc(
     Check that virtctl can upload an local disk image to an existing empty PVC
     """
     storage_class = [*storage_class_matrix__module__][0]
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=empty_pvc.name,
         size="1Gi",
@@ -321,7 +321,7 @@ def test_virtctl_image_upload_with_exist_pvc_image(
     """
     storage_class = [*storage_class_matrix__module__][0]
     pvc_name = f"cnv-3729-{storage_class}"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=pvc_name,
         size="1Gi",
@@ -332,7 +332,7 @@ def test_virtctl_image_upload_with_exist_pvc_image(
         status, out = res
         LOGGER.info(out)
         assert "Processing completed successfully" in out
-        with storage_utils.virtctl_upload_dv(
+        with virtctl_upload_dv(
             namespace=namespace.name,
             name=pvc_name,
             size="1Gi",
@@ -363,7 +363,7 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
     - PVC with the same name already exists.
     """
     storage_class = [*storage_class_matrix__module__][0]
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=empty_pvc.name,
         size="1Gi",
@@ -433,7 +433,7 @@ def test_disk_image_after_upload_virtctl(
 ):
     storage_class = [*storage_class_matrix__module__][0]
     dv_name = f"cnv-4033-{storage_class}"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
@@ -470,7 +470,7 @@ def test_print_response_body_on_error_upload_virtctl(
     """
     storage_class = [*storage_class_matrix__module__][0]
     dv_name = f"cnv-4512-{storage_class}"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="3G",

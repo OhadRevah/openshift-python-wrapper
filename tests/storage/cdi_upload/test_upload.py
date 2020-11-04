@@ -21,6 +21,7 @@ from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from string_utils import shuffle
 from utilities.infra import Images
+from utilities.storage import downloaded_image
 
 
 LOGGER = logging.getLogger(__name__)
@@ -160,7 +161,7 @@ def test_successful_upload_with_supported_formats(
 ):
     storage_class = [*storage_class_matrix__module__][0]
     local_name = f"{tmpdir}/{local_name}"
-    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    downloaded_image(remote_name=remote_name, local_name=local_name)
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
         storage_class=storage_class,
@@ -344,7 +345,7 @@ def test_successful_upload_missing_file_in_transit(
     dv_name = "cnv-2017"
     storage_class = [*storage_class_matrix__class__][0]
     volume_mode = storage_class_matrix__class__[storage_class]["volume_mode"]
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
         local_name=upload_file_path,
     )

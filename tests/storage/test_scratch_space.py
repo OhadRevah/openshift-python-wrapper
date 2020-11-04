@@ -14,7 +14,11 @@ from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from tests.storage import utils as storage_utils
 from utilities.infra import BUG_STATUS_CLOSED, Images
-from utilities.storage import get_images_external_http_server, get_images_https_server
+from utilities.storage import (
+    downloaded_image,
+    get_images_external_http_server,
+    get_images_https_server,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -91,7 +95,7 @@ def test_upload_https_scratch_space_delete_pvc(
 ):
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
-    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    downloaded_image(remote_name=remote_name, local_name=local_name)
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="upload",
@@ -504,7 +508,7 @@ def test_scratch_space_upload_data_volume(
 ):
     local_name = f"{tmpdir}/{file_name}"
     remote_name = f"{Images.Cirros.DIR}/{file_name}"
-    storage_utils.downloaded_image(remote_name=remote_name, local_name=local_name)
+    downloaded_image(remote_name=remote_name, local_name=local_name)
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="upload",

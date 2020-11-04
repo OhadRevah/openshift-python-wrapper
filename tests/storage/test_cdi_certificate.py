@@ -19,7 +19,11 @@ from resources.secret import Secret
 from resources.utils import TimeoutSampler
 from utilities import console
 from utilities.infra import Images
-from utilities.storage import create_dv, get_images_external_http_server
+from utilities.storage import (
+    create_dv,
+    get_images_external_http_server,
+    virtctl_upload_dv,
+)
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
 
@@ -212,7 +216,7 @@ def test_upload_after_certs_renewal(
     Check that CDI can do upload operation after certs get refreshed
     """
     dv_name = "cnv-3667"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
@@ -279,7 +283,7 @@ def test_upload_after_validate_aggregated_api_cert(
     Check that upload is successful after verifying validity of aggregated api client certificate
     """
     dv_name = "cnv-3977"
-    with storage_utils.virtctl_upload_dv(
+    with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",

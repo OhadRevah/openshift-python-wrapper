@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
-import urllib.request
 from contextlib import contextmanager
 
 import requests
@@ -11,7 +9,6 @@ from pytest_testconfig import config as py_config
 from resources.cluster_role import ClusterRole
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.role_binding import RoleBinding
 from resources.route import Route
@@ -23,14 +20,9 @@ from resources.volume_snapshot import VolumeSnapshotClass
 from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.infra import Images, get_cert
-from utilities.storage import (
-    create_dv,
-    get_images_external_http_server,
-    get_storage_class_dict_from_matrix,
-)
+from utilities.storage import create_dv
 from utilities.virt import (
     VirtualMachineForTests,
-    run_virtctl_command,
     validate_vmi_ga_info_vs_windows_os_info,
     wait_for_windows_vm,
 )
@@ -203,77 +195,6 @@ def create_windows_vm_validate_guest_agent_info(
             winrmcli_pod=winrmcli_pod_scope_function,
             helper_vm=bridge_attached_helper_vm,
         )
-
-
-@contextmanager
-def virtctl_upload_dv(
-    namespace,
-    name,
-    image_path,
-    size,
-    pvc=False,
-    storage_class=None,
-    volume_mode=None,
-    access_mode=None,
-    uploadproxy_url=None,
-    wait_secs=None,
-    insecure=False,
-    no_create=False,
-):
-    command = [
-        "image-upload",
-        f"{'dv' if not pvc else pvc}",
-        f"{name}",
-        f"--image-path={image_path}",
-        f"--size={size}",
-    ]
-    if pvc:
-        command[1] = "pvc"
-    if storage_class:
-        if not (
-            volume_mode and access_mode
-        ):  # In case either one of them is missing, must fetch missing mode/s from matrix
-            storage_class_dict = get_storage_class_dict_from_matrix(
-                storage_class=storage_class
-            )
-            storage_class = [*storage_class_dict][0]
-        # There is still an option that one mode was passed by caller, will use the passed value
-        volume_mode = volume_mode or storage_class_dict[storage_class]["volume_mode"]
-        access_mode = access_mode or storage_class_dict[storage_class]["access_mode"]
-        command.append(f"--storage-class={storage_class}")
-    if access_mode:
-        command.append(f"--access-mode={access_mode}")
-    if uploadproxy_url:
-        command.append(f"--uploadproxy-url={uploadproxy_url}")
-    if wait_secs:
-        command.append(f"--wait-secs={wait_secs}")
-    if insecure:
-        command.append("--insecure")
-    if volume_mode == "Block":
-        command.append("--block-volume")
-    if no_create:
-        command.append("--no-create")
-
-    yield run_virtctl_command(command=command, namespace=namespace)
-    if pvc:
-        PersistentVolumeClaim(namespace=namespace, name=name).delete(wait=True)
-    else:
-        DataVolume(namespace=namespace, name=name).delete(wait=True)
-
-
-def downloaded_image(remote_name, local_name):
-    """
-    Download image to local tmpdir path
-    """
-    url = f"{get_images_external_http_server()}{remote_name}"
-    assert requests.head(url).status_code == requests.codes.ok
-    LOGGER.info(f"Download {url} to {local_name}")
-    urllib.request.urlretrieve(url, local_name)
-    try:
-        assert os.path.isfile(local_name)
-    except FileNotFoundError as err:
-        LOGGER.error(err)
-        raise
 
 
 def upload_image(token, data, asynchronous=False):

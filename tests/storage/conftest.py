@@ -8,7 +8,6 @@ import logging
 import os
 
 import pytest
-import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.cdi import CDI
 from resources.cdi_config import CDIConfig
@@ -19,14 +18,9 @@ from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.secret import Secret
 from resources.storage_class import StorageClass
-from tests.storage.utils import (
-    HttpService,
-    downloaded_image,
-    smart_clone_supported_by_sc,
-    virtctl_upload_dv,
-)
+from tests.storage.utils import HttpService, smart_clone_supported_by_sc
 from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, Images, get_cert
-from utilities.storage import HttpDeployment
+from utilities.storage import HttpDeployment, downloaded_image, virtctl_upload_dv
 
 
 LOGGER = logging.getLogger(__name__)
@@ -276,7 +270,7 @@ def uploaded_dv(
 
 @pytest.fixture()
 def download_image():
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=LOCAL_PATH
     )
 

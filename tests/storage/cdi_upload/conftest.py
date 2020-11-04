@@ -8,9 +8,8 @@ import re
 import subprocess
 
 import pytest
-import tests.storage.utils as storage_utils
-from tests.storage.utils import downloaded_image
 from utilities.infra import Images
+from utilities.storage import downloaded_image
 
 
 LOGGER = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ def upload_file_path(request, tmpdir):
     remote_image_dir = params.get("remote_image_dir", Images.Cirros.DIR)
     remote_image_name = params.get("remote_image_name", Images.Cirros.QCOW2_IMG)
     local_name = f"{tmpdir}/{remote_image_name}"
-    storage_utils.downloaded_image(
+    downloaded_image(
         remote_name=f"{remote_image_dir}/{remote_image_name}",
         local_name=local_name,
     )
