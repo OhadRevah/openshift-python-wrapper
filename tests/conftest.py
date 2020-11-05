@@ -1263,7 +1263,7 @@ def winrmcli_pod(namespace, **kwargs):
     """
 
     with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name, **kwargs) as pod:
-        pod.wait_for_status(status=pod.Status.RUNNING, timeout=90)
+        pod.wait_for_status(status=pod.Status.RUNNING, timeout=240)
         yield pod
 
 
