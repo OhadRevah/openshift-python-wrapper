@@ -1471,6 +1471,15 @@ def format_cpu_model_name(cpu_model_str):
 
 @pytest.fixture(scope="session")
 def nodes_common_cpu_model(utility_pods):
+    def _node_cpu_name(node_cpu_model):
+        # Some CPU models provide a name that needs to be mapped to CPU microarchitecture
+        cpus_model_name_to_architecture_dict = {
+            "Intel(R) Xeon(R) Gold 6130": "Skylake-Server"
+        }
+        for cpu_name, architecture in cpus_model_name_to_architecture_dict.items():
+            if cpu_name in node_cpu_model:
+                return architecture
+
     nodes_cpus_list = []
     cmd = ["grep", "-m1", "model name", "/proc/cpuinfo"]
     for pod in utility_pods:
@@ -1478,12 +1487,20 @@ def nodes_common_cpu_model(utility_pods):
 
     # All nodes have the same CPU
     if len(set(nodes_cpus_list)) == 1:
-        return format_cpu_model_name(cpu_model_str=nodes_cpus_list[0])
+        cpu_model = nodes_cpus_list[0]
+        return _node_cpu_name(node_cpu_model=cpu_model) or format_cpu_model_name(
+            cpu_model_str=cpu_model
+        )
     else:
         # Select the oldest CPU model, list ordered by model release, descending
         # TODO: Add AMD models
         cpus_models_list = [
-            "Skylake",
+            "Skylake-Server-noTSX-IBRS",
+            "Skylake-Server-IBRS",
+            "Skylake-Server",
+            "Skylake-Client-noTSX-IBRS",
+            "Skylake-Client-IBRS",
+            "Skylake-Client",
             "Broadwell-IBRS",
             "Broadwell",
             "Haswell-noTSX-IBRS",
@@ -1498,9 +1515,10 @@ def nodes_common_cpu_model(utility_pods):
         ]
         cpu_index = 0
         for node_cpu_model in nodes_cpus_list:
+            node_cpu_model = _node_cpu_name(
+                node_cpu_model=node_cpu_model
+            ) or format_cpu_model_name(cpu_model_str=node_cpu_model)
             # Get the index of the node's CPU in cpus_models_list
-            node_cpu_index = cpus_models_list.index(
-                format_cpu_model_name(cpu_model_str=node_cpu_model)
-            )
+            node_cpu_index = cpus_models_list.index(node_cpu_model)
             cpu_index = node_cpu_index if node_cpu_index > cpu_index else cpu_index
         return cpus_models_list[cpu_index]
