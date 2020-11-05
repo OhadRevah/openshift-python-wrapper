@@ -19,6 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 LINUX_WORKLOADS_LIST = ["tiny", "small", "medium", "large"]
 LINUX_FLAVORS_LIST = ["desktop", "highperformance", "server"]
+WINDOWS_WORKLOADS_LIST = ["medium", "large"]
 
 
 @pytest.fixture()
@@ -50,11 +51,16 @@ def get_fedora_templates_list():
 
 
 def get_windows_templates_list():
+    windows_releases_list = [
+        "windows10-desktop",
+        "windows2k12r2-server",
+        "windows2k16-server",
+        "windows2k19-server",
+    ]
     return [
-        "windows-server-large",
-        "windows-server-medium",
-        "windows10-desktop-large",
-        "windows10-desktop-medium",
+        f"{release}-{workload}"
+        for release in windows_releases_list
+        for workload in WINDOWS_WORKLOADS_LIST
     ]
 
 
@@ -87,7 +93,7 @@ def test_base_templates_annotations(
     base_templates = [template.name.split("-v")[0] for template in base_templates]
 
     assert not set(base_templates) ^ set(common_templates_expected_list), (
-        f"Not all base CNV templates exists\n exist templates:\n "
+        f"Not all base CNV templates exist\n existing templates:\n "
         f"{base_templates} expected:\n {common_templates_expected_list}",
     )
 
