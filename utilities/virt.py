@@ -268,6 +268,7 @@ class VirtualMachineForTests(VirtualMachine):
             "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
         )
 
+        # runStrategy and running are mutually exclusive
         if self.run_strategy:
             res["spec"].pop("running", None)
             res["spec"]["runStrategy"] = self.run_strategy

@@ -1,5 +1,6 @@
 import os
 
+from resources.virtual_machine import VirtualMachine
 from utilities.infra import Images
 
 
@@ -133,6 +134,14 @@ link_aggregation_mode_matrix = [
 link_aggregation_mode_no_connectivity_matrix = [
     "balance-xor",
     "802.3ad",
+]
+
+vm_volumes_matrix = ["container_disk_vm", "data_volume_vm"]
+run_strategy_matrix = [
+    VirtualMachine.RunStrategy.MANUAL,
+    VirtualMachine.RunStrategy.ALWAYS,
+    VirtualMachine.RunStrategy.HALTED,
+    VirtualMachine.RunStrategy.RERUNONFAILURE,
 ]
 
 rhel_os_matrix = [
