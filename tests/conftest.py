@@ -34,7 +34,7 @@ from resources.oauth import OAuth
 from resources.persistent_volume import PersistentVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
-from resources.resource import TIMEOUT
+from resources.resource import TIMEOUT, ResourceEditor
 from resources.secret import Secret
 from resources.service_account import ServiceAccount
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
@@ -544,6 +544,7 @@ def unprivileged_client(admin_client, unprivileged_secret):
 
     else:
         token = None
+        identity_provider_config_editor = None
         kube_config_path = os.path.join(os.path.expanduser("~"), ".kube/config")
         kubeconfig_env = os.environ.get("KUBECONFIG")
         kube_config_exists = os.path.isfile(kube_config_path)
@@ -556,22 +557,25 @@ def unprivileged_client(admin_client, unprivileged_secret):
 
         # Update identity provider
         identity_provider_config = OAuth(name="cluster")
-        identity_provider_config.update(
-            resource_dict={
-                "metadata": {"name": identity_provider_config.name},
-                "spec": {
-                    "identityProviders": [
-                        {
-                            "name": "htpasswd_provider",
-                            "mappingMethod": "claim",
-                            "type": "HTPasswd",
-                            "htpasswd": {"fileData": {"name": "htpass-secret"}},
-                        }
-                    ],
-                    "tokenConfig": {"accessTokenMaxAgeSeconds": 604800},
-                },
+        identity_provider_config_editor = ResourceEditor(
+            patches={
+                identity_provider_config: {
+                    "metadata": {"name": identity_provider_config.name},
+                    "spec": {
+                        "identityProviders": [
+                            {
+                                "name": "htpasswd_provider",
+                                "mappingMethod": "claim",
+                                "type": "HTPasswd",
+                                "htpasswd": {"fileData": {"name": "htpass-secret"}},
+                            }
+                        ],
+                        "tokenConfig": {"accessTokenMaxAgeSeconds": 604800},
+                    },
+                }
             }
         )
+        identity_provider_config_editor.update(backup_resources=True)
 
         current_user = (
             check_output("oc whoami", shell=True).decode().strip()
@@ -610,6 +614,9 @@ def unprivileged_client(admin_client, unprivileged_secret):
             yield
 
         # Teardown
+        if identity_provider_config_editor:
+            identity_provider_config_editor.restore()
+
         if token:
             try:
                 if kube_config_exists:
