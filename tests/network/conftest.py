@@ -17,7 +17,7 @@ def bond_supported(utility_pods, multi_nics_nodes, nodes_available_nics):
     Check if setup support BOND (have more then 2 NICs up)
     """
     return (
-        max([len(nodes_available_nics[i.node.name]) for i in utility_pods]) > 3
+        max([len(nodes_available_nics[i.node.name]) for i in utility_pods]) >= 3
         if multi_nics_nodes
         else False
     )
