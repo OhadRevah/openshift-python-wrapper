@@ -34,6 +34,7 @@ ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wra
 docker="*"
 pyvmomi="*"
 pytest-dependency="*"
+pytest-progress="*"  # https://github.com/ssrikanta/pytest-progress
 
 [requires]
 python_version = "3"
