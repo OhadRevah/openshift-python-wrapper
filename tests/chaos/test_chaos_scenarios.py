@@ -1,5 +1,6 @@
 import pytest
-from tests.chaos.utils import BackgroundLoop, ChaosScenario
+from resources.chaos_engine import ChaosEngine
+from tests.chaos.utils import BackgroundLoop, ChaosScenario, LitmusScenario
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -59,3 +60,26 @@ def test_chaos_scenario(scenario, admin_client, migrate_loop_vm, restart_loop_vm
 
     for vm in [restart_loop_vm, migrate_loop_vm]:
         vm.vmi.wait_until_running()
+
+
+@pytest.fixture()
+def scenario(scenario_name):
+    with LitmusScenario(scenario=scenario_name) as scenario:
+        yield scenario
+
+
+@pytest.mark.chaos
+@pytest.mark.parametrize(
+    "scenario_name",
+    [
+        pytest.param("scenario01", marks=pytest.mark.polarion("CNV-6841")),
+        pytest.param("scenario02", marks=pytest.mark.polarion("CNV-6923")),
+        pytest.param("scenario03", marks=pytest.mark.polarion("CNV-7260")),
+        pytest.param("scenario04", marks=pytest.mark.polarion("CNV-7271")),
+    ],
+)
+def test_scenarios(scenario_name, scenario, admin_client):
+    scenario.run_scenario()
+
+    for engine in ChaosEngine.get(dyn_client=admin_client, namespace=scenario_name):
+        assert engine.success, f"Scenario {scenario_name} failed"

@@ -1,10 +1,15 @@
+import json
 import logging
 import os
+import shutil
+import subprocess
 import threading
 import time
 from datetime import datetime
 
 import docker
+import requests
+import yaml
 from pytest_testconfig import py_config
 from resources.hyperconverged import HyperConverged
 from resources.node import Node
@@ -38,6 +43,129 @@ class KrakenScenario:
         )
 
         return container
+
+
+class ScenarioError(Exception):
+    def __init__(self, scenario, reason):
+        self.scenario = scenario
+        self.reason = reason
+
+    def __str__(self):
+        return f"Scenario {self.scenario} failed with {self.reason}"
+
+
+class LitmusScenario:
+    def __init__(self, scenario):
+        self.scenario = scenario
+        self.litmus_dir = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "litmus/"
+        )
+        self.config = self._load_config()
+
+    def run_scenario(self):
+        scenarios = self.config["repo"]["scenariodir"]
+        scenario_dir = os.path.join(scenarios, self.scenario)
+
+        self._fetch_scenario(scenario_dir=scenario_dir)
+        init_script = os.path.join(scenario_dir, "init_engine.sh")
+        self._run_script(script=init_script)
+
+    def _fetch_file(self, filename, directory=""):
+        repo = self.config["repo"]
+        if not os.path.isfile(os.path.join(self.litmus_dir, directory, filename)):
+            url = f"https://{repo['url']}/{repo['org']}/{repo['project']}/-/raw/{repo['branch']}/{directory}/{filename}"
+            resp = requests.get(url, verify=False)
+            if resp.status_code != 200:
+                raise requests.HTTPError("Failed to fetch file from remote repository")
+
+            if directory != "":
+                os.makedirs(os.path.join(self.litmus_dir, directory), exist_ok=True)
+
+            open(os.path.join(self.litmus_dir, directory, filename), "wb").write(
+                resp.content
+            )
+
+    def _fetch_file_list(self, scenario, directory):
+        repo = self.config["repo"]
+        project = f"{repo['org']}%2F{repo['project']}"
+
+        url = f"https://{repo['url']}/api/v4/projects/{project}/repository/tree?path={directory}{scenario}"
+        resp = requests.get(url, verify=False)
+        if resp.status_code != 200:
+            raise requests.HTTPError("Not able to list directories")
+
+        return [
+            filename["name"] for filename in json.loads(resp.content.decode("utf-8"))
+        ]
+
+    def _fetch_scenario(self, scenario_dir):
+        filenames = self._fetch_file_list(
+            scenario=self.scenario, directory=self.config["repo"]["scenariodir"]
+        )
+        for filename in filenames:
+            self._fetch_file(filename=filename, directory=scenario_dir)
+
+        self._make_executable(filename="init_engine.sh", directory=scenario_dir)
+        self._make_executable(filename="cleanup.sh", directory=scenario_dir)
+
+    def _make_executable(self, filename, directory=""):
+        os.chmod(os.path.join(self.litmus_dir, directory, filename), 0o775)
+
+    def _load_config(self):
+        with open(os.path.join(self.litmus_dir, "config.yaml"), "r") as data:
+            return yaml.load(data, Loader=yaml.FullLoader)
+
+    def _deploy(self):
+        script_dir = self.config["repo"]["deploydir"]
+        self._fetch_file(filename="deploy-litmus.sh", directory=script_dir)
+        self._make_executable(filename="deploy-litmus.sh", directory=script_dir)
+        self._fetch_file(filename="common.sh", directory=script_dir)
+        self._fetch_file(filename="variables.sh", directory=script_dir)
+
+        deploy_script = os.path.join(self.litmus_dir, script_dir, "deploy-litmus.sh")
+        self._run_script(script=deploy_script)
+
+    def _run_script(self, script):
+        returncode = subprocess.Popen(
+            script,
+            env={
+                "KUBECONFIG": os.getenv("KUBECONFIG"),
+            },
+            cwd=self.litmus_dir,
+        ).wait()
+
+        if returncode != 0:
+            raise ScenarioError(
+                scenario=self.scenario, reason="Failed to deploy litmus."
+            )
+
+    def _file_cleanup(self, scenario_dir):
+        keep = os.getenv("CNV_TESTS_CHAOS_KEEP_DATA", 0)
+        if keep != 0:
+            return
+
+        try:
+            shutil.rmtree(os.path.join(self.litmus_dir, scenario_dir))
+        except OSError:
+            LOGGER.warning(
+                f"{self.__class__}: Failed to remove scenario: {self.scenario}"
+            )
+
+    def __enter__(self):
+        self._deploy()
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        scenarios = self.config["repo"]["scenariodir"]
+        scenario_dir = os.path.join(scenarios, self.scenario)
+
+        try:
+            script = os.path.join(scenario_dir, "cleanup.sh")
+            self._run_script(script=script)
+            self._file_cleanup(scenario_dir=scenarios)
+        except ScenarioError:
+            LOGGER.warning(f"{self.__class__}: Failed to cleanup: {self.scenario}")
 
 
 class BackgroundLoop(threading.Thread):

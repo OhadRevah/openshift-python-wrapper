@@ -1,0 +1,7 @@
+repo:
+  url: gitlab.cee.redhat.com
+  org: cnv-qe
+  project: cnv-chaos
+  branch: master
+  deploydir: scripts/
+  scenariodir: scenarios/
