@@ -62,7 +62,7 @@ def data_volume_clone_settings(
         access_modes=data_volume_multi_storage_scope_module.access_modes,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
         size=data_volume_multi_storage_scope_module.size,
-        hostpath_node=data_volume_multi_storage_scope_module.hostpath_node,
+        hostpath_node=data_volume_multi_storage_scope_module.pvc.selected_node,
     )
     return dv
 
