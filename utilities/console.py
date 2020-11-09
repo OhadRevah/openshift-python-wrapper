@@ -31,37 +31,29 @@ class Console(object):
         self.password = password or self.PASSWORD
         self.timeout = timeout
         self.child = None
-        self.prompt = "#" if self.username == "root" else "$"
+        self.login_prompt = "login:"
+        self.prompt = "#" if self.username == "root" else ["\$"]  # noqa: W605
         self.cmd = self._generate_cmd()
 
     def connect(self):
         LOGGER.info(f"Connect to {self.vm.name} console")
         self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
 
-        self._connect(
-            login_prompt="login:",
-            username=self.username,
-            password=self.password,
-            prompt=self.prompt,
-        )
+        self._connect()
 
         return self.child
 
-    def _connect(self, login_prompt, username, password, prompt):
+    def _connect(self):
         self.child.send("\n\n")
-        self.child.expect(login_prompt, timeout=300)
+        self.child.expect(self.login_prompt, timeout=300)
         LOGGER.info(f"{self.vm.name}: Using username {self.username}")
-        self.child.sendline(username)
+        self.child.sendline(self.username)
         if self.password:
             self.child.expect("Password:")
             LOGGER.info(f"{self.vm.name}: Using password {self.password}")
-            self.child.sendline(password)
-        self.child.expect(prompt)
+            self.child.sendline(self.password)
+        self.child.expect(self.prompt, timeout=90)
         LOGGER.info(f"{self.vm.name}: Got prompt.")
-        if self.child.after:
-            raise ConnectionError(
-                f"Failed to open console to {self.vm.name}. error: {self.child.after}"
-            )
 
     def disconnect(self):
         if self.child.terminated:
