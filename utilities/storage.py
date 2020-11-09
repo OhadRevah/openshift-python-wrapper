@@ -2,23 +2,66 @@ import logging
 import os
 import socket
 import ssl
+import threading
 import urllib.error
 import urllib.request
 from contextlib import contextmanager
 
 import requests
 from pytest_testconfig import config as py_config
+from resources.cdi_config import CDIConfig
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
 from resources.storage_class import StorageClass
+from resources.utils import TimeoutExpiredError
 
 from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 from utilities.virt import run_virtctl_command
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def dv_reached_wffc_phase(dv):
+    try:
+        dv.wait_for_status(
+            status=StorageClass.VolumeBindingMode.WaitForFirstConsumer, timeout=10
+        )
+        return True
+    except TimeoutExpiredError:
+        # We are not guaranteed to get to this status, can fail earlier
+        LOGGER.warning(
+            f"Status {StorageClass.VolumeBindingMode.WaitForFirstConsumer} wasn't reached,"
+            " failure occurred prior to consuming of PVC"
+        )
+
+
+def create_dummy_first_consumer_pod(
+    volume_mode=DataVolume.VolumeMode.FILE, dv=None, pvc=None
+):
+    """
+    Create a dummy pod that will become the PVCs first consumer
+    Triggers start of CDI worker pod
+
+    To consume PVCs that are not backed by DVs, just pass in pvc param
+    Otherwise, it is needed to pass in dv
+    """
+    if not (pvc or dv):
+        raise ValueError("Exactly one of the args: (dv,pvc) must be passed")
+    if pvc or dv_reached_wffc_phase(dv=dv):
+        pvc = pvc or dv.pvc
+        with PodWithPVC(
+            namespace=pvc.namespace,
+            name=f"first-consumer-{pvc.name}",
+            pvc_name=pvc.name,
+            volume_mode=volume_mode,
+        ) as pod:
+            LOGGER.info(
+                f"Created dummy pod {pod.name} to be the first consumer of the PVC, "
+                "this triggers the start of CDI worker pods in case the PVC is backed by DV"
+            )
 
 
 @contextmanager
@@ -39,6 +82,7 @@ def create_dv(
     source_pvc=None,
     source_namespace=None,
     teardown=True,
+    consume_wffc=True,
 ):
     if source in ("http", "https"):
         if not url_excluded_from_validation(url):
@@ -63,6 +107,8 @@ def create_dv(
         source_namespace=source_namespace,
         teardown=teardown,
     ) as dv:
+        if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
+            create_dummy_first_consumer_pod(dv=dv)
         yield dv
 
 
@@ -93,6 +139,7 @@ def data_volume(
     # Values can be extracted from request.param or from
     # rhel_os_matrix or windows_os_matrix (passed as os_matrix)
     source = params_dict.get("source", "http")
+    consume_wffc = params_dict.get("consume_wffc", True)
 
     # DV namespace may not be in the same namespace as the originating test
     # If a namespace is passes in request.param, use it instead of the test's namespace
@@ -125,6 +172,7 @@ def data_volume(
         "hostpath_node": schedulable_nodes[0].name
         if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
         else None,
+        "consume_wffc": consume_wffc,
     }
     if source == "http":
         dv_kwargs["url"] = f"{get_images_external_http_server()}{image}"
@@ -143,7 +191,22 @@ def data_volume(
                 )
                 dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
             else:
-                dv.wait(timeout=3000 if "win" in image else 1600)
+                if (
+                    not consume_wffc
+                    and sc_volume_binding_mode_is_wffc(sc=storage_class)
+                    and check_cdi_feature_gate_enabled(
+                        feature="HonorWaitForFirstConsumer"
+                    )
+                ):
+                    # In the case of WFFC Storage Class && caller asking to NOT consume && WFFC feature gate enabled
+                    # We will hand out a DV that has nothing on it, just waiting to be further consumed by kubevirt
+                    # It will be in a new status 'WaitForFirstConsumer' (this is how the caller wanted it)
+                    dv.wait_for_status(
+                        status=StorageClass.VolumeBindingMode.WaitForFirstConsumer,
+                        timeout=10,
+                    )
+                else:
+                    dv.wait(timeout=3000 if "win" in image else 1600)
         yield dv
 
 
@@ -220,6 +283,12 @@ def sc_volume_binding_mode_is_wffc(sc):
     )
 
 
+def check_cdi_feature_gate_enabled(feature):
+    return feature in CDIConfig(name="config").instance.to_dict().get("spec", {}).get(
+        "featureGates", []
+    )
+
+
 @contextmanager
 def virtctl_upload_dv(
     namespace,
@@ -234,6 +303,7 @@ def virtctl_upload_dv(
     wait_secs=None,
     insecure=False,
     no_create=False,
+    consume_wffc=True,
 ):
     command = [
         "image-upload",
@@ -242,6 +312,11 @@ def virtctl_upload_dv(
         f"--image-path={image_path}",
         f"--size={size}",
     ]
+    resource_to_cleanup = (
+        PersistentVolumeClaim(namespace=namespace, name=name)
+        if pvc
+        else DataVolume(namespace=namespace, name=name)
+    )
     if pvc:
         command[1] = "pvc"
     if storage_class:
@@ -268,12 +343,31 @@ def virtctl_upload_dv(
         command.append("--block-volume")
     if no_create:
         command.append("--no-create")
+    # WFFC needs a dummy first consumer pod to be created in order to trigger CDI workers
+    thread = False
+    if (
+        sc_volume_binding_mode_is_wffc(sc=storage_class)
+        and consume_wffc
+        and not no_create
+    ):
+        # We can safely consume this PVC because:
+        # sc is wffc && consume flag set to True && cmd creates dv/pvc => available for consumption
+        wffc_args_dict = {}
+        if pvc:
+            wffc_args_dict["pvc"] = resource_to_cleanup
+        else:
+            wffc_args_dict["dv"] = resource_to_cleanup
+        thread = threading.Thread(
+            target=create_dummy_first_consumer_pod, kwargs=wffc_args_dict
+        )
+        thread.daemon = True
+        thread.start()
 
     yield run_virtctl_command(command=command, namespace=namespace)
-    if pvc:
-        PersistentVolumeClaim(namespace=namespace, name=name).delete(wait=True)
-    else:
-        DataVolume(namespace=namespace, name=name).delete(wait=True)
+
+    if thread:
+        thread.join()
+    resource_to_cleanup.delete(wait=True)
 
 
 class HttpDeployment(Deployment):

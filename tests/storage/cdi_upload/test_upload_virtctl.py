@@ -16,7 +16,15 @@ from resources.route import Route
 import tests.storage.utils as storage_utils
 from utilities import console
 from utilities.infra import Images
-from utilities.storage import ErrorMsg, create_dv, downloaded_image, virtctl_upload_dv
+from utilities.storage import (
+    ErrorMsg,
+    create_dummy_first_consumer_pod,
+    create_dv,
+    downloaded_image,
+    sc_is_hpp_with_immediate_volume_binding,
+    sc_volume_binding_mode_is_wffc,
+    virtctl_upload_dv,
+)
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
 
@@ -272,8 +280,14 @@ def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         accessmodes=storage_class_matrix__module__[storage_class]["access_mode"],
         size="1Gi",
-        hostpath_node=worker_node1.name,
+        hostpath_node=worker_node1.name
+        if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
+        else None,
     ) as pvc:
+        if sc_volume_binding_mode_is_wffc(sc=storage_class):
+            # For PVC to bind on WFFC, it must be consumed
+            # (this was previously solved by hard coding hostpath_node at all times)
+            create_dummy_first_consumer_pod(pvc=pvc)
         pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=60)
         yield pvc
 

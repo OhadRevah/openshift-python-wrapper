@@ -14,6 +14,11 @@ from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.storage_class import StorageClass
 
 from utilities.infra import Images
+from utilities.storage import (
+    create_dummy_first_consumer_pod,
+    sc_is_hpp_with_immediate_volume_binding,
+    sc_volume_binding_mode_is_wffc,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -34,8 +39,14 @@ def pvc_hpp(namespace, worker_node1):
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        hostpath_node=worker_node1.name,
+        hostpath_node=worker_node1.name
+        if sc_is_hpp_with_immediate_volume_binding(sc=StorageClass.Types.HOSTPATH)
+        else None,
     ) as pvc:
+        if sc_volume_binding_mode_is_wffc(sc=pvc.storage_class):
+            # For PVC to bind on WFFC, it must be consumed
+            # (this was previously solved by hard coding hostpath_node at all times)
+            create_dummy_first_consumer_pod(pvc=pvc)
         pvc.wait()
         yield pvc
 
