@@ -142,7 +142,7 @@ def data_volume(
                 )
                 dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
             else:
-                dv.wait(timeout=3000 if "win" in image else 1200)
+                dv.wait(timeout=3000 if "win" in image else 1600)
         yield dv
 
 
