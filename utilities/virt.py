@@ -281,9 +281,6 @@ class VirtualMachineForTests(VirtualMachine):
         spec = self.update_vm_cpu_configuration(spec=spec)
         spec = self.update_vm_memory_configuration(spec=spec)
 
-        if self.cloud_init_data:
-            spec = self.update_vm_cloud_init_data(spec=spec)
-
         for sa in self.service_accounts:
             spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                 "disks", []
@@ -307,6 +304,9 @@ class VirtualMachineForTests(VirtualMachine):
         ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
 
         res, spec = self.update_vm_storage_configuration(res=res, spec=spec)
+
+        if self.cloud_init_data:
+            spec = self.update_vm_cloud_init_data(spec=spec)
 
         if self.smm_enabled is not None:
             spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
