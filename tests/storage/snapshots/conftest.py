@@ -7,8 +7,11 @@ import logging
 
 import pytest
 from resources.datavolume import DataVolume
+from resources.role_binding import RoleBinding
 from resources.storage_class import StorageClass
 from resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from tests.conftest import UNPRIVILEGED_USER
+from tests.storage.utils import set_permissions
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import get_images_external_http_server
@@ -38,7 +41,7 @@ def skip_test_if_no_ocs_sc(ocs_storage_class):
         pytest.skip("Skipping test, OCS storage class is not deployed")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cirros_vm(
     request,
     admin_client,
@@ -68,7 +71,7 @@ def cirros_vm(
         yield vm
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def snapshots_with_content(
     request,
     namespace,
@@ -89,6 +92,7 @@ def snapshots_with_content(
             name=f"snapshot-{cirros_vm.name}-number-{idx+1}",
             namespace=cirros_vm.namespace,
             vm_name=cirros_vm.name,
+            client=admin_client,
             teardown=False,
         ) as vm_snapshot:
             vm_snapshots.append(vm_snapshot)
@@ -109,3 +113,21 @@ def write_file(vm, filename, content):
     with console.Cirros(vm=vm) as vm_console:
         vm_console.sendline(f"echo '{content}' >> {filename}")
     vm.stop(wait=True)
+
+
+@pytest.fixture()
+def permissions_for_dv(namespace):
+    """
+    Sets DV permissions for an unprivileged client
+    """
+    with set_permissions(
+        role_name="datavolume-cluster-role",
+        verbs=["*"],
+        permissions_to_resources=["datavolumes", "datavolumes/source"],
+        binding_name="role-bind-data-volume",
+        namespace=namespace.name,
+        subjects_kind="User",
+        subjects_name=UNPRIVILEGED_USER,
+        subjects_api_group=RoleBinding.api_group,
+    ):
+        yield
