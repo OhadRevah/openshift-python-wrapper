@@ -86,7 +86,7 @@ def bond_and_privileged_pod(utility_pods):
         if bond:
             return bond, pod
 
-    return None, None
+    pytest.skip(msg="BOND is not configured on the workers on primary interface")
 
 
 @pytest.fixture(scope="module")
