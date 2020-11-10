@@ -11,6 +11,7 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
+    assert_ping_successful,
     cloud_init_network_data,
     get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
@@ -178,6 +179,7 @@ def http_service(namespace, running_vma, running_vmb):
 @pytest.fixture()
 def ping_in_background(running_vma, running_vmb):
     dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
+    assert_ping_successful(src_vm=running_vma, dst_ip=dst_ip)
     LOGGER.info(f"Ping {dst_ip} from {running_vma.name} to {running_vmb.name}")
     with console.Fedora(vm=running_vma) as vmc:
         vmc.sendline(f"sudo ping -i 0.1 {dst_ip} > /tmp/ping.log &")
