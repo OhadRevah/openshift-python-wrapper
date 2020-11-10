@@ -1258,6 +1258,7 @@ class WinRMcliPod(Pod):
                 {
                     "name": "winrmcli-con",
                     "image": "kubevirt/winrmcli:latest",
+                    "imagePullPolicy": "IfNotPresent",
                     "command": ["bash", "-c", "/usr/bin/sleep 6000"],
                 }
             ]
