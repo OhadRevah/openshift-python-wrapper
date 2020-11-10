@@ -17,6 +17,7 @@ def vm_instance_from_template_golden_image_multi_scope_function(
         namespace=namespace,
         data_volume_template=data_volume_template_dict(
             target_dv_name=request.param["target_dv_name"],
+            target_dv_namespace=namespace.name,
             source_dv=data_volume_multi_storage_scope_function,
             worker_node=worker_node1,
         ),
@@ -38,6 +39,7 @@ def vm_instance_from_template_golden_image_multi_scope_class(
         namespace=namespace,
         data_volume_template=data_volume_template_dict(
             target_dv_name=request.param["target_dv_name"],
+            target_dv_namespace=namespace.name,
             source_dv=data_volume_multi_storage_scope_class,
             worker_node=worker_node1,
         ),

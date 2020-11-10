@@ -390,6 +390,7 @@ class PodWithPVC(Pod):
 
 def data_volume_template_dict(
     target_dv_name,
+    target_dv_namespace,
     source_dv,
     worker_node=None,
 ):
@@ -397,7 +398,7 @@ def data_volume_template_dict(
     source_dv_pvc = source_dv.instance.spec.pvc
     data_volume_template_dict = DataVolume(
         name=target_dv_name,
-        namespace=source_dv.namespace,
+        namespace=target_dv_namespace,
         source="pvc",
         storage_class=source_dv_pvc.storageClassName,
         volume_mode=source_dv_pvc.volumeMode,

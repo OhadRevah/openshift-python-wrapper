@@ -116,6 +116,7 @@ def test_regular_user_can_create_vm_from_cloned_dv(
         ),
         data_volume_template=data_volume_template_dict(
             target_dv_name=f"user-dv-{time.time()}",
+            target_dv_namespace=namespace.name,
             source_dv=data_volume_multi_storage_scope_function,
             worker_node=worker_node1,
         ),
