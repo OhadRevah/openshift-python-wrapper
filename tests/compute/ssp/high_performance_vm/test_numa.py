@@ -100,8 +100,19 @@ def get_numa_cpu_allocation(vm_cpus, numa_nodes):
     """
     Find NUMA node # where VM CPUs are allocated.
     """
+
+    def _parse_ranges_to_list(ranges):
+        cpus = []
+        for elem in ranges:
+            if "-" in elem:
+                start, end = elem.split("-")
+                cpus.extend([str(x) for x in range(int(start), int(end) + 1)])
+            else:
+                cpus.append(elem)
+        return cpus
+
     for node in numa_nodes.keys():
-        if all(cpu in numa_nodes[node] for cpu in vm_cpus):
+        if all(cpu in _parse_ranges_to_list(numa_nodes[node]) for cpu in vm_cpus):
             return node
 
 
