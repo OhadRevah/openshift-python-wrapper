@@ -11,7 +11,7 @@ def check_pod_creation_failed(pod_name, client, namespace):
     ):
         with Pod(
             name=pod_name,
-            namespace=namespace,
+            namespace=namespace.name,
             client=client,
         ):
             return
