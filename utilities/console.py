@@ -32,7 +32,7 @@ class Console(object):
         self.timeout = timeout
         self.child = None
         self.login_prompt = "login:"
-        self.prompt = "#" if self.username == "root" else ["\$"]  # noqa: W605
+        self.prompt = "#" if self.username == "root" else [r"\$"]
         self.cmd = self._generate_cmd()
 
     def connect(self):
