@@ -205,6 +205,9 @@ def migration_job_sampler(dyn_client, namespace):
             return
 
 
+@pytest.mark.bugzilla(
+    1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
     skip_when_one_node,
@@ -221,6 +224,9 @@ def test_node_drain_using_console_fedora(
     )
 
 
+@pytest.mark.bugzilla(
+    1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
     [
@@ -249,9 +255,6 @@ def test_node_drain_using_console_fedora(
     "data_volume_multi_storage_scope_class",
 )
 class TestNodeMaintenanceRHEL:
-    @pytest.mark.bugzilla(
-        1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
         self,
@@ -359,6 +362,9 @@ class TestNodeMaintenanceRHEL:
     "data_volume_multi_storage_scope_class",
 )
 class TestNodeCordonAndDrain:
+    @pytest.mark.bugzilla(
+        1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.polarion("CNV-2048")
     def test_node_drain_template_windows(
         self,
@@ -378,9 +384,6 @@ class TestNodeCordonAndDrain:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.bugzilla(
-        1881676, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.polarion("CNV-4906")
     def test_node_cordon_template_windows(
         self,
