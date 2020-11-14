@@ -559,11 +559,11 @@ class VirtualMachineForTests(VirtualMachine):
         self.ssh_service = ServiceForVirtualMachineForTests(
             name=f"ssh-{self.name}"[:63],
             namespace=self.namespace,
-            vmi=self.vmi,
+            vm=self,
             port=22,
             service_type=Service.Type.NODE_PORT,
         )
-        self.ssh_service.create_svc()
+        self.ssh_service.create(wait=True)
 
     def custom_service_enable(
         self, service_name, port, service_type=Service.Type.CLUSTER_IP, service_ip=None
@@ -576,12 +576,12 @@ class VirtualMachineForTests(VirtualMachine):
         self.custom_service = ServiceForVirtualMachineForTests(
             name=f"{service_name}-{self.name}"[:63],
             namespace=self.namespace,
-            vmi=self.vmi,
+            vm=self,
             port=port,
             service_type=service_type,
             target_ip=service_ip,
         )
-        self.custom_service.create_svc()
+        self.custom_service.create(wait=True)
 
     def get_storage_configuration(self):
         node_annotation = "kubevirt.io/provisionOnNode"
@@ -882,51 +882,48 @@ class ServiceForVirtualMachineForTests(Service):
         self,
         name,
         namespace,
-        vmi,
+        vm,
         port,
         service_type=Service.Type.CLUSTER_IP,
         target_ip=None,
         teardown=True,
     ):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
-        self.vmi = vmi
-        self.vmi_name = vmi.name
+        self.vm = vm
+        self.vmi = vm.vmi
         self.port = port
         self.service_type = service_type
         self.target_ip = target_ip
-        self.service_ip = None
-        self.service_port = None
 
     def to_dict(self):
         res = super().to_dict()
         res["spec"] = {
             "ports": [{"port": self.port, "protocol": "TCP"}],
-            "selector": {"kubevirt.io/domain": self.vmi_name},
+            "selector": {"kubevirt.io/domain": self.vm.name},
             "sessionAffinity": "None",
             "type": self.service_type,
         }
         return res
 
-    def set_target_ip_port(self):
+    @property
+    def service_ip(self):
         if self.service_type == Service.Type.CLUSTER_IP:
-            self.service_ip = self.instance.spec.clusterIP
-            self.service_port = self.instance.attributes.spec.ports[0]["port"]
+            return self.instance.spec.clusterIP
 
         if self.service_type == Service.Type.NODE_PORT:
-            node_port = camelcase_to_mixedcase(camelcase_str=self.service_type)
-            self.service_ip = (
+            return (
                 self.target_ip
                 or get_schedulable_nodes_ips(nodes=[self.vmi.node])[self.vmi.node.name]
             )
-            self.service_port = self.instance.attributes.spec.ports[0][node_port]
 
-    def create_svc(self):
-        self.create(wait=True)
-        self.set_target_ip_port()
-        return self
+    @property
+    def service_port(self):
+        if self.service_type == Service.Type.CLUSTER_IP:
+            return self.instance.attributes.spec.ports[0]["port"]
 
-    def __enter__(self):
-        return self.create_svc()
+        if self.service_type == Service.Type.NODE_PORT:
+            node_port = camelcase_to_mixedcase(camelcase_str=self.service_type)
+            return self.instance.attributes.spec.ports[0][node_port]
 
 
 class Prometheus(object):

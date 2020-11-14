@@ -48,8 +48,8 @@ def vm_rrmngmnt_host(schedulable_node_ips, vm_with_fio):
     return rrmngmnt_host(
         usr=console.Fedora.USERNAME,
         passwd=console.Fedora.PASSWORD,
-        ip=list(schedulable_node_ips.values())[0],
-        port=vm_with_fio.ssh_node_port,
+        ip=vm_with_fio.ssh_service.service_ip,
+        port=vm_with_fio.ssh_service.service_port,
     )
 
 
@@ -72,7 +72,7 @@ def run_fio_in_vm(vm_rrmngmnt_host):
 
 def get_disk_usage(vm_rrmngmnt_host):
     iotop_cmd = "sudo iotop -b -n 1 -o".split()
-    iotop_output = vm_rrmngmnt_host.run_command(command=iotop_cmd, tcp_timeout=30)
+    iotop_output = vm_rrmngmnt_host.run_command(command=iotop_cmd, tcp_timeout=60)
     # Example output for regex: 'Actual DISK READ:       3.00 M/s | Actual DISK WRITE:    1303.72 '
     iotop_read_write_str = re.search(r"Actual DISK READ: .* ", iotop_output[1]).group(0)
     # Example value of read_write_values : ('3.00', '3.72')
