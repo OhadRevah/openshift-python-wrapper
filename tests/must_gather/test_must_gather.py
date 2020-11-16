@@ -325,12 +325,12 @@ def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector)
     [
         pytest.param(
             {"app": "sriov-device-plugin"},
-            marks=(pytest.mark.polarion("CNV-2710")),
+            marks=(pytest.mark.polarion("CNV-5355")),
             id="test_sriov_device_plugin_logs",
         ),
         pytest.param(
             {"app": "sriov-cni"},
-            marks=(pytest.mark.polarion("CNV-2709")),
+            marks=(pytest.mark.polarion("CNV-5354")),
             id="test_sriov_cni_logs",
         ),
     ],
