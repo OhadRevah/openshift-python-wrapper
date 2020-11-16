@@ -345,6 +345,19 @@ fedora_os_matrix = [
                 "workload": "server",
                 "flavor": "tiny",
             },
+        },
+    },
+    {
+        "fedora-33": {
+            "image_name": Images.Fedora.FEDORA33_IMG,
+            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA33_IMG),
+            "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
+            # TODO: Modify to fedora33 once it is added to templates
+            "template_labels": {
+                "os": "fedora32",
+                "workload": "server",
+                "flavor": "tiny",
+            },
         }
     },
 ]
