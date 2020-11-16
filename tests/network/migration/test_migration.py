@@ -32,11 +32,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 def http_port_accessible(vm, server_ip, server_port):
+    connection_timeout = 30
     vm_console_run_commands(
         console_impl=console.Fedora,
         vm=vm,
-        commands=[f"curl --head {server_ip}:{server_port} --connect-timeout 5"],
-        timeout=10,
+        commands=[
+            f"curl --head {server_ip}:{server_port} --connect-timeout {connection_timeout}"
+        ],
+        timeout=connection_timeout,
     )
 
 
