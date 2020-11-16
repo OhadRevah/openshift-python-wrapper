@@ -3,8 +3,8 @@ set -xe
 
 BUILD_DIR="fedora_build"
 FEDORA_IMAGE=$1
-FEDORA_VERSION=$2
 CLOUD_INIT_ISO="cidata.iso"
+NAME="fedora${FEDORA_VERSION}"
 mkdir $BUILD_DIR
 
 echo "Create cloud-init user data ISO"
@@ -14,19 +14,19 @@ echo "Run the VM (ctrl+] to exit)"
 virt-install \
   --memory 2048 \
   --vcpus 2 \
-  --name Fedora \
+  --name $NAME \
   --disk $FEDORA_IMAGE,device=disk \
-  --disk cidata.iso,device=cdrom \
+  --disk $CLOUD_INIT_ISO,device=cdrom \
   --os-type Linux \
-  --os-variant fedora30 \
+  --os-variant $NAME \
   --virt-type kvm \
   --graphics none \
   --network default \
   --import
 
 echo "Remove Fedora VM"
-virsh destroy Fedora || :
-virsh undefine Fedora
+virsh destroy $NAME || :
+virsh undefine $NAME
 
 rm -rf $CLOUD_INIT_ISO
 
