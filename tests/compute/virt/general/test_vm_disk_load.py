@@ -5,6 +5,7 @@ import re
 
 import pytest
 from pytest_testconfig import config as py_config
+from resources.utils import TimeoutSampler
 from tests.compute.utils import migrate_vm, rrmngmnt_host
 from tests.conftest import vm_instance_from_template
 from utilities import console
@@ -62,17 +63,29 @@ def run_fio_in_vm(vm_rrmngmnt_host):
         "nohup",
         "bash",
         "-c",
-        "/usr/bin/fio --loops=50 --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test "
-        "--filename=/home/fedora/random_read_write.fio --bs=4k --iodepth=64 --size=1G --readwrite=randrw "
-        "--rwmixread=75 >& /dev/null &",
+        "/usr/bin/fio --loops=200 --runtime=600 --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 "
+        "--name=test --filename=/home/fedora/random_read_write.fio --bs=4k --iodepth=64 --size=1G --readwrite=randrw "
+        "--rwmixread=75 --numjobs=8 >& /dev/null &",
         "&",
     ]
     vm_rrmngmnt_host.run_command(command=fio_cmd)
 
 
 def get_disk_usage(vm_rrmngmnt_host):
-    iotop_cmd = "sudo iotop -b -n 1 -o".split()
-    iotop_output = vm_rrmngmnt_host.run_command(command=iotop_cmd, tcp_timeout=60)
+    def _wait_for_iotop_output():
+        # After migration, the SSH connection may not be accessible for a brief moment ("No route to host")
+        for sample in TimeoutSampler(
+            timeout=60,
+            sleep=5,
+            func=vm_rrmngmnt_host.run_command,
+            command="sudo iotop -b -n 1 -o".split(),
+            tcp_timeout=60,
+        ):
+            if sample:
+                return sample
+
+    iotop_output = _wait_for_iotop_output()
+    LOGGER.info(f"iotop output: {iotop_output}")
     # Example output for regex: 'Actual DISK READ:       3.00 M/s | Actual DISK WRITE:    1303.72 '
     iotop_read_write_str = re.search(r"Actual DISK READ: .* ", iotop_output[1]).group(0)
     # Example value of read_write_values : ('3.00', '3.72')
