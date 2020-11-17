@@ -33,6 +33,7 @@ click = "*"
 ocp-python-wrapper = {git = "https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper.git"}
 docker="*"
 pyvmomi="*"
+pytest-dependency="*"
 
 [requires]
 python_version = "3"

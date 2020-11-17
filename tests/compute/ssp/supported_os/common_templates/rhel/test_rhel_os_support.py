@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.ci
 class TestCommonTemplatesRhel:
-    @pytest.mark.run("first")
+    @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3802")
     def test_create_vm(
         self,
@@ -41,7 +41,7 @@ class TestCommonTemplatesRhel:
             wait=True
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
     @pytest.mark.polarion("CNV-3266")
     def test_start_vm(
         self,
@@ -59,7 +59,7 @@ class TestCommonTemplatesRhel:
             wait_for_interfaces="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(name="vm_console", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
         self,
@@ -78,7 +78,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         )
 
-    @pytest.mark.run(after="test_vm_console")
+    @pytest.mark.dependency(depends=["vm_console"])
     @pytest.mark.polarion("CNV-3318")
     def test_os_version(
         self,
@@ -96,7 +96,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3306")
     def test_domain_label(
         self,
@@ -119,7 +119,7 @@ class TestCommonTemplatesRhel:
             == vm_object_from_template_multi_rhel_os_multi_storage_scope_class.name
         ), f"Wrong domain label: {domain_label}"
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3320")
     def test_expose_ssh(
         self,
@@ -181,7 +181,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         ), "Failed to login via SSH"
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3513")
     def test_vmi_guest_agent_info(
         self,
@@ -207,7 +207,7 @@ class TestCommonTemplatesRhel:
             ssh_pass=console.RHEL.PASSWORD,
         )
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4195")
     def test_virtctl_guest_agent_os_info(
         self,
@@ -237,7 +237,7 @@ class TestCommonTemplatesRhel:
             ssh_pass=console.RHEL.PASSWORD,
         )
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4550")
     def test_virtctl_guest_agent_user_info(
         self,
@@ -265,7 +265,7 @@ class TestCommonTemplatesRhel:
                 ssh_pass=console.RHEL.PASSWORD,
             )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3671")
     def test_vm_machine_type(
         self,
@@ -280,7 +280,7 @@ class TestCommonTemplatesRhel:
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4201")
     def test_vm_smbios_default(
         self,
@@ -297,7 +297,7 @@ class TestCommonTemplatesRhel:
             cm_values=smbios_from_kubevirt_config_cm,
         )
 
-    @pytest.mark.run("last")
+    @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3269")
     def test_vm_deletion(
         self,
@@ -309,8 +309,6 @@ class TestCommonTemplatesRhel:
         vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
-
-        if not common_templates_utils.vm_deleted(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
-        ):
-            pytest.xfail("VM was not created, nothing to delete.")
+        vm_object_from_template_multi_rhel_os_multi_storage_scope_class.delete(
+            wait=True
+        )

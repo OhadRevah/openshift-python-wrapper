@@ -60,7 +60,7 @@ HYPERV_DICT = {
 @pytest.mark.smoke
 @pytest.mark.ocp_interop
 class TestCommonTemplatesFedora:
-    @pytest.mark.run("first")
+    @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3351")
     def test_create_vm(
         self,
@@ -78,7 +78,7 @@ class TestCommonTemplatesFedora:
             wait=True
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
     @pytest.mark.polarion("CNV-3345")
     def test_start_vm(
         self,
@@ -92,7 +92,7 @@ class TestCommonTemplatesFedora:
 
         vm_started(vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class)
 
-    @pytest.mark.run("test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-2651")
     def test_vm_hyperv(
         self,
@@ -110,7 +110,7 @@ class TestCommonTemplatesFedora:
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(name="vm_console", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3344")
     def test_vm_console(
         self,
@@ -128,7 +128,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
 
-    @pytest.mark.run(after="test_vm_console")
+    @pytest.mark.dependency(depends=["vm_console"])
     @pytest.mark.polarion("CNV-3348")
     def test_os_version(
         self,
@@ -145,7 +145,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3347")
     def test_domain_label(
         self,
@@ -162,7 +162,7 @@ class TestCommonTemplatesFedora:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3349")
     def test_expose_ssh(
         self,
@@ -195,7 +195,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         ), "Failed to login via SSH"
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3937")
     def test_vmi_guest_agent_info(
         self,
@@ -220,7 +220,7 @@ class TestCommonTemplatesFedora:
             ssh_pass=console.Fedora.PASSWORD,
         )
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3573")
     def test_virtctl_guest_agent_os_info(
         self,
@@ -249,7 +249,7 @@ class TestCommonTemplatesFedora:
             ssh_pass=console.Fedora.PASSWORD,
         )
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3574")
     def test_virtctl_guest_agent_fs_info(
         self,
@@ -273,7 +273,7 @@ class TestCommonTemplatesFedora:
             ssh_pass=console.Fedora.PASSWORD,
         )
 
-    @pytest.mark.run(after="test_expose_ssh")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4549")
     def test_virtctl_guest_agent_user_info(
         self,
@@ -300,7 +300,7 @@ class TestCommonTemplatesFedora:
                 ssh_pass=console.Fedora.PASSWORD,
             )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3668")
     def test_vm_machine_type(
         self,
@@ -314,7 +314,7 @@ class TestCommonTemplatesFedora:
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
-    @pytest.mark.run("last")
+    @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3346")
     def test_vm_deletion(
         self,
@@ -325,8 +325,6 @@ class TestCommonTemplatesFedora:
         vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
-
-        if not common_templates_utils.vm_deleted(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
-        ):
-            pytest.xfail("VM was not created, nothing to delete.")
+        vm_object_from_template_multi_fedora_os_multi_storage_scope_class.delete(
+            wait=True
+        )

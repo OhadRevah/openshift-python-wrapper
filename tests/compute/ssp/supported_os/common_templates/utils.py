@@ -12,7 +12,6 @@ from xml.etree import ElementTree
 
 import bitmath
 import utilities.network
-from openshift.dynamic.exceptions import NotFoundError
 from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -61,14 +60,6 @@ def vm_os_version(vm, console_impl):
     command = [f"cat /etc/redhat-release | grep {os.replace('-', '.')}"]
 
     vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
-
-
-def vm_deleted(vm):
-    try:
-        vm.delete(wait=True)
-        return True
-    except NotFoundError:
-        return False
 
 
 def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):

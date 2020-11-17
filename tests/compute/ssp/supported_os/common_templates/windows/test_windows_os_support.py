@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
     indirect=True,
 )
 class TestCommonTemplatesWindows:
-    @pytest.mark.run("first")
+    @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-2196")
     def test_create_vm(
         self,
@@ -42,7 +42,7 @@ class TestCommonTemplatesWindows:
             wait=True
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
     @pytest.mark.polarion("CNV-3785")
     def test_start_vm(
         self,
@@ -69,7 +69,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3512")
     def test_vmi_guest_agent_info(
         self,
@@ -85,7 +85,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4196")
     def test_virtctl_guest_agent_os_info(
         self,
@@ -101,7 +101,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4197")
     def test_virtctl_guest_agent_fs_info(
         self,
@@ -117,7 +117,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4552")
     def test_virtctl_guest_agent_user_info(
         self,
@@ -133,7 +133,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3303")
     @pytest.mark.bugzilla(
         1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
@@ -154,7 +154,7 @@ class TestCommonTemplatesWindows:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-2776")
     def test_hyperv(
         self,
@@ -178,7 +178,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-2177")
     @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_stop_start(
@@ -213,7 +213,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_create_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3415")
     @pytest.mark.jira("CNV-3771", run=False)
     def test_vm_license_state_after_reboot(
@@ -248,7 +248,7 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3674")
     def test_vm_machine_type(
         self,
@@ -263,7 +263,7 @@ class TestCommonTemplatesWindows:
             vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3087")
     def test_pause_unpause_vm(
         self,
@@ -310,7 +310,7 @@ class TestCommonTemplatesWindows:
         LOGGER.info(f"Post pause processid is: {post_pause_processid}")
         assert pre_pause_processid == post_pause_processid
 
-    @pytest.mark.run(after="test_start_vm")
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4203")
     def test_vm_smbios_default(
         self,
@@ -327,7 +327,7 @@ class TestCommonTemplatesWindows:
             cm_values=smbios_from_kubevirt_config_cm,
         )
 
-    @pytest.mark.run("last")
+    @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3289")
     def test_vm_deletion(
         self,
@@ -339,8 +339,6 @@ class TestCommonTemplatesWindows:
         vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
-
-        if not common_templates_utils.vm_deleted(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
-        ):
-            pytest.xfail("VM was not created, nothing to delete.")
+        vm_object_from_template_multi_windows_os_multi_storage_scope_class.delete(
+            wait=True
+        )
