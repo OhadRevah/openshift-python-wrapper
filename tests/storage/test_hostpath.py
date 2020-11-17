@@ -20,6 +20,7 @@ from resources.pod import Pod
 from resources.security_context_constraints import SecurityContextConstraints
 from resources.service_account import ServiceAccount
 from resources.storage_class import StorageClass
+from resources.template import Template
 from resources.utils import TimeoutSampler
 from utilities import console
 from utilities.infra import Images
@@ -32,7 +33,7 @@ from utilities.storage import (
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
-from utilities.virt import wait_for_console
+from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -540,7 +541,7 @@ def test_hostpath_registry_import_dv(
         pytest.param(
             {
                 "dv_name": "cnv-3516-source-dv",
-                "image": f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA30_IMG}",
+                "image": py_config["latest_fedora_version"]["image_path"],
                 "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
                 "storage_class": StorageClass.Types.HOSTPATH,
             },
@@ -583,11 +584,17 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             type_="target",
         )
         target_dv.wait(timeout=300)
-        with storage_utils.create_vm_from_dv(
-            dv=target_dv,
-            vm_name="fedora-vm",
-            memory_requests="1Gi",
+        with VirtualMachineForTestsFromTemplate(
+            name="fedora-vm",
+            namespace=namespace.name,
+            client=admin_client,
+            labels=Template.generate_template_labels(
+                **py_config["latest_fedora_version"]["template_labels"]
+            ),
+            data_volume=target_dv,
         ) as vm:
+            vm.start(wait=True, timeout=900)
+            vm.vmi.wait_until_running(timeout=300)
             wait_for_console(vm=vm, console_impl=console.Fedora)
 
 
