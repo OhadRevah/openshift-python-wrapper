@@ -20,6 +20,7 @@ from resources.secret import Secret
 from resources.service import Service
 from resources.service_account import ServiceAccount
 from resources.sriov_network import SriovNetwork
+from resources.storage_class import StorageClass
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -508,7 +509,11 @@ class VirtualMachineForTests(VirtualMachine):
                 spec.pop("evictionStrategy", None)
 
             # For HPP - DV/PVC and VM must reside on the same node
-            if storage_class == "hostpath-provisioner" and not self.node_selector:
+            if (
+                node_selector
+                and storage_class == StorageClass.Types.HOSTPATH
+                and not self.node_selector
+            ):
                 spec["nodeSelector"] = {"kubernetes.io/hostname": node_selector}
 
             # Needed only for VMs which are not created from common templates

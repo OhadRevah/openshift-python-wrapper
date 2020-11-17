@@ -58,7 +58,9 @@ def import_image_to_dv(
 
 
 @contextmanager
-def upload_image_to_dv(dv_name, volume_mode, storage_ns_name, storage_class, client):
+def upload_image_to_dv(
+    dv_name, volume_mode, storage_ns_name, storage_class, client, consume_wffc=True
+):
     with create_dv(
         source="upload",
         dv_name=dv_name,
@@ -67,6 +69,7 @@ def upload_image_to_dv(dv_name, volume_mode, storage_ns_name, storage_class, cli
         storage_class=storage_class,
         volume_mode=volume_mode,
         client=client,
+        consume_wffc=consume_wffc,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
         yield dv

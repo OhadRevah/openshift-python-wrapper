@@ -51,13 +51,6 @@ def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
 
 
 @pytest.fixture(scope="module")
-def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc):
-    LOGGER.debug("Use 'skip_when_hpp_no_waitforfirstconsumer' fixture...")
-    if not sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
-        pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
-
-
-@pytest.fixture(scope="module")
 def hpp_operator_deployment():
     LOGGER.debug("Use 'hpp_operator_deployment' fixture...")
     hpp_operator_deployment = Deployment(

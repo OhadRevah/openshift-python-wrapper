@@ -21,7 +21,12 @@ from resources.storage_class import StorageClass
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
 from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, Images, get_cert
-from utilities.storage import HttpDeployment, downloaded_image, virtctl_upload_dv
+from utilities.storage import (
+    HttpDeployment,
+    downloaded_image,
+    sc_volume_binding_mode_is_wffc,
+    virtctl_upload_dv,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -172,6 +177,12 @@ def skip_test_if_no_hpp_sc(hpp_storage_class):
     LOGGER.debug("Use 'skip_test_if_no_hpp_sc' fixture...")
     if not hpp_storage_class:
         pytest.skip("Skipping test, HostPath storage class is not deployed")
+
+
+@pytest.fixture(scope="session")
+def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc):
+    if not sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
+        pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
 @pytest.fixture(scope="session")
