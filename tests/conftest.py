@@ -27,6 +27,7 @@ from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
+from resources.network import Network
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node import Node
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
@@ -756,6 +757,12 @@ def network_interfaces_k8s(utility_pods):
         interfaces[node] = list(filter(None, output))  # Filter out empty lines
 
     return interfaces
+
+
+@pytest.fixture(scope="session")
+def ovn_kubernetes_cluster(admin_client):
+    cluster_network = list(Network.get(dyn_client=admin_client))[0]
+    return cluster_network.instance.status.networkType == "OVNKubernetes"
 
 
 @pytest.fixture(scope="session")
