@@ -134,6 +134,7 @@ def pytest_addoption(parser):
     matrix_group = parser.getgroup(name="Matrix")
     upgrade_group = parser.getgroup(name="Upgrade")
     workers_group = parser.getgroup(name="Workers")
+    storage_group = parser.getgroup(name="Storage")
 
     # Upgrade addoption
     upgrade_group.addoption(
@@ -160,6 +161,12 @@ def pytest_addoption(parser):
         "--rhel7-workers",
         help="If running on cluster with RHEL7 workers",
         action="store_true",
+    )
+
+    # Storage addoption
+    storage_group.addoption(
+        "--default-storage-class",
+        help="Overwrite default storage class in storage_class_matrix",
     )
 
 
@@ -377,6 +384,8 @@ def pytest_sessionstart(session):
                     items_list.append(val)
 
         py_config[key] = items_list
+
+    config_default_storage_class(session=session)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -1577,3 +1586,43 @@ def golden_images_edit_rolebinding(
         role_ref_name=golden_images_cluster_role_edit.name,
     ) as role_binding:
         yield role_binding
+
+
+def config_default_storage_class(session):
+    # Default storage class selection order:
+    # 1. --default-storage-class from command line
+    # 2. --storage-class-matrix:
+    #     * if default sc from global_config storage_class_matrix appears in the commandline, use this sc
+    #     * if default sc from global_config storage_class_matrix does not appear in the commandline, use the first
+    #       sc in --storage-class-matrix options
+    # 3. global_config default_storage_class
+    global_config_default_sc = py_config["default_storage_class"]
+    cmd_default_storage_class = session.config.getoption(name="default_storage_class")
+    cmdline_storage_class_matrix = session.config.getoption(name="storage_class_matrix")
+    updated_default_sc = None
+    if cmd_default_storage_class:
+        updated_default_sc = cmd_default_storage_class
+    elif cmdline_storage_class_matrix:
+        cmdline_storage_class_matrix = cmdline_storage_class_matrix.split(",")
+        updated_default_sc = (
+            global_config_default_sc
+            if global_config_default_sc in cmdline_storage_class_matrix
+            else cmdline_storage_class_matrix[0]
+        )
+
+    # Update only if the requested default sc is not the same as set in global_config
+    if updated_default_sc and updated_default_sc != global_config_default_sc:
+        py_config["default_storage_class"] = updated_default_sc
+        default_storage_class_configuration = [
+            sc_dict
+            for sc in py_config["system_storage_class_matrix"]
+            for sc_name, sc_dict in sc.items()
+            if sc_name == updated_default_sc
+        ][0]
+
+        py_config["default_volume_mode"] = default_storage_class_configuration[
+            "volume_mode"
+        ]
+        py_config["default_access_mode"] = default_storage_class_configuration[
+            "access_mode"
+        ]
