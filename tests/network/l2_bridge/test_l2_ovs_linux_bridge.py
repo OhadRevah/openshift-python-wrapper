@@ -65,15 +65,16 @@ class TestL2LinuxBridge:
         skip_if_no_multinic_nodes,
         configured_l2_bridge_vm_a,
         configured_l2_bridge_vm_b,
+        dhcp_client_eth3_nm_connection_name,
         dhcp_nad,
     ):
         """
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
         """
-        # TODO: Extract connection name from nmcli command by device name.
+        # Start dhcp client in configured_l2_bridge_vm_b
         post_install_command = [
-            "sudo nmcli connection modify 'System eth3' ipv4.method auto",
-            "sudo nmcli connection up 'System eth3'",
+            f"sudo nmcli connection modify '{dhcp_client_eth3_nm_connection_name}' ipv4.method auto",
+            f"sudo nmcli connection up '{dhcp_client_eth3_nm_connection_name}'",
         ]
         vm_console_run_commands(
             console_impl=console.Fedora,

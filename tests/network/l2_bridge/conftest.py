@@ -2,6 +2,7 @@
 from ipaddress import ip_interface
 
 import pytest
+from tests.compute.utils import rrmngmnt_host
 from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
 from utilities import console
 from utilities.network import cloud_init_network_data, network_nad
@@ -151,6 +152,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         namespace,
         interfaces,
         ip_addresses,
+        ssh,
         mpls_local_tag,
         mpls_local_ip,
         mpls_dest_ip,
@@ -184,6 +186,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
             client=client,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
+            ssh=ssh,
         )
 
     def to_dict(self):
@@ -216,6 +219,7 @@ def bridge_attached_vm(
     cloud_init_extra_user_data=None,
     client=None,
     node_selector=None,
+    ssh=False,
 ):
     cloud_init_data = _cloud_init_data(
         vm_name=name,
@@ -242,6 +246,7 @@ def bridge_attached_vm(
         client=client,
         cloud_init_data=cloud_init_data,
         node_selector=node_selector,
+        ssh=ssh,
     ) as vm:
         yield vm
 
@@ -305,6 +310,7 @@ def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_cli
         mpls_route_next_hop="10.200.4.1",
         client=unprivileged_client,
         node_selector=worker_node2.name,
+        ssh=True,
     )
 
 
@@ -316,6 +322,37 @@ def l2_bridge_started_vmi_a(l2_bridge_vm_a):
 @pytest.fixture(scope="class")
 def l2_bridge_started_vmi_b(l2_bridge_vm_b):
     return running_vmi(vm=l2_bridge_vm_b)
+
+
+@pytest.fixture(scope="class")
+def l2_bridge_vm_b_ssh_executor(l2_bridge_vm_b):
+    return rrmngmnt_host(
+        usr=console.Fedora.USERNAME,
+        passwd=console.Fedora.PASSWORD,
+        ip=l2_bridge_vm_b.ssh_service.service_ip,
+        port=l2_bridge_vm_b.ssh_service.service_port,
+    )
+
+
+@pytest.fixture(scope="class")
+def dhcp_client_eth3_nm_connection_name(l2_bridge_vm_b_ssh_executor):
+    """
+    Extracts connection name from nmcli command by device name (eth3) from the rrmngmnt host on the dhcp client.
+
+    Returns:
+        str: The connection name
+    """
+    host_nmcli = l2_bridge_vm_b_ssh_executor.network.nmcli
+    devices = host_nmcli.get_all_devices()
+    connections = host_nmcli.get_all_connections()
+    relevant_dev = [dev for dev in devices if dev["name"] == "eth3"]
+    relevant_con = [
+        con for con in connections if con["device"] == relevant_dev[0]["name"]
+    ]
+
+    if not relevant_con:
+        assert False, "Could not extract connection name by device - No connections."
+    return relevant_con[0]["name"]
 
 
 @pytest.fixture(scope="class")
@@ -342,6 +379,6 @@ def configured_l2_bridge_vm_a(
 
 @pytest.fixture(scope="class")
 def configured_l2_bridge_vm_b(
-    l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_started_vmi_b, configured_l2_bridge_vm_a
+    l2_bridge_vm_b,
 ):
     return l2_bridge_vm_b
