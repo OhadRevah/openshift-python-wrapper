@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from resources.pod import ExecOnPodError
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -68,25 +69,32 @@ def get_interface_by_attribute(all_connections, att):
 
 @pytest.fixture(scope="module")
 def bond_and_privileged_pod(utility_pods):
+    """
+    Get OVS BOND from the worker, if OVS BOND not exists the tests should be skipped.
+    """
     for pod in utility_pods:
-        all_connections = pod.execute(
-            command=[
-                "bash",
-                "-c",
-                'nmcli -g name con show | \
-                xargs -i nmcli -t -f connection.interface-name,ovs-port.bond-mode connection show "{}"',
-            ],
-        )
+        try:
+            # TODO: use rrmngmnt to get info from nmcli
+            all_connections = pod.execute(
+                command=[
+                    "bash",
+                    "-c",
+                    'nmcli -g name con show | \
+                    xargs -i nmcli -t -f connection.interface-name,ovs-port.bond-mode connection show "{}"',
+                ],
+            )
 
-        bond_mode_string = "ovs-port.bond-mode:balance-slb"
-        bond = get_interface_by_attribute(
-            all_connections=all_connections, att=bond_mode_string
-        )
+            bond = get_interface_by_attribute(
+                all_connections=all_connections, att="ovs-port.bond-mode:balance-slb"
+            )
 
-        if bond:
-            return bond, pod
-
-    pytest.skip(msg="BOND is not configured on the workers on primary interface")
+            if bond:
+                return bond, pod
+        except ExecOnPodError:
+            pytest.skip(
+                msg="BOND is not configured on the workers on primary interface"
+            )
+            break
 
 
 @pytest.fixture(scope="module")
