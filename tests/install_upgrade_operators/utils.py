@@ -7,12 +7,16 @@ from resources.resource import Resource
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 
+TIMEOUT_10MIN = 10 * 60
 DEFAULT_HCO_CONDITIONS = {
     Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
     Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
     Resource.Condition.RECONCILE_COMPLETE: Resource.Condition.Status.TRUE,
     Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
     Resource.Condition.UPGRADEABLE: Resource.Condition.Status.TRUE,
+}
+DEFAULT_HCO_PROGRESSING_CONDITIONS = {
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.TRUE,
 }
 LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ def wait_for_hco_conditions(admin_client, conditions=DEFAULT_HCO_CONDITIONS):
 
     actual_hco_conditions = {}
     samples = TimeoutSampler(
-        timeout=600,
+        timeout=TIMEOUT_10MIN,
         sleep=5,
         func=lambda: list(
             HyperConverged.get(
