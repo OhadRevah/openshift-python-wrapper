@@ -143,6 +143,25 @@ make tests
 make tests UPSTREAM=1
 ```
 
+## Running chaos testing
+
+If you want to use chaos tools we support you need to run following command:
+
+```bash
+make tests PYTEST_ARGS="-k chaos"
+```
+
+We support 2 distinct chaos tools [Kraken](https://github.com/openshift-scale/kraken/) and [Litmus](https://github.com/litmuschaos/litmus).
+
+Above command would run tests using both tools.
+
+Litmus downloads scenarios from this [repo](https://gitlab.cee.redhat.com/cnv-qe/cnv-chaos/) and
+later deletes it. In order to cache scenarios locally it is required to set env variable:
+
+```bash
+export CNV_TESTS_CHAOS_KEEP_DATA=1
+```
+
 ## Other parameters
 
 ### Logging

@@ -72,10 +72,10 @@ def scenario(scenario_name):
 @pytest.mark.parametrize(
     "scenario_name",
     [
-        pytest.param("scenario01", marks=pytest.mark.polarion("CNV-6841")),
-        pytest.param("scenario02", marks=pytest.mark.polarion("CNV-6923")),
-        pytest.param("scenario03", marks=pytest.mark.polarion("CNV-7260")),
-        pytest.param("scenario04", marks=pytest.mark.polarion("CNV-7271")),
+        pytest.param("scenario01", marks=pytest.mark.polarion("CNV-5428")),
+        pytest.param("scenario02", marks=pytest.mark.polarion("CNV-5429")),
+        pytest.param("scenario03", marks=pytest.mark.polarion("CNV-5430")),
+        pytest.param("scenario04", marks=pytest.mark.polarion("CNV-5431")),
     ],
 )
 def test_scenarios(scenario_name, scenario, admin_client):
