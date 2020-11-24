@@ -330,6 +330,7 @@ class TestConnectivity:
             ),
         ],
     )
+    @pytest.mark.smoke
     def test_bridge(
         self,
         bridge,
