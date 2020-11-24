@@ -85,6 +85,9 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4196")
     def test_virtctl_guest_agent_os_info(
@@ -101,6 +104,9 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4197")
     def test_virtctl_guest_agent_fs_info(
@@ -117,6 +123,9 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4552")
     def test_virtctl_guest_agent_user_info(

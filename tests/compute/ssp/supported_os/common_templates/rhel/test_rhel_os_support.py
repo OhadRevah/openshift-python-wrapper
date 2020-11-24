@@ -181,6 +181,9 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         ), "Failed to login via SSH"
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3513")
     def test_vmi_guest_agent_info(
@@ -207,6 +210,9 @@ class TestCommonTemplatesRhel:
             ssh_pass=console.RHEL.PASSWORD,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4195")
     def test_virtctl_guest_agent_os_info(
@@ -237,6 +243,9 @@ class TestCommonTemplatesRhel:
             ssh_pass=console.RHEL.PASSWORD,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4550")
     def test_virtctl_guest_agent_user_info(

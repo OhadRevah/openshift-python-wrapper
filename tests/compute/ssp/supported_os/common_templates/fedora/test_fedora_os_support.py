@@ -13,6 +13,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import vm_started
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import check_ssh_connection, wait_for_console
 
 
@@ -220,6 +221,9 @@ class TestCommonTemplatesFedora:
             ssh_pass=console.Fedora.PASSWORD,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3573")
     def test_virtctl_guest_agent_os_info(
@@ -249,6 +253,9 @@ class TestCommonTemplatesFedora:
             ssh_pass=console.Fedora.PASSWORD,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3574")
     def test_virtctl_guest_agent_fs_info(
@@ -273,6 +280,9 @@ class TestCommonTemplatesFedora:
             ssh_pass=console.Fedora.PASSWORD,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4549")
     def test_virtctl_guest_agent_user_info(
