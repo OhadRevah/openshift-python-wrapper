@@ -161,7 +161,9 @@ def skip_if_scratch_space_specified(cdi_config):
 
 @pytest.mark.polarion("CNV-2412")
 def test_cdi_config_scratch_space_value_is_default(
-    skip_no_default_sc, skip_if_scratch_space_specified, cdi_config, default_sc
+    skip_if_scratch_space_specified,
+    default_sc,
+    cdi_config,
 ):
     assert cdi_config.scratch_space_storage_class_from_status == default_sc.name
 
@@ -208,10 +210,11 @@ def test_upload_proxy_url_overridden(
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
     skip_test_if_no_hpp_sc,
-    cdi_config,
-    namespace,
+    skip_test_if_no_ocs_sc,
     hpp_storage_class,
+    namespace,
     default_sc,
+    cdi_config,
 ):
     def _get_update_dict(default, storage_class):
         return {
@@ -226,7 +229,8 @@ def test_cdiconfig_changing_storage_class_default(
     with ResourceEditor(
         patches={
             default_sc: _get_update_dict(
-                default=False, storage_class=StorageClass.Types.CEPH_RBD
+                default=False,
+                storage_class=default_sc.name,
             )
         }
     ):
@@ -251,8 +255,8 @@ def test_cdiconfig_changing_storage_class_default(
                     dv_name="import-cdiconfig-scratch-space-not-default",
                     namespace=configmap.namespace,
                     url=url,
-                    storage_class=default_sc.name,
-                    volume_mode=DataVolume.VolumeMode.FILE,
+                    storage_class=StorageClass.Types.CEPH_RBD,
+                    volume_mode=DataVolume.VolumeMode.BLOCK,
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()

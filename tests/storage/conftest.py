@@ -106,14 +106,35 @@ def default_sc(admin_client):
     """
     Get default Storage Class defined
     """
-    for sc in StorageClass.get(admin_client):
-        if (
-            sc.instance.metadata.get("annotations", {}).get(
-                "storageclass.kubernetes.io/is-default-class"
-            )
-            == "true"
+
+    default_sc_annotations = "storageclass.kubernetes.io/is-default-class"
+
+    default_sc_list = [
+        sc
+        for sc in StorageClass.get(dyn_client=admin_client)
+        if sc.instance.metadata.get("annotations", {}).get(default_sc_annotations)
+        == "true"
+    ]
+    if default_sc_list:
+        yield default_sc_list[0]
+    else:
+        for sc in StorageClass.get(
+            dyn_client=admin_client, name=py_config["default_storage_class"]
         ):
-            return sc
+            assert (
+                sc
+            ), f'The cluster does not include {py_config["default_storage_class"]} storage class'
+            with ResourceEditor(
+                patches={
+                    sc: {
+                        "metadata": {
+                            "annotations": {default_sc_annotations: "true"},
+                            "name": sc.name,
+                        }
+                    }
+                }
+            ):
+                yield sc
 
 
 @pytest.fixture(scope="session")
@@ -136,10 +157,30 @@ def hpp_storage_class(admin_client):
 
 
 @pytest.fixture(scope="session")
+def ocs_storage_class(admin_client):
+    """
+    Get the OCS storage class if configured
+    """
+    for sc in StorageClass.get(
+        dyn_client=admin_client, name=StorageClass.Types.CEPH_RBD
+    ):
+        return sc
+
+
+@pytest.fixture(scope="session")
 def skip_test_if_no_hpp_sc(hpp_storage_class):
     LOGGER.debug("Use 'skip_test_if_no_hpp_sc' fixture...")
     if not hpp_storage_class:
         pytest.skip("Skipping test, HostPath storage class is not deployed")
+
+
+@pytest.fixture(scope="session")
+def skip_test_if_no_ocs_sc(ocs_storage_class):
+    """
+    Skip test if no OCS storage class available
+    """
+    if not ocs_storage_class:
+        pytest.skip("Skipping test, OCS storage class is not deployed")
 
 
 @pytest.fixture(scope="session")
