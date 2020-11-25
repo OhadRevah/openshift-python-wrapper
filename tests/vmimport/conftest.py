@@ -52,21 +52,16 @@ def vm_import_bridge_device(
     utility_pods,
     schedulable_nodes,
     skip_if_no_multinic_nodes,
-    nodes_available_nics,
+    hosts_common_available_ports,
     bridge_network,
 ):
-    ports = [
-        utilities.network.get_hosts_common_ports(
-            nodes_available_nics=nodes_available_nics
-        )[0]
-    ]
     with network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"{bridge_network.name}-nncp",
         interface_name=bridge_network.bridge_name,
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
-        ports=ports,
+        ports=[hosts_common_available_ports[0]],
     ) as iface:
         yield iface
 

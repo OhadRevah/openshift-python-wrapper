@@ -13,7 +13,6 @@ from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
     cloud_init_network_data,
-    get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
     network_nad,
 )
@@ -106,7 +105,7 @@ def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
 def ovs_linux_bond1(
     index_number,
     utility_pods,
-    nodes_available_nics,
+    hosts_common_available_ports,
     link_aggregation_mode_matrix__class__,
 ):
     """
@@ -116,7 +115,7 @@ def ovs_linux_bond1(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
+        slaves=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_matrix__class__,
         mtu=1450,
@@ -333,6 +332,7 @@ class TestConnectivity:
     @pytest.mark.smoke
     def test_bridge(
         self,
+        skip_if_no_multinic_nodes,
         bridge,
         rhel7_workers,
         namespace,
@@ -355,6 +355,7 @@ class TestConnectivity:
     def test_positive_vlan(
         self,
         skip_rhel7_workers,
+        skip_if_no_multinic_nodes,
         skip_if_workers_vms,
         namespace,
         network_interface,
@@ -380,6 +381,7 @@ class TestConnectivity:
         self,
         skip_rhel7_workers,
         skip_if_workers_vms,
+        skip_if_no_multinic_nodes,
         namespace,
         network_interface,
         ovs_linux_br1vlan300_nad,
@@ -402,6 +404,7 @@ class TestConnectivity:
         self,
         skip_rhel7_workers,
         skip_if_workers_vms,
+        skip_if_no_multinic_nodes,
         namespace,
         network_interface,
         ovs_linux_nad,

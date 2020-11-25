@@ -19,7 +19,7 @@ from . import utils as kmp_utils
 @pytest.fixture(scope="module")
 def bridge_device(
     skip_if_no_multinic_nodes,
-    nodes_available_nics,
+    hosts_common_available_ports,
     utility_pods,
     schedulable_nodes,
 ):
@@ -29,11 +29,7 @@ def bridge_device(
         interface_name="br1test",
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
-        ports=[
-            utilities.network.get_hosts_common_ports(
-                nodes_available_nics=nodes_available_nics
-            )[1]
-        ],
+        ports=[hosts_common_available_ports[0]],
     ) as dev:
         yield dev
 

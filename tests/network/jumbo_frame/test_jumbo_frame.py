@@ -10,7 +10,6 @@ from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
     cloud_init_network_data,
-    get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
     network_nad,
 )
@@ -23,7 +22,9 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="class")
-def bond1(index_number, skip_no_bond_support, utility_pods, nodes_available_nics):
+def bond1(
+    index_number, skip_no_bond_support, utility_pods, hosts_common_available_ports
+):
     """
     Create BOND if setup support BOND
     """
@@ -31,7 +32,7 @@ def bond1(index_number, skip_no_bond_support, utility_pods, nodes_available_nics
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
+        slaves=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=9000,

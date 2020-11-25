@@ -10,12 +10,7 @@ from resources.operator_source import OperatorSource
 from resources.resource import ResourceEditor
 from resources.secret import Secret
 from resources.template import Template
-from utilities.network import (
-    LINUX_BRIDGE,
-    cloud_init_network_data,
-    get_hosts_common_ports,
-    network_nad,
-)
+from utilities.network import LINUX_BRIDGE, cloud_init_network_data, network_nad
 from utilities.storage import (
     get_images_external_http_server,
     sc_is_hpp_with_immediate_volume_binding,
@@ -36,7 +31,7 @@ MARKETPLACE_NAMESPACE = "openshift-marketplace"
 def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_available_nics,
+    hosts_common_available_ports,
     schedulable_nodes,
 ):
     with network_utils.network_device(
@@ -45,7 +40,7 @@ def upgrade_bridge_on_all_nodes(
         interface_name="br1upgrade",
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
-        ports=[get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[1]],
+        ports=[hosts_common_available_ports[0]],
     ) as br:
         yield br
 

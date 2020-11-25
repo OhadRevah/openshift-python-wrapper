@@ -72,6 +72,7 @@ def bond_and_privileged_pod(utility_pods):
     """
     Get OVS BOND from the worker, if OVS BOND not exists the tests should be skipped.
     """
+    skip_msg = "BOND is not configured on the workers on primary interface"
     for pod in utility_pods:
         try:
             # TODO: use rrmngmnt to get info from nmcli
@@ -90,10 +91,10 @@ def bond_and_privileged_pod(utility_pods):
 
             if bond:
                 return bond, pod
+            else:
+                pytest.skip(msg=skip_msg)
         except ExecOnPodError:
-            pytest.skip(
-                msg="BOND is not configured on the workers on primary interface"
-            )
+            pytest.skip(msg=skip_msg)
             break
 
 

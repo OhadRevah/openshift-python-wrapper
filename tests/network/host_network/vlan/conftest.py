@@ -16,7 +16,6 @@ from utilities.network import (
     LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
-    get_hosts_common_ports,
     network_nad,
 )
 from utilities.virt import (
@@ -256,14 +255,14 @@ def disabled_dhcp_client_2(vlan_iface_dhcp_client_2, dhcp_client_2):
 def vlan_iface_bond_dhcp_client_1(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_available_nics,
+    hosts_common_available_ports,
     dhcp_client_1,
     vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
-        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
+        slaves=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -287,14 +286,14 @@ def vlan_iface_bond_dhcp_client_1(
 def vlan_iface_bond_dhcp_client_2(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_available_nics,
+    hosts_common_available_ports,
     dhcp_client_2,
     vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-2-nncp",
         bond_name="bond4vlan",
-        slaves=get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0:2],
+        slaves=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,

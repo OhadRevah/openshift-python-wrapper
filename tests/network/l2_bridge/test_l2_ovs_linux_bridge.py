@@ -45,7 +45,12 @@ class TestL2LinuxBridge:
         ids=["dot1q", "mpls"],
     )
     def test_connectivity_l2_bridge(
-        self, namespace, dst_ip, configured_l2_bridge_vm_a, configured_l2_bridge_vm_b
+        self,
+        skip_if_no_multinic_nodes,
+        namespace,
+        dst_ip,
+        configured_l2_bridge_vm_a,
+        configured_l2_bridge_vm_b,
     ):
         """
         Test VM to VM connectivity via dot1q/mpls
@@ -54,7 +59,11 @@ class TestL2LinuxBridge:
 
     @pytest.mark.polarion("CNV-2282")
     def test_dhcp_broadcast(
-        self, configured_l2_bridge_vm_a, configured_l2_bridge_vm_b, dhcp_nad
+        self,
+        skip_if_no_multinic_nodes,
+        configured_l2_bridge_vm_a,
+        configured_l2_bridge_vm_b,
+        dhcp_nad,
     ):
         """
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
@@ -73,6 +82,7 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2284")
     def test_custom_eth_type(
         self,
+        skip_if_no_multinic_nodes,
         configured_l2_bridge_vm_a,
         configured_l2_bridge_vm_b,
         custom_eth_type_llpd_nad,
@@ -97,7 +107,11 @@ class TestL2LinuxBridge:
 
     @pytest.mark.polarion("CNV-2674")
     def test_icmp_multicast(
-        self, namespace, configured_l2_bridge_vm_a, configured_l2_bridge_vm_b
+        self,
+        skip_if_no_multinic_nodes,
+        namespace,
+        configured_l2_bridge_vm_a,
+        configured_l2_bridge_vm_b,
     ):
         """
         Test multicast traffic(ICMP) via linux bridge

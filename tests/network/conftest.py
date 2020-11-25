@@ -8,19 +8,14 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from tests.network.utils import network_device
-from utilities.network import get_hosts_common_ports
 
 
 @pytest.fixture(scope="session")
-def bond_supported(utility_pods, multi_nics_nodes, nodes_available_nics):
+def bond_supported(hosts_common_available_ports):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
-    return (
-        max([len(nodes_available_nics[i.node.name]) for i in utility_pods]) >= 3
-        if multi_nics_nodes
-        else False
-    )
+    return len(hosts_common_available_ports) >= 3
 
 
 @pytest.fixture(scope="class")
@@ -90,16 +85,12 @@ def network_interface(
     schedulable_node_ips,
     multi_nics_nodes,
     utility_pods,
-    nodes_available_nics,
+    hosts_common_available_ports,
     schedulable_nodes,
 ):
     params = request.param if hasattr(request, "param") else {}
     mtu = params.get("mtu")
-    ports = (
-        [get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[0]]
-        if multi_nics_nodes
-        else []
-    )
+    ports = [hosts_common_available_ports[0]] if multi_nics_nodes else []
     unique_index = next(index_number)
     interface_name = f"br{unique_index}test"
     with network_device(

@@ -131,7 +131,7 @@ def _delete_vm_and_compare_veth(pod, vm, vmi_interfaces):
     vm.delete(wait=True)
 
     sampler = TimeoutSampler(
-        timeout=120, sleep=1, func=count_veth_devices_on_host, pod=pod
+        timeout=180, sleep=1, func=count_veth_devices_on_host, pod=pod
     )
     for sample in sampler:
         if sample == expect_host_veth:

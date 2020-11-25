@@ -13,7 +13,6 @@ from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
     cloud_init_network_data,
-    get_hosts_common_ports,
     get_vmi_ip_v4_by_name,
     network_nad,
 )
@@ -141,7 +140,7 @@ def running_vmb(vmb):
 def bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
     utility_pods,
-    nodes_available_nics,
+    hosts_common_available_ports,
     schedulable_nodes,
 ):
     with network_utils.network_device(
@@ -150,7 +149,7 @@ def bridge_on_all_nodes(
         interface_name=BR1TEST,
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
-        ports=[get_hosts_common_ports(nodes_available_nics=nodes_available_nics)[1]],
+        ports=[hosts_common_available_ports[0]],
     ) as br:
         yield br
 
