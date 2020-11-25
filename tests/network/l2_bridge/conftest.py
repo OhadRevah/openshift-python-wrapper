@@ -160,6 +160,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         cloud_init_extra_user_data=None,
         client=None,
         cloud_init_data=None,
+        node_selector=None,
     ):
 
         self.mpls_local_tag = mpls_local_tag
@@ -182,6 +183,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
             networks=networks,
             client=client,
             cloud_init_data=cloud_init_data,
+            node_selector=node_selector,
         )
 
     def to_dict(self):
@@ -213,6 +215,7 @@ def bridge_attached_vm(
     dhcp_pool_address="",
     cloud_init_extra_user_data=None,
     client=None,
+    node_selector=None,
 ):
     cloud_init_data = _cloud_init_data(
         vm_name=name,
@@ -238,12 +241,13 @@ def bridge_attached_vm(
         cloud_init_extra_user_data=cloud_init_extra_user_data,
         client=client,
         cloud_init_data=cloud_init_data,
+        node_selector=node_selector,
     ) as vm:
         yield vm
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_vm_a(namespace, l2_bridge_all_nads, unprivileged_client):
+def l2_bridge_vm_a(namespace, worker_node1, l2_bridge_all_nads, unprivileged_client):
     dhcpd_data = DHCP_SERVER_CONF_FILE.format(
         DHCP_IP_SUBNET="10.200.3",
         DHCP_IP_RANGE_START=DHCP_IP_RANGE_START,
@@ -275,11 +279,12 @@ def l2_bridge_vm_a(namespace, l2_bridge_all_nads, unprivileged_client):
         mpls_dest_tag=VMB_MPLS_ROUTE_TAG,
         mpls_route_next_hop="10.200.4.2",
         client=unprivileged_client,
+        node_selector=worker_node1.name,
     )
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_vm_b(namespace, l2_bridge_all_nads, unprivileged_client):
+def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_client):
     interface_ip_addresses = [
         "10.200.0.2",
         "10.200.2.2",
@@ -299,6 +304,7 @@ def l2_bridge_vm_b(namespace, l2_bridge_all_nads, unprivileged_client):
         mpls_dest_tag=VMA_MPLS_ROUTE_TAG,
         mpls_route_next_hop="10.200.4.1",
         client=unprivileged_client,
+        node_selector=worker_node2.name,
     )
 
 
