@@ -344,15 +344,4 @@ def configured_l2_bridge_vm_a(
 def configured_l2_bridge_vm_b(
     l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_started_vmi_b, configured_l2_bridge_vm_a
 ):
-    """
-    Starts dhcp client in l2_bridge_vm_b
-    """
-    # TODO: Extract connection name from nmcli command by device name.
-    post_install_command = [
-        "sudo nmcli connection modify 'System eth3' ipv4.method auto",
-        "sudo nmcli connection up 'System eth3'",
-    ]
-    vm_console_run_commands(
-        console_impl=console.Fedora, vm=l2_bridge_vm_b, commands=post_install_command
-    )
     return l2_bridge_vm_b

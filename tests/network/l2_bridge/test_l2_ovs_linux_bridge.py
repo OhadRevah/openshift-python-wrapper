@@ -2,9 +2,11 @@ import contextlib
 
 import pytest
 from resources.utils import TimeoutSampler
+from utilities import console
 from utilities.console import Fedora
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
+from utilities.virt import vm_console_run_commands
 
 
 CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
@@ -68,6 +70,17 @@ class TestL2LinuxBridge:
         """
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
         """
+        # TODO: Extract connection name from nmcli command by device name.
+        post_install_command = [
+            "sudo nmcli connection modify 'System eth3' ipv4.method auto",
+            "sudo nmcli connection up 'System eth3'",
+        ]
+        vm_console_run_commands(
+            console_impl=console.Fedora,
+            vm=configured_l2_bridge_vm_b,
+            commands=post_install_command,
+        )
+
         current_ip = TimeoutSampler(
             timeout=120,
             sleep=2,
