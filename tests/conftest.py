@@ -107,6 +107,15 @@ PODS_TO_COLLECT_INFO = [
 ]
 TESTS_MARKERS = ["destructive", "chaos", "tier3"]
 
+TEAM_MARKERS = {
+    "ansible": ["ansible-module"],
+    "compute": ["compute", "metrics", "must_gather"],
+    "network": ["network", "must_gather"],
+    "storage": ["storage", "must_gather"],
+    "v2v": ["vmimport"],
+    "iuo": ["csv", "install_upgrade_operators", "security", "must_gather"],
+}
+
 
 def _get_admin_client():
     return DynamicClient(client=kubernetes.config.new_client_from_config())
@@ -245,6 +254,14 @@ def pytest_collection_modifyitems(session, config, items):
         markers = [mark.name for mark in list(item.iter_markers())]
         if not [mark for mark in markers if mark in TESTS_MARKERS]:
             item.add_marker(marker="tier2")
+
+        # Mark tests by team.
+        def _mark_tests_by_team(_item):
+            for team, vals in TEAM_MARKERS.items():
+                if _item.location[0].split("/")[1] in vals:
+                    _item.add_marker(marker=team)
+
+        _mark_tests_by_team(_item=item)
 
     #  Collect only 'upgrade' tests when running pytest with --upgrade
     upgrade_tests = [item for item in items if "upgrade" in item.keywords]
