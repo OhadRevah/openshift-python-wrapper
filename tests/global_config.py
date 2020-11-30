@@ -290,7 +290,7 @@ windows_os_matrix = [
             "os_version": "12",
             "image_name": Images.Windows.WIN12_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
-            "dv_size": "40Gi",
+            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "win2k12r2",
                 "workload": "server",
