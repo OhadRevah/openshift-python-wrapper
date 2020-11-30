@@ -20,7 +20,7 @@ pytest-testconfig = "*"
 python-bugzilla = "==2.3.0"  # pipenv fail to install on python 3.6.8 when version > 2.3.0
 sh = "*"
 pytest-ordering = "*"
-ansible = {editable = true, git = "https://github.com/ansible/ansible.git",ref = "devel"}
+ansible-core = {editable = true, git = "https://github.com/ansible/ansible.git",ref = "devel"}
 jinja2 = "*"
 requests = "*"
 xmltodict = "*"
