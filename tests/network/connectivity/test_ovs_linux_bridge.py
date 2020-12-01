@@ -198,7 +198,6 @@ class TestConnectivity:
             ),
         ],
     )
-    @pytest.mark.smoke
     def test_bridge(
         self,
         skip_if_no_multinic_nodes,
