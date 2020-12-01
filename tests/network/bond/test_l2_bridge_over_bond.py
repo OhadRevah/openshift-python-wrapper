@@ -4,6 +4,7 @@ Connectivity over bond bridge on secondary interface
 from collections import OrderedDict
 
 import pytest
+
 import tests.network.utils as network_utils
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,

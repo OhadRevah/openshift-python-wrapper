@@ -1,6 +1,7 @@
 import json
 
 import bitmath
+
 from utilities import console
 
 

@@ -3,6 +3,7 @@ Test VM with cloudInit disk.
 """
 
 import pytest
+
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

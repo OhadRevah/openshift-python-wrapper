@@ -2,6 +2,7 @@ import logging
 
 import pytest
 from resources.pod import ExecOnPodError
+
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,

@@ -3,6 +3,7 @@ VM with sidecar
 """
 
 import pytest
+
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

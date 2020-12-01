@@ -6,6 +6,7 @@ Common templates test Windows OS support
 import logging
 
 import pytest
+
 import tests.compute.ssp.utils as ssp_utils
 import utilities.virt
 from tests.compute import utils as compute_utils

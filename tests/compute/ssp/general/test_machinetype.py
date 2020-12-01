@@ -3,6 +3,7 @@
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.resource import ResourceEditor
+
 from tests.compute.ssp import utils as ssp_utils
 from tests.compute.utils import migrate_vm
 from utilities.virt import (

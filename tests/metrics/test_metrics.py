@@ -1,6 +1,7 @@
 import pytest
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstance
+
 from tests.compute.utils import vm_started
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

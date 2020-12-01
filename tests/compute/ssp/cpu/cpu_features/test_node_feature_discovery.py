@@ -8,6 +8,7 @@ import yaml
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.pod import Pod
+
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

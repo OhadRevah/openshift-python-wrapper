@@ -4,7 +4,6 @@
 import logging
 
 import pytest
-import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
@@ -12,6 +11,8 @@ from resources.resource import ResourceEditor
 from resources.route import Route
 from resources.storage_class import StorageClass
 from resources.utils import TimeoutSampler
+
+import utilities.storage
 from tests.storage import utils
 from utilities.infra import Images, get_cert
 from utilities.storage import downloaded_image, get_images_https_server

@@ -5,13 +5,14 @@ import threading
 from multiprocessing.pool import ThreadPool
 
 import pytest
-import utilities.storage
 from openshift.dynamic.exceptions import NotFoundError
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.secret import Secret
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
+
+import utilities.storage
 from tests.storage import utils as storage_utils
 from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import (

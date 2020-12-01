@@ -49,6 +49,7 @@ from resources.virtual_machine import (
     VirtualMachineInstance,
     VirtualMachineInstanceMigration,
 )
+
 from utilities import console
 from utilities.infra import (
     BUG_STATUS_CLOSED,

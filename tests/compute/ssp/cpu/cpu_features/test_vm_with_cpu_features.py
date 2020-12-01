@@ -7,6 +7,7 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
+
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

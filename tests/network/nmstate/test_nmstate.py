@@ -2,6 +2,7 @@ import logging
 from ipaddress import ip_interface
 
 import pytest
+
 from utilities.network import assert_ping_successful
 
 

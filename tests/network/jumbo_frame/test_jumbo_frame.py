@@ -4,6 +4,7 @@ VM to VM connectivity with  custom MTU (jumbo frame)
 from collections import OrderedDict
 
 import pytest
+
 from tests.network.utils import assert_no_ping, network_device
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (

@@ -2,6 +2,7 @@ import contextlib
 
 import pytest
 from resources.utils import TimeoutSampler
+
 from utilities import console
 from utilities.console import Fedora
 from utilities.infra import BUG_STATUS_CLOSED

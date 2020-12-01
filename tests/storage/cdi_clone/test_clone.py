@@ -5,11 +5,12 @@ Clone tests
 """
 
 import pytest
-import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.utils import TimeoutSampler
 from resources.volume_snapshot import VolumeSnapshot
+
+import utilities.storage
 from tests.storage import utils
 from utilities.infra import Images
 

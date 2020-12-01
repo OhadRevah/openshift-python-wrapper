@@ -4,6 +4,7 @@ import logging
 from resources.node_network_state import NodeNetworkState
 from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+
 from utilities.network import NETWORK_DEVICE_TYPE, SRIOV, console_ping
 
 

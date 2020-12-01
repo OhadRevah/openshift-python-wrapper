@@ -1,7 +1,8 @@
 import pytest
+from resources.network_addons_config import NetworkAddonsConfig
+
 import tests.network.utils as network_utils
 import utilities.network
-from resources.network_addons_config import NetworkAddonsConfig
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

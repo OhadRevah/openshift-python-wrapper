@@ -7,6 +7,7 @@ Pytest conftest file for CNV network tests
 import pytest
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
+
 from tests.network.utils import network_device
 
 

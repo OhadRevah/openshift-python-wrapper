@@ -10,13 +10,14 @@ import subprocess
 import time
 
 import pytest
-import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.resource import ResourceEditor
 from resources.secret import Secret
 from resources.utils import TimeoutSampler
+
+import tests.storage.utils as storage_utils
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import (

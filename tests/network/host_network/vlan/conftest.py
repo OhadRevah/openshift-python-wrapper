@@ -4,6 +4,7 @@ import logging
 
 import pytest
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
+
 from tests.network.host_network.vlan.utils import (
     DHCP_IP_SUBNET,
     dhcp_server_cloud_init_data,

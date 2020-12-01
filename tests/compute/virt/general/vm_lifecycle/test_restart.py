@@ -4,6 +4,7 @@ Test VM restart
 import logging
 
 import pytest
+
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

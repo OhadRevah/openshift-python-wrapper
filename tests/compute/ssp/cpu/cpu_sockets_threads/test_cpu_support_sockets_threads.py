@@ -5,6 +5,7 @@ Test cpu support for sockets and threads
 import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
+
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,

@@ -4,6 +4,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.node_maintenance import NodeMaintenance
 from resources.virtual_machine import VirtualMachineInstance
+
 from tests.compute.virt import utils as virt_utils
 from tests.conftest import vm_instance_from_template
 

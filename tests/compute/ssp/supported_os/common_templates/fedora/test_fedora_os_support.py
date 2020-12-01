@@ -7,6 +7,7 @@ Common templates test Fedora OS support
 import logging
 
 import pytest
+
 import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,

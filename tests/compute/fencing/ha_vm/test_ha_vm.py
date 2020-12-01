@@ -12,6 +12,7 @@ from resources.machine import Machine
 from resources.machine_health_check import MachineHealthCheck
 from resources.template import Template
 from resources.utils import TimeoutSampler
+
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

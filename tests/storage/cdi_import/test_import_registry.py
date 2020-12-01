@@ -3,12 +3,13 @@ import logging
 import multiprocessing
 
 import pytest
-import utilities.storage
 from kubernetes.client.rest import ApiException
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.resource import ResourceEditor
+
+import utilities.storage
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod

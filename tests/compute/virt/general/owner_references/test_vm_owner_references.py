@@ -4,6 +4,7 @@ Check VM, VMI, POD owner references
 
 import pytest
 from resources.utils import TimeoutSampler
+
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,

@@ -8,12 +8,13 @@ import logging
 from subprocess import STDOUT, check_output
 
 import pytest
-import utilities.network
 import yaml
-from providers import providers
 from resources.secret import Secret
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import ResourceMapping
+
+import utilities.network
+from providers import providers
 from tests.network.utils import network_device
 from tests.vmimport import utils
 from tests.vmimport.utils import ProviderMappings, ResourceMappingItem, Source

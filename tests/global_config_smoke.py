@@ -1,6 +1,7 @@
 import os
 
 import pytest_testconfig
+
 from utilities.infra import Images
 
 

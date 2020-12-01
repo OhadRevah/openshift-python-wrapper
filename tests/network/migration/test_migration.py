@@ -6,8 +6,9 @@ Network Migration test
 import logging
 
 import pytest
-import tests.network.utils as network_utils
 from resources.virtual_machine import VirtualMachineInstanceMigration
+
+import tests.network.utils as network_utils
 from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,

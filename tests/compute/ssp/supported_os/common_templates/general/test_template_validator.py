@@ -9,6 +9,7 @@ import logging
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
+
 from utilities.infra import Images
 
 

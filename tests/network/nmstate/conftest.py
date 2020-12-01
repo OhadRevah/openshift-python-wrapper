@@ -3,6 +3,7 @@
 import logging
 
 import pytest
+
 import tests.network.utils as network_utils
 import utilities.network
 from utilities.virt import (

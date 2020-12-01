@@ -6,6 +6,7 @@ import shlex
 from collections import OrderedDict
 
 import pytest
+
 import tests.network.utils as network_utils
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import (

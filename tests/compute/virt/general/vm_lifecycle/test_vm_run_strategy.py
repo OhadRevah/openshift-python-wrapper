@@ -16,6 +16,7 @@ from resources.resource import ResourceEditor
 from resources.template import Template
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine, VirtualMachineInstance
+
 from tests.compute.utils import migrate_vm
 from utilities import console
 from utilities.storage import create_dv, get_images_external_http_server

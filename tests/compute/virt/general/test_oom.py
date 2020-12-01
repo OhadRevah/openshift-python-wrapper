@@ -8,6 +8,7 @@ from multiprocessing import Process
 
 import pytest
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+
 from tests.compute.utils import rrmngmnt_host
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED

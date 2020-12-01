@@ -7,12 +7,13 @@ Upload using virtctl
 import logging
 
 import pytest
-import tests.storage.utils as storage_utils
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.route import Route
+
+import tests.storage.utils as storage_utils
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import ErrorMsg, create_dv, downloaded_image, virtctl_upload_dv

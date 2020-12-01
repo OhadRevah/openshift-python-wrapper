@@ -2,6 +2,7 @@
 from ipaddress import ip_interface
 
 import pytest
+
 from tests.compute.utils import rrmngmnt_host
 from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
 from utilities import console

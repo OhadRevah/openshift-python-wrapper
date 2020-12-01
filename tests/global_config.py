@@ -1,6 +1,7 @@
 import os
 
 from resources.virtual_machine import VirtualMachine
+
 from utilities.infra import Images
 
 

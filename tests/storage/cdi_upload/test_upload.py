@@ -11,8 +11,6 @@ from time import sleep
 
 import pytest
 import sh
-import tests.storage.utils as storage_utils
-import utilities.storage
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.persistent_volume import PersistentVolume
@@ -20,6 +18,9 @@ from resources.route import Route
 from resources.upload_token_request import UploadTokenRequest
 from resources.utils import TimeoutSampler
 from string_utils import shuffle
+
+import tests.storage.utils as storage_utils
+import utilities.storage
 from utilities.infra import Images
 from utilities.storage import downloaded_image
 

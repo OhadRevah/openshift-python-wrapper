@@ -3,6 +3,7 @@ import logging
 
 import rrmngmnt
 from resources.virtual_machine import VirtualMachineInstanceMigration
+
 from utilities.virt import (
     execute_winrm_cmd,
     vm_console_run_commands,

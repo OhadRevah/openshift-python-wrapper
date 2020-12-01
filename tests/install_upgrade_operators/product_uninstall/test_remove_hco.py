@@ -5,6 +5,7 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.event import Event
 from resources.hyperconverged import HyperConverged
+
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

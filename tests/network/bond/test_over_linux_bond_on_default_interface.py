@@ -6,9 +6,10 @@ import logging
 import subprocess
 
 import pytest
+from resources.utils import TimeoutSampler
+
 import tests.network.utils as network_utils
 import utilities.network
-from resources.utils import TimeoutSampler
 from utilities.network import BondNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

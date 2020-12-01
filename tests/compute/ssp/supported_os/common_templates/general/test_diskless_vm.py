@@ -8,6 +8,7 @@ import logging
 
 import pytest
 from pytest_testconfig import config as py_config
+
 from tests.conftest import vm_instance_from_template
 from utilities.infra import BUG_STATUS_CLOSED, Images
 

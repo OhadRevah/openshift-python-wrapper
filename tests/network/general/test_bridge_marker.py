@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-import utilities.network
 from resources.utils import TimeoutExpiredError
+
+import utilities.network
 from tests.network import utils as network_utils
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 

@@ -1,4 +1,5 @@
 import pytest
+
 from utilities.console import Fedora
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

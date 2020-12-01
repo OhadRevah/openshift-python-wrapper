@@ -15,6 +15,7 @@ from resources.resource import sub_resource_level
 from resources.sriov_network import SriovNetwork
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+
 from utilities import console
 
 

@@ -1,10 +1,11 @@
 import pytest
-import tests.network.utils as network_utils
-import utilities.network
 from resources.daemonset import DaemonSet
 from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.resource import ResourceEditor
+
+import tests.network.utils as network_utils
+import utilities.network
 from tests.network.utils import running_vmi
 from utilities.infra import create_ns
 from utilities.virt import (

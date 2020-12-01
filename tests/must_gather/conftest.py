@@ -9,13 +9,14 @@ import shutil
 from subprocess import check_output
 
 import pytest
-import tests.network.utils as network_utils
-import utilities.network
 import yaml
 from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
 from resources.pod import Pod
+
+import tests.network.utils as network_utils
+import utilities.network
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns
 from utilities.virt import (

@@ -5,8 +5,9 @@ Common templates RHEL VM migration and SSH access after migration
 """
 
 import pytest
-import utilities.virt
 from pytest_testconfig import config as py_config
+
+import utilities.virt
 from tests.compute.utils import migrate_vm
 from utilities import console
 from utilities.virt import check_ssh_connection, wait_for_console

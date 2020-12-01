@@ -7,7 +7,6 @@ import logging
 from multiprocessing.pool import ThreadPool
 
 import pytest
-import tests.storage.utils as storage_utils
 from pytest_testconfig import config as py_config
 from resources.cluster_role import ClusterRole
 from resources.cluster_role_binding import ClusterRoleBinding
@@ -22,6 +21,8 @@ from resources.service_account import ServiceAccount
 from resources.storage_class import StorageClass
 from resources.template import Template
 from resources.utils import TimeoutSampler
+
+import tests.storage.utils as storage_utils
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import (

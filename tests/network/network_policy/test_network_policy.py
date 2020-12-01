@@ -4,6 +4,7 @@ Network policy tests
 
 import pytest
 from resources.network_policy import NetworkPolicy
+
 from utilities import console
 from utilities.infra import create_ns
 from utilities.virt import (

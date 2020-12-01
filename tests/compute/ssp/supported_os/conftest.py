@@ -3,6 +3,7 @@
 import pytest
 from resources.service import Service
 from resources.template import Template
+
 from utilities.storage import data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate
 

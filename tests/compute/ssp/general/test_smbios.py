@@ -5,6 +5,7 @@ Test SMBIOS values from kubevirt config are:
 """
 
 import pytest
+
 from tests.compute.ssp import utils as ssp_utils
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

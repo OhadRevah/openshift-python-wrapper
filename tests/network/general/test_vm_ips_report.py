@@ -4,6 +4,7 @@ Report VM IP
 
 import pytest
 from resources.virtual_machine import VirtualMachineInstanceMigration
+
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

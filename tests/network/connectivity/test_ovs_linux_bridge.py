@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import pytest
 from pytest_testconfig import config as py_config
+
 from tests.network.connectivity.utils import run_test_guest_performance
 from tests.network.utils import assert_no_ping
 from utilities.infra import BUG_STATUS_CLOSED

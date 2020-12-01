@@ -5,8 +5,9 @@ Common templates Windows VM migration and SSH access after migration
 """
 
 import pytest
-import utilities.virt
 from pytest_testconfig import config as py_config
+
+import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.compute.utils import migrate_vm
 

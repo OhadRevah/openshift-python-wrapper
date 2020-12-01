@@ -4,6 +4,7 @@ VM with CPU flag
 import pytest
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
+
 from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

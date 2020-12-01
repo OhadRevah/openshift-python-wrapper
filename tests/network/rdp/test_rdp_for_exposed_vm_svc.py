@@ -7,6 +7,7 @@ import logging
 import pytest
 from pytest_testconfig import config as py_config
 from resources.service import Service
+
 from tests.conftest import vm_instance_from_template
 
 

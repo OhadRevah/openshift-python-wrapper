@@ -4,6 +4,7 @@ Test VLAN network interfaces on hosts network only (not on CNV VM).
 import logging
 
 import pytest
+
 from tests.network.host_network.vlan.utils import (
     assert_vlan_dynamic_ip,
     assert_vlan_iface_no_ip,

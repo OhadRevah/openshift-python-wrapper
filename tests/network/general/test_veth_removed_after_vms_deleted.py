@@ -7,9 +7,10 @@ Veth interfaces deleted after VMs are removed
 import logging
 
 import pytest
+from resources.utils import TimeoutSampler
+
 import tests.network.utils as network_utils
 import utilities.network
-from resources.utils import TimeoutSampler
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

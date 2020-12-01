@@ -2,6 +2,7 @@ import logging
 
 import pytest
 from pytest_testconfig import config as py_config
+
 from tests.compute.utils import migrate_vm
 from utilities import console
 from utilities.virt import wait_for_console, wait_for_windows_vm

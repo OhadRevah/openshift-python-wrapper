@@ -4,8 +4,9 @@ VM to VM connectivity
 from ipaddress import ip_interface
 
 import pytest
-import utilities.network
 from pytest_testconfig import config as py_config
+
+import utilities.network
 from tests.network.connectivity import utils
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

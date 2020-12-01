@@ -4,6 +4,7 @@ VM to VM connectivity
 from collections import OrderedDict
 
 import pytest
+
 from utilities.network import (
     OVS,
     assert_ping_successful,

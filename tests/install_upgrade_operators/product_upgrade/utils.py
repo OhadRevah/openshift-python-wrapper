@@ -19,6 +19,7 @@ from resources.resource import Resource, ResourceEditor
 from resources.subscription import Subscription
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
+
 from utilities.virt import run_command, wait_for_vm_interfaces
 
 

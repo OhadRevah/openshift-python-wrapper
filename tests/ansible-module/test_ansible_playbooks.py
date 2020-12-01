@@ -15,6 +15,7 @@ from resources.virtual_machine import (
     VirtualMachineInstancePreset,
     VirtualMachineInstanceReplicaSet,
 )
+
 from utilities.infra import BUG_STATUS_CLOSED
 
 

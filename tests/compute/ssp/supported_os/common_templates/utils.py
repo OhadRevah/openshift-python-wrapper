@@ -11,10 +11,11 @@ from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree
 
 import bitmath
-import utilities.network
 from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+
+import utilities.network
 from tests.compute.utils import rrmngmnt_host, vm_started
 from utilities.virt import (
     execute_winrm_cmd,

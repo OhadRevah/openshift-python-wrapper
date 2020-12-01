@@ -4,6 +4,7 @@ from resources.kubevirt import KubeVirt
 from resources.resource import ResourceEditor
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
+
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

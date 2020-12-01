@@ -2,6 +2,7 @@ import logging
 
 from resources.node import Node
 from resources.utils import TimeoutSampler
+
 from utilities.virt import kubernetes_taint_exists
 
 

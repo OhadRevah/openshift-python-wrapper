@@ -4,6 +4,7 @@ from ipaddress import ip_interface
 
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
+
 from utilities.network import cloud_init_network_data, get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

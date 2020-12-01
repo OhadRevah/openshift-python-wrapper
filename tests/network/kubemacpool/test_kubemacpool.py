@@ -1,5 +1,6 @@
 import pytest
 from kubernetes.client.rest import ApiException
+
 from utilities.network import assert_ping_successful, get_vmi_mac_address_by_iface_name
 from utilities.virt import VirtualMachineForTests
 

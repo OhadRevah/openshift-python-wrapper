@@ -1,8 +1,6 @@
 from copy import deepcopy
 
 import pytest
-import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
-import tests.network.utils as network_utils
 from pytest_testconfig import py_config
 from resources.datavolume import DataVolume
 from resources.operator_hub import OperatorHub
@@ -10,6 +8,9 @@ from resources.operator_source import OperatorSource
 from resources.resource import ResourceEditor
 from resources.secret import Secret
 from resources.template import Template
+
+import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
+import tests.network.utils as network_utils
 from utilities.network import LINUX_BRIDGE, cloud_init_network_data, network_nad
 from utilities.storage import (
     get_images_external_http_server,

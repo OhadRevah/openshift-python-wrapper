@@ -11,7 +11,6 @@ from contextlib import contextmanager
 import jinja2
 import pexpect
 import requests
-import utilities.network
 import yaml
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
@@ -26,6 +25,8 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 from rrmngmnt import ssh, user
+
+import utilities.network
 from utilities import console
 from utilities.infra import (
     ClusterHosts,

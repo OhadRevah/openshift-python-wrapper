@@ -13,6 +13,7 @@ from resources.node_maintenance import NodeMaintenance
 from resources.pod import Pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
+
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
 from tests.conftest import winrmcli_pod
