@@ -85,16 +85,18 @@ def lbodi_bond(
     Create BOND if setup support BOND
     """
     bond_idx = next(index_number)
+    primary_slave = hosts_common_occupied_ports[0]
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=[hosts_common_occupied_ports[0], hosts_common_available_ports[0]],
+        slaves=[primary_slave, hosts_common_available_ports[0]],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
         node_selector=worker_node1.name,
         ipv4_dhcp=True,
         ipv4_enable=True,
+        primary_slave=primary_slave,
     ) as bond:
         yield bond
 

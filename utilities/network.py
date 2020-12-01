@@ -478,11 +478,11 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             options_dic = {"miimon": "120"}
             if self.mode == "active-backup" and self.primary_slave is not None:
                 options_dic.update({"primary": self.primary_slave})
+
             self.iface = {
                 "name": self.bond_name,
                 "type": "bond",
                 "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                "mtu": self.mtu,
                 "link-aggregation": {
                     "mode": self.mode,
                     "slaves": self.slaves,
@@ -490,12 +490,13 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 },
             }
             if self.mtu:
+                self.iface["mtu"] = self.mtu
                 for port in self.ports:
                     _port = {
                         "name": port,
                         "type": "ethernet",
                         "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                        "mtu": self.mtu,
+                        "mtu": self.mtu - 50,  # Set ports MTU lower than BOND MTU
                     }
                     self.set_interface(interface=_port)
 
