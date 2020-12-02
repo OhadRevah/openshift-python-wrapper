@@ -63,13 +63,13 @@ def fetch_processid_from_windows_vm(vm, winrmcli_pod, process_name, helper_vm=Fa
     )
 
 
-def migrate_vm(vm):
+def migrate_vm(vm, timeout=1500):
     with VirtualMachineInstanceMigration(
         name=vm.name,
         namespace=vm.namespace,
         vmi=vm.vmi,
     ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
 
 
 def rrmngmnt_host(usr, passwd, ip, port):
