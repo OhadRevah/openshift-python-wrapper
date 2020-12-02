@@ -8,14 +8,17 @@ import logging
 
 import pytest
 
-import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
 from tests.compute.utils import vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import check_ssh_connection, wait_for_console
+from utilities.virt import (
+    check_ssh_connection,
+    enable_ssh_service_in_vm,
+    wait_for_console,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -182,7 +185,7 @@ class TestCommonTemplatesFedora:
     ):
         """ CNV common templates access VM via SSH """
 
-        utilities.virt.enable_ssh_service_in_vm(
+        enable_ssh_service_in_vm(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
         )

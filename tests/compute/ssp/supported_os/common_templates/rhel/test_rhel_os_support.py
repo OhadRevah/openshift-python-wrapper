@@ -9,14 +9,18 @@ import logging
 import pytest
 
 import tests.compute.ssp.utils as ssp_utils
-import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
-from utilities.virt import check_ssh_connection, get_guest_os_info, wait_for_console
+from utilities.virt import (
+    check_ssh_connection,
+    enable_ssh_service_in_vm,
+    get_guest_os_info,
+    wait_for_console,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -163,7 +167,7 @@ class TestCommonTemplatesRhel:
                 vmi=vm_object_from_template_multi_rhel_os_multi_storage_scope_class.vmi
             )
 
-        utilities.virt.enable_ssh_service_in_vm(
+        enable_ssh_service_in_vm(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             console_impl=console.RHEL,
             systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
