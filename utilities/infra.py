@@ -1,7 +1,9 @@
 import os
 
 import bugzilla
+import kubernetes
 import requests
+from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
 from resources.project import Project, ProjectRequest
@@ -160,3 +162,7 @@ def camelcase_to_mixedcase(camelcase_str):
     # Utility to convert CamelCase to mixedCase
     # Example: Service type may be NodePort but in VM attributes.spec.ports it is nodePort
     return camelcase_str[0].lower() + camelcase_str[1:]
+
+
+def get_admin_client():
+    return DynamicClient(client=kubernetes.config.new_client_from_config())

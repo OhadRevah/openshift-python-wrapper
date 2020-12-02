@@ -55,6 +55,7 @@ from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
     create_ns,
+    get_admin_client,
     get_bug_status,
     get_schedulable_nodes_ips,
 )
@@ -116,10 +117,6 @@ TEAM_MARKERS = {
     "v2v": ["vmimport"],
     "iuo": ["csv", "install_upgrade_operators", "security", "must_gather"],
 }
-
-
-def _get_admin_client():
-    return DynamicClient(client=kubernetes.config.new_client_from_config())
 
 
 def _separator(symbol_, val=None):
@@ -432,7 +429,7 @@ def pytest_sessionfinish(session, exitstatus):
 def pytest_exception_interact(node, call, report):
     if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
         try:
-            dyn_client = _get_admin_client()
+            dyn_client = get_admin_client()
             test_dir = os.environ.get("TEST_DIR_LOG")
             pods_dir = os.path.join(test_dir, "Pods")
             os.makedirs(test_dir, exist_ok=True)
@@ -549,7 +546,7 @@ def admin_client():
     """
     Get DynamicClient
     """
-    return _get_admin_client()
+    return get_admin_client()
 
 
 @pytest.fixture(scope="session")

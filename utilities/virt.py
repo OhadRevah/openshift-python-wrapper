@@ -31,6 +31,7 @@ from utilities import console
 from utilities.infra import (
     ClusterHosts,
     camelcase_to_mixedcase,
+    get_admin_client,
     get_schedulable_nodes_ips,
 )
 
@@ -737,7 +738,9 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 )
 
         template_instance = self.get_template_by_labels()
-        resources_list = template_instance.process(**template_kwargs)
+        resources_list = template_instance.process(
+            client=get_admin_client(), **template_kwargs
+        )
         for resource in resources_list:
             if (
                 resource["kind"] == VirtualMachine.kind
