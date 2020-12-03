@@ -111,9 +111,9 @@ TESTS_MARKERS = ["destructive", "chaos", "tier3"]
 
 TEAM_MARKERS = {
     "ansible": ["ansible-module"],
-    "compute": ["compute", "metrics", "must_gather"],
-    "network": ["network", "must_gather"],
-    "storage": ["storage", "must_gather"],
+    "compute": ["compute", "metrics"],
+    "network": ["network"],
+    "storage": ["storage"],
     "v2v": ["vmimport"],
     "iuo": ["csv", "install_upgrade_operators", "security", "must_gather"],
 }
