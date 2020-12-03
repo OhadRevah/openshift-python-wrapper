@@ -5,6 +5,7 @@ VM with sidecar
 import pytest
 
 from utilities import console
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -12,6 +13,11 @@ from utilities.virt import (
     vm_console_run_commands,
     wait_for_console,
     wait_for_vm_interfaces,
+)
+
+
+pytestmark = pytest.mark.bugzilla(
+    1904132, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 
 
