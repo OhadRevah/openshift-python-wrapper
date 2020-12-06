@@ -1,6 +1,7 @@
 import pytest
 from kubernetes.client.rest import ApiException
 from resources.pod import Pod
+
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -37,7 +38,7 @@ def vm_virt_launcher_pod(developer_vm, namespace, unprivileged_client):
     )
 
 
-@pytest.mark.polarion("CNV-4567")
+@pytest.mark.polarion("CNV-4897")
 def test_unprivileged_client_virt_launcher(
     skip_upstream, unprivileged_client, developer_vm, vm_virt_launcher_pod
 ):
