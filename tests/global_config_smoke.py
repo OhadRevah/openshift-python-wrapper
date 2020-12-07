@@ -1,6 +1,7 @@
 import os
 
 import pytest_testconfig
+from resources.template import Template
 
 from utilities.infra import Images
 
@@ -19,8 +20,8 @@ fedora_os_matrix = [
             # TODO: Modify to fedora33 once it is added to templates
             "template_labels": {
                 "os": "fedora32",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },

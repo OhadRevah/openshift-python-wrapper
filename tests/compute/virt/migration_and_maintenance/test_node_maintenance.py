@@ -18,7 +18,7 @@ from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
 from tests.conftest import winrmcli_pod
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -234,16 +234,12 @@ def test_node_drain_using_console_fedora(
         pytest.param(
             {
                 "dv_name": "dv-rhel8-template-node-maintenance",
-                "image": f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
-                "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+                "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
             {
                 "vm_name": "rhel8-template-node-maintenance",
-                "template_labels": {
-                    "os": "rhel8.0",
-                    "workload": "server",
-                    "flavor": "tiny",
-                },
+                "template_labels": py_config["latest_rhel_version"]["template_labels"],
                 "set_vm_common_cpu": True,
             },
         )

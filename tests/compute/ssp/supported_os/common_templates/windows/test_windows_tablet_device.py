@@ -13,7 +13,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import execute_winrm_cmd
 
 
@@ -217,15 +217,11 @@ def test_windows_server_default_tablet_device(
             {
                 "dv_name": "dv-windows-desktop-default-tablet",
                 "image": WINDOWS_DESKTOP_VERSION["image_path"],
-                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
+                "dv_size": WINDOWS_DESKTOP_VERSION["dv_size"],
             },
             {
                 "vm_name": "windows-desktop-default-tablet-device",
-                "template_labels": {
-                    "os": WINDOWS_DESKTOP_VERSION["template_labels"]["os"],
-                    "workload": "desktop",
-                    "flavor": "medium",
-                },
+                "template_labels": WINDOWS_DESKTOP_VERSION["template_labels"],
                 "cpu_threads": 2,
             },
             {"os_version": WINDOWS_DESKTOP_VERSION["os_version"]},

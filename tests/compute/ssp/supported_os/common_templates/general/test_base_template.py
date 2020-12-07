@@ -18,9 +18,13 @@ from utilities.infra import BUG_STATUS_CLOSED
 
 LOGGER = logging.getLogger(__name__)
 
-LINUX_WORKLOADS_LIST = ["tiny", "small", "medium", "large"]
-LINUX_FLAVORS_LIST = ["desktop", "highperformance", "server"]
-WINDOWS_WORKLOADS_LIST = ["medium", "large"]
+LINUX_WORKLOADS_LIST = [
+    value for key, value in vars(Template.Workload).items() if not key.startswith("_")
+]
+LINUX_FLAVORS_LIST = [
+    value for key, value in vars(Template.Flavor).items() if not key.startswith("_")
+]
+WINDOWS_FLAVOR_LIST = [Template.Flavor.MEDIUM, Template.Flavor.LARGE]
 
 
 @pytest.fixture()
@@ -35,17 +39,17 @@ def get_rhel_templates_list():
     rhel_major_releases_list = ["6", "7", "8"]
     # RHEL6 - only desktop and server versions are released
     return [
-        f"rhel{release}-{flavor}-{workload}"
+        f"rhel{release}-{workload}-{flavor}"
         for release in rhel_major_releases_list
         for flavor in LINUX_FLAVORS_LIST
         for workload in LINUX_WORKLOADS_LIST
-        if not (release == "6" and flavor == "highperformance")
+        if not (release == "6" and workload == Template.Workload.HIGH_PERFORMANCE)
     ]
 
 
 def get_fedora_templates_list():
     return [
-        f"fedora-{flavor}-{workload}"
+        f"fedora-{workload}-{flavor}"
         for flavor in LINUX_FLAVORS_LIST
         for workload in LINUX_WORKLOADS_LIST
     ]
@@ -59,9 +63,9 @@ def get_windows_templates_list():
         "windows2k19-server",
     ]
     return [
-        f"{release}-{workload}"
+        f"{release}-{flavor}"
         for release in windows_releases_list
-        for workload in WINDOWS_WORKLOADS_LIST
+        for flavor in WINDOWS_FLAVOR_LIST
     ]
 
 

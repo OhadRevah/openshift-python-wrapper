@@ -1,5 +1,6 @@
 import os
 
+from resources.template import Template
 from resources.virtual_machine import VirtualMachine
 
 from utilities.infra import Images
@@ -153,8 +154,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel6.0",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -165,8 +166,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel7.6",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -177,8 +178,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel7.7",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -189,8 +190,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel7.8",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -202,8 +203,8 @@ rhel_os_matrix = [
             # TODO: Modify to 7.9 once it is added to templates
             "template_labels": {
                 "os": "rhel7.8",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -214,8 +215,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel8.0",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -226,8 +227,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel8.1",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -238,8 +239,8 @@ rhel_os_matrix = [
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "rhel8.2",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -251,8 +252,8 @@ rhel_os_matrix = [
             "latest": True,
             "template_labels": {
                 "os": "rhel8.3",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -264,8 +265,8 @@ rhel_os_matrix = [
             # TODO: Modify to 8.4 once it is added to templates
             "template_labels": {
                 "os": "rhel8.3",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -280,8 +281,8 @@ windows_os_matrix = [
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "win10",
-                "workload": "desktop",
-                "flavor": "medium",
+                "workload": Template.Workload.DESKTOP,
+                "flavor": Template.Flavor.MEDIUM,
             },
             "license": "TFNPT-4HYRB-JMJW3-6JDYQ-JTYP6",
         }
@@ -294,8 +295,8 @@ windows_os_matrix = [
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "win2k12r2",
-                "workload": "server",
-                "flavor": "medium",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.MEDIUM,
             },
             "license": "CKWJN-48TW8-V7CVV-RQCFY-R6XCB",
         }
@@ -308,8 +309,8 @@ windows_os_matrix = [
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "win2k16",
-                "workload": "server",
-                "flavor": "medium",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.MEDIUM,
             },
             "license": "MBHVF-NK7XF-C4YG9-8VBVP-Q3XQF",
         }
@@ -323,8 +324,8 @@ windows_os_matrix = [
             "latest": True,
             "template_labels": {
                 "os": "win2k19",
-                "workload": "server",
-                "flavor": "medium",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.MEDIUM,
             },
             "license": "N8BP4-3RHM3-YQWTF-MBJC3-YBKQ3",
         }
@@ -339,8 +340,8 @@ fedora_os_matrix = [
             "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
             "template_labels": {
                 "os": "fedora31",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
@@ -352,8 +353,8 @@ fedora_os_matrix = [
             "latest": True,
             "template_labels": {
                 "os": "fedora32",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         },
     },
@@ -365,8 +366,8 @@ fedora_os_matrix = [
             # TODO: Modify to fedora33 once it is added to templates
             "template_labels": {
                 "os": "fedora32",
-                "workload": "server",
-                "flavor": "tiny",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
             },
         }
     },
