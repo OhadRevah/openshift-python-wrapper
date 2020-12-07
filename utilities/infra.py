@@ -48,6 +48,7 @@ class Images:
 
     class Windows:
         WIM10_IMG = "win_10.qcow2"
+        WIM10_EFI_IMG = "win_10_efi.qcow2"
         WIN12_IMG = "win_12.qcow2"
         WIN16_IMG = "win_16.qcow2"
         WIN19_IMG = "win_19.qcow2"

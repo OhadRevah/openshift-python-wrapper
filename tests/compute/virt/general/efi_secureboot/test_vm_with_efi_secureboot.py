@@ -9,14 +9,18 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
+from resources.template import Template
 
+from tests.compute.utils import migrate_vm, vm_started
 from utilities import console
 from utilities.infra import Images
 from utilities.virt import (
     VirtualMachineForTests,
+    VirtualMachineForTestsFromTemplate,
+    execute_winrm_cmd,
     vm_console_run_commands,
     wait_for_console,
-    wait_for_vm_interfaces,
+    wait_for_windows_vm,
 )
 
 
@@ -24,10 +28,11 @@ LOGGER = logging.getLogger(__name__)
 VM_CPU = 2
 VM_MEMORY = 1
 RHEL_EFI_IMG = os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_2_EFI_IMG)
+WIN_EFI_IMG = os.path.join(Images.Windows.DIR, Images.Windows.WIM10_EFI_IMG)
 
 
 @pytest.fixture(scope="class")
-def efi_secureboot_vm(request, namespace, unprivileged_client, data_volume_scope_class):
+def rhel_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_class):
     """ Create VM with EFI secureBoot set as True """
     with VirtualMachineForTests(
         name="rhel-efi-secureboot-default",
@@ -37,29 +42,41 @@ def efi_secureboot_vm(request, namespace, unprivileged_client, data_volume_scope
         cpu_cores=VM_CPU,
         memory_requests=f"{VM_MEMORY}Gi",
         smm_enabled=True,
-        efi_params=request.param.get("efi_params"),
+        efi_params={"secureBoot": True},
     ) as vm:
-        start_and_wait_for_vm_console(vm=vm, console_impl=console.RHEL)
+        vm_started(vm=vm)
+        wait_for_console(vm=vm, console_impl=console.RHEL)
         yield vm
 
 
-def start_and_wait_for_vm_console(vm, console_impl):
-    vm.start(wait=True)
-    vm.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vm.vmi)
-    wait_for_console(vm=vm, console_impl=console_impl)
+@pytest.fixture(scope="class")
+def windows_efi_secureboot_vm(
+    namespace, unprivileged_client, data_volume_scope_class, winrmcli_pod_scope_class
+):
+    """ Create VM with EFI secureBoot set as True """
+    with VirtualMachineForTestsFromTemplate(
+        name="windows-efi-secureboot",
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(
+            **py_config["windows_os_matrix"][0]["win-10"]["template_labels"]
+        ),
+        data_volume=data_volume_scope_class,
+        cpu_cores=VM_CPU,
+        smm_enabled=True,
+        efi_params={"secureBoot": True},
+    ) as vm:
+        vm_started(vm=vm, wait_for_interfaces=False)
+        wait_for_windows_vm(
+            vm=vm,
+            version=vm.template_labels[0].split("win")[1],
+            winrmcli_pod=winrmcli_pod_scope_class,
+            timeout=1800,
+        )
+        yield vm
 
 
-def validate_efi_vm_and_vm_xml(vm):
-    """
-    Verify EFI directory structure exists and VM XML is secureBoot enabled.
-    """
-    vm_console_run_commands(
-        console_impl=console.RHEL,
-        vm=vm,
-        commands=["ls -ld /sys/firmware/efi"],
-    )
-
+def validate_vm_xml_efi(vm):
     LOGGER.info("Verify VM XML - EFI secureBoot values.")
     os = vm.vmi.xml_dict["domain"]["os"]
     efi_path = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
@@ -78,6 +95,30 @@ def validate_efi_vm_and_vm_xml(vm):
     ), f"EFIVarsPath value {vmi_xml_efi_vars_path} does not match expected {efi_vars_path} value"
 
 
+def validate_linux_efi(vm):
+    """
+    Verify guest OS is using EFI.
+    """
+    vm_console_run_commands(
+        console_impl=console.RHEL, vm=vm, commands=["ls -ld /sys/firmware/efi"]
+    )
+
+
+def validate_windows_efi(vm, winrm_pod):
+    """
+    Verify guest OS is using EFI.
+    """
+    out = execute_winrm_cmd(
+        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
+        winrmcli_pod=winrm_pod,
+        cmd="bcdedit | findstr EFI",
+        target_vm=vm,
+    )
+    assert (
+        "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out
+    ), f"EFI boot not fount in path. bcdedit output:\n{out}"
+
+
 def _update_vm_efi_spec(vm):
     ResourceEditor(
         {
@@ -90,12 +131,12 @@ def _update_vm_efi_spec(vm):
             }
         }
     ).update()
-    vm.stop(wait=True)
-    start_and_wait_for_vm_console(vm=vm, console_impl=console.RHEL)
+    vm.restart(wait=True)
+    wait_for_console(vm=vm, console_impl=console.RHEL)
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class, efi_secureboot_vm",
+    "data_volume_scope_class",
     [
         pytest.param(
             {
@@ -103,36 +144,36 @@ def _update_vm_efi_spec(vm):
                 "image": RHEL_EFI_IMG,
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            },
-            {"efi_params": {"secureBoot": True}},
+            }
         ),
     ],
     indirect=True,
 )
-class TestEFISecureBoot:
+class TestEFISecureBootRHEL:
     """
     Test EFI secureBoot VM with RHEL Images in DV.
     """
 
     @pytest.mark.run(before="test_efi_secureboot_is_default")
     @pytest.mark.polarion("CNV-1791")
-    def test_secureboot_efi(self, data_volume_scope_class, efi_secureboot_vm):
+    def test_secureboot_efi(self, data_volume_scope_class, rhel_efi_secureboot_vm):
         """
         Test VM boots with efi secureboot and check vm_xml values
         """
-        validate_efi_vm_and_vm_xml(vm=efi_secureboot_vm)
+        validate_vm_xml_efi(vm=rhel_efi_secureboot_vm)
+        validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
     @pytest.mark.run(before="test_efi_secureboot_is_default")
     @pytest.mark.polarion("CNV-1789")
     def test_efi_secureboot_vm_cpu_and_memory(
-        self, data_volume_scope_class, efi_secureboot_vm
+        self, data_volume_scope_class, rhel_efi_secureboot_vm
     ):
         """
         Test EFI secureBoot VM cpu and memory values specified in spec match
         """
         vm_console_run_commands(
             console_impl=console.RHEL,
-            vm=efi_secureboot_vm,
+            vm=rhel_efi_secureboot_vm,
             commands=[
                 f"sudo dmidecode -t 17 | awk '/Size/{{print $2,$3}}' | grep \"{VM_MEMORY} GB\"",
                 f"nproc | grep {VM_CPU}",
@@ -142,13 +183,14 @@ class TestEFISecureBoot:
     @pytest.mark.run(after="test_secureboot_efi")
     @pytest.mark.polarion("CNV-1790")
     def test_efi_secureboot_is_default(
-        self, data_volume_scope_class, efi_secureboot_vm
+        self, data_volume_scope_class, rhel_efi_secureboot_vm
     ):
         """
         Test VM with EFI is set as secureBoot by default.
         """
-        _update_vm_efi_spec(vm=efi_secureboot_vm)
-        validate_efi_vm_and_vm_xml(vm=efi_secureboot_vm)
+        _update_vm_efi_spec(vm=rhel_efi_secureboot_vm)
+        validate_vm_xml_efi(vm=rhel_efi_secureboot_vm)
+        validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
 
 @pytest.mark.polarion("CNV-4465")
@@ -166,3 +208,58 @@ def test_efi_secureboot_with_smm_disabled(namespace, unprivileged_client):
             pytest.fail(
                 "VM created with EFI SecureBoot enabled. SecureBoot requires SMM, which is currently disabled"
             )
+
+
+@pytest.mark.parametrize(
+    "data_volume_scope_class",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-windows-efi-secureboot",
+                "image": WIN_EFI_IMG,
+                "storage_class": py_config["default_storage_class"],
+                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
+            },
+        ),
+    ],
+    indirect=True,
+)
+class TestEFISecureBootWindows:
+    """
+    Test EFI secureBoot VM with Windows Images in DV.
+    """
+
+    @pytest.mark.polarion("CNV-5464")
+    def test_secureboot_efi(
+        self,
+        windows_efi_secureboot_vm,
+        winrmcli_pod_scope_class,
+    ):
+        """
+        Test VM boots with efi secureboot and check vm_xml values
+        """
+        validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
+        validate_windows_efi(
+            vm=windows_efi_secureboot_vm, winrm_pod=winrmcli_pod_scope_class
+        )
+
+    @pytest.mark.polarion("CNV-5465")
+    def test_migrate_vm_windows(
+        self,
+        skip_access_mode_rwo_scope_class,
+        windows_efi_secureboot_vm,
+        winrmcli_pod_scope_class,
+    ):
+        """Test EFI Windows VM is migrated."""
+
+        migrate_vm(vm=windows_efi_secureboot_vm)
+        wait_for_windows_vm(
+            vm=windows_efi_secureboot_vm,
+            version=windows_efi_secureboot_vm.template_labels[0].split("win")[1],
+            winrmcli_pod=winrmcli_pod_scope_class,
+            timeout=1800,
+        )
+        validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
+        validate_windows_efi(
+            vm=windows_efi_secureboot_vm, winrm_pod=winrmcli_pod_scope_class
+        )

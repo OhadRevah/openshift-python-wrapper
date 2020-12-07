@@ -642,6 +642,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         interfaces=None,
         ssh=False,
         vm_dict=None,
+        cpu_cores=None,
         cpu_threads=None,
         cpu_model=None,
         memory_requests=None,
@@ -654,6 +655,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         diskless_vm=False,
         run_strategy=None,
         disk_options_vm=None,
+        smm_enabled=None,
+        efi_params=None,
     ):
         super().__init__(
             name=name,
@@ -664,6 +667,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             ssh=ssh,
             network_model=network_model,
             network_multiqueue=network_multiqueue,
+            cpu_cores=cpu_cores,
             cpu_threads=cpu_threads,
             cpu_model=cpu_model,
             memory_requests=memory_requests,
@@ -675,6 +679,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             diskless_vm=diskless_vm,
             run_strategy=run_strategy,
             disk_io_options=disk_options_vm,
+            smm_enabled=smm_enabled,
+            efi_params=efi_params,
         )
         self.template_labels = labels
         self.data_volume = data_volume
