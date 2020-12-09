@@ -124,6 +124,14 @@ def get_bug_status(bugzilla_connection_params, bug):
     return bzapi.getbug(objid=bug).status
 
 
+class MissingResourceException(Exception):
+    def __init__(self, resource):
+        self.resource = resource
+
+    def __str__(self):
+        return f"No resources of type {self.resource} were found. Please check the test environment setup."
+
+
 class UrlNotFoundError(Exception):
     def __init__(self, url_request):
         self.url_request = url_request

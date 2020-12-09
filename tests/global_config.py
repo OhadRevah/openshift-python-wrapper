@@ -73,7 +73,7 @@ provider_matrix = [
             "api_url": "https://rhev-node-05.rdu2.scalelab.redhat.com/sdk",
             "username": "administrator@vsphere.local",
             "password": "Heslo123!",
-            "cluster_name": "Cluster",
+            "cluster_name": "MTV",
             "thumbprint": "31:14:EB:9E:F1:78:68:10:A5:78:D1:A7:DF:BB:54:B7:1B:91:9F:30",
         }
     },

@@ -17,7 +17,7 @@ from resources.pod import Pod
 
 import utilities.network
 from tests.must_gather import utils as mg_utils
-from utilities.infra import create_ns
+from utilities.infra import MissingResourceException, create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -26,14 +26,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-class MissingResourceException(Exception):
-    def __init__(self, resource):
-        self.resource = resource
-
-    def __str__(self):
-        return f"No resources of type {self.resource} were found. Please check the test environment setup."
 
 
 @pytest.fixture(scope="module")

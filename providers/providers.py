@@ -5,6 +5,9 @@ import re
 import ovirtsdk4
 from pyVim.connect import Disconnect, SmartConnectNoSSL
 from pyVmomi import vim
+from resources.utils import TimeoutSampler
+
+from utilities.infra import MissingResourceException
 
 
 class Provider(abc.ABC):
@@ -204,3 +207,104 @@ class VMWare(Provider):
         for cluster in self.clusters(datacenter=datacenter):
             if cluster.name == name:
                 return cluster
+
+    def get_resource_obj(self, resource_type, resource_name):
+        """
+        Get the vsphere resource object associated with a given resource_name.
+        """
+        containers = self.content.viewManager.CreateContainerView(
+            container=self.content.rootFolder, type=resource_type, recursive=True
+        )
+        for cont_obj in containers.view:
+            if cont_obj.name == resource_name:
+                return cont_obj
+
+        raise MissingResourceException(f"{resource_type}: {resource_name}")
+
+    def wait_task(self, task, action_name="job"):
+        """
+        Waits and provides updates on a vSphere task.
+        """
+        for sample in TimeoutSampler(
+            timeout=60,
+            sleep=2,
+            func=lambda: task.info.state != vim.TaskInfo.State.running,
+        ):
+            if sample:
+                break
+
+        if task.info.state == vim.TaskInfo.State.success:
+            self.log.info(
+                msg=(
+                    f"{action_name} completed successfully. "
+                    f"{f'result: {task.info.result}' if task.info.result else ''}"
+                )
+            )
+            return task.info.result
+
+        self.log.error(
+            msg=f"{action_name} did not complete successfully: {task.info.error}"
+        )
+        raise task.info.error  # should be a Fault
+
+    def get_vm_clone_spec(self, cluster_name, power_on, vm_flavor, datastore_name):
+        cluster = self.cluster(name=cluster_name)
+        resource_pool = cluster.resourcePool
+        # Relocation spec
+        relospec = vim.vm.RelocateSpec()
+        relospec.pool = resource_pool
+
+        if datastore_name:
+            data_store = self.get_resource_obj(
+                resource_type=[vim.Datastore],
+                resource_name=datastore_name,
+            )
+            relospec.datastore = data_store
+
+        vmconf = vim.vm.ConfigSpec()
+        if vm_flavor:
+            # VM config spec
+            vmconf.numCPUs = vm_flavor["cpus"]
+            vmconf.memoryMB = vm_flavor["memory"]
+
+        clone_spec = vim.vm.CloneSpec(
+            powerOn=power_on,
+            template=False,
+            location=relospec,
+            customization=None,
+            config=vmconf,
+        )
+
+        return clone_spec
+
+    def clone_vm_from_template(
+        self,
+        cluster_name,
+        template_name,
+        vm_name,
+        power_on=True,
+        vm_flavor=None,
+        datastore_name=None,
+    ):
+        """
+        This method will create a new vm by cloning the template provided using template_name.
+        By default it uses the spec of the template to create new vm.
+        vm_flavor and datastore_name can be changed if required.
+        vm_flavor (dict): {'cpu': <number of vCPU>, 'memory':<RAM size in MB>}
+        datastore_name (str): '<new datastore name>'
+        """
+        template_vm = self.get_resource_obj(
+            resource_type=[vim.VirtualMachine],
+            resource_name=template_name,
+        )
+        clone_spec = self.get_vm_clone_spec(
+            cluster_name=cluster_name,
+            power_on=power_on,
+            vm_flavor=vm_flavor,
+            datastore_name=datastore_name,
+        )
+        # Creating clone task
+        task = template_vm.Clone(
+            name=vm_name, folder=template_vm.parent, spec=clone_spec
+        )
+        return self.wait_task(task=task, action_name="VM clone task")
