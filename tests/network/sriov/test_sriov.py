@@ -77,7 +77,7 @@ def sriov_network(sriov_node_policy, namespace):
     with SriovNetwork(
         name="sriov-test-network",
         resource_name=sriov_node_policy.resource_name,
-        policy_namespace=SRIOV_NAMESPACE,
+        namespace=SRIOV_NAMESPACE,
         network_namespace=namespace.name,
     ) as sriov_network:
         yield sriov_network
@@ -91,7 +91,7 @@ def sriov_network_vlan(sriov_node_policy, namespace, vlan_tag_id):
     with SriovNetwork(
         name="sriov-test-network-vlan",
         resource_name=sriov_node_policy.resource_name,
-        policy_namespace=SRIOV_NAMESPACE,
+        namespace=SRIOV_NAMESPACE,
         network_namespace=namespace.name,
         vlan=vlan_tag_id,
     ) as sriov_network:

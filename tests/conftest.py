@@ -1495,7 +1495,7 @@ def skip_if_no_sriov_workers(sriov_workers):
 def sriov_node_state(sriov_workers):
     return SriovNetworkNodeState(
         name=sriov_workers[0].name,
-        policy_namespace=py_config["sriov_namespace"],
+        namespace=py_config["sriov_namespace"],
     )
 
 
@@ -1504,7 +1504,7 @@ def sriov_node_policy(sriov_node_state):
     sriov_iface = sriov_node_state.instance.spec.interfaces[0]
     with SriovNetworkNodePolicy(
         name="test-sriov-policy",
-        policy_namespace=sriov_node_state.namespace,
+        namespace=sriov_node_state.namespace,
         pf_names=sriov_iface.name,
         root_devices=sriov_iface.pciAddress,
         num_vfs=sriov_iface.numVfs,

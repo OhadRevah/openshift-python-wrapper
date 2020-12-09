@@ -372,7 +372,7 @@ class VirtualMachineForTests(VirtualMachine):
                 sriov_network_exists = SriovNetwork(
                     name=iface_name,
                     network_namespace=self.namespace,
-                    policy_namespace=py_config["sriov_namespace"],
+                    namespace=py_config["sriov_namespace"],
                 ).exists
             except NotImplementedError:
                 sriov_network_exists = False

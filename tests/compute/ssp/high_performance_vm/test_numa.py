@@ -31,7 +31,7 @@ def skip_if_no_cpumanager_workers(schedulable_nodes):
 def sriov_net(sriov_node_policy, namespace):
     with SriovNetwork(
         name="numa-sriov-test-net",
-        policy_namespace=sriov_node_policy.namespace,
+        namespace=sriov_node_policy.namespace,
         resource_name=sriov_node_policy.resource_name,
         network_namespace=namespace.name,
     ) as net:
