@@ -21,8 +21,11 @@ import tests.storage.utils as storage_utils
 from utilities import console
 from utilities.infra import Images
 from utilities.storage import (
+    create_dummy_first_consumer_pod,
     create_dv,
     get_images_external_http_server,
+    sc_is_hpp_with_immediate_volume_binding,
+    sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
 from utilities.virt import VirtualMachineForTests, wait_for_console
@@ -166,34 +169,40 @@ def test_dv_delete_from_vm(
     """
     dv = DataVolume(namespace=namespace.name, name="cnv-3686-dv")
     storage_class = [*storage_class_matrix__module__][0]
+    dv_template = {
+        "metadata": {
+            "name": f"{dv.name}",
+        },
+        "spec": {
+            "pvc": {
+                "storageClassName": storage_class,
+                "volumeMode": storage_class_matrix__module__[storage_class][
+                    "volume_mode"
+                ],
+                "accessModes": [
+                    storage_class_matrix__module__[storage_class]["access_mode"]
+                ],
+                "resources": {"requests": {"storage": "1Gi"}},
+            },
+            "source": {
+                "http": {
+                    "url": f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
+                }
+            },
+        },
+    }
+    if sc_is_hpp_with_immediate_volume_binding(sc=storage_class):
+        dv_template["metadata"]["annotations"] = {
+            "kubevirt.io/provisionOnNode": worker_node1.name
+        }
     with VirtualMachineForTests(
         name="cnv-3686-vm",
         namespace=namespace.name,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={
-            "metadata": {
-                "name": f"{dv.name}",
-                "annotations": {"kubevirt.io/provisionOnNode": worker_node1.name},
-            },
-            "spec": {
-                "pvc": {
-                    "storageClassName": storage_class,
-                    "volumeMode": storage_class_matrix__module__[storage_class][
-                        "volume_mode"
-                    ],
-                    "accessModes": [
-                        storage_class_matrix__module__[storage_class]["access_mode"]
-                    ],
-                    "resources": {"requests": {"storage": "1Gi"}},
-                },
-                "source": {
-                    "http": {
-                        "url": f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
-                    }
-                },
-            },
-        },
+        data_volume_template=dv_template,
     ) as vm:
+        if sc_volume_binding_mode_is_wffc(sc=storage_class):
+            create_dummy_first_consumer_pod(dv=dv)
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
         dv.delete()
         # DV re-creation is triggered by VM

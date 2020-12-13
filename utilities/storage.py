@@ -503,7 +503,7 @@ def data_volume_template_dict(
         source_namespace=source_dv.namespace,
     ).to_dict()
 
-    if DataVolume.AccessMode.RWO in source_dv_pvc.accessModes:
+    if sc_is_hpp_with_immediate_volume_binding(sc=source_dv_pvc.storageClassName):
         data_volume_template_dict["metadata"].setdefault("annotations", {})[
             "kubevirt.io/provisionOnNode"
         ] = worker_node.name

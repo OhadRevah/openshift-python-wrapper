@@ -22,7 +22,7 @@ from tests.storage.utils import (
     storage_params,
 )
 from utilities.infra import Images
-from utilities.storage import ErrorMsg
+from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
 from utilities.virt import VirtualMachineForTests
 
 
@@ -63,7 +63,11 @@ def data_volume_clone_settings(
         access_modes=data_volume_multi_storage_scope_module.access_modes,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
         size=data_volume_multi_storage_scope_module.size,
-        hostpath_node=data_volume_multi_storage_scope_module.pvc.selected_node,
+        hostpath_node=data_volume_multi_storage_scope_module.pvc.selected_node
+        if sc_is_hpp_with_immediate_volume_binding(
+            sc=data_volume_multi_storage_scope_module.storage_class
+        )
+        else None,
     )
     return dv
 

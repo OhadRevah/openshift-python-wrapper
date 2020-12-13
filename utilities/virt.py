@@ -21,7 +21,6 @@ from resources.secret import Secret
 from resources.service import Service
 from resources.service_account import ServiceAccount
 from resources.sriov_network import SriovNetwork
-from resources.storage_class import StorageClass
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -509,19 +508,11 @@ class VirtualMachineForTests(VirtualMachine):
 
         # DV/PVC info may be taken from self.data_volume_template, self.data_volume or self.pvc
         if self.data_volume_template or self.data_volume or self.pvc:
-            storage_class, access_mode, node_selector = self.get_storage_configuration()
+            storage_class, access_mode = self.get_storage_configuration()
 
             # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
             if DataVolume.AccessMode.RWX not in access_mode:
                 spec.pop("evictionStrategy", None)
-
-            # For HPP - DV/PVC and VM must reside on the same node
-            if (
-                node_selector
-                and storage_class == StorageClass.Types.HOSTPATH
-                and not self.node_selector
-            ):
-                spec["nodeSelector"] = {"kubernetes.io/hostname": node_selector}
 
             # Needed only for VMs which are not created from common templates
             if not self.is_vm_from_template:
@@ -612,7 +603,6 @@ class VirtualMachineForTests(VirtualMachine):
         self.custom_service.create(wait=True)
 
     def get_storage_configuration(self):
-        node_annotation = "kubevirt.io/provisionOnNode"
         storage_class = (
             self.data_volume.storage_class
             if self.data_volume
@@ -627,19 +617,8 @@ class VirtualMachineForTests(VirtualMachine):
             if self.pvc
             else self.data_volume_template["spec"]["pvc"]["accessModes"]
         )
-        node_selector = (
-            self.data_volume.pvc.selected_node
-            or self.data_volume.pvc.instance.metadata.annotations.get(node_annotation)
-            if self.data_volume
-            else self.pvc.instance.metadata.annotations.get(node_annotation)
-            or self.pvc.selected_node
-            if self.pvc
-            else self.data_volume_template["metadata"]
-            .setdefault("annotations", {})
-            .get(node_annotation)
-        )
 
-        return storage_class, access_mode, node_selector
+        return storage_class, access_mode
 
     @property
     def ssh_exec(self):
