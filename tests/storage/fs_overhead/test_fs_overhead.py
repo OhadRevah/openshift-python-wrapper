@@ -1,6 +1,8 @@
 import math
 
 import pytest
+from resources.datavolume import DataVolume
+from resources.storage_class import StorageClass
 
 from utilities.infra import Images
 from utilities.storage import ErrorMsg, downloaded_image, virtctl_upload_dv
@@ -68,3 +70,22 @@ def test_upload_with_same_size_as_image_should_fail(
         status, out = res
         assert ErrorMsg.LARGER_PVC_REQUIRED in out
         assert not status
+
+
+@pytest.mark.polarion("CNV-5507")
+def test_fs_overhead_dont_affect_block_volume_mode(
+    skip_test_if_no_ocs_sc,
+    namespace,
+    local_fedora_image,
+):
+    with virtctl_upload_dv(
+        name="cnv-5507",
+        namespace=namespace.name,
+        size=f"{FEDORA_IMAGE_SIZE_GI}Gi",
+        insecure=True,
+        image_path=LOCAL_NAME,
+        storage_class=StorageClass.Types.CEPH_RBD,
+        volume_mode=DataVolume.VolumeMode.BLOCK,
+    ) as res:
+        status, out = res
+        assert status, out
