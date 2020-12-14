@@ -76,7 +76,7 @@ def get_centos_templates_list():
         f"centos{release}-{workload}-{flavor}"
         for release in centos_releases_list
         for flavor in LINUX_FLAVORS_LIST
-        for workload in LINUX_WORKLOADS_LIST
+        for workload in [Template.Workload.SERVER, Template.Workload.DESKTOP]
     ]
 
 
@@ -87,16 +87,43 @@ def base_templates(admin_client):
         Template.get(
             dyn_client=admin_client,
             singular_name=Template.singular_name,
-            label_selector="template.kubevirt.io/type=base",
+            label_selector=Template.Labels.BASE,
         )
     )
     return [
         template
         for template in common_templates_list
         if not template.instance.metadata.annotations.get(
-            "template.kubevirt.io/deprecated"
+            Template.Annotations.DEPRECATED
         )
     ]
+
+
+@pytest.fixture()
+def templates_provider_support_dict():
+    provider_url_annotation = Template.Annotations.PROVIDER_URL
+    support_level_annotation = Template.Annotations.PROVIDER_SUPPORT_LEVEL
+    provider_support_dict = {"provider": {Template.Annotations.PROVIDER: "Red Hat"}}
+    redhat_support_dict = {
+        support_level_annotation: "Full",
+        provider_url_annotation: "https://www.redhat.com",
+    }
+    provider_support_dict.update(
+        {
+            "windows": redhat_support_dict,
+            "rhel": redhat_support_dict,
+            "fedora": {
+                support_level_annotation: "Community",
+                provider_url_annotation: "https://www.fedoraproject.org",
+            },
+            "centos": {
+                support_level_annotation: "Community",
+                provider_url_annotation: "https://www.centos.org",
+            },
+        }
+    )
+
+    return provider_support_dict
 
 
 @pytest.mark.polarion("CNV-1069")
@@ -340,3 +367,31 @@ def test_common_templates_golden_images_params(base_templates):
     assert (
         not unmatched_templates
     ), f"The following templates fail on golden images verification: {unmatched_templates}"
+
+
+@pytest.mark.polarion("CNV-5599")
+def test_provide_support_annotations(base_templates, templates_provider_support_dict):
+    """ Verify provider, provider-support-level and provider-url annotations"""
+
+    def _get_os_support_dict(os_name):
+        # Return support dict based on OS
+        return {
+            **templates_provider_support_dict["provider"],
+            **templates_provider_support_dict[os_name],
+        }
+
+    unmatched_templates = {}
+    for template in base_templates:
+        # RHEL 6 templates to do not have the provider annotations
+        if "rhel6" not in template.name:
+            template_annotations_dict = template.instance.to_dict()["metadata"][
+                "annotations"
+            ]
+            template_os_name = re.search(r"([a-z]+).*", template.name).group(1)
+            for key, value in _get_os_support_dict(os_name=template_os_name).items():
+                if template_annotations_dict.get(key) != value:
+                    unmatched_templates[template.name] = template_annotations_dict
+                    break
+    assert (
+        not unmatched_templates
+    ), f"The following templates fail on provider and support verification: {unmatched_templates}"
