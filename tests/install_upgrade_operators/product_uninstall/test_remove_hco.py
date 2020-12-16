@@ -6,6 +6,7 @@ from pytest_testconfig import config as py_config
 from resources.event import Event
 from resources.hyperconverged import HyperConverged
 
+from tests.install_upgrade_operators.utils import wait_for_hco_conditions
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -170,24 +171,7 @@ class TestRemoveHCO:
         ) as hco:
             LOGGER.info("Waiting for all HCO conditions to detect that it is deployed")
             assert hco.exists
-            hco.wait_for_condition(
-                condition=HyperConverged.Condition.PROGRESSING,
-                status=HyperConverged.Condition.Status.FALSE,
-                timeout=HCO_DEPLOY_TIMEOUT,
-            )
-            hco.wait_for_condition(
-                condition=HyperConverged.Condition.DEGRADED,
-                status=HyperConverged.Condition.Status.FALSE,
-            )
-            hco.wait_for_condition(
-                condition=HyperConverged.Condition.AVAILABLE,
-                status=HyperConverged.Condition.Status.TRUE,
-                timeout=HCO_DEPLOY_TIMEOUT,
-            )
-            hco.wait_for_condition(
-                condition=HyperConverged.Condition.UPGRADEABLE,
-                status=HyperConverged.Condition.Status.TRUE,
-            )
+            wait_for_hco_conditions(admin_client=admin_client)
 
 
 # assert that a certain event was emitted

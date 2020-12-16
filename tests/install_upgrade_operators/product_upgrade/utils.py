@@ -20,6 +20,7 @@ from resources.subscription import Subscription
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
+from tests.install_upgrade_operators.utils import wait_for_hco_conditions
 from utilities.virt import run_command, wait_for_vm_interfaces
 
 
@@ -71,8 +72,6 @@ def assert_node_is_marked_by_bridge(bridge_nad, vm):
 
 
 # Upgrade-related functions
-
-
 def wait_for_operator_replacement(
     dyn_client, hco_namespace, operator_name, old_operator_pod
 ):
@@ -346,46 +345,6 @@ def get_hyperconverged_cr(dyn_client, namespace):
         return cr
 
 
-def wait_for_hco_conditions(dyn_client, namespace):
-    upgrade_conditions = {
-        "Available": Resource.Condition.Status.TRUE,
-        "Progressing": Resource.Condition.Status.FALSE,
-        "ReconcileComplete": Resource.Condition.Status.TRUE,
-        "Degraded": Resource.Condition.Status.FALSE,
-        "Upgradeable": Resource.Condition.Status.TRUE,
-    }
-    actual_conditions = None
-
-    samples = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
-        sleep=5,
-        func=get_hyperconverged_cr,
-        exceptions=NotFoundError,
-        dyn_client=dyn_client,
-        namespace=namespace,
-    )
-
-    try:
-        for sample in samples:
-            if sample:
-                actual_conditions = sample.instance.status.conditions
-                actual_upgrade_conditions = {
-                    condition.type: condition.status
-                    for condition in actual_conditions
-                    if condition.type in upgrade_conditions.keys()
-                }
-
-                if actual_upgrade_conditions == upgrade_conditions:
-                    return
-
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Expected conditions: {upgrade_conditions}. Actual "
-            f"conditions: {actual_conditions}"
-        )
-        raise
-
-
 def get_nodes_status(nodes):
     nodes_dict = {}
     for node in nodes:
@@ -488,7 +447,7 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
     )
 
     LOGGER.info("Wait for HCO conditions after upgrade")
-    wait_for_hco_conditions(dyn_client=dyn_client, namespace=hco_namespace.name)
+    wait_for_hco_conditions(admin_client=dyn_client)
 
     LOGGER.info("Wait for HCO operator to be ready")
     hco_operator_pod = get_operator_by_name(
