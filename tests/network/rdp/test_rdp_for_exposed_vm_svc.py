@@ -9,13 +9,12 @@ from pytest_testconfig import config as py_config
 from resources.service import Service
 
 from tests.conftest import vm_instance_from_template
+from utilities.virt import get_windows_os_dict
 
 
 LOGGER = logging.getLogger(__name__)
 # TODO : Use once Win19 RDP issue resolved - WIN_LATEST_VERSION = py_config["latest_windows_version"]["os_version"]
-WIN_VERSION_16_CONFIG = [
-    v for i in py_config["windows_os_matrix"] for k, v in i.items() if k == "win-16"
-][0]
+WIN_VERSION_16_CONFIG = get_windows_os_dict(windows_version="win-16")
 WIN_OS_VERSION_16 = WIN_VERSION_16_CONFIG["os_version"]
 
 

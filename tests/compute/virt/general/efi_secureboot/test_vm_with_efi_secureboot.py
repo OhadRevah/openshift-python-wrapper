@@ -59,7 +59,7 @@ def windows_efi_secureboot_vm(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(
-            **py_config["windows_os_matrix"][0]["win-10"]["template_labels"]
+            **py_config["system_windows_os_matrix"][0]["win-10"]["template_labels"]
         ),
         data_volume=data_volume_scope_class,
         cpu_cores=VM_CPU,

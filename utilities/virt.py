@@ -1398,3 +1398,18 @@ def get_guest_os_info(vmi):
     except TimeoutExpiredError:
         LOGGER.error("VMI doesn't have guest agent data")
         raise
+
+
+def get_windows_os_dict(windows_version):
+    windows_os_dict = [
+        os_dict
+        for win_os in py_config["system_windows_os_matrix"]
+        for os_name, os_dict in win_os.items()
+        if os_name == windows_version
+    ]
+    if windows_os_dict:
+        return windows_os_dict[0]
+    else:
+        raise KeyError(
+            f"Failed to extract {windows_version} from system_windows_os_matrix"
+        )

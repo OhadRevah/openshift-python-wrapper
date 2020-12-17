@@ -14,7 +14,7 @@ from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import execute_winrm_cmd
+from utilities.virt import execute_winrm_cmd, get_windows_os_dict
 
 
 pytestmark = pytest.mark.skipif(
@@ -23,9 +23,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 LOGGER = logging.getLogger(__name__)
-WINDOWS_DESKTOP_VERSION = [
-    v for i in py_config["windows_os_matrix"] for k, v in i.items() if k == "win-10"
-][0]
+WINDOWS_DESKTOP_VERSION = get_windows_os_dict(windows_version="win-10")
 
 
 def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=False):

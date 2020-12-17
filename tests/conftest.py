@@ -384,6 +384,12 @@ def pytest_sessionstart(session):
     # with runtime storage_class_matrix value(s)
     py_config["system_storage_class_matrix"] = py_config_scs
 
+    # Save the default windows_os_matrix before it is updated
+    # with runtime windows_os_matrix value(s).
+    # Some tests extract a single OS from the matrix and may fail if running with
+    # passed values from cli
+    py_config["system_windows_os_matrix"] = py_config["windows_os_matrix"]
+
     matrix_addoptions = [
         matrix
         for matrix in session.config.invocation_params.args
