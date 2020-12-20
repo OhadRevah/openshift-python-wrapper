@@ -156,9 +156,10 @@ def hpp_storage_class(admin_client):
     """
     Get the HPP storage class if configured
     """
-    for sc in StorageClass.get(admin_client):
-        if sc.instance.metadata.get("name") == StorageClass.Types.HOSTPATH:
-            return sc
+    for sc in StorageClass.get(
+        dyn_client=admin_client, name=StorageClass.Types.HOSTPATH
+    ):
+        return sc
 
 
 @pytest.fixture(scope="session")
