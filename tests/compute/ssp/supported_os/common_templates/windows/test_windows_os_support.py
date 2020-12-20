@@ -70,6 +70,9 @@ class TestCommonTemplatesWindows:
             helper_vm=bridge_attached_helper_vm,
         )
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3512")
     def test_vmi_guest_agent_info(
