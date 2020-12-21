@@ -34,7 +34,6 @@ LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 
 @pytest.fixture(scope="function")
 def skip_no_reencrypt_route(upload_proxy_route):
-    LOGGER.debug("Use 'skip_no_reencrypt_route' fixture...")
     if not upload_proxy_route.termination == "reencrypt":
         pytest.skip(msg="Skip testing. The upload proxy route is not re-encrypt.")
 
@@ -271,7 +270,6 @@ def test_virtctl_image_upload_with_exist_dv(
 
 @pytest.fixture()
 def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
-    LOGGER.debug("Use 'empty_pvc' fixture...")
     storage_class = [*storage_class_matrix__module__][0]
     with PersistentVolumeClaim(
         name="empty-pvc",

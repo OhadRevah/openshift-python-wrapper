@@ -15,7 +15,6 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture()
 def skip_non_shared_storage(storage_class_matrix__function__):
-    LOGGER.debug("Use 'skip_non_shared_storage' fixture...")
     if [*storage_class_matrix__function__][0] == StorageClass.Types.HOSTPATH:
         pytest.skip(msg="Skipping when storage is non-shared")
 

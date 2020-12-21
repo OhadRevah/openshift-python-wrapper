@@ -31,7 +31,6 @@ def upload_file_path(request, tmpdir):
 
 @pytest.fixture(scope="session")
 def skip_router_wildcard_cert_not_trusted(admin_client):
-    LOGGER.debug("Use 'skip_router_wildcard_cert_not_trusted' fixture...")
     trust_store_dir = "/etc/pki/ca-trust/source/anchors/"
     wildcard_hostname = (
         f"*.apps{re.search(r'.*api(.*):.*', admin_client.configuration.host).group(1)}"

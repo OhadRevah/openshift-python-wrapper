@@ -152,7 +152,6 @@ def test_cdiconfig_scratch_space_not_default(
 
 @pytest.fixture()
 def skip_if_scratch_space_specified(cdi_config):
-    LOGGER.debug("Use 'skip_if_scratch_space_specifie' fixture...")
     if cdi_config.scratch_space_storage_class_from_spec:
         pytest.skip(
             msg="Skip test because cdiconfig.spec.scratchSpaceStorageClass is specified"

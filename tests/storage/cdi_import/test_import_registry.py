@@ -32,7 +32,6 @@ def disable_tls_registry(configmap_with_cert):
     """
     To disable TLS security for a registry
     """
-    LOGGER.debug("Use 'disable_tls_registry' fixture...")
     cdi_insecure_registries = ConfigMap(
         name="cdi-insecure-registries", namespace=py_config["hco_namespace"]
     )
@@ -51,7 +50,6 @@ def disable_tls_registry(configmap_with_cert):
 
 @pytest.fixture()
 def configmap_with_cert(namespace):
-    LOGGER.debug("Use 'configmap_with_cert' fixture...")
     with ConfigMap(
         name="registry-cm-cert",
         namespace=namespace.name,
@@ -67,7 +65,6 @@ def configmap_with_cert(namespace):
 @pytest.fixture()
 def update_configmap_with_cert(request, configmap_with_cert):
     cert_name = py_config[py_config["region"]]["registry_cert"]
-    LOGGER.debug("Use 'update_configmap_with_cert' fixture...")
     injected_content = request.param["injected_content"]
     ResourceEditor(
         {

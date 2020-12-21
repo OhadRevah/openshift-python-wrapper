@@ -42,7 +42,6 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
-    LOGGER.debug("Use 'skip_when_hpp_no_immediate' fixture...")
     if (
         not hpp_storage_class.instance["volumeBindingMode"]
         == StorageClass.VolumeBindingMode.Immediate
@@ -52,7 +51,6 @@ def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
 
 @pytest.fixture(scope="module")
 def hpp_operator_deployment():
-    LOGGER.debug("Use 'hpp_operator_deployment' fixture...")
     hpp_operator_deployment = Deployment(
         name="hostpath-provisioner-operator", namespace=py_config["hco_namespace"]
     )
@@ -62,7 +60,6 @@ def hpp_operator_deployment():
 
 @pytest.fixture(scope="module")
 def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
-    LOGGER.debug("Use 'skip_when_cdiconfig_scratch_no_hpp' fixture...")
     if not (
         cdi_config.scratch_space_storage_class_from_status
         == StorageClass.Types.HOSTPATH
@@ -72,13 +69,11 @@ def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
 
 @pytest.fixture(scope="module")
 def hostpath_provisioner():
-    LOGGER.debug("Use 'hostpath_provisioner' fixture...")
     yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
 
 
 @pytest.fixture(scope="module")
 def hpp_serviceaccount():
-    LOGGER.debug("Use 'hpp_serviceaccount' fixture...")
     yield ServiceAccount(
         name="hostpath-provisioner-admin", namespace=py_config["hco_namespace"]
     )
@@ -86,25 +81,21 @@ def hpp_serviceaccount():
 
 @pytest.fixture(scope="module")
 def hpp_scc():
-    LOGGER.debug("Use 'hpp_scc' fixture...")
     yield SecurityContextConstraints(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
 
 
 @pytest.fixture(scope="module")
 def hpp_clusterrole():
-    LOGGER.debug("Use 'hpp_clusterrole' fixture...")
     yield ClusterRole(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
 
 
 @pytest.fixture(scope="module")
 def hpp_clusterrolebinding():
-    LOGGER.debug("Use 'hpp_clusterrolebinding' fixture...")
     yield ClusterRoleBinding(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
 
 
 @pytest.fixture(scope="module")
 def hpp_daemonset():
-    LOGGER.debug("Use 'hpp_daemonset' fixture...")
     yield DaemonSet(
         name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
         namespace=py_config["hco_namespace"],

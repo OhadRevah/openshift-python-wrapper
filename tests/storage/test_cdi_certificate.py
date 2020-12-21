@@ -75,7 +75,6 @@ def valid_cdi_certificates(secrets):
     auth.openshift.io/certificate-not-after: "2020-04-24T04:02:12Z"
     auth.openshift.io/certificate-not-before: "2020-04-22T04:02:11Z"
     """
-    LOGGER.debug("Use 'valid_cdi_certificates' fixture...")
     for secret in secrets:
         for cdi_secret in CDI_SECRETS:
             if secret.name == cdi_secret:
@@ -102,7 +101,6 @@ def valid_aggregated_api_client_cert():
     Performing the following steps will determine whether the extension-apiserver-authentication cert
     has been renewed within the valid time frame
     """
-    LOGGER.debug("Use 'valid_aggregated_api_client_cert' fixture...")
     kube_system_ns = "kube-system"
     aggregated_cm = "extension-apiserver-authentication"
     cert_end = "-----END CERTIFICATE-----\n"
@@ -131,7 +129,6 @@ def refresh_cdi_certificates(secrets):
     "auth.openshift.io/certificate-not-before" will trigger the cert renewal.
     This fixture refresh all CDI certificates.
     """
-    LOGGER.debug("Use 'refresh_cdi_certificates' fixture...")
     for secret in secrets:
         for cdi_secret in CDI_SECRETS:
             if secret.name == cdi_secret:

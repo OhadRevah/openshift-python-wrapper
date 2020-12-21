@@ -174,7 +174,6 @@ def ocs_storage_class(admin_client):
 
 @pytest.fixture(scope="session")
 def skip_test_if_no_hpp_sc(hpp_storage_class):
-    LOGGER.debug("Use 'skip_test_if_no_hpp_sc' fixture...")
     if not hpp_storage_class:
         pytest.skip("Skipping test, HostPath storage class is not deployed")
 
@@ -343,7 +342,6 @@ def skip_smart_clone_not_supported_by_sc(
 
 
 def _skip_block_volumemode(storage_class_matrix):
-    LOGGER.debug("Use 'skip_block_volumemode' fixture...")
     storage_class = [*storage_class_matrix][0]
     if storage_class_matrix[storage_class]["volume_mode"] == "Block":
         pytest.skip("Test is not supported on Block volume mode")
