@@ -33,9 +33,10 @@ def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_bond1(
+def ovs_linux_bond1_worker_1(
     index_number,
     utility_pods,
+    worker_node1,
     hosts_common_available_ports,
     link_aggregation_mode_matrix__class__,
 ):
@@ -48,6 +49,7 @@ def ovs_linux_bond1(
         bond_name=f"bond{bond_idx}",
         slaves=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
+        node_selector=worker_node1.name,
         mode=link_aggregation_mode_matrix__class__,
         mtu=1450,
     ) as bond:
@@ -55,23 +57,70 @@ def ovs_linux_bond1(
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_bridge_on_bond(
+def ovs_linux_bond1_worker_2(
+    index_number,
+    utility_pods,
+    worker_node2,
+    hosts_common_available_ports,
+    link_aggregation_mode_matrix__class__,
+    ovs_linux_bond1_worker_1,
+):
+    """
+    Create BOND if setup support BOND
+    """
+    bond_idx = next(index_number)
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"bond{bond_idx}nncp",
+        bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
+        slaves=hosts_common_available_ports[0:2],
+        worker_pods=utility_pods,
+        node_selector=worker_node2.name,
+        mode=link_aggregation_mode_matrix__class__,
+        mtu=1450,
+    ) as bond:
+        yield bond
+
+
+@pytest.fixture(scope="class")
+def ovs_linux_bridge_on_bond_worker_1(
     bridge_device_matrix__class__,
     utility_pods,
-    schedulable_nodes,
+    worker_node1,
     ovs_linux_br1bond_nad,
-    ovs_linux_bond1,
+    ovs_linux_bond1_worker_1,
 ):
     """
     Create bridge and attach the BOND to it
     """
     with network_utils.network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name="bridge-on-bond",
+        nncp_name="bridge-on-bond-worker-1",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
         network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
-        ports=[ovs_linux_bond1.bond_name],
+        node_selector=worker_node1.name,
+        ports=[ovs_linux_bond1_worker_1.bond_name],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def ovs_linux_bridge_on_bond_worker_2(
+    bridge_device_matrix__class__,
+    utility_pods,
+    worker_node2,
+    ovs_linux_br1bond_nad,
+    ovs_linux_bond1_worker_2,
+):
+    """
+    Create bridge and attach the BOND to it
+    """
+    with network_utils.network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name="bridge-on-bond-worker-2",
+        interface_name=ovs_linux_br1bond_nad.bridge_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[ovs_linux_bond1_worker_2.bond_name],
     ) as br:
         yield br
 
@@ -82,7 +131,7 @@ def ovs_linux_bond_bridge_attached_vma(
     namespace,
     unprivileged_client,
     ovs_linux_br1bond_nad,
-    ovs_linux_bridge_on_bond,
+    ovs_linux_bridge_on_bond_worker_1,
 ):
     name = "bond-vma"
     networks = OrderedDict()
@@ -111,7 +160,7 @@ def ovs_linux_bond_bridge_attached_vmb(
     namespace,
     unprivileged_client,
     ovs_linux_br1bond_nad,
-    ovs_linux_bridge_on_bond,
+    ovs_linux_bridge_on_bond_worker_2,
 ):
     name = "bond-vmb"
     networks = OrderedDict()
@@ -158,7 +207,8 @@ class TestBondConnectivity:
         skip_no_bond_support,
         namespace,
         ovs_linux_br1bond_nad,
-        ovs_linux_bridge_on_bond,
+        ovs_linux_bridge_on_bond_worker_1,
+        ovs_linux_bridge_on_bond_worker_2,
         ovs_linux_bond_bridge_attached_vma,
         ovs_linux_bond_bridge_attached_vmb,
         ovs_linux_bond_bridge_attached_running_vmia,
