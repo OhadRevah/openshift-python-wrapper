@@ -9,6 +9,7 @@ from pytest_testconfig import config as py_config
 from resources.service import Service
 
 from tests.conftest import vm_instance_from_template
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_windows_os_dict
 
 
@@ -82,6 +83,9 @@ def rdp_executor_pod(utility_pods, rdp_vm):
         ),
     ],
     indirect=True,
+)
+@pytest.mark.bugzilla(
+    1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 def test_rdp_for_exposed_win_vm_as_node_port_svc(
     rdp_vm,
