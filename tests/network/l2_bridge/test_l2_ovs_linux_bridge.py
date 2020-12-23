@@ -1,8 +1,10 @@
 import contextlib
 
 import pytest
+from netaddr import IPNetwork
 from resources.utils import TimeoutSampler
 
+from tests.network.l2_bridge.conftest import DHCP_IP_RANGE_START
 from utilities import console
 from utilities.console import Fedora
 from utilities.infra import BUG_STATUS_CLOSED
@@ -76,6 +78,7 @@ class TestL2LinuxBridge:
         post_install_command = [
             f"sudo nmcli connection modify '{dhcp_client_eth3_nm_connection_name}' ipv4.method auto",
             f"sudo nmcli connection up '{dhcp_client_eth3_nm_connection_name}'",
+            "sudo systemctl restart qemu-guest-agent.service",  # Force guest agent to report the new IP.
         ]
         vm_console_run_commands(
             console_impl=console.Fedora,
@@ -91,7 +94,7 @@ class TestL2LinuxBridge:
             name=dhcp_nad.name,
         )
         for address in current_ip:
-            if str(address) == configured_l2_bridge_vm_b.dhcp_pool_address:
+            if str(address) in IPNetwork(f"{DHCP_IP_RANGE_START}/24"):
                 return True
 
     @pytest.mark.polarion("CNV-2284")

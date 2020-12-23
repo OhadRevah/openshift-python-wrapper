@@ -28,7 +28,8 @@ VMA_MPLS_LOOPBACK_IP = "10.200.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
 VMB_MPLS_LOOPBACK_IP = "10.200.200.1/32"
 VMB_MPLS_ROUTE_TAG = 200
-DHCP_IP_RANGE_START = DHCP_IP_RANGE_END = "10.200.3.3"
+DHCP_IP_RANGE_START = "10.200.3.3"
+DHCP_IP_RANGE_END = "10.200.3.10"
 DOT1Q_VLAN_ID = 10
 
 
@@ -159,7 +160,6 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         mpls_dest_ip,
         mpls_dest_tag,
         mpls_route_next_hop,
-        dhcp_pool_address,
         cloud_init_extra_user_data=None,
         client=None,
         cloud_init_data=None,
@@ -169,7 +169,6 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         self.mpls_local_tag = mpls_local_tag
         self.ip_addresses = ip_addresses
         self.mpls_local_ip = ip_interface(address=mpls_local_ip).ip
-        self.dhcp_pool_address = dhcp_pool_address
         self.mpls_dest_ip = mpls_dest_ip
         self.mpls_dest_tag = mpls_dest_tag
         self.mpls_route_next_hop = mpls_route_next_hop
@@ -216,7 +215,6 @@ def bridge_attached_vm(
     mpls_dest_tag,
     mpls_route_next_hop,
     mpls_local_ip,
-    dhcp_pool_address="",
     cloud_init_extra_user_data=None,
     client=None,
     node_selector=None,
@@ -239,7 +237,6 @@ def bridge_attached_vm(
         ip_addresses=ip_addresses,
         mpls_local_tag=mpls_local_tag,
         mpls_local_ip=mpls_local_ip,
-        dhcp_pool_address=dhcp_pool_address,
         mpls_dest_ip=mpls_dest_ip,
         mpls_dest_tag=mpls_dest_tag,
         mpls_route_next_hop=mpls_route_next_hop,
@@ -305,7 +302,6 @@ def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_cli
         ip_addresses=interface_ip_addresses,
         mpls_local_tag=VMB_MPLS_ROUTE_TAG,
         mpls_local_ip=VMB_MPLS_LOOPBACK_IP,
-        dhcp_pool_address=DHCP_IP_RANGE_START,
         mpls_dest_ip=VMA_MPLS_LOOPBACK_IP,
         mpls_dest_tag=VMA_MPLS_ROUTE_TAG,
         mpls_route_next_hop="10.200.4.1",
