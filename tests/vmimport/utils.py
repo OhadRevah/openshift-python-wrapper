@@ -1,5 +1,7 @@
 from resources.virtual_machine_import import VirtualMachineImport
 
+from utilities.storage import get_storage_class_dict_from_matrix
+
 
 class ProviderMappings:
     def __init__(
@@ -14,6 +16,8 @@ class ResourceMappingItem:
     def __init__(
         self,
         target_name,
+        target_volume_mode=None,
+        target_access_modes=None,
         target_namespace=None,
         target_type=None,
         source_name=None,
@@ -24,19 +28,23 @@ class ResourceMappingItem:
         self.source_name = source_name
         self.source_id = source_id
         self.target_type = target_type
+        self.target_volume_mode = target_volume_mode
+        self.target_access_modes = target_access_modes
 
 
 def storage_mapping_by_source_vm_disks_storage_name(
     storage_classes, source_volumes_config
 ):
     storage_mapping_items = []
-    for source_vm_volume_index, target_storage_class in enumerate(storage_classes):
+    for storage_class_index, source_volume_config in enumerate(source_volumes_config):
+        _sc_name = storage_classes[storage_class_index]
         storage_mapping_items.append(
             ResourceMappingItem(
-                target_name=target_storage_class,
-                source_name=source_volumes_config[source_vm_volume_index][
-                    "storage_name"
-                ],
+                target_name=_sc_name,
+                target_volume_mode=get_storage_class_dict_from_matrix(
+                    storage_class=_sc_name
+                )[_sc_name]["volume_mode"],
+                source_name=source_volume_config["storage_name"],
             )
         )
     return storage_mapping_items

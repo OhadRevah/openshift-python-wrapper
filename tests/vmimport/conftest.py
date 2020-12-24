@@ -9,6 +9,7 @@ from subprocess import STDOUT, check_output
 
 import pytest
 import yaml
+from pytest_testconfig import py_config
 from resources.secret import Secret
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import ResourceMapping
@@ -182,7 +183,19 @@ def providers_mapping_network_only(request, pod_network, multus_network, provide
 
 
 @pytest.fixture(scope="module")
+def skip_on_min_storage_classes(request):
+    if len(py_config["storage_class_matrix"]) < request.param:
+        pytest.skip(
+            f"Destination OCP Must have at least {request.param} Storage Classes in order to run this test."
+        )
+
+
+@pytest.fixture(scope="module")
 def resource_mapping(request, namespace, pod_network, provider_data):
+    sc_names = [[*sc][0] for sc in py_config["storage_class_matrix"]]
+    sc_names.insert(0, sc_names.pop(sc_names.index(py_config["default_storage_class"])))
+    # The default storage class should be 1st so it is mapped to the 1st disk's datastore/domain
+
     with ResourceMapping(
         name="resource-mapping",
         namespace=namespace.name,
@@ -190,7 +203,7 @@ def resource_mapping(request, namespace, pod_network, provider_data):
             provider_data["type"]: ProviderMappings(
                 network_mappings=[pod_network],
                 storage_mappings=utils.storage_mapping_by_source_vm_disks_storage_name(
-                    storage_classes=["nfs", "local-block", "hostpath-provisioner"],
+                    storage_classes=sc_names,
                     source_volumes_config=request.param,
                 ),
             )

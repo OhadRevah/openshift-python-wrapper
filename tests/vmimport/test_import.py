@@ -3,6 +3,7 @@ import multiprocessing
 
 import ovirtsdk4.types
 import pytest
+from pytest_testconfig import py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
@@ -405,22 +406,41 @@ def test_invalid_vm_import(
     ],
     indirect=True,
 )
+@pytest.mark.parametrize(
+    "skip_on_min_storage_classes",
+    [
+        pytest.param(
+            len(Source.vms["cirros-3disks"]["volumes_details"]),
+            marks=(pytest.mark.polarion("CNV-4393")),
+        ),
+    ],
+    indirect=True,
+)
 def test_vmimport_with_mixed_external_and_internal_storage_mappings(
-    provider, provider_data, namespace, secret, resource_mapping, no_vms_in_namespace
+    skip_on_min_storage_classes,
+    provider,
+    provider_data,
+    namespace,
+    secret,
+    resource_mapping,
+    no_vms_in_namespace,
 ):
 
     # Verify:
-    # 1. External Storage Mapping (Disk0 expected StorageClass: nfs)
-    # 2. Override 1 Storage Name with Internal Mapping  (Disk1 expected StorageClass: nfs)
-    # 3. Override 1 Disk name with InternalMapping  (Disk2 expected StorageClass: nfs)
+    # 1. External Storage Mapping (Disk0 expected StorageClass: global_config default sc)
+    # 2. Override 1 Storage Name with Internal Mapping  (Disk1 expected StorageClass: global_config default sc)
+    # 3. Override 1 Disk name with InternalMapping  (Disk2 expected StorageClass: global_config default sc)
 
     expected_vm_config = Source.vms["cirros-3disks"]
     expected_vm_name = expected_vm_config["name"]
     source_data_volumes_config = expected_vm_config["volumes_details"]
-    target_storage_class = "nfs"
 
-    # we expect all volumes to have the same storage class
-    expected_vm_config["expected_storage_class"] = target_storage_class
+    # in the internal mapping we use  the same destination storage class&volume mode for all items
+    _sc_name = py_config["default_storage_class"]
+    _vol_mod = py_config["default_volume_mode"]
+
+    # all 3 disks are expected to be of the global_config default storage class at the end.
+    expected_vm_config["expected_storage_class"] = _sc_name
 
     _test_import_vm(
         name=import_name(vm_name=expected_vm_name),
@@ -435,14 +455,16 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
         provider_mappings=utils.ProviderMappings(
             storage_mappings=[
                 ResourceMappingItem(
-                    target_name=target_storage_class,  # disk1 is overridden by Storage Name
+                    target_name=_sc_name,  # disk1 is overridden by Storage Name
                     source_name=source_data_volumes_config[1]["storage_name"],
+                    target_volume_mode=_vol_mod,
                 ),
             ],
             disk_mappings=[
                 ResourceMappingItem(
-                    target_name=target_storage_class,  # disk2 is overridden by DiskName
+                    target_name=_sc_name,  # disk2 is overridden by DiskName
                     source_name=source_data_volumes_config[2]["disk_name"],
+                    target_volume_mode=_vol_mod,
                 )
             ],
         ),
