@@ -167,6 +167,11 @@ def br1test_nad(namespace):
 
 
 @pytest.fixture()
+def restarted_vm(vma):
+    vma.restart(wait=True)
+
+
+@pytest.fixture()
 def http_service(namespace, running_vma, running_vmb):
     running_vmb.custom_service_enable(service_name="http-masquerade-migration", port=80)
 
@@ -245,6 +250,7 @@ def test_ping_vm_migration(
     assert_low_packet_loss(vm=running_vma)
 
 
+@pytest.mark.dependency(name="ssh_vm_migration")
 @pytest.mark.polarion("CNV-2063")
 def test_ssh_vm_migration(
     skip_rhel7_workers,
@@ -264,6 +270,24 @@ def test_ssh_vm_migration(
         assert running_vmb.vmi.instance.status.nodeName != src_node
 
     assert_ssh_alive(ssh_vm=running_vma)
+
+
+@pytest.mark.dependency(depends=["ssh_vm_migration"])
+@pytest.mark.polarion("CNV-5565")
+def test_connectivity_after_migration_and_restart(
+    skip_rhel7_workers,
+    skip_when_one_node,
+    namespace,
+    vma,
+    vmb,
+    running_vma,
+    running_vmb,
+    restarted_vm,
+):
+    assert_ping_successful(
+        src_vm=running_vma,
+        dst_ip=get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST),
+    )
 
 
 @pytest.mark.polarion("CNV-2061")
