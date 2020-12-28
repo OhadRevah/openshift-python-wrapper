@@ -25,6 +25,7 @@ from resources.cluster_service_version import ClusterServiceVersion
 from resources.configmap import ConfigMap
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
+from resources.deployment import Deployment
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network import Network
@@ -573,6 +574,33 @@ def unprivileged_secret(admin_client):
         ) as secret:
             yield secret
 
+        #  Wait for oauth-openshift deployment to update after removeing htpass-secret
+        _wait_for_oauth_openshift_deployment(admin_client=admin_client)
+
+
+def _wait_for_oauth_openshift_deployment(admin_client):
+    dp = next(
+        Deployment.get(
+            dyn_client=admin_client,
+            name="oauth-openshift",
+            namespace="openshift-authentication",
+        )
+    )
+    _log = f"Wait for {dp.name} -> Type: Progressing -> Reason:"
+
+    def _wait_sampler(reason):
+        sampler = TimeoutSampler(
+            timeout=60, sleep=1, func=lambda: dp.instance.status.conditions
+        )
+        for sample in sampler:
+            for _spl in sample:
+                if _spl.type == "Progressing" and _spl.reason == reason:
+                    return
+
+    for reason in ("ReplicaSetUpdated", "NewReplicaSetAvailable"):
+        LOGGER.info(f"{_log} {reason}")
+        _wait_sampler(reason=reason)
+
 
 @pytest.fixture(scope="session")
 def unprivileged_client(admin_client, unprivileged_secret):
@@ -617,6 +645,7 @@ def unprivileged_client(admin_client, unprivileged_secret):
             }
         )
         identity_provider_config_editor.update(backup_resources=True)
+        _wait_for_oauth_openshift_deployment(admin_client=admin_client)
 
         current_user = (
             check_output("oc whoami", shell=True).decode().strip()
