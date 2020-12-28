@@ -761,6 +761,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             os_password_dict = {
                 "rhel": console.RHEL.PASSWORD,
                 "fedora": console.Fedora.PASSWORD,
+                "centos": console.Centos.PASSWORD,
             }
             return os_password_dict[os_name]
 

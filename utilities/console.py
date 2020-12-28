@@ -124,3 +124,8 @@ class Alpine(Console):
 class RHEL(Console):
     USERNAME = "cloud-user"
     PASSWORD = "redhat"
+
+
+class Centos(Console):
+    USERNAME = "centos"
+    PASSWORD = "centos"

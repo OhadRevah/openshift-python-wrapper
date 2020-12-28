@@ -70,6 +70,12 @@ class Images:
         DIR = f"{BASE_IMAGES_DIR}/fedora-images"
         DEFAULT_DV_SIZE = "10Gi"
 
+    class CentOS:
+        CENTOS7_IMG = "CentOS-7-x86_64-GenericCloud-2009.qcow2"
+        CENTOS8_IMG = "CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2"
+        DIR = f"{BASE_IMAGES_DIR}/centos-images"
+        DEFAULT_DV_SIZE = "15Gi"
+
     class Cdi:
         QCOW2_IMG = "cirros-qcow2.img"
         DIR = f"{BASE_IMAGES_DIR}/cdi-test-images"

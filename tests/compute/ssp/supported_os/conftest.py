@@ -62,6 +62,24 @@ def golden_image_data_volume_multi_fedora_os_multi_storage_scope_class(
     )
 
 
+@pytest.fixture(scope="class")
+def golden_image_data_volume_multi_centos_multi_storage_scope_class(
+    admin_client,
+    golden_images_namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
+    centos_os_matrix__class__,
+):
+    yield from data_volume(
+        namespace=golden_images_namespace,
+        storage_class_matrix=storage_class_matrix__class__,
+        schedulable_nodes=schedulable_nodes,
+        os_matrix=centos_os_matrix__class__,
+        check_dv_exists=True,
+        admin_client=admin_client,
+    )
+
+
 def vm_object_from_template(
     unprivileged_client,
     namespace,
@@ -256,6 +274,29 @@ def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_cla
     )
 
 
+@pytest.fixture(scope="class")
+def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
+    request,
+    rhel7_workers,
+    unprivileged_client,
+    namespace,
+    centos_os_matrix__class__,
+    golden_image_data_volume_multi_centos_multi_storage_scope_class,
+    network_configuration,
+    cloud_init_data,
+):
+    return vm_object_from_template(
+        request=request,
+        rhel7_workers=rhel7_workers,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        os_matrix=centos_os_matrix__class__,
+        data_volume_object=golden_image_data_volume_multi_centos_multi_storage_scope_class,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+    )
+
+
 def vm_ssh_service(vm):
     """Manages (creation and deletion) of a service to enable SSH access to the VM
 
@@ -302,6 +343,15 @@ def vm_ssh_service_multi_windows_os_scope_class(
 ):
     yield from vm_ssh_service(
         vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+    )
+
+
+@pytest.fixture(scope="class")
+def golden_image_vm_ssh_service_multi_centos_scope_class(
+    golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+):
+    yield from vm_ssh_service(
+        vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
     )
 
 

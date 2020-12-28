@@ -373,9 +373,38 @@ fedora_os_matrix = [
     },
 ]
 
+centos_os_matrix = [
+    {
+        "centos-7": {
+            "image_name": Images.CentOS.CENTOS7_IMG,
+            "image_path": os.path.join(Images.CentOS.DIR, Images.CentOS.CENTOS7_IMG),
+            "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
+            "template_labels": {
+                "os": "centos7.0",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "centos-8": {
+            "image_name": Images.CentOS.CENTOS8_IMG,
+            "image_path": os.path.join(Images.CentOS.DIR, Images.CentOS.CENTOS8_IMG),
+            "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
+            "latest": True,
+            "template_labels": {
+                "os": "centos8",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+]
+
 latest_rhel_version = _generate_latest_os_dict(os_list=rhel_os_matrix)
 latest_windows_version = _generate_latest_os_dict(os_list=windows_os_matrix)
 latest_fedora_version = _generate_latest_os_dict(os_list=fedora_os_matrix)
+latest_centos_version = _generate_latest_os_dict(os_list=centos_os_matrix)
 
 ip_stack_version_matrix = [
     "ipv4",

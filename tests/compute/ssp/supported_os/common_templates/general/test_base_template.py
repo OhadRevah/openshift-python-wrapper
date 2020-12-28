@@ -32,6 +32,7 @@ def common_templates_expected_list():
     common_templates_list = get_rhel_templates_list()
     common_templates_list += get_fedora_templates_list()
     common_templates_list += get_windows_templates_list()
+    common_templates_list += get_centos_templates_list()
     return common_templates_list
 
 
@@ -66,6 +67,16 @@ def get_windows_templates_list():
         f"{release}-{flavor}"
         for release in windows_releases_list
         for flavor in WINDOWS_FLAVOR_LIST
+    ]
+
+
+def get_centos_templates_list():
+    centos_releases_list = ["7", "8"]
+    return [
+        f"centos{release}-{workload}-{flavor}"
+        for release in centos_releases_list
+        for flavor in LINUX_FLAVORS_LIST
+        for workload in LINUX_WORKLOADS_LIST
     ]
 
 
