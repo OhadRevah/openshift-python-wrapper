@@ -131,9 +131,13 @@ def request_updated_vm_run_strategy(request, lifecyle_vm):
 
 
 @pytest.fixture()
-def start_vm_if_not_running(lifecyle_vm, matrix_updated_vm_run_strategy):
+def start_vm_if_not_running(lifecyle_vm):
+
+    vm_run_strategy = lifecyle_vm.instance.spec.runStrategy
+
     if not lifecyle_vm.ready:
-        run_strategy_policy = RUN_STRATEGY_DICT[matrix_updated_vm_run_strategy]["start"]
+        # runStrategy policy acc. to vm's current run strategy
+        run_strategy_policy = RUN_STRATEGY_DICT[vm_run_strategy]["start"]
         LOGGER.info(f"Starting VM {lifecyle_vm.name}")
         run_vm_action(
             vm=lifecyle_vm,
@@ -263,10 +267,12 @@ class TestRunStrategy:
         pytest.param(
             {"run_strategy": MANUAL},
             marks=pytest.mark.polarion("CNV-4688"),
+            id="Manual",
         ),
         pytest.param(
             {"run_strategy": ALWAYS},
             marks=pytest.mark.polarion("CNV-4689"),
+            id="Always",
         ),
     ],
     indirect=True,
@@ -286,6 +292,7 @@ def test_run_strategy_pause_unpause_vmi(
         pytest.param(
             {"run_strategy": ALWAYS},
             marks=pytest.mark.polarion("CNV-4690"),
+            id="Always",
         )
     ],
     indirect=True,
