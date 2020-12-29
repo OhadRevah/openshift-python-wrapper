@@ -1,7 +1,8 @@
 # Customized Docker image
 
 ## Instruction
-This document describes how did I make the docker image "qe-cnv-tests-registry-fedora29-qcow2-rootdir" which was used in test_import_registy.py
+This document describes how the docker image "qe-cnv-tests-registry-fedora29-qcow2-rootdir" was made,\
+which is used in test_import_registry.py.
 
 The image requires three conditions:
 1. The disk image file is not under /disk directory
@@ -36,12 +37,12 @@ $ docker tag fedora29:$VERSION quay.io/openshift-cnv/qe-cnv-tests-registry-fedor
 ``
 
 #### 6. Push docker image to Quay
-```
-$ docker push quay.io/openshift-cnv/qe-cnv-tests-registry-fedora29-qcow2-rootdir
-```
 Note: Before push, you need to login
 ```
 $ docker login quay.io
+```
+```
+$ docker push quay.io/openshift-cnv/qe-cnv-tests-registry-fedora29-qcow2-rootdir
 ```
 
 #### 7. Validate the docker image
