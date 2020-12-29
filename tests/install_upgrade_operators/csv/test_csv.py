@@ -71,7 +71,7 @@ def test_csv_icon(csv):
     assert len(csv.instance.spec.icon) == 1
     assert csv.instance.spec.icon[0].mediatype == "image/svg+xml"
     svg = b64decode(s=csv.instance.spec.icon[0].base64data)
-    with open("tests/csv/logo.svg", "rb") as logo_file:
+    with open("tests/install_upgrade_operators/csv/logo.svg", "rb") as logo_file:
         expected_svg = logo_file.read()
 
     icon_match = svg == expected_svg
