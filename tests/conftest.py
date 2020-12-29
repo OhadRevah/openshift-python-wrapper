@@ -413,7 +413,8 @@ def pytest_sessionstart(session):
 
                 if isinstance(item, str):
                     # Extract only the items item which has the requested key from
-                    items_list.append(val)
+                    if item == val:
+                        items_list.append(item)
 
         py_config[key] = items_list
 
