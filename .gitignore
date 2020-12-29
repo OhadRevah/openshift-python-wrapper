@@ -3,6 +3,7 @@ kubevirtci/
 
 # Temporary files
 _out
+_hco
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template

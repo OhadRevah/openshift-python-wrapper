@@ -41,7 +41,6 @@ def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
         yield vm
 
 
-@pytest.mark.ci
 @pytest.mark.polarion("CNV-2520")
 def test_component_installed_by_operator(skip_rhel7_workers, network_addons_config):
     """
@@ -55,7 +54,6 @@ def test_component_installed_by_operator(skip_rhel7_workers, network_addons_conf
     ), f"{component_name_in_cr} is missing from the network operator CR."
 
 
-@pytest.mark.ci
 @pytest.mark.polarion("CNV-2296")
 def test_linux_bridge_functionality(skip_rhel7_workers, net_add_op_bridge_attached_vm):
     """

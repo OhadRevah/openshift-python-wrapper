@@ -9,6 +9,7 @@ from utilities.virt import (
 
 
 @pytest.mark.smoke
+@pytest.mark.ci
 @pytest.mark.polarion("CNV-5501")
 def test_container_disk_vm(
     namespace,

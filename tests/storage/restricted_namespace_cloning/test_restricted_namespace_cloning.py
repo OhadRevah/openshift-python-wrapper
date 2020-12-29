@@ -22,7 +22,6 @@ LOGGER = logging.getLogger(__name__)
 pytestmark = pytest.mark.usefixtures("skip_when_no_unprivileged_client_available")
 
 
-@pytest.mark.ci
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",
     [
@@ -59,7 +58,6 @@ def test_unprivileged_user_clone_same_namespace_negative(
             return
 
 
-@pytest.mark.ci
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",
     [

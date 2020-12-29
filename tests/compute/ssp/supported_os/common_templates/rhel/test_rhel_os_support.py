@@ -24,7 +24,6 @@ pytestmark = pytest.mark.post_upgrade
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.mark.ci
 class TestCommonTemplatesRhel:
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3802")
