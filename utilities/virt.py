@@ -11,6 +11,7 @@ from contextlib import contextmanager
 import jinja2
 import pexpect
 import requests
+import rrmngmnt
 import yaml
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
@@ -195,6 +196,9 @@ class VirtualMachineForTests(VirtualMachine):
         running=False,
         run_strategy=None,
         disk_io_options=None,
+        rhel7_workers=False,
+        username=None,
+        password=None,
     ):
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -239,6 +243,9 @@ class VirtualMachineForTests(VirtualMachine):
         self.running = running
         self.run_strategy = run_strategy
         self.disk_io_options = disk_io_options
+        self.username = username
+        self.password = password
+        self.rhel7_workers = rhel7_workers
 
     def __enter__(self):
         super().__enter__()
@@ -633,6 +640,18 @@ class VirtualMachineForTests(VirtualMachine):
 
         return storage_class, access_mode, node_selector
 
+    @property
+    def ssh_exec(self):
+        # In order to use this property VM should be created with ssh=True
+        # or one of vm_ssh_service_*** (compute/ssp/supported_os/conftest.py) fixtures should be used
+        host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip))
+        host_user = rrmngmnt.user.User(name=self.username, password=self.password)
+        host._set_executor_user(user=host_user)
+        host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
+            port=self.ssh_service.service_port
+        )
+        return host
+
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def __init__(
@@ -662,6 +681,9 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         disk_options_vm=None,
         smm_enabled=None,
         efi_params=None,
+        username=None,
+        password=None,
+        rhel7_workers=False,
     ):
         super().__init__(
             name=name,
@@ -686,6 +708,9 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             disk_io_options=disk_options_vm,
             smm_enabled=smm_enabled,
             efi_params=efi_params,
+            username=username,
+            password=password,
+            rhel7_workers=rhel7_workers,
         )
         self.template_labels = labels
         self.data_volume = data_volume
@@ -917,6 +942,7 @@ class ServiceForVirtualMachineForTests(Service):
         service_type=Service.Type.CLUSTER_IP,
         target_ip=None,
         teardown=True,
+        rhel7_workers=False,
     ):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.vm = vm
@@ -924,6 +950,7 @@ class ServiceForVirtualMachineForTests(Service):
         self.port = port
         self.service_type = service_type
         self.target_ip = target_ip
+        self.rhel7_workers = rhel7_workers
 
     def to_dict(self):
         res = super().to_dict()
@@ -937,6 +964,11 @@ class ServiceForVirtualMachineForTests(Service):
 
     @property
     def service_ip(self):
+        if self.rhel7_workers:
+            return utilities.network.get_vmi_ip_v4_by_name(
+                vmi=self.vmi, name=[*self.vm.networks][0]
+            )
+
         if self.service_type == Service.Type.CLUSTER_IP:
             return self.instance.spec.clusterIP
 
@@ -948,6 +980,9 @@ class ServiceForVirtualMachineForTests(Service):
 
     @property
     def service_port(self):
+        if self.rhel7_workers:
+            return self.port
+
         if self.service_type == Service.Type.CLUSTER_IP:
             return self.instance.attributes.spec.ports[0]["port"]
 
