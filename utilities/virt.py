@@ -589,6 +589,7 @@ class VirtualMachineForTests(VirtualMachine):
             vm=self,
             port=22,
             service_type=Service.Type.NODE_PORT,
+            rhel7_workers=self.rhel7_workers,
         )
         self.ssh_service.create(wait=True)
 
@@ -1357,31 +1358,6 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
         ]
 
     return bootcmds
-
-
-def check_ssh_connection(ip, port, console_impl):
-    """Verifies successful SSH connection
-    Args:
-        ip (str): host IP
-        port (int): host port
-
-    Returns:
-        bool: True if connection succeeds else False
-    """
-
-    LOGGER.info("Check SSH connection to VM.")
-
-    ssh_user = user.User(
-        name=console_impl.USERNAME,
-        password=console_impl.PASSWORD,
-    )
-    return ssh.RemoteExecutor(
-        user=ssh_user, address=str(ip), port=port
-    ).wait_for_connectivity_state(
-        positive=True,
-        timeout=120,
-        tcp_connection_timeout=120,
-    )
 
 
 @contextmanager

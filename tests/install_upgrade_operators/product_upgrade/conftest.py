@@ -11,6 +11,7 @@ from resources.template import Template
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 import tests.network.utils as network_utils
+from utilities import console
 from utilities.network import LINUX_BRIDGE, cloud_init_network_data, network_nad
 from utilities.storage import (
     get_images_external_http_server,
@@ -163,7 +164,9 @@ def dvs_for_upgrade(namespace, worker_node1):
 
 
 @pytest.fixture(scope="module")
-def vms_for_upgrade(unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_upgrade):
+def vms_for_upgrade(
+    unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_upgrade, rhel7_workers
+):
     networks = {
         upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
     }
@@ -178,6 +181,9 @@ def vms_for_upgrade(unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_up
             data_volume=dv,
             networks=networks,
             interfaces=sorted(networks.keys()),
+            username=console.RHEL.USERNAME,
+            password=console.RHEL.PASSWORD,
+            rhel7_workers=rhel7_workers,
         )
         vm.create()
         vms_list.append(vm)

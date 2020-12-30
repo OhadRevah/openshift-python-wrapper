@@ -15,8 +15,7 @@ from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-import utilities.network
-from tests.compute.utils import rrmngmnt_host, vm_started
+from tests.compute.utils import vm_started
 from utilities.virt import (
     execute_winrm_cmd,
     get_guest_os_info,
@@ -62,18 +61,6 @@ def vm_os_version(vm, console_impl):
     command = [f"cat /etc/redhat-release | grep {os.replace('-', '.')}"]
 
     vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
-
-
-def get_vm_accessible_ip(rhel7_workers, schedulable_node_ips, vm):
-    return (
-        utilities.network.get_vmi_ip_v4_by_name(vmi=vm.vmi, name=[*vm.networks][0])
-        if rhel7_workers
-        else list(schedulable_node_ips.values())[0]
-    )
-
-
-def get_vm_ssh_port(rhel7_workers, vm):
-    return 22 if rhel7_workers else vm.ssh_service.service_port
 
 
 def check_telnet_connection(ip, port):
@@ -397,55 +384,45 @@ def restart_qemu_guest_agent_service(vm, console_impl):
 
 
 # Guest agent data comparison functions.
-def validate_os_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    def _get_os_info(vm, rrmngmnt_host):
+def validate_os_info_virtctl_vs_linux_os(vm):
+    def _get_os_info(vm):
         virtctl_info = get_virtctl_os_info(vm=vm)
         cnv_info = get_cnv_os_info(vm=vm)
         libvirt_info = get_libvirt_os_info(vm=vm)
-        linux_info = get_linux_os_info(rrmngmnt_host=rrmngmnt_host)
+        linux_info = get_linux_os_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    os_info_sampler = TimeoutSampler(
-        timeout=330, sleep=30, func=_get_os_info, vm=vm, rrmngmnt_host=host
-    )
+    os_info_sampler = TimeoutSampler(timeout=330, sleep=30, func=_get_os_info, vm=vm)
     check_guest_agent_sampler_data(sampler=os_info_sampler)
 
 
-def validate_fs_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    def _get_fs_info(vm, rrmngmnt_host):
+def validate_fs_info_virtctl_vs_linux_os(vm):
+    def _get_fs_info(vm):
         virtctl_info = get_virtctl_fs_info(vm=vm)
         cnv_info = get_cnv_fs_info(vm=vm)
         libvirt_info = get_libvirt_fs_info(vm=vm)
-        linux_info = get_linux_fs_info(rrmngmnt_host=rrmngmnt_host)
+        linux_info = get_linux_fs_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    fs_info_sampler = TimeoutSampler(
-        timeout=330, sleep=30, func=_get_fs_info, vm=vm, rrmngmnt_host=host
-    )
+    fs_info_sampler = TimeoutSampler(timeout=330, sleep=30, func=_get_fs_info, vm=vm)
     check_guest_agent_sampler_data(sampler=fs_info_sampler)
 
 
-def validate_user_info_virtctl_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    def _get_user_info(vm, rrmngmnt_host):
+def validate_user_info_virtctl_vs_linux_os(vm):
+    def _get_user_info(vm):
         virtctl_info = get_virtctl_user_info(vm=vm)
         cnv_info = get_cnv_user_info(vm=vm)
         libvirt_info = get_libvirt_user_info(vm=vm)
-        linux_info = get_linux_user_info(rrmngmnt_host=rrmngmnt_host)
+        linux_info = get_linux_user_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
-    user_info_sampler = TimeoutSampler(
-        timeout=30, sleep=10, func=_get_user_info, vm=vm, rrmngmnt_host=host
-    )
+    user_info_sampler = TimeoutSampler(timeout=30, sleep=10, func=_get_user_info, vm=vm)
     check_guest_agent_sampler_data(sampler=user_info_sampler)
 
 
-def validate_os_info_vmi_vs_linux_os(vm, ssh_usr, ssh_pass, ssh_ip, ssh_port):
-    host = rrmngmnt_host(usr=ssh_usr, passwd=ssh_pass, ip=str(ssh_ip), port=ssh_port)
+def validate_os_info_vmi_vs_linux_os(vm):
     vmi_info = get_guest_os_info(vmi=vm.vmi)
-    linux_info = get_linux_os_info(rrmngmnt_host=host)["os"]
+    linux_info = get_linux_os_info(ssh_exec=vm.ssh_exec)["os"]
     del linux_info["machine"]  # VMI describe doesn't have machine info
     linux_info["version"] = linux_info["version"].split(" ")[0]
 
@@ -645,16 +622,16 @@ def get_libvirt_os_info(vm):
     }
 
 
-def get_linux_os_info(rrmngmnt_host):
+def get_linux_os_info(ssh_exec):
     ga_ver = guest_agent_version_parser(
-        version_string=rrmngmnt_host.run_command(
+        version_string=ssh_exec.run_command(
             shlex.split("yum list -q installed qemu-g*")
         )[1]
     )
-    hostname = rrmngmnt_host.network.hostname
-    os_release = rrmngmnt_host.os.release_info
-    kernel = rrmngmnt_host.os.kernel_info
-    timezone = rrmngmnt_host.os.timezone
+    hostname = ssh_exec.network.hostname
+    os_release = ssh_exec.os.release_info
+    kernel = ssh_exec.os.kernel_info
+    timezone = ssh_exec.os.timezone
 
     return {
         "guestAgentVersion": ga_ver,
@@ -761,9 +738,9 @@ def get_libvirt_fs_info(vm):
     return guest_agent_disk_info_parser(disk_info=fsinfo)
 
 
-def get_linux_fs_info(rrmngmnt_host):
+def get_linux_fs_info(ssh_exec):
     cmd = shlex.split("df -TB1 | grep /dev/vd")
-    _, out, _ = rrmngmnt_host.run_command(command=cmd)
+    _, out, _ = ssh_exec.run_command(command=cmd)
     disks = out.strip().split()
     return {
         "name": disks[0].split("/dev/")[1],
@@ -835,13 +812,13 @@ def get_libvirt_user_info(vm):
         }
 
 
-def get_linux_user_info(rrmngmnt_host):
+def get_linux_user_info(ssh_exec):
     cmd = shlex.split("lastlog | grep tty; who | awk \"'{print$3}'\"")
-    _, out, _ = rrmngmnt_host.run_command(command=cmd)
+    _, out, _ = ssh_exec.run_command(command=cmd)
     users = out.strip().split()
     date = datetime.strptime(f"{users[8]} {users[5]}", "%Y-%m-%d %H:%M:%S")
     timestamp = date.replace(
-        tzinfo=timezone(timedelta(seconds=int(rrmngmnt_host.os.timezone.offset) * 36))
+        tzinfo=timezone(timedelta(seconds=int(ssh_exec.os.timezone.offset) * 36))
     ).timestamp()
     return {
         "userName": users[0],

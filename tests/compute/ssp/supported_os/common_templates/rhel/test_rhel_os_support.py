@@ -15,18 +15,18 @@ from tests.compute.ssp.supported_os.common_templates import (
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
-from utilities.virt import (
-    check_ssh_connection,
-    enable_ssh_service_in_vm,
-    get_guest_os_info,
-    wait_for_console,
-)
+from utilities.virt import enable_ssh_service_in_vm, get_guest_os_info, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.ci
+@pytest.mark.parametrize(
+    "vm_object_from_template_multi_rhel_os_multi_storage_scope_class",
+    [({"username": console.RHEL.USERNAME, "password": console.RHEL.PASSWORD})],
+    indirect=True,
+)
 class TestCommonTemplatesRhel:
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3802")
@@ -136,7 +136,6 @@ class TestCommonTemplatesRhel:
         data_volume_multi_rhel_os_multi_storage_scope_class,
         vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         vm_ssh_service_multi_rhel_os_scope_class,
-        schedulable_node_ips,
         bugzilla_connection_params,
     ):
         """ CNV common templates access VM via SSH """
@@ -173,17 +172,8 @@ class TestCommonTemplatesRhel:
             systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
-        assert check_ssh_connection(
-            ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ),
-            port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ),
-            console_impl=console.RHEL,
+        assert vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.is_connective(
+            tcp_timeout=120
         ), "Failed to login via SSH"
 
     @pytest.mark.bugzilla(
@@ -196,23 +186,10 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_os_info_vmi_vs_linux_os(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ),
-            ssh_port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ),
-            ssh_usr=console.RHEL.USERNAME,
-            ssh_pass=console.RHEL.PASSWORD,
+            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -224,8 +201,6 @@ class TestCommonTemplatesRhel:
         self,
         skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
@@ -234,18 +209,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         )
         common_templates_utils.validate_os_info_virtctl_vs_linux_os(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ),
-            ssh_port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            ),
-            ssh_usr=console.RHEL.USERNAME,
-            ssh_pass=console.RHEL.PASSWORD,
+            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -257,26 +221,13 @@ class TestCommonTemplatesRhel:
         self,
         skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         with console.RHEL(
             vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         ):
             common_templates_utils.validate_user_info_virtctl_vs_linux_os(
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                    rhel7_workers=rhel7_workers,
-                    schedulable_node_ips=schedulable_node_ips,
-                    vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                ),
-                ssh_port=common_templates_utils.get_vm_ssh_port(
-                    rhel7_workers=rhel7_workers,
-                    vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                ),
-                ssh_usr=console.RHEL.USERNAME,
-                ssh_pass=console.RHEL.PASSWORD,
+                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
             )
 
     @pytest.mark.dependency(depends=["start_vm"])

@@ -1263,6 +1263,7 @@ def vm_instance_from_template(
     request,
     unprivileged_client,
     namespace,
+    rhel7_workers=False,
     data_volume=None,
     data_volume_template=None,
     network_configuration=None,
@@ -1302,6 +1303,9 @@ def vm_instance_from_template(
         cpu_model=params.get("cpu_model") or vm_cpu_model,
         ssh=params.get("ssh"),
         disk_options_vm=params.get("disk_io_option"),
+        username=params.get("username"),
+        password=params.get("password"),
+        rhel7_workers=rhel7_workers,
     ) as vm:
         if params.get("start_vm", True):
             vm.start(wait=True, timeout=params.get("vm_wait_timeout", TIMEOUT))
@@ -1316,6 +1320,7 @@ def vm_instance_from_template(
 @pytest.fixture()
 def vm_instance_from_template_multi_storage_scope_function(
     request,
+    rhel7_workers,
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
@@ -1330,6 +1335,7 @@ def vm_instance_from_template_multi_storage_scope_function(
 
     with vm_instance_from_template(
         request=request,
+        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_multi_storage_scope_function,
@@ -1345,6 +1351,7 @@ def vm_instance_from_template_multi_storage_scope_function(
 @pytest.fixture(scope="class")
 def vm_instance_from_template_multi_storage_scope_class(
     request,
+    rhel7_workers,
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_class,
@@ -1359,6 +1366,7 @@ def vm_instance_from_template_multi_storage_scope_class(
 
     with vm_instance_from_template(
         request=request,
+        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_multi_storage_scope_class,

@@ -7,11 +7,7 @@ from resources.datavolume import DataVolume
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
 from utilities.network import assert_ping_successful, get_vmi_mac_address_by_iface_name
-from utilities.virt import (
-    check_ssh_connection,
-    enable_ssh_service_in_vm,
-    vm_console_run_commands,
-)
+from utilities.virt import enable_ssh_service_in_vm, vm_console_run_commands
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,11 +51,7 @@ class TestUpgrade:
     def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             enable_ssh_service_in_vm(vm=vm, console_impl=console.RHEL)
-            assert check_ssh_connection(
-                ip=vm.ssh_service.service_ip,
-                port=vm.ssh_service.service_port,
-                console_impl=console.RHEL,
-            ), "Failed to login via SSH"
+            assert vm.ssh_exec.is_connective(tcp_timeout=120), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2743")
     @pytest.mark.run(before="test_upgrade")
@@ -177,11 +169,7 @@ class TestUpgrade:
     @pytest.mark.run(after="test_is_vm_running_after_upgrade")
     def test_vm_ssh_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            assert check_ssh_connection(
-                ip=vm.ssh_service.service_ip,
-                port=vm.ssh_service.service_port,
-                console_impl=console.RHEL,
-            ), "Failed to login via SSH"
+            assert vm.ssh_exec.is_connective(tcp_timeout=120), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2979")
     @pytest.mark.run(after="test_vm_console_after_upgrade")

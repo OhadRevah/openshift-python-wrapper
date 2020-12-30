@@ -14,11 +14,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 from tests.compute.utils import vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import (
-    check_ssh_connection,
-    enable_ssh_service_in_vm,
-    wait_for_console,
-)
+from utilities.virt import enable_ssh_service_in_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -59,7 +55,15 @@ HYPERV_DICT = {
 
 @pytest.mark.parametrize(
     "vm_object_from_template_multi_fedora_os_multi_storage_scope_class",
-    [({"vm_dict": HYPERV_DICT})],
+    [
+        (
+            {
+                "vm_dict": HYPERV_DICT,
+                "username": console.Fedora.USERNAME,
+                "password": console.Fedora.PASSWORD,
+            }
+        )
+    ],
     indirect=True,
 )
 @pytest.mark.ocp_interop
@@ -175,13 +179,11 @@ class TestCommonTemplatesFedora:
     def test_expose_ssh(
         self,
         skip_upstream,
-        rhel7_workers,
         namespace,
         fedora_os_matrix__class__,
         data_volume_multi_fedora_os_multi_storage_scope_class,
         vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         vm_ssh_service_multi_fedora_os_scope_class,
-        schedulable_node_ips,
     ):
         """ CNV common templates access VM via SSH """
 
@@ -190,17 +192,8 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
 
-        assert check_ssh_connection(
-            ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            console_impl=console.Fedora,
+        assert vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec.is_connective(
+            tcp_timeout=120
         ), "Failed to login via SSH"
 
     @pytest.mark.smoke
@@ -209,24 +202,11 @@ class TestCommonTemplatesFedora:
     def test_vmi_guest_agent_info(
         self,
         fedora_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test Guest OS agent info. """
         common_templates_utils.validate_os_info_vmi_vs_linux_os(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            ssh_port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            ssh_usr=console.Fedora.USERNAME,
-            ssh_pass=console.Fedora.PASSWORD,
+            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -237,8 +217,6 @@ class TestCommonTemplatesFedora:
     def test_virtctl_guest_agent_os_info(
         self,
         fedora_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
@@ -247,18 +225,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
         common_templates_utils.validate_os_info_virtctl_vs_linux_os(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            ssh_port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            ssh_usr=console.Fedora.USERNAME,
-            ssh_pass=console.Fedora.PASSWORD,
+            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -269,23 +236,10 @@ class TestCommonTemplatesFedora:
     def test_virtctl_guest_agent_fs_info(
         self,
         fedora_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_fs_info_virtctl_vs_linux_os(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                rhel7_workers=rhel7_workers,
-                schedulable_node_ips=schedulable_node_ips,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            ssh_port=common_templates_utils.get_vm_ssh_port(
-                rhel7_workers=rhel7_workers,
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-            ),
-            ssh_usr=console.Fedora.USERNAME,
-            ssh_pass=console.Fedora.PASSWORD,
+            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -296,26 +250,13 @@ class TestCommonTemplatesFedora:
     def test_virtctl_guest_agent_user_info(
         self,
         fedora_os_matrix__class__,
-        schedulable_node_ips,
-        rhel7_workers,
         vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         with console.Fedora(
             vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         ):
             common_templates_utils.validate_user_info_virtctl_vs_linux_os(
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-                ssh_ip=common_templates_utils.get_vm_accessible_ip(
-                    rhel7_workers=rhel7_workers,
-                    schedulable_node_ips=schedulable_node_ips,
-                    vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-                ),
-                ssh_port=common_templates_utils.get_vm_ssh_port(
-                    rhel7_workers=rhel7_workers,
-                    vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-                ),
-                ssh_usr=console.Fedora.USERNAME,
-                ssh_pass=console.Fedora.PASSWORD,
+                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
             )
 
     @pytest.mark.dependency(depends=["start_vm"])
