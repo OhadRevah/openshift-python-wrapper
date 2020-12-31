@@ -1524,6 +1524,39 @@ def worker_node2(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
+def sriov_nodes_states(admin_client):
+    return list(
+        SriovNetworkNodeState.get(
+            dyn_client=admin_client, namespace=py_config["sriov_namespace"]
+        )
+    )
+
+
+@pytest.fixture(scope="session")
+def labeled_sriov_nodes(admin_client, sriov_nodes_states):
+    sriov_nodes_editors = []
+    for state in sriov_nodes_states:
+        sriov_nodes_editors.append(
+            ResourceEditor(
+                {
+                    Node(client=admin_client, name=state.name): {
+                        "metadata": {
+                            "labels": {
+                                "feature.node.kubernetes.io/network-sriov.capable": "true"
+                            }
+                        }
+                    }
+                }
+            )
+        )
+    for editor in sriov_nodes_editors:
+        editor.update(backup_resources=True)
+    yield
+    for editor in sriov_nodes_editors:
+        editor.restore()
+
+
+@pytest.fixture(scope="session")
 def sriov_workers(schedulable_nodes):
     sriov_worker_label = "feature.node.kubernetes.io/network-sriov.capable"
     yield [
