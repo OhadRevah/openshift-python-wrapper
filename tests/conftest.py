@@ -1575,25 +1575,43 @@ def skip_if_no_sriov_workers(sriov_workers):
 
 
 @pytest.fixture(scope="session")
-def sriov_node_state(sriov_workers):
-    return SriovNetworkNodeState(
-        name=sriov_workers[0].name,
-        namespace=py_config["sriov_namespace"],
+def sriov_iface(sriov_nodes_states, workers_ssh_executors):
+    for iface in sriov_nodes_states[0].instance.status.interfaces:
+        if (
+            iface.totalvfs
+            and workers_ssh_executors[
+                sriov_nodes_states[0].name
+            ].network.get_interface_status(interface=iface.name)
+            == "up"
+        ):
+            return iface
+    raise NotFoundError(
+        "no sriov interface with 'up' status was found, please make sure at least one sriov interface is up"
     )
 
 
+def wait_for_ready_sriov_nodes(snns):
+    for status in ("InProgress", "Succeeded"):
+        for state in snns:
+            state.wait_for_status_sync(wanted_status=status)
+
+
 @pytest.fixture(scope="session")
-def sriov_node_policy(sriov_node_state):
-    sriov_iface = sriov_node_state.instance.spec.interfaces[0]
+def sriov_node_policy(sriov_nodes_states, sriov_iface):
     with SriovNetworkNodePolicy(
         name="test-sriov-policy",
-        namespace=sriov_node_state.namespace,
+        namespace=py_config["sriov_namespace"],
         pf_names=sriov_iface.name,
         root_devices=sriov_iface.pciAddress,
-        num_vfs=sriov_iface.numVfs,
-        resource_name=sriov_iface.vfGroups[0].resourceName,
+        # num_vfs is the pool of ifaces we want available in the sriov network
+        # and should be no less than the number of multiple vm's we use in the tests
+        # totalvfs is usually 64 or 128
+        num_vfs=min(sriov_iface.totalvfs, 10),
+        resource_name="sriov_net",
     ) as policy:
+        wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
         yield policy
+    wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
 
 
 @pytest.fixture(scope="session")
