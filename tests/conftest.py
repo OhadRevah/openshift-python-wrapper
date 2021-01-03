@@ -86,6 +86,8 @@ from utilities.virt import (
 LOGGER = logging.getLogger(__name__)
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
+HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
+OPENSHIFT_CONFIG_NAMESPACE = "openshift-config"
 TEST_LOG_FILE = "pytest-tests.log"
 TEST_COLLECT_INFO_DIR = "tests-collected-info"
 RESOURCES_TO_COLLECT_INFO = [
@@ -568,8 +570,8 @@ def unprivileged_secret(admin_client):
         enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
         crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
         with Secret(
-            name="htpass-secret",
-            namespace="openshift-config",
+            name=HTTP_SECRET_NAME,
+            namespace=OPENSHIFT_CONFIG_NAMESPACE,
             htpasswd=base64.b64encode(crypto_credentials).decode(),
         ) as secret:
             yield secret
@@ -636,7 +638,9 @@ def unprivileged_client(admin_client, unprivileged_secret):
                                 "name": "htpasswd_provider",
                                 "mappingMethod": "claim",
                                 "type": "HTPasswd",
-                                "htpasswd": {"fileData": {"name": "htpass-secret"}},
+                                "htpasswd": {
+                                    "fileData": {"name": unprivileged_secret.name}
+                                },
                             }
                         ],
                         "tokenConfig": {"accessTokenMaxAgeSeconds": 604800},
@@ -986,7 +990,7 @@ def skip_upstream():
 
 @pytest.fixture(scope="session", autouse=True)
 def leftovers():
-    secret = Secret(name="htpass-secret", namespace="openshift-config")
+    secret = Secret(name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE)
     ds = UtilityDaemonSet(name="utility", namespace="kube-system")
     for resource_ in (secret, ds):
         try:
