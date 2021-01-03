@@ -467,11 +467,6 @@ def test_hostpath_upload_dv_with_token(
     ("dv_name", "url"),
     [
         pytest.param(
-            "cnv-3326-docker",
-            f"docker://docker.io/kubevirt/{Images.Cirros.DISK_DEMO}",
-            marks=(pytest.mark.polarion("CNV-3326")),
-        ),
-        pytest.param(
             "cnv-3326-quay",
             f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
             marks=(pytest.mark.polarion("CNV-3326")),

@@ -19,7 +19,7 @@ from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
-DOCKERHUB_IMAGE = "docker://kubevirt/cirros-registry-disk-demo"
+
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
@@ -119,7 +119,7 @@ def test_private_registry_cirros(
     [
         pytest.param(
             "cnv-2198",
-            "docker://docker.io/cirros",
+            "docker://quay.io/openshift-cnv/qe-cnv-tests-registry-official-cirros",
             marks=(pytest.mark.polarion("CNV-2198")),
             id="image-registry-not-conform-registrydisk",
         ),
@@ -170,9 +170,9 @@ def test_public_registry_multiple_data_volume(
         for dv in ("dv1", "dv2", "dv3"):
             rdv = DataVolume(
                 source="registry",
-                name=f"import-registry-dockerhub-{dv}",
+                name=f"import-public-registry-quay-{dv}",
                 namespace=namespace.name,
-                url=DOCKERHUB_IMAGE,
+                url=QUAY_IMAGE,
                 size="5Gi",
                 content_type=DataVolume.ContentType.KUBEVIRT,
                 **utils.storage_params(
@@ -323,48 +323,34 @@ def test_private_registry_with_untrusted_certificate(
     ("dv_name", "url", "cert_configmap", "content_type", "size"),
     [
         pytest.param(
-            "import-registry-dockerhub-dv",
-            DOCKERHUB_IMAGE,
-            None,
-            DataVolume.ContentType.KUBEVIRT,
-            "5Gi",
-            marks=(pytest.mark.polarion("CNV-2041")),
-        ),
-        pytest.param(
-            "import-registry-dockerhub-no-content-type-dv",
-            DOCKERHUB_IMAGE,
+            "import-public-registry-no-content-type-dv",
+            QUAY_IMAGE,
             None,
             None,
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2195")),
         ),
         pytest.param(
-            "import-registry-dockerhub-empty-content-type-dv",
-            DOCKERHUB_IMAGE,
+            "import-public-registry-empty-content-type-dv",
+            QUAY_IMAGE,
             None,
             "",
             "5Gi",
             marks=(pytest.mark.polarion("CNV-2197")),
         ),
         pytest.param(
-            "import-registry-quay-dv",
+            "import-public-registry-quay-dv",
             QUAY_IMAGE,
             None,
             DataVolume.ContentType.KUBEVIRT,
             "5Gi",
-            marks=(
-                pytest.mark.polarion("CNV-2026"),
-                pytest.mark.bugzilla(
-                    1884278, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-2026")),
         ),
     ],
     ids=[
-        "import-registry-dockerhub-dv",
-        "import-registry-dockerhub-no-content-type-dv",
-        "import-registry-dockerhub-empty-content-type-dv",
-        "import-registry-quay-dv",
+        "import-public-registry-no-content-type-dv",
+        "import-public-registry-empty-content-type-dv",
+        "import-public-registry-quay-dv",
     ],
 )
 def test_public_registry_data_volume(
@@ -392,17 +378,17 @@ def test_public_registry_data_volume(
 
 
 # The following test is to show after imports fails because low capacity storage,
-# we can overcome by updaing to the right requested volume size and import successfully
+# we can overcome by updating to the right requested volume size and import successfully
 @pytest.mark.polarion("CNV-2024")
-def test_public_registry_data_volume_dockerhub_low_capacity(
+def test_public_registry_data_volume_low_capacity(
     admin_client, namespace, storage_class_matrix__function__
 ):
     # negative flow - low capacity volume
     with utilities.storage.create_dv(
         source="registry",
-        dv_name="import-registry-dockerhub-low-capacity-dv",
+        dv_name="import-public-registry-low-capacity-dv",
         namespace=namespace.name,
-        url=DOCKERHUB_IMAGE,
+        url=QUAY_IMAGE,
         content_type="",
         size="16Mi",
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
@@ -421,9 +407,9 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
     # positive flow
     with utilities.storage.create_dv(
         source="registry",
-        dv_name="import-registry-dockerhub-low-capacity-dv",
+        dv_name="import-public-registry-low-capacity-dv",
         namespace=namespace.name,
-        url=DOCKERHUB_IMAGE,
+        url=QUAY_IMAGE,
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
         dv.wait()
@@ -432,7 +418,7 @@ def test_public_registry_data_volume_dockerhub_low_capacity(
 
 
 @pytest.mark.polarion("CNV-2150")
-def test_public_registry_data_volume_dockerhub_archive(
+def test_public_registry_data_volume_archive(
     namespace, storage_class_matrix__function__
 ):
     with pytest.raises(
@@ -440,9 +426,9 @@ def test_public_registry_data_volume_dockerhub_archive(
     ):
         with utilities.storage.create_dv(
             source="registry",
-            dv_name="import-registry-archive",
+            dv_name="import-public-registry-archive",
             namespace=namespace.name,
-            url=DOCKERHUB_IMAGE,
+            url=QUAY_IMAGE,
             content_type=DataVolume.ContentType.ARCHIVE,
             **utils.storage_params(
                 storage_class_matrix=storage_class_matrix__function__
