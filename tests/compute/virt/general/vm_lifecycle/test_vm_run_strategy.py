@@ -84,10 +84,10 @@ RUN_STRATEGY_SHUTDOWN_STATUS = {
 
 
 @pytest.fixture()
-def skip_containerdisk_vm(lifecyle_vm):
+def skip_containerdisk_vm(lifecycle_vm):
     if [
         True
-        for volume in lifecyle_vm.instance.spec.template.spec.volumes
+        for volume in lifecycle_vm.instance.spec.template.spec.volumes
         if volume.get("containerDisk")
     ]:
         pytest.skip("Skip test for VM using container disk.")
@@ -115,38 +115,38 @@ def updated_vm_run_strategy(run_strategy, vm_for_test):
 
 
 @pytest.fixture(scope="class")
-def matrix_updated_vm_run_strategy(run_strategy_matrix__class__, lifecyle_vm):
+def matrix_updated_vm_run_strategy(run_strategy_matrix__class__, lifecycle_vm):
     # Update the VM run strategy from run_strategy_matrix__class__
     return updated_vm_run_strategy(
-        run_strategy=run_strategy_matrix__class__, vm_for_test=lifecyle_vm
+        run_strategy=run_strategy_matrix__class__, vm_for_test=lifecycle_vm
     )
 
 
 @pytest.fixture()
-def request_updated_vm_run_strategy(request, lifecyle_vm):
+def request_updated_vm_run_strategy(request, lifecycle_vm):
     # Update the VM run strategy from request.param
     return updated_vm_run_strategy(
-        run_strategy=request.param["run_strategy"], vm_for_test=lifecyle_vm
+        run_strategy=request.param["run_strategy"], vm_for_test=lifecycle_vm
     )
 
 
 @pytest.fixture()
-def start_vm_if_not_running(lifecyle_vm):
+def start_vm_if_not_running(lifecycle_vm):
 
-    vm_run_strategy = lifecyle_vm.instance.spec.runStrategy
+    vm_run_strategy = lifecycle_vm.instance.spec.runStrategy
 
-    if not lifecyle_vm.ready:
+    if not lifecycle_vm.ready:
         # runStrategy policy acc. to vm's current run strategy
         run_strategy_policy = RUN_STRATEGY_DICT[vm_run_strategy]["start"]
-        LOGGER.info(f"Starting VM {lifecyle_vm.name}")
+        LOGGER.info(f"Starting VM {lifecycle_vm.name}")
         run_vm_action(
-            vm=lifecyle_vm,
+            vm=lifecycle_vm,
             vm_action="start",
             expected_exceptions=run_strategy_policy.get("expected_exceptions"),
         )
 
-    lifecyle_vm.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=lifecyle_vm.vmi)
+    lifecycle_vm.vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=lifecycle_vm.vmi)
 
 
 def run_vm_action(vm, vm_action, expected_exceptions=None):
@@ -220,7 +220,7 @@ class TestRunStrategy:
     @pytest.mark.first
     def test_run_strategy_policy(
         self,
-        lifecyle_vm,
+        lifecycle_vm,
         matrix_updated_vm_run_strategy,
         vm_action,
     ):
@@ -228,7 +228,7 @@ class TestRunStrategy:
             f"Verify VM with run strategy {matrix_updated_vm_run_strategy} and VM action {vm_action}"
         )
         verify_vm_action(
-            vm=lifecyle_vm,
+            vm=lifecycle_vm,
             vm_action=vm_action,
             run_strategy=matrix_updated_vm_run_strategy,
         )
@@ -236,19 +236,19 @@ class TestRunStrategy:
     @pytest.mark.polarion("CNV-5054")
     def test_run_strategy_shutdown(
         self,
-        lifecyle_vm,
+        lifecycle_vm,
         skip_run_strategy_halted,
         matrix_updated_vm_run_strategy,
         start_vm_if_not_running,
     ):
-        vmi = lifecyle_vm.vmi
+        vmi = lifecycle_vm.vmi
         launcher_pod = vmi.virt_launcher_pod
         run_strategy = matrix_updated_vm_run_strategy
         status = RUN_STRATEGY_SHUTDOWN_STATUS[run_strategy]
 
         # send poweroff
         with pytest.raises(EOF):
-            with console.Fedora(vm=lifecyle_vm, timeout=600) as vm_console:
+            with console.Fedora(vm=lifecycle_vm, timeout=600) as vm_console:
                 vm_console.sendline(s="sudo poweroff")
 
         # runStrategy "Always" first terminates the pod, then re-raises it
@@ -278,12 +278,12 @@ class TestRunStrategy:
     indirect=True,
 )
 def test_run_strategy_pause_unpause_vmi(
-    lifecyle_vm, request_updated_vm_run_strategy, start_vm_if_not_running
+    lifecycle_vm, request_updated_vm_run_strategy, start_vm_if_not_running
 ):
     LOGGER.info(
         f"Verify VMI pause/un-pause with runStrategy: {request_updated_vm_run_strategy}"
     )
-    pause_unpause_vmi_and_verify_status(vm=lifecyle_vm)
+    pause_unpause_vmi_and_verify_status(vm=lifecycle_vm)
 
 
 @pytest.mark.parametrize(
@@ -298,10 +298,10 @@ def test_run_strategy_pause_unpause_vmi(
     indirect=True,
 )
 def test_always_run_migrate_vm(
-    skip_upstream, skip_containerdisk_vm, lifecyle_vm, request_updated_vm_run_strategy
+    skip_upstream, skip_containerdisk_vm, lifecycle_vm, request_updated_vm_run_strategy
 ):
     LOGGER.info("The VM migration with runStrategy 'Always'")
-    verify_vm_vmi_status(vm=lifecyle_vm, ready=True)
-    migrate_vm(vm=lifecyle_vm)
-    verify_vm_vmi_status(vm=lifecyle_vm, ready=True)
-    verify_vm_run_strategy(vm=lifecyle_vm, run_strategy=ALWAYS)
+    verify_vm_vmi_status(vm=lifecycle_vm, ready=True)
+    migrate_vm(vm=lifecycle_vm)
+    verify_vm_vmi_status(vm=lifecycle_vm, ready=True)
+    verify_vm_run_strategy(vm=lifecycle_vm, run_strategy=ALWAYS)

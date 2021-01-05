@@ -60,7 +60,7 @@ def data_volume_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture(scope="module")
-def lifecyle_vm(unprivileged_client, namespace, vm_volumes_matrix__module__):
+def lifecycle_vm(unprivileged_client, namespace, vm_volumes_matrix__module__):
     """Wrapper fixture to generate the desired VM
     vm_volumes_matrix returns a string.
     globals() is used to call the actual contextmanager with that name
