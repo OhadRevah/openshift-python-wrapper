@@ -41,7 +41,13 @@ and 50G volume size (default deployment configuration).
 
 Following binaries are needed:
 ```bash
-sudo yum install python3-devel libcurl-devel libxml-devel libxslt-devel libxml++-devel libxml2-devel
+sudo dnf install python3-devel  \
+                 libcurl-devel  \
+                 libxml-devel   \
+                 openssl-devel  \
+                 libxslt-devel  \
+                 libxml++-devel \
+                 libxml2-devel
 ```
 
 ##jq
