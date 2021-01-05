@@ -2,12 +2,13 @@
 
 import logging
 import re
+import shlex
 
 import pytest
 from pytest_testconfig import config as py_config
 from resources.utils import TimeoutSampler
 
-from tests.compute.utils import migrate_vm, rrmngmnt_host
+from tests.compute.utils import migrate_vm
 from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD, enable_ssh_service_in_vm
@@ -46,17 +47,7 @@ def vm_with_fio(
 
 
 @pytest.fixture()
-def vm_rrmngmnt_host(schedulable_node_ips, vm_with_fio):
-    return rrmngmnt_host(
-        usr=console.Fedora.USERNAME,
-        passwd=console.Fedora.PASSWORD,
-        ip=vm_with_fio.ssh_service.service_ip,
-        port=vm_with_fio.ssh_service.service_port,
-    )
-
-
-@pytest.fixture()
-def run_fio_in_vm(vm_rrmngmnt_host):
+def run_fio_in_vm(vm_with_fio):
     # Random write/read -  create a 1G file, and perform 4KB reads and writes using a 75%/25%
     LOGGER.info("Running fio in VM")
     fio_cmd = [
@@ -69,17 +60,17 @@ def run_fio_in_vm(vm_rrmngmnt_host):
         "--rwmixread=75 --numjobs=8 >& /dev/null &",
         "&",
     ]
-    vm_rrmngmnt_host.run_command(command=fio_cmd)
+    vm_with_fio.ssh_exec.run_command(command=fio_cmd)
 
 
-def get_disk_usage(vm_rrmngmnt_host):
+def get_disk_usage(ssh_exec):
     def _wait_for_iotop_output():
         # After migration, the SSH connection may not be accessible for a brief moment ("No route to host")
         for sample in TimeoutSampler(
             timeout=60,
             sleep=5,
-            func=vm_rrmngmnt_host.run_command,
-            command="sudo iotop -b -n 1 -o".split(),
+            func=ssh_exec.run_command,
+            command=shlex.split("sudo iotop -b -n 1 -o"),
             tcp_timeout=60,
         ):
             if sample:
@@ -115,6 +106,8 @@ def get_disk_usage(vm_rrmngmnt_host):
                 ],
                 "cpu_threads": 2,
                 "ssh": True,
+                "username": console.Fedora.USERNAME,
+                "password": console.Fedora.PASSWORD,
             },
             marks=pytest.mark.polarion("CNV-4663"),
         ),
@@ -130,8 +123,7 @@ def test_fedora_vm_load_migration(
     vm_cloud_init_data,
     vm_with_fio,
     run_fio_in_vm,
-    vm_rrmngmnt_host,
 ):
     LOGGER.info("Test migrate VM with disk load")
     migrate_vm(vm=vm_with_fio)
-    get_disk_usage(vm_rrmngmnt_host=vm_rrmngmnt_host)
+    get_disk_usage(ssh_exec=vm_with_fio.ssh_exec)

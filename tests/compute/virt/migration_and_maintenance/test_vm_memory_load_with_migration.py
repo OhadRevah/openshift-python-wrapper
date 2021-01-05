@@ -61,7 +61,7 @@ def start_vm_stress(vm_with_mem_load):
 @pytest.fixture()
 def vm_info_before_migrate(vm_with_mem_load):
     source_node = vm_with_mem_load.vmi.virt_launcher_pod.node
-    stress_ng_pid_before = get_stress_ng_pid(host=vm_with_mem_load.ssh_exec)
+    stress_ng_pid_before = get_stress_ng_pid(ssh_exec=vm_with_mem_load.ssh_exec)
     return source_node, stress_ng_pid_before
 
 
@@ -73,9 +73,9 @@ def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
     ), "migration completed but vm on source node"
 
 
-def get_stress_ng_pid(host):
+def get_stress_ng_pid(ssh_exec):
     LOGGER.info("Get pid of stress-ng")
-    return host.run_command(
+    return ssh_exec.run_command(
         command=shlex.split("pgrep stress-ng"), tcp_timeout=60, io_timeout=60
     )[1]
 
@@ -104,7 +104,7 @@ def test_vm_migarte_with_memory_load(
     migrate_vm_with_memory_load,
 ):
     _, stress_ng_pid_before = vm_info_before_migrate
-    stress_ng_pid_after = get_stress_ng_pid(host=vm_with_mem_load.ssh_exec)
+    stress_ng_pid_after = get_stress_ng_pid(ssh_exec=vm_with_mem_load.ssh_exec)
     assert (
         stress_ng_pid_before == stress_ng_pid_after
     ), "stress ng stopped or changed during migration"

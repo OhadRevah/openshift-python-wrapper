@@ -9,7 +9,6 @@ from multiprocessing import Process
 import pytest
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.compute.utils import rrmngmnt_host
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
@@ -28,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def oom_vm(request, namespace, unprivileged_client):
+def oom_vm(request, namespace, unprivileged_client, rhel7_workers):
     name = "oom-vm"
     with VirtualMachineForTests(
         name=name,
@@ -44,20 +43,13 @@ def oom_vm(request, namespace, unprivileged_client):
         memory_requests=request.param["requests"],
         memory_limits=request.param["limits"],
         memory_guest=request.param["guest"],
+        username=console.Fedora.USERNAME,
+        password=console.Fedora.PASSWORD,
+        rhel7_workers=rhel7_workers,
     ) as vm:
         vm.vmi.wait_until_running()
         wait_for_console(vm=vm, console_impl=console.Fedora)
         yield vm
-
-
-@pytest.fixture()
-def vm_ssh_executor(oom_vm):
-    return rrmngmnt_host(
-        usr=console.Fedora.USERNAME,
-        passwd=console.Fedora.PASSWORD,
-        ip=oom_vm.ssh_service.service_ip,
-        port=oom_vm.ssh_service.service_port,
-    )
 
 
 def start_vm_stress(vm, console_impl):
@@ -125,7 +117,7 @@ def wait_vm_oom(vm):
     ],
     indirect=True,
 )
-def test_vm_oom(oom_vm, vm_ssh_executor):
+def test_vm_oom(oom_vm):
     start_vm_stress(vm=oom_vm, console_impl=console.Fedora)
-    with start_file_transfer(vm_ssh=vm_ssh_executor):
+    with start_file_transfer(vm_ssh=oom_vm.ssh_exec):
         assert wait_vm_oom(vm=oom_vm), "VM crashed"
