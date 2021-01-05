@@ -19,7 +19,7 @@ default_run_strategy = VirtualMachine.RunStrategy.MANUAL
 
 @contextmanager
 def container_disk_vm(namespace, unprivileged_client):
-    name = "fedora-vm-run-strategy"
+    name = "fedora-vm-lifecycle"
     with VirtualMachineForTests(
         name=name,
         namespace=namespace.name,
@@ -34,7 +34,7 @@ def container_disk_vm(namespace, unprivileged_client):
 @contextmanager
 def data_volume_vm(unprivileged_client, namespace):
     with create_dv(
-        dv_name="fedora-dv-run-strategy",
+        dv_name="fedora-dv-lifecycle",
         namespace=namespace.name,
         url=f"{get_images_external_http_server()}{py_config['latest_fedora_version']['image_path']}",
         storage_class=py_config["default_storage_class"],
@@ -46,7 +46,7 @@ def data_volume_vm(unprivileged_client, namespace):
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=1800)
 
         with VirtualMachineForTestsFromTemplate(
-            name="fedora-vm-run-strategy",
+            name="fedora-vm-lifecycle",
             namespace=dv.namespace,
             client=unprivileged_client,
             labels=Template.generate_template_labels(
