@@ -30,9 +30,12 @@ from rrmngmnt import ssh, user
 import utilities.network
 from utilities import console
 from utilities.infra import (
+    BUG_STATUS_CLOSED,
     ClusterHosts,
     camelcase_to_mixedcase,
     get_admin_client,
+    get_bug_status,
+    get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
 )
 
@@ -90,7 +93,17 @@ def wait_for_vm_interfaces(vmi, timeout=720):
 
     except TimeoutExpiredError:
         LOGGER.error(f"Guest agent is not installed or not active on {vmi.name}")
-        raise
+        if (
+            get_bug_status(
+                bugzilla_connection_params=get_bugzilla_connection_params(), bug=1886453
+            )
+            not in BUG_STATUS_CLOSED
+        ):
+            LOGGER.error(
+                "Due to bug 1886453 guest agent may not report its status and VM interfaces may not be available."
+            )
+        else:
+            raise
 
 
 def generate_cloud_init_data(data):

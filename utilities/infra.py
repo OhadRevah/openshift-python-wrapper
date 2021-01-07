@@ -1,4 +1,6 @@
 import os
+from configparser import ConfigParser
+from pathlib import Path
 
 import bugzilla
 import kubernetes
@@ -167,3 +169,14 @@ def camelcase_to_mixedcase(camelcase_str):
 
 def get_admin_client():
     return DynamicClient(client=kubernetes.config.new_client_from_config())
+
+
+def get_bugzilla_connection_params():
+    bz_cfg = os.path.join(Path(".").resolve(), "bugzilla.cfg")
+    parser = ConfigParser()
+    # Open the file with the correct encoding
+    parser.read(bz_cfg, encoding="utf-8")
+    params_dict = {}
+    for params in parser.items("DEFAULT"):
+        params_dict[params[0]] = params[1]
+    return params_dict
