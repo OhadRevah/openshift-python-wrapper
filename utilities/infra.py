@@ -8,6 +8,7 @@ import requests
 from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
 from resources.namespace import Namespace
+from resources.pod import Pod
 from resources.project import Project, ProjectRequest
 from resources.resource import ResourceEditor
 
@@ -180,3 +181,16 @@ def get_bugzilla_connection_params():
     for params in parser.items("DEFAULT"):
         params_dict[params[0]] = params[1]
     return params_dict
+
+
+def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
+    pods = [
+        pod
+        for pod in Pod.get(dyn_client=dyn_client, namespace=namespace)
+        if pod.name.startswith(pod_prefix)
+    ]
+    if pods:
+        if get_all:
+            return pods
+        else:
+            return pods[0]

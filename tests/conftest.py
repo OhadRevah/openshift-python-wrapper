@@ -25,6 +25,7 @@ from resources.configmap import ConfigMap
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
+from resources.hyperconverged import HyperConverged
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network import Network
@@ -1852,3 +1853,13 @@ def pyconfig_updated_default_sc(admin_client, default_sc):
                 }
             ):
                 yield sc
+
+
+@pytest.fixture()
+def hyperconverged_resource(admin_client, hco_namespace):
+    for hco in HyperConverged.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+        name="kubevirt-hyperconverged",
+    ):
+        return hco

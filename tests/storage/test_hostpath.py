@@ -24,7 +24,7 @@ from resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
     create_dv,
@@ -159,15 +159,6 @@ def assert_selected_node_annotation(pvc_node_name, pod_node_name, type_="source"
     assert (
         pvc_node_name == pod_node_name
     ), f"No 'volume.kubernetes.io/selected-node' annotation found on {type_} PVC / node names differ"
-
-
-def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace):
-    pods = [
-        pod
-        for pod in Pod.get(dyn_client=dyn_client, namespace=namespace)
-        if pod.name.startswith(pod_prefix)
-    ]
-    return pods[0] if pods else None
 
 
 def _get_pod_and_scratch_pvc(dyn_client, namespace, pod_prefix, pvc_suffix):

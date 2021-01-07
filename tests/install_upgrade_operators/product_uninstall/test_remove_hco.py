@@ -23,12 +23,6 @@ VIRT_EVENT = "ErrVirtUninstall"
 CDI_EVENT = "ErrCDIUninstall"
 
 
-@pytest.fixture()
-def hyperconverged_resource(admin_client):
-    for hco in HyperConverged.get(dyn_client=admin_client):
-        return hco
-
-
 @pytest.fixture(scope="module")
 def remove_hco_vm(unprivileged_client, namespace):
     name = "remove-hco-vm"

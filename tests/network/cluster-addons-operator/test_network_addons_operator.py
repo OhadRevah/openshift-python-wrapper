@@ -1,5 +1,4 @@
 import pytest
-from resources.network_addons_config import NetworkAddonsConfig
 
 import tests.network.utils as network_utils
 import utilities.network
@@ -30,14 +29,6 @@ def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
 
 
 @pytest.fixture(scope="module")
-def net_add_op_config_cr(admin_client):
-    nac = NetworkAddonsConfig.get(admin_client)
-    nac_list = list(nac)
-    assert nac_list, "There should be one NetworkAddonsConfig CR."
-    yield nac_list[0]
-
-
-@pytest.fixture(scope="module")
 def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
     name = "oper-test-vm"
     with VirtualMachineForTests(
@@ -53,7 +44,7 @@ def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
 
 @pytest.mark.ci
 @pytest.mark.polarion("CNV-2520")
-def test_component_installed_by_operator(skip_rhel7_workers, net_add_op_config_cr):
+def test_component_installed_by_operator(skip_rhel7_workers, network_addons_config):
     """
     Verify that the network addons operator is supposed to install Linux-Bridge
     (a mandatory default component), by checking if the component appears in
@@ -61,7 +52,7 @@ def test_component_installed_by_operator(skip_rhel7_workers, net_add_op_config_c
     """
     component_name_in_cr = "linuxBridge"
     assert (
-        component_name_in_cr in net_add_op_config_cr.instance.spec.keys()
+        component_name_in_cr in network_addons_config.instance.spec.keys()
     ), f"{component_name_in_cr} is missing from the network operator CR."
 
 
