@@ -5,3 +5,6 @@ repo:
   branch: master
   deploydir: scripts/
   scenariodir: scenarios/
+env:
+  host: <host_ip>
+  key: <key_path>

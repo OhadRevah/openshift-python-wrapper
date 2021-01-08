@@ -151,6 +151,10 @@ If you want to use chaos tools we support you need to run following command:
 make tests PYTEST_ARGS="-k chaos"
 ```
 
+There are cluster specific settings which are required to run some of the scenarios:
+HOST - hypervisor host ip
+KEY - hypervisor id-rsa key path
+
 We support 2 distinct chaos tools [Kraken](https://github.com/openshift-scale/kraken/) and [Litmus](https://github.com/litmuschaos/litmus).
 
 Above command would run tests using both tools.

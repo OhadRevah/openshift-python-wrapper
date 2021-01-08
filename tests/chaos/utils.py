@@ -55,8 +55,9 @@ class ScenarioError(Exception):
 
 
 class LitmusScenario:
-    def __init__(self, scenario):
+    def __init__(self, scenario, kind):
         self.scenario = scenario
+        self.kind = kind
         self.litmus_dir = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "litmus/"
         )
@@ -64,7 +65,7 @@ class LitmusScenario:
 
     def run_scenario(self):
         scenarios = self.config["repo"]["scenariodir"]
-        scenario_dir = os.path.join(scenarios, self.scenario)
+        scenario_dir = os.path.join(scenarios, self.kind, self.scenario)
 
         self._fetch_scenario(scenario_dir=scenario_dir)
         init_script = os.path.join(scenario_dir, "init_engine.sh")
@@ -89,7 +90,7 @@ class LitmusScenario:
         repo = self.config["repo"]
         project = f"{repo['org']}%2F{repo['project']}"
 
-        url = f"https://{repo['url']}/api/v4/projects/{project}/repository/tree?path={directory}{scenario}"
+        url = f"https://{repo['url']}/api/v4/projects/{project}/repository/tree?path={directory}{self.kind}/{scenario}"
         resp = requests.get(url, verify=False)
         if resp.status_code != 200:
             raise requests.HTTPError("Not able to list directories")
@@ -117,6 +118,7 @@ class LitmusScenario:
 
     def _deploy(self):
         script_dir = self.config["repo"]["deploydir"]
+        self._fetch_file(filename="compute-tests-to-run.sh", directory=script_dir)
         self._fetch_file(filename="deploy-litmus.sh", directory=script_dir)
         self._make_executable(filename="deploy-litmus.sh", directory=script_dir)
         self._fetch_file(filename="common.sh", directory=script_dir)
@@ -130,6 +132,11 @@ class LitmusScenario:
             script,
             env={
                 "KUBECONFIG": os.getenv("KUBECONFIG"),
+                "HOST_IP": os.environ.get("HOST_IP", self.config["env"]["host"]),
+                "GROUP": self.kind,
+                "NODE_SSH_KEY": os.environ.get(
+                    "NODE_SSH_KEY", self.config["env"]["key"]
+                ),
             },
             cwd=self.litmus_dir,
         ).wait()
@@ -158,7 +165,7 @@ class LitmusScenario:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         scenarios = self.config["repo"]["scenariodir"]
-        scenario_dir = os.path.join(scenarios, self.scenario)
+        scenario_dir = os.path.join(scenarios, self.kind, self.scenario)
 
         try:
             script = os.path.join(scenario_dir, "cleanup.sh")
