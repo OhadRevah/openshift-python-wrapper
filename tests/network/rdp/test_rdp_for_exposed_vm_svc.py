@@ -23,7 +23,7 @@ WIN_OS_VERSION_16 = WIN_VERSION_16_CONFIG["os_version"]
 def rdp_vm(
     request,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     network_configuration,
     cloud_init_data,
     unprivileged_client,
@@ -31,7 +31,7 @@ def rdp_vm(
     with vm_instance_from_template(
         request=request,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
         unprivileged_client=unprivileged_client,
@@ -63,11 +63,11 @@ def rdp_executor_pod(utility_pods, rdp_vm):
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, rdp_vm",
+    "golden_image_data_volume_scope_function, rdp_vm",
     [
         pytest.param(
             {
-                "dv_name": f"win{WIN_OS_VERSION_16}-dv-test",
+                "dv_name": WIN_VERSION_16_CONFIG["template_labels"]["os"],
                 "image": WIN_VERSION_16_CONFIG["image_path"],
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": WIN_VERSION_16_CONFIG["dv_size"],
@@ -77,6 +77,7 @@ def rdp_executor_pod(utility_pods, rdp_vm):
                 "os_version": WIN_OS_VERSION_16,
                 "template_labels": WIN_VERSION_16_CONFIG["template_labels"],
                 "network_model": "virtio",
+                "wait_for_interfaces_timeout": 2100,
             },
             marks=(pytest.mark.polarion("CNV-235")),
             id="test_rdp_for_exposed_win_vm_svc",
