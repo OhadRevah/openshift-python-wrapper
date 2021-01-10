@@ -17,7 +17,6 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.utils import vm_started
 from utilities.virt import (
-    execute_winrm_cmd,
     get_guest_os_info,
     run_virtctl_command,
     vm_console_run_commands,
@@ -33,16 +32,11 @@ def stop_start_vm(vm, wait_for_interfaces=True):
     vm_started(vm=vm, wait_for_interfaces=wait_for_interfaces)
 
 
-def reboot_vm(vm, winrmcli_pod, helper_vm=False):
+def reboot_vm(vm):
     try:
-        execute_winrm_cmd(
-            vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-            winrmcli_pod=winrmcli_pod,
-            cmd="powershell restart-computer -force",
-            target_vm=vm,
-            helper_vm=helper_vm,
-            timeout=60,
-        )
+        vm.ssh_exec.run_command(
+            command=shlex.split("powershell restart-computer -force")
+        )[1]
     # When a reboot command is executed, a resources.pod.ExecOnPodError exception is raised:
     # "connection reset by peer"
     except pod.ExecOnPodError as e:
@@ -113,7 +107,7 @@ def check_vm_xml_clock(vm):
     ] == "yes"
 
 
-def check_windows_vm_hvinfo(vm, winrmcli_pod, helper_vm=False):
+def check_windows_vm_hvinfo(vm):
     """ Verify HyperV values in Windows VMI using hvinfo """
 
     hvinfo_dict = None
@@ -121,16 +115,12 @@ def check_windows_vm_hvinfo(vm, winrmcli_pod, helper_vm=False):
     sampler = TimeoutSampler(
         timeout=90,
         sleep=15,
-        func=execute_winrm_cmd,
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        target_vm=vm,
-        helper_vm=helper_vm,
-        cmd="C:\\\\hvinfo\\\\hvinfo.exe",
+        func=vm.ssh_exec.run_command,
+        command=shlex.split("C:\\\\hvinfo\\\\hvinfo.exe"),
     )
     for sample in sampler:
-        if sample and "connect: connection refused" not in sample:
-            hvinfo_dict = json.loads(sample)
+        if sample[1] and "connect: connection refused" not in sample[1]:
+            hvinfo_dict = json.loads(sample[1])
             break
 
     assert hvinfo_dict["HyperVsupport"]
@@ -192,16 +182,12 @@ def check_vm_xml_tablet_device(vm):
     ), "Wrong device name"
 
 
-def add_windows_license(vm, winrmcli_pod, windows_license, helper_vm=False):
+def add_windows_license(vm, windows_license):
     LOGGER.info("Add Windows license.")
-    addition_status = execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        cmd=f"cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ipk {windows_license}",
-        target_vm=vm,
-        helper_vm=helper_vm,
-        timeout=90,
+    cmd = shlex.split(
+        f"cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ipk {windows_license}"
     )
+    addition_status = vm.ssh_exec.run_command(command=cmd)[1]
     assert re.match(
         r"Installed product key [a-z0-9-]+ successfully.",
         addition_status,
@@ -209,16 +195,10 @@ def add_windows_license(vm, winrmcli_pod, windows_license, helper_vm=False):
     ), "Failed to add license."
 
 
-def activate_windows_online(vm, winrmcli_pod, helper_vm=False):
+def activate_windows_online(vm):
     LOGGER.info("Activate Windows license online.")
-    online_activation_status = execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        cmd="cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato",
-        target_vm=vm,
-        helper_vm=helper_vm,
-        timeout=240,
-    )
+    cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato")
+    online_activation_status = vm.ssh_exec.run_command(command=cmd)[1]
     assert re.match(
         r"Activating Windows\(R\), (ServerStandard|Professional) edition "
         r"\(.*\) \.+.*Product activated successfully",
@@ -227,54 +207,35 @@ def activate_windows_online(vm, winrmcli_pod, helper_vm=False):
     ), "Failed to activate Windows online."
 
 
-def is_windows_activated(vm, winrmcli_pod, helper_vm=False):
+def is_windows_activated(vm):
     """ Returns True if license is active else False """
 
-    return "The machine is permanently activated" in execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        cmd="cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr",
-        target_vm=vm,
-        helper_vm=helper_vm,
+    cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr")
+    return (
+        "The machine is permanently activated"
+        in vm.ssh_exec.run_command(command=cmd)[1]
     )
 
 
-def check_windows_activated_license(
-    vm, winrmcli_pod, reset_action, version, helper_vm=False
-):
+def check_windows_activated_license(vm, reset_action, version):
     """ Verify VM activation mode after VM reset (reboot / stop and start) """
 
     if "stop_start" in reset_action:
         stop_start_vm(vm=vm, wait_for_interfaces=False)
     if "reboot" in reset_action:
-        reboot_vm(vm=vm, winrmcli_pod=winrmcli_pod, helper_vm=helper_vm)
-    wait_for_windows_vm(
-        vm=vm,
-        version=version,
-        winrmcli_pod=winrmcli_pod,
-        helper_vm=helper_vm,
-    )
-    assert is_windows_activated(
-        vm, winrmcli_pod, helper_vm
-    ), "VM license is not activated after restart."
+        reboot_vm(vm=vm)
+    wait_for_windows_vm(vm=vm, version=version)
+    assert is_windows_activated(vm=vm), "VM license is not activated after restart."
 
 
-def add_activate_windows_license(vm, winrm_pod, license_key, helper_vm=False):
+def add_activate_windows_license(vm, license_key):
     """Add Windows license to the VM, activate it online and verify that
     the activation was successful.
     """
 
-    add_windows_license(
-        vm=vm, winrmcli_pod=winrm_pod, windows_license=license_key, helper_vm=helper_vm
-    )
-    activate_windows_online(
-        vm=vm,
-        winrmcli_pod=winrm_pod,
-        helper_vm=helper_vm,
-    )
-    assert is_windows_activated(vm=vm, winrmcli_pod=winrm_pod, helper_vm=helper_vm), (
-        "VM license is not " "activated."
-    )
+    add_windows_license(vm=vm, windows_license=license_key)
+    activate_windows_online(vm=vm)
+    assert is_windows_activated(vm=vm), "VM license is not " "activated."
 
 
 def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):
@@ -429,11 +390,11 @@ def validate_os_info_vmi_vs_linux_os(vm):
     assert vmi_info == linux_info, f"Data mismatch! VMI: {vmi_info}\nOS: {linux_info}"
 
 
-def validate_os_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
+def validate_os_info_virtctl_vs_windows_os(vm):
     virtctl_info = get_virtctl_os_info(vm=vm)
     cnv_info = get_cnv_os_info(vm=vm)
     libvirt_info = get_libvirt_os_info(vm=vm)
-    windows_info = get_windows_os_info(vm=vm, winrm_pod=winrm_pod, helper_vm=helper_vm)
+    windows_info = get_windows_os_info(ssh_exec=vm.ssh_exec)
 
     data_mismatch = []
     if virtctl_info["guestAgentVersion"] != windows_info["guestAgentVersion"]:
@@ -455,25 +416,16 @@ def validate_os_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
     )
 
 
-def validate_fs_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
-    def _get_fs_info(vm, winrm_pod, helper_vm):
+def validate_fs_info_virtctl_vs_windows_os(vm):
+    def _get_fs_info(vm):
         virtctl_info = get_virtctl_fs_info(vm=vm)
         cnv_info = get_cnv_fs_info(vm=vm)
         libvirt_info = get_libvirt_fs_info(vm=vm)
-        windows_info = get_windows_fs_info(
-            vm=vm, winrm_pod=winrm_pod, helper_vm=helper_vm
-        )
+        windows_info = get_windows_fs_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, windows_info
 
     virtctl_info = cnv_info = libvirt_info = windows_info = None
-    fs_info_sampler = TimeoutSampler(
-        timeout=330,
-        sleep=30,
-        func=_get_fs_info,
-        vm=vm,
-        winrm_pod=winrm_pod,
-        helper_vm=helper_vm,
-    )
+    fs_info_sampler = TimeoutSampler(timeout=330, sleep=30, func=_get_fs_info, vm=vm)
 
     try:
         for virtctl_info, cnv_info, libvirt_info, windows_info in fs_info_sampler:
@@ -488,17 +440,11 @@ def validate_fs_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
         raise
 
 
-def validate_user_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
+def validate_user_info_virtctl_vs_windows_os(vm):
     virtctl_info = get_virtctl_user_info(vm=vm)
     cnv_info = get_cnv_user_info(vm=vm)
     libvirt_info = get_libvirt_user_info(vm=vm)
-    windows_info = execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrm_pod,
-        cmd="quser",
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
+    windows_info = vm.ssh_exec.run_command(command=shlex.split("quser"))[1]
 
     data_mismatch = []
     if virtctl_info["userName"].lower() not in windows_info:
@@ -516,18 +462,13 @@ def validate_user_info_virtctl_vs_windows_os(vm, winrm_pod, helper_vm=False):
     )
 
 
-def validate_os_info_vmi_vs_windows_os(vm, winrm_pod, helper_vm=False):
+def validate_os_info_vmi_vs_windows_os(vm):
     vmi_info = get_guest_os_info(vmi=vm.vmi)
     assert vmi_info, "VMI doesn't have guest agent data"
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
-    windows_info = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
+    cmd = shlex.split(
+        "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     )
+    windows_info = vm.ssh_exec.run_command(command=cmd)[1]
 
     data_mismatch = []
     for key, val in vmi_info.items():
@@ -650,40 +591,19 @@ def get_linux_os_info(ssh_exec):
     }
 
 
-def get_windows_os_info(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    ga_ver_cmd = 'wmic datafile \\"C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe\\" get Version /value'
-    ga_ver = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=ga_ver_cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    ).strip()
-    hostname_cmd = "wmic os get CSName /value"
-    hostname = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=hostname_cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
+def get_windows_os_info(ssh_exec):
+    ga_ver_cmd = shlex.split(
+        'wmic datafile "C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe" get Version /value'
     )
-    os_release_cmd = "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
-    os_release = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=os_release_cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
+    ga_ver = ssh_exec.run_command(command=ga_ver_cmd)[1].strip()
+    hostname_cmd = shlex.split("wmic os get CSName /value")
+    hostname = ssh_exec.run_command(command=hostname_cmd)[1]
+    os_release_cmd = shlex.split(
+        "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     )
-    timezone_cmd = 'powershell -command "Get-TimeZone"'
-    timezone = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=timezone_cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
+    os_release = ssh_exec.run_command(command=os_release_cmd)[1]
+    timezone_cmd = shlex.split('powershell -command "Get-TimeZone"')
+    timezone = ssh_exec.run_command(command=timezone_cmd)[1]
 
     return {
         "guestAgentVersion": guest_agent_version_parser(version_string=ga_ver),
@@ -751,36 +671,13 @@ def get_linux_fs_info(ssh_exec):
     }
 
 
-def get_windows_fs_info(vm, winrm_pod, helper_vm=False):
-    vmi_ip = vm.vmi.virt_launcher_pod.instance.status.podIP
-    disk_name_cmd = "fsutil volume list"
-    disk_name = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=disk_name_cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
-    disk_space_cmd = "fsutil volume diskfree C:"
-    disk_space = (
-        execute_winrm_cmd(
-            vmi_ip=vmi_ip,
-            winrmcli_pod=winrm_pod,
-            cmd=disk_space_cmd,
-            target_vm=vm,
-            helper_vm=helper_vm,
-        )
-        .strip()
-        .split("\r\n")
-    )
-    fs_type_cmd = "fsutil fsinfo volumeinfo C:"
-    fs_type = execute_winrm_cmd(
-        vmi_ip=vmi_ip,
-        winrmcli_pod=winrm_pod,
-        cmd=fs_type_cmd,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
+def get_windows_fs_info(ssh_exec):
+    disk_name_cmd = shlex.split("fsutil volume list")
+    disk_name = ssh_exec.run_command(command=disk_name_cmd)[1]
+    disk_space_cmd = shlex.split("fsutil volume diskfree C:")
+    disk_space = ssh_exec.run_command(command=disk_space_cmd)[1].strip().split("\r\n")
+    fs_type_cmd = shlex.split("fsutil fsinfo volumeinfo C:")
+    fs_type = ssh_exec.run_command(command=fs_type_cmd)[1]
 
     return f"{disk_name} {windows_disk_space_parser(disk_space)} {fs_type}"
 

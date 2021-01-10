@@ -8,13 +8,14 @@ https://libvirt.org/formatdomain.html#elementsInput
 
 import logging
 import re
+import shlex
 
 import pytest
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import execute_winrm_cmd, get_windows_os_dict
+from utilities.virt import get_windows_os_dict
 
 
 pytestmark = pytest.mark.skipif(
@@ -26,17 +27,12 @@ LOGGER = logging.getLogger(__name__)
 WINDOWS_DESKTOP_VERSION = get_windows_os_dict(windows_version="win-10")
 
 
-def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=False):
+def check_windows_vm_tablet_device(vm, driver_state):
     """ Verify tablet device values in Windows VMI using driverquery """
 
-    windows_driver_query = execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        cmd="%systemroot%\\\\system32\\\\driverquery /fo list /v",
-        timeout=180,
-        target_vm=vm,
-        helper_vm=helper_vm,
-    )
+    windows_driver_query = vm.ssh_exec.run_command(
+        command=shlex.split("%systemroot%\\\\system32\\\\driverquery /fo list /v"),
+    )[1]
 
     assert re.search(
         f"Module Name:(.*)HidUsb(.*)Display Name:(.*)Microsoft "
@@ -68,6 +64,9 @@ def check_windows_vm_tablet_device(vm, winrmcli_pod, driver_state, helper_vm=Fal
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "tablet1", "type": "tablet", "bus": "usb"}
                 ),
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
             marks=pytest.mark.polarion("CNV-2644"),
@@ -80,8 +79,6 @@ def test_tablet_usb_tablet_device(
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
     started_windows_vm,
 ):
 
@@ -89,9 +86,7 @@ def test_tablet_usb_tablet_device(
 
     check_windows_vm_tablet_device(
         vm=vm_instance_from_template_multi_storage_scope_function,
-        winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
-        helper_vm=bridge_attached_helper_vm,
     )
     utils.check_vm_xml_tablet_device(
         vm=vm_instance_from_template_multi_storage_scope_function
@@ -118,6 +113,9 @@ def test_tablet_usb_tablet_device(
                 "vm_dict": utils.set_vm_tablet_device_dict(
                     {"name": "win_tablet", "type": "tablet", "bus": "virtio"}
                 ),
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
             marks=pytest.mark.polarion("CNV-3444"),
@@ -130,8 +128,6 @@ def test_tablet_virtio_tablet_device(
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
     started_windows_vm,
 ):
     """Verify that when a Windows VM is configured with virtio tablet input
@@ -142,9 +138,7 @@ def test_tablet_virtio_tablet_device(
 
     check_windows_vm_tablet_device(
         vm=vm_instance_from_template_multi_storage_scope_function,
-        winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Stopped",
-        helper_vm=bridge_attached_helper_vm,
     )
 
     utils.check_vm_xml_tablet_device(
@@ -172,6 +166,9 @@ def test_tablet_virtio_tablet_device(
                     "template_labels"
                 ],
                 "cpu_threads": 2,
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
             marks=pytest.mark.polarion("CNV-4151"),
@@ -184,8 +181,6 @@ def test_windows_server_default_tablet_device(
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
     started_windows_vm,
 ):
     """Verify that when a Windows Server VM is configured by default with
@@ -196,9 +191,7 @@ def test_windows_server_default_tablet_device(
 
     check_windows_vm_tablet_device(
         vm=vm_instance_from_template_multi_storage_scope_function,
-        winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
-        helper_vm=bridge_attached_helper_vm,
     )
 
     utils.check_vm_xml_tablet_device(
@@ -221,6 +214,9 @@ def test_windows_server_default_tablet_device(
                 "vm_name": "windows-desktop-default-tablet-device",
                 "template_labels": WINDOWS_DESKTOP_VERSION["template_labels"],
                 "cpu_threads": 2,
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             {"os_version": WINDOWS_DESKTOP_VERSION["os_version"]},
             marks=pytest.mark.polarion("CNV-4150"),
@@ -233,8 +229,6 @@ def test_windows_desktop_default_tablet_device(
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
     started_windows_vm,
 ):
     """Verify that when a Desktop Windows VM is configured by default with
@@ -245,9 +239,7 @@ def test_windows_desktop_default_tablet_device(
 
     check_windows_vm_tablet_device(
         vm=vm_instance_from_template_multi_storage_scope_function,
-        winrmcli_pod=winrmcli_pod_scope_function,
         driver_state="Running",
-        helper_vm=bridge_attached_helper_vm,
     )
 
     utils.check_vm_xml_tablet_device(

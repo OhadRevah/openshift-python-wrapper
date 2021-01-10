@@ -4,6 +4,7 @@ EFI secureBoot VM
 
 import logging
 import os
+import shlex
 
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
@@ -17,7 +18,6 @@ from utilities.infra import Images
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
-    execute_winrm_cmd,
     vm_console_run_commands,
     wait_for_console,
     wait_for_windows_vm,
@@ -102,16 +102,11 @@ def validate_linux_efi(vm):
     )
 
 
-def validate_windows_efi(vm, winrm_pod):
+def validate_windows_efi(ssh_exec):
     """
     Verify guest OS is using EFI.
     """
-    out = execute_winrm_cmd(
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrm_pod,
-        cmd="bcdedit | findstr EFI",
-        target_vm=vm,
-    )
+    _, out, _ = ssh_exec.run_command(command=shlex.split("bcdedit | findstr EFI"))
     assert (
         "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out
     ), f"EFI boot not fount in path. bcdedit output:\n{out}"
@@ -231,22 +226,18 @@ class TestEFISecureBootWindows:
     def test_secureboot_efi(
         self,
         windows_efi_secureboot_vm,
-        winrmcli_pod_scope_class,
     ):
         """
         Test VM boots with efi secureboot and check vm_xml values
         """
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
-        validate_windows_efi(
-            vm=windows_efi_secureboot_vm, winrm_pod=winrmcli_pod_scope_class
-        )
+        validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
 
     @pytest.mark.polarion("CNV-5465")
     def test_migrate_vm_windows(
         self,
         skip_access_mode_rwo_scope_class,
         windows_efi_secureboot_vm,
-        winrmcli_pod_scope_class,
     ):
         """Test EFI Windows VM is migrated."""
 
@@ -257,6 +248,4 @@ class TestEFISecureBootWindows:
             timeout=1800,
         )
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
-        validate_windows_efi(
-            vm=windows_efi_secureboot_vm, winrm_pod=winrmcli_pod_scope_class
-        )
+        validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
