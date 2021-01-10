@@ -55,7 +55,6 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
 )
 def test_successful_clone_of_large_image(
     skip_upstream,
-    skip_if_workers_vms,
     namespace,
     data_volume_multi_storage_scope_function,
 ):
@@ -145,7 +144,6 @@ def test_successful_vm_restart_with_cloned_dv(
 )
 def test_successful_vm_from_cloned_dv_windows(
     skip_upstream,
-    skip_if_workers_vms,
     unprivileged_client,
     network_configuration,
     cloud_init_data,
