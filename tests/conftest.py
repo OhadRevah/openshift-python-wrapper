@@ -1285,6 +1285,7 @@ def vm_instance_from_template(
     rhel7_workers=False,
     data_volume=None,
     data_volume_template=None,
+    existing_data_volume=None,
     network_configuration=None,
     cloud_init_data=None,
     node_selector=None,
@@ -1297,6 +1298,15 @@ def vm_instance_from_template(
     vm_instance_from_template_multi_storage_scope_function or vm_instance_from_template_multi_storage_scope_class.
 
     Prerequisite - a DV must be created prior to VM creation.
+
+    Args:
+        data_volume (obj `DataVolume`: DV resource): existing DV that will be cloned (for example: golden image)
+        data_volume_template (dict): dataVolumeTemplates dict; will replace dataVolumeTemplates in VM yaml
+        existing_data_volume (obj `DataVolume`: DV resource): existing DV to be consumed directly (not cloned)
+
+    Yields:
+        obj `VirtualMachine`: VM resource
+
     """
     params = request.param if hasattr(request, "param") else request
     with VirtualMachineForTestsFromTemplate(
@@ -1306,6 +1316,7 @@ def vm_instance_from_template(
         labels=Template.generate_template_labels(**params["template_labels"]),
         data_volume=data_volume,
         data_volume_template=data_volume_template,
+        existing_data_volume=existing_data_volume,
         vm_dict=params.get("vm_dict"),
         cpu_threads=params.get("cpu_threads"),
         memory_requests=params.get("memory_requests"),

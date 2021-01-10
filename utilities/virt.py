@@ -660,6 +660,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         labels,
         data_volume=None,
         data_volume_template=None,
+        existing_data_volume=None,
         networks=None,
         interfaces=None,
         ssh=False,
@@ -683,6 +684,18 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         password=None,
         rhel7_workers=False,
     ):
+        """
+        VM creation using common templates.
+
+        Args:
+            data_volume (obj `DataVolume`): DV object that will be cloned into a VM PVC
+            data_volume_template (dict): dataVolumeTemplates dict to replace template's default dataVolumeTemplates
+            existing_data_volume (obj `DataVolume`): An existing DV object that will be used as the VM's volume. Cloning
+                will not be done and the template's dataVolumeTemplates will be removed.
+
+        Returns:
+            obj `VirtualMachine`: VM resource
+        """
         super().__init__(
             name=name,
             namespace=namespace,
@@ -713,6 +726,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.template_labels = labels
         self.data_volume = data_volume
         self.data_volume_template = data_volume_template
+        self.existing_data_volume = existing_data_volume
         self.vm_dict = vm_dict
         self.cpu_threads = cpu_threads
         self.node_selector = node_selector
@@ -734,17 +748,44 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         if not self.termination_grace_period:
             spec["terminationGracePeriodSeconds"] = 180
 
-        # dataVolumeTemplates needs to be updated with the source accessModes,
-        # volumeMode and storageClass
-        # TODO: removed once supported in templates
-        dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["pvc"]
-        dv_pvc_spec[
-            "storageClassName"
-        ] = self.data_volume.pvc.instance.spec.storageClassName
-        dv_pvc_spec["accessModes"] = self.data_volume.pvc.instance.spec.accessModes
-        dv_pvc_spec["volumeMode"] = self.data_volume.pvc.instance.spec.volumeMode
+        # Existing DV will be used as the VM's DV; dataVolumeTemplates is not needed
+        if self.existing_data_volume:
+            del res["spec"]["dataVolumeTemplates"]
+            spec = self._update_vm_storage_config(
+                spec=spec, name=self.existing_data_volume.name
+            )
+        # Template's dataVolumeTemplates will be replaced with self.data_volume_template
+        elif self.data_volume_template:
+            res["spec"]["dataVolumeTemplates"] = [self.data_volume_template]
+            spec = self._update_vm_storage_config(
+                spec=spec, name=self.data_volume_template["metadata"]["name"]
+            )
+        # Otherwise clone self.data_volume
+        else:
+            # dataVolumeTemplates needs to be updated with the source accessModes,
+            # volumeMode and storageClass
+            # TODO: removed once supported in templates
+            dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["pvc"]
+            dv_pvc_spec[
+                "storageClassName"
+            ] = self.data_volume.pvc.instance.spec.storageClassName
+            dv_pvc_spec["accessModes"] = self.data_volume.pvc.instance.spec.accessModes
+            dv_pvc_spec["volumeMode"] = self.data_volume.pvc.instance.spec.volumeMode
 
         return res
+
+    def _update_vm_storage_config(self, spec, name):
+        # volume name and disk name should be updated
+        for volume in spec["volumes"]:
+            if "dataVolume" in volume:
+                volume["name"] = name
+                volume["dataVolume"]["name"] = name
+        for disk in spec["domain"]["devices"]["disks"]:
+            # oc process assigns the VMs name to the boot disk
+            if disk["name"] == self.name:
+                disk["name"] = name
+
+        return spec
 
     def process_template(self):
         def _extract_os_from_template():
@@ -766,16 +807,16 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             return os_password_dict[os_name]
 
         # Common templates use golden image clone as a default for VM DV
-        # It is still possible to overwrite that by explicitly setting
-        # a custom dataVolumeTemplate.
         # SRC_PVC_NAME - to support minor releases, this value needs to be passed. Currently
         # the templates only have one name per major OS.
-        # SRC_PVC_NAMESPACE parameters is not passed so the default
-        # value will be used.
+        # SRC_PVC_NAMESPACE parameters is not passed so the default value will be used.
+        # If existing DV or custom dataVolumeTemplates are used, use mock source PVC name and namespace
         template_kwargs = {
             "NAME": self.name,
-            "SRC_PVC_NAME": self.data_volume.name,
-            "SRC_PVC_NAMESPACE": self.data_volume.namespace,
+            "SRC_PVC_NAME": self.data_volume.name if self.data_volume else "mock_pvc",
+            "SRC_PVC_NAMESPACE": self.data_volume.namespace
+            if self.data_volume
+            else "mock_pvc_ns",
         }
 
         # Add password to VM for Non-Windows VMs
