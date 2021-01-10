@@ -124,13 +124,11 @@ def create_vm_from_dv(
 
 def create_windows_vm_validate_guest_agent_info(
     cloud_init_data,
-    bridge_attached_helper_vm,
     dv,
     namespace,
     network_configuration,
     unprivileged_client,
     vm_params,
-    winrmcli_pod_scope_function,
 ):
     with vm_instance_from_template(
         request=vm_params,
@@ -141,11 +139,7 @@ def create_windows_vm_validate_guest_agent_info(
         unprivileged_client=unprivileged_client,
     ) as vm_dv:
         wait_for_windows_vm(vm=vm_dv, version=vm_params["os_version"], timeout=1800)
-        validate_vmi_ga_info_vs_windows_os_info(
-            vm=vm_dv,
-            winrmcli_pod=winrmcli_pod_scope_function,
-            helper_vm=bridge_attached_helper_vm,
-        )
+        validate_vmi_ga_info_vs_windows_os_info(vm=vm_dv)
 
 
 def upload_image(token, data, asynchronous=False):

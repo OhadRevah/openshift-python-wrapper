@@ -136,6 +136,8 @@ def test_successful_vm_restart_with_cloned_dv(
                 ],
                 "cpu_threads": 2,
                 "os_version": py_config["latest_windows_version"]["os_version"],
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             marks=pytest.mark.polarion("CNV-3638"),
         ),
@@ -150,8 +152,6 @@ def test_successful_vm_from_cloned_dv_windows(
     data_volume_multi_storage_scope_function,
     vm_params,
     namespace,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
 ):
     with utilities.storage.create_dv(
         source="pvc",
@@ -167,13 +167,11 @@ def test_successful_vm_from_cloned_dv_windows(
         assert cdv.pvc.bound()
         utils.create_windows_vm_validate_guest_agent_info(
             cloud_init_data=cloud_init_data,
-            bridge_attached_helper_vm=bridge_attached_helper_vm,
             dv=cdv,
             namespace=namespace,
             network_configuration=network_configuration,
             unprivileged_client=unprivileged_client,
             vm_params=vm_params,
-            winrmcli_pod_scope_function=winrmcli_pod_scope_function,
         )
 
 

@@ -797,6 +797,9 @@ def test_vm_from_dv_on_different_node(
                     "template_labels"
                 ],
                 "cpu_threads": 2,
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
             marks=pytest.mark.polarion("CNV-3637"),
@@ -810,14 +813,10 @@ def test_successful_vm_from_imported_dv_windows(
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
     started_windows_vm,
 ):
     validate_vmi_ga_info_vs_windows_os_info(
         vm=vm_instance_from_template_multi_storage_scope_function,
-        winrmcli_pod=winrmcli_pod_scope_function,
-        helper_vm=bridge_attached_helper_vm,
     )
 
 
