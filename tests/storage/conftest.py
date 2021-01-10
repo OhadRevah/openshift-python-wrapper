@@ -107,42 +107,6 @@ def upload_proxy_route(admin_client):
 
 
 @pytest.fixture(scope="session")
-def default_sc(admin_client):
-    """
-    Get default Storage Class defined
-    """
-
-    default_sc_annotations = "storageclass.kubernetes.io/is-default-class"
-
-    default_sc_list = [
-        sc
-        for sc in StorageClass.get(dyn_client=admin_client)
-        if sc.instance.metadata.get("annotations", {}).get(default_sc_annotations)
-        == "true"
-    ]
-    if default_sc_list:
-        yield default_sc_list[0]
-    else:
-        for sc in StorageClass.get(
-            dyn_client=admin_client, name=py_config["default_storage_class"]
-        ):
-            assert (
-                sc
-            ), f'The cluster does not include {py_config["default_storage_class"]} storage class'
-            with ResourceEditor(
-                patches={
-                    sc: {
-                        "metadata": {
-                            "annotations": {default_sc_annotations: "true"},
-                            "name": sc.name,
-                        }
-                    }
-                }
-            ):
-                yield sc
-
-
-@pytest.fixture(scope="session")
 def skip_no_default_sc(default_sc):
     """
     Skip test if no default Storage Class defined

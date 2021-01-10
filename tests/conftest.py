@@ -42,6 +42,7 @@ from resources.secret import Secret
 from resources.service_account import ServiceAccount
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.sriov_network_node_state import SriovNetworkNodeState
+from resources.storage_class import StorageClass
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import (
@@ -1807,3 +1808,47 @@ def hosts_common_occupied_ports(nodes_occupied_nics):
     )
     LOGGER.info(f"Hosts common occupied NICs: {nics_list}")
     return nics_list
+
+
+@pytest.fixture(scope="session")
+def default_sc(admin_client):
+    """
+    Get default Storage Class defined
+    """
+    default_sc_list = [
+        sc
+        for sc in StorageClass.get(dyn_client=admin_client)
+        if sc.instance.metadata.get("annotations", {}).get(
+            StorageClass.Annotations.IS_DEFAULT_CLASS
+        )
+        == "true"
+    ]
+    if default_sc_list:
+        yield default_sc_list[0]
+
+
+@pytest.fixture(scope="session")
+def pyconfig_updated_default_sc(admin_client, default_sc):
+    # Based on py_config["default_storage_class"], update default SC, if needed
+    if default_sc:
+        yield default_sc
+    else:
+        for sc in StorageClass.get(
+            dyn_client=admin_client, name=py_config["default_storage_class"]
+        ):
+            assert (
+                sc
+            ), f'The cluster does not include {py_config["default_storage_class"]} storage class'
+            with ResourceEditor(
+                patches={
+                    sc: {
+                        "metadata": {
+                            "annotations": {
+                                StorageClass.Annotations.IS_DEFAULT_CLASS: "true"
+                            },
+                            "name": sc.name,
+                        }
+                    }
+                }
+            ):
+                yield sc

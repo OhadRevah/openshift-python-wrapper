@@ -170,10 +170,13 @@ def skip_if_scratch_space_specified(cdi_config):
 @pytest.mark.polarion("CNV-2412")
 def test_cdi_config_scratch_space_value_is_default(
     skip_if_scratch_space_specified,
-    default_sc,
+    pyconfig_updated_default_sc,
     cdi_config,
 ):
-    assert cdi_config.scratch_space_storage_class_from_status == default_sc.name
+    assert (
+        cdi_config.scratch_space_storage_class_from_status
+        == pyconfig_updated_default_sc.name
+    )
 
 
 @pytest.mark.polarion("CNV-2208")
@@ -221,7 +224,7 @@ def test_cdiconfig_changing_storage_class_default(
     skip_test_if_no_ocs_sc,
     hpp_storage_class,
     namespace,
-    default_sc,
+    pyconfig_updated_default_sc,
     cdi_config,
 ):
     def _get_update_dict(default, storage_class):
@@ -236,9 +239,9 @@ def test_cdiconfig_changing_storage_class_default(
 
     with ResourceEditor(
         patches={
-            default_sc: _get_update_dict(
+            pyconfig_updated_default_sc: _get_update_dict(
                 default=False,
-                storage_class=default_sc.name,
+                storage_class=pyconfig_updated_default_sc.name,
             )
         }
     ):
