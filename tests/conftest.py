@@ -37,7 +37,7 @@ from resources.oauth import OAuth
 from resources.persistent_volume import PersistentVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
-from resources.resource import TIMEOUT, ResourceEditor
+from resources.resource import ResourceEditor
 from resources.role_binding import RoleBinding
 from resources.secret import Secret
 from resources.service_account import ServiceAccount
@@ -1151,6 +1151,42 @@ def data_volume_multi_storage_scope_module(
     )
 
 
+@pytest.fixture(scope="class")
+def golden_image_data_volume_multi_storage_scope_class(
+    admin_client,
+    request,
+    golden_images_namespace,
+    storage_class_matrix__class__,
+    schedulable_nodes,
+):
+    yield from data_volume(
+        request=request,
+        namespace=golden_images_namespace,
+        storage_class_matrix=storage_class_matrix__class__,
+        schedulable_nodes=schedulable_nodes,
+        check_dv_exists=True,
+        admin_client=admin_client,
+    )
+
+
+@pytest.fixture()
+def golden_image_data_volume_multi_storage_scope_function(
+    admin_client,
+    request,
+    golden_images_namespace,
+    storage_class_matrix__function__,
+    schedulable_nodes,
+):
+    yield from data_volume(
+        request=request,
+        namespace=golden_images_namespace,
+        storage_class_matrix=storage_class_matrix__function__,
+        schedulable_nodes=schedulable_nodes,
+        check_dv_exists=True,
+        admin_client=admin_client,
+    )
+
+
 @pytest.fixture()
 def data_volume_scope_function(request, namespace, schedulable_nodes):
     yield from data_volume(
@@ -1178,6 +1214,34 @@ def data_volume_scope_module(request, namespace, schedulable_nodes):
         namespace=namespace,
         storage_class=request.param["storage_class"],
         schedulable_nodes=schedulable_nodes,
+    )
+
+
+@pytest.fixture(scope="class")
+def golden_image_data_volume_scope_class(
+    request, admin_client, golden_images_namespace, schedulable_nodes
+):
+    yield from data_volume(
+        request=request,
+        namespace=golden_images_namespace,
+        storage_class=request.param["storage_class"],
+        schedulable_nodes=schedulable_nodes,
+        check_dv_exists=True,
+        admin_client=admin_client,
+    )
+
+
+@pytest.fixture()
+def golden_image_data_volume_scope_function(
+    request, admin_client, golden_images_namespace, schedulable_nodes
+):
+    yield from data_volume(
+        request=request,
+        namespace=golden_images_namespace,
+        storage_class=request.param["storage_class"],
+        schedulable_nodes=schedulable_nodes,
+        check_dv_exists=True,
+        admin_client=admin_client,
     )
 
 
@@ -1262,7 +1326,8 @@ def vm_instance_from_template(
         rhel7_workers=rhel7_workers,
     ) as vm:
         if params.get("start_vm", True):
-            vm.start(wait=True, timeout=params.get("vm_wait_timeout", TIMEOUT))
+            # Higher timeout is needed for golden images (pvc is cloned when the VM is started)
+            vm.start(wait=True, timeout=params.get("vm_wait_timeout", 1800))
             vm.vmi.wait_until_running()
             if params.get("guest_agent", True):
                 wait_for_vm_interfaces(
@@ -1293,6 +1358,66 @@ def vm_instance_from_template_multi_storage_scope_function(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_multi_storage_scope_function,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+        vm_cpu_model=nodes_common_cpu_model
+        if request.param.get("set_vm_common_cpu")
+        else None,
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture()
+def golden_image_vm_instance_from_template_multi_storage_scope_function(
+    request,
+    unprivileged_client,
+    namespace,
+    golden_image_data_volume_multi_storage_scope_function,
+    network_configuration,
+    cloud_init_data,
+    nodes_common_cpu_model,
+):
+    """Calls vm_instance_from_template contextmanager
+
+    Creates a VM from template and starts it (if requested).
+    """
+
+    with vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume=golden_image_data_volume_multi_storage_scope_function,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+        vm_cpu_model=nodes_common_cpu_model
+        if request.param.get("set_vm_common_cpu")
+        else None,
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture()
+def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function(
+    request,
+    unprivileged_client,
+    namespace,
+    golden_image_data_volume_multi_storage_scope_class,
+    network_configuration,
+    cloud_init_data,
+    nodes_common_cpu_model,
+):
+    """Calls vm_instance_from_template contextmanager
+
+    Creates a VM from template and starts it (if requested).
+    VM is created with function scope whereas golden image DV is created with class scope. to be used when a number
+    of tests (each creates its relevant VM) are gathered under a class and use the same golden image DV.
+    """
+
+    with vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume=golden_image_data_volume_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model
@@ -1333,6 +1458,35 @@ def vm_instance_from_template_multi_storage_scope_class(
         yield vm
 
 
+@pytest.fixture(scope="class")
+def golden_image_vm_instance_from_template_multi_storage_scope_class(
+    request,
+    unprivileged_client,
+    namespace,
+    golden_image_data_volume_multi_storage_scope_class,
+    network_configuration,
+    cloud_init_data,
+    nodes_common_cpu_model,
+):
+    """Calls vm_instance_from_template contextmanager
+
+    Creates a VM from template and starts it (if requested).
+    """
+
+    with vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume=golden_image_data_volume_multi_storage_scope_class,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+        vm_cpu_model=nodes_common_cpu_model
+        if request.param.get("set_vm_common_cpu")
+        else None,
+    ) as vm:
+        yield vm
+
+
 """
 Windows-specific fixtures
 """
@@ -1359,6 +1513,34 @@ def started_windows_vm(
     wait_for_windows_vm(
         vm=vm_instance_from_template_multi_storage_scope_function,
         version=request.param["os_version"],
+    )
+
+
+@pytest.fixture()
+def golden_image_started_windows_vm(
+    request,
+    golden_image_vm_instance_from_template_multi_storage_scope_function,
+):
+    wait_for_windows_vm(
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
+        version=request.param["os_version"],
+        timeout=1800,
+    )
+
+
+@pytest.fixture()
+def golden_image_started_windows_dv_scope_class_vm_scope_function(
+    request,
+    golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
+):
+    """
+    VM is created with function scope whereas golden image DV is created with class scope. to be used when a number
+    of tests (each creates its relevant VM) are gathered under a class and use the same golden image DV.
+    """
+    wait_for_windows_vm(
+        vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
+        version=request.param["os_version"],
+        timeout=1800,
     )
 
 

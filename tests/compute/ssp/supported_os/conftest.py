@@ -9,47 +9,56 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 @pytest.fixture(scope="class")
-def data_volume_multi_rhel_os_multi_storage_scope_class(
-    namespace,
+def golden_image_data_volume_multi_rhel_os_multi_storage_scope_class(
+    admin_client,
+    golden_images_namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
     rhel_os_matrix__class__,
 ):
     yield from data_volume(
-        namespace=namespace,
+        namespace=golden_images_namespace,
         storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
         os_matrix=rhel_os_matrix__class__,
+        check_dv_exists=True,
+        admin_client=admin_client,
     )
 
 
 @pytest.fixture(scope="class")
-def data_volume_multi_windows_os_multi_storage_scope_class(
-    namespace,
+def golden_image_data_volume_multi_windows_os_multi_storage_scope_class(
+    admin_client,
+    golden_images_namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
     windows_os_matrix__class__,
 ):
     yield from data_volume(
-        namespace=namespace,
+        namespace=golden_images_namespace,
         storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
         os_matrix=windows_os_matrix__class__,
+        check_dv_exists=True,
+        admin_client=admin_client,
     )
 
 
 @pytest.fixture(scope="class")
-def data_volume_multi_fedora_os_multi_storage_scope_class(
-    namespace,
+def golden_image_data_volume_multi_fedora_os_multi_storage_scope_class(
+    admin_client,
+    golden_images_namespace,
     storage_class_matrix__class__,
     schedulable_nodes,
     fedora_os_matrix__class__,
 ):
     yield from data_volume(
-        namespace=namespace,
+        namespace=golden_images_namespace,
         storage_class_matrix=storage_class_matrix__class__,
         schedulable_nodes=schedulable_nodes,
         os_matrix=fedora_os_matrix__class__,
+        check_dv_exists=True,
+        admin_client=admin_client,
     )
 
 
@@ -66,7 +75,8 @@ def vm_object_from_template(
     """Instantiate a VM object
 
     The call to this function is triggered by calling either
-    vm_object_from_template_multi_storage_scope_function or vm_object_from_template_multi_storage_scope_class.
+    golden_image_vm_object_from_template_multi_storage_scope_function or
+    golden_image_vm_object_from_template_multi_storage_scope_class.
     """
 
     param_dict = request.param if request else {}
@@ -111,12 +121,12 @@ def vm_object_from_template(
 
 
 @pytest.fixture()
-def vm_object_from_template_multi_storage_scope_function(
+def golden_image_vm_object_from_template_multi_storage_scope_function(
     request,
     rhel7_workers,
     unprivileged_client,
     namespace,
-    data_volume_multi_storage_scope_function,
+    golden_image_data_volume_multi_storage_scope_function,
     network_configuration,
     cloud_init_data,
 ):
@@ -125,19 +135,44 @@ def vm_object_from_template_multi_storage_scope_function(
         rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume_object=data_volume_multi_storage_scope_function,
+        data_volume_object=golden_image_data_volume_multi_storage_scope_function,
+        network_configuration=network_configuration,
+        cloud_init_data=cloud_init_data,
+    )
+
+
+@pytest.fixture()
+def golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_function(
+    request,
+    rhel7_workers,
+    unprivileged_client,
+    namespace,
+    golden_image_data_volume_multi_storage_scope_class,
+    network_configuration,
+    cloud_init_data,
+    nodes_common_cpu_model,
+):
+    """VM is created with function scope whereas golden image DV is created with class scope. to be used when a number
+    of tests (each creates its relevant VM) are gathered under a class and use the same golden image DV.
+    """
+    return vm_object_from_template(
+        request=request,
+        rhel7_workers=rhel7_workers,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume_object=golden_image_data_volume_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_multi_storage_scope_class(
+def golden_image_vm_object_from_template_multi_storage_scope_class(
     request,
     rhel7_workers,
     unprivileged_client,
     namespace,
-    data_volume_multi_storage_scope_class,
+    golden_image_data_volume_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -146,20 +181,20 @@ def vm_object_from_template_multi_storage_scope_class(
         rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume_object=data_volume_multi_storage_scope_class,
+        data_volume_object=golden_image_data_volume_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_multi_rhel_os_multi_storage_scope_class(
+def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class(
     request,
     rhel7_workers,
     unprivileged_client,
     namespace,
     rhel_os_matrix__class__,
-    data_volume_multi_rhel_os_multi_storage_scope_class,
+    golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -169,20 +204,20 @@ def vm_object_from_template_multi_rhel_os_multi_storage_scope_class(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=rhel_os_matrix__class__,
-        data_volume_object=data_volume_multi_rhel_os_multi_storage_scope_class,
+        data_volume_object=golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_multi_windows_os_multi_storage_scope_class(
+def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class(
     request,
     rhel7_workers,
     unprivileged_client,
     namespace,
     windows_os_matrix__class__,
-    data_volume_multi_windows_os_multi_storage_scope_class,
+    golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -192,20 +227,20 @@ def vm_object_from_template_multi_windows_os_multi_storage_scope_class(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=windows_os_matrix__class__,
-        data_volume_object=data_volume_multi_windows_os_multi_storage_scope_class,
+        data_volume_object=golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
-def vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
+def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
     request,
     rhel7_workers,
     unprivileged_client,
     namespace,
     fedora_os_matrix__class__,
-    data_volume_multi_fedora_os_multi_storage_scope_class,
+    golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
 ):
@@ -215,7 +250,7 @@ def vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=fedora_os_matrix__class__,
-        data_volume_object=data_volume_multi_fedora_os_multi_storage_scope_class,
+        data_volume_object=golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
     )
@@ -225,8 +260,7 @@ def vm_ssh_service(vm):
     """Manages (creation and deletion) of a service to enable SSH access to the VM
 
     The call to this function is triggered by calling either
-    vm_ssh_service_multi_storage_scope_function or
-    vm_ssh_service_multi_storage_scope_class.
+    golden_image_vm_ssh_service_multi_storage_scope_function or
     """
 
     vm.ssh_enable()
@@ -235,34 +269,30 @@ def vm_ssh_service(vm):
 
 
 @pytest.fixture()
-def vm_ssh_service_multi_storage_scope_function(
-    vm_instance_from_template_multi_storage_scope_function,
-):
-    yield from vm_ssh_service(vm=vm_instance_from_template_multi_storage_scope_function)
-
-
-@pytest.fixture(scope="class")
-def vm_ssh_service_multi_storage_scope_class(
-    vm_object_from_template_multi_storage_scope_class,
-):
-    yield from vm_ssh_service(vm=vm_object_from_template_multi_storage_scope_class)
-
-
-@pytest.fixture(scope="class")
-def vm_ssh_service_multi_rhel_os_scope_class(
-    vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+def golden_image_vm_ssh_service_multi_storage_scope_function(
+    golden_image_vm_instance_from_template_multi_storage_scope_function,
 ):
     yield from vm_ssh_service(
-        vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_multi_fedora_os_scope_class(
-    vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+def golden_image_vm_ssh_service_multi_rhel_os_scope_class(
+    golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
 ):
     yield from vm_ssh_service(
-        vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+    )
+
+
+@pytest.fixture(scope="class")
+def golden_image_vm_ssh_service_multi_fedora_os_scope_class(
+    golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+):
+
+    yield from vm_ssh_service(
+        vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
     )
 
 
@@ -282,6 +312,20 @@ def exposed_vm_service_multi_storage_scope_function(
     schedulable_node_ips,
 ):
     vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
+        service_name=request.param["service_name"],
+        port=request.param["service_port"],
+        service_type=Service.Type.NODE_PORT,
+        service_ip=list(schedulable_node_ips.values())[0],
+    )
+
+
+@pytest.fixture()
+def golden_image_exposed_vm_service_multi_storage_scope_function(
+    request,
+    golden_image_vm_instance_from_template_multi_storage_scope_function,
+    schedulable_node_ips,
+):
+    golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
         service_name=request.param["service_name"],
         port=request.param["service_port"],
         service_type=Service.Type.NODE_PORT,

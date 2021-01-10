@@ -273,6 +273,18 @@ storage_class_matrix__module__
 storage_class_matrix__class__
 ```
 
+### Common templates and golden images
+As of 2.6, VMs using common templates will require an existing golden image PVC.
+Golden image name - SRC_PVC_NAME
+Golden images namespace parameter - SRC_PVC_NAMESPACE (default: openshift-virtualization-os-images)
+The VM's created PVC will have the same name as the VM (NAME parameter).
+- Fixtures prefixed with "golden_image_data_volume" are used to create golden image
+DV.
+- Fixtures prefixed with "golden_image_vm" are used to create a VM from template, based on a golden
+image PVC.
+When using the fixtures, note their scopes. As golden image may be created once per class,
+it can be used by multiple VMs created under that class (scoped as function).
+
 # Network utility container
 Check containers/utility/README.md
 

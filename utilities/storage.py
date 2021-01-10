@@ -8,6 +8,7 @@ import urllib.request
 from contextlib import contextmanager
 
 import requests
+from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 from resources.cdi_config import CDIConfig
 from resources.datavolume import DataVolume
@@ -119,9 +120,24 @@ def data_volume(
     schedulable_nodes=None,
     request=None,
     os_matrix=None,
+    check_dv_exists=False,
+    admin_client=None,
 ):
     """
     DV creation using create_dv.
+
+    Args:
+        namespace (:obj: `Namespace`): namespace resource
+        storage_class_matrix (dict): Contains current storage_class_matrix attributes
+        storage_class (str): Storage class name
+        schedulable_nodes (list): List of schedulable nodes objects
+        os_matrix (dict): Contains current os_matrix attributes
+        check_dv_exists (bool): Skip DV creation if DV exists. Used for golden images. IF the DV exists in golden images
+        namespace, it can be used for cloning.
+
+    Yields:
+        obj `DataVolume`: DV resource
+
     """
     if not storage_class_matrix:
         storage_class_matrix = get_storage_class_dict_from_matrix(
@@ -154,6 +170,22 @@ def data_volume(
         image = params_dict.get("image", "")
         dv_name = params_dict.get("dv_name").replace(".", "-").lower()
         dv_size = params_dict.get("dv_size")
+
+    # For golden images; images are created once per module in
+    # golden images namepace and cloned when using common templates.
+    # If the DV exists, yield the DV else create a new one in
+    # golden images namespace
+    if check_dv_exists:
+        try:
+            golden_image = list(
+                DataVolume.get(
+                    dyn_client=admin_client, name=dv_name, namespace=dv_namespace
+                )
+            )
+            yield golden_image[0]
+        except NotFoundError:
+            LOGGER.warning(f"Golden image {dv_name} not found; DV will be created.")
+
     dv_kwargs = {
         "dv_name": dv_name,
         "namespace": dv_namespace,

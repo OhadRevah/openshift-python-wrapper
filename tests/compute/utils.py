@@ -3,6 +3,7 @@ import logging
 import shlex
 
 import rrmngmnt
+from resources.resource import TIMEOUT
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from utilities.virt import vm_console_run_commands, wait_for_vm_interfaces
@@ -17,7 +18,14 @@ def vm_started(vm, wait_for_interfaces=True):
     If wait_for_interfaces - wait for interfaces to be up.
     """
 
-    vm.start(wait=True)
+    # For VMs from common templates
+    timeout = (
+        2100
+        if "vm.kubevirt.io/template" in vm.instance.metadata.get("labels", {}).keys()
+        else TIMEOUT
+    )
+
+    vm.start(wait=True, timeout=timeout)
     vm.vmi.wait_until_running()
     if wait_for_interfaces:
         wait_for_vm_interfaces(vmi=vm.vmi)
