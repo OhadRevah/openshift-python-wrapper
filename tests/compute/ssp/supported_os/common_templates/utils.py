@@ -285,7 +285,11 @@ def check_default_and_validation_memory(
             0
         ].spec.template.spec.domain.resources.requests.memory
 
-        validation_map = json.loads(template.instance.metadata.annotations.validations)
+        validation_map = json.loads(
+            template.instance.to_dict()["objects"][0]["metadata"]["annotations"][
+                "vm.kubevirt.io/validations"
+            ]
+        )
         min_validation_memory_value = validation_map[0]["min"]
 
         LOGGER.info(
