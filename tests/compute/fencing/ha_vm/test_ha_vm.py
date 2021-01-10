@@ -28,7 +28,7 @@ pytestmark = pytest.mark.destructive
 
 LOGGER = logging.getLogger(__name__)
 DV_DICT = {
-    "dv_name": "ha-vm-dv",
+    "dv_name": py_config["latest_fedora_version"]["template_labels"]["os"],
     "image": py_config["latest_fedora_version"]["image_path"],
     "dv_size": py_config["latest_fedora_version"]["dv_size"],
     "storage_class": "nfs",
@@ -75,7 +75,9 @@ def ha_vm_container_disk(request, unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def ha_vm_dv_disk(request, unprivileged_client, namespace, data_volume_scope_function):
+def ha_vm_dv_disk(
+    request, unprivileged_client, namespace, golden_image_data_volume_scope_function
+):
     run_strategy = request.param["run_strategy"]
     name = f"ha-vm-dv-disk-{run_strategy}".lower()
     with VirtualMachineForTestsFromTemplate(
@@ -85,7 +87,7 @@ def ha_vm_dv_disk(request, unprivileged_client, namespace, data_volume_scope_fun
         labels=Template.generate_template_labels(
             **py_config["latest_fedora_version"]["template_labels"]
         ),
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
         run_strategy=run_strategy,
     ) as vm:
         vm_ready_for_test(vm=vm)
@@ -187,7 +189,7 @@ def test_ha_vm_container_disk_reboot(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, ha_vm_dv_disk",
+    "golden_image_data_volume_scope_function, ha_vm_dv_disk",
     [
         pytest.param(
             DV_DICT,

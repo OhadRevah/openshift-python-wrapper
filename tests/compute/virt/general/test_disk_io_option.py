@@ -13,6 +13,7 @@ RHEL_LATEST = py_config["latest_rhel_version"]
 RHEL_VERSION_IMAGE_PATH = RHEL_LATEST["image_path"]
 RHEL_VERSION_IMAGE_SIZE = RHEL_LATEST["dv_size"]
 RHEL_VERSION_TEMPLATE_LABELS = RHEL_LATEST["template_labels"]
+RHEL_DV_NAME = RHEL_VERSION_TEMPLATE_LABELS["os"]
 
 
 def _vm_test_params(template_labels, disk_io_option=None, cpu_threads=None):
@@ -46,14 +47,14 @@ def disk_options_vm(
     unprivileged_client,
     rhel7_workers,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     network_configuration,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
         network_configuration=network_configuration,
     ) as vm:
         if rhel7_workers:
@@ -72,11 +73,11 @@ def windows_vm(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, disk_options_vm, expected_disk_io_option",
+    "golden_image_data_volume_scope_function, disk_options_vm, expected_disk_io_option",
     [
         pytest.param(
             {
-                "dv_name": "dv-disk-io-options-threads",
+                "dv_name": RHEL_DV_NAME,
                 "image": RHEL_VERSION_IMAGE_PATH,
                 "dv_size": RHEL_VERSION_IMAGE_SIZE,
                 "storage_class": py_config["default_storage_class"],
@@ -95,7 +96,7 @@ def windows_vm(
         ),
         pytest.param(
             {
-                "dv_name": "dv-disk-io-options-native",
+                "dv_name": RHEL_DV_NAME,
                 "image": RHEL_VERSION_IMAGE_PATH,
                 "dv_size": RHEL_VERSION_IMAGE_SIZE,
                 "storage_class": py_config["default_storage_class"],
@@ -107,13 +108,13 @@ def windows_vm(
             marks=pytest.mark.polarion("CNV-4560"),
         ),
     ],
-    indirect=["data_volume_scope_function", "disk_options_vm"],
+    indirect=["golden_image_data_volume_scope_function", "disk_options_vm"],
 )
 def test_vm_with_disk_io_option_rhel(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     disk_options_vm,
     expected_disk_io_option,
 ):
@@ -126,11 +127,11 @@ def test_vm_with_disk_io_option_rhel(
 
 @pytest.mark.tier3
 @pytest.mark.parametrize(
-    "data_volume_scope_function, disk_options_vm, windows_vm, expected_disk_io_option",
+    "golden_image_data_volume_scope_function, disk_options_vm, windows_vm, expected_disk_io_option",
     [
         pytest.param(
             {
-                "dv_name": "dv-disk-io-options-native-windows",
+                "dv_name": WINDOWS_LATEST["template_labels"]["os"],
                 "image": WINDOWS_LATEST["image_path"],
                 "dv_size": WINDOWS_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
@@ -145,7 +146,7 @@ def test_vm_with_disk_io_option_rhel(
         ),
     ],
     indirect=[
-        "data_volume_scope_function",
+        "golden_image_data_volume_scope_function",
         "disk_options_vm",
         "windows_vm",
     ],
@@ -153,7 +154,7 @@ def test_vm_with_disk_io_option_rhel(
 def test_vm_with_disk_io_option_windows(
     skip_upstream,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     disk_options_vm,
     windows_vm,
     expected_disk_io_option,

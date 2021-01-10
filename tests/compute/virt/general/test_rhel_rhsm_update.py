@@ -63,7 +63,7 @@ def rhsm_vm(
     unprivileged_client,
     rhel7_workers,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     network_configuration,
     rhsm_cloud_init_data,
 ):
@@ -71,7 +71,7 @@ def rhsm_vm(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=rhsm_cloud_init_data,
     ) as rhsm_vm:
@@ -100,11 +100,11 @@ def registered_rhsm(rhsm_vm):
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, rhsm_vm",
+    "golden_image_data_volume_scope_function, rhsm_vm",
     [
         pytest.param(
             {
-                "dv_name": "dv-rhel-rhsm-vm",
+                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
                 "image": py_config["latest_rhel_version"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": py_config["latest_rhel_version"]["dv_size"],
@@ -128,7 +128,7 @@ def test_rhel_yum_update(
     unprivileged_client,
     namespace,
     rhsm_created_secret,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     rhsm_vm,
     registered_rhsm,
 ):

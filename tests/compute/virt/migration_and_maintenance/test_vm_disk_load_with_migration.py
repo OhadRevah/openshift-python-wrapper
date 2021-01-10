@@ -31,14 +31,14 @@ def vm_with_fio(
     unprivileged_client,
     nodes_common_cpu_model,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     vm_cloud_init_data,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
         cloud_init_data=vm_cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model,
     ) as vm_with_fio:
@@ -90,11 +90,11 @@ def get_disk_usage(ssh_exec):
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_with_fio",
+    "golden_image_data_volume_scope_function, vm_with_fio",
     [
         pytest.param(
             {
-                "dv_name": "dv-fedora-load-vm",
+                "dv_name": py_config["latest_fedora_version"]["template_labels"]["os"],
                 "image": py_config["latest_fedora_version"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": py_config["latest_fedora_version"]["dv_size"],
@@ -119,7 +119,7 @@ def test_fedora_vm_load_migration(
     skip_rhel7_workers,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     vm_cloud_init_data,
     vm_with_fio,
     run_fio_in_vm,

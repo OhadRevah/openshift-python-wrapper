@@ -155,10 +155,12 @@ def get_migration_job(dyn_client, namespace):
 
 
 @pytest.fixture()
-def no_migration_job(admin_client, vm_instance_from_template_multi_storage_scope_class):
+def no_migration_job(
+    admin_client, golden_image_vm_instance_from_template_multi_storage_scope_class
+):
     migration_job = get_migration_job(
         dyn_client=admin_client,
-        namespace=vm_instance_from_template_multi_storage_scope_class.namespace,
+        namespace=golden_image_vm_instance_from_template_multi_storage_scope_class.namespace,
     )
     if migration_job:
         migration_job.delete(wait=True)
@@ -200,11 +202,12 @@ def test_node_drain_using_console_fedora(
     1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
+    "golden_image_data_volume_multi_storage_scope_class,"
+    "golden_image_vm_instance_from_template_multi_storage_scope_class",
     [
         pytest.param(
             {
-                "dv_name": "dv-rhel8-template-node-maintenance",
+                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
                 "image": py_config["latest_rhel_version"]["image_path"],
                 "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
@@ -220,23 +223,25 @@ def test_node_drain_using_console_fedora(
 @pytest.mark.usefixtures(
     "skip_when_one_node",
     "skip_access_mode_rwo_scope_class",
-    "data_volume_multi_storage_scope_class",
+    "golden_image_data_volume_multi_storage_scope_class",
 )
 class TestNodeMaintenanceRHEL:
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
         self,
         no_migration_job,
-        vm_instance_from_template_multi_storage_scope_class,
+        golden_image_vm_instance_from_template_multi_storage_scope_class,
         admin_client,
     ):
         source_pod = (
-            vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod
+            golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod
         )
         source_node = source_pod.node
 
         with running_sleep_in_linux(
-            vm_cli=console.RHEL(vm=vm_instance_from_template_multi_storage_scope_class)
+            vm_cli=console.RHEL(
+                vm=golden_image_vm_instance_from_template_multi_storage_scope_class
+            )
         ):
             with NodeMaintenance(
                 name="node-maintenance-job", node=source_node, timeout=600
@@ -245,7 +250,7 @@ class TestNodeMaintenanceRHEL:
                 check_draining_process(
                     dyn_client=admin_client,
                     source_pod=source_pod,
-                    vm=vm_instance_from_template_multi_storage_scope_class,
+                    vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
                 )
                 nm.wait_for_status(status=nm.Status.SUCCEEDED, timeout=360)
             virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
@@ -254,22 +259,24 @@ class TestNodeMaintenanceRHEL:
     def test_node_drain_using_console_rhel(
         self,
         no_migration_job,
-        vm_instance_from_template_multi_storage_scope_class,
+        golden_image_vm_instance_from_template_multi_storage_scope_class,
         admin_client,
     ):
         drain_using_console(
             dyn_client=admin_client,
-            source_node=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
-            source_pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
-            vm=vm_instance_from_template_multi_storage_scope_class,
-            vm_cli=console.RHEL(vm=vm_instance_from_template_multi_storage_scope_class),
+            source_node=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
+            source_pod=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
+            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
+            vm_cli=console.RHEL(
+                vm=golden_image_vm_instance_from_template_multi_storage_scope_class
+            ),
         )
 
     @pytest.mark.polarion("CNV-4995")
     def test_migration_when_multiple_nodes_unschedulable_using_console_rhel(
         self,
         no_migration_job,
-        vm_instance_from_template_multi_storage_scope_class,
+        golden_image_vm_instance_from_template_multi_storage_scope_class,
         schedulable_nodes,
         admin_client,
     ):
@@ -286,7 +293,7 @@ class TestNodeMaintenanceRHEL:
         3. Drain the Node, on which the VMI is present.
         4. Make sure the VMI is migrated to the other node.
         """
-        vm = vm_instance_from_template_multi_storage_scope_class
+        vm = golden_image_vm_instance_from_template_multi_storage_scope_class
         cordon_nodes = node_filter(
             pod=vm.vmi.virt_launcher_pod,
             schedulable_nodes=schedulable_nodes,
@@ -294,21 +301,22 @@ class TestNodeMaintenanceRHEL:
         with node_mgmt_console(node=cordon_nodes[0], node_mgmt="cordon"):
             drain_using_console(
                 dyn_client=admin_client,
-                source_node=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
-                source_pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
-                vm=vm_instance_from_template_multi_storage_scope_class,
+                source_node=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
+                source_pod=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
+                vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
                 vm_cli=console.RHEL(
-                    vm=vm_instance_from_template_multi_storage_scope_class
+                    vm=golden_image_vm_instance_from_template_multi_storage_scope_class
                 ),
             )
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_class, vm_instance_from_template_multi_storage_scope_class",
+    "golden_image_data_volume_multi_storage_scope_class,"
+    "golden_image_vm_instance_from_template_multi_storage_scope_class",
     [
         pytest.param(
             {
-                "dv_name": "dv-win-template-node-cordon-and-drain",
+                "dv_name": py_config["latest_windows_version"]["template_labels"]["os"],
                 "image": py_config["latest_windows_version"]["image_path"],
                 "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
@@ -327,7 +335,7 @@ class TestNodeMaintenanceRHEL:
 @pytest.mark.usefixtures(
     "skip_when_one_node",
     "skip_access_mode_rwo_scope_class",
-    "data_volume_multi_storage_scope_class",
+    "golden_image_data_volume_multi_storage_scope_class",
 )
 class TestNodeCordonAndDrain:
     @pytest.mark.bugzilla(
@@ -337,10 +345,10 @@ class TestNodeCordonAndDrain:
     def test_node_drain_template_windows(
         self,
         no_migration_job,
-        vm_instance_from_template_multi_storage_scope_class,
+        golden_image_vm_instance_from_template_multi_storage_scope_class,
         admin_client,
     ):
-        vm = vm_instance_from_template_multi_storage_scope_class
+        vm = golden_image_vm_instance_from_template_multi_storage_scope_class
         drain_using_console_windows(
             dyn_client=admin_client,
             source_node=vm.vmi.virt_launcher_pod.node,
@@ -352,10 +360,10 @@ class TestNodeCordonAndDrain:
     def test_node_cordon_template_windows(
         self,
         no_migration_job,
-        vm_instance_from_template_multi_storage_scope_class,
+        golden_image_vm_instance_from_template_multi_storage_scope_class,
         admin_client,
     ):
-        vm = vm_instance_from_template_multi_storage_scope_class
+        vm = golden_image_vm_instance_from_template_multi_storage_scope_class
         with node_mgmt_console(node=vm.vmi.virt_launcher_pod.node, node_mgmt="cordon"):
             with pytest.raises(TimeoutExpiredError):
                 migration_job_sampler(

@@ -15,7 +15,7 @@ def unscheduled_node_vm(
     worker_node1,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     network_configuration,
     cloud_init_data,
 ):
@@ -23,7 +23,7 @@ def unscheduled_node_vm(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
         node_selector=worker_node1.name,
@@ -32,11 +32,11 @@ def unscheduled_node_vm(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, unscheduled_node_vm",
+    "golden_image_data_volume_scope_function, unscheduled_node_vm",
     [
         pytest.param(
             {
-                "dv_name": "dv-rhel-node-maintenance",
+                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
                 "image": py_config["latest_rhel_version"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": py_config["latest_rhel_version"]["dv_size"],
@@ -55,7 +55,7 @@ def unscheduled_node_vm(
 def test_node_maintenance_job_rhel(
     skip_when_one_node,
     nodes,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     unscheduled_node_vm,
     admin_client,
 ):

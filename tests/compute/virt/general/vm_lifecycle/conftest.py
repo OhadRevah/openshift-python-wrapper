@@ -18,7 +18,7 @@ default_run_strategy = VirtualMachine.RunStrategy.MANUAL
 
 
 @contextmanager
-def container_disk_vm(namespace, unprivileged_client):
+def container_disk_vm(namespace, unprivileged_client, admin_client=None):
     name = "fedora-vm-lifecycle"
     with VirtualMachineForTests(
         name=name,
@@ -32,10 +32,11 @@ def container_disk_vm(namespace, unprivileged_client):
 
 
 @contextmanager
-def data_volume_vm(unprivileged_client, namespace):
+def data_volume_vm(admin_client, unprivileged_client, namespace):
     with create_dv(
-        dv_name="fedora-dv-lifecycle",
-        namespace=namespace.name,
+        client=admin_client,
+        dv_name=py_config["latest_fedora_version"]["template_labels"]["os"],
+        namespace=py_config["golden_images_namespace"],
         url=f"{get_images_external_http_server()}{py_config['latest_fedora_version']['image_path']}",
         storage_class=py_config["default_storage_class"],
         access_modes=py_config["default_access_mode"],
@@ -47,7 +48,7 @@ def data_volume_vm(unprivileged_client, namespace):
 
         with VirtualMachineForTestsFromTemplate(
             name="fedora-vm-lifecycle",
-            namespace=dv.namespace,
+            namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(
                 **py_config["latest_fedora_version"]["template_labels"]
@@ -60,13 +61,20 @@ def data_volume_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture(scope="module")
-def lifecycle_vm(unprivileged_client, namespace, vm_volumes_matrix__module__):
+def lifecycle_vm(
+    admin_client, unprivileged_client, namespace, vm_volumes_matrix__module__
+):
     """Wrapper fixture to generate the desired VM
     vm_volumes_matrix returns a string.
     globals() is used to call the actual contextmanager with that name
     request should be True to start vm and wait for interfaces, else False
+
+    Note: admin_client is needed only for data_volume_vm, but as a matrix is used, it is passed to either
+    one of the context managers.
     """
     with globals()[vm_volumes_matrix__module__](
-        unprivileged_client=unprivileged_client, namespace=namespace
+        admin_client=admin_client,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
     ) as vm:
         yield vm

@@ -50,7 +50,11 @@ def rhel_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_cla
 
 
 @pytest.fixture(scope="class")
-def windows_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_class):
+def windows_efi_secureboot_vm(
+    namespace,
+    unprivileged_client,
+    golden_image_data_volume_scope_class,
+):
     """ Create VM with EFI secureBoot set as True """
     with VirtualMachineForTestsFromTemplate(
         name="windows-efi-secureboot",
@@ -59,7 +63,7 @@ def windows_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_
         labels=Template.generate_template_labels(
             **py_config["system_windows_os_matrix"][0]["win-10"]["template_labels"]
         ),
-        data_volume=data_volume_scope_class,
+        data_volume=golden_image_data_volume_scope_class,
         cpu_cores=VM_CPU,
         smm_enabled=True,
         efi_params={"secureBoot": True},
@@ -204,7 +208,7 @@ def test_efi_secureboot_with_smm_disabled(namespace, unprivileged_client):
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_class",
+    "golden_image_data_volume_scope_class",
     [
         pytest.param(
             {
