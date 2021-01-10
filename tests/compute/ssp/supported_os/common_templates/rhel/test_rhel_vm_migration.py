@@ -15,11 +15,12 @@ from utilities.virt import enable_ssh_service_in_vm, wait_for_console
 @pytest.mark.smoke
 @pytest.mark.ocp_interop
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function",
+    "golden_image_data_volume_multi_storage_scope_function,"
+    "golden_image_vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
-                "dv_name": "dv-rhel-migrate-vm",
+                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
                 "image": py_config["latest_rhel_version"]["image_path"],
                 "dv_size": py_config["latest_rhel_version"]["dv_size"],
             },
@@ -41,9 +42,9 @@ def test_migrate_vm_rhel(
     skip_upstream,
     skip_access_mode_rwo_scope_function,
     namespace,
-    data_volume_multi_storage_scope_function,
-    vm_instance_from_template_multi_storage_scope_function,
-    vm_ssh_service_multi_storage_scope_function,
+    golden_image_data_volume_multi_storage_scope_function,
+    golden_image_vm_instance_from_template_multi_storage_scope_function,
+    golden_image_vm_ssh_service_multi_storage_scope_function,
     schedulable_node_ips,
 ):
     """Test CNV common templates with RHEL
@@ -53,31 +54,27 @@ def test_migrate_vm_rhel(
     """
 
     wait_for_console(
-        vm=vm_instance_from_template_multi_storage_scope_function,
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
         console_impl=console.RHEL,
     )
 
     enable_ssh_service_in_vm(
-        vm=vm_instance_from_template_multi_storage_scope_function,
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
         console_impl=console.RHEL,
     )
 
-    assert (
-        vm_instance_from_template_multi_storage_scope_function.ssh_exec.is_connective(
-            tcp_timeout=120
-        )
-    ), ("Failed to login via SSH")
+    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.is_connective(
+        tcp_timeout=120
+    ), "Failed to login via SSH"
 
-    migrate_vm(vm=vm_instance_from_template_multi_storage_scope_function)
+    migrate_vm(vm=golden_image_vm_instance_from_template_multi_storage_scope_function)
 
     wait_for_console(
-        vm=vm_instance_from_template_multi_storage_scope_function,
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
         console_impl=console.RHEL,
     )
 
     # Verify successful SSH connection after migration
-    assert (
-        vm_instance_from_template_multi_storage_scope_function.ssh_exec.is_connective(
-            tcp_timeout=120
-        )
-    ), ("Failed to login via SSH after migration")
+    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.is_connective(
+        tcp_timeout=120
+    ), "Failed to login via SSH after migration"

@@ -23,23 +23,23 @@ def diskless_vm(
     request,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_function,
     ) as diskless_vm:
         yield diskless_vm
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, diskless_vm",
+    "golden_image_data_volume_scope_function, diskless_vm",
     [
         pytest.param(
             {
-                "dv_name": "dv-rhel-diskless-vm",
+                "dv_name": "cirros-dv",
                 "image": SMALL_VM_IMAGE,
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
@@ -54,7 +54,7 @@ def diskless_vm(
         ),
         pytest.param(
             {
-                "dv_name": "dv-windows-diskless-vm",
+                "dv_name": "cirros-dv",
                 "image": SMALL_VM_IMAGE,
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
@@ -81,7 +81,7 @@ def test_diskless_vm_creation(
     skip_upstream,
     unprivileged_client,
     namespace,
-    data_volume_scope_function,
+    golden_image_data_volume_scope_function,
     diskless_vm,
 ):
     LOGGER.info("Verify diskless VM is created.")

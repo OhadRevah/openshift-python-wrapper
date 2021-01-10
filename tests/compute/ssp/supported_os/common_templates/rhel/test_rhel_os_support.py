@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.ci
 @pytest.mark.parametrize(
-    "vm_object_from_template_multi_rhel_os_multi_storage_scope_class",
+    "golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class",
     [({"username": console.RHEL.USERNAME, "password": console.RHEL.PASSWORD})],
     indirect=True,
 )
@@ -36,13 +36,13 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class.create(
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.create(
             wait=True
         )
 
@@ -54,13 +54,13 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM initiation """
 
         vm_started(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             wait_for_interfaces="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
@@ -72,14 +72,14 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
         wait_for_console(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             console_impl=console.RHEL,
         )
 
@@ -91,13 +91,13 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates OS version """
 
         common_templates_utils.vm_os_version(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             console_impl=console.RHEL,
         )
 
@@ -109,20 +109,20 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
 
-        domain_label = vm_object_from_template_multi_rhel_os_multi_storage_scope_class.instance.spec.template.metadata[
+        label = golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.instance.spec.template.metadata[  # noqa: E501
             "labels"
         ][
             "kubevirt.io/domain"
         ]
         assert (
-            domain_label
-            == vm_object_from_template_multi_rhel_os_multi_storage_scope_class.name
-        ), f"Wrong domain label: {domain_label}"
+            label
+            == golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.name
+        ), f"Wrong domain label: {label}"
 
     @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3320")
@@ -133,9 +133,9 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-        vm_ssh_service_multi_rhel_os_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_ssh_service_multi_rhel_os_scope_class,
         bugzilla_connection_params,
     ):
         """ CNV common templates access VM via SSH """
@@ -150,7 +150,7 @@ class TestCommonTemplatesRhel:
         # remove default GW from eth0 after VM is running
         if "rhel-8-2" in [*rhel_os_matrix__class__][0] and rhel7_workers:
             remove_eth0_default_gw(
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+                vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
                 console_impl=console.RHEL,
             )
 
@@ -163,16 +163,16 @@ class TestCommonTemplatesRhel:
             and "rhel-7-7" in [*rhel_os_matrix__class__][0]
         ):
             get_guest_os_info(
-                vmi=vm_object_from_template_multi_rhel_os_multi_storage_scope_class.vmi
+                vmi=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.vmi
             )
 
         enable_ssh_service_in_vm(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             console_impl=console.RHEL,
             systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
-        assert vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.is_connective(
+        assert golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.is_connective(
             tcp_timeout=120
         ), "Failed to login via SSH"
 
@@ -186,10 +186,10 @@ class TestCommonTemplatesRhel:
         skip_upstream,
         skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_os_info_vmi_vs_linux_os(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -201,15 +201,15 @@ class TestCommonTemplatesRhel:
         self,
         skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
         common_templates_utils.restart_qemu_guest_agent_service(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             console_impl=console.RHEL,
         )
         common_templates_utils.validate_os_info_virtctl_vs_linux_os(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -221,13 +221,13 @@ class TestCommonTemplatesRhel:
         self,
         skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         with console.RHEL(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         ):
             common_templates_utils.validate_user_info_virtctl_vs_linux_os(
-                vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+                vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
             )
 
     @pytest.mark.dependency(depends=["start_vm"])
@@ -238,11 +238,11 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         common_templates_utils.check_machine_type(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
     @pytest.mark.dependency(depends=["start_vm"])
@@ -254,11 +254,11 @@ class TestCommonTemplatesRhel:
         smbios_from_kubevirt_config_cm,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         ssp_utils.check_vm_xml_smbios(
-            vm=vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             cm_values=smbios_from_kubevirt_config_cm,
         )
 
@@ -270,10 +270,10 @@ class TestCommonTemplatesRhel:
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
-        data_volume_multi_rhel_os_multi_storage_scope_class,
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
-        vm_object_from_template_multi_rhel_os_multi_storage_scope_class.delete(
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.delete(
             wait=True
         )

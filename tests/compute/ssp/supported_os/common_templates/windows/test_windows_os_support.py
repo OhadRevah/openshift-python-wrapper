@@ -21,11 +21,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "vm_object_from_template_multi_windows_os_multi_storage_scope_class",
+    "golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class",
     [
         (
             {
                 "cpu_threads": 2,
+                "ssh": True,
                 "username": py_config["windows_username"],
                 "password": py_config["windows_password"],
             }
@@ -42,13 +43,13 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class.create(
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.create(
             wait=True
         )
 
@@ -58,16 +59,16 @@ class TestCommonTemplatesWindows:
         self,
         skip_upstream,
         windows_os_matrix__class__,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-        vm_ssh_service_multi_windows_os_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM initiation """
 
         compute_utils.vm_started(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
         utilities.virt.wait_for_windows_vm(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
             ],
@@ -81,11 +82,11 @@ class TestCommonTemplatesWindows:
     def test_vmi_guest_agent_info(
         self,
         windows_os_matrix__class__,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test Guest OS agent info. """
         common_templates_utils.validate_os_info_vmi_vs_windows_os(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
     @pytest.mark.bugzilla(
@@ -97,10 +98,10 @@ class TestCommonTemplatesWindows:
         self,
         skip_guest_agent_on_win12,
         windows_os_matrix__class__,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_os_info_virtctl_vs_windows_os(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
     @pytest.mark.bugzilla(
@@ -112,10 +113,10 @@ class TestCommonTemplatesWindows:
         self,
         skip_guest_agent_on_win12,
         windows_os_matrix__class__,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_fs_info_virtctl_vs_windows_os(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
     @pytest.mark.bugzilla(
@@ -127,10 +128,10 @@ class TestCommonTemplatesWindows:
         self,
         skip_guest_agent_on_win12,
         windows_os_matrix__class__,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_user_info_virtctl_vs_windows_os(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
     @pytest.mark.dependency(depends=["create_vm"])
@@ -144,11 +145,11 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
-        vm = vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        vm = golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         domain_label = vm.body["spec"]["template"]["metadata"]["labels"][
             "kubevirt.io/domain"
         ]
@@ -162,16 +163,16 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
 
         LOGGER.info("Verify VM HyperV values.")
         common_templates_utils.check_vm_xml_hyperv(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
         common_templates_utils.check_windows_vm_hvinfo(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
     @pytest.mark.dependency(depends=["start_vm"])
@@ -183,12 +184,12 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
 
         common_templates_utils.add_activate_windows_license(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "license"
             ],
@@ -196,7 +197,7 @@ class TestCommonTemplatesWindows:
 
         LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
         common_templates_utils.check_windows_activated_license(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             reset_action="stop_start",
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
@@ -212,12 +213,12 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
 
         common_templates_utils.add_activate_windows_license(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "license"
             ],
@@ -225,7 +226,7 @@ class TestCommonTemplatesWindows:
 
         LOGGER.info("Verify VM activation mode is not changed after reboot.")
         common_templates_utils.check_windows_activated_license(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             reset_action="reboot",
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
@@ -240,11 +241,11 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         common_templates_utils.check_machine_type(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
     @pytest.mark.dependency(depends=["start_vm"])
@@ -255,32 +256,32 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test VM pause and unpause """
 
         pre_pause_processid = compute_utils.start_and_fetch_processid_on_windows_vm(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             process_name="mspaint.exe",
         )
         LOGGER.info(f"Pre pause processid is: {pre_pause_processid}")
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.pause(
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.pause(
             wait=True
         )
 
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.unpause(
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.unpause(
             wait=True
         )
 
         utilities.virt.wait_for_windows_vm(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
             ],
         )
         post_pause_processid = compute_utils.fetch_processid_from_windows_vm(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             process_name="mspaint.exe",
         )
         LOGGER.info(f"Post pause processid is: {post_pause_processid}")
@@ -295,11 +296,11 @@ class TestCommonTemplatesWindows:
         smbios_from_kubevirt_config_cm,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         ssp_utils.check_vm_xml_smbios(
-            vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             cm_values=smbios_from_kubevirt_config_cm,
         )
 
@@ -311,10 +312,10 @@ class TestCommonTemplatesWindows:
         unprivileged_client,
         namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
-        vm_object_from_template_multi_windows_os_multi_storage_scope_class.delete(
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.delete(
             wait=True
         )

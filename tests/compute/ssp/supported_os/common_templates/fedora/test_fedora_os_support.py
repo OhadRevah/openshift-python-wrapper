@@ -54,7 +54,7 @@ HYPERV_DICT = {
 
 
 @pytest.mark.parametrize(
-    "vm_object_from_template_multi_fedora_os_multi_storage_scope_class",
+    "golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class",
     [
         (
             {
@@ -77,13 +77,13 @@ class TestCommonTemplatesFedora:
         unprivileged_client,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test CNV VM creation from template """
 
         LOGGER.info("Create VM from template.")
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class.create(
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.create(
             wait=True
         )
 
@@ -95,12 +95,14 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM initiation """
 
-        vm_started(vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class)
+        vm_started(
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        )
 
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-2651")
@@ -109,15 +111,15 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         LOGGER.info("Verify VMI HyperV values.")
         common_templates_utils.check_vm_xml_hyperv(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
         common_templates_utils.check_vm_xml_clock(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.smoke
@@ -128,14 +130,14 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM console """
 
         LOGGER.info("Verify VM console connection.")
         wait_for_console(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
         )
 
@@ -146,13 +148,13 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates OS version """
 
         common_templates_utils.vm_os_version(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
         )
 
@@ -163,11 +165,11 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ CNV common templates 'domain' label contains vm name """
-        vm = vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        vm = golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         domain_label = vm.instance.spec.template.metadata["labels"][
             "kubevirt.io/domain"
         ]
@@ -181,18 +183,19 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-        vm_ssh_service_multi_fedora_os_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_ssh_service_multi_fedora_os_scope_class,
+        schedulable_node_ips,
     ):
         """ CNV common templates access VM via SSH """
 
         enable_ssh_service_in_vm(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
         )
 
-        assert vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec.is_connective(
+        assert golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec.is_connective(
             tcp_timeout=120
         ), "Failed to login via SSH"
 
@@ -202,11 +205,11 @@ class TestCommonTemplatesFedora:
     def test_vmi_guest_agent_info(
         self,
         fedora_os_matrix__class__,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test Guest OS agent info. """
         common_templates_utils.validate_os_info_vmi_vs_linux_os(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -217,15 +220,15 @@ class TestCommonTemplatesFedora:
     def test_virtctl_guest_agent_os_info(
         self,
         fedora_os_matrix__class__,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
         common_templates_utils.restart_qemu_guest_agent_service(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
         )
         common_templates_utils.validate_os_info_virtctl_vs_linux_os(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -236,10 +239,10 @@ class TestCommonTemplatesFedora:
     def test_virtctl_guest_agent_fs_info(
         self,
         fedora_os_matrix__class__,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         common_templates_utils.validate_fs_info_virtctl_vs_linux_os(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.bugzilla(
@@ -250,13 +253,13 @@ class TestCommonTemplatesFedora:
     def test_virtctl_guest_agent_user_info(
         self,
         fedora_os_matrix__class__,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         with console.Fedora(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         ):
             common_templates_utils.validate_user_info_virtctl_vs_linux_os(
-                vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+                vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
             )
 
     @pytest.mark.dependency(depends=["start_vm"])
@@ -266,11 +269,11 @@ class TestCommonTemplatesFedora:
         fedora_os_matrix__class__,
         skip_upstream,
         namespace,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         common_templates_utils.check_machine_type(
-            vm=vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
     @pytest.mark.smoke
@@ -281,10 +284,10 @@ class TestCommonTemplatesFedora:
         skip_upstream,
         namespace,
         fedora_os_matrix__class__,
-        data_volume_multi_fedora_os_multi_storage_scope_class,
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM deletion """
-        vm_object_from_template_multi_fedora_os_multi_storage_scope_class.delete(
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.delete(
             wait=True
         )

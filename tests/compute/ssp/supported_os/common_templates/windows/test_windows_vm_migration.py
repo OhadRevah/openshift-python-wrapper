@@ -13,12 +13,13 @@ from tests.compute.utils import migrate_vm
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function, vm_instance_from_template_multi_storage_scope_function, "
-    "started_windows_vm, exposed_vm_service_multi_storage_scope_function",
+    "golden_image_data_volume_multi_storage_scope_function,"
+    "golden_image_vm_instance_from_template_multi_storage_scope_function, "
+    "golden_image_started_windows_vm, golden_image_exposed_vm_service_multi_storage_scope_function",
     [
         pytest.param(
             {
-                "dv_name": "dv-windows-migrate-vm",
+                "dv_name": py_config["latest_windows_version"]["template_labels"]["os"],
                 "image": py_config["latest_windows_version"]["image_path"],
                 "dv_size": py_config["latest_windows_version"]["dv_size"],
             },
@@ -47,10 +48,10 @@ def test_migrate_vm_windows(
     skip_upstream,
     skip_access_mode_rwo_scope_function,
     namespace,
-    data_volume_multi_storage_scope_function,
-    vm_instance_from_template_multi_storage_scope_function,
-    started_windows_vm,
-    exposed_vm_service_multi_storage_scope_function,
+    golden_image_data_volume_multi_storage_scope_function,
+    golden_image_vm_instance_from_template_multi_storage_scope_function,
+    golden_image_started_windows_vm,
+    golden_image_exposed_vm_service_multi_storage_scope_function,
 ):
     """Test CNV common templates with Windows
 
@@ -59,19 +60,19 @@ def test_migrate_vm_windows(
     """
 
     assert utils.check_telnet_connection(
-        ip=vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
-        port=vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
+        ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
+        port=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
     ), "Failed to login via Telnet"
 
-    migrate_vm(vm=vm_instance_from_template_multi_storage_scope_function)
+    migrate_vm(vm=golden_image_vm_instance_from_template_multi_storage_scope_function)
 
     utilities.virt.wait_for_windows_vm(
-        vm=vm_instance_from_template_multi_storage_scope_function,
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
         version=py_config["latest_windows_version"]["os_version"],
         timeout=1800,
     )
 
     assert utils.check_telnet_connection(
-        ip=vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
-        port=vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
+        ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
+        port=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
     ), "Failed to login via Telnet after migration"
