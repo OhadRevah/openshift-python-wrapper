@@ -1442,15 +1442,10 @@ def winrmcli_pod_scope_class(rhel7_workers, namespace, sa_ready):
 def started_windows_vm(
     request,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
 ):
     wait_for_windows_vm(
         vm=vm_instance_from_template_multi_storage_scope_function,
         version=request.param["os_version"],
-        winrmcli_pod=winrmcli_pod_scope_function,
-        timeout=1800,
-        helper_vm=bridge_attached_helper_vm,
     )
 
 

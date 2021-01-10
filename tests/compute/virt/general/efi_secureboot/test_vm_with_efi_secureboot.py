@@ -50,9 +50,7 @@ def rhel_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_cla
 
 
 @pytest.fixture(scope="class")
-def windows_efi_secureboot_vm(
-    namespace, unprivileged_client, data_volume_scope_class, winrmcli_pod_scope_class
-):
+def windows_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_class):
     """ Create VM with EFI secureBoot set as True """
     with VirtualMachineForTestsFromTemplate(
         name="windows-efi-secureboot",
@@ -65,13 +63,13 @@ def windows_efi_secureboot_vm(
         cpu_cores=VM_CPU,
         smm_enabled=True,
         efi_params={"secureBoot": True},
+        ssh=True,
+        username=py_config["windows_username"],
+        password=py_config["windows_password"],
     ) as vm:
         vm_started(vm=vm, wait_for_interfaces=False)
         wait_for_windows_vm(
-            vm=vm,
-            version=vm.template_labels[0].split("win")[1],
-            winrmcli_pod=winrmcli_pod_scope_class,
-            timeout=1800,
+            vm=vm, version=vm.template_labels[0].split("win")[1], timeout=1800
         )
         yield vm
 
@@ -256,7 +254,6 @@ class TestEFISecureBootWindows:
         wait_for_windows_vm(
             vm=windows_efi_secureboot_vm,
             version=windows_efi_secureboot_vm.template_labels[0].split("win")[1],
-            winrmcli_pod=winrmcli_pod_scope_class,
             timeout=1800,
         )
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)

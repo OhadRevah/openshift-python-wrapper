@@ -78,6 +78,9 @@ class TestRhelGoldenImages:
                 "target_dv_name": "windows-dv-target",
                 "vm_wait_timeout": 3600,
                 "wait_for_interfaces_timeout": 1800,
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
         ),
     ],
@@ -86,12 +89,10 @@ class TestRhelGoldenImages:
 @pytest.mark.polarion("CNV-4495")
 def test_vm_from_windows_golden_image(
     vm_instance_from_template_golden_image_multi_scope_function,
-    winrmcli_pod_scope_function,
 ):
     wait_for_windows_vm(
         vm=vm_instance_from_template_golden_image_multi_scope_function,
         version=py_config["latest_windows_version"]["os_version"],
-        winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,
     )
 

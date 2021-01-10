@@ -58,7 +58,7 @@ class Images:
         WIN19_RAW = "win19.raw"
         DIR = f"{BASE_IMAGES_DIR}/windows-images"
         RAW_DIR = f"{DIR}/raw_images"
-        DEFAULT_DV_SIZE = "55Gi"
+        DEFAULT_DV_SIZE = "60Gi"
 
     class Fedora:
         FEDORA29_IMG = "Fedora-Cloud-Base-29-1.2.x86_64.qcow2"

@@ -174,6 +174,9 @@ class TestLatestRHEL:
                 "network_model": "virtio",
                 "network_multiqueue": True,
                 "wait_for_interfaces_timeout": 1500,
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
         )
     ],
@@ -189,24 +192,15 @@ class TestLatestWindows:
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
-        self,
-        vm_instance_from_template_multi_storage_scope_class,
-        winrmcli_pod_scope_class,
-        bridge_attached_helper_vm,
+        self, vm_instance_from_template_multi_storage_scope_class
     ):
         wait_for_windows_vm(
-            vm=vm_instance_from_template_multi_storage_scope_class,
-            version=self.WIN_VER,
-            winrmcli_pod=winrmcli_pod_scope_class,
-            helper_vm=bridge_attached_helper_vm,
+            vm=vm_instance_from_template_multi_storage_scope_class, version=self.WIN_VER
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_four_cores_two_sockets_two_threads(
-        self,
-        vm_instance_from_template_multi_storage_scope_class,
-        winrmcli_pod_scope_class,
-        bridge_attached_helper_vm,
+        self, vm_instance_from_template_multi_storage_scope_class
     ):
         _update_and_validate_vm_cpu_spec(
             vm=vm_instance_from_template_multi_storage_scope_class,
@@ -215,8 +209,5 @@ class TestLatestWindows:
             threads=2,
         )
         wait_for_windows_vm(
-            vm=vm_instance_from_template_multi_storage_scope_class,
-            version=self.WIN_VER,
-            winrmcli_pod=winrmcli_pod_scope_class,
-            helper_vm=bridge_attached_helper_vm,
+            vm=vm_instance_from_template_multi_storage_scope_class, version=self.WIN_VER
         )

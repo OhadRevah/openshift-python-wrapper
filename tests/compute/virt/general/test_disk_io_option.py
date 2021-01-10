@@ -65,15 +65,9 @@ def disk_options_vm(
 def windows_vm(
     request,
     disk_options_vm,
-    winrmcli_pod_scope_function,
-    bridge_attached_helper_vm,
 ):
     wait_for_windows_vm(
-        vm=disk_options_vm,
-        version=request.param["os_version"],
-        winrmcli_pod=winrmcli_pod_scope_function,
-        timeout=1800,
-        helper_vm=bridge_attached_helper_vm,
+        vm=disk_options_vm, version=request.param["os_version"], timeout=1800
     )
 
 
@@ -161,7 +155,6 @@ def test_vm_with_disk_io_option_windows(
     namespace,
     data_volume_scope_function,
     disk_options_vm,
-    winrmcli_pod_scope_function,
     windows_vm,
     expected_disk_io_option,
 ):

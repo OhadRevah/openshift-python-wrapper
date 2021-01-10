@@ -31,6 +31,9 @@ from tests.compute.utils import migrate_vm
                 ],
                 "cpu_threads": 2,
                 "set_vm_common_cpu": True,
+                "ssh": True,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
             },
             {"os_version": py_config["latest_windows_version"]["os_version"]},
             {"service_name": "telnet", "service_port": 5985},
@@ -46,7 +49,6 @@ def test_migrate_vm_windows(
     namespace,
     data_volume_multi_storage_scope_function,
     vm_instance_from_template_multi_storage_scope_function,
-    winrmcli_pod_scope_function,
     started_windows_vm,
     exposed_vm_service_multi_storage_scope_function,
 ):
@@ -66,7 +68,6 @@ def test_migrate_vm_windows(
     utilities.virt.wait_for_windows_vm(
         vm=vm_instance_from_template_multi_storage_scope_function,
         version=py_config["latest_windows_version"]["os_version"],
-        winrmcli_pod=winrmcli_pod_scope_function,
         timeout=1800,
     )
 

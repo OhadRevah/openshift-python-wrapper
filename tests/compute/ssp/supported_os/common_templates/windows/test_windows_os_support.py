@@ -6,6 +6,7 @@ Common templates test Windows OS support
 import logging
 
 import pytest
+from pytest_testconfig import config as py_config
 
 import tests.compute.ssp.utils as ssp_utils
 import utilities.virt
@@ -21,7 +22,15 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.parametrize(
     "vm_object_from_template_multi_windows_os_multi_storage_scope_class",
-    [({"cpu_threads": 2})],
+    [
+        (
+            {
+                "cpu_threads": 2,
+                "username": py_config["windows_username"],
+                "password": py_config["windows_password"],
+            }
+        )
+    ],
     indirect=True,
 )
 class TestCommonTemplatesWindows:
@@ -48,13 +57,9 @@ class TestCommonTemplatesWindows:
     def test_start_vm(
         self,
         skip_upstream,
-        unprivileged_client,
-        namespace,
         windows_os_matrix__class__,
-        data_volume_multi_windows_os_multi_storage_scope_class,
         vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-        winrmcli_pod_scope_class,
-        bridge_attached_helper_vm,
+        vm_ssh_service_multi_windows_os_scope_class,
     ):
         """ Test CNV common templates VM initiation """
 
@@ -66,8 +71,6 @@ class TestCommonTemplatesWindows:
             version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
                 "os_version"
             ],
-            winrmcli_pod=winrmcli_pod_scope_class,
-            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.bugzilla(

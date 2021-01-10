@@ -1286,25 +1286,21 @@ def execute_ssh_command(username, passwd, ip, port, cmd, timeout=60):
     return out
 
 
-def wait_for_windows_vm(vm, version, winrmcli_pod, timeout=1500, helper_vm=False):
+def wait_for_windows_vm(vm, version, timeout=1500):
     """
     Samples Windows VM; wait for it to complete the boot process.
     """
 
     LOGGER.info(
         f"Windows VM {vm.name} booting up, "
-        f"will attempt to access it up to 25 minutes."
+        f"will attempt to access it up to {round(timeout / 60)} minutes."
     )
 
     sampler = TimeoutSampler(
         timeout=timeout,
         sleep=15,
-        func=execute_winrm_cmd,
-        vmi_ip=vm.vmi.virt_launcher_pod.instance.status.podIP,
-        winrmcli_pod=winrmcli_pod,
-        target_vm=vm,
-        helper_vm=helper_vm,
-        cmd="wmic os get Caption /value",
+        func=vm.ssh_exec.run_command,
+        command=shlex.split("wmic os get Caption /value"),
     )
     for sample in sampler:
         if version in str(sample):
