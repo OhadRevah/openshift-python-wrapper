@@ -14,8 +14,8 @@ OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
 
 
-def replace_annotations(hyperconverged_resource, annotations):
-    metadata = {
+def updated_metadata(hyperconverged_resource, annotations):
+    return {
         "metadata": {
             "annotations": annotations,
             "name": hyperconverged_resource.name,
@@ -24,7 +24,6 @@ def replace_annotations(hyperconverged_resource, annotations):
         "kind": hyperconverged_resource.kind,
         "apiVersion": hyperconverged_resource.api_version,
     }
-    hyperconverged_resource.update_replace(resource_dict=metadata)
 
 
 def wait_for_ovs_daemonset_deleted(ovs_daemonset):
@@ -107,13 +106,22 @@ def hyperconverged_ovs_annotations_removed(
     ]
     annotations = origin_annotations.copy()
     annotations.pop(DEPLOY_OVS)
-    replace_annotations(
-        hyperconverged_resource=hyperconverged_resource, annotations=annotations
-    )
-    yield
-    replace_annotations(
-        hyperconverged_resource=hyperconverged_resource, annotations=origin_annotations
-    )
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource: updated_metadata(
+                hyperconverged_resource=hyperconverged_resource, annotations=annotations
+            )
+        },
+        user_backups={
+            hyperconverged_resource: updated_metadata(
+                hyperconverged_resource=hyperconverged_resource,
+                annotations=origin_annotations,
+            )
+        },
+        action="replace",
+    ):
+        yield
+
     wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
     ovs_daemonset.wait_until_deployed()
 
