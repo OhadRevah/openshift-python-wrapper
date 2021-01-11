@@ -24,13 +24,11 @@ def replace_annotations(hyperconverged_resource, annotations):
         "kind": hyperconverged_resource.kind,
         "apiVersion": hyperconverged_resource.api_version,
     }
-    hyperconverged_resource.api().replace(
-        metadata, namespace=hyperconverged_resource.namespace
-    )
+    hyperconverged_resource.update_replace(resource_dict=metadata)
 
 
 def wait_for_ovs_daemonset_deleted(ovs_daemonset):
-    samples = TimeoutSampler(timeout=60, sleep=1, func=lambda: ovs_daemonset.exists)
+    samples = TimeoutSampler(timeout=90, sleep=1, func=lambda: ovs_daemonset.exists)
     try:
         for sample in samples:
             if not sample:
@@ -43,7 +41,7 @@ def wait_for_ovs_daemonset_deleted(ovs_daemonset):
 
 def wait_for_ovs_pods(admin_client, hco_namespace, count=0):
     samples = TimeoutSampler(
-        timeout=60,
+        timeout=90,
         sleep=1,
         func=ovs_pods,
         admin_client=admin_client,
