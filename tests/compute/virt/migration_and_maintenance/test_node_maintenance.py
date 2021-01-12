@@ -16,7 +16,6 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
-from tests.conftest import winrmcli_pod
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
@@ -75,23 +74,17 @@ def drain_using_console_windows(
     source_node,
     source_pod,
     vm,
-    winrmcli_pod,
-    helper_vm=False,
 ):
     process_name = "mspaint.exe"
     pre_migrate_processid = compute_utils.start_and_fetch_processid_on_windows_vm(
         vm=vm,
-        winrmcli_pod=winrmcli_pod,
         process_name=process_name,
-        helper_vm=helper_vm,
     )
     with node_mgmt_console(node=source_node, node_mgmt="drain"):
         check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
         post_migrate_processid = compute_utils.fetch_processid_from_windows_vm(
             vm=vm,
-            winrmcli_pod=winrmcli_pod,
             process_name=process_name,
-            helper_vm=helper_vm,
         )
         assert (
             post_migrate_processid == pre_migrate_processid
@@ -99,14 +92,14 @@ def drain_using_console_windows(
 
 
 def node_filter(pod, schedulable_nodes):
-    nodes_for_winrmcli = list(
+    nodes_for_test = list(
         filter(
             lambda node: node.name != pod.node.name,
             schedulable_nodes,
         )
     )
-    assert len(nodes_for_winrmcli) > 0, "No available nodes."
-    return nodes_for_winrmcli
+    assert len(nodes_for_test) > 0, "No available nodes."
+    return nodes_for_test
 
 
 @pytest.fixture()
@@ -123,28 +116,6 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         yield vm
-
-
-@pytest.fixture(scope="class")
-def winrmcli_pod_nodeselector_scope_class(
-    rhel7_workers,
-    sa_ready,
-    namespace,
-    vm_instance_from_template_multi_storage_scope_class,
-    schedulable_nodes,
-):
-    """Creates a Winrmcli Pod with a node selector."""
-    # For RHEL7 workers, helper_vm is used
-    if rhel7_workers:
-        yield
-    else:
-        yield from winrmcli_pod(
-            namespace=namespace,
-            node_selector=node_filter(
-                pod=vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
-                schedulable_nodes=schedulable_nodes,
-            )[0].name,
-        )
 
 
 def assert_pod_status_completed(source_pod):
@@ -367,8 +338,6 @@ class TestNodeCordonAndDrain:
         self,
         no_migration_job,
         vm_instance_from_template_multi_storage_scope_class,
-        winrmcli_pod_nodeselector_scope_class,
-        bridge_attached_helper_vm,
         admin_client,
     ):
         vm = vm_instance_from_template_multi_storage_scope_class
@@ -377,8 +346,6 @@ class TestNodeCordonAndDrain:
             source_node=vm.vmi.virt_launcher_pod.node,
             source_pod=vm.vmi.virt_launcher_pod,
             vm=vm,
-            winrmcli_pod=winrmcli_pod_nodeselector_scope_class,
-            helper_vm=bridge_attached_helper_vm,
         )
 
     @pytest.mark.polarion("CNV-4906")

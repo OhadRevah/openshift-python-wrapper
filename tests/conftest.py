@@ -52,7 +52,6 @@ from resources.virtual_machine import (
     VirtualMachineInstanceMigration,
 )
 
-from utilities import console
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -72,11 +71,7 @@ from utilities.storage import data_volume
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     RHEL_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
-    WinRMcliPod,
-    enable_ssh_service_in_vm,
-    fedora_vm_body,
     generate_yaml_from_template,
     kubernetes_taint_exists,
     nmcli_add_con_cmds,
@@ -1188,73 +1183,6 @@ def cloud_init_data(
         return cloud_init_data
 
 
-@pytest.fixture(scope="class")
-def bridge_attached_helper_vm(
-    workers_type,
-    rhel7_workers,
-    worker_node1,
-    namespace,
-    unprivileged_client,
-    network_attachment_definition,
-    rhel7_psi_network_config,
-):
-    if rhel7_workers:
-        name = "helper-vm"
-        networks = {
-            network_attachment_definition.name: network_attachment_definition.name
-        }
-
-        bootcmds = nmcli_add_con_cmds(
-            workers_type=workers_type,
-            iface="eth1",
-            ip=rhel7_psi_network_config["helper_vm_address"],
-            default_gw=rhel7_psi_network_config["default_gw"],
-            dns_server=rhel7_psi_network_config["dns_server"],
-        )
-
-        cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-        cloud_init_data["userData"]["bootcmd"] = bootcmds
-
-        # On PSI, set DHCP server configuration
-        if workers_type == ClusterHosts.Type.VIRTUAL:
-            dhcpd_conf_file = f"""
-cat <<EOF >> /etc/dhcp/dhcpd.conf
-default-lease-time 3600;
-max-lease-time 7200;
-authoritative;
-subnet {rhel7_psi_network_config['subnet']} netmask 255.255.255.0 {{
-option subnet-mask 255.255.255.0;
-range {rhel7_psi_network_config['vm_address']} {rhel7_psi_network_config['vm_address']};
-option routers {rhel7_psi_network_config['default_gw']};
-option domain-name-servers {rhel7_psi_network_config['dns_server']};
-}}
-EOF
-"""
-            cloud_init_data["userData"]["runcmd"] = [
-                dhcpd_conf_file,
-                "sysctl net.ipv4.icmp_echo_ignore_broadcasts=0",
-                "sudo systemctl enable dhcpd",
-                "sudo systemctl restart dhcpd",
-            ]
-
-        with VirtualMachineForTests(
-            namespace=namespace.name,
-            name=name,
-            body=fedora_vm_body(name=name),
-            networks=networks,
-            interfaces=sorted(networks.keys()),
-            node_selector=worker_node1.name,
-            cloud_init_data=cloud_init_data,
-            client=unprivileged_client,
-        ) as vm:
-            vm.start(wait=True)
-            wait_for_vm_interfaces(vmi=vm.vmi)
-            enable_ssh_service_in_vm(vm=vm, console_impl=console.Fedora)
-            yield vm
-    else:
-        yield
-
-
 """
 VM creation from template
 """
@@ -1397,45 +1325,6 @@ def sa_ready(namespace):
     for sample in sampler:
         if sample:
             return
-
-
-def winrmcli_pod(namespace, **kwargs):
-    """Deploy winrm-cli Pod into the same namespace.
-
-    The call to this function is triggered by calling either
-    winrmcli_pod_scope_module or winrmcli_pod_scope_class.
-    """
-
-    with WinRMcliPod(name="winrmcli-pod", namespace=namespace.name, **kwargs) as pod:
-        pod.wait_for_status(status=pod.Status.RUNNING, timeout=240)
-        yield pod
-
-
-@pytest.fixture()
-def winrmcli_pod_scope_function(rhel7_workers, namespace, sa_ready):
-    # For RHEL7 workers, helper_vm is used
-    if rhel7_workers:
-        yield
-    else:
-        yield from winrmcli_pod(namespace=namespace)
-
-
-@pytest.fixture(scope="module")
-def winrmcli_pod_scope_module(rhel7_workers, namespace, sa_ready):
-    # For RHEL7 workers, helper_vm is used
-    if rhel7_workers:
-        yield
-    else:
-        yield from winrmcli_pod(namespace=namespace)
-
-
-@pytest.fixture(scope="class")
-def winrmcli_pod_scope_class(rhel7_workers, namespace, sa_ready):
-    # For RHEL7 workers, helper_vm is used
-    if rhel7_workers:
-        yield
-    else:
-        yield from winrmcli_pod(namespace=namespace)
 
 
 @pytest.fixture()

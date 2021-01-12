@@ -54,7 +54,7 @@ def test_migrate_vm_windows(
 ):
     """Test CNV common templates with Windows
 
-    Verify VM is migrated and previously-created expose service (winrm)
+    Verify VM is migrated and previously-created expose service (telnet)
     can be accessed.
     """
 

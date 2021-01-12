@@ -15,7 +15,6 @@ import rrmngmnt
 import yaml
 from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
-from resources.pod import Pod
 from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
@@ -25,7 +24,6 @@ from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
-from rrmngmnt import ssh, user
 
 import utilities.network
 from utilities import console
@@ -1214,62 +1212,6 @@ def get_windows_os_info(ssh_exec):
     return ssh_exec.run_command(command=cmd)[1]
 
 
-def execute_winrm_cmd(
-    vmi_ip, winrmcli_pod, cmd, timeout=120, target_vm=False, helper_vm=False
-):
-    """
-    For RHEL7 workers, pass in the following:
-    target_vm: vm which the command will be executed on
-    helper_vm: cmd execution is done using a helper vm, must be fedora
-    """
-    if helper_vm:
-        LOGGER.info(f"Running {cmd} via helper VM.")
-        return execute_winrm_in_vm(target_vm=target_vm, helper_vm=helper_vm, cmd=cmd)
-    else:
-        LOGGER.info(f"Running {cmd} via winrm pod.")
-
-        winrmcli_cmd = [
-            "bash",
-            "-c",
-            f"/bin/winrm-cli -hostname {vmi_ip} \
-            -username {py_config['windows_username']} -password {py_config['windows_password']} \
-            \"{cmd}\"",
-        ]
-        return winrmcli_pod.execute(command=winrmcli_cmd, timeout=timeout)
-
-
-def execute_winrm_in_vm(target_vm, helper_vm, cmd):
-    target_vm_ip = utilities.network.get_vmi_ip_v4_by_name(
-        vmi=target_vm.vmi, name=[*target_vm.networks][0]
-    )
-
-    run_cmd = shlex.split(
-        f"podman run -it docker.io/kubevirt/winrmcli winrm-cli -hostname "
-        f"{target_vm_ip} -username {py_config['windows_username']} -password "
-        f"{py_config['windows_password']}"
-    ) + [cmd]
-
-    return execute_ssh_command(
-        username=console.Fedora.USERNAME,
-        passwd=console.Fedora.PASSWORD,
-        ip=utilities.network.get_vmi_ip_v4_by_name(
-            vmi=helper_vm.vmi, name=[*helper_vm.networks][0]
-        ),
-        port=22,
-        cmd=run_cmd,
-        timeout=480,
-    )
-
-
-def execute_ssh_command(username, passwd, ip, port, cmd, timeout=60):
-    ssh_user = user.User(name=username, password=passwd)
-    rc, out, err = ssh.RemoteExecutor(
-        user=ssh_user, address=str(ip), port=port
-    ).run_cmd(cmd=cmd, tcp_timeout=timeout, io_timeout=timeout)
-    assert rc == 0 and not err, f"SSH command {' '.join(cmd)} failed!"
-    return out
-
-
 def wait_for_windows_vm(vm, version, timeout=1500):
     """
     Samples Windows VM; wait for it to complete the boot process.
@@ -1289,29 +1231,6 @@ def wait_for_windows_vm(vm, version, timeout=1500):
     for sample in sampler:
         if version in str(sample):
             return True
-
-
-class WinRMcliPod(Pod):
-    def __init__(self, name, namespace, node_selector=None, teardown=True):
-        super().__init__(name=name, namespace=namespace, teardown=teardown)
-        self.node_selector = node_selector
-
-    def to_dict(self):
-        res = super().to_dict()
-        res["spec"] = {
-            "containers": [
-                {
-                    "name": "winrmcli-con",
-                    "image": "kubevirt/winrmcli:latest",
-                    "imagePullPolicy": "IfNotPresent",
-                    "command": ["bash", "-c", "/usr/bin/sleep 6000"],
-                }
-            ]
-        }
-        if self.node_selector:
-            res["spec"]["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
-
-        return res
 
 
 def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
