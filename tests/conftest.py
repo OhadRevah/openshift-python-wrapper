@@ -918,9 +918,9 @@ def nodes_occupied_nics(nodes_active_nics):
 @pytest.fixture(scope="session")
 def multi_nics_nodes(hosts_common_available_ports):
     """
-    Check if nodes has more than 1 available NIC
+    Check if nodes has any available NICs
     """
-    return len(hosts_common_available_ports) >= 2
+    return bool(hosts_common_available_ports)
 
 
 @pytest.fixture(scope="session")
