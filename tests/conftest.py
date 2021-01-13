@@ -85,6 +85,13 @@ UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
 HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
 OPENSHIFT_CONFIG_NAMESPACE = "openshift-config"
+HTPASSWD_PROVIDER_DICT = {
+    "name": "htpasswd_provider",
+    "mappingMethod": "claim",
+    "type": "HTPasswd",
+    "htpasswd": {"fileData": {"name": HTTP_SECRET_NAME}},
+}
+ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
 TEST_LOG_FILE = "pytest-tests.log"
 TEST_COLLECT_INFO_DIR = "tests-collected-info"
 RESOURCES_TO_COLLECT_INFO = [
@@ -574,7 +581,7 @@ def unprivileged_secret(admin_client):
         ) as secret:
             yield secret
 
-        #  Wait for oauth-openshift deployment to update after removeing htpass-secret
+        #  Wait for oauth-openshift deployment to update after removing htpass-secret
         _wait_for_oauth_openshift_deployment(admin_client=admin_client)
 
 
@@ -603,7 +610,12 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
 
 @pytest.fixture(scope="session")
-def unprivileged_client(admin_client, unprivileged_secret):
+def identity_provider_config():
+    return OAuth(name="cluster")
+
+
+@pytest.fixture(scope="session")
+def unprivileged_client(admin_client, unprivileged_secret, identity_provider_config):
     """
     Provides none privilege API client
     """
@@ -613,7 +625,6 @@ def unprivileged_client(admin_client, unprivileged_secret):
 
     else:
         token = None
-        identity_provider_config_editor = None
         kube_config_path = os.path.join(os.path.expanduser("~"), ".kube/config")
         kubeconfig_env = os.environ.get("KUBECONFIG")
         kube_config_exists = os.path.isfile(kube_config_path)
@@ -625,23 +636,13 @@ def unprivileged_client(admin_client, unprivileged_secret):
             )
 
         # Update identity provider
-        identity_provider_config = OAuth(name="cluster")
         identity_provider_config_editor = ResourceEditor(
             patches={
                 identity_provider_config: {
                     "metadata": {"name": identity_provider_config.name},
                     "spec": {
-                        "identityProviders": [
-                            {
-                                "name": "htpasswd_provider",
-                                "mappingMethod": "claim",
-                                "type": "HTPasswd",
-                                "htpasswd": {
-                                    "fileData": {"name": unprivileged_secret.name}
-                                },
-                            }
-                        ],
-                        "tokenConfig": {"accessTokenMaxAgeSeconds": 604800},
+                        "identityProviders": [HTPASSWD_PROVIDER_DICT],
+                        "tokenConfig": ACCESS_TOKEN,
                     },
                 }
             }
@@ -987,15 +988,38 @@ def skip_upstream():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def leftovers():
+def leftovers(identity_provider_config):
     secret = Secret(name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE)
     ds = UtilityDaemonSet(name="utility", namespace="kube-system")
+    #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
         try:
             if resource_.instance:
                 resource_.delete(wait=True)
         except NotFoundError:
             continue
+
+    #  Remove leftovers from OAuth
+    identity_providers_spec = identity_provider_config.instance.to_dict()["spec"]
+    identity_providers_token = identity_providers_spec.get("tokenConfig")
+    identity_providers = identity_providers_spec.get("identityProviders", [])
+
+    if ACCESS_TOKEN == identity_providers_token:
+        identity_providers_spec["tokenConfig"] = None
+
+    if HTPASSWD_PROVIDER_DICT in identity_providers:
+        identity_providers.pop(identity_providers.index(HTPASSWD_PROVIDER_DICT))
+        identity_providers_spec["identityProviders"] = identity_providers or None
+
+    r_editor = ResourceEditor(
+        patches={
+            identity_provider_config: {
+                "metadata": {"name": identity_provider_config.name},
+                "spec": identity_providers_spec,
+            }
+        }
+    )
+    r_editor.update()
 
 
 @pytest.fixture(scope="session")
