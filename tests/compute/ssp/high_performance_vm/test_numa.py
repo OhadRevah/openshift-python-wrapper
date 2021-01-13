@@ -164,8 +164,8 @@ def test_numa(vm_numa):
 
 @pytest.mark.polarion("CNV-4309")
 def test_numa_with_sriov(
-    labeled_sriov_nodes,
     skip_if_no_sriov_workers,
+    labeled_sriov_nodes,
     vm_numa_sriov,
     workers_ssh_executors,
 ):

@@ -234,9 +234,9 @@ def vm4_interfaces(running_sriov_vm4):
 
 
 @pytest.mark.usefixtures(
+    "skip_if_no_sriov_workers",
     "labeled_sriov_nodes",
     "skip_rhel7_workers",
-    "skip_if_no_sriov_workers",
     "skip_insufficient_sriov_workers",
     "sriov_vm1",
     "sriov_vm2",
