@@ -22,6 +22,7 @@ from pytest_testconfig import config as py_config
 from resources.cluster_role import ClusterRole
 from resources.cluster_service_version import ClusterServiceVersion
 from resources.configmap import ConfigMap
+from resources.custom_resource_definition import CustomResourceDefinition
 from resources.daemonset import DaemonSet
 from resources.datavolume import DataVolume
 from resources.deployment import Deployment
@@ -1628,7 +1629,7 @@ def worker_node2(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def sriov_nodes_states(admin_client):
+def sriov_nodes_states(skip_when_no_sriov, admin_client):
     return list(
         SriovNetworkNodeState.get(
             dyn_client=admin_client, namespace=py_config["sriov_namespace"]
@@ -1661,19 +1662,13 @@ def labeled_sriov_nodes(admin_client, sriov_nodes_states):
 
 
 @pytest.fixture(scope="session")
-def sriov_workers(schedulable_nodes):
+def sriov_workers(schedulable_nodes, labeled_sriov_nodes):
     sriov_worker_label = "feature.node.kubernetes.io/network-sriov.capable"
     yield [
         node
         for node in schedulable_nodes
         if node.labels.get(sriov_worker_label) == "true"
     ]
-
-
-@pytest.fixture(scope="session")
-def skip_if_no_sriov_workers(sriov_workers):
-    if not any(sriov_workers):
-        pytest.skip(msg="Test should run on cluster with hosts that have SR-IOV card")
 
 
 @pytest.fixture(scope="session")
@@ -1983,3 +1978,16 @@ def hyperconverged_resource(admin_client, hco_namespace):
         name="kubevirt-hyperconverged",
     ):
         return hco
+
+
+@pytest.fixture(scope="session")
+def skip_when_no_sriov(admin_client):
+    try:
+        list(
+            CustomResourceDefinition.get(
+                dyn_client=admin_client,
+                name="sriovnetworknodestates.sriovnetwork.openshift.io",
+            )
+        )
+    except NotFoundError:
+        pytest.skip(msg="Cluster without SR-IOV support")

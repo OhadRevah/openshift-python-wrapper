@@ -126,14 +126,6 @@ def running_hco_containers(admin_client, hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def skip_when_no_sriov(admin_client):
-    for crd in list(CustomResourceDefinition.get(admin_client)):
-        if crd.name == "sriovnetworknodestates.sriovnetwork.openshift.io":
-            return
-    pytest.skip(msg="Cluster without SR-IOV support")
-
-
-@pytest.fixture(scope="module")
 def node_gather_unprivileged_namespace(unprivileged_client, kmp_vm_label, admin_client):
     yield from create_ns(
         client=unprivileged_client,
