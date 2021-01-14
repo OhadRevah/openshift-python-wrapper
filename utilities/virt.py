@@ -863,14 +863,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             ),
         )
 
-        # TODO: remove - workaround on cluster with multiple templates xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        return [t for t in template if not re.search(r"\d+$", t.name)][0]
+        assert (
+            len(template) == 1
+        ), f"More than one template matches {self.template_labels}"
 
-        # assert (
-        #     len(template) == 1
-        # ), f"More than one template matches {self.template_labels}"
-        #
-        # return template[0]
+        return template[0]
 
 
 def vm_console_run_commands(
