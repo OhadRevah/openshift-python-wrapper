@@ -26,7 +26,6 @@ LOGGER = logging.getLogger(__name__)
         (
             {
                 "cpu_threads": 2,
-                "ssh": True,
                 "username": py_config["windows_username"],
                 "password": py_config["windows_password"],
             }
@@ -45,6 +44,7 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_ssh_service_multi_windows_os_scope_class,
     ):
         """ Test CNV VM creation from template """
 

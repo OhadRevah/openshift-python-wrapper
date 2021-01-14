@@ -338,11 +338,11 @@ def golden_image_vm_ssh_service_multi_fedora_os_scope_class(
 
 
 @pytest.fixture(scope="class")
-def vm_ssh_service_multi_windows_os_scope_class(
-    vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+def golden_image_vm_ssh_service_multi_windows_os_scope_class(
+    golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
 ):
     yield from vm_ssh_service(
-        vm=vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
     )
 
 
