@@ -304,7 +304,7 @@ def test_nmstate_config_data(cnv_must_gather, admin_client):
         resource_type=NodeNetworkState,
         temp_dir=cnv_must_gather,
         resource_path="cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
-        checks=(("spec",), ("metadata", "name"), ("metadata", "uid")),
+        checks=(("metadata", "name"), ("metadata", "uid")),
     )
 
 
