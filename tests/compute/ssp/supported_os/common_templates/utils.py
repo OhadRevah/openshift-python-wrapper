@@ -52,8 +52,10 @@ def vm_os_version(vm, console_impl):
     # The os version in /etc/redhat-release is formated as <os major version>.[<minor version>]
     # For example: 7.6 or 32 (for Fedora)
     os_release_name = vm.name.split("-")[0]
+    # Replace rhel with "redhat"
+    os_name = "redhat" if "rhel" in os_release_name else os_release_name
     os = re.search(r"(\w+-)?(\d+(-\d+)?)(-\d+-\d+)$", vm.name).group(2)
-    command = [f"cat /etc/{os_release_name}-release | grep {os.replace('-', '.')}"]
+    command = [f"cat /etc/{os_name}-release | grep {os.replace('-', '.')}"]
 
     vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
 
