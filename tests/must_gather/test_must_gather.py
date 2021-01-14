@@ -525,29 +525,32 @@ def test_webhookconfig_resources(cnv_must_gather, admin_client):
 def test_crd_resources(admin_client, cnv_must_gather, kubevirt_crd_resources):
     for kubevirt_crd_resource in kubevirt_crd_resources:
         crd_name = kubevirt_crd_resource.name
-        resource_objs = admin_client.resources.get(
-            kind=kubevirt_crd_resource.instance.spec.names.kind
-        )
-        resource_items = resource_objs.get().to_dict()["items"]
+        for version in kubevirt_crd_resource.instance.spec.versions:
+            resource_objs = admin_client.resources.get(
+                api_version=version.name,
+                kind=kubevirt_crd_resource.instance.spec.names.kind,
+            )
 
-        for resource_item in resource_items:
-            metadata = resource_item["metadata"]
-            name = metadata["name"]
-            if "namespace" in metadata:
-                resource_file = os.path.join(
-                    cnv_must_gather,
-                    f"namespaces/{metadata['namespace']}/crs/{crd_name}/{name}.yaml",
-                )
-            else:
-                resource_file = os.path.join(
-                    cnv_must_gather,
-                    f"cluster-scoped-resources/{crd_name}/{name}.yaml",
-                )
+            for resource_item in resource_objs.get().to_dict()["items"]:
+                metadata = resource_item["metadata"]
+                name = metadata["name"]
+                if "namespace" in metadata:
+                    resource_file = os.path.join(
+                        cnv_must_gather,
+                        f"namespaces/{metadata['namespace']}/crs/{crd_name}/{name}.yaml",
+                    )
+                else:
+                    resource_file = os.path.join(
+                        cnv_must_gather,
+                        f"cluster-scoped-resources/{crd_name}/{name}.yaml",
+                    )
 
-            with open(resource_file) as resource_file:
-                file_content = yaml.load(resource_file.read(), Loader=yaml.Loader)
-            assert resource_item["metadata"]["name"] == file_content["metadata"]["name"]
-            assert resource_item["metadata"]["uid"] == file_content["metadata"]["uid"]
+                with open(resource_file) as resource_file:
+                    file_content = yaml.load(resource_file.read(), Loader=yaml.Loader)
+                assert name == file_content["metadata"]["name"]
+                assert (
+                    resource_item["metadata"]["uid"] == file_content["metadata"]["uid"]
+                )
 
 
 @pytest.mark.polarion("CNV-2939")
