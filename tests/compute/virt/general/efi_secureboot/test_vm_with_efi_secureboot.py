@@ -14,7 +14,7 @@ from resources.template import Template
 
 from tests.compute.utils import migrate_vm, vm_started
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -237,6 +237,9 @@ class TestEFISecureBootWindows:
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
 
+    @pytest.mark.bugzilla(
+        1911118, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.polarion("CNV-5465")
     def test_migrate_vm_windows(
         self,

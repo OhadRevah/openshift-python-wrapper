@@ -10,8 +10,12 @@ from pytest_testconfig import config as py_config
 import utilities.virt
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.compute.utils import migrate_vm
+from utilities.infra import BUG_STATUS_CLOSED
 
 
+@pytest.mark.bugzilla(
+    1911118, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_function,"
     "golden_image_vm_instance_from_template_multi_storage_scope_function, "

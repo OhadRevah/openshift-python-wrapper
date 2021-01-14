@@ -339,7 +339,7 @@ class TestNodeMaintenanceRHEL:
 )
 class TestNodeCordonAndDrain:
     @pytest.mark.bugzilla(
-        1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        1911118, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.polarion("CNV-2048")
     def test_node_drain_template_windows(
