@@ -1,15 +1,13 @@
 import logging
 
 import pytest
-from resources.daemonset import DaemonSet
 from resources.resource import ResourceEditor
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.network import wait_for_ovs_pods, wait_for_ovs_status
+from utilities.network import OVS_DS_NAME, wait_for_ovs_pods, wait_for_ovs_status
 
 
 LOGGER = logging.getLogger()
-OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
 
 
@@ -80,18 +78,6 @@ def hyperconverged_ovs_annotations_removed(
 
     wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
     ovs_daemonset.wait_until_deployed()
-
-
-@pytest.fixture(scope="class")
-def ovs_daemonset(admin_client, hco_namespace):
-    ovs_ds = list(
-        DaemonSet.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-            field_selector=f"metadata.name=={OVS_DS_NAME}",
-        )
-    )
-    return ovs_ds[0] if ovs_ds else None
 
 
 class TestOVSOptIn:

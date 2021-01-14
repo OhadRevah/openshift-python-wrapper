@@ -21,6 +21,7 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from tests.install_upgrade_operators.utils import wait_for_hco_conditions
+from utilities.network import OVS_DS_NAME, wait_for_ovs_pods, wait_for_ovs_status
 from utilities.virt import run_command, wait_for_vm_interfaces
 
 
@@ -561,3 +562,23 @@ def upgrade_ocp(ocp_image, dyn_client):
     )[1], "OCP upgrade command failed."
 
     wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)
+
+
+def verify_ovs_installed_with_annotations(
+    admin_client,
+    ovs_daemonset,
+    hyperconverged_ovs_annotations_fetched,
+    network_addons_config,
+):
+    # Verify OVS
+    wait_for_ovs_status(network_addons_config=network_addons_config)
+    assert ovs_daemonset.exists, f"{OVS_DS_NAME} not found."
+    ovs_daemonset.wait_until_deployed()
+    # Verify annotations
+    assert hyperconverged_ovs_annotations_fetched, "No ovs annotations found."
+    # Verify pods
+    wait_for_ovs_pods(
+        admin_client=admin_client,
+        hco_namespace=ovs_daemonset.namespace,
+        count=ovs_daemonset.instance.status.desiredNumberScheduled,
+    )

@@ -106,6 +106,22 @@ class TestUpgrade:
                 )
             )
 
+    @pytest.mark.polarion("CNV-5659")
+    @pytest.mark.run(before="test_upgrade")
+    def test_ovs_installed_with_annotations_before_upgrade(
+        self,
+        admin_client,
+        ovs_daemonset,
+        hyperconverged_ovs_annotations_fetched,
+        network_addons_config,
+    ):
+        upgrade_utils.verify_ovs_installed_with_annotations(
+            admin_client=admin_client,
+            ovs_daemonset=ovs_daemonset,
+            hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
+            network_addons_config=network_addons_config,
+        )
+
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
     @pytest.mark.run(after="test_linux_bridge_before_upgrade")
@@ -255,3 +271,19 @@ class TestUpgrade:
     def test_dv_api_version_after_upgrade(self, dvs_for_upgrade):
         for dv in dvs_for_upgrade:
             assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
+
+    @pytest.mark.polarion("CNV-5532")
+    @pytest.mark.run(after="test_upgrade")
+    def test_ovs_installed_with_annotations_after_upgrade(
+        self,
+        admin_client,
+        ovs_daemonset,
+        hyperconverged_ovs_annotations_fetched,
+        network_addons_config,
+    ):
+        upgrade_utils.verify_ovs_installed_with_annotations(
+            admin_client=admin_client,
+            ovs_daemonset=ovs_daemonset,
+            hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
+            network_addons_config=network_addons_config,
+        )

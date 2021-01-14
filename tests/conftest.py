@@ -30,6 +30,7 @@ from resources.hyperconverged import HyperConverged
 from resources.mutating_webhook_config import MutatingWebhookConfiguration
 from resources.namespace import Namespace
 from resources.network import Network
+from resources.network_addons_config import NetworkAddonsConfig
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node import Node
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
@@ -64,6 +65,7 @@ from utilities.infra import (
 )
 from utilities.network import (
     OVS,
+    OVS_DS_NAME,
     EthernetNetworkConfigurationPolicy,
     MacPool,
     network_nad,
@@ -1991,3 +1993,29 @@ def skip_when_no_sriov(admin_client):
         )
     except NotFoundError:
         pytest.skip(msg="Cluster without SR-IOV support")
+
+
+@pytest.fixture(scope="class")
+def ovs_daemonset(admin_client, hco_namespace):
+    ovs_ds = list(
+        DaemonSet.get(
+            dyn_client=admin_client,
+            namespace=hco_namespace.name,
+            field_selector=f"metadata.name=={OVS_DS_NAME}",
+        )
+    )
+    return ovs_ds[0] if ovs_ds else None
+
+
+@pytest.fixture()
+def hyperconverged_ovs_annotations_fetched(hyperconverged_resource):
+    return (hyperconverged_resource.instance.to_dict()["metadata"]["annotations"]).get(
+        "deployOVS"
+    )
+
+
+@pytest.fixture(scope="module")
+def network_addons_config(admin_client):
+    nac = list(NetworkAddonsConfig.get(dyn_client=admin_client))
+    assert nac, "There should be one NetworkAddonsConfig CR."
+    yield nac[0]

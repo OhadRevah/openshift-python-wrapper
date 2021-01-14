@@ -6,7 +6,6 @@ Pytest conftest file for CNV network tests
 
 import pytest
 from pytest_testconfig import config as py_config
-from resources.network_addons_config import NetworkAddonsConfig
 from resources.pod import Pod
 
 from tests.network.utils import network_device
@@ -109,13 +108,6 @@ def network_interface(
         mtu=mtu,
     ) as iface:
         yield iface
-
-
-@pytest.fixture(scope="module")
-def network_addons_config(admin_client):
-    nac = list(NetworkAddonsConfig.get(dyn_client=admin_client))
-    assert nac, "There should be one NetworkAddonsConfig CR."
-    yield nac[0]
 
 
 @pytest.fixture(scope="session")
