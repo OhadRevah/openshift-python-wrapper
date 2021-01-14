@@ -4,7 +4,6 @@ from pytest_testconfig import config as py_config
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_guest_os_info, wait_for_console, wait_for_windows_vm
 
 
@@ -16,7 +15,11 @@ RHEL_VERSION_TEMPLATE_LABELS = RHEL_LATEST["template_labels"]
 RHEL_DV_NAME = RHEL_VERSION_TEMPLATE_LABELS["os"]
 
 
-def _vm_test_params(template_labels, disk_io_option=None, cpu_threads=None):
+def _vm_test_params(
+    template_labels,
+    disk_io_option=None,
+    cpu_threads=None,
+):
     return {
         "vm_name": f"vm-disk-io-options-{disk_io_option if disk_io_option else 'auto-driver'}",
         "cpu_threads": cpu_threads,
@@ -30,11 +33,11 @@ def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
     driver_io = None
     if "Windows" not in guest_os_info["name"]:
         for disk_element in vm.vmi.xml_dict["domain"]["devices"]["disk"]:
-            if disk_element["alias"]["@name"] == "ua-rootdisk":
+            if disk_element["alias"]["@name"] == f"ua-{vm.name}":
                 driver_io = disk_element["driver"]["@io"]
     else:
         disk = vm.vmi.xml_dict["domain"]["devices"]["disk"]
-        if disk["source"]["@dev"] == "/dev/rootdisk":
+        if disk["source"]["@dev"] == f"/dev/{vm.name}":
             driver_io = disk["driver"]["@io"]
     assert (
         driver_io == expected_disk_io_option
@@ -68,7 +71,7 @@ def windows_vm(
     disk_options_vm,
 ):
     wait_for_windows_vm(
-        vm=disk_options_vm, version=request.param["os_version"], timeout=1800
+        vm=disk_options_vm, version=request.param["os_version"], timeout=2100
     )
 
 
@@ -87,12 +90,7 @@ def windows_vm(
                 template_labels=RHEL_VERSION_TEMPLATE_LABELS,
             ),
             "threads",
-            marks=(
-                pytest.mark.polarion("CNV-4567"),
-                pytest.mark.bugzilla(
-                    1901480, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-4567"),),
         ),
         pytest.param(
             {
@@ -136,10 +134,16 @@ def test_vm_with_disk_io_option_rhel(
                 "dv_size": WINDOWS_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
-            _vm_test_params(
-                template_labels=WINDOWS_LATEST["template_labels"],
-                cpu_threads=2,
-            ),
+            {
+                **_vm_test_params(
+                    template_labels=WINDOWS_LATEST["template_labels"], cpu_threads=2
+                ),
+                **{
+                    "ssh": True,
+                    "username": py_config["windows_username"],
+                    "password": py_config["windows_password"],
+                },
+            },
             {"os_version": WINDOWS_LATEST["os_version"]},
             "native",
             marks=pytest.mark.polarion("CNV-4692"),

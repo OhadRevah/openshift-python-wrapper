@@ -358,8 +358,10 @@ class VirtualMachineForTests(VirtualMachine):
                 .setdefault("devices", {})
                 .setdefault("disks", [])
             )
+            # In VM from template, rootdisk is named as the VM name
+            disk_name = self.name if self.is_vm_from_template else "rootdisk"
             for disk in disks_spec:
-                if disk["name"] == "rootdisk":
+                if disk["name"] == disk_name:
                     disk["io"] = self.disk_io_options
                     break
         return res
