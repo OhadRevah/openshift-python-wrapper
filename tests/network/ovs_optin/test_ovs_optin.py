@@ -2,11 +2,10 @@ import logging
 
 import pytest
 from resources.daemonset import DaemonSet
-from resources.pod import Pod
 from resources.resource import ResourceEditor
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.infra import get_pod_by_name_prefix
+from utilities.network import wait_for_ovs_pods, wait_for_ovs_status
 
 
 LOGGER = logging.getLogger()
@@ -35,49 +34,6 @@ def wait_for_ovs_daemonset_deleted(ovs_daemonset):
 
     except TimeoutExpiredError:
         LOGGER.error("OVD daemonset exists after opt-out")
-        raise
-
-
-def wait_for_ovs_pods(admin_client, hco_namespace, count=0):
-    samples = TimeoutSampler(
-        timeout=90,
-        sleep=1,
-        func=ovs_pods,
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-    )
-    num_of_pods = None
-    try:
-        for sample in samples:
-            num_of_pods = len(sample) if sample is not None else 0
-            if not sample and count == 0:
-                return True
-
-            if num_of_pods == count:
-                return True
-
-    except TimeoutExpiredError:
-        LOGGER.error(f"Found {num_of_pods} OVS PODs, expected: {count}")
-        raise
-
-
-def wait_for_ovs_status(network_addons_config, status=True):
-    samples = TimeoutSampler(
-        timeout=60,
-        sleep=1,
-        func=lambda: network_addons_config.instance.to_dict()["spec"].get("ovs"),
-    )
-
-    try:
-        for sample in samples:
-            if sample is not None and status:
-                return True
-
-            if sample is None and not status:
-                return True
-
-    except TimeoutExpiredError:
-        LOGGER.error(f"OVS should be {'opt-in' if status else 'opt-out'}")
         raise
 
 
@@ -136,20 +92,6 @@ def ovs_daemonset(admin_client, hco_namespace):
         )
     )
     return ovs_ds[0] if ovs_ds else None
-
-
-def ovs_pods(admin_client, hco_namespace):
-    pods = get_pod_by_name_prefix(
-        dyn_client=admin_client,
-        pod_prefix=OVS_DS_NAME,
-        namespace=hco_namespace,
-        get_all=True,
-    )
-    return (
-        [pod for pod in pods if pod.instance.status.phase == Pod.Status.RUNNING]
-        if pods
-        else pods
-    )
 
 
 class TestOVSOptIn:
