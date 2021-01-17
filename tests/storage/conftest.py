@@ -127,17 +127,6 @@ def hpp_storage_class(admin_client):
 
 
 @pytest.fixture(scope="session")
-def ocs_storage_class(admin_client):
-    """
-    Get the OCS storage class if configured
-    """
-    for sc in StorageClass.get(
-        dyn_client=admin_client, name=StorageClass.Types.CEPH_RBD
-    ):
-        return sc
-
-
-@pytest.fixture(scope="session")
 def skip_test_if_no_hpp_sc(hpp_storage_class):
     if not hpp_storage_class:
         pytest.skip("Skipping test, HostPath storage class is not deployed")
@@ -147,15 +136,6 @@ def skip_test_if_no_hpp_sc(hpp_storage_class):
 def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc):
     if not sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
         pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
-
-
-@pytest.fixture(scope="session")
-def skip_test_if_no_ocs_sc(ocs_storage_class):
-    """
-    Skip test if no OCS storage class available
-    """
-    if not ocs_storage_class:
-        pytest.skip("Skipping test, OCS storage class is not deployed")
 
 
 @pytest.fixture(scope="session")

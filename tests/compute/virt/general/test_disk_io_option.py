@@ -1,10 +1,14 @@
 import pytest
 from pytest_testconfig import config as py_config
+from resources.storage_class import StorageClass
 
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
 from utilities import console
 from utilities.virt import get_guest_os_info, wait_for_console, wait_for_windows_vm
+
+
+pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
 
 
 WINDOWS_LATEST = py_config["latest_windows_version"]
@@ -13,6 +17,8 @@ RHEL_VERSION_IMAGE_PATH = RHEL_LATEST["image_path"]
 RHEL_VERSION_IMAGE_SIZE = RHEL_LATEST["dv_size"]
 RHEL_VERSION_TEMPLATE_LABELS = RHEL_LATEST["template_labels"]
 RHEL_DV_NAME = RHEL_VERSION_TEMPLATE_LABELS["os"]
+# Use OCS SC for Block disk IO logic
+STORAGE_CLASS = StorageClass.Types.CEPH_RBD
 
 
 def _vm_test_params(
@@ -83,7 +89,7 @@ def windows_vm(
                 "dv_name": RHEL_DV_NAME,
                 "image": RHEL_VERSION_IMAGE_PATH,
                 "dv_size": RHEL_VERSION_IMAGE_SIZE,
-                "storage_class": py_config["default_storage_class"],
+                "storage_class": STORAGE_CLASS,
             },
             _vm_test_params(
                 disk_io_option="threads",
@@ -97,7 +103,7 @@ def windows_vm(
                 "dv_name": RHEL_DV_NAME,
                 "image": RHEL_VERSION_IMAGE_PATH,
                 "dv_size": RHEL_VERSION_IMAGE_SIZE,
-                "storage_class": py_config["default_storage_class"],
+                "storage_class": STORAGE_CLASS,
             },
             _vm_test_params(
                 template_labels=RHEL_VERSION_TEMPLATE_LABELS,
@@ -132,7 +138,7 @@ def test_vm_with_disk_io_option_rhel(
                 "dv_name": WINDOWS_LATEST["template_labels"]["os"],
                 "image": WINDOWS_LATEST["image_path"],
                 "dv_size": WINDOWS_LATEST["dv_size"],
-                "storage_class": py_config["default_storage_class"],
+                "storage_class": STORAGE_CLASS,
             },
             {
                 **_vm_test_params(
