@@ -132,46 +132,6 @@ def test_upload_https_scratch_space_delete_pvc(
                     return True
 
 
-@pytest.mark.bugzilla(
-    1878499, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-@pytest.mark.parametrize(
-    "dv_name",
-    [
-        pytest.param(
-            {"dv_name": "scratch-space-import-qcow2-https"},
-            marks=(pytest.mark.polarion("CNV-2328")),
-        ),
-    ],
-    indirect=True,
-)
-def test_import_https_scratch_space_delete_pvc(
-    skip_upstream,
-    namespace,
-    storage_class_matrix__module__,
-    https_config_map,
-    dv_name,
-    scratch_bound_reached,
-):
-    storage_class = [*storage_class_matrix__module__][0]
-    with storage_utils.create_dv(
-        source="http",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        url=f"{get_images_https_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        cert_configmap=https_config_map.name,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
-    ) as dv:
-        # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
-        scratch_bound_reached.get()
-        dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
-        dv.scratch_pvc.delete()
-        dv.wait()
-        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm=vm_dv)
-
-
 @pytest.mark.parametrize(
     ("dv_name", "file_name", "content_type", "size"),
     [
