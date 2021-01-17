@@ -6,7 +6,11 @@ from resources.datavolume import DataVolume
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
-from utilities.network import assert_ping_successful, get_vmi_mac_address_by_iface_name
+from utilities.network import (
+    assert_ping_successful,
+    get_vmi_mac_address_by_iface_name,
+    verify_ovs_installed_with_annotations,
+)
 from utilities.virt import enable_ssh_service_in_vm, vm_console_run_commands
 
 
@@ -115,7 +119,7 @@ class TestUpgrade:
         hyperconverged_ovs_annotations_fetched,
         network_addons_config,
     ):
-        upgrade_utils.verify_ovs_installed_with_annotations(
+        verify_ovs_installed_with_annotations(
             admin_client=admin_client,
             ovs_daemonset=ovs_daemonset,
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
@@ -281,7 +285,7 @@ class TestUpgrade:
         hyperconverged_ovs_annotations_fetched,
         network_addons_config,
     ):
-        upgrade_utils.verify_ovs_installed_with_annotations(
+        verify_ovs_installed_with_annotations(
             admin_client=admin_client,
             ovs_daemonset=ovs_daemonset,
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,

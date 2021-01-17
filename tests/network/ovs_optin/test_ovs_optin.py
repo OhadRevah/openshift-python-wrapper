@@ -4,7 +4,11 @@ import pytest
 from resources.resource import ResourceEditor
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.network import OVS_DS_NAME, wait_for_ovs_pods, wait_for_ovs_status
+from utilities.network import (
+    verify_ovs_installed_with_annotations,
+    wait_for_ovs_pods,
+    wait_for_ovs_status,
+)
 
 
 LOGGER = logging.getLogger()
@@ -86,15 +90,14 @@ class TestOVSOptIn:
         self,
         admin_client,
         ovs_daemonset,
+        hyperconverged_ovs_annotations_fetched,
         network_addons_config,
     ):
-        wait_for_ovs_status(network_addons_config=network_addons_config)
-        assert ovs_daemonset.exists, f"{OVS_DS_NAME} not found"
-        ovs_daemonset.wait_until_deployed()
-        wait_for_ovs_pods(
+        verify_ovs_installed_with_annotations(
             admin_client=admin_client,
-            hco_namespace=ovs_daemonset.namespace,
-            count=ovs_daemonset.instance.status.desiredNumberScheduled,
+            ovs_daemonset=ovs_daemonset,
+            hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
+            network_addons_config=network_addons_config,
         )
 
     @pytest.mark.polarion("CNV-5531")

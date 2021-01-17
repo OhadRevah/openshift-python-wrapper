@@ -862,3 +862,23 @@ def wait_for_ovs_status(network_addons_config, status=True):
     except TimeoutExpiredError:
         LOGGER.error(f"OVS should be {'opt-in' if status else 'opt-out'}")
         raise
+
+
+def verify_ovs_installed_with_annotations(
+    admin_client,
+    ovs_daemonset,
+    hyperconverged_ovs_annotations_fetched,
+    network_addons_config,
+):
+    # Verify OVS
+    wait_for_ovs_status(network_addons_config=network_addons_config)
+    assert ovs_daemonset.exists, f"{OVS_DS_NAME} not found."
+    ovs_daemonset.wait_until_deployed()
+    # Verify annotations
+    assert hyperconverged_ovs_annotations_fetched, "No ovs annotations found."
+    # Verify pods
+    wait_for_ovs_pods(
+        admin_client=admin_client,
+        hco_namespace=ovs_daemonset.namespace,
+        count=ovs_daemonset.instance.status.desiredNumberScheduled,
+    )
