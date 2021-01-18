@@ -48,7 +48,7 @@ def test_upload_with_enough_size_for_overhead(
         image_path=LOCAL_NAME,
         storage_class=[*storage_class_matrix__module__][0],
     ) as res:
-        status, out = res
+        status, out, _ = res
         assert status, out
 
 
@@ -67,7 +67,7 @@ def test_upload_with_same_size_as_image_should_fail(
         image_path=LOCAL_NAME,
         storage_class=[*storage_class_matrix__module__][0],
     ) as res:
-        status, out = res
+        status, out, _ = res
         assert ErrorMsg.LARGER_PVC_REQUIRED in out
         assert not status
 
@@ -87,5 +87,5 @@ def test_fs_overhead_dont_affect_block_volume_mode(
         storage_class=StorageClass.Types.CEPH_RBD,
         volume_mode=DataVolume.VolumeMode.BLOCK,
     ) as res:
-        status, out = res
+        status, out, _ = res
         assert status, out

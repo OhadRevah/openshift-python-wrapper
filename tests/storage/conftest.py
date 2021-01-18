@@ -248,7 +248,7 @@ def uploaded_dv(
         image_path=local_path,
         insecure=True,
     ) as res:
-        status, out = res
+        status, out, _ = res
         LOGGER.info(out)
         assert status
         dv = DataVolume(namespace=namespace.name, name=dv_name)

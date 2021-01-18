@@ -231,7 +231,7 @@ def test_upload_after_certs_renewal(
         storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
-        status, out = res
+        status, out, _ = res
         LOGGER.info(out)
         assert status
         assert "Processing completed successfully" in out
@@ -298,7 +298,7 @@ def test_upload_after_validate_aggregated_api_cert(
         storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
-        status, out = res
+        status, out, _ = res
         LOGGER.info(out)
         assert status
         assert "Processing completed successfully" in out

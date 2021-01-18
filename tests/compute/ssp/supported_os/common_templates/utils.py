@@ -786,7 +786,7 @@ def windows_disk_space_parser(fsinfo_list):
 
 # TODO: Remove once bug 1886453 is fixed
 def wait_for_virtctl_output(cmd, namespace):
-    for res, output in TimeoutSampler(
+    for res, output, err in TimeoutSampler(
         timeout=360,
         sleep=5,
         func=run_virtctl_command,
@@ -796,4 +796,6 @@ def wait_for_virtctl_output(cmd, namespace):
         if res:
             return output
         else:
-            LOGGER.warning("Retrying to get guest-agent info via virtctl")
+            LOGGER.warning(
+                f"Retrying to get guest-agent info via virtctl. error: {err}"
+            )

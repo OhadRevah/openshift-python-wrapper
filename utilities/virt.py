@@ -923,16 +923,18 @@ def run_command(command, verify_stderr=True):
     """
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
+    out_decoded = out.decode("utf-8")
+    err_decoded = err.decode("utf-8")
 
     if p.returncode != 0:
         LOGGER.error(f"Failed to run {command}. rc: {p.returncode}")
-        return False, out.decode("utf-8")
+        return False, out_decoded, err_decoded
 
     if err and verify_stderr:
-        LOGGER.error(f"Failed to run {command}. error: {err}")
-        return False, err
+        LOGGER.error(f"Failed to run {command}. error: {err_decoded}")
+        return False, out_decoded, err_decoded
 
-    return True, out.decode("utf-8")
+    return True, out_decoded, err_decoded
 
 
 def run_virtctl_command(command, namespace=None):
