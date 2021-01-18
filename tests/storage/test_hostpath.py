@@ -391,8 +391,9 @@ def test_hpp_upload_virtctl(
     """
     Check that upload disk image via virtctl tool works
     """
-    local_name = f"{tmpdir}/{Images.Fedora.FEDORA29_IMG}"
-    remote_name = f"{Images.Fedora.DIR}/{Images.Fedora.FEDORA29_IMG}"
+    latest_fedora_image = py_config["latest_fedora_version"]["image_name"]
+    local_name = f"{tmpdir}/{latest_fedora_image}"
+    remote_name = f"{Images.Fedora.DIR}/{latest_fedora_image}"
     downloaded_image(remote_name=remote_name, local_name=local_name)
     pvc_name = "cnv-2771"
 
