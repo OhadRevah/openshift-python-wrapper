@@ -334,23 +334,10 @@ windows_os_matrix = [
 
 fedora_os_matrix = [
     {
-        "fedora-31": {
-            "image_name": Images.Fedora.FEDORA31_IMG,
-            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA31_IMG),
-            "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "fedora31",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
         "fedora-32": {
             "image_name": Images.Fedora.FEDORA32_IMG,
             "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA32_IMG),
             "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            "latest": True,
             "template_labels": {
                 "os": "fedora32",
                 "workload": Template.Workload.SERVER,
@@ -363,9 +350,9 @@ fedora_os_matrix = [
             "image_name": Images.Fedora.FEDORA33_IMG,
             "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA33_IMG),
             "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            # TODO: Modify to fedora33 once it is added to templates
+            "latest": True,
             "template_labels": {
-                "os": "fedora32",
+                "os": "fedora33",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
