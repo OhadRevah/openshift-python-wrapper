@@ -1003,7 +1003,17 @@ def run_virtctl_command(command, namespace=None):
         virtctl_cmd += ["--kubeconfig", kubeconfig]
 
     virtctl_cmd += command
-    return run_command(command=virtctl_cmd)
+    res, out, err = run_command(command=virtctl_cmd)
+    # TODO: This is a workaround for BZ #1911386, once fixed this will be removed
+    if re.match(
+        r'{"component":"","level":"error","msg":"Error when closing file","pos":"os_helper.go:34",'
+        r'"reason":"close (\/.*?\.[\w:]+): file already closed"',
+        err,
+    ):
+        LOGGER.warning(f"W/A for bug 1911386. error: {err}")
+        return True, out, err
+
+    return res, out, err
 
 
 def fedora_vm_body(name):
