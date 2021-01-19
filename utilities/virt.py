@@ -170,7 +170,7 @@ class VirtualMachineForTests(VirtualMachine):
         name,
         namespace,
         body=None,
-        eviction=None,
+        eviction=False,
         client=None,
         interfaces=None,
         networks=None,
@@ -210,6 +210,52 @@ class VirtualMachineForTests(VirtualMachine):
         username=None,
         password=None,
     ):
+        """
+        Virtual machine creation
+
+        Args:
+            name (str): VM name
+            namespace (str): Namespace name
+            body (dict, optional): VM [metadata] and spec
+            eviction (bool, default False): If True, set evictionStrategy to LiveMigrate
+            client (:obj:`DynamicClient`, optional): admin client or unprivileged client
+            interfaces (list, optional): list of interfaces names
+            networks (dict, optional)
+            node_selector (str, optional): Node name
+            service_accounts (list, optional): list of service account names
+            cpu_flags (str, optional)
+            cpu_limits (quantity, optional): quantity supports string, ints, and floats
+            cpu_requests (quantity, optional): quantity supports string, ints, and floats
+            cpu_sockets (int, optional)
+            cpu_cores (int, optional)
+            cpu_threads (int, optional)
+            cpu_model (str, optional)
+            memory_requests (str, optional)
+            memory_limits (str, optional)
+            memory_guest (str, optional)
+            cloud_init_data (dict, optional): cloud-init dict
+            machine_type (str, optional)
+            image (str, optional)
+            ssh (bool, default: False): If True and using with statement, create an SSH service
+            network_model (str, optional)
+            network_multiqueue (None/bool, optional, default: None): If not None, set to True/False
+            pvc (:obj:`PersistentVolumeClaim`, optional)
+            data_volume (:obj:`DataVolume`, optional)
+            data_volume_template (dict, optional)
+            teardown (bool, default: True)
+            cloud_init_type (str, optional): cloud-init type, for example: cloudInitNoCloud
+            attached_secret (dict, optional)
+            cpu_placement (bool, default: False): If True, set dedicatedCpuPlacement = True
+            smm_enabled (None/bool, optional, default: None): If not None, set to True/False
+            efi_params (dict, optional)
+            diskless_vm (bool, default: False): If True, remove VM disks
+            running (bool, default: False): If True, running = True
+            run_strategy (str, optional): Set runStrategy (run_strategy and running are mutually exclusive)
+            disk_io_options (str, optional): Set root disk IO
+            rhel7_workers (bool, default: False)
+            username (str, optional): SSH username
+            password (str, optional): SSH password
+        """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
         super().__init__(
