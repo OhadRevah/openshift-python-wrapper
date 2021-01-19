@@ -8,6 +8,7 @@ import re
 import netaddr
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
+from resources.daemonset import DaemonSet
 from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
@@ -29,6 +30,7 @@ LINUX_BRIDGE = "linux-bridge"
 OVS = "ovs"
 OVS_DS_NAME = "ovs-cni-amd64"
 SRIOV = "sriov"
+DEPLOY_OVS = "deployOVS"
 
 
 class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
@@ -882,3 +884,26 @@ def verify_ovs_installed_with_annotations(
         hco_namespace=ovs_daemonset.namespace,
         count=ovs_daemonset.instance.status.desiredNumberScheduled,
     )
+
+
+def get_ovs_daemonset(admin_client, hco_namespace):
+    ovs_ds = list(
+        DaemonSet.get(
+            dyn_client=admin_client,
+            namespace=hco_namespace.name,
+            field_selector=f"metadata.name=={OVS_DS_NAME}",
+        )
+    )
+    return ovs_ds[0] if ovs_ds else None
+
+
+def wait_for_ovs_daemonset_deleted(ovs_daemonset):
+    samples = TimeoutSampler(timeout=90, sleep=1, func=lambda: ovs_daemonset.exists)
+    try:
+        for sample in samples:
+            if not sample:
+                return True
+
+    except TimeoutExpiredError:
+        LOGGER.error("OVS daemonset exists after opt-out")
+        raise

@@ -2,17 +2,26 @@ import logging
 
 import pytest
 from resources.resource import ResourceEditor
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.network import (
+    DEPLOY_OVS,
     verify_ovs_installed_with_annotations,
+    wait_for_ovs_daemonset_deleted,
     wait_for_ovs_pods,
     wait_for_ovs_status,
 )
 
 
 LOGGER = logging.getLogger()
-DEPLOY_OVS = "deployOVS"
+
+
+def wait_for_ovs_removed(admin_client, ovs_daemonset, network_addons_config):
+    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+    wait_for_ovs_daemonset_deleted(ovs_daemonset=ovs_daemonset)
+    wait_for_ovs_pods(
+        admin_client=admin_client,
+        hco_namespace=ovs_daemonset.namespace,
+    )
 
 
 def updated_metadata(hyperconverged_resource, annotations):
@@ -27,37 +36,29 @@ def updated_metadata(hyperconverged_resource, annotations):
     }
 
 
-def wait_for_ovs_daemonset_deleted(ovs_daemonset):
-    samples = TimeoutSampler(timeout=90, sleep=1, func=lambda: ovs_daemonset.exists)
-    try:
-        for sample in samples:
-            if not sample:
-                return True
-
-    except TimeoutExpiredError:
-        LOGGER.error("OVD daemonset exists after opt-out")
-        raise
-
-
 @pytest.fixture()
 def hyperconverged_ovs_annotations_disabled(
-    hyperconverged_resource, network_addons_config, ovs_daemonset
+    hyperconverged_resource,
+    network_addons_config,
+    hyperconverged_ovs_annotations_enabled,
 ):
     with ResourceEditor(
         patches={
             hyperconverged_resource: {
-                "metadata": {"annotations": {DEPLOY_OVS: "False"}}
+                "metadata": {"annotations": {DEPLOY_OVS: "false"}}
             }
         }
     ):
         yield
-    wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
-    ovs_daemonset.wait_until_deployed()
+    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+    hyperconverged_ovs_annotations_enabled.wait_until_deployed()
 
 
 @pytest.fixture()
 def hyperconverged_ovs_annotations_removed(
-    hyperconverged_resource, network_addons_config, ovs_daemonset
+    hyperconverged_resource,
+    network_addons_config,
+    hyperconverged_ovs_annotations_enabled,
 ):
     origin_annotations = hyperconverged_resource.instance.to_dict()["metadata"][
         "annotations"
@@ -80,8 +81,8 @@ def hyperconverged_ovs_annotations_removed(
     ):
         yield
 
-    wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
-    ovs_daemonset.wait_until_deployed()
+    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+    hyperconverged_ovs_annotations_enabled.wait_until_deployed()
 
 
 class TestOVSOptIn:
@@ -89,13 +90,13 @@ class TestOVSOptIn:
     def test_ovs_installed(
         self,
         admin_client,
-        ovs_daemonset,
+        hyperconverged_ovs_annotations_enabled,
         hyperconverged_ovs_annotations_fetched,
         network_addons_config,
     ):
         verify_ovs_installed_with_annotations(
             admin_client=admin_client,
-            ovs_daemonset=ovs_daemonset,
+            ovs_daemonset=hyperconverged_ovs_annotations_enabled,
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
             network_addons_config=network_addons_config,
         )
@@ -104,26 +105,26 @@ class TestOVSOptIn:
     def test_ovs_not_installed_annotations_disabled(
         self,
         admin_client,
-        ovs_daemonset,
+        hyperconverged_ovs_annotations_enabled,
         hyperconverged_ovs_annotations_disabled,
         network_addons_config,
     ):
-        wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
-        wait_for_ovs_daemonset_deleted(ovs_daemonset=ovs_daemonset)
-        wait_for_ovs_pods(
-            admin_client=admin_client, hco_namespace=ovs_daemonset.namespace
+        wait_for_ovs_removed(
+            admin_client=admin_client,
+            ovs_daemonset=hyperconverged_ovs_annotations_enabled,
+            network_addons_config=network_addons_config,
         )
 
     @pytest.mark.polarion("CNV-5533")
     def test_ovs_not_installed_annotations_removed(
         self,
         admin_client,
-        ovs_daemonset,
+        hyperconverged_ovs_annotations_enabled,
         hyperconverged_ovs_annotations_removed,
         network_addons_config,
     ):
-        wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
-        wait_for_ovs_daemonset_deleted(ovs_daemonset=ovs_daemonset)
-        wait_for_ovs_pods(
-            admin_client=admin_client, hco_namespace=ovs_daemonset.namespace
+        wait_for_ovs_removed(
+            admin_client=admin_client,
+            ovs_daemonset=hyperconverged_ovs_annotations_enabled,
+            network_addons_config=network_addons_config,
         )
