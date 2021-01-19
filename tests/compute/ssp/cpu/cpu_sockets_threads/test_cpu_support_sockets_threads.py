@@ -6,6 +6,7 @@ import pytest
 import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -119,6 +120,9 @@ def test_vm_with_no_cpu_settings(no_cpu_settings_vm):
     check_vm_dumpxml(vm=no_cpu_settings_vm, sockets="1", cores="1", threads="1")
 
 
+@pytest.mark.bugzilla(
+    1914616, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-2818")
 def test_vm_with_cpu_limitation(namespace, unprivileged_client):
     """
@@ -140,6 +144,9 @@ def test_vm_with_cpu_limitation(namespace, unprivileged_client):
         check_vm_dumpxml(vm=vm, sockets="1", cores="2", threads="1")
 
 
+@pytest.mark.bugzilla(
+    1914616, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-2819")
 def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
     """
