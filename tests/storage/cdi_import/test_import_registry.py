@@ -188,9 +188,6 @@ def test_public_registry_multiple_data_volume(
         for dvp in dvs_processes:
             dvp.join()
 
-        for dv in dvs:
-            dv.wait()
-
         for vm in [vm for vm in dvs]:
             rvm = VirtualMachineForTests(
                 name=vm.name,
