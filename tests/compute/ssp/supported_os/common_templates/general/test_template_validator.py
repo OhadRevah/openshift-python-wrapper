@@ -20,7 +20,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_function,"
-    "golden_image_vm_instance_from_template_multi_storage_scope_function",
+    "golden_image_vm_object_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -40,12 +40,12 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 )
 def test_template_validation_min_memory(
     golden_image_data_volume_multi_storage_scope_function,
-    golden_image_vm_instance_from_template_multi_storage_scope_function,
+    golden_image_vm_object_from_template_multi_storage_scope_function,
 ):
     LOGGER.info("Test template validator - minimum required memory")
 
     with pytest.raises(UnprocessibleEntityError) as vm_exception:
-        golden_image_vm_instance_from_template_multi_storage_scope_function.create()
+        golden_image_vm_object_from_template_multi_storage_scope_function.create()
 
         assert (
             "This VM requires more memory" in vm_exception.value.body.decode()
