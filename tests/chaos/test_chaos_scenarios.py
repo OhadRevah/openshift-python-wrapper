@@ -86,6 +86,7 @@ def standard_scenario(scenario_name):
         pytest.param("scenario11", marks=pytest.mark.polarion("CNV-5440")),
         pytest.param("scenario12", marks=pytest.mark.polarion("CNV-5438")),
         pytest.param("scenario13", marks=pytest.mark.polarion("CNV-5443")),
+        pytest.param("scenario14", marks=pytest.mark.polarion("CNV-5667")),
     ],
 )
 def test_scenarios(scenario_name, standard_scenario, admin_client):
