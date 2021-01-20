@@ -14,8 +14,8 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import remove_eth0_default_gw, vm_started
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
-from utilities.virt import enable_ssh_service_in_vm, get_guest_os_info, wait_for_console
+from utilities.infra import BUG_STATUS_CLOSED
+from utilities.virt import enable_ssh_service_in_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -152,18 +152,6 @@ class TestCommonTemplatesRhel:
             remove_eth0_default_gw(
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
                 console_impl=console.RHEL,
-            )
-
-        # OS info is needed for RHEL 7.7 (force-closing console connection)
-        if (
-            get_bug_status(
-                bugzilla_connection_params=bugzilla_connection_params, bug=1886453
-            )
-            not in BUG_STATUS_CLOSED
-            and "rhel-7-7" in [*rhel_os_matrix__class__][0]
-        ):
-            get_guest_os_info(
-                vmi=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.vmi
             )
 
         enable_ssh_service_in_vm(

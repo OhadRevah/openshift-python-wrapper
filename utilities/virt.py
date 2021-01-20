@@ -1183,10 +1183,6 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
         verify_commands_output=False,
     )
 
-    # RHEL 7-7 has issue with running "sudo systemctl" command and disconnecting right after it
-    if "7.7" in vm.vmi.os_version:
-        console_impl(vm=vm).force_disconnect()
-
     wait_for_ssh_service(
         vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
     )
