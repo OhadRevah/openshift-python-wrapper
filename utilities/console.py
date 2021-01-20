@@ -52,7 +52,7 @@ class Console(object):
             self.child.expect("Password:")
             LOGGER.info(f"{self.vm.name}: Using password {self.password}")
             self.child.sendline(self.password)
-        self.child.expect(self.prompt, timeout=90)
+        self.child.expect(self.prompt, timeout=150)
         LOGGER.info(f"{self.vm.name}: Got prompt.")
 
     def disconnect(self):

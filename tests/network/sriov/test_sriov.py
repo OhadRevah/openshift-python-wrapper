@@ -2,13 +2,19 @@
 SRIOV Tests
 """
 
+import logging
+
 import pytest
 from pytest_testconfig import config as py_config
 from resources.sriov_network import SriovNetwork
-from resources.utils import TimeoutSampler
 
 from tests.network.utils import assert_no_ping
 from utilities import console
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_bug_status,
+    get_bugzilla_connection_params,
+)
 from utilities.network import (
     assert_ping_successful,
     cloud_init_network_data,
@@ -24,23 +30,36 @@ from utilities.virt import (
 )
 
 
+LOGGER = logging.getLogger(__name__)
 SRIOV_NAMESPACE = py_config["sriov_namespace"]
 
 
-def _ping_sampler(node_exec, command, positive):
-    """
-    Wait until PING is return or not based on positive value.
-    """
-    sampler = TimeoutSampler(
-        timeout=60, sleep=1, func=node_exec.run_command, command=command
-    )
-    for sample in sampler:
-        rc = sample[0]
-        if rc and not positive:
-            return
+# TODO : remove restart_guest_agent and replace all calls to it with wait_for_vm_interfaces once BZ 1907707 is fixed
+def restart_guest_agent(vm):
+    bug_num = 1907707
+    if (
+        get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_num
+        )
+        not in BUG_STATUS_CLOSED
+    ):
+        vm_console_run_commands(
+            console_impl=console.Fedora,
+            vm=vm,
+            commands=["sudo systemctl restart qemu-guest-agent"],
+        )
+    else:
+        LOGGER.warning(
+            f"bug {bug_num} is resolved. please remove all references to it from the automation"
+        )
+    wait_for_vm_interfaces(vmi=vm.vmi)
 
-        if not rc and positive:
-            return
+
+def running_vmi(vm):
+    vmi = vm.vmi
+    vmi.wait_until_running()
+    restart_guest_agent(vm=vm)
+    return vmi
 
 
 @pytest.fixture(scope="class")
@@ -122,10 +141,7 @@ def sriov_vm1(sriov_workers_node1, namespace, unprivileged_client, sriov_network
 
 @pytest.fixture(scope="class")
 def running_sriov_vm1(sriov_vm1):
-    vmi = sriov_vm1.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+    return running_vmi(vm=sriov_vm1)
 
 
 @pytest.fixture(scope="class")
@@ -152,10 +168,7 @@ def sriov_vm2(sriov_workers_node2, namespace, unprivileged_client, sriov_network
 
 @pytest.fixture(scope="class")
 def running_sriov_vm2(sriov_vm2):
-    vmi = sriov_vm2.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+    return running_vmi(vm=sriov_vm2)
 
 
 @pytest.fixture(scope="class")
@@ -187,10 +200,7 @@ def sriov_vm3(
 
 @pytest.fixture(scope="class")
 def running_sriov_vm3(sriov_vm3):
-    vmi = sriov_vm3.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+    return running_vmi(vm=sriov_vm3)
 
 
 @pytest.fixture(scope="class")
@@ -215,6 +225,9 @@ def sriov_vm4(
         node_selector=sriov_workers_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
+        ssh=True,
+        username=console.Fedora.USERNAME,
+        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -222,10 +235,7 @@ def sriov_vm4(
 
 @pytest.fixture(scope="class")
 def running_sriov_vm4(sriov_vm4):
-    vmi = sriov_vm4.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+    return running_vmi(vm=sriov_vm4)
 
 
 @pytest.fixture(scope="class")
@@ -238,14 +248,6 @@ def vm4_interfaces(running_sriov_vm4):
     "labeled_sriov_nodes",
     "skip_rhel7_workers",
     "skip_insufficient_sriov_workers",
-    "sriov_vm1",
-    "sriov_vm2",
-    "sriov_vm3",
-    "sriov_vm4",
-    "running_sriov_vm1",
-    "running_sriov_vm2",
-    "running_sriov_vm3",
-    "running_sriov_vm4",
 )
 class TestPingConnectivity:
     @pytest.mark.polarion("CNV-3963")
@@ -296,22 +298,11 @@ class TestPingConnectivity:
     def test_sriov_interfaces_post_reboot(
         self, workers_ssh_executors, sriov_vm4, running_sriov_vm4, vm4_interfaces
     ):
-        vm_console_run_commands(
-            console_impl=console.Fedora,
-            vm=sriov_vm4,
-            commands=["sudo reboot -f now"],
-            verify_commands_output=False,
-        )
-
-        pod_ip = str(get_vmi_ip_v4_by_name(vmi=running_sriov_vm4, name="default"))
-        node_exec = workers_ssh_executors[running_sriov_vm4.node.name]
-        command = ["ping", "-c", "1", pod_ip]
+        sriov_vm4.ssh_exec.run_command(command=["sudo", "reboot"])
         # Make sure the VM is down.
-        _ping_sampler(node_exec=node_exec, command=command, positive=False)
-
+        sriov_vm4.ssh_exec.executor().wait_for_connectivity_state(positive=False)
         # Make sure the VM is up, otherwise we will get an old VM interfaces data.
-        _ping_sampler(node_exec=node_exec, command=command, positive=True)
-
-        wait_for_vm_interfaces(vmi=running_sriov_vm4)
+        sriov_vm4.ssh_exec.executor().wait_for_connectivity_state(positive=True)
+        restart_guest_agent(vm=sriov_vm4)
         # Check only the second interface (SRIOV interface).
         assert running_sriov_vm4.interfaces[1] == vm4_interfaces[1]
