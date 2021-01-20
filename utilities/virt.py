@@ -1155,8 +1155,14 @@ class Prometheus(object):
         return json.loads(response.content)
 
 
-def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
-    LOGGER.info("Enable SSH in VM.")
+def enable_ssh_service_in_vm(
+    vm,
+    console_impl,
+    systemctl_support=True,
+    wait_for_vm_ssh_service=True,
+    wait_for_vm_ssh_connectivity=True,
+):
+    LOGGER.info(f"Enable SSH in {vm.name}.")
 
     enable_ssh_command = [
         r"sudo sed -iE "
@@ -1183,9 +1189,13 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
         verify_commands_output=False,
     )
 
-    wait_for_ssh_service(
-        vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
-    )
+    if wait_for_vm_ssh_service:
+        wait_for_ssh_service(
+            vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
+        )
+
+    if wait_for_vm_ssh_connectivity:
+        wait_for_ssh_connectivity(vm=vm)
 
 
 def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
