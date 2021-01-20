@@ -15,7 +15,7 @@ def unscheduled_node_vm(
     worker_node1,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    data_volume_scope_function,
     network_configuration,
     cloud_init_data,
 ):
@@ -23,7 +23,7 @@ def unscheduled_node_vm(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        existing_data_volume=data_volume_scope_function,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
         node_selector=worker_node1.name,
@@ -32,7 +32,7 @@ def unscheduled_node_vm(
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function, unscheduled_node_vm",
+    "data_volume_scope_function, unscheduled_node_vm",
     [
         pytest.param(
             {
@@ -55,9 +55,8 @@ def unscheduled_node_vm(
 def test_node_maintenance_job_rhel(
     skip_when_one_node,
     nodes,
-    golden_image_data_volume_scope_function,
+    data_volume_scope_function,
     unscheduled_node_vm,
-    admin_client,
 ):
     """Test VM scheduling on a node under maintenance.
     1. Start node maintenance job
