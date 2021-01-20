@@ -1761,7 +1761,8 @@ def nodes_common_cpu_model(utility_pods):
     def _node_cpu_name(node_cpu_model):
         # Some CPU models provide a name that needs to be mapped to CPU microarchitecture
         cpus_model_name_to_architecture_dict = {
-            "Intel(R) Xeon(R) Gold 6130": "Skylake-Server"
+            "Intel(R) Xeon(R) Gold 6130": "Skylake-Server",
+            "Intel(R) Xeon(R) Gold 6152": "Skylake-Server",
         }
         for cpu_name, architecture in cpus_model_name_to_architecture_dict.items():
             if cpu_name in node_cpu_model:
