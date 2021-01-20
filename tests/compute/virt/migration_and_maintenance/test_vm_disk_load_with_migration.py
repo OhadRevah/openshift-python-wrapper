@@ -11,7 +11,11 @@ from resources.utils import TimeoutSampler
 from tests.compute.utils import migrate_vm
 from tests.conftest import vm_instance_from_template
 from utilities import console
-from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD, enable_ssh_service_in_vm
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    enable_ssh_service_in_vm,
+    wait_for_ssh_connectivity,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,7 +59,7 @@ def run_fio_in_vm(vm_with_fio):
         "nohup",
         "bash",
         "-c",
-        "/usr/bin/fio --loops=200 --runtime=600 --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 "
+        "/usr/bin/fio --loops=400 --runtime=600 --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 "
         "--name=test --filename=/home/fedora/random_read_write.fio --bs=4k --iodepth=64 --size=1G --readwrite=randrw "
         "--rwmixread=75 --numjobs=8 >& /dev/null &",
         "&",
@@ -126,4 +130,5 @@ def test_fedora_vm_load_migration(
 ):
     LOGGER.info("Test migrate VM with disk load")
     migrate_vm(vm=vm_with_fio)
+    wait_for_ssh_connectivity(vm=vm_with_fio)
     get_disk_usage(ssh_exec=vm_with_fio.ssh_exec)

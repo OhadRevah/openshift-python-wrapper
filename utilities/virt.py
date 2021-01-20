@@ -1193,7 +1193,7 @@ def enable_ssh_service_in_vm(vm, console_impl, systemctl_support=True):
 
 
 def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
-    LOGGER.info("Wait for SSH service to be active.")
+    LOGGER.info(f"Wait for {vm.name} SSH service to be active.")
 
     sampler = TimeoutSampler(
         timeout=30,
@@ -1221,6 +1221,20 @@ def ssh_service_activated(vm, console_impl, systemctl_support=True):
         vm_console.sendline(ssh_service_status_cmd)
         vm_console.expect(expected)
         return True
+
+
+def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
+    LOGGER.info(f"Wait for {vm.name} SSH connectivity.")
+
+    sampler = TimeoutSampler(
+        timeout=timeout,
+        sleep=5,
+        func=vm.ssh_exec.is_connective,
+        tcp_timeout=tcp_timeout,
+    )
+    for sample in sampler:
+        if sample:
+            return
 
 
 def wait_for_console(vm, console_impl):
