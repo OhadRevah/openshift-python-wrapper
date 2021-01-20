@@ -144,6 +144,9 @@ class TestCommonTemplatesCentos:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
+    @pytest.mark.bugzilla(
+        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5346")
     def test_vmi_guest_agent_info(
