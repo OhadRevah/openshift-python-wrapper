@@ -1245,7 +1245,7 @@ def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
 
 def wait_for_console(vm, console_impl):
     with console_impl(vm=vm, timeout=1500):
-        pass
+        LOGGER.info(f"Successfully connected to {vm.name} console")
 
 
 def generate_yaml_from_template(file_, **kwargs):

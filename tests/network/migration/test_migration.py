@@ -136,7 +136,9 @@ def running_vma(vma):
     vmi = vma.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
-    enable_ssh_service_in_vm(vm=vma, console_impl=console.Fedora)
+    enable_ssh_service_in_vm(
+        vm=vma, console_impl=console.Fedora, check_ssh_connectivity=False
+    )
     yield vma
 
 
@@ -145,7 +147,9 @@ def running_vmb(vmb):
     vmi = vmb.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
-    enable_ssh_service_in_vm(vm=vmb, console_impl=console.Fedora)
+    enable_ssh_service_in_vm(
+        vm=vmb, console_impl=console.Fedora, check_ssh_connectivity=False
+    )
     yield vmb
 
 
