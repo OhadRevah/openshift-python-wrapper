@@ -690,6 +690,10 @@ class VirtualMachineForTests(VirtualMachine):
     def ssh_exec(self):
         # In order to use this property VM should be created with ssh=True
         # or one of vm_ssh_service_*** (compute/ssp/supported_os/conftest.py) fixtures should be used
+        LOGGER.info(
+            f"Username: {self.username}, password: {self.password}, "
+            f"SSH IP: {self.ssh_service.service_ip}, SSH port: {self.ssh_service.service_port}"
+        )
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip))
         host_user = rrmngmnt.user.User(name=self.username, password=self.password)
         host._set_executor_user(user=host_user)
