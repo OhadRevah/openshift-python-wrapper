@@ -77,8 +77,8 @@ def lbodi_bond(
     index_number,
     skip_no_bond_support,
     utility_pods,
-    hosts_common_available_ports,
-    hosts_common_occupied_ports,
+    nodes_available_nics,
+    nodes_occupied_nics,
     worker_node1,
     worker_nodes_ipv4_false_secondary_nics,
 ):
@@ -86,11 +86,11 @@ def lbodi_bond(
     Create BOND if setup support BOND
     """
     bond_idx = next(index_number)
-    primary_slave = hosts_common_occupied_ports[0]
+    primary_slave = nodes_occupied_nics[worker_node1.name][0]
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=[primary_slave, hosts_common_available_ports[0]],
+        slaves=[primary_slave, nodes_available_nics[worker_node1.name][0]],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,

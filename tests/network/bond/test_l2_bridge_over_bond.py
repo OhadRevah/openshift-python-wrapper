@@ -37,7 +37,7 @@ def ovs_linux_bond1_worker_1(
     index_number,
     utility_pods,
     worker_node1,
-    hosts_common_available_ports,
+    nodes_available_nics,
     link_aggregation_mode_matrix__class__,
 ):
     """
@@ -47,7 +47,7 @@ def ovs_linux_bond1_worker_1(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=hosts_common_available_ports[0:2],
+        slaves=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
         node_selector=worker_node1.name,
         mode=link_aggregation_mode_matrix__class__,
@@ -61,7 +61,7 @@ def ovs_linux_bond1_worker_2(
     index_number,
     utility_pods,
     worker_node2,
-    hosts_common_available_ports,
+    nodes_available_nics,
     link_aggregation_mode_matrix__class__,
     ovs_linux_bond1_worker_1,
 ):
@@ -72,7 +72,7 @@ def ovs_linux_bond1_worker_2(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
-        slaves=hosts_common_available_ports[0:2],
+        slaves=nodes_available_nics[worker_node2.name][0:2],
         worker_pods=utility_pods,
         node_selector=worker_node2.name,
         mode=link_aggregation_mode_matrix__class__,
