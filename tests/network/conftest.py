@@ -13,9 +13,9 @@ from tests.network.utils import network_device
 from utilities.network import (
     DEPLOY_OVS,
     get_ipv6_address,
-    get_ovs_daemonset,
     ip_version_data_from_matrix,
     wait_for_ovs_daemonset_deleted,
+    wait_for_ovs_daemonset_resource,
     wait_for_ovs_pods,
     wait_for_ovs_status,
 )
@@ -175,7 +175,7 @@ def hyperconverged_ovs_annotations_enabled(
         }
     ):
         wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
-        ovs_daemonset = get_ovs_daemonset(
+        ovs_daemonset = wait_for_ovs_daemonset_resource(
             admin_client=admin_client, hco_namespace=hco_namespace
         )
         ovs_daemonset.wait_until_deployed()

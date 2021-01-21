@@ -816,16 +816,15 @@ def ovs_pods(admin_client, hco_namespace):
         namespace=hco_namespace,
         get_all=True,
     )
-    return (
-        [pod for pod in pods if pod.instance.status.phase == Pod.Status.RUNNING]
-        if pods
-        else pods
-    )
+    return [
+        pod for pod in pods or [] if pod.instance.status.phase == Pod.Status.RUNNING
+    ]
 
 
 def wait_for_ovs_pods(admin_client, hco_namespace, count=0):
+    LOGGER.info(f"Wait for number of OVS pods to be: {count}")
     samples = TimeoutSampler(
-        timeout=90,
+        timeout=150,
         sleep=1,
         func=ovs_pods,
         admin_client=admin_client,
@@ -834,10 +833,7 @@ def wait_for_ovs_pods(admin_client, hco_namespace, count=0):
     num_of_pods = None
     try:
         for sample in samples:
-            num_of_pods = len(sample) if sample is not None else 0
-            if not sample and count == 0:
-                return True
-
+            num_of_pods = len(sample)
             if num_of_pods == count:
                 return True
 
@@ -847,6 +843,9 @@ def wait_for_ovs_pods(admin_client, hco_namespace, count=0):
 
 
 def wait_for_ovs_status(network_addons_config, status=True):
+    opt_log = "opt-in" if status else "opt-out"
+    resource_log = f"{network_addons_config.kind} {network_addons_config.name}"
+    LOGGER.info(f"Wait for {resource_log} OVS to be {opt_log}")
     samples = TimeoutSampler(
         timeout=60,
         sleep=1,
@@ -855,14 +854,11 @@ def wait_for_ovs_status(network_addons_config, status=True):
 
     try:
         for sample in samples:
-            if sample is not None and status:
-                return True
-
-            if sample is None and not status:
+            if bool(sample is not None) == status:
                 return True
 
     except TimeoutExpiredError:
-        LOGGER.error(f"OVS should be {'opt-in' if status else 'opt-out'}")
+        LOGGER.error(f"{resource_log} OVS should be {opt_log}")
         raise
 
 
@@ -906,4 +902,22 @@ def wait_for_ovs_daemonset_deleted(ovs_daemonset):
 
     except TimeoutExpiredError:
         LOGGER.error("OVS daemonset exists after opt-out")
+        raise
+
+
+def wait_for_ovs_daemonset_resource(admin_client, hco_namespace):
+    samples = TimeoutSampler(
+        timeout=30,
+        sleep=1,
+        func=get_ovs_daemonset,
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return sample
+
+    except TimeoutExpiredError:
+        LOGGER.error("OVS daemonset doesn't exists after opt-in")
         raise

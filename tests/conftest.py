@@ -67,8 +67,8 @@ from utilities.network import (
     OVS,
     EthernetNetworkConfigurationPolicy,
     MacPool,
-    get_ovs_daemonset,
     network_nad,
+    wait_for_ovs_daemonset_resource,
 )
 from utilities.storage import data_volume
 from utilities.virt import (
@@ -1997,7 +1997,9 @@ def skip_when_no_sriov(admin_client):
 
 @pytest.fixture(scope="class")
 def ovs_daemonset(admin_client, hco_namespace):
-    return get_ovs_daemonset(admin_client=admin_client, hco_namespace=hco_namespace)
+    return wait_for_ovs_daemonset_resource(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
 
 
 @pytest.fixture()
