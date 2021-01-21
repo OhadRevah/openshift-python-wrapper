@@ -63,7 +63,7 @@ def test_migrate_vm_rhel(
         console_impl=console.RHEL,
     )
 
-    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.is_connective(
+    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.executor().is_connective(
         tcp_timeout=120
     ), "Failed to login via SSH"
 
@@ -75,6 +75,6 @@ def test_migrate_vm_rhel(
     )
 
     # Verify successful SSH connection after migration
-    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.is_connective(
+    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.executor().is_connective(
         tcp_timeout=120
     ), "Failed to login via SSH after migration"

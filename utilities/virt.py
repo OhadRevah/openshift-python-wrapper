@@ -1235,7 +1235,7 @@ def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
     sampler = TimeoutSampler(
         timeout=timeout,
         sleep=5,
-        func=vm.ssh_exec.is_connective,
+        func=vm.ssh_exec.executor().is_connective,
         tcp_timeout=tcp_timeout,
     )
     for sample in sampler:

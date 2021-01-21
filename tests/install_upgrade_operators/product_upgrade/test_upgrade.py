@@ -55,7 +55,9 @@ class TestUpgrade:
     def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             enable_ssh_service_in_vm(vm=vm, console_impl=console.RHEL)
-            assert vm.ssh_exec.is_connective(tcp_timeout=120), "Failed to login via SSH"
+            assert vm.ssh_exec.executor().is_connective(
+                tcp_timeout=120
+            ), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2743")
     @pytest.mark.run(before="test_upgrade")
@@ -189,7 +191,9 @@ class TestUpgrade:
     @pytest.mark.run(after="test_is_vm_running_after_upgrade")
     def test_vm_ssh_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            assert vm.ssh_exec.is_connective(tcp_timeout=120), "Failed to login via SSH"
+            assert vm.ssh_exec.executor().is_connective(
+                tcp_timeout=120
+            ), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2979")
     @pytest.mark.run(after="test_vm_console_after_upgrade")

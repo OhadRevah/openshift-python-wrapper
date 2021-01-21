@@ -160,7 +160,7 @@ class TestCommonTemplatesRhel:
             systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
 
-        assert golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.is_connective(
+        assert golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
         ), "Failed to login via SSH"
 

@@ -195,7 +195,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
 
-        assert golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec.is_connective(
+        assert golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
         ), "Failed to login via SSH"
 

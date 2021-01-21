@@ -140,7 +140,7 @@ class TestCommonTemplatesCentos:
             console_impl=console.Centos,
         )
 
-        assert golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class.ssh_exec.is_connective(
+        assert golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
         ), "Failed to login via SSH"
 
