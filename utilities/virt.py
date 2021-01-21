@@ -1159,8 +1159,8 @@ def enable_ssh_service_in_vm(
     vm,
     console_impl,
     systemctl_support=True,
-    wait_for_vm_ssh_service=True,
-    wait_for_vm_ssh_connectivity=True,
+    check_ssh_service=True,
+    check_ssh_connectivity=True,
 ):
     LOGGER.info(f"Enable SSH in {vm.name}.")
 
@@ -1189,12 +1189,12 @@ def enable_ssh_service_in_vm(
         verify_commands_output=False,
     )
 
-    if wait_for_vm_ssh_service:
+    if check_ssh_service:
         wait_for_ssh_service(
             vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
         )
 
-    if wait_for_vm_ssh_connectivity:
+    if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
 
 
