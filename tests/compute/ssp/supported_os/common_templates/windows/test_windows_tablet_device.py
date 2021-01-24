@@ -14,7 +14,6 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_windows_os_dict
 
 
@@ -146,9 +145,6 @@ class TestWindowsTabletDevice:
             vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function
         )
 
-    @pytest.mark.bugzilla(
-        1827705, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.parametrize(
         "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,"
         "golden_image_started_windows_dv_scope_class_vm_scope_function",

@@ -186,7 +186,6 @@ class VirtualMachineForTests(VirtualMachine):
         memory_requests=None,
         memory_limits=None,
         memory_guest=None,
-        label=None,
         cloud_init_data=None,
         machine_type=None,
         image=None,
@@ -277,7 +276,6 @@ class VirtualMachineForTests(VirtualMachine):
         self.memory_requests = memory_requests
         self.memory_limits = memory_limits
         self.memory_guest = memory_guest
-        self.label = label
         self.cloud_init_data = cloud_init_data
         self.machine_type = machine_type
         self.image = image
@@ -357,14 +355,6 @@ class VirtualMachineForTests(VirtualMachine):
             spec.setdefault("volumes", []).append(
                 {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
             )
-
-        if self.label:
-            # Windows templates are missing spec -> template -> metadata -> labels path
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1769692
-            # Once fixed, setdefault to 'template' and 'metadata' should be removed.
-            res.setdefault("spec", {}).setdefault("template", {}).setdefault(
-                "metadata", {}
-            ).setdefault("labels", {})["kubevirt.io/vm"] = self.label
 
         # Create rng device so the vm will able to use /dev/rnd without
         # waiting for entropy collecting.

@@ -136,9 +136,6 @@ class TestCommonTemplatesWindows:
 
     @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3303")
-    @pytest.mark.bugzilla(
-        1769692, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_domain_label(
         self,
         skip_upstream,
