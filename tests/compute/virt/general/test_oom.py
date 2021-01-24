@@ -10,7 +10,6 @@ import pytest
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -101,12 +100,7 @@ def wait_vm_oom(vm):
     [
         pytest.param(
             {"requests": "8192Mi", "limits": "8192Mi", "guest": "8192Mi"},
-            marks=(
-                pytest.mark.polarion("CNV-4482"),
-                pytest.mark.bugzilla(
-                    1885418, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-4482"),),
             id="case: guest memory == memory requests & limits",
         ),
         pytest.param(
