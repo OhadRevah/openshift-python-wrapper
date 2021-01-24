@@ -138,6 +138,7 @@ def test_successful_vm_restart_with_cloned_dv(
                 "os_version": py_config["latest_windows_version"]["os_version"],
                 "username": py_config["windows_username"],
                 "password": py_config["windows_password"],
+                "ssh": True,
             },
             marks=pytest.mark.polarion("CNV-3638"),
         ),
