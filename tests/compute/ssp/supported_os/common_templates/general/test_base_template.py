@@ -13,7 +13,6 @@ from pytest_testconfig import config as py_config
 from resources.template import Template
 
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
@@ -324,9 +323,6 @@ def test_common_templates_machine_type(
     ), f"Templates with machine-type that do not match kubevirt cm: {unmatched_templates}"
 
 
-@pytest.mark.bugzilla(
-    1877834, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-5002")
 def test_common_templates_golden_images_params(base_templates):
     unmatched_templates = {}

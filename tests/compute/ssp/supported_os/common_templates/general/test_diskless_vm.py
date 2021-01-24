@@ -10,7 +10,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -67,12 +67,7 @@ def diskless_vm(
                 "diskless_vm": True,
                 "start_vm": False,
             },
-            marks=(
-                pytest.mark.polarion("CNV-4697"),
-                pytest.mark.bugzilla(
-                    1856654, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-4697"),),
         ),
     ],
     indirect=True,
