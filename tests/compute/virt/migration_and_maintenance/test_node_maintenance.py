@@ -179,9 +179,6 @@ def migration_job_sampler(dyn_client, namespace):
             return
 
 
-@pytest.mark.bugzilla(
-    1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-3006")
 def test_node_drain_using_console_fedora(
     skip_when_one_node,
@@ -198,9 +195,6 @@ def test_node_drain_using_console_fedora(
     )
 
 
-@pytest.mark.bugzilla(
-    1888790, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_class,"
     "golden_image_vm_instance_from_template_multi_storage_scope_class",
