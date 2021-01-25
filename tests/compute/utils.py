@@ -18,12 +18,11 @@ def vm_started(vm, wait_for_interfaces=True):
     If wait_for_interfaces - wait for interfaces to be up.
     """
 
+    timeout = TIMEOUT
     # For VMs from common templates
-    timeout = (
-        2100
-        if "vm.kubevirt.io/template" in vm.instance.metadata.get("labels", {}).keys()
-        else TIMEOUT
-    )
+    if vm.is_vm_from_template:
+        # Windows 10 takes longer to start
+        timeout = 2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
 
     vm.start(wait=True, timeout=timeout)
     vm.vmi.wait_until_running()
