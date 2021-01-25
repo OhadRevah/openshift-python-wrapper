@@ -42,6 +42,7 @@ from resources.pod import Pod
 from resources.resource import ResourceEditor
 from resources.role_binding import RoleBinding
 from resources.secret import Secret
+from resources.service import Service
 from resources.service_account import ServiceAccount
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.sriov_network_node_state import SriovNetworkNodeState
@@ -107,6 +108,7 @@ RESOURCES_TO_COLLECT_INFO = [
     NetworkAttachmentDefinition,
     NodeNetworkConfigurationPolicy,
     NodeNetworkState,
+    Service,
 ]
 
 PODS_TO_COLLECT_INFO = [
@@ -452,10 +454,20 @@ def pytest_exception_interact(node, call, report):
             pods_dir = os.path.join(test_dir, "Pods")
             os.makedirs(test_dir, exist_ok=True)
             os.makedirs(pods_dir, exist_ok=True)
+            test_namespace_name = generate_namespace_name(pytest_obj=node)
+            namespace = list(
+                Namespace.get(dyn_client=dyn_client, name=test_namespace_name)
+            )
+            resource_namespace_name = namespace[0].name if namespace else None
+            get_kwargs = {"dyn_client": dyn_client}
 
             for _resources in RESOURCES_TO_COLLECT_INFO:
                 resource_dir = os.path.join(test_dir, _resources.__name__)
-                for resource_obj in _resources.get(dyn_client=dyn_client):
+
+                if _resources == Service:
+                    get_kwargs["namespace"] = resource_namespace_name
+
+                for resource_obj in _resources.get(**get_kwargs):
                     if not os.path.isdir(resource_dir):
                         os.makedirs(resource_dir, exist_ok=True)
 
@@ -968,18 +980,21 @@ def namespace(request, unprivileged_client, admin_client, kmp_vm_label):
     if hasattr(request, "param"):
         client = request.param.get("unprivileged_client", True)
 
-    name = (
-        request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
-        .strip(".py")
-        .replace("/", "-")
-        .replace("_", "-")
-    )[-63:]
     yield from create_ns(
         client=unprivileged_client if client else None,
-        name=name.split("-", 1)[-1],
+        name=generate_namespace_name(pytest_obj=request),
         admin_client=admin_client,
         kmp_vm_label=kmp_vm_label,
     )
+
+
+def generate_namespace_name(pytest_obj):
+    return (
+        pytest_obj.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
+        .strip(".py")
+        .replace("/", "-")
+        .replace("_", "-")
+    )[-63:].split("-", 1)[-1]
 
 
 @pytest.fixture(scope="session")
