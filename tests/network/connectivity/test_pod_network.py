@@ -101,10 +101,10 @@ def test_connectivity_over_pod_network(
         dst_ip = utilities.network.get_ipv6_address(
             cnv_resource=pod_net_running_vmb.vmi
         )
-        if not dst_ip:
-            raise Exception(
-                f"Cannot get valid IPv6 address from {pod_net_running_vmb.vmi.name}."
-            )
+        assert (
+            dst_ip
+        ), f"Cannot get valid IPv6 address from {pod_net_running_vmb.vmi.name}."
+
     else:
         dst_ip = ip_interface(
             address=pod_net_running_vmb.vmi.interfaces[0]["ipAddress"]

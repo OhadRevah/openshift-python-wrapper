@@ -17,7 +17,7 @@ import kubernetes
 import pytest
 import rrmngmnt
 from openshift.dynamic import DynamicClient
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 from resources.cluster_role import ClusterRole
 from resources.cluster_service_version import ClusterServiceVersion
@@ -958,7 +958,7 @@ def kmp_vm_label(admin_client):
                 if ldict["key"] == kmp_vm_webhook
             }
 
-    raise Exception(f"Webhook {kmp_vm_webhook} was not found")
+    raise ResourceNotFoundError(f"Webhook {kmp_vm_webhook} was not found")
 
 
 @pytest.fixture(scope="module")

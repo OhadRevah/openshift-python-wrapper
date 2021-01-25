@@ -491,13 +491,10 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
 def extract_ocp_version(ocp_image):
     # Extract the OCP version from the OCP URL input.
     ocp_version = re.search(r":(\d+\.\d+\.\d+)-(rc\.\d+)?", ocp_image)
-
-    if ocp_version:
-        return "-".join(filter(None, ocp_version.groups()))
-
-    raise Exception(
-        f"Cannot extract OCP version. OCP image url: {ocp_image} is invalid"
-    )
+    assert (
+        ocp_version
+    ), f"Cannot extract OCP version. OCP image url: {ocp_image} is invalid"
+    return "-".join(filter(None, ocp_version.groups()))
 
 
 def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):

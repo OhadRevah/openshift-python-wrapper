@@ -13,6 +13,10 @@ DEFAULT_NAMESPACE = "default"
 SRIOV_NETWORK_OPERATOR_NAMESPACE = "sriov-network-operator"
 
 
+class ResourceMissMatch(Exception):
+    pass
+
+
 # TODO: this is a workaround for an openshift bug
 # An issue was opened in openshift for this:
 # https://github.com/openshift/openshift-restclient-python/issues/320
@@ -50,7 +54,7 @@ def compare_resource_contents(resource, file_content, checks):
             file_part = file_part[part]
         with ResourceFieldEqBugWorkaround():
             if oc_part != file_part:
-                raise Exception(
+                raise ResourceMissMatch(
                     f"Comparison of resource {resource.name} "
                     f"(namespace: {resource.namespace}) "
                     f"failed for element {check}."
