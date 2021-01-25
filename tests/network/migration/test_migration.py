@@ -33,7 +33,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def http_port_accessible(vm, server_ip, server_port):
-    connection_timeout = 30
+    connection_timeout = 60
 
     # For IPv6 - significantly longer timeout should be used. The reason is that it takes time for the *IPv6
     # MAC table* to learn the new MAC address for the default gateway, which is the pod bridge.
