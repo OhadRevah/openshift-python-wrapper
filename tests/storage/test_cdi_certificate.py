@@ -205,6 +205,7 @@ def test_dv_delete_from_vm(
             create_dummy_first_consumer_pod(dv=dv)
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
         dv.delete()
+        create_dummy_first_consumer_pod(dv=dv)
         # DV re-creation is triggered by VM
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED)
         vm.start(wait=True)

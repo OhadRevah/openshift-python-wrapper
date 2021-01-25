@@ -21,7 +21,7 @@ from tests.storage.cdi_import.conftest import wait_for_importer_container_messag
 from tests.storage.utils import get_importer_pod
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, NON_EXIST_URL, Images, get_bug_status
-from utilities.storage import ErrorMsg, PodWithPVC
+from utilities.storage import ErrorMsg, PodWithPVC, create_dummy_first_consumer_pod
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
 
 
@@ -54,7 +54,7 @@ def get_file_url(url, file_name):
 def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_function):
     pvc = data_volume_multi_storage_scope_function.pvc
     pvc.delete()
-    pvc.wait_for_status(status=pvc.Status.BOUND)
+    create_dummy_first_consumer_pod(pvc=pvc)
     data_volume_multi_storage_scope_function.wait_for_status(
         status=data_volume_multi_storage_scope_function.Status.IMPORT_SCHEDULED
     )

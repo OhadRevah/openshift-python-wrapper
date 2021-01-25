@@ -63,6 +63,7 @@ def create_dummy_first_consumer_pod(
                 f"Created dummy pod {pod.name} to be the first consumer of the PVC, "
                 "this triggers the start of CDI worker pods in case the PVC is backed by DV"
             )
+            pvc.wait_for_status(status=pvc.Status.BOUND)
 
 
 @contextmanager
