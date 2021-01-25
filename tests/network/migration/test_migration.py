@@ -90,7 +90,7 @@ class BridgedFedoraVirtualMachine(VirtualMachineForTests):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace, unprivileged_client, ipv6_network_data):
+def vma(namespace, unprivileged_client, ipv6_network_data, bridge_worker_1):
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
@@ -111,7 +111,7 @@ def vma(namespace, unprivileged_client, ipv6_network_data):
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace, unprivileged_client, ipv6_network_data):
+def vmb(namespace, unprivileged_client, ipv6_network_data, bridge_worker_2):
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
@@ -153,20 +153,38 @@ def running_vmb(vmb):
     yield vmb
 
 
-@pytest.fixture(scope="module", autouse=True)
-def bridge_on_all_nodes(
+@pytest.fixture(scope="module")
+def bridge_worker_1(
     skip_if_no_multinic_nodes,
     utility_pods,
-    hosts_common_available_ports,
-    schedulable_nodes,
+    worker_node1,
+    nodes_available_nics,
 ):
     with network_utils.network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name="migration",
+        nncp_name="migration-worker-1",
         interface_name=BR1TEST,
         network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
-        ports=[hosts_common_available_ports[0]],
+        node_selector=worker_node1.name,
+        ports=[nodes_available_nics[worker_node1.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="module")
+def bridge_worker_2(
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    worker_node2,
+    nodes_available_nics,
+):
+    with network_utils.network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name="migration-worker-2",
+        interface_name=BR1TEST,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[nodes_available_nics[worker_node2.name][0]],
     ) as br:
         yield br
 
