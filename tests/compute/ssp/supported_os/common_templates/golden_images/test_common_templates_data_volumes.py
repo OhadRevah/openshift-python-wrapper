@@ -10,6 +10,11 @@ from resources.virtual_machine import VirtualMachine
 
 from tests.conftest import vm_instance_from_template
 from utilities import console
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_bug_status,
+    get_bugzilla_connection_params,
+)
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     wait_for_console,
@@ -60,6 +65,16 @@ def updated_default_storage_class(
     removed_default_storage_classes,
 ):
     sc_name = [*storage_class_matrix__function__][0]
+    if (
+        get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(), bug=1918294
+        )
+        not in BUG_STATUS_CLOSED
+    ) and sc_name == StorageClass.Types.CEPH_RBD:
+        pytest.skip(
+            "when default SC is OSC, VM creation will fail as volumeMode is missing."
+        )
+
     sc = list(StorageClass.get(dyn_client=admin_client, name=sc_name))
     with ResourceEditor(
         patches={
