@@ -463,7 +463,7 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
 
     LOGGER.info("Wait for number of replicas = number of updated replicas")
     for deploy in Deployment.get(dyn_client, namespace=hco_namespace.name):
-        deploy.wait_until_avail_replicas(timeout=TIMEOUT_10MIN)
+        deploy.wait_for_replicas(timeout=TIMEOUT_10MIN)
 
     LOGGER.info("Wait for the new HCO to be available.")
     for hco in HyperConverged.get(dyn_client=dyn_client, namespace=hco_namespace.name):

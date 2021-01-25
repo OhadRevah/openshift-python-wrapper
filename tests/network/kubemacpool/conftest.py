@@ -247,14 +247,14 @@ def ovn_ns():
 @pytest.fixture()
 def kmp_down(cnao_down, kmp_deployment):
     with ResourceEditor(patches={kmp_deployment: {"spec": {"replicas": 0}}}):
-        kmp_deployment.wait_until_no_replicas()
+        kmp_deployment.wait_for_replicas(deployed=False)
         yield
 
 
 @pytest.fixture()
 def cnao_down(cnao_deployment):
     with ResourceEditor(patches={cnao_deployment: {"spec": {"replicas": 0}}}):
-        cnao_deployment.wait_until_no_replicas()
+        cnao_deployment.wait_for_replicas(deployed=False)
         yield
 
 

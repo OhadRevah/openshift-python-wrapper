@@ -724,7 +724,7 @@ def test_hpp_operator_recreate_after_deletion(
     """
     pre_delete_binding_mode = hpp_storage_class.instance["volumeBindingMode"]
     hpp_operator_deployment.delete()
-    hpp_operator_deployment.wait_until_avail_replicas(timeout=300)
+    hpp_operator_deployment.wait_for_replicas(timeout=300)
     assert (
         pre_delete_binding_mode == hpp_storage_class.instance["volumeBindingMode"]
     ), "Pre delete binding mode differs from post delete"

@@ -71,7 +71,7 @@ def internal_http_deployment():
     This Deployment deploys a pod that runs an HTTP server
     """
     with HttpDeployment(name="internal-http", namespace="kube-system") as dep:
-        dep.wait_until_avail_replicas()
+        dep.wait_for_replicas()
         yield dep
 
 
@@ -157,12 +157,12 @@ def uploadproxy_route_deleted():
     deployment = Deployment(name="cdi-operator", namespace=ns)
     try:
         deployment.scale_replicas(replica_count=0)
-        deployment.wait_until_no_replicas()
+        deployment.wait_for_replicas(deployed=False)
         Route(name="cdi-uploadproxy", namespace=ns).delete(wait=True)
         yield
     finally:
         deployment.scale_replicas(replica_count=1)
-        deployment.wait_until_avail_replicas()
+        deployment.wait_for_replicas()
         Route(name="cdi-uploadproxy", namespace=ns).wait()
 
 
