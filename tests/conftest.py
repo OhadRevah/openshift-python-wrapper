@@ -68,8 +68,10 @@ from utilities.network import (
     OVS,
     EthernetNetworkConfigurationPolicy,
     MacPool,
+    enable_hyperconverged_ovs_annotations,
     network_nad,
     wait_for_ovs_daemonset_resource,
+    wait_for_ovs_status,
 )
 from utilities.storage import data_volume
 from utilities.virt import (
@@ -2050,3 +2052,20 @@ def skip_test_if_no_ocs_sc(ocs_storage_class):
     """
     if not ocs_storage_class:
         pytest.skip("Skipping test, OCS storage class is not deployed")
+
+
+@pytest.fixture()
+def hyperconverged_ovs_annotations_enabled(
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource,
+    network_addons_config,
+):
+    yield from enable_hyperconverged_ovs_annotations(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        hyperconverged_resource=hyperconverged_resource,
+        network_addons_config=network_addons_config,
+    )
+
+    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)

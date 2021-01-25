@@ -3,6 +3,7 @@ from copy import deepcopy
 import pytest
 from pytest_testconfig import py_config
 from resources.datavolume import DataVolume
+from resources.hyperconverged import HyperConverged
 from resources.operator_hub import OperatorHub
 from resources.operator_source import OperatorSource
 from resources.resource import ResourceEditor
@@ -12,7 +13,13 @@ from resources.template import Template
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 import utilities.network
 from utilities import console
-from utilities.network import LINUX_BRIDGE, cloud_init_network_data, network_nad
+from utilities.network import (
+    LINUX_BRIDGE,
+    cloud_init_network_data,
+    enable_hyperconverged_ovs_annotations,
+    network_nad,
+    wait_for_ovs_status,
+)
 from utilities.storage import (
     get_images_external_http_server,
     sc_is_hpp_with_immediate_volume_binding,
@@ -282,3 +289,30 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
 @pytest.fixture(scope="module")
 def nodes_status_before_upgrade(nodes):
     return upgrade_utils.get_nodes_status(nodes=nodes)
+
+
+@pytest.fixture(scope="class")
+def hyperconverged_resource_scope_class(admin_client, hco_namespace):
+    for hco in HyperConverged.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+        name="kubevirt-hyperconverged",
+    ):
+        return hco
+
+
+@pytest.fixture(scope="class")
+def hyperconverged_ovs_annotations_enabled_scope_class(
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource_scope_class,
+    network_addons_config,
+):
+    yield from enable_hyperconverged_ovs_annotations(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        hyperconverged_resource=hyperconverged_resource_scope_class,
+        network_addons_config=network_addons_config,
+    )
+
+    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)

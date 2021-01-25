@@ -114,19 +114,19 @@ class TestUpgrade:
 
     @pytest.mark.polarion("CNV-5659")
     @pytest.mark.run(before="test_upgrade")
-    def test_ovs_installed_with_annotations_before_upgrade(
+    def test_install_ovs_with_annotations_before_upgrade(
         self,
         admin_client,
-        ovs_daemonset,
-        hyperconverged_ovs_annotations_fetched,
+        hco_namespace,
+        hyperconverged_resource,
         network_addons_config,
+        hyperconverged_ovs_annotations_enabled_scope_class,
+        hyperconverged_ovs_annotations_fetched,
     ):
-        verify_ovs_installed_with_annotations(
-            admin_client=admin_client,
-            ovs_daemonset=ovs_daemonset,
-            hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
-            network_addons_config=network_addons_config,
-        )
+        # Verify ovs annotation has been enabled (opt-in)
+        assert (
+            hyperconverged_ovs_annotations_fetched
+        ), "OVS hasn't been opt-in as needed."
 
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
@@ -289,6 +289,7 @@ class TestUpgrade:
         hyperconverged_ovs_annotations_fetched,
         network_addons_config,
     ):
+        # Verify ovs opt-in still applies after upgrade
         verify_ovs_installed_with_annotations(
             admin_client=admin_client,
             ovs_daemonset=ovs_daemonset,

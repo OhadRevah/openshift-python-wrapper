@@ -13,7 +13,7 @@ from resources.network_attachment_definition import NetworkAttachmentDefinition
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
 from resources.node_network_state import NodeNetworkState
 from resources.pod import Pod
-from resources.resource import sub_resource_level
+from resources.resource import ResourceEditor, sub_resource_level
 from resources.sriov_network import SriovNetwork
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.sriov_network_node_state import SriovNetworkNodeState
@@ -958,3 +958,22 @@ def network_device(
 
     with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
         yield iface
+
+
+def enable_hyperconverged_ovs_annotations(
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource,
+    network_addons_config,
+):
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
+        }
+    ):
+        wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
+        ovs_daemonset = wait_for_ovs_daemonset_resource(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )
+        ovs_daemonset.wait_until_deployed()
+        yield ovs_daemonset

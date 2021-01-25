@@ -7,17 +7,11 @@ Pytest conftest file for CNV network tests
 import pytest
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
-from resources.resource import ResourceEditor
 
 from utilities.network import (
-    DEPLOY_OVS,
     get_ipv6_address,
     ip_version_data_from_matrix,
     network_device,
-    wait_for_ovs_daemonset_deleted,
-    wait_for_ovs_daemonset_resource,
-    wait_for_ovs_pods,
-    wait_for_ovs_status,
 )
 
 
@@ -160,27 +154,3 @@ def ipv6_network_data(
                 },
             },
         }
-
-
-@pytest.fixture()
-def hyperconverged_ovs_annotations_enabled(
-    admin_client,
-    hco_namespace,
-    hyperconverged_resource,
-    network_addons_config,
-):
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
-        }
-    ):
-        wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
-        ovs_daemonset = wait_for_ovs_daemonset_resource(
-            admin_client=admin_client, hco_namespace=hco_namespace
-        )
-        ovs_daemonset.wait_until_deployed()
-        yield ovs_daemonset
-
-    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
-    wait_for_ovs_daemonset_deleted(ovs_daemonset=ovs_daemonset)
-    wait_for_ovs_pods(admin_client=admin_client, hco_namespace=ovs_daemonset.namespace)
