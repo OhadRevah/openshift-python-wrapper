@@ -16,6 +16,7 @@ from resources.pod import Pod
 from resources.resource import sub_resource_level
 from resources.sriov_network import SriovNetwork
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
+from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities import console
@@ -915,3 +916,45 @@ def wait_for_ovs_daemonset_resource(admin_client, hco_namespace):
     except TimeoutExpiredError:
         LOGGER.error("OVS daemonset doesn't exists after opt-in")
         raise
+
+
+@contextlib.contextmanager
+def network_device(
+    interface_type,
+    nncp_name,
+    network_utility_pods,
+    nodes=None,
+    interface_name=None,
+    ports=None,
+    mtu=None,
+    node_selector=None,
+    ipv4_enable=False,
+    ipv4_dhcp=False,
+    priority=None,
+    namespace=None,
+):
+    nodes_names = [node_selector] if node_selector else [node.name for node in nodes]
+    worker_pods = [pod for pod in network_utility_pods if pod.node.name in nodes_names]
+    kwargs = {
+        "name": nncp_name,
+        "mtu": mtu,
+    }
+    if interface_type == SRIOV:
+        snns = SriovNetworkNodeState(name=worker_pods[0].node.name)
+        iface = snns.interfaces[0]
+        kwargs["namespace"] = namespace
+        kwargs["pf_names"] = snns.iface_name(iface=iface)
+        kwargs["root_devices"] = snns.pciaddress(iface=iface)
+        kwargs["num_vfs"] = snns.totalvfs(iface=iface)
+        kwargs["priority"] = priority or 99
+
+    else:
+        kwargs["bridge_name"] = interface_name
+        kwargs["worker_pods"] = worker_pods
+        kwargs["ports"] = ports
+        kwargs["node_selector"] = node_selector
+        kwargs["ipv4_enable"] = ipv4_enable
+        kwargs["ipv4_dhcp"] = ipv4_dhcp
+
+    with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
+        yield iface

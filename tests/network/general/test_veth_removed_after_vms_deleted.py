@@ -62,7 +62,7 @@ def remove_vath_br1test_nad(namespace):
 def remove_vath_bridge_device(
     utility_pods, schedulable_nodes, worker_node1, remove_vath_br1test_nad
 ):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="veth-removed",
         interface_name=remove_vath_br1test_nad.bridge_name,

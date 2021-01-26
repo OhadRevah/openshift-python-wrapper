@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 import pytest
 
-import tests.network.utils as network_utils
+import utilities.network
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -63,7 +63,7 @@ def bond_modes_bridge(
     """
     Create bridge and attach the BOND to it
     """
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         interface_name=bond_modes_nad.bridge_name,

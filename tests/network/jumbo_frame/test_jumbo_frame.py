@@ -5,13 +5,14 @@ from collections import OrderedDict
 
 import pytest
 
-from tests.network.utils import assert_no_ping, network_device
+from tests.network.utils import assert_no_ping
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
     cloud_init_network_data,
     get_vmi_ip_v4_by_name,
+    network_device,
     network_nad,
 )
 from utilities.virt import (

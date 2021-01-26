@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 import pytest
 
-import tests.network.utils as network_utils
+import utilities.network
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
@@ -92,7 +92,7 @@ def ovs_linux_bridge_on_bond_worker_1(
     """
     Create bridge and attach the BOND to it
     """
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond-worker-1",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
@@ -114,7 +114,7 @@ def ovs_linux_bridge_on_bond_worker_2(
     """
     Create bridge and attach the BOND to it
     """
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond-worker-2",
         interface_name=ovs_linux_br1bond_nad.bridge_name,

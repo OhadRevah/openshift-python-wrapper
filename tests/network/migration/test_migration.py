@@ -8,7 +8,7 @@ import logging
 import pytest
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
-import tests.network.utils as network_utils
+import utilities.network
 from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
@@ -160,7 +160,7 @@ def bridge_worker_1(
     worker_node1,
     nodes_available_nics,
 ):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-1",
         interface_name=BR1TEST,
@@ -178,7 +178,7 @@ def bridge_worker_2(
     worker_node2,
     nodes_available_nics,
 ):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-2",
         interface_name=BR1TEST,

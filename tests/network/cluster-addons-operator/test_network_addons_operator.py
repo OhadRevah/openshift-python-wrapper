@@ -1,13 +1,12 @@
 import pytest
 
-import tests.network.utils as network_utils
 import utilities.network
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module")
 def net_add_op_bridge_device(utility_pods, worker_node1):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="test-network-operator",
         interface_name="br1test",

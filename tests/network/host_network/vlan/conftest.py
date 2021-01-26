@@ -11,12 +11,12 @@ from tests.network.host_network.vlan.utils import (
     disable_ipv4_dhcp_client,
     enable_ipv4_dhcp_client,
 )
-from tests.network.utils import network_device
 from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
+    network_device,
     network_nad,
 )
 from utilities.virt import (

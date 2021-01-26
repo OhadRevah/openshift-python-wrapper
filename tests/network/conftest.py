@@ -9,11 +9,11 @@ from pytest_testconfig import config as py_config
 from resources.pod import Pod
 from resources.resource import ResourceEditor
 
-from tests.network.utils import network_device
 from utilities.network import (
     DEPLOY_OVS,
     get_ipv6_address,
     ip_version_data_from_matrix,
+    network_device,
     wait_for_ovs_daemonset_deleted,
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_pods,

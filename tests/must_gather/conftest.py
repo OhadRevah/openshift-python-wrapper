@@ -15,7 +15,6 @@ from resources.configmap import ConfigMap
 from resources.custom_resource_definition import CustomResourceDefinition
 from resources.pod import Pod
 
-import tests.network.utils as network_utils
 import utilities.network
 from tests.must_gather import utils as mg_utils
 from utilities.infra import create_ns
@@ -104,7 +103,7 @@ def nodenetworkstate_with_bridge(
     if rhel7_workers:
         yield rhel7_ovs_bridge
     else:
-        with network_utils.network_device(
+        with utilities.network.network_device(
             interface_type=utilities.network.LINUX_BRIDGE,
             nncp_name="must-gather-br",
             interface_name="mgbr",

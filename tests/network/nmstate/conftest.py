@@ -90,7 +90,7 @@ def bridges_on_management_ifaces_node1(
     worker_pod = network_utils.get_worker_pod(
         network_utility_pods=utility_pods, worker_node=worker_node1
     )
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node1.name}",
         interface_name="brext1",
@@ -123,7 +123,7 @@ def bridges_on_management_ifaces_node2(
     worker_pod = network_utils.get_worker_pod(
         network_utility_pods=utility_pods, worker_node=worker_node2
     )
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node2.name}",
         interface_name="brext2",

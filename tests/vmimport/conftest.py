@@ -16,9 +16,9 @@ from resources.virtual_machine_import import ResourceMapping
 
 import utilities.network
 from providers import providers
-from tests.network.utils import network_device
 from tests.vmimport import utils
 from tests.vmimport.utils import ProviderMappings, ResourceMappingItem, Source
+from utilities.network import network_device
 
 
 LOGGER = logging.getLogger(__name__)

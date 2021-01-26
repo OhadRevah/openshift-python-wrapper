@@ -1,11 +1,9 @@
-import contextlib
 import logging
 
 from resources.node_network_state import NodeNetworkState
-from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.network import NETWORK_DEVICE_TYPE, SRIOV, console_ping
+from utilities.network import console_ping
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,48 +28,6 @@ def running_vmi(vm):
     vm.start(wait=True)
     vm.vmi.wait_until_running()
     return vm.vmi
-
-
-@contextlib.contextmanager
-def network_device(
-    interface_type,
-    nncp_name,
-    network_utility_pods,
-    nodes=None,
-    interface_name=None,
-    ports=None,
-    mtu=None,
-    node_selector=None,
-    ipv4_enable=False,
-    ipv4_dhcp=False,
-    priority=None,
-    namespace=None,
-):
-    nodes_names = [node_selector] if node_selector else [node.name for node in nodes]
-    worker_pods = [pod for pod in network_utility_pods if pod.node.name in nodes_names]
-    kwargs = {
-        "name": nncp_name,
-        "mtu": mtu,
-    }
-    if interface_type == SRIOV:
-        snns = SriovNetworkNodeState(name=worker_pods[0].node.name)
-        iface = snns.interfaces[0]
-        kwargs["namespace"] = namespace
-        kwargs["pf_names"] = snns.iface_name(iface=iface)
-        kwargs["root_devices"] = snns.pciaddress(iface=iface)
-        kwargs["num_vfs"] = snns.totalvfs(iface=iface)
-        kwargs["priority"] = priority or 99
-
-    else:
-        kwargs["bridge_name"] = interface_name
-        kwargs["worker_pods"] = worker_pods
-        kwargs["ports"] = ports
-        kwargs["node_selector"] = node_selector
-        kwargs["ipv4_enable"] = ipv4_enable
-        kwargs["ipv4_dhcp"] = ipv4_dhcp
-
-    with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
-        yield iface
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):

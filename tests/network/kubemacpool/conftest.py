@@ -4,7 +4,6 @@ from resources.deployment import Deployment
 from resources.namespace import Namespace
 from resources.resource import ResourceEditor
 
-import tests.network.utils as network_utils
 import utilities.network
 from tests.network.utils import running_vmi
 from utilities.infra import create_ns
@@ -24,7 +23,7 @@ def bridge_device(
     utility_pods,
     schedulable_nodes,
 ):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="kubemacpool",
         interface_name="br1test",

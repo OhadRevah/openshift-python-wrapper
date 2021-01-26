@@ -10,7 +10,7 @@ from resources.secret import Secret
 from resources.template import Template
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
-import tests.network.utils as network_utils
+import utilities.network
 from utilities import console
 from utilities.network import LINUX_BRIDGE, cloud_init_network_data, network_nad
 from utilities.storage import (
@@ -36,7 +36,7 @@ def upgrade_bridge_on_all_nodes(
     hosts_common_available_ports,
     schedulable_nodes,
 ):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         interface_name="br1upgrade",
@@ -49,7 +49,7 @@ def upgrade_bridge_on_all_nodes(
 
 @pytest.fixture(scope="module")
 def bridge_on_one_node(utility_pods, worker_node1):
-    with network_utils.network_device(
+    with utilities.network.network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         interface_name="upg-br-mark",
