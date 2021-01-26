@@ -58,9 +58,8 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
         self.dst_port = dst_port
         self.remote = remote
 
-    def __enter__(self):
-        super().__enter__()
-
+    def deploy(self):
+        self.create()
         try:
             self.validate_create()
             return self

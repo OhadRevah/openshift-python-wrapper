@@ -301,18 +301,14 @@ class VirtualMachineForTests(VirtualMachine):
         self.password = password
         self.rhel7_workers = rhel7_workers
 
-    def __enter__(self):
-        super().__enter__()
+    def deploy(self):
+        self.create()
         if self.ssh:
             self.ssh_enable()
         return self
 
-    def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(
-            exception_type=exception_type,
-            exception_value=exception_value,
-            traceback=traceback,
-        )
+    def clean_up(self):
+        super().__exit__()
         if self.ssh_service:
             self.ssh_service.delete(wait=True)
         if self.custom_service:
