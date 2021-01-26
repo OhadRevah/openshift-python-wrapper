@@ -119,12 +119,18 @@ def check_cnv_vm_network_config(
 def check_cnv_vm_cpu_config(vm, expected_vm_config):
     machine = vm.instance.spec.template.spec.domain.machine
     cpu = vm.instance.spec.template.spec.domain.cpu
+    check_values = {
+        "cpu_cores": cpu.cores,
+        "cpu_sockets": cpu.sockets,
+        "cpu_threads": cpu.threads,
+        "machine_type": machine.type,
+    }
+    # cpu threading is optional.source vm may not support it.
+    if not getattr(cpu, "threads"):
+        check_values.pop("cpu_threads")
 
     failed_assert_msgs = []
-    for check, value in zip(
-        ["cpu_cores", "cpu_sockets", "cpu_threads", "machine_type"],
-        [cpu.cores, cpu.sockets, cpu.threads, machine.type],
-    ):
+    for check, value in check_values.items():
         if value != expected_vm_config[check]:
             failed_assert_msgs.append(
                 f"vm {check} check failed, Expected: {expected_vm_config[check]}, Actual: {value}"
