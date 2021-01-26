@@ -235,7 +235,13 @@ def test_vm_import(
 
 @pytest.mark.polarion("CNV-4392")
 def test_cancel_vm_import(
-    admin_client, namespace, provider_data, provider, secret, no_vms_in_namespace
+    skip_if_vmware_provider,
+    admin_client,
+    namespace,
+    provider_data,
+    provider,
+    secret,
+    no_vms_in_namespace,
 ):
     vm_name = Source.vms["cirros-no-nics"]["name"]
     cluster_name = provider_data["cluster_name"]
@@ -277,6 +283,7 @@ def test_cancel_vm_import(
 
 @pytest.mark.polarion("CNV-4391")
 def test_running_vm_import(
+    skip_if_vmware_provider,
     namespace,
     provider_data,
     provider,
@@ -366,6 +373,7 @@ def test_two_disks_and_nics_vm_import(
     ],
 )
 def test_invalid_vm_import(
+    skip_if_vmware_provider,
     provider,
     namespace,
     provider_data,
@@ -482,7 +490,13 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     ],
 )
 def test_vm_import_no_mappings(
-    namespace, provider_data, provider, secret, vm_key, no_vms_in_namespace
+    skip_if_vmware_provider,
+    namespace,
+    provider_data,
+    provider,
+    secret,
+    vm_key,
+    no_vms_in_namespace,
 ):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]

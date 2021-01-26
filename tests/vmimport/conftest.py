@@ -221,3 +221,9 @@ def no_vms_in_namespace(admin_client, namespace):
         if vm.vmi.status == vm.vmi.Status.RUNNING:
             vm.stop(wait=True)
         vm.delete(wait=True)
+
+
+@pytest.fixture()
+def skip_if_vmware_provider(provider_data):
+    if provider_data["type"] == "vmware":
+        pytest.skip("skipping for vmware provider.")
