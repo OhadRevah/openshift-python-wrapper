@@ -354,7 +354,7 @@ def test_virtctl_image_upload_with_exist_pvc_image(
             insecure=True,
             no_create=True,
         ) as res_new:
-            status_new, out_new = res_new
+            status_new, out_new, _ = res_new
             LOGGER.info(out_new)
             assert not status_new
             assert (
