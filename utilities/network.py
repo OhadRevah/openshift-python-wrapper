@@ -59,7 +59,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
         self.remote = remote
 
     def deploy(self):
-        self.create()
+        super().deploy()
         try:
             self.validate_create()
             return self

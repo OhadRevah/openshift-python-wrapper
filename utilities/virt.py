@@ -302,13 +302,13 @@ class VirtualMachineForTests(VirtualMachine):
         self.rhel7_workers = rhel7_workers
 
     def deploy(self):
-        self.create()
+        super().deploy()
         if self.ssh:
             self.ssh_enable()
         return self
 
     def clean_up(self):
-        super().__exit__()
+        super().clean_up()
         if self.ssh_service:
             self.ssh_service.delete(wait=True)
         if self.custom_service:
