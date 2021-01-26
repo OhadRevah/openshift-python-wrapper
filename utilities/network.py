@@ -69,11 +69,6 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
             self.clean_up()
             raise
 
-    def __exit__(self, exception_type, exception_value, traceback):
-        if not self.teardown:
-            return
-        self.clean_up()
-
     def to_dict(self):
         res = super().to_dict()
         res["spec"]["desiredState"]["interfaces"] = [
