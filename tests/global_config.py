@@ -1,5 +1,7 @@
 import os
 
+from resources.datavolume import DataVolume
+from resources.storage_class import StorageClass
 from resources.template import Template
 from resources.virtual_machine import VirtualMachine
 
@@ -107,16 +109,21 @@ nic_models_matrix = [
 bridge_device_matrix = ["linux-bridge"]
 storage_class_matrix = [
     {
-        "hostpath-provisioner": {
-            "volume_mode": "Filesystem",
-            "access_mode": "ReadWriteOnce",
+        StorageClass.Types.HOSTPATH: {
+            "volume_mode": DataVolume.VolumeMode.FILE,
+            "access_mode": DataVolume.AccessMode.RWO,
         }
     },
-    {"nfs": {"volume_mode": "Filesystem", "access_mode": "ReadWriteMany"}},
     {
-        "ocs-storagecluster-ceph-rbd": {
-            "volume_mode": "Block",
-            "access_mode": "ReadWriteMany",
+        StorageClass.Types.NFS: {
+            "volume_mode": DataVolume.VolumeMode.FILE,
+            "access_mode": DataVolume.AccessMode.RWX,
+        }
+    },
+    {
+        StorageClass.Types.CEPH_RBD: {
+            "volume_mode": DataVolume.VolumeMode.BLOCK,
+            "access_mode": DataVolume.AccessMode.RWX,
             "default": True,
         }
     },
