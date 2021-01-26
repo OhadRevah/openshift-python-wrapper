@@ -1,34 +1,26 @@
 import logging
-import time
 
 import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
-from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
+from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
 from tests.storage import utils
-from utilities import console
-from utilities.storage import (
-    ErrorMsg,
-    create_dv,
-    data_volume_template_dict,
-    get_images_server_url,
-)
-from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_console
+from utilities.storage import ErrorMsg, create_dv, get_images_server_url
+from utilities.virt import wait_for_ssh_connectivity
 
 
 LOGGER = logging.getLogger(__name__)
-LATEST_RHEL_IMAGE = py_config["latest_rhel_os_dict"]["image_path"]
-RHEL_IMAGE_SIZE = py_config["latest_rhel_os_dict"]["dv_size"]
+LATEST_RHEL_IMAGE = RHEL_LATEST["image_path"]
+RHEL_IMAGE_SIZE = RHEL_LATEST["dv_size"]
 GOLDEN_IMAGES_NAMESPACE = py_config["golden_images_namespace"]
 
 
 DV_PARAM = {
     "dv_name": "golden-image-dv",
     "image": LATEST_RHEL_IMAGE,
-    "dv_namespace": GOLDEN_IMAGES_NAMESPACE,
     "dv_size": RHEL_IMAGE_SIZE,
     "storage_class": py_config["default_storage_class"],
 }
@@ -59,7 +51,7 @@ def test_regular_user_cant_create_dv_in_ns(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_module",
+    "golden_image_data_volume_scope_module",
     [
         pytest.param(DV_PARAM, marks=pytest.mark.polarion("CNV-4756")),
     ],
@@ -68,7 +60,7 @@ def test_regular_user_cant_create_dv_in_ns(
 def test_regular_user_cant_delete_dv_from_cloned_dv(
     golden_images_namespace,
     unprivileged_client,
-    data_volume_scope_module,
+    golden_image_data_volume_scope_module,
 ):
     LOGGER.info(
         "Try as a regular user, to delete a dv from golden image NS and receive the proper error"
@@ -78,21 +70,25 @@ def test_regular_user_cant_delete_dv_from_cloned_dv(
         match=ErrorMsg.CANNOT_DELETE_RESOURCE,
     ):
         DataVolume(
-            name=data_volume_scope_module.name,
-            namespace=golden_images_namespace.name,
+            name=golden_image_data_volume_scope_module.name,
+            namespace=golden_image_data_volume_scope_module.namespace,
             client=unprivileged_client,
         ).delete()
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function",
+    "golden_image_data_volume_multi_storage_scope_function,"
+    "golden_image_vm_instance_from_template_multi_storage_scope_function",
     [
         pytest.param(
             {
-                "dv_name": f"golden-image-dv-{time.time()}".replace(".", "-"),
+                "dv_name": "cnv-4757",
                 "image": LATEST_RHEL_IMAGE,
-                "dv_namespace": GOLDEN_IMAGES_NAMESPACE,
                 "dv_size": RHEL_IMAGE_SIZE,
+            },
+            {
+                "vm_name": "rhel-vm",
+                "template_labels": RHEL_LATEST_LABELS,
             },
             marks=pytest.mark.polarion("CNV-4757"),
         ),
@@ -100,35 +96,16 @@ def test_regular_user_cant_delete_dv_from_cloned_dv(
     indirect=True,
 )
 def test_regular_user_can_create_vm_from_cloned_dv(
-    unprivileged_client,
-    worker_node1,
-    namespace,
-    data_volume_multi_storage_scope_function,
+    golden_image_data_volume_multi_storage_scope_function,
+    golden_image_vm_instance_from_template_multi_storage_scope_function,
 ):
-    LOGGER.info(
-        "Clone a DV from the golden images NS to a new NS and create a VM using the cloned DV"
+    wait_for_ssh_connectivity(
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
-    with VirtualMachineForTestsFromTemplate(
-        name="vm-for-test",
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=Template.generate_template_labels(
-            **py_config["latest_rhel_os_dict"]["template_labels"]
-        ),
-        data_volume_template=data_volume_template_dict(
-            target_dv_name=f"user-dv-{time.time()}".replace(".", "-"),
-            target_dv_namespace=namespace.name,
-            source_dv=data_volume_multi_storage_scope_function,
-            worker_node=worker_node1,
-        ),
-    ) as vm:
-        vm.start(wait=True, timeout=1200)
-        vm.vmi.wait_until_running(timeout=300)
-        wait_for_console(vm=vm, console_impl=console.RHEL)
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_module",
+    "golden_image_data_volume_scope_module",
     [
         pytest.param(DV_PARAM, marks=pytest.mark.polarion("CNV-4758")),
     ],
@@ -137,7 +114,7 @@ def test_regular_user_can_create_vm_from_cloned_dv(
 def test_regular_user_can_list_all_pvc_in_ns(
     golden_images_namespace,
     unprivileged_client,
-    data_volume_scope_module,
+    golden_image_data_volume_scope_module,
 ):
     LOGGER.info(
         "Make sure regulr user have permissions to view PVC's in golden image NS"
@@ -146,13 +123,13 @@ def test_regular_user_can_list_all_pvc_in_ns(
         PersistentVolumeClaim.get(
             dyn_client=unprivileged_client,
             namespace=golden_images_namespace.name,
-            field_selector=f"metadata.name=={data_volume_scope_module.name}",
+            field_selector=f"metadata.name=={golden_image_data_volume_scope_module.name}",
         )
     )
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_module",
+    "golden_image_data_volume_scope_module",
     [
         pytest.param(DV_PARAM, marks=pytest.mark.polarion("CNV-4760")),
     ],
@@ -161,7 +138,7 @@ def test_regular_user_can_list_all_pvc_in_ns(
 def test_regular_user_cant_clone_dv_in_ns(
     golden_images_namespace,
     unprivileged_client,
-    data_volume_scope_module,
+    golden_image_data_volume_scope_module,
 ):
     LOGGER.info(
         "Try to clone a DV in the golden image NS and fail with the proper message"
@@ -174,12 +151,12 @@ def test_regular_user_cant_clone_dv_in_ns(
             dv_name="cloned-dv",
             namespace=golden_images_namespace.name,
             source="pvc",
-            size=data_volume_scope_module.size,
-            source_pvc=data_volume_scope_module.pvc.name,
-            source_namespace=data_volume_scope_module.name,
+            size=golden_image_data_volume_scope_module.size,
+            source_pvc=golden_image_data_volume_scope_module.pvc.name,
+            source_namespace=golden_image_data_volume_scope_module.namespace,
             client=unprivileged_client,
-            storage_class=data_volume_scope_module.storage_class,
-            volume_mode=data_volume_scope_module.volume_mode,
+            storage_class=golden_image_data_volume_scope_module.storage_class,
+            volume_mode=golden_image_data_volume_scope_module.volume_mode,
         ):
             return
 

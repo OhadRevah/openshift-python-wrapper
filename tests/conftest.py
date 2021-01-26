@@ -1250,6 +1250,20 @@ def golden_image_data_volume_scope_class(
     )
 
 
+@pytest.fixture(scope="module")
+def golden_image_data_volume_scope_module(
+    request, admin_client, golden_images_namespace, schedulable_nodes
+):
+    yield from data_volume(
+        request=request,
+        namespace=golden_images_namespace,
+        storage_class=request.param["storage_class"],
+        schedulable_nodes=schedulable_nodes,
+        check_dv_exists=True,
+        admin_client=admin_client,
+    )
+
+
 @pytest.fixture()
 def golden_image_data_volume_scope_function(
     request, admin_client, golden_images_namespace, schedulable_nodes
