@@ -399,27 +399,18 @@ def test_invalid_vm_import(
 
 
 @pytest.mark.parametrize(
-    "resource_mapping",
+    "resource_mapping, skip_if_less_than_x_storage_classes",
     [
         pytest.param(
-            Source.vms["cirros-3disks"]["volumes_details"],
-            marks=(pytest.mark.polarion("CNV-4393")),
-        ),
-    ],
-    indirect=True,
-)
-@pytest.mark.parametrize(
-    "skip_on_min_storage_classes",
-    [
-        pytest.param(
-            len(Source.vms["cirros-3disks"]["volumes_details"]),
+            "cirros-3disks",
+            3,
             marks=(pytest.mark.polarion("CNV-4393")),
         ),
     ],
     indirect=True,
 )
 def test_vmimport_with_mixed_external_and_internal_storage_mappings(
-    skip_on_min_storage_classes,
+    skip_if_less_than_x_storage_classes,
     provider,
     provider_data,
     namespace,
@@ -433,7 +424,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     # 2. Override 1 Storage Name with Internal Mapping  (Disk1 expected StorageClass: global_config default sc)
     # 3. Override 1 Disk name with InternalMapping  (Disk2 expected StorageClass: global_config default sc)
 
-    expected_vm_config = Source.vms["cirros-3disks"]
+    expected_vm_config = Source.vms[f"cirros-3disks-{provider_data['fqdn']}"]
     expected_vm_name = expected_vm_config["name"]
     source_data_volumes_config = expected_vm_config["volumes_details"]
 

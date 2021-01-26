@@ -135,7 +135,7 @@ class Source:
                 "type": VirtualMachineImport.Condition.MAPPING_RULES_VERIFIED,
             },
         },
-        "cirros-3disks": {
+        "cirros-3disks-rhev-blue-01.rdu2.scalelab.redhat.com": {
             "name": "v2v-cirros-vm-for-test-3disks",
             "cpu_cores": 1,
             "cpu_sockets": 1,
@@ -155,6 +155,29 @@ class Source:
                 {
                     "disk_name": "v2v-cirros-vm-for-test-3disks_hosted_storage",
                     "storage_name": "hosted_storage",
+                },
+            ],
+        },
+        "cirros-3disks-rhev-node-05.rdu2.scalelab.redhat.com": {
+            "name": "v2v-3disks",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 1,
+            "volumes": 3,
+            "volumes_details": [
+                {
+                    "disk_name": "Hard disk 1",
+                    "storage_name": "rhv-v2v-performance-testing",
+                },
+                {
+                    "disk_name": "Hard disk 2",
+                    "storage_name": "v2v_general_porpuse_ISCSI_DC",
+                },
+                {
+                    "disk_name": "Hard disk 3",
+                    "storage_name": "b02-h27-localdisk",
                 },
             ],
         },

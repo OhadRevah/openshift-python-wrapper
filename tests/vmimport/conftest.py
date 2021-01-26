@@ -183,7 +183,7 @@ def providers_mapping_network_only(request, pod_network, multus_network, provide
 
 
 @pytest.fixture(scope="module")
-def skip_on_min_storage_classes(request):
+def skip_if_less_than_x_storage_classes(request):
     if len(py_config["storage_class_matrix"]) < request.param:
         pytest.skip(
             f"Destination OCP Must have at least {request.param} Storage Classes in order to run this test."
@@ -204,7 +204,9 @@ def resource_mapping(request, namespace, pod_network, provider_data):
                 network_mappings=[pod_network],
                 storage_mappings=utils.storage_mapping_by_source_vm_disks_storage_name(
                     storage_classes=sc_names,
-                    source_volumes_config=request.param,
+                    source_volumes_config=Source.vms[
+                        f"{request.param}-{provider_data['fqdn']}"
+                    ]["volumes_details"],
                 ),
             )
         },
