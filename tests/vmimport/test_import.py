@@ -87,7 +87,7 @@ def wait_for_source_vm_status(provider, provider_data, source_vm_name, state):
 def check_cnv_vm_network_config(
     vm, source_vm_name, expected_vm_config, provider_data, provider=None
 ):
-    cnv_vm_network_interfaces = vm.vmi.interfaces
+    cnv_vm_network_interfaces = vm.get_interfaces()
     number_of_cnv_vm_network_interfaces = (
         len(cnv_vm_network_interfaces) if cnv_vm_network_interfaces is not None else 0
     )
@@ -96,7 +96,7 @@ def check_cnv_vm_network_config(
         number_of_cnv_vm_network_interfaces == expected_vm_config["network_interfaces"]
     ), "Wrong number of network interfaces"
 
-    if provider:
+    if provider and hasattr(provider, "vm_nics"):
         failed_assert_msgs = []
         for nic_index, source_vm_nic in enumerate(
             provider.vm_nics(
@@ -105,7 +105,7 @@ def check_cnv_vm_network_config(
                 )
             )
         ):
-            cnv_vm_mac = cnv_vm_network_interfaces[nic_index].mac
+            cnv_vm_mac = cnv_vm_network_interfaces[nic_index].macAddress
             source_vm_mac = source_vm_nic.mac.address
             if cnv_vm_mac != source_vm_mac:
                 failed_assert_msgs.append(
