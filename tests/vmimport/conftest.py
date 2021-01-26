@@ -10,7 +10,9 @@ from subprocess import STDOUT, check_output
 import pytest
 import yaml
 from pytest_testconfig import py_config
+from resources.resource import ResourceEditor
 from resources.secret import Secret
+from resources.storage_class import StorageClass
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import ResourceMapping
 
@@ -227,3 +229,24 @@ def no_vms_in_namespace(admin_client, namespace):
 def skip_if_vmware_provider(provider_data):
     if provider_data["type"] == "vmware":
         pytest.skip("skipping for vmware provider.")
+
+
+@pytest.fixture()
+def default_sc_multi_storage(
+    admin_client,
+    removed_default_storage_classes,
+    storage_class_matrix__function__,
+):
+    sc_name = [*storage_class_matrix__function__][0]
+    sc = list(StorageClass.get(dyn_client=admin_client, name=sc_name))
+    with ResourceEditor(
+        patches={
+            sc[0]: {
+                "metadata": {
+                    "annotations": {StorageClass.Annotations.IS_DEFAULT_CLASS: "true"},
+                    "name": sc_name,
+                }
+            }
+        }
+    ):
+        yield sc

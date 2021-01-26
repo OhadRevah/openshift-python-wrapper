@@ -218,6 +218,7 @@ def test_vm_import(
     vm_key,
     providers_mapping_network_only,
     no_vms_in_namespace,
+    default_sc_multi_storage,
 ):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
