@@ -44,7 +44,6 @@ from resources.role_binding import RoleBinding
 from resources.secret import Secret
 from resources.service import Service
 from resources.service_account import ServiceAccount
-from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.storage_class import StorageClass
 from resources.template import Template
@@ -66,9 +65,11 @@ from utilities.infra import (
 )
 from utilities.network import (
     OVS,
+    SRIOV,
     EthernetNetworkConfigurationPolicy,
     MacPool,
     enable_hyperconverged_ovs_annotations,
+    network_device,
     network_nad,
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
@@ -1716,16 +1717,15 @@ def wait_for_ready_sriov_nodes(snns):
 
 @pytest.fixture(scope="session")
 def sriov_node_policy(sriov_nodes_states, sriov_iface):
-    with SriovNetworkNodePolicy(
-        name="test-sriov-policy",
+    with network_device(
+        interface_type=SRIOV,
+        nncp_name="test-sriov-policy",
         namespace=py_config["sriov_namespace"],
-        pf_names=sriov_iface.name,
-        root_devices=sriov_iface.pciAddress,
-        # num_vfs is the pool of ifaces we want available in the sriov network
-        # and should be no less than the number of multiple vm's we use in the tests
-        # totalvfs is usually 64 or 128
-        num_vfs=min(sriov_iface.totalvfs, 10),
-        resource_name="sriov_net",
+        sriov_iface=sriov_iface,
+        sriov_resource_name="sriov_net",
+        # sriov operator doesnt pass the mtu to the VFs when using vfio-pci device driver (the one we are using)
+        # so the mtu parameter only affects the PF. we need to change the mtu manually on the VM.
+        mtu=9000,
     ) as policy:
         wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
         yield policy

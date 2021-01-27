@@ -16,7 +16,6 @@ from resources.pod import Pod
 from resources.resource import ResourceEditor, sub_resource_level
 from resources.sriov_network import SriovNetwork
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
-from resources.sriov_network_node_state import SriovNetworkNodeState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities import console
@@ -558,27 +557,26 @@ def network_nad(
     vlan=None,
     mtu=None,
     ipam=None,
+    sriov_resource_name=None,
+    sriov_network_namespace=None,
 ):
     kwargs = {
         "name": nad_name,
         "vlan": vlan,
+        "namespace": namespace.name,
     }
     if nad_type == LINUX_BRIDGE:
-        cni_type = py_config["linux_bridge_cni"]
-        tuning_type = py_config["bridge_tuning"] if tuning else None
-        kwargs["namespace"] = namespace.name
-        kwargs["cni_type"] = cni_type
-        kwargs["tuning_type"] = tuning_type
+        kwargs["cni_type"] = py_config["linux_bridge_cni"]
+        kwargs["tuning_type"] = py_config["bridge_tuning"] if tuning else None
         kwargs["bridge_name"] = interface_name
         kwargs["mtu"] = mtu
 
     if nad_type == SRIOV:
-        kwargs["network_namespace"] = namespace
-        kwargs["resource_name"] = nad_name
+        kwargs["network_namespace"] = sriov_network_namespace
+        kwargs["resource_name"] = sriov_resource_name
         kwargs["ipam"] = ipam
 
     if nad_type == OVS:
-        kwargs["namespace"] = namespace.name
         kwargs["bridge_name"] = interface_name
 
     with NAD_TYPE[nad_type](**kwargs) as nad:
@@ -737,6 +735,11 @@ def console_ping(src_vm, dst_ip, packetsize=None):
 
 
 def assert_ping_successful(src_vm, dst_ip, packetsize=None):
+    if packetsize and packetsize > 1500:
+        icmp_header = 8
+        ip_header = 20
+        packetsize = packetsize - ip_header - icmp_header
+
     assert console_ping(src_vm, dst_ip, packetsize)[0] == b"0"
 
 
@@ -922,7 +925,7 @@ def wait_for_ovs_daemonset_resource(admin_client, hco_namespace):
 def network_device(
     interface_type,
     nncp_name,
-    network_utility_pods,
+    network_utility_pods=None,
     nodes=None,
     interface_name=None,
     ports=None,
@@ -932,25 +935,38 @@ def network_device(
     ipv4_dhcp=False,
     priority=None,
     namespace=None,
+    sriov_iface=None,
+    sriov_resource_name=None,
 ):
-    nodes_names = [node_selector] if node_selector else [node.name for node in nodes]
-    worker_pods = [pod for pod in network_utility_pods if pod.node.name in nodes_names]
+    worker_pods = None
+    nodes_names = (
+        [node_selector] if node_selector else [node.name for node in nodes or []]
+    )
+    if network_utility_pods:
+        worker_pods = [
+            pod for pod in network_utility_pods if pod.node.name in nodes_names
+        ]
+
     kwargs = {
         "name": nncp_name,
         "mtu": mtu,
     }
     if interface_type == SRIOV:
-        snns = SriovNetworkNodeState(name=worker_pods[0].node.name)
-        iface = snns.interfaces[0]
         kwargs["namespace"] = namespace
-        kwargs["pf_names"] = snns.iface_name(iface=iface)
-        kwargs["root_devices"] = snns.pciaddress(iface=iface)
-        kwargs["num_vfs"] = snns.totalvfs(iface=iface)
+        kwargs["resource_name"] = sriov_resource_name
+        kwargs["pf_names"] = sriov_iface.name
+        kwargs["root_devices"] = sriov_iface.pciAddress
+        # num_vfs is the pool of ifaces we want available in the sriov network
+        # and should be no less than the number of multiple vm's we use in the tests
+        # totalvfs is usually 64 or 128
+        kwargs["num_vfs"] = min(sriov_iface.totalvfs, 10)
         kwargs["priority"] = priority or 99
 
     else:
         kwargs["bridge_name"] = interface_name
-        kwargs["worker_pods"] = worker_pods
+        if worker_pods:
+            kwargs["worker_pods"] = worker_pods
+
         kwargs["ports"] = ports
         kwargs["node_selector"] = node_selector
         kwargs["ipv4_enable"] = ipv4_enable
