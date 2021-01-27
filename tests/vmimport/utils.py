@@ -192,7 +192,7 @@ class Source:
             "cpu_sockets": 1,
             "cpu_threads": 1,
             "machine_type": "q35",
-            "network_interfaces": 1,
+            "network_interfaces": 0,
             "volumes": 1,
         },
     }
