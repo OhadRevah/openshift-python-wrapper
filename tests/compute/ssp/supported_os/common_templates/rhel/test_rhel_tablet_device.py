@@ -216,6 +216,7 @@ class TestRHELTabletDeviceNegative:
         indirect=True,
     )
     def test_tablet_invalid_usb_tablet_device(
+        self,
         skip_upstream,
         unprivileged_client,
         namespace,
@@ -252,6 +253,7 @@ class TestRHELTabletDeviceNegative:
         indirect=True,
     )
     def test_tablet_invalid_type_tablet_device(
+        self,
         skip_upstream,
         unprivileged_client,
         namespace,

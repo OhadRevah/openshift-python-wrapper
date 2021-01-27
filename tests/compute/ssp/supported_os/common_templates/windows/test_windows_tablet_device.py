@@ -82,6 +82,7 @@ class TestWindowsTabletDevice:
         indirect=True,
     )
     def test_tablet_usb_tablet_device(
+        self,
         unprivileged_client,
         namespace,
         golden_image_data_volume_multi_storage_scope_class,
@@ -124,6 +125,7 @@ class TestWindowsTabletDevice:
         indirect=True,
     )
     def test_tablet_virtio_tablet_device(
+        self,
         unprivileged_client,
         namespace,
         golden_image_data_volume_multi_storage_scope_class,
@@ -167,6 +169,7 @@ class TestWindowsTabletDevice:
         indirect=True,
     )
     def test_windows_server_default_tablet_device(
+        self,
         unprivileged_client,
         namespace,
         golden_image_data_volume_multi_storage_scope_class,
