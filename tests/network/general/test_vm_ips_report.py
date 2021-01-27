@@ -17,18 +17,37 @@ from utilities.virt import (
 @pytest.fixture(scope="module")
 def report_masquerade_ip_vm(unprivileged_client, namespace):
     name = "report-masquerade-ip-vm"
-    with VirtualMachineForTests(
+    vm = VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
-    ) as vm:
-        vm.start(wait=True)
-        vmi = vm.vmi
-        vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vmi)
-        yield vmi
+    )
+    vm.deploy()
+    vm.start(wait=True)
+    vmi = vm.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    yield vmi
+    vm.clean_up()
+
+
+@pytest.fixture()
+def migrated_vm_src_node(report_masquerade_ip_vm):
+    """
+    Migrate the VM and return the source Node that the VM was migrate from.
+    """
+    src_node = report_masquerade_ip_vm.instance.status.nodeName
+    mig = VirtualMachineInstanceMigration(
+        name="report-masquerade-ip-migration",
+        namespace=report_masquerade_ip_vm.namespace,
+        vmi=report_masquerade_ip_vm,
+    )
+    mig.deploy()
+    mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
+    yield src_node
+    mig.clean_up()
 
 
 @pytest.mark.polarion("CNV-4455")
@@ -43,16 +62,10 @@ def test_report_masquerade_ip(report_masquerade_ip_vm):
     1686208, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-4153")
-def test_report_masquerade_ip_after_migration(report_masquerade_ip_vm):
-    src_node = report_masquerade_ip_vm.instance.status.nodeName
-    with VirtualMachineInstanceMigration(
-        name="report-masquerade-ip-migration",
-        namespace=report_masquerade_ip_vm.namespace,
-        vmi=report_masquerade_ip_vm,
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-        assert report_masquerade_ip_vm.instance.status.nodeName != src_node
-
+def test_report_masquerade_ip_after_migration(
+    report_masquerade_ip_vm, migrated_vm_src_node
+):
+    assert report_masquerade_ip_vm.instance.status.nodeName != migrated_vm_src_node
     assert (
         report_masquerade_ip_vm.interface_ip(interface="eth0")
         == report_masquerade_ip_vm.virt_launcher_pod.ip
