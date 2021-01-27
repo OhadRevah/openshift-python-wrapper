@@ -15,8 +15,8 @@ from utilities.network import (
     compose_cloud_init_data_dict,
     get_ipv6_address,
     get_vmi_ip_v4_by_name,
-    network_nad,
 )
+from utilities.network import network_nad_nocm as network_nad
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -41,55 +41,63 @@ def _masquerade_vmib_ip(vmib, bridge, ipv6_testing):
 
 @pytest.fixture(scope="class")
 def ovs_linux_nad(bridge_device_matrix__class__, namespace, network_interface):
-    with network_nad(
+    nad = network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1test-nad",
         interface_name=network_interface.bridge_name,
-    ) as nad:
-        yield nad
+    )
+    nad.deploy()
+    yield nad
+    nad.clean_up()
 
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1vlan100_nad(
     bridge_device_matrix__class__, namespace, network_interface
 ):
-    with network_nad(
+    nad = network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan100-nad",
         interface_name=network_interface.bridge_name,
         vlan=100,
-    ) as nad:
-        yield nad
+    )
+    nad.deploy()
+    yield nad
+    nad.clean_up()
 
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1vlan200_nad(
     bridge_device_matrix__class__, namespace, network_interface
 ):
-    with network_nad(
+    nad = network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan200-nad",
         interface_name=network_interface.bridge_name,
         vlan=200,
-    ) as nad:
-        yield nad
+    )
+    nad.deploy()
+    yield nad
+    nad.clean_up()
 
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1vlan300_nad(
     bridge_device_matrix__class__, namespace, network_interface
 ):
-    with network_nad(
+    nad = network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1vlan300-nad",
         interface_name=network_interface.bridge_name,
         vlan=300,
-    ) as nad:
-        yield nad
+    )
+    nad.deploy()
+    yield nad
+    nad.clean_up()
 
 
 @pytest.fixture(scope="class")
@@ -120,7 +128,7 @@ def ovs_linux_bridge_attached_vma(
         ipv6_network_data=ipv6_network_data,
     )
 
-    with VirtualMachineForTests(
+    vm = VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -129,9 +137,11 @@ def ovs_linux_bridge_attached_vma(
         node_selector=worker_node1.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-    ) as vm:
-        vm.start(wait=True)
-        yield vm
+    )
+    vm.deploy()
+    vm.start(wait=True)
+    yield vm
+    vm.clean_up()
 
 
 @pytest.fixture(scope="class")
@@ -162,7 +172,7 @@ def ovs_linux_bridge_attached_vmb(
         ipv6_network_data=ipv6_network_data,
     )
 
-    with VirtualMachineForTests(
+    vm = VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -171,9 +181,11 @@ def ovs_linux_bridge_attached_vmb(
         node_selector=worker_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-    ) as vm:
-        vm.start(wait=True)
-        yield vm
+    )
+    vm.deploy()
+    vm.start(wait=True)
+    yield vm
+    vm.clean_up()
 
 
 @pytest.fixture(scope="class")
