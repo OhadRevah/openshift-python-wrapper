@@ -15,7 +15,7 @@ def enabled_hotplugvolumes_feature_gate(hyperconverged_resource):
     with ResourceEditor(
         patches={
             hyperconverged_resource: {
-                "spec": {"featureGates": {"HotplugVolumes": True}}
+                "spec": {"featureGates": {"hotplugVolumes": True}}
             }
         }
     ) as edits:
