@@ -22,42 +22,6 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture(scope="session")
-def cluster_storage_classes(admin_client):
-    return list(StorageClass.get(dyn_client=admin_client))
-
-
-@pytest.fixture()
-def removed_default_storage_classes(admin_client, cluster_storage_classes):
-    sc_resources = []
-    for sc in cluster_storage_classes:
-        if (
-            sc.instance.metadata.get("annotations", {}).get(
-                StorageClass.Annotations.IS_DEFAULT_CLASS
-            )
-            == "true"
-        ):
-            sc_resources.append(
-                ResourceEditor(
-                    patches={
-                        sc: {
-                            "metadata": {
-                                "annotations": {
-                                    StorageClass.Annotations.IS_DEFAULT_CLASS: "false"
-                                },
-                                "name": sc.name,
-                            }
-                        }
-                    }
-                )
-            )
-    for editor in sc_resources:
-        editor.update(backup_resources=True)
-    yield
-    for editor in sc_resources:
-        editor.restore()
-
-
 @pytest.fixture()
 def updated_default_storage_class(
     admin_client,
