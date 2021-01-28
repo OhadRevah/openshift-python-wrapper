@@ -5,14 +5,14 @@ from collections import OrderedDict
 
 import pytest
 
+import utilities.network
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
     cloud_init_network_data,
     get_vmi_ip_v4_by_name,
+    network_nad,
 )
-from utilities.network import network_device_nocm as network_device
-from utilities.network import network_nad_nocm as network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -23,15 +23,13 @@ from utilities.virt import (
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
-    nad = network_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="br1bond-nad",
         interface_name="br1bond",
-    )
-    nad.deploy()
-    yield nad
-    nad.clean_up()
+    ) as nad:
+        yield nad
 
 
 @pytest.fixture(scope="class")
@@ -46,7 +44,7 @@ def ovs_linux_bond1_worker_1(
     Create BOND if setup support BOND
     """
     bond_idx = next(index_number)
-    bond = BondNodeNetworkConfigurationPolicy(
+    with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         slaves=nodes_available_nics[worker_node1.name][0:2],
@@ -54,10 +52,8 @@ def ovs_linux_bond1_worker_1(
         node_selector=worker_node1.name,
         mode=link_aggregation_mode_matrix__class__,
         mtu=1450,
-    )
-    bond.deploy()
-    yield bond
-    bond.clean_up()
+    ) as bond:
+        yield bond
 
 
 @pytest.fixture(scope="class")
@@ -73,7 +69,7 @@ def ovs_linux_bond1_worker_2(
     Create BOND if setup support BOND
     """
     bond_idx = next(index_number)
-    bond = BondNodeNetworkConfigurationPolicy(
+    with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
         slaves=nodes_available_nics[worker_node2.name][0:2],
@@ -81,10 +77,8 @@ def ovs_linux_bond1_worker_2(
         node_selector=worker_node2.name,
         mode=link_aggregation_mode_matrix__class__,
         mtu=1450,
-    )
-    bond.deploy()
-    yield bond
-    bond.clean_up()
+    ) as bond:
+        yield bond
 
 
 @pytest.fixture(scope="class")
@@ -98,17 +92,15 @@ def ovs_linux_bridge_on_bond_worker_1(
     """
     Create bridge and attach the BOND to it
     """
-    br = network_device(
+    with utilities.network.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond-worker-1",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
         ports=[ovs_linux_bond1_worker_1.bond_name],
-    )
-    br.deploy()
-    yield br
-    br.clean_up()
+    ) as br:
+        yield br
 
 
 @pytest.fixture(scope="class")
@@ -122,17 +114,15 @@ def ovs_linux_bridge_on_bond_worker_2(
     """
     Create bridge and attach the BOND to it
     """
-    br = network_device(
+    with utilities.network.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond-worker-2",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,
         ports=[ovs_linux_bond1_worker_2.bond_name],
-    )
-    br.deploy()
-    yield br
-    br.clean_up()
+    ) as br:
+        yield br
 
 
 @pytest.fixture(scope="class")
@@ -150,7 +140,7 @@ def ovs_linux_bond_bridge_attached_vma(
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -159,11 +149,9 @@ def ovs_linux_bond_bridge_attached_vma(
         node_selector=worker_node1.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-    )
-    vm.deploy()
-    vm.start(wait=True)
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
 
 
 @pytest.fixture(scope="class")
@@ -181,7 +169,7 @@ def ovs_linux_bond_bridge_attached_vmb(
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -190,11 +178,9 @@ def ovs_linux_bond_bridge_attached_vmb(
         node_selector=worker_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-    )
-    vm.deploy()
-    vm.start(wait=True)
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
 
 
 @pytest.fixture(scope="class")

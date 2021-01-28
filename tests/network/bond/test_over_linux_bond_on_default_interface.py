@@ -9,7 +9,8 @@ import pytest
 from resources.utils import TimeoutSampler
 
 import tests.network.utils as network_utils
-from utilities.network import BondNodeNetworkConfigurationPolicy, assert_ping_successful
+import utilities.network
+from utilities.network import BondNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -26,46 +27,46 @@ SLEEP = 5
 @pytest.fixture(scope="class")
 def lbodi_vma(worker_node1, namespace, unprivileged_client):
     name = "vma"
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
-    )
-    vm.deploy()
-    vm.start(wait=True)
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
 
 
 @pytest.fixture(scope="class")
 def lbodi_vmb(worker_node2, namespace, unprivileged_client):
     name = "vmb"
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         node_selector=worker_node2.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
-    )
-    vm.deploy()
-    vm.start(wait=True)
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
 
 
 @pytest.fixture(scope="class")
-def lbodi_running_vma(lbodi_vma):
+def lbodi_running_vma(
+    lbodi_vma,
+):
     lbodi_vma.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=lbodi_vma.vmi)
     return lbodi_vma
 
 
 @pytest.fixture(scope="class")
-def lbodi_running_vmb(lbodi_vmb):
+def lbodi_running_vmb(
+    lbodi_vmb,
+):
     lbodi_vmb.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=lbodi_vmb.vmi)
     return lbodi_vmb
@@ -86,7 +87,7 @@ def lbodi_bond(
     """
     bond_idx = next(index_number)
     primary_slave = nodes_occupied_nics[worker_node1.name][0]
-    bond = BondNodeNetworkConfigurationPolicy(
+    with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         slaves=[primary_slave, nodes_available_nics[worker_node1.name][0]],
@@ -97,10 +98,8 @@ def lbodi_bond(
         ipv4_dhcp=True,
         ipv4_enable=True,
         primary_slave=primary_slave,
-    )
-    bond.deploy()
-    yield bond
-    bond.clean_up()
+    ) as bond:
+        yield bond
 
 
 @pytest.fixture(scope="class")
@@ -157,7 +156,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
             [lbodi_running_vma, lbodi_running_vmb],
             [vmb_ip, vma_ip],
         ):
-            assert_ping_successful(
+            utilities.network.assert_ping_successful(
                 src_vm=vm,
                 dst_ip=ip,
             )

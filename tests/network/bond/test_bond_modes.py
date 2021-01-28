@@ -7,9 +7,8 @@ from collections import OrderedDict
 
 import pytest
 
-from utilities.network import BondNodeNetworkConfigurationPolicy
-from utilities.network import network_device_nocm as network_device
-from utilities.network import network_nad_nocm as network_nad
+import utilities.network
+from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -20,15 +19,13 @@ from utilities.virt import (
 
 @pytest.fixture(scope="class")
 def bond_modes_nad(bridge_device_matrix__class__, namespace):
-    nad = network_nad(
+    with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
         nad_name="bond-nad",
         interface_name="brbond",
-    )
-    nad.deploy()
-    yield nad
-    nad.clean_up()
+    ) as nad:
+        yield nad
 
 
 @pytest.fixture(scope="class")
@@ -43,7 +40,7 @@ def bond_modes_bond(
     Create BOND if setup support BOND
     """
     bond_idx = next(index_number)
-    bond = BondNodeNetworkConfigurationPolicy(
+    with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         slaves=nodes_available_nics[worker_node1.name][0:2],
@@ -51,10 +48,8 @@ def bond_modes_bond(
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         mtu=1450,
         node_selector=worker_node1.name,
-    )
-    bond.deploy()
-    yield bond
-    bond.clean_up()
+    ) as bond:
+        yield bond
 
 
 @pytest.fixture(scope="class")
@@ -68,17 +63,15 @@ def bond_modes_bridge(
     """
     Create bridge and attach the BOND to it
     """
-    br = network_device(
+    with utilities.network.network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond",
         interface_name=bond_modes_nad.bridge_name,
         network_utility_pods=utility_pods,
         ports=[bond_modes_bond.bond_name],
         node_selector=worker_node1.name,
-    )
-    br.deploy()
-    yield br
-    br.clean_up()
+    ) as br:
+        yield br
 
 
 @pytest.fixture(scope="class")
@@ -93,7 +86,7 @@ def bond_modes_vm(
     networks = OrderedDict()
     networks[bond_modes_nad.name] = bond_modes_nad.name
 
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
@@ -102,10 +95,8 @@ def bond_modes_vm(
         node_selector=worker_node1.name,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
-    )
-    vm.deploy()
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        yield vm
 
 
 @pytest.mark.usefixtures("skip_no_bond_support")
