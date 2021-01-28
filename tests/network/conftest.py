@@ -8,8 +8,11 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.pod import Pod
 
-from utilities.network import get_ipv6_address, ip_version_data_from_matrix
-from utilities.network import network_device_nocm as network_device
+from utilities.network import (
+    get_ipv6_address,
+    ip_version_data_from_matrix,
+    network_device,
+)
 
 
 IPV6_STR = "ipv6"
@@ -98,7 +101,7 @@ def network_interface(
     ports = [hosts_common_available_ports[0]] if multi_nics_nodes else []
     unique_index = next(index_number)
     interface_name = f"br{unique_index}test"
-    iface = network_device(
+    with network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name=f"{interface_name}-nncp",
         interface_name=interface_name,
@@ -106,10 +109,8 @@ def network_interface(
         nodes=schedulable_nodes,
         ports=ports,
         mtu=mtu,
-    )
-    iface.deploy()
-    yield iface
-    iface.clean_up()
+    ) as iface:
+        yield iface
 
 
 @pytest.fixture(scope="session")
