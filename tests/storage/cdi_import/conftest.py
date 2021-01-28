@@ -9,8 +9,11 @@ from resources.pod import Pod
 from resources.storage_class import StorageClass
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.network import LINUX_BRIDGE, network_device, network_nad
+
 
 LOGGER = logging.getLogger(__name__)
+BRIDGE_NAME = "br1-dv"
 
 
 @pytest.fixture()
@@ -51,3 +54,26 @@ def importer_container_status_reason(pod):
         return container_state.waiting.reason
     if container_state.terminated:
         return container_state.terminated.reason
+
+
+@pytest.fixture()
+def bridge_on_node(utility_pods, worker_node1):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=BRIDGE_NAME,
+        interface_name=BRIDGE_NAME,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.name,
+    ) as br:
+        yield br
+
+
+@pytest.fixture()
+def linux_nad(namespace, bridge_on_node):
+    with network_nad(
+        namespace=namespace,
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{BRIDGE_NAME}-nad",
+        interface_name=bridge_on_node.bridge_name,
+    ) as nad:
+        yield nad

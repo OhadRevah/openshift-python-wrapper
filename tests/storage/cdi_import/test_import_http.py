@@ -13,6 +13,7 @@ from pytest_testconfig import config as py_config
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
 from resources.pod import Pod
+from resources.resource import Resource
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.storage
@@ -33,6 +34,26 @@ TAR_IMG = "archive.tar"
 
 def get_file_url(url, file_name):
     return f"{url}{file_name}"
+
+
+@pytest.fixture()
+def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
+    with utilities.storage.create_dv(
+        source="http",
+        dv_name="dv-annotation",
+        namespace=namespace.name,
+        url=f"{utilities.storage.get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        volume_mode=py_config["default_volume_mode"],
+        storage_class=py_config["default_storage_class"],
+        multus_annotation=linux_nad.name,
+    ) as dv:
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
+            timeout=60,
+            stop_status=DataVolume.Status.SUCCEEDED,
+        )
+        importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
+        return importer_pod.instance.metadata.annotations
 
 
 @pytest.mark.parametrize(
@@ -856,3 +877,15 @@ def test_dv_api_version_after_import(
         **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
         assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
+
+
+@pytest.mark.polarion("CNV-5509")
+def test_importer_pod_annotation(dv_with_annotation, linux_nad):
+    # verify "k8s.v1.cni.cncf.io/networks" can pass to the importer pod
+    assert (
+        dv_with_annotation.get(f"{Resource.ApiGroup.K8S_V1_CNI_CNCF_IO}/networks")
+        == linux_nad.name
+    )
+    assert '"interface": "net1"' in dv_with_annotation.get(
+        f"{Resource.ApiGroup.K8S_V1_CNI_CNCF_IO}/network-status"
+    )

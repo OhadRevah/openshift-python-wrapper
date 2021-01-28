@@ -83,6 +83,7 @@ def create_dv(
     client=None,
     source_pvc=None,
     source_namespace=None,
+    multus_annotation=None,
     teardown=True,
     consume_wffc=True,
     bind_immediate=None,
@@ -109,6 +110,7 @@ def create_dv(
         source_pvc=source_pvc,
         source_namespace=source_namespace,
         bind_immediate_annotation=bind_immediate,
+        multus_annotation=multus_annotation,
         teardown=teardown,
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
