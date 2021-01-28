@@ -548,42 +548,6 @@ class IpNotFound(Exception):
         return f"IP address not found for interface {self.name}"
 
 
-def network_nad_nocm(
-    nad_type,
-    nad_name,
-    namespace,
-    interface_name=None,
-    tuning=None,
-    vlan=None,
-    mtu=None,
-    ipam=None,
-):
-    kwargs = {
-        "name": nad_name,
-        "vlan": vlan,
-    }
-    if nad_type == LINUX_BRIDGE:
-        cni_type = py_config["linux_bridge_cni"]
-        tuning_type = py_config["bridge_tuning"] if tuning else None
-        kwargs["namespace"] = namespace.name
-        kwargs["cni_type"] = cni_type
-        kwargs["tuning_type"] = tuning_type
-        kwargs["bridge_name"] = interface_name
-        kwargs["mtu"] = mtu
-
-    if nad_type == SRIOV:
-        kwargs["network_namespace"] = namespace
-        kwargs["resource_name"] = nad_name
-        kwargs["ipam"] = ipam
-
-    if nad_type == OVS:
-        kwargs["namespace"] = namespace.name
-        kwargs["bridge_name"] = interface_name
-
-    return NAD_TYPE[nad_type](**kwargs)
-
-
-# TODO: Remove once all usages replaced with no contextmanager
 @contextlib.contextmanager
 def network_nad(
     nad_type,
@@ -954,47 +918,6 @@ def wait_for_ovs_daemonset_resource(admin_client, hco_namespace):
         raise
 
 
-def network_device_nocm(
-    interface_type,
-    nncp_name,
-    network_utility_pods,
-    nodes=None,
-    interface_name=None,
-    ports=None,
-    mtu=None,
-    node_selector=None,
-    ipv4_enable=False,
-    ipv4_dhcp=False,
-    priority=None,
-    namespace=None,
-):
-    nodes_names = [node_selector] if node_selector else [node.name for node in nodes]
-    worker_pods = [pod for pod in network_utility_pods if pod.node.name in nodes_names]
-    kwargs = {
-        "name": nncp_name,
-        "mtu": mtu,
-    }
-    if interface_type == SRIOV:
-        snns = SriovNetworkNodeState(name=worker_pods[0].node.name)
-        iface = snns.interfaces[0]
-        kwargs["namespace"] = namespace
-        kwargs["pf_names"] = snns.iface_name(iface=iface)
-        kwargs["root_devices"] = snns.pciaddress(iface=iface)
-        kwargs["num_vfs"] = snns.totalvfs(iface=iface)
-        kwargs["priority"] = priority or 99
-
-    else:
-        kwargs["bridge_name"] = interface_name
-        kwargs["worker_pods"] = worker_pods
-        kwargs["ports"] = ports
-        kwargs["node_selector"] = node_selector
-        kwargs["ipv4_enable"] = ipv4_enable
-        kwargs["ipv4_dhcp"] = ipv4_dhcp
-
-    return NETWORK_DEVICE_TYPE[interface_type](**kwargs)
-
-
-# TODO: Remove once all usages replaced with no contextmanager
 @contextlib.contextmanager
 def network_device(
     interface_type,
