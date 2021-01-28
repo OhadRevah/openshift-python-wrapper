@@ -71,3 +71,22 @@ def rrmngmnt_host(usr, passwd, ip, port):
     host._set_executor_user(user=host_user)
     host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
     return host
+
+
+def get_linux_timezone(ssh_exec):
+    return ssh_exec.run_command(
+        command=shlex.split("timedatectl show | grep -i timezone")
+    )[1]
+
+
+def get_windows_timezone(ssh_exec, get_standard_name=False):
+    """
+    Args:
+        ssh_exec: vm SSH executor
+        get_standard_name (bool, default False): If True, get only Windows StandardName
+    """
+    standard_name_cmd = '| findstr "StandardName"' if get_standard_name else ""
+    timezone_cmd = shlex.split(
+        f'powershell -command "Get-TimeZone {standard_name_cmd}"'
+    )
+    return ssh_exec.run_command(command=timezone_cmd)[1]

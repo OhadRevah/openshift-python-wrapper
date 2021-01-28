@@ -15,7 +15,7 @@ from packaging import version
 from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.compute.utils import vm_started
+from tests.compute.utils import get_windows_timezone, vm_started
 from utilities.virt import (
     get_guest_os_info,
     run_virtctl_command,
@@ -609,8 +609,7 @@ def get_windows_os_info(ssh_exec):
         "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     )
     os_release = ssh_exec.run_command(command=os_release_cmd)[1]
-    timezone_cmd = shlex.split('powershell -command "Get-TimeZone"')
-    timezone = ssh_exec.run_command(command=timezone_cmd)[1]
+    timezone = get_windows_timezone(ssh_exec=ssh_exec)
 
     return {
         "guestAgentVersion": guest_agent_version_parser(version_string=ga_ver),
