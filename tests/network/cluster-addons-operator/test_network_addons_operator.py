@@ -1,52 +1,44 @@
 import pytest
 
-from utilities.network import LINUX_BRIDGE
-from utilities.network import network_device_nocm as network_device
-from utilities.network import network_nad_nocm as network_nad
+import utilities.network
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="module")
 def net_add_op_bridge_device(utility_pods, worker_node1):
-    br_dev = network_device(
-        interface_type=LINUX_BRIDGE,
+    with utilities.network.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="test-network-operator",
         interface_name="br1test",
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
-    )
-    br_dev.deploy()
-    yield br_dev
-    br_dev.clean_up()
+    ) as br_dev:
+        yield br_dev
 
 
 @pytest.fixture(scope="module")
 def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
-    nad = network_nad(
-        nad_type=LINUX_BRIDGE,
+    with utilities.network.network_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=net_add_op_bridge_device.bridge_name,
         interface_name=net_add_op_bridge_device.bridge_name,
         namespace=namespace,
-    )
-    nad.deploy()
-    yield nad
-    nad.clean_up()
+    ) as nad:
+        yield nad
 
 
 @pytest.fixture(scope="module")
 def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
     name = "oper-test-vm"
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         interfaces=[net_add_op_br1test_nad.name],
         networks={net_add_op_br1test_nad.name: net_add_op_br1test_nad.name},
         name=name,
         body=fedora_vm_body(name=name),
-    )
-    vm.deploy()
-    vm.start(wait=True)
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
 
 
 @pytest.mark.ci
