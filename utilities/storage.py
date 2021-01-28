@@ -85,6 +85,7 @@ def create_dv(
     source_namespace=None,
     teardown=True,
     consume_wffc=True,
+    bind_immediate=None,
 ):
     if source in ("http", "https"):
         if not url_excluded_from_validation(url):
@@ -107,6 +108,7 @@ def create_dv(
         client=client,
         source_pvc=source_pvc,
         source_namespace=source_namespace,
+        bind_immediate_annotation=bind_immediate,
         teardown=teardown,
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
@@ -123,6 +125,7 @@ def data_volume(
     os_matrix=None,
     check_dv_exists=False,
     admin_client=None,
+    bind_immediate=None,
 ):
     """
     DV creation using create_dv.
@@ -135,6 +138,7 @@ def data_volume(
         os_matrix (dict): Contains current os_matrix attributes
         check_dv_exists (bool): Skip DV creation if DV exists. Used for golden images. IF the DV exists in golden images
         namespace, it can be used for cloning.
+        bind_immediate (bool): if True, cdi.kubevirt.io/storage.bind.immediate.requested annotation
 
     Yields:
         obj `DataVolume`: DV resource
@@ -172,11 +176,17 @@ def data_volume(
         dv_name = params_dict.get("dv_name").replace(".", "-").lower()
         dv_size = params_dict.get("dv_size")
 
+    is_golden_image = False
     # For golden images; images are created once per module in
     # golden images namepace and cloned when using common templates.
     # If the DV exists, yield the DV else create a new one in
     # golden images namespace
+    # If SC is HPP, cdi.kubevirt.io/storage.bind.immediate.requested annotation
+    # should be used to avoid wffc
     if check_dv_exists:
+        consume_wffc = False
+        bind_immediate = True
+        is_golden_image = True
         try:
             golden_image = list(
                 DataVolume.get(
@@ -186,6 +196,17 @@ def data_volume(
             yield golden_image[0]
         except NotFoundError:
             LOGGER.warning(f"Golden image {dv_name} not found; DV will be created.")
+
+    # In hpp, volume must reside on the same worker as the VM
+    # This is not needed for golden image PVC
+    hostpath_node = (
+        schedulable_nodes[0].name
+        if (
+            sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
+            and not is_golden_image
+        )
+        else None
+    )
 
     dv_kwargs = {
         "dv_name": dv_name,
@@ -201,11 +222,9 @@ def data_volume(
             storage_class_dict[storage_class]["volume_mode"],
         ),
         "content_type": DataVolume.ContentType.KUBEVIRT,
-        # In hpp, volume must reside on the same worker as the VM
-        "hostpath_node": schedulable_nodes[0].name
-        if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
-        else None,
+        "hostpath_node": hostpath_node,
         "consume_wffc": consume_wffc,
+        "bind_immediate": bind_immediate,
     }
     if source == "http":
         dv_kwargs["url"] = f"{get_images_external_http_server()}{image}"
@@ -230,8 +249,11 @@ def data_volume(
                     and check_cdi_feature_gate_enabled(
                         feature="HonorWaitForFirstConsumer"
                     )
+                    and not bind_immediate
                 ):
                     # In the case of WFFC Storage Class && caller asking to NOT consume && WFFC feature gate enabled
+                    # and bind_immediate is False (i.e bind_immediate annotation will be added, import will not wait
+                    # first consumer)
                     # We will hand out a DV that has nothing on it, just waiting to be further consumed by kubevirt
                     # It will be in a new status 'WaitForFirstConsumer' (this is how the caller wanted it)
                     dv.wait_for_status(
