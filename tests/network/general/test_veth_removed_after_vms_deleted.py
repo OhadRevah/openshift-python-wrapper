@@ -10,9 +10,7 @@ import pytest
 from resources.utils import TimeoutSampler
 
 import tests.network.utils as network_utils
-from utilities.network import LINUX_BRIDGE
-from utilities.network import network_device_nocm as network_device
-from utilities.network import network_nad_nocm as network_nad
+import utilities.network
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -45,51 +43,40 @@ def count_veth_devices_on_host(pod, bridge):
 
 @pytest.fixture()
 def remove_vath_br1test_nad(namespace):
-    nad = network_nad(
-        nad_type=LINUX_BRIDGE,
+    with utilities.network.network_nad(
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name=BR1TEST,
         interface_name=BR1TEST,
         namespace=namespace,
-    )
-    nad.deploy()
-    yield nad
-    nad.clean_up()
-
-
-@pytest.fixture()
-def remove_vath_br2test_nad(namespace):
-    nad = network_nad(
-        nad_type=LINUX_BRIDGE,
-        nad_name=BR2TEST,
-        interface_name=BR1TEST,
-        namespace=namespace,
-    )
-    nad.deploy()
-    yield nad
-    nad.clean_up()
+    ) as nad:
+        with utilities.network.network_nad(
+            nad_type=utilities.network.LINUX_BRIDGE,
+            nad_name=BR2TEST,
+            interface_name=BR1TEST,
+            namespace=namespace,
+        ):
+            yield nad
 
 
 @pytest.fixture()
 def remove_vath_bridge_device(
     utility_pods, schedulable_nodes, worker_node1, remove_vath_br1test_nad
 ):
-    dev = network_device(
-        interface_type=LINUX_BRIDGE,
+    with utilities.network.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="veth-removed",
         interface_name=remove_vath_br1test_nad.bridge_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
-    )
-    dev.deploy()
-    yield dev
-    dev.clean_up()
+    ) as dev:
+        yield dev
 
 
 @pytest.fixture()
 def remove_vath_bridge_attached_vma(namespace, unprivileged_client, worker_node1):
     name = "vma"
     networks = {"net1": BR1TEST, "net2": BR2TEST}
-    vm = VirtualMachineForTests(
+    with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
         networks=networks,
@@ -98,12 +85,10 @@ def remove_vath_bridge_attached_vma(namespace, unprivileged_client, worker_node1
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.name,
         teardown=False,
-    )
-    vm.deploy()
-    vm.start(wait=True)
-    vm.vmi.wait_until_running()
-    yield vm
-    vm.clean_up()
+    ) as vm:
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
+        yield vm
 
 
 @pytest.fixture()
@@ -132,7 +117,6 @@ def test_veth_removed_from_host_after_vm_deleted(
     utility_pods,
     worker_pod,
     remove_vath_br1test_nad,
-    remove_vath_br2test_nad,
     remove_vath_bridge_device,
     remove_vath_bridge_attached_vma,
     veth_interfaces_exists,
