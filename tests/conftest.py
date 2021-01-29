@@ -25,6 +25,7 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
+from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
@@ -59,6 +60,7 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import SRIOV
+from utilities.hco import apply_np_changes
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -1641,6 +1643,12 @@ def worker_node2(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
+def worker_node3(schedulable_nodes):
+    # Get third worker nodes out of schedulable_nodes list
+    return schedulable_nodes[2]
+
+
+@pytest.fixture(scope="session")
 def sriov_nodes_states(skip_when_no_sriov, admin_client):
     return list(
         SriovNetworkNodeState.get(
@@ -2078,3 +2086,42 @@ def removed_default_storage_classes(admin_client, cluster_storage_classes):
     yield
     for editor in sc_resources:
         editor.restore()
+
+
+@pytest.fixture(scope="class")
+def hyperconverged_with_node_placement(
+    request, admin_client, hco_namespace, hyperconverged_resource_scope_class
+):
+    """
+    Update HCO CR with infrastructure and workloads spec.
+    """
+    infra_placement = request.param["infra"]
+    workloads_placement = request.param["workloads"]
+
+    LOGGER.info("Fetching HCO to save its initial node placement configuration ")
+    initial_infra = hyperconverged_resource_scope_class.instance.to_dict()["spec"].get(
+        "infra", {}
+    )
+    initial_workloads = hyperconverged_resource_scope_class.instance.to_dict()[
+        "spec"
+    ].get("workloads", {})
+    yield apply_np_changes(
+        admin_client=admin_client,
+        hco=hyperconverged_resource_scope_class,
+        hco_namespace=hco_namespace,
+        infra_placement=infra_placement,
+        workloads_placement=workloads_placement,
+    )
+    LOGGER.info("Revert to initial HCO node placement configuration ")
+    apply_np_changes(
+        admin_client=admin_client,
+        hco=hyperconverged_resource_scope_class,
+        hco_namespace=hco_namespace,
+        infra_placement=initial_infra,
+        workloads_placement=initial_workloads,
+    )
+
+
+@pytest.fixture(scope="module")
+def hostpath_provisioner():
+    yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)

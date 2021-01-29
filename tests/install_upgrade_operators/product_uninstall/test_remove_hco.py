@@ -6,7 +6,7 @@ from ocp_resources.event import Event
 from ocp_resources.hyperconverged import HyperConverged
 from pytest_testconfig import config as py_config
 
-from tests.install_upgrade_operators.utils import wait_for_hco_conditions
+from utilities.hco import wait_for_hco_conditions
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

@@ -22,11 +22,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,
     SELECTORS,
 )
-from tests.install_upgrade_operators.utils import (
-    DEFAULT_HCO_CONDITIONS,
-    DEFAULT_HCO_PROGRESSING_CONDITIONS,
-    wait_for_hco_conditions,
-)
+from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -68,22 +64,6 @@ def workers(nodes):
     return [
         node for node in nodes if "node-role.kubernetes.io/worker" in node.labels.keys()
     ]
-
-
-def add_labels_to_nodes(nodes, node_labels):
-    """
-    This function is going to add label to each node.
-    Returns a node_resources and dictionary of lableled nodes.
-    """
-    node_resources = []
-    labels_on_nodes = {}
-    for index, node in enumerate(nodes, start=1):
-        labels = {key: f"{value}{index}" for key, value in node_labels.items()}
-        node_resource = ResourceEditor(patches={node: {"metadata": {"labels": labels}}})
-        node_resource.update(backup_resources=True)
-        node_resources.append(node_resource)
-        labels_on_nodes[node.name] = labels
-    return node_resources, labels_on_nodes
 
 
 @pytest.fixture(scope="class")
@@ -312,144 +292,6 @@ def hco_pods_per_nodes_after_altering_placement(
     admin_client, hco_namespace, alter_np_configuration
 ):
     return get_pod_per_nodes(admin_client=admin_client, hco_namespace=hco_namespace)
-
-
-def apply_np_changes(
-    admin_client, hco, hco_namespace, infra_placement=None, workloads_placement=None
-):
-    current_infra = hco.instance.to_dict()["spec"].get("infra")
-    current_workloads = hco.instance.to_dict()["spec"].get("workloads")
-    target_infra = infra_placement if infra_placement is not None else current_infra
-    target_workloads = (
-        workloads_placement if workloads_placement is not None else current_workloads
-    )
-    if target_workloads != current_workloads or target_infra != current_infra:
-        reseditor = ResourceEditor(
-            patches={
-                hco: {
-                    "spec": {
-                        "infra": target_infra or None,
-                        "workloads": target_workloads or None,
-                    }
-                }
-            }
-        )
-        LOGGER.info("Updating HCO with node placement.")
-        reseditor.update()
-        LOGGER.info("Waiting for HCO to report progressing condition.")
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            conditions=DEFAULT_HCO_PROGRESSING_CONDITIONS,
-            sleep=5,
-        )
-        LOGGER.info(
-            "Waiting for all HCO conditions to detect that it's back to a stable configuration."
-        )
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            conditions=DEFAULT_HCO_CONDITIONS,
-            sleep=5,
-            number_of_consecutive_checks=6,
-        )
-        # unfortunately at this time we are not really done:
-        # HCO propagated the change to components operators that propagated it
-        # to their operands (deployments and daemonsets)
-        # so all the CNV operators reports progressing=False and even HCO reports progressing=False
-        # but deployment and daemonsets controllers has still to kill and restart pods.
-        # with the following lines we can wait for all the deployment and daemonsets in
-        # openshift-cnv namespace to be back to uptodate status.
-        # The remain issue is that if we check it too fast, we can even check before
-        # deployment and daemonsets controller report uptodate=false.
-        # We have also to compare the observedGeneration with the generation number
-        # to be sure that the relevant controller already updated the status
-        for ds in DaemonSet.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-        ):
-            wait_for_ds(ds=ds)
-        for dp in Deployment.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-        ):
-            wait_for_dp(dp=dp)
-    else:
-        LOGGER.info("No actual changes to node placement configuration, skipping")
-
-
-def wait_for_dp(dp):
-    LOGGER.info(f"Waiting for deployment {dp.name} to be up to date.")
-    samples = TimeoutSampler(
-        wait_timeout=240,
-        sleep=5,
-        func=lambda: dp.instance.to_dict(),
-    )
-    try:
-        for sample in samples:
-            status = sample.get("status")
-            metadata = sample.get("metadata")
-            if metadata.get("generation") == status.get(
-                "observedGeneration"
-            ) and status.get("replicas") == status.get("updatedReplicas"):
-                break
-    except TimeoutExpiredError:
-        LOGGER.error(f"Timeout waiting for deployment {dp.name} to be up to date.")
-        raise
-
-
-def wait_for_ds(ds):
-    LOGGER.info(f"Waiting for daemonset {ds.name} to be up to date.")
-    samples = TimeoutSampler(
-        wait_timeout=240,
-        sleep=5,
-        func=lambda: ds.instance.to_dict(),
-    )
-    try:
-        for sample in samples:
-            status = sample.get("status")
-            metadata = sample.get("metadata")
-            if metadata.get("generation") == status.get("observedGeneration") and (
-                status.get("desiredNumberScheduled")
-                == status.get("currentNumberScheduled")
-                == status.get("updatedNumberScheduled")
-            ):
-                break
-    except TimeoutExpiredError:
-        LOGGER.error(f"Timeout waiting for daemonset {ds.name} to be up to date.")
-        raise
-
-
-@pytest.fixture(scope="class")
-def hyperconverged_with_node_placement(
-    request, admin_client, hco_namespace, hyperconverged_resource_scope_class
-):
-    """
-    Update HCO CR with infrastructure and workloads spec.
-    """
-    infra_placement = request.param["infra"]
-    workloads_placement = request.param["workloads"]
-
-    LOGGER.info("Fetching HCO to save its initial node placement configuration ")
-    initial_infra = hyperconverged_resource_scope_class.instance.to_dict()["spec"].get(
-        "infra", {}
-    )
-    initial_workloads = hyperconverged_resource_scope_class.instance.to_dict()[
-        "spec"
-    ].get("workloads", {})
-    yield apply_np_changes(
-        admin_client=admin_client,
-        hco=hyperconverged_resource_scope_class,
-        hco_namespace=hco_namespace,
-        infra_placement=infra_placement,
-        workloads_placement=workloads_placement,
-    )
-    LOGGER.info("Revert to initial HCO node placement configuration ")
-    apply_np_changes(
-        admin_client=admin_client,
-        hco=hyperconverged_resource_scope_class,
-        hco_namespace=hco_namespace,
-        infra_placement=initial_infra,
-        workloads_placement=initial_workloads,
-    )
 
 
 @pytest.fixture(scope="class")

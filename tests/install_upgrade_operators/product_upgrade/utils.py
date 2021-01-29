@@ -20,8 +20,8 @@ from openshift.dynamic.exceptions import (
     ResourceNotFoundError,
 )
 
-from tests.install_upgrade_operators.utils import wait_for_hco_conditions
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_60MIN
+from utilities.hco import wait_for_hco_conditions
 from utilities.virt import run_command, wait_for_vm_interfaces
 
 

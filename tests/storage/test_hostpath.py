@@ -69,11 +69,6 @@ def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
 
 
 @pytest.fixture(scope="module")
-def hostpath_provisioner():
-    yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
-
-
-@pytest.fixture(scope="module")
 def hpp_serviceaccount():
     yield ServiceAccount(
         name="hostpath-provisioner-admin", namespace=py_config["hco_namespace"]
