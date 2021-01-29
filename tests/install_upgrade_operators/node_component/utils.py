@@ -7,6 +7,13 @@ SELECTORS = [
     ("work-comp", "work3"),
 ]
 
+INFRA_LABEL_1 = {"nodePlacement": {"nodeSelector": {"infra-comp": "infra1"}}}
+INFRA_LABEL_2 = {"nodePlacement": {"nodeSelector": {"infra-comp": "infra2"}}}
+INFRA_LABEL_3 = {"nodePlacement": {"nodeSelector": {"infra-comp": "infra3"}}}
+WORK_LABEL_1 = {"nodePlacement": {"nodeSelector": {"work-comp": "work1"}}}
+WORK_LABEL_2 = {"nodePlacement": {"nodeSelector": {"work-comp": "work2"}}}
+WORK_LABEL_3 = {"nodePlacement": {"nodeSelector": {"work-comp": "work3"}}}
+
 NODE_PLACEMENT_INFRA = {
     "nodePlacement": {
         "affinity": {

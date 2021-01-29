@@ -3,7 +3,6 @@ from copy import deepcopy
 import pytest
 from pytest_testconfig import py_config
 from resources.datavolume import DataVolume
-from resources.hyperconverged import HyperConverged
 from resources.operator_hub import OperatorHub
 from resources.operator_source import OperatorSource
 from resources.resource import ResourceEditor
@@ -289,16 +288,6 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
 @pytest.fixture(scope="module")
 def nodes_status_before_upgrade(nodes):
     return upgrade_utils.get_nodes_status(nodes=nodes)
-
-
-@pytest.fixture(scope="class")
-def hyperconverged_resource_scope_class(admin_client, hco_namespace):
-    for hco in HyperConverged.get(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
-        name="kubevirt-hyperconverged",
-    ):
-        return hco
 
 
 @pytest.fixture(scope="class")

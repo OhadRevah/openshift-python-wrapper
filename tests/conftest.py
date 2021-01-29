@@ -2002,6 +2002,16 @@ def hyperconverged_resource(admin_client, hco_namespace):
         return hco
 
 
+@pytest.fixture(scope="class")
+def hyperconverged_resource_scope_class(admin_client, hco_namespace):
+    for hco in HyperConverged.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+        name="kubevirt-hyperconverged",
+    ):
+        return hco
+
+
 @pytest.fixture(scope="session")
 def skip_when_no_sriov(admin_client):
     try:
