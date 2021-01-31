@@ -249,6 +249,7 @@ def test_cancel_vm_import(
     provider,
     secret,
     no_vms_in_namespace,
+    default_sc_multi_storage,
 ):
     vm_name = Source.vms["cirros-no-nics"]["name"]
     cluster_name = provider_data["cluster_name"]
@@ -297,6 +298,7 @@ def test_running_vm_import(
     providers_mapping_network_only,
     secret,
     no_vms_in_namespace,
+    default_sc_multi_storage,
 ):
     vm_config = Source.vms["cirros-running"]
     vm_name = vm_config["name"]
@@ -341,6 +343,7 @@ def test_two_disks_and_nics_vm_import(
     secret,
     providers_mapping_network_only,
     no_vms_in_namespace,
+    default_sc_multi_storage,
 ):
     vm_config = Source.vms["cirros-2disks2nics"]
     vm_name = vm_config["name"]
@@ -504,6 +507,7 @@ def test_vm_import_no_mappings(
     secret,
     vm_key,
     no_vms_in_namespace,
+    default_sc_multi_storage,
 ):
     vm_config = Source.vms[vm_key]
     vm_name = vm_config["name"]
@@ -526,7 +530,12 @@ def test_vm_import_no_mappings(
 
 @pytest.mark.polarion("CNV-4397")
 def test_two_vms_parallel_import(
-    namespace, provider_data, provider, secret, providers_mapping_network_only
+    namespace,
+    provider_data,
+    provider,
+    secret,
+    providers_mapping_network_only,
+    default_sc_multi_storage,
 ):
     vmimport_jobs = []
     for vm in ["cirros", "cirros2"]:
