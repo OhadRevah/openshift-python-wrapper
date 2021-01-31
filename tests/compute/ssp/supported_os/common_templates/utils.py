@@ -573,7 +573,7 @@ def get_libvirt_os_info(vm):
 def get_linux_os_info(ssh_exec):
     ga_ver = guest_agent_version_parser(
         version_string=ssh_exec.run_command(
-            shlex.split("yum list -q installed qemu-g*")
+            shlex.split("sudo dnf list -q installed qemu-g*")
         )[1]
     )
     hostname = ssh_exec.network.hostname
