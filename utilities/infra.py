@@ -157,12 +157,7 @@ def url_excluded_from_validation(url):
 
 
 def get_schedulable_nodes_ips(nodes):
-    node_ips = {}
-    for node in nodes:
-        for addr in node.instance.status.addresses:
-            if addr.type == "InternalIP":
-                node_ips[node.name] = addr.address
-    return node_ips
+    return {node.name: node.internal_ip for node in nodes}
 
 
 def camelcase_to_mixedcase(camelcase_str):
