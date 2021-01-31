@@ -68,7 +68,7 @@ def migrate_vm(vm, timeout=1500):
 def rrmngmnt_host(usr, passwd, ip, port):
     host = rrmngmnt.Host(ip=str(ip))
     host_user = rrmngmnt.user.User(name=usr, password=passwd)
-    host._set_executor_user(user=host_user)
+    host.executor_user = host_user
     host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
     return host
 

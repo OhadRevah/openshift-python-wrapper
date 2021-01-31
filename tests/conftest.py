@@ -817,7 +817,7 @@ def workers_ssh_executors(rhel7_workers, utility_pods):
         host_user = rrmngmnt.user.User(
             name="root" if rhel7_workers else "core", password=None
         )
-        host._set_executor_user(user=host_user)
+        host.executor_user = host_user
         host.add_user(user=host_user)
         executors[pod.node.name] = host
 

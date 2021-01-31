@@ -682,7 +682,7 @@ class VirtualMachineForTests(VirtualMachine):
         )
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip))
         host_user = rrmngmnt.user.User(name=self.username, password=self.password)
-        host._set_executor_user(user=host_user)
+        host.executor_user = host_user
         host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
             port=self.ssh_service.service_port
         )
