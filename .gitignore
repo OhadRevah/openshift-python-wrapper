@@ -124,3 +124,6 @@ docs/source/rst
 
 # Pipenv
 Pipfile.lock
+
+# For local run (debug).
+resources
