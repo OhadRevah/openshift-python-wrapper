@@ -55,9 +55,15 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
 )
 def test_successful_clone_of_large_image(
     skip_upstream,
+    admin_client,
     namespace,
     data_volume_multi_storage_scope_function,
 ):
+    conditions = [
+        DataVolume.Condition.Type.BOUND,
+        DataVolume.Condition.Type.RUNNING,
+        DataVolume.Condition.Type.READY,
+    ]
     with utilities.storage.create_dv(
         source="pvc",
         dv_name="dv-target",
@@ -68,21 +74,15 @@ def test_successful_clone_of_large_image(
         volume_mode=data_volume_multi_storage_scope_function.volume_mode,
         access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
-        cdv.wait_for_condition(
-            condition=DataVolume.Condition.Type.BOUND,
-            status=DataVolume.Condition.Status.TRUE,
-            timeout=300,
-        )
-        cdv.wait_for_condition(
-            condition=DataVolume.Condition.Type.RUNNING,
-            status=DataVolume.Condition.Status.TRUE,
-            timeout=1500,
-        )
-        cdv.wait_for_condition(
-            condition=DataVolume.Condition.Type.READY,
-            status=DataVolume.Condition.Status.TRUE,
-            timeout=WINDOWS_CLONE_TIMEOUT,
-        )
+        if utils.smart_clone_supported_by_sc(sc=cdv.storage_class, client=admin_client):
+            # Smart clone via snapshots does not hit this condition; no workers are spawned
+            conditions.remove(DataVolume.Condition.Type.RUNNING)
+        for condition in conditions:
+            cdv.wait_for_condition(
+                condition=condition,
+                status=DataVolume.Condition.Status.TRUE,
+                timeout=WINDOWS_CLONE_TIMEOUT,
+            )
 
 
 @pytest.mark.parametrize(
