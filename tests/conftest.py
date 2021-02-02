@@ -529,24 +529,26 @@ def login_to_account(api_address, user, password=None):
         stdout=PIPE,
         stderr=PIPE,
     )
+    login_result = None
     try:
+        LOGGER.info(
+            f"Trying to login to {user} user shell. Login command: {login_command}"
+        )
         for sample in samples:
-            LOGGER.info(
-                f"Trying to login to {user} user shell. Login command: {login_command}"
-            )
             login_result = sample.communicate()
             if sample.returncode == 0:
                 LOGGER.info(f"Login to {user} user shell - success")
                 return True
 
-            LOGGER.warning(
-                f"Login to unprivileged user - failed due to the following error: "
-                f"{login_result[0].decode('utf-8')} {login_result[1].decode('utf-8')}"
-            )
             if [err for err in stop_errors if err in login_result[1].decode("utf-8")]:
                 break
 
     except TimeoutExpiredError:
+        if login_result:
+            LOGGER.warning(
+                f"Login to unprivileged user - failed due to the following error: "
+                f"{login_result[0].decode('utf-8')} {login_result[1].decode('utf-8')}"
+            )
         return False
 
 
