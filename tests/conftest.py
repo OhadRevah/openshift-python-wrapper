@@ -54,6 +54,7 @@ from resources.virtual_machine import (
     VirtualMachineInstanceMigration,
 )
 
+from utilities.constants import SRIOV
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -65,7 +66,6 @@ from utilities.infra import (
 )
 from utilities.network import (
     OVS,
-    SRIOV,
     EthernetNetworkConfigurationPolicy,
     MacPool,
     enable_hyperconverged_ovs_annotations,

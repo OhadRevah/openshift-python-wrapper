@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import random
 import re
 import shlex
 import subprocess
@@ -27,6 +26,7 @@ from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
 from utilities import console
+from utilities.constants import SRIOV
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -208,6 +208,7 @@ class VirtualMachineForTests(VirtualMachine):
         rhel7_workers=False,
         username=None,
         password=None,
+        macs=None,
     ):
         """
         Virtual machine creation
@@ -254,6 +255,7 @@ class VirtualMachineForTests(VirtualMachine):
             rhel7_workers (bool, default: False)
             username (str, optional): SSH username
             password (str, optional): SSH password
+            macs (dict, optional): Dict of {interface_name: mac address}
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -300,6 +302,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.username = username
         self.password = password
         self.rhel7_workers = rhel7_workers
+        self.macs = macs
 
     def deploy(self):
         super().deploy()
@@ -417,35 +420,26 @@ class VirtualMachineForTests(VirtualMachine):
         return spec
 
     def update_vm_network_configuration(self, spec):
-        iface_mac_number = random.randint(0, 255)
         for iface_name in self.interfaces:
+            iface_type = "bridge"
             try:
                 # On cluster without SR-IOV deploy we will get NotImplementedError
-                sriov_network_exists = SriovNetwork(
+                SriovNetwork(
                     name=iface_name,
                     network_namespace=self.namespace,
                     namespace=py_config["sriov_namespace"],
                 ).exists
+                iface_type = SRIOV
             except NotImplementedError:
-                sriov_network_exists = False
+                pass
 
-            if sriov_network_exists:
-                # TODO : Remove hardcoded mac(iface_mac_number) when BZ 1868359 is fixed
-                # TODO : JIRA Task :  https://issues.redhat.com/browse/CNV-6349
-                spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                    "interfaces", []
-                ).append(
-                    {
-                        "name": iface_name,
-                        "sriov": {},
-                        "macAddress": "02:00:b5:b5:b5:%02x" % (iface_mac_number),
-                    }
-                )
-                iface_mac_number += 1
-            else:
-                spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                    "interfaces", []
-                ).append({"name": iface_name, "bridge": {}})
+            network_dict = {"name": iface_name, iface_type: {}}
+            if self.macs:
+                network_dict["macAddress"] = self.macs.get(iface_name)
+
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "interfaces", []
+            ).append(network_dict)
 
         for iface_name, network in self.networks.items():
             spec.setdefault("networks", []).append(
@@ -721,6 +715,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         username=None,
         password=None,
         rhel7_workers=False,
+        macs=None,
     ):
         """
         VM creation using common templates.
@@ -760,6 +755,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             username=username,
             password=password,
             rhel7_workers=rhel7_workers,
+            macs=macs,
         )
         self.template_labels = labels
         self.data_volume = data_volume

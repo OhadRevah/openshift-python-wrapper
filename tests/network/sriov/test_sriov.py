@@ -11,13 +11,13 @@ from resources.utils import TimeoutSampler
 
 from tests.network.utils import assert_no_ping
 from utilities import console
+from utilities.constants import SRIOV
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
     get_bugzilla_connection_params,
 )
 from utilities.network import (
-    SRIOV,
     assert_ping_successful,
     cloud_init_network_data,
     get_vmi_ip_v4_by_name,
@@ -35,21 +35,24 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
+VM_SRIOV_IFACE_NAME = "sriov1"
 
 
 # TODO : remove restart_guest_agent and replace all calls to it with wait_for_vm_interfaces once BZ 1907707 is fixed
 def restart_guest_agent(vm):
     bug_num = 1907707
+    restart = "restart qemu-guest-agent"
     if (
         get_bug_status(
             bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_num
         )
         not in BUG_STATUS_CLOSED
     ):
+        LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
         vm_console_run_commands(
             console_impl=console.Fedora,
             vm=vm,
-            commands=["sudo systemctl restart qemu-guest-agent"],
+            commands=[f"sudo systemctl {restart}"],
         )
     else:
         LOGGER.warning(
@@ -66,8 +69,25 @@ def running_vm(vm):
     return vm
 
 
-def sriov_vm(unprivileged_client, name, namespace, worker, ip_config, sriov_network):
-    network_data_data = {"ethernets": {"eth1": {"addresses": [ip_config]}}}
+def sriov_vm(
+    _index_number,
+    unprivileged_client,
+    name,
+    namespace,
+    worker,
+    ip_config,
+    sriov_network,
+):
+    sriov_mac = "02:00:b5:b5:b5:%02x" % _index_number
+    network_data_data = {
+        "ethernets": {
+            "1": {
+                "addresses": [ip_config],
+                "match": {"macaddress": sriov_mac},
+                "set-name": VM_SRIOV_IFACE_NAME,
+            }
+        }
+    }
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
     cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
     cloud_init_data.update(cloud_init_network_data(data=network_data_data))
@@ -84,6 +104,7 @@ def sriov_vm(unprivileged_client, name, namespace, worker, ip_config, sriov_netw
         ssh=True,
         username=console.Fedora.USERNAME,
         password=console.Fedora.PASSWORD,
+        macs={sriov_network.name: sriov_mac},
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -152,8 +173,11 @@ def sriov_network_vlan(sriov_node_policy, namespace, sriov_namespace, vlan_tag_i
 
 
 @pytest.fixture(scope="class")
-def sriov_vm1(sriov_workers_node1, namespace, unprivileged_client, sriov_network):
+def sriov_vm1(
+    index_number, sriov_workers_node1, namespace, unprivileged_client, sriov_network
+):
     yield from sriov_vm(
+        _index_number=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm1",
         namespace=namespace,
@@ -169,8 +193,11 @@ def running_sriov_vm1(sriov_vm1):
 
 
 @pytest.fixture(scope="class")
-def sriov_vm2(sriov_workers_node2, namespace, unprivileged_client, sriov_network):
+def sriov_vm2(
+    index_number, sriov_workers_node2, namespace, unprivileged_client, sriov_network
+):
     yield from sriov_vm(
+        _index_number=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm2",
         namespace=namespace,
@@ -187,12 +214,14 @@ def running_sriov_vm2(sriov_vm2):
 
 @pytest.fixture(scope="class")
 def sriov_vm3(
+    index_number,
     sriov_workers_node1,
     namespace,
     unprivileged_client,
     sriov_network_vlan,
 ):
     yield from sriov_vm(
+        _index_number=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm3",
         namespace=namespace,
@@ -209,12 +238,14 @@ def running_sriov_vm3(sriov_vm3):
 
 @pytest.fixture(scope="class")
 def sriov_vm4(
+    index_number,
     sriov_workers_node2,
     namespace,
     unprivileged_client,
     sriov_network_vlan,
 ):
     yield from sriov_vm(
+        _index_number=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm4",
         namespace=namespace,
@@ -234,8 +265,9 @@ def vm4_interfaces(running_sriov_vm4):
     return running_sriov_vm4.vmi.interfaces
 
 
-@pytest.fixture()
-def rebooted_sriov_vm4(running_sriov_vm4):
+@pytest.fixture(params=list(range(1, 6)))
+def rebooted_sriov_vm4(request, running_sriov_vm4):
+    LOGGER.info(f"Reboot number {request.param}")
     # Reboot the VM
     running_sriov_vm4.ssh_exec.run_command(command=["sudo", "reboot"])
     # Make sure the VM is up, otherwise we will get an old VM interfaces data.
@@ -244,32 +276,36 @@ def rebooted_sriov_vm4(running_sriov_vm4):
     return running_sriov_vm4
 
 
-def get_eth1_mtu(vm):
-    return int(vm.ssh_exec.run_command(command=["cat", "/sys/class/net/eth1/mtu"])[1])
-
-
-def set_eth1_mtu(vm, mtu):
-    vm.ssh_exec.run_command(
-        command=["sudo", "ip", "link", "set", "eth1", "mtu", str(mtu)]
+def get_sriov1_mtu(vm):
+    return int(
+        vm.ssh_exec.run_command(
+            command=["cat", f"/sys/class/net/{VM_SRIOV_IFACE_NAME}/mtu"]
+        )[1]
     )
-    LOGGER.info(f"wait for {vm.name} eth1 mtu to be {mtu}")
-    for sample in TimeoutSampler(timeout=30, sleep=1, func=get_eth1_mtu, vm=vm):
+
+
+def set_sriov1_mtu(vm, mtu):
+    vm.ssh_exec.run_command(
+        command=["sudo", "ip", "link", "set", VM_SRIOV_IFACE_NAME, "mtu", str(mtu)]
+    )
+    LOGGER.info(f"wait for {vm.name} {VM_SRIOV_IFACE_NAME} mtu to be {mtu}")
+    for sample in TimeoutSampler(timeout=30, sleep=1, func=get_sriov1_mtu, vm=vm):
         if sample == mtu:
             return
 
 
 @pytest.fixture()
-def eth1_mtu_9000(sriov_vm1, sriov_vm2, running_sriov_vm1, running_sriov_vm2):
+def sriov1_mtu_9000(sriov_vm1, sriov_vm2, running_sriov_vm1, running_sriov_vm2):
     vms = (running_sriov_vm1, running_sriov_vm2)
     default_mtu = (
-        get_eth1_mtu(vm=running_sriov_vm1),
-        get_eth1_mtu(vm=running_sriov_vm2),
+        get_sriov1_mtu(vm=running_sriov_vm1),
+        get_sriov1_mtu(vm=running_sriov_vm2),
     )
     for vm in vms:
-        set_eth1_mtu(vm=vm, mtu=9000)
+        set_sriov1_mtu(vm=vm, mtu=9000)
     yield
     for vm, mtu in zip(vms, default_mtu):
-        set_eth1_mtu(vm=vm, mtu=mtu)
+        set_sriov1_mtu(vm=vm, mtu=mtu)
 
 
 @pytest.mark.usefixtures(
@@ -303,7 +339,7 @@ class TestPingConnectivity:
         sriov_vm2,
         running_sriov_vm1,
         running_sriov_vm2,
-        eth1_mtu_9000,
+        sriov1_mtu_9000,
     ):
         assert_ping_successful(
             src_vm=running_sriov_vm1,

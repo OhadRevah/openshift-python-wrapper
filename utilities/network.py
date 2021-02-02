@@ -19,6 +19,7 @@ from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities import console
+from utilities.constants import SRIOV
 from utilities.infra import get_pod_by_name_prefix
 from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
 
@@ -29,7 +30,6 @@ IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
 LINUX_BRIDGE = "linux-bridge"
 OVS = "ovs"
 OVS_DS_NAME = "ovs-cni-amd64"
-SRIOV = "sriov"
 DEPLOY_OVS = "deployOVS"
 
 
