@@ -185,16 +185,18 @@ def providers_mapping_network_only(request, pod_network, multus_network, provide
 
 
 @pytest.fixture(scope="module")
-def skip_if_less_than_x_storage_classes(request):
-    if len(py_config["storage_class_matrix"]) < request.param:
+def skip_if_less_than_x_storage_classes(request, cluster_storage_classes):
+    if len(cluster_storage_classes) < request.param:
         pytest.skip(
             f"Destination OCP Must have at least {request.param} Storage Classes in order to run this test."
         )
 
 
 @pytest.fixture(scope="module")
-def resource_mapping(request, namespace, pod_network, provider_data):
-    sc_names = [[*sc][0] for sc in py_config["storage_class_matrix"]]
+def resource_mapping(
+    request, namespace, pod_network, provider_data, cluster_storage_classes
+):
+    sc_names = [sc.name for sc in cluster_storage_classes]
     sc_names.insert(0, sc_names.pop(sc_names.index(py_config["default_storage_class"])))
     # The default storage class should be 1st so it is mapped to the 1st disk's datastore/domain
 

@@ -32,19 +32,30 @@ class ResourceMappingItem:
         self.target_access_modes = target_access_modes
 
 
+# Same as get_storage_class_dict_from_matrix but return None if not found
+def get_storage_class_dict_from_matrix_or_none(storage_class):
+    try:
+        return get_storage_class_dict_from_matrix(storage_class=storage_class)[
+            storage_class
+        ]
+    except ValueError:
+        return None
+
+
 def storage_mapping_by_source_vm_disks_storage_name(
     storage_classes, source_volumes_config
 ):
     storage_mapping_items = []
     for storage_class_index, source_volume_config in enumerate(source_volumes_config):
         _sc_name = storage_classes[storage_class_index]
+        _sc_config = get_storage_class_dict_from_matrix_or_none(storage_class=_sc_name)
         storage_mapping_items.append(
             ResourceMappingItem(
-                target_name=_sc_name,
-                target_volume_mode=get_storage_class_dict_from_matrix(
-                    storage_class=_sc_name
-                )[_sc_name]["volume_mode"],
                 source_name=source_volume_config["storage_name"],
+                target_name=_sc_name,
+                target_volume_mode=_sc_config["volume_mode"] if _sc_config else None,
+                target_access_modes=_sc_config["access_mode"] if _sc_config else None,
+                # the none default sc we use may use the default access/vol mode
             )
         )
     return storage_mapping_items
