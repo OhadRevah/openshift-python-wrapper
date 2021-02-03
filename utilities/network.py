@@ -587,14 +587,17 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,
         name,
-        interfaces_name,
-        worker_pods,
+        interfaces_name=None,
+        worker_pods=None,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         node_selector=None,
         teardown=True,
         ipv4_enable=False,
         ipv4_dhcp=False,
         node_active_nics=None,
+        ipv4_addresses=None,
+        dns_resolver=None,
+        routes=None,
     ):
         super().__init__(
             name=name,
@@ -604,22 +607,24 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
             node_active_nics=node_active_nics,
+            ipv4_addresses=ipv4_addresses,
+            dns_resolver=dns_resolver,
+            routes=routes,
         )
         self.interfaces_name = interfaces_name
         self.iface_state = iface_state
 
     def to_dict(self):
-        res = None
-        if not self.interfaces_name:
-            raise ValueError("Value of interface_name cannot be empty")
-        for nic in self.interfaces_name:
-            self.iface = {
-                "name": nic,
-                "type": "ethernet",
-                "state": self.iface_state,
-            }
-            self.set_interface(interface=self.iface)
-            res = super().to_dict()
+        res = super().to_dict()
+        if self.interfaces_name:
+            for nic in self.interfaces_name:
+                self.iface = {
+                    "name": nic,
+                    "type": "ethernet",
+                    "state": self.iface_state,
+                }
+                self.set_interface(interface=self.iface)
+                res = super().to_dict()
         return res
 
 
