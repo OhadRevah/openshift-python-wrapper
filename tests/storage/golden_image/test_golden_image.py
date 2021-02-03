@@ -89,7 +89,7 @@ def test_regular_user_cant_delete_dv_from_cloned_dv(
     [
         pytest.param(
             {
-                "dv_name": f"golden-image-dv-{time.time()}",
+                "dv_name": f"golden-image-dv-{time.time()}".replace(".", "-"),
                 "image": LATEST_RHEL_IMAGE,
                 "dv_namespace": GOLDEN_IMAGES_NAMESPACE,
                 "dv_size": RHEL_IMAGE_SIZE,
@@ -116,7 +116,7 @@ def test_regular_user_can_create_vm_from_cloned_dv(
             **py_config["latest_rhel_version"]["template_labels"]
         ),
         data_volume_template=data_volume_template_dict(
-            target_dv_name=f"user-dv-{time.time()}",
+            target_dv_name=f"user-dv-{time.time()}".replace(".", "-"),
             target_dv_namespace=namespace.name,
             source_dv=data_volume_multi_storage_scope_function,
             worker_node=worker_node1,
