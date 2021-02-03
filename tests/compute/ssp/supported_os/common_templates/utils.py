@@ -334,13 +334,23 @@ def check_machine_type(vm):
 
 
 def restart_qemu_guest_agent_service(vm, console_impl):
-    ver = vm.vmi.virt_launcher_pod.execute(
+    # Service restart is needed because of bugs 1910326 and 1845127
+    # TODO: remove restart_qemu_guest_agent_service when tested opering systems are updated with newer qemu KVM
+    # and qemu guest agent versions.
+    qemu_kvm_version = vm.vmi.virt_launcher_pod.execute(
         command=["/usr/libexec/qemu-kvm", "--version", "|", "grep", "kvm"],
         container="compute",
     )
-    if version.parse(ver.split()[3]) >= version.parse("5.1.0"):
+    qemu_guest_agent_version = get_linux_guest_agent_version(ssh_exec=vm.ssh_exec)
+    if version.parse(qemu_kvm_version.split()[3]) >= version.parse(
+        "5.1.0"
+    ) and version.parse(qemu_guest_agent_version) >= version.parse("4.2.0-40"):
         return
 
+    LOGGER.warning(
+        f"Restart qemu-guest-agent service, qemu KVM version: {qemu_kvm_version},"
+        f"qemu-guest-agent version: {qemu_guest_agent_version}"
+    )
     cmd = ["sudo systemctl restart qemu-guest-agent"]
     if "7.7" in vm.vmi.os_version:
         vm_console_run_commands(
@@ -571,11 +581,8 @@ def get_libvirt_os_info(vm):
 
 
 def get_linux_os_info(ssh_exec):
-    ga_ver = guest_agent_version_parser(
-        version_string=ssh_exec.run_command(
-            shlex.split("sudo dnf list -q installed qemu-g*")
-        )[1]
-    )
+    # Use guest agent version without the build number
+    ga_ver = get_linux_guest_agent_version(ssh_exec=ssh_exec).split("-")[0]
     hostname = ssh_exec.network.hostname
     os_release = ssh_exec.os.release_info
     kernel = ssh_exec.os.kernel_info
@@ -766,7 +773,8 @@ def convert_disk_size(value, si_prefix=True):
 
 
 def guest_agent_version_parser(version_string):
-    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+", version_string).group(0)
+    # Return qemu-guest-agent version (including build number, e.g: "4.2.0-34")
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+\-[0-9]+", version_string).group(0)
 
 
 def windows_disk_space_parser(fsinfo_list):
@@ -798,3 +806,10 @@ def wait_for_virtctl_output(cmd, namespace):
             LOGGER.warning(
                 f"Retrying to get guest-agent info via virtctl. error: {err}"
             )
+
+
+def get_linux_guest_agent_version(ssh_exec):
+    ssh_exec.sudo = True
+    return guest_agent_version_parser(
+        version_string=ssh_exec.package_manager.info("qemu-guest-agent")
+    )

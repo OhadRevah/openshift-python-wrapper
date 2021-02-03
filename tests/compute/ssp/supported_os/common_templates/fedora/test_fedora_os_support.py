@@ -225,7 +225,7 @@ class TestCommonTemplatesFedora:
         fedora_os_matrix__class__,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        # TODO: remove restart_qemu_guest_agent_service when cnv moved to RHEL AV 8.3
+        # TODO: remove restart_qemu_guest_agent_service when cnv moved to newer qemu versions
         common_templates_utils.restart_qemu_guest_agent_service(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             console_impl=console.Fedora,
