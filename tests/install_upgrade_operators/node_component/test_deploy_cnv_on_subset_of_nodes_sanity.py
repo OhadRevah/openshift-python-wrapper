@@ -1,6 +1,8 @@
 import logging
 
 import pytest
+from openshift.dynamic.exceptions import ForbiddenError
+from resources.resource import ResourceEditor
 
 from tests.install_upgrade_operators.node_component.utils import (
     INFRA_LABEL_1,
@@ -88,6 +90,28 @@ class TestDeployCNVOnSubsetOfClusterNodes:
         nodes_labeled,
     ):
         assert vm_placement_vm_work3.vmi.node.name == nodes_labeled["work3"][0]
+
+    @pytest.mark.polarion("CNV-5231")
+    @pytest.mark.dependency(
+        depends=["test_deploying_workloads_on_selected_nodes"],
+    )
+    def test_workload_components_selection_change_denied_with_workloads(
+        self,
+        nodes_labeled,
+        admin_client,
+        hco_namespace,
+        hyperconverged_resource,
+    ):
+        LOGGER.info(
+            "Attempting to update HCO with node placement, expecting it to fail"
+        )
+        with pytest.raises(
+            ForbiddenError, match=r"denied the request:.*while there are running vms"
+        ):
+            with ResourceEditor(
+                patches={hyperconverged_resource: {"spec": {"workloads": WORK_LABEL_1}}}
+            ):
+                pytest.fail("Workloads label changed while VM/Workload is present.")
 
     @pytest.mark.polarion("CNV-5232")
     @pytest.mark.parametrize(
