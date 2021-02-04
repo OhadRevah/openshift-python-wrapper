@@ -87,6 +87,7 @@ def create_dv(
     teardown=True,
     consume_wffc=True,
     bind_immediate=None,
+    preallocation=None,
 ):
     if source in ("http", "https"):
         if not url_excluded_from_validation(url):
@@ -112,6 +113,7 @@ def create_dv(
         bind_immediate_annotation=bind_immediate,
         multus_annotation=multus_annotation,
         teardown=teardown,
+        preallocation=preallocation,
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
             create_dummy_first_consumer_pod(dv=dv)
@@ -227,6 +229,7 @@ def data_volume(
         "hostpath_node": hostpath_node,
         "consume_wffc": consume_wffc,
         "bind_immediate": bind_immediate,
+        "preallocation": params_dict.get("preallocation", None),
     }
     if source == "http":
         dv_kwargs["url"] = f"{get_images_external_http_server()}{image}"
