@@ -3,15 +3,26 @@ Report VM IP
 """
 
 import pytest
+from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
+
+
+def assert_ip_mismatch(vm):
+    sampler = TimeoutSampler(
+        timeout=10,
+        sleep=1,
+        func=lambda: vm.interface_ip(interface="eth0") == vm.virt_launcher_pod.ip,
+    )
+    for sample in sampler:
+        if sample:
+            return
 
 
 @pytest.fixture(scope="module")
@@ -33,15 +44,9 @@ def report_masquerade_ip_vm(unprivileged_client, namespace):
 
 @pytest.mark.polarion("CNV-4455")
 def test_report_masquerade_ip(report_masquerade_ip_vm):
-    assert (
-        report_masquerade_ip_vm.interface_ip(interface="eth0")
-        == report_masquerade_ip_vm.virt_launcher_pod.ip
-    )
+    assert_ip_mismatch(vm=report_masquerade_ip_vm)
 
 
-@pytest.mark.bugzilla(
-    1686208, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-4153")
 def test_report_masquerade_ip_after_migration(report_masquerade_ip_vm):
     src_node = report_masquerade_ip_vm.instance.status.nodeName
@@ -53,7 +58,4 @@ def test_report_masquerade_ip_after_migration(report_masquerade_ip_vm):
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
         assert report_masquerade_ip_vm.instance.status.nodeName != src_node
 
-    assert (
-        report_masquerade_ip_vm.interface_ip(interface="eth0")
-        == report_masquerade_ip_vm.virt_launcher_pod.ip
-    )
+    assert_ip_mismatch(vm=report_masquerade_ip_vm)
