@@ -10,9 +10,15 @@ import re
 
 import pytest
 from pytest_testconfig import config as py_config
+from resources.resource import Resource
 from resources.template import Template
 
 from tests.compute.ssp.supported_os.common_templates import utils
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_bug_status,
+    get_bugzilla_connection_params,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -89,6 +95,25 @@ def base_templates(admin_client):
             label_selector=Template.Labels.BASE,
         )
     )
+    # TODO: remove once bug 1925019 is fixed ("deprecated" label should be added to older templates)
+    # After upgrade, os.template.kubevirt.io/<os name> label is removed from older templates
+    # but not all deprecated templates have "deprecated" annotation.
+    if (
+        get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(), bug=1925019
+        )
+        not in BUG_STATUS_CLOSED
+    ):
+        return [
+            template
+            for template in common_templates_list
+            if [
+                label
+                for label in template.labels
+                if label[0].startswith(f"{Resource.ApiGroup.OS_TEMPLATE_KUBEVIRT_IO}/")
+            ]
+        ]
+
     return [
         template
         for template in common_templates_list
