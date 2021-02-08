@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import logging
 import os
@@ -25,7 +26,7 @@ from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
 from utilities.console import CONSOLE_IMPL
-from utilities.constants import OS_LOGIN_PARAMS
+from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK, OS_LOGIN_PARAMS
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     BUG_STATUS_CLOSED,
@@ -634,7 +635,7 @@ class VirtualMachineForTests(VirtualMachine):
         return spec
 
     def ssh_enable(self):
-        # To use the service: ssh_service.service_ip and ssh_service.service_port
+        # To use the service: ssh_service.service_ip() and ssh_service.service_port
         # Name is restricted to 63 characters
         self.ssh_service = ServiceForVirtualMachineForTests(
             name=f"ssh-{self.name}"[:63],
@@ -650,15 +651,17 @@ class VirtualMachineForTests(VirtualMachine):
         self,
         service_name,
         port,
-        service_type=Service.Type.CLUSTER_IP,
+        service_type=None,
         service_ip=None,
-        ip_family=None,
+        ip_family_policy=None,
+        ip_families=None,
     ):
         """
         service_type is set with K8S default service type (ClusterIP)
         service_ip - relevant for node port; default will be set to vm node IP
-        ip_family - IP family (IPv4/6)
-        To use the service: custom_service.service_ip and custom_service.service_port
+        ip_families - list of IP families to be supported in the service (IPv4/6 or both)
+        ip_family_policy - SingleStack, RequireDualStack or PreferDualStack
+        To use the service: custom_service.service_ip() and custom_service.service_port
         """
         self.custom_service = ServiceForVirtualMachineForTests(
             name=f"{service_name}-{self.name}"[:63],
@@ -667,7 +670,8 @@ class VirtualMachineForTests(VirtualMachine):
             port=port,
             service_type=service_type,
             target_ip=service_ip,
-            ip_family=ip_family,
+            ip_family_policy=ip_family_policy,
+            ip_families=ip_families,
         )
         self.custom_service.create(wait=True)
 
@@ -699,9 +703,9 @@ class VirtualMachineForTests(VirtualMachine):
 
         LOGGER.info(
             f"Username: {self.username}, password: {self.password}, "
-            f"ssh {self.username}@{self.ssh_service.service_ip} -p {self.ssh_service.service_port}"
+            f"ssh {self.username}@{self.ssh_service.service_ip()} -p {self.ssh_service.service_port}"
         )
-        host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip))
+        host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip()))
         host_user = rrmngmnt.user.User(name=self.username, password=self.password)
         host.executor_user = host_user
         host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
@@ -1035,7 +1039,8 @@ class ServiceForVirtualMachineForTests(Service):
         port,
         service_type=Service.Type.CLUSTER_IP,
         target_ip=None,
-        ip_family=None,
+        ip_family_policy=IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+        ip_families=None,
         teardown=True,
         rhel7_workers=False,
     ):
@@ -1046,7 +1051,8 @@ class ServiceForVirtualMachineForTests(Service):
         self.service_type = service_type
         self.target_ip = target_ip
         self.rhel7_workers = rhel7_workers
-        self.ip_family = ip_family
+        self.ip_family_policy = ip_family_policy
+        self.ip_families = ip_families
 
     def to_dict(self):
         res = super().to_dict()
@@ -1055,21 +1061,46 @@ class ServiceForVirtualMachineForTests(Service):
             "selector": {"kubevirt.io/domain": self.vm.name},
             "sessionAffinity": "None",
             "type": self.service_type,
-            "ipFamily": self.ip_family or "IPv4",
         }
+
+        res["spec"]["ipFamilyPolicy"] = self.ip_family_policy
+        if self.ip_families:
+            res["spec"]["ipFamilies"] = self.ip_families
+
         return res
 
-    @property
-    def service_ip(self):
+    def service_ip(self, ip_family=None):
         if self.rhel7_workers:
             return utilities.network.get_vmi_ip_v4_by_name(
                 vmi=self.vmi, name=[*self.vm.networks][0]
             )
 
         if self.service_type == Service.Type.CLUSTER_IP:
+            if ip_family:
+                cluster_ips = [
+                    cluster_ip
+                    for cluster_ip in self.vm.custom_service.instance.spec.clusterIPs
+                    if str(ipaddress.ip_address(cluster_ip).version) in ip_family
+                ]
+                assert (
+                    cluster_ips
+                ), f"No {ip_family} addresses in service {self.vm.custom_service.name}"
+                return cluster_ips[0]
+
             return self.instance.spec.clusterIP
 
         if self.service_type == Service.Type.NODE_PORT:
+            if ip_family:
+                internal_ips = [
+                    internal_ip
+                    for internal_ip in self.vmi.node.instance.status.addresses
+                    if str(ipaddress.ip_address(internal_ip).version) in ip_family
+                ]
+                assert (
+                    internal_ips
+                ), f"No {ip_family} addresses in node {self.vmi.node.name}"
+                return internal_ips[0]
+
             return (
                 self.target_ip
                 or get_schedulable_nodes_ips(nodes=[self.vmi.node])[self.vmi.node.name]

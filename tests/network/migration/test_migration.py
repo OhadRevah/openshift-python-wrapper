@@ -8,8 +8,10 @@ import re
 import shlex
 
 import pytest
+from resources.service import Service
 from resources.utils import TimeoutSampler
 
+from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK
 from utilities.infra import run_ssh_commands
 from utilities.network import (
     LINUX_BRIDGE,
@@ -17,7 +19,6 @@ from utilities.network import (
     compose_cloud_init_data_dict,
     get_ipv6_ip_str,
     get_vmi_ip_v4_by_name,
-    ip_version_data_from_matrix,
     network_device,
     network_nad,
 )
@@ -158,26 +159,23 @@ def restarted_vmb(running_vmb):
     return running_vm(vm=running_vmb, enable_ssh=False)
 
 
-@pytest.fixture()
-def http_service(request, namespace, running_vma, running_vmb):
-    ip_family = ip_version_data_from_matrix(request=request)
-
-    # ipFamily value casing in Service is 'IPv#', so set the letter casing accordingly.
-    ip_family = ip_family.replace(ip_family[:2], ip_family[:2].upper())
-
+@pytest.fixture(scope="module")
+def http_service(namespace, running_vma, running_vmb):
     running_vmb.custom_service_enable(
-        service_name=f"http-masquerade-migration-{ip_family.lower()}",
+        service_name="http-masquerade-migration",
         port=80,
-        ip_family=ip_family,
+        service_type=Service.Type.CLUSTER_IP,
+        ip_family_policy=IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     )
 
-    # Check that http service on port 80 can be accessed by cluster IP
+    # Check that http service on port 80 can be accessed by all cluster IPs
     # before vmi migration.
-    http_port_accessible(
-        vm=running_vma,
-        server_ip=running_vmb.custom_service.service_ip,
-        server_port=running_vmb.custom_service.service_port,
-    )
+    for server_ip in running_vmb.custom_service.instance.spec.clusterIPs:
+        http_port_accessible(
+            vm=running_vma,
+            server_ip=server_ip,
+            server_port=running_vmb.custom_service.service_port,
+        )
 
 
 @pytest.fixture()
@@ -320,6 +318,8 @@ def test_migration_with_masquerade(
 
     http_port_accessible(
         vm=running_vma,
-        server_ip=running_vmb.custom_service.service_ip,
+        server_ip=running_vmb.custom_service.service_ip(
+            ip_family=ip_stack_version_matrix__module__
+        ),
         server_port=running_vmb.custom_service.service_port,
     )

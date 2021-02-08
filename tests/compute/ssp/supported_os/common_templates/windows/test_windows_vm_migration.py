@@ -58,7 +58,7 @@ def test_migrate_vm_windows(
     """
 
     assert check_telnet_connection(
-        ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
+        ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip(),
         port=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
     ), "Failed to login via Telnet"
 
@@ -73,6 +73,6 @@ def test_migrate_vm_windows(
     )
 
     assert check_telnet_connection(
-        ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
+        ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip(),
         port=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
     ), "Failed to login via Telnet after migration"

@@ -103,7 +103,8 @@ def test_rdp_for_exposed_win_vm_as_node_port_svc(
     # TODO : Supposed to run on latest Windows version (Win19) once RDP issue is fixed - currently testing on Win16.
     rdp_auth_cmd = (
         f"xvfb-run --server-args='-screen 0 1024x768x24' "
-        f"xfreerdp /cert-ignore /auth-only /v:{rdp_vm.custom_service.service_ip}:{rdp_vm.custom_service.service_port} "
+        f"xfreerdp /cert-ignore /auth-only "
+        f"/v:{rdp_vm.custom_service.service_ip()}:{rdp_vm.custom_service.service_port} "
         f"/u:{py_config['windows_username']} /p:{py_config['windows_password']}"
     )
 
