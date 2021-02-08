@@ -8,9 +8,11 @@ from pytest_testconfig import config as py_config
 
 import utilities.network
 from tests.network.conftest import IPV6_STR
-from tests.network.connectivity import utils
+from tests.network.utils import run_test_guest_performance
+from utilities import console
 from utilities.virt import (
     VirtualMachineForTests,
+    enable_ssh_service_in_vm,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
@@ -34,6 +36,9 @@ def pod_net_vma(
         network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
         cloud_init_data=cloud_init_ipv6_network_data,
+        ssh=True,
+        username=console.Fedora.USERNAME,
+        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -57,6 +62,9 @@ def pod_net_vmb(
         network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
         cloud_init_data=cloud_init_ipv6_network_data,
+        ssh=True,
+        username=console.Fedora.USERNAME,
+        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -66,6 +74,7 @@ def pod_net_vmb(
 def pod_net_running_vma(pod_net_vma):
     pod_net_vma.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=pod_net_vma.vmi)
+    enable_ssh_service_in_vm(vm=pod_net_vma, console_impl=console.Fedora)
     return pod_net_vma
 
 
@@ -73,6 +82,7 @@ def pod_net_running_vma(pod_net_vma):
 def pod_net_running_vmb(pod_net_vmb):
     pod_net_vmb.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=pod_net_vmb.vmi)
+    enable_ssh_service_in_vm(vm=pod_net_vmb, console_impl=console.Fedora)
     return pod_net_vmb
 
 
@@ -116,7 +126,6 @@ def test_connectivity_over_pod_network(
     )
 
 
-@pytest.mark.xfail(reason="Slow performance on BM, need investigation")
 @pytest.mark.polarion("CNV-2334")
 def test_guest_performance_over_pod_network(
     skip_if_workers_vms,
@@ -126,15 +135,15 @@ def test_guest_performance_over_pod_network(
     pod_net_vmb,
     pod_net_running_vma,
     pod_net_running_vmb,
-    namespace,
 ):
     """
     In-guest performance bandwidth passthrough over Linux bridge
     """
     expected_res = py_config["test_guest_performance"]["bandwidth"]
-    bits_per_second = utils.run_test_guest_performance(
+    bits_per_second = run_test_guest_performance(
         server_vm=pod_net_running_vma,
         client_vm=pod_net_running_vmb,
-        listen_ip=ip_interface(pod_net_running_vma.vmi.interfaces[0]["ipAddress"]).ip,
+        target_ip=ip_interface(pod_net_running_vma.vmi.interfaces[0]["ipAddress"]).ip,
     )
+
     assert bits_per_second >= expected_res

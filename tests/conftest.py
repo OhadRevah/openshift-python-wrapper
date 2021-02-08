@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import shlex
 import shutil
 from contextlib import contextmanager
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -873,6 +874,7 @@ def nodes_active_nics(
     node_physical_nics,
     ovn_kubernetes_cluster,
     ovs_bridge_bug_closed,
+    workers_ssh_executors,
 ):
     # TODO: Remove this function and its usage in nodes_active_nics when BZ 1885605 is fixed.
     def _ovs_bridge_ports(node_interface):
@@ -893,29 +895,41 @@ def nodes_active_nics(
     for node in schedulable_nodes:
         nodes_nics[node.name] = {"available": [], "occupied": []}
         nns = NodeNetworkState(name=node.name)
-        for node_iface in nns.interfaces:
-            if node_iface.name in nodes_nics[node.name]["occupied"]:
-                continue
+        host = workers_ssh_executors[node.name]
 
-            # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
-            # OVS bridge, it shouldn't be used for tests' node networking.
-            bridge_ports = _ovs_bridge_ports(node_interface=node_iface)
-            for port in bridge_ports:
-                if port in node_physical_nics[node.name]:
-                    nodes_nics[node.name]["occupied"].append(port)
-                    if port in nodes_nics[node.name]["available"]:
-                        nodes_nics[node.name]["available"].remove(port)
-            if node_iface.name not in node_physical_nics[node.name]:
-                continue
+        #  Use one ssh connection to the node.
+        with host.executor().session() as ssh_session:
+            for node_iface in nns.interfaces:
 
-            if (
-                node_iface["ipv4"]["address"]
-                and node_iface["ipv4"]["dhcp"]
-                and node_iface["state"] == "up"
-            ):
-                nodes_nics[node.name]["occupied"].append(node_iface.name)
-            else:
-                nodes_nics[node.name]["available"].append(node_iface.name)
+                #  Exclude SR-IOV (VFs) interfaces.
+                if re.findall(r"v\d+$", node_iface.name):
+                    continue
+
+                if node_iface.name in nodes_nics[node.name]["occupied"]:
+                    continue
+
+                # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
+                # OVS bridge, it shouldn't be used for tests' node networking.
+                bridge_ports = _ovs_bridge_ports(node_interface=node_iface)
+                for port in bridge_ports:
+                    if port in node_physical_nics[node.name]:
+                        nodes_nics[node.name]["occupied"].append(port)
+                        if port in nodes_nics[node.name]["available"]:
+                            nodes_nics[node.name]["available"].remove(port)
+
+                if node_iface.name not in node_physical_nics[node.name]:
+                    continue
+
+                ethtool_state = ssh_session.run_cmd(
+                    cmd=shlex.split(f"ethtool {node_iface.name}")
+                )[1]
+                if "Link detected: no" in ethtool_state:
+                    continue
+
+                if node_iface["ipv4"]["address"] and node_iface["ipv4"]["dhcp"]:
+                    nodes_nics[node.name]["occupied"].append(node_iface.name)
+                else:
+                    nodes_nics[node.name]["available"].append(node_iface.name)
 
     return nodes_nics
 

@@ -18,7 +18,6 @@ from resources.route import Route
 from resources.secret import Secret
 from resources.service import Service
 from resources.service_account import ServiceAccount
-from resources.sriov_network import SriovNetwork
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachine
@@ -26,7 +25,6 @@ from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
 from utilities import console
-from utilities.constants import SRIOV
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -209,6 +207,7 @@ class VirtualMachineForTests(VirtualMachine):
         username=None,
         password=None,
         macs=None,
+        interfaces_types=None,
     ):
         """
         Virtual machine creation
@@ -256,6 +255,7 @@ class VirtualMachineForTests(VirtualMachine):
             username (str, optional): SSH username
             password (str, optional): SSH password
             macs (dict, optional): Dict of {interface_name: mac address}
+            interfaces_types (dict, optional): Dict of interfaces names and type ({"iface1": "sriov"})
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -303,6 +303,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.password = password
         self.rhel7_workers = rhel7_workers
         self.macs = macs
+        self.interfaces_types = interfaces_types or {}
 
     def deploy(self):
         super().deploy()
@@ -421,19 +422,9 @@ class VirtualMachineForTests(VirtualMachine):
 
     def update_vm_network_configuration(self, spec):
         for iface_name in self.interfaces:
-            iface_type = "bridge"
-            try:
-                # On cluster without SR-IOV deploy we will get NotImplementedError
-                SriovNetwork(
-                    name=iface_name,
-                    network_namespace=self.namespace,
-                    namespace=py_config["sriov_namespace"],
-                ).exists
-                iface_type = SRIOV
-            except NotImplementedError:
-                pass
-
+            iface_type = self.interfaces_types.get(iface_name, "bridge")
             network_dict = {"name": iface_name, iface_type: {}}
+
             if self.macs:
                 network_dict["macAddress"] = self.macs.get(iface_name)
 
@@ -716,6 +707,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         password=None,
         rhel7_workers=False,
         macs=None,
+        interfaces_types=None,
     ):
         """
         VM creation using common templates.
@@ -756,6 +748,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             password=password,
             rhel7_workers=rhel7_workers,
             macs=macs,
+            interfaces_types=interfaces_types,
         )
         self.template_labels = labels
         self.data_volume = data_volume

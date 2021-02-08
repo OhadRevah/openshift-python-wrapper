@@ -1,5 +1,8 @@
+import json
 import logging
+import shlex
 
+import bitmath
 from resources.node_network_state import NodeNetworkState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -68,3 +71,28 @@ def get_worker_pod(network_utility_pods, worker_node):
     for pod in network_utility_pods:
         if pod.node.name == worker_node.name:
             return pod
+
+
+def run_test_guest_performance(server_vm, client_vm, listen_ip=None, target_ip=None):
+    """
+    In-guest performance bandwidth passthrough.
+    VMs should be created with:
+        ssh=True,
+        username=SSH.USERNAME,
+        password=SSH.PASSWORD,
+
+    Args:
+        server_vm (VirtualMachine): VM name that will be IPERF server.
+        client_vm (VirtualMachine): VM name that will be IPERF client.
+        listen_ip (str): The IP to listen on the server, if not sent then "0.0.0.0" will be used.
+        target_ip (str): the IP to connect to (server IP), if not sent then listen_ip will be used.
+    """
+    _listen_ip = listen_ip or "0.0.0.0"  # When listing on POD network.
+    server_vm.ssh_exec.run_command(command=shlex.split(f"iperf3 -D -sB {_listen_ip}"))
+    iperf_data = client_vm.ssh_exec.run_command(
+        command=shlex.split(f"iperf3 -c {target_ip or listen_ip} -t 5 -J")
+    )[1]
+    iperf_json = json.loads(iperf_data)
+    sum_sent = iperf_json.get("end").get("sum_sent")
+    bits_per_second = int(sum_sent.get("bits_per_second"))
+    return float(bitmath.Byte(bits_per_second).GiB)

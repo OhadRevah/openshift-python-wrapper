@@ -48,8 +48,7 @@ sriov_namespace = "openshift-sriov-network-operator"
 machine_api_namespace = "openshift-machine-api"
 golden_images_namespace = "openshift-virtualization-os-images"
 
-test_guest_performance = {"bandwidth": 2.5}
-test_performance_over_pod_network = {"bandwidth": 2.5}
+test_guest_performance = {"bandwidth": 0.8}  # All our servers have 1GiB interfaces.
 linux_bridge_cni = "cnv-bridge"
 bridge_tuning = "cnv-tuning"
 

@@ -7,8 +7,8 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.network.conftest import IPV6_STR
-from tests.network.connectivity.utils import run_test_guest_performance
-from tests.network.utils import assert_no_ping
+from tests.network.utils import assert_no_ping, run_test_guest_performance
+from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     assert_ping_successful,
@@ -19,6 +19,7 @@ from utilities.network import (
 )
 from utilities.virt import (
     VirtualMachineForTests,
+    enable_ssh_service_in_vm,
     fedora_vm_body,
     wait_for_vm_interfaces,
 )
@@ -129,6 +130,9 @@ def ovs_linux_bridge_attached_vma(
         node_selector=worker_node1.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
+        ssh=True,
+        username=console.Fedora.USERNAME,
+        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -171,6 +175,9 @@ def ovs_linux_bridge_attached_vmb(
         node_selector=worker_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
+        ssh=True,
+        username=console.Fedora.USERNAME,
+        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -181,6 +188,9 @@ def ovs_linux_bridge_attached_running_vmia(ovs_linux_bridge_attached_vma):
     vmi = ovs_linux_bridge_attached_vma.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
+    enable_ssh_service_in_vm(
+        vm=ovs_linux_bridge_attached_vma, console_impl=console.Fedora
+    )
     return vmi
 
 
@@ -189,6 +199,9 @@ def ovs_linux_bridge_attached_running_vmib(ovs_linux_bridge_attached_vmb):
     vmi = ovs_linux_bridge_attached_vmb.vmi
     vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vmi)
+    enable_ssh_service_in_vm(
+        vm=ovs_linux_bridge_attached_vmb, console_impl=console.Fedora
+    )
     return vmi
 
 
@@ -291,14 +304,12 @@ class TestConnectivity:
             ),
         )
 
-    @pytest.mark.xfail(reason="Slow performance on BM, need investigation")
     @pytest.mark.polarion("CNV-2335")
     def test_guest_performance(
         self,
         skip_rhel7_workers,
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
-        namespace,
         network_interface,
         ovs_linux_nad,
         ovs_linux_bridge_attached_vma,
