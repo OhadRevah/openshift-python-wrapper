@@ -1267,6 +1267,8 @@ def vm_instance_from_template(
         cpu_model=params.get("cpu_model") or vm_cpu_model,
         ssh=params.get("ssh", True),
         disk_options_vm=params.get("disk_io_option"),
+        host_device_name=params.get("host_device_name"),
+        gpu_name=params.get("gpu_name"),
         rhel7_workers=rhel7_workers,
     ) as vm:
         if params.get("start_vm", True):

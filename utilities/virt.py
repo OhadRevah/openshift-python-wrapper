@@ -216,6 +216,8 @@ class VirtualMachineForTests(VirtualMachine):
         macs=None,
         interfaces_types=None,
         os_flavor="fedora",
+        host_device_name=None,
+        gpu_name=None,
     ):
         """
         Virtual machine creation
@@ -266,6 +268,8 @@ class VirtualMachineForTests(VirtualMachine):
             interfaces_types (dict, optional): Dict of interfaces names and type ({"iface1": "sriov"})
             os_flavor (str, default: fedora): OS flavor to get SSH login parameters.
                 (flavor should be exist in constants.py)
+            host_device_name (str, optional): PCI Host Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
+            gpu_name (str, optional): GPU Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -315,6 +319,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.macs = macs
         self.interfaces_types = interfaces_types or {}
         self.os_flavor = os_flavor
+        self.host_device_name = host_device_name
+        self.gpu_name = gpu_name
 
     def deploy(self):
         super().deploy()
@@ -398,6 +404,26 @@ class VirtualMachineForTests(VirtualMachine):
 
         if self.diskless_vm:
             spec.get("domain", {}).get("devices", {}).pop("disks", None)
+
+        if self.host_device_name:
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "hostDevices", []
+            ).append(
+                {
+                    "deviceName": self.host_device_name,
+                    "name": "hostdevice",
+                }
+            )
+
+        if self.gpu_name:
+            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "gpus", []
+            ).append(
+                {
+                    "deviceName": self.gpu_name,
+                    "name": "gpu",
+                }
+            )
 
         if self.disk_io_options:
             disks_spec = (
@@ -726,6 +752,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         rhel7_workers=False,
         macs=None,
         interfaces_types=None,
+        host_device_name=None,
+        gpu_name=None,
     ):
         """
         VM creation using common templates.
@@ -765,6 +793,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             rhel7_workers=rhel7_workers,
             macs=macs,
             interfaces_types=interfaces_types,
+            host_device_name=host_device_name,
+            gpu_name=gpu_name,
         )
         self.template_labels = labels
         self.data_volume = data_volume
