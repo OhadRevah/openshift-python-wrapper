@@ -32,3 +32,7 @@ OS_LOGIN_PARAMS = {
         "password": "Heslo123",
     },
 }
+
+# GPU constants
+GPU_DEVICE_NAME = "nvidia.com/GV100GL_Tesla_V100"
+GPU_DEVICE_ID = "10de:1db6"
