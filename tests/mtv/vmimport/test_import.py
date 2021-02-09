@@ -12,11 +12,10 @@ from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 
-from tests.vmimport import utils
+from tests.mtv.vmimport import utils
+from tests.mtv.vmimport.utils import ResourceMappingItem, Source
 from utilities.constants import TIMEOUT_10MIN
 from utilities.virt import import_vm
-
-from .utils import ResourceMappingItem, Source
 
 
 LOGGER = logging.getLogger(__name__)

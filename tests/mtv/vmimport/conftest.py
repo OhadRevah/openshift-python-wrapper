@@ -18,8 +18,8 @@ from resources.virtual_machine_import import ResourceMapping
 
 import utilities.network
 from providers import providers
-from tests.vmimport import utils
-from tests.vmimport.utils import ProviderMappings, ResourceMappingItem, Source
+from tests.mtv.vmimport import utils
+from tests.mtv.vmimport.utils import ProviderMappings, ResourceMappingItem, Source
 from utilities.network import network_device
 
 
