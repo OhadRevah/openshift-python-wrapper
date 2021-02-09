@@ -15,6 +15,7 @@ from resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 
 from tests.compute.utils import migrate_vm
 from utilities import console
+from utilities.constants import TIMEOUT_10MIN
 from utilities.virt import wait_for_vm_interfaces
 
 
@@ -158,7 +159,7 @@ def run_vm_action(vm, vm_action, expected_exceptions=None):
             # send the start instruction from here there is a race condition which may
             # cause expected exceptions not to be raised.
             try:
-                getattr(vm, vm_action)(wait=True)
+                getattr(vm, vm_action)(wait=True, timeout=TIMEOUT_10MIN)
             except ApiException as e:
                 if re.search(
                     pattern=rf"{'|'.join(expected_exceptions)}", string=str(e)
@@ -166,11 +167,11 @@ def run_vm_action(vm, vm_action, expected_exceptions=None):
                     return True
                 raise e
         else:
-            getattr(vm, vm_action)(wait=True)
+            getattr(vm, vm_action)(wait=True, timeout=TIMEOUT_10MIN)
             return True
 
     for sample in TimeoutSampler(
-        timeout=300,
+        timeout=TIMEOUT_10MIN,
         sleep=2,
         func=_vm_run_action,
     ):
@@ -179,8 +180,8 @@ def run_vm_action(vm, vm_action, expected_exceptions=None):
 
 
 def verify_vm_vmi_status(vm, ready):
-    LOGGER.info(f"Verify VM/I status: {ready}")
-    vm.wait_for_status(status=ready)
+    LOGGER.info(f"Verify VMI status: {ready}")
+    vm.wait_for_status(status=ready, timeout=TIMEOUT_10MIN)
     if ready:
         vm.vmi.wait_for_status(status=VirtualMachineInstance.Status.RUNNING)
 
@@ -248,7 +249,7 @@ class TestRunStrategy:
 
         # send poweroff
         with pytest.raises(EOF):
-            with console.Fedora(vm=lifecycle_vm, timeout=600) as vm_console:
+            with console.Fedora(vm=lifecycle_vm, timeout=TIMEOUT_10MIN) as vm_console:
                 vm_console.sendline(s="sudo poweroff")
 
         # runStrategy "Always" first terminates the pod, then re-raises it
