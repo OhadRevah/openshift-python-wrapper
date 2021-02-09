@@ -4,6 +4,8 @@ import os
 import pexpect
 from resources.utils import TimeoutSampler
 
+from utilities.constants import OS_LOGIN_PARAMS
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -107,25 +109,30 @@ class Console(object):
 
 
 class Fedora(Console):
-    USERNAME = "fedora"
-    PASSWORD = "fedora"
+    params = OS_LOGIN_PARAMS["fedora"]
+    USERNAME = params["username"]
+    PASSWORD = params["password"]
 
 
 class Cirros(Console):
-    USERNAME = "cirros"
-    PASSWORD = "gocubsgo"
+    params = OS_LOGIN_PARAMS["cirros"]
+    USERNAME = params["username"]
+    PASSWORD = params["password"]
 
 
 class Alpine(Console):
-    USERNAME = "root"
-    PASSWORD = None
+    params = OS_LOGIN_PARAMS["alpine"]
+    USERNAME = params["username"]
+    PASSWORD = params["password"]
 
 
 class RHEL(Console):
-    USERNAME = "cloud-user"
-    PASSWORD = "redhat"
+    params = OS_LOGIN_PARAMS["rhel"]
+    USERNAME = params["username"]
+    PASSWORD = params["password"]
 
 
 class Centos(Console):
-    USERNAME = "centos"
-    PASSWORD = "centos"
+    params = OS_LOGIN_PARAMS["centos"]
+    USERNAME = params["username"]
+    PASSWORD = params["password"]

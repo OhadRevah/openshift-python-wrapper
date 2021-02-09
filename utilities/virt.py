@@ -24,7 +24,7 @@ from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
-from utilities import console
+from utilities.constants import OS_LOGIN_PARAMS
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -187,7 +187,7 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_data=None,
         machine_type=None,
         image=None,
-        ssh=False,
+        ssh=True,
         network_model=None,
         network_multiqueue=None,
         pvc=None,
@@ -208,6 +208,7 @@ class VirtualMachineForTests(VirtualMachine):
         password=None,
         macs=None,
         interfaces_types=None,
+        os_flavor="fedora",
     ):
         """
         Virtual machine creation
@@ -256,6 +257,8 @@ class VirtualMachineForTests(VirtualMachine):
             password (str, optional): SSH password
             macs (dict, optional): Dict of {interface_name: mac address}
             interfaces_types (dict, optional): Dict of interfaces names and type ({"iface1": "sriov"})
+            os_flavor (str, default: fedora): OS flavor to get SSH login parameters.
+                (flavor should be exist in constants.py)
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -304,6 +307,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.rhel7_workers = rhel7_workers
         self.macs = macs
         self.interfaces_types = interfaces_types or {}
+        self.os_flavor = os_flavor
 
     def deploy(self):
         super().deploy()
@@ -661,9 +665,13 @@ class VirtualMachineForTests(VirtualMachine):
     def ssh_exec(self):
         # In order to use this property VM should be created with ssh=True
         # or one of vm_ssh_service_*** (compute/ssp/supported_os/conftest.py) fixtures should be used
+        login_params = OS_LOGIN_PARAMS[self.os_flavor]
+        self.username = self.username or login_params["username"]
+        self.password = self.password or login_params["password"]
+
         LOGGER.info(
             f"Username: {self.username}, password: {self.password}, "
-            f"SSH IP: {self.ssh_service.service_ip}, SSH port: {self.ssh_service.service_port}"
+            f"ssh {self.username}@{self.ssh_service.service_ip} -p {self.ssh_service.service_port}"
         )
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip))
         host_user = rrmngmnt.user.User(name=self.username, password=self.password)
@@ -686,7 +694,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         existing_data_volume=None,
         networks=None,
         interfaces=None,
-        ssh=False,
+        ssh=True,
         vm_dict=None,
         cpu_cores=None,
         cpu_threads=None,
@@ -761,6 +769,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.cloud_init_data = cloud_init_data
 
     def to_dict(self):
+        self.os_flavor = self._extract_os_from_template()
         self.body = self.process_template()
         res = super().to_dict()
 
@@ -814,25 +823,13 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
         return spec
 
+    def _extract_os_from_template(self):
+        return re.search(
+            r".*/([a-z]+)",
+            [label for label in self.template_labels if Template.Labels.OS in label][0],
+        ).group(1)
+
     def process_template(self):
-        def _extract_os_from_template():
-            return re.search(
-                r".*/([a-z]+)",
-                [
-                    label
-                    for label in self.template_labels
-                    if Template.Labels.OS in label
-                ][0],
-            ).group(1)
-
-        def _get_os_password(os_name):
-            os_password_dict = {
-                "rhel": console.RHEL.PASSWORD,
-                "fedora": console.Fedora.PASSWORD,
-                "centos": console.Centos.PASSWORD,
-            }
-            return os_password_dict[os_name]
-
         # Common templates use golden image clone as a default for VM DV
         # SRC_PVC_NAME - to support minor releases, this value needs to be passed. Currently
         # the templates only have one name per major OS.
@@ -847,15 +844,13 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         }
 
         # Add password to VM for Non-Windows VMs
-        if not self.cloud_init_data or not self.cloud_init_data.setdefault(
-            "userData", {}
-        ).get("password"):
-            # Extract OS from template labels
-            template_os = _extract_os_from_template()
-            if "win" not in template_os:
-                template_kwargs["CLOUD_USER_PASSWORD"] = _get_os_password(
-                    os_name=template_os
-                )
+        self.password = self._get_password_from_cloud_init() or self.password
+
+        # Extract OS from template labels
+        if "win" not in self.os_flavor:
+            template_kwargs["CLOUD_USER_PASSWORD"] = (
+                self.password or OS_LOGIN_PARAMS[self.os_flavor]["password"]
+            )
 
         template_instance = self.get_template_by_labels()
         resources_list = template_instance.process(
@@ -895,6 +890,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         ), f"More than one template matches {self.template_labels}"
 
         return template[0]
+
+    def _get_password_from_cloud_init(self):
+        if self.cloud_init_data:
+            return self.cloud_init_data.get("userData", {}).get("password")
 
 
 def vm_console_run_commands(
