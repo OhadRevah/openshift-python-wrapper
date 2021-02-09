@@ -8,7 +8,6 @@ from pytest_testconfig import config as py_config
 
 from tests.network.conftest import IPV6_STR
 from tests.network.utils import assert_no_ping, run_test_guest_performance
-from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     assert_ping_successful,
@@ -17,12 +16,7 @@ from utilities.network import (
     get_vmi_ip_v4_by_name,
     network_nad,
 )
-from utilities.virt import (
-    VirtualMachineForTests,
-    enable_ssh_service_in_vm,
-    fedora_vm_body,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 def _masquerade_vmib_ip(vmib, bridge, ipv6_testing):
@@ -130,9 +124,6 @@ def ovs_linux_bridge_attached_vma(
         node_selector=worker_node1.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-        ssh=True,
-        username=console.Fedora.USERNAME,
-        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -175,34 +166,19 @@ def ovs_linux_bridge_attached_vmb(
         node_selector=worker_node2.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-        ssh=True,
-        username=console.Fedora.USERNAME,
-        password=console.Fedora.PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_bridge_attached_running_vmia(ovs_linux_bridge_attached_vma):
-    vmi = ovs_linux_bridge_attached_vma.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    enable_ssh_service_in_vm(
-        vm=ovs_linux_bridge_attached_vma, console_impl=console.Fedora
-    )
-    return vmi
+def ovs_linux_bridge_attached_running_vma(ovs_linux_bridge_attached_vma):
+    return running_vm(vm=ovs_linux_bridge_attached_vma)
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_bridge_attached_running_vmib(ovs_linux_bridge_attached_vmb):
-    vmi = ovs_linux_bridge_attached_vmb.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    enable_ssh_service_in_vm(
-        vm=ovs_linux_bridge_attached_vmb, console_impl=console.Fedora
-    )
-    return vmi
+def ovs_linux_bridge_attached_running_vmb(ovs_linux_bridge_attached_vmb):
+    return running_vm(vm=ovs_linux_bridge_attached_vmb)
 
 
 @pytest.mark.usefixtures(
@@ -234,24 +210,23 @@ class TestConnectivity:
         network_interface,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
-        ovs_linux_bridge_attached_running_vmia,
-        ovs_linux_bridge_attached_running_vmib,
+        ovs_linux_bridge_attached_running_vma,
+        ovs_linux_bridge_attached_running_vmb,
     ):
         if bridge == "default" and rhel7_workers:
             # https://bugzilla.redhat.com/show_bug.cgi?id=1787576
             pytest.skip(msg="Masquerade not working on RHEL7 workers.")
 
         ipv6_testing = ip_stack_version_matrix__module__ == IPV6_STR
-        if ipv6_testing:
-            if bridge != "default":
-                pytest.skip(
-                    msg="IPv6 is only supported on default interface, and shouldn't be covered in this test."
-                )
+        if ipv6_testing and bridge != "default":
+            pytest.skip(
+                msg="IPv6 is only supported on default interface, and shouldn't be covered in this test."
+            )
 
         assert_ping_successful(
-            src_vm=ovs_linux_bridge_attached_running_vmia,
+            src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=_masquerade_vmib_ip(
-                vmib=ovs_linux_bridge_attached_running_vmib,
+                vmib=ovs_linux_bridge_attached_running_vmb.vmi,
                 bridge=bridge,
                 ipv6_testing=ipv6_testing,
             ),
@@ -268,13 +243,13 @@ class TestConnectivity:
         ovs_linux_br1vlan100_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
-        ovs_linux_bridge_attached_running_vmia,
-        ovs_linux_bridge_attached_running_vmib,
+        ovs_linux_bridge_attached_running_vma,
+        ovs_linux_bridge_attached_running_vmb,
     ):
         assert_ping_successful(
-            src_vm=ovs_linux_bridge_attached_running_vmia,
+            src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bridge_attached_running_vmib,
+                vmi=ovs_linux_bridge_attached_running_vmb.vmi,
                 name=ovs_linux_br1vlan100_nad.name,
             ),
         )
@@ -293,13 +268,13 @@ class TestConnectivity:
         ovs_linux_br1vlan300_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
-        ovs_linux_bridge_attached_running_vmia,
-        ovs_linux_bridge_attached_running_vmib,
+        ovs_linux_bridge_attached_running_vma,
+        ovs_linux_bridge_attached_running_vmb,
     ):
         assert_no_ping(
-            src_vm=ovs_linux_bridge_attached_running_vmia,
+            src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bridge_attached_running_vmib,
+                vmi=ovs_linux_bridge_attached_running_vmb.vmi,
                 name=ovs_linux_br1vlan300_nad.name,
             ),
         )
@@ -314,8 +289,8 @@ class TestConnectivity:
         ovs_linux_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
-        ovs_linux_bridge_attached_running_vmia,
-        ovs_linux_bridge_attached_running_vmib,
+        ovs_linux_bridge_attached_running_vma,
+        ovs_linux_bridge_attached_running_vmb,
     ):
         """
         In-guest performance bandwidth passthrough.
@@ -325,7 +300,7 @@ class TestConnectivity:
             server_vm=ovs_linux_bridge_attached_vma,
             client_vm=ovs_linux_bridge_attached_vmb,
             listen_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bridge_attached_running_vmia, name=ovs_linux_nad.name
+                vmi=ovs_linux_bridge_attached_running_vma.vmi, name=ovs_linux_nad.name
             ),
         )
         assert bits_per_second >= expected_res
