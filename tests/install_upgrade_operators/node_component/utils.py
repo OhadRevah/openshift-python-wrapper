@@ -5,6 +5,9 @@ SELECTORS = [
     ("work-comp", "work1"),
     ("work-comp", "work2"),
     ("work-comp", "work3"),
+    ("op-comp", "op1"),
+    ("op-comp", "op2"),
+    ("op-comp", "op3"),
 ]
 
 INFRA_LABEL_1 = {"nodePlacement": {"nodeSelector": {"infra-comp": "infra1"}}}
@@ -13,6 +16,18 @@ INFRA_LABEL_3 = {"nodePlacement": {"nodeSelector": {"infra-comp": "infra3"}}}
 WORK_LABEL_1 = {"nodePlacement": {"nodeSelector": {"work-comp": "work1"}}}
 WORK_LABEL_2 = {"nodePlacement": {"nodeSelector": {"work-comp": "work2"}}}
 WORK_LABEL_3 = {"nodePlacement": {"nodeSelector": {"work-comp": "work3"}}}
+
+SUBSCRIPTION_NODE_SELCTOR_1 = {"op-comp": "op1"}
+SUBSCRIPTION_NODE_SELCTOR_2 = {"op-comp": "op2"}
+SUBSCRIPTION_NODE_SELCTOR_3 = {"op-comp": "op3"}
+SUBSCRIPTION_TOLERATIONS = [
+    {
+        "effect": "NoSchedule",
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+    }
+]
+
 
 NODE_PLACEMENT_INFRA = {
     "nodePlacement": {
@@ -113,7 +128,7 @@ OPERATOR_PODS_COMPONENTS = [
     "hco-operator",
     "hco-webhook",
     "hostpath-provisioner-operator",
-    "kubevirt-ssp-operator",
+    "ssp-operator",
     "node-maintenance-operator",
     "virt-operator",
     "vm-import-operator",
