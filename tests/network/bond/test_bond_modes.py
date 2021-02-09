@@ -8,13 +8,12 @@ from collections import OrderedDict
 import pytest
 
 import utilities.network
-from utilities.constants import TIMEOUT_10MIN
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -120,6 +119,4 @@ class TestBondModes:
         # When BOND mode is 802.3ad, it is takes more time to the VM to run.
         # We get an error: failed to configure vmi network for migration target: Link not found
         # Increase timeout till we investigate this issue.
-        bond_modes_vm.start(wait=True, timeout=TIMEOUT_10MIN)
-        bond_modes_vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=bond_modes_vm.vmi)
+        running_vm(vm=bond_modes_vm, enable_ssh=False)

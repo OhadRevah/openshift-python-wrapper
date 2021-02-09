@@ -17,7 +17,7 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -184,19 +184,13 @@ def ovs_linux_bond_bridge_attached_vmb(
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_bond_bridge_attached_running_vmia(ovs_linux_bond_bridge_attached_vma):
-    vmi = ovs_linux_bond_bridge_attached_vma.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def ovs_linux_bond_bridge_attached_running_vma(ovs_linux_bond_bridge_attached_vma):
+    return running_vm(vm=ovs_linux_bond_bridge_attached_vma)
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_bond_bridge_attached_running_vmib(ovs_linux_bond_bridge_attached_vmb):
-    vmi = ovs_linux_bond_bridge_attached_vmb.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def ovs_linux_bond_bridge_attached_running_vmb(ovs_linux_bond_bridge_attached_vmb):
+    return running_vm(vm=ovs_linux_bond_bridge_attached_vmb)
 
 
 class TestBondConnectivity:
@@ -211,13 +205,13 @@ class TestBondConnectivity:
         ovs_linux_bridge_on_bond_worker_2,
         ovs_linux_bond_bridge_attached_vma,
         ovs_linux_bond_bridge_attached_vmb,
-        ovs_linux_bond_bridge_attached_running_vmia,
-        ovs_linux_bond_bridge_attached_running_vmib,
+        ovs_linux_bond_bridge_attached_running_vma,
+        ovs_linux_bond_bridge_attached_running_vmb,
     ):
         assert_ping_successful(
-            src_vm=ovs_linux_bond_bridge_attached_running_vmia,
+            src_vm=ovs_linux_bond_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bond_bridge_attached_running_vmib,
+                vmi=ovs_linux_bond_bridge_attached_running_vmb.vmi,
                 name=ovs_linux_br1bond_nad.name,
             ),
         )

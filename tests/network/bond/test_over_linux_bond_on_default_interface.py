@@ -8,15 +8,14 @@ import subprocess
 import pytest
 from resources.utils import TimeoutSampler
 
-import tests.network.utils as network_utils
-import utilities.network
+from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import TIMEOUT_10MIN
-from utilities.network import BondNodeNetworkConfigurationPolicy
+from utilities.network import BondNodeNetworkConfigurationPolicy, assert_ping_successful
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -55,21 +54,13 @@ def lbodi_vmb(worker_node2, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def lbodi_running_vma(
-    lbodi_vma,
-):
-    lbodi_vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=lbodi_vma.vmi)
-    return lbodi_vma
+def lbodi_running_vma(lbodi_vma):
+    return running_vm(vm=lbodi_vma)
 
 
 @pytest.fixture(scope="class")
-def lbodi_running_vmb(
-    lbodi_vmb,
-):
-    lbodi_vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=lbodi_vmb.vmi)
-    return lbodi_vmb
+def lbodi_running_vmb(lbodi_vmb):
+    return running_vm(vm=lbodi_vmb)
 
 
 @pytest.fixture(scope="class")
@@ -127,7 +118,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         Check that bond interface exists on the specific worker node,
         in Up state and has valid IP address.
         """
-        bond_ip = network_utils.wait_for_address_on_iface(
+        bond_ip = wait_for_address_on_iface(
             worker_pod=lbodi_pod_with_bond,
             iface_name=lbodi_bond.bond_name,
         )
@@ -156,10 +147,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
             [lbodi_running_vma, lbodi_running_vmb],
             [vmb_ip, vma_ip],
         ):
-            utilities.network.assert_ping_successful(
-                src_vm=vm,
-                dst_ip=ip,
-            )
+            assert_ping_successful(src_vm=vm, dst_ip=ip)
 
     @pytest.mark.polarion("CNV-3439")
     def test_bond_and_persistence(
@@ -175,7 +163,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         Verify bond interface status and persistence after reboot
         """
         worker_exec = workers_ssh_executors[lbodi_bond.node_selector]
-        network_utils.wait_for_address_on_iface(
+        wait_for_address_on_iface(
             worker_pod=lbodi_pod_with_bond,
             iface_name=lbodi_bond.bond_name,
         )
@@ -192,7 +180,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
             if sample:
                 break
 
-        network_utils.wait_for_address_on_iface(
+        wait_for_address_on_iface(
             worker_pod=lbodi_pod_with_bond,
             iface_name=lbodi_bond.bond_name,
         )
