@@ -1,1 +1,4 @@
 SRIOV = "sriov"
+
+TIMEOUT_10MIN = 10 * 60
+TIMEOUT_60MIN = 60 * 60
