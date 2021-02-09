@@ -12,6 +12,7 @@ from resources.volume_snapshot import VolumeSnapshot
 
 import utilities.storage
 from tests.storage import utils
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images
 
 
@@ -112,7 +113,7 @@ def test_successful_vm_restart_with_cloned_dv(
         volume_mode=data_volume_multi_storage_scope_function.volume_mode,
         access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
-        cdv.wait(timeout=600)
+        cdv.wait(timeout=TIMEOUT_10MIN)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
             vm_dv.restart(timeout=300, wait=True)
             utils.check_disk_count_in_vm(vm=vm_dv)

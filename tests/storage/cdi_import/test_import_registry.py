@@ -13,6 +13,7 @@ import utilities.storage
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests
@@ -519,7 +520,9 @@ def test_inject_invalid_cert_to_configmap(
         size="1Gi",
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=600)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=TIMEOUT_10MIN
+        )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
         wait_for_importer_container_message(
             importer_pod=importer_pod,

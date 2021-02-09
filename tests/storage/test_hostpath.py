@@ -24,6 +24,7 @@ from resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
 from utilities import console
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
@@ -273,7 +274,7 @@ def test_hpp_specify_node_immediate(
         volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=worker_node1.name,
     ) as dv:
-        dv.wait(timeout=600)
+        dv.wait(timeout=TIMEOUT_10MIN)
 
 
 @pytest.mark.parametrize(
@@ -652,7 +653,9 @@ def test_hostpath_clone_dv_with_annotation(
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
         ) as target_dv:
-            target_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=600)
+            target_dv.wait_for_status(
+                status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_10MIN
+            )
             assert_provision_on_node_annotation(
                 pvc=target_dv.pvc, node_name=worker_node1.name, type_="target"
             )

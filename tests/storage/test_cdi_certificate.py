@@ -19,6 +19,7 @@ from resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
 from utilities import console
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import (
     create_dummy_first_consumer_pod,
@@ -119,7 +120,7 @@ def valid_aggregated_api_client_cert():
         ]
         for cert in cert_list:
             # Check if certificate won't expire in next 10 minutes
-            if not x509_cert_is_valid(cert=cert, seconds=10 * 60):
+            if not x509_cert_is_valid(cert=cert, seconds=TIMEOUT_10MIN):
                 raise pytest.fail(
                     f"Certificate located in: {cert_attr} expires in less than 10 minutes"
                 )

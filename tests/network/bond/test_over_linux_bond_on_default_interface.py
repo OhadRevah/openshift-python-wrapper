@@ -10,6 +10,7 @@ from resources.utils import TimeoutSampler
 
 import tests.network.utils as network_utils
 import utilities.network
+from utilities.constants import TIMEOUT_10MIN
 from utilities.network import BondNodeNetworkConfigurationPolicy
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -20,7 +21,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-TIMEOUT = 600
 SLEEP = 5
 
 
@@ -184,7 +184,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         worker_exec.executor().run_cmd(cmd=["bash", "-c", "sudo reboot"])
         LOGGER.info(f"Wait until {lbodi_bond.node_selector} reboots ...")
         samples = TimeoutSampler(
-            timeout=TIMEOUT,
+            timeout=TIMEOUT_10MIN,
             sleep=SLEEP,
             func=worker_exec.executor().is_connective,
         )

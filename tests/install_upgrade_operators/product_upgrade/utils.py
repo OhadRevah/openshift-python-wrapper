@@ -21,13 +21,12 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from tests.install_upgrade_operators.utils import wait_for_hco_conditions
+from utilities.constants import TIMEOUT_10MIN, TIMEOUT_60MIN
 from utilities.virt import run_command, wait_for_vm_interfaces
 
 
 APP_REGISTRY = "rh-osbs-operators"
 LOGGER = logging.getLogger(__name__)
-TIMEOUT_10MIN = 10 * 60
-TIMEOUT_60MIN = 60 * 60
 
 
 def wait_for_dvs_import_completed(dvs_list):
@@ -365,7 +364,7 @@ def get_nodes_status(nodes):
 def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
     nodes_status_after_upgrade = None
     nodes_sampler = TimeoutSampler(
-        timeout=600,
+        timeout=TIMEOUT_10MIN,
         sleep=5,
         func=get_nodes_status,
         nodes=nodes,

@@ -12,6 +12,7 @@ from resources.resource import ResourceEditor
 from resources.storage_class import StorageClass
 
 import tests.storage.utils as storage_utils
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import (
     check_cdi_feature_gate_enabled,
@@ -251,7 +252,7 @@ def test_wffc_clone_dv(
         access_modes=data_volume_scope_function.access_modes,
         consume_wffc=True,
     ) as cdv:
-        cdv.wait(timeout=600)
+        cdv.wait(timeout=TIMEOUT_10MIN)
         with storage_utils.create_vm_from_dv(dv=cdv, vm_name=cdv.name) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 

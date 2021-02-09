@@ -13,6 +13,7 @@ from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 
 from tests.vmimport import utils
+from utilities.constants import TIMEOUT_10MIN
 from utilities.virt import import_vm
 
 from .utils import ResourceMappingItem, Source
@@ -73,7 +74,7 @@ def import_name(vm_name):
 
 def wait_for_source_vm_status(provider, provider_data, source_vm_name, state):
     samples = TimeoutSampler(
-        timeout=600,
+        timeout=TIMEOUT_10MIN,
         sleep=1,
         func=provider.vm,
         name=source_vm_name,

@@ -17,6 +17,7 @@ from resources.utils import TimeoutSampler
 
 from tests.storage import utils as storage_utils
 from utilities import storage as utils
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import get_images_https_server
 
@@ -193,7 +194,9 @@ def test_cloner_pods_cdi_label(
         volume_mode=data_volume_multi_storage_scope_function.volume_mode,
         access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
-        cdv.wait_for_status(status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=600)
+        cdv.wait_for_status(
+            status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=TIMEOUT_10MIN
+        )
         is_cdi_worker_pod(
             dyn_client=admin_client,
             pod_name="cdi-upload-dv-target",

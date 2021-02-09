@@ -17,6 +17,7 @@ from resources.virtual_machine import VirtualMachineInstanceMigration
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
 from utilities import console
+from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -238,7 +239,7 @@ class TestNodeMaintenanceRHEL:
             )
         ):
             with NodeMaintenance(
-                name="node-maintenance-job", node=source_node, timeout=600
+                name="node-maintenance-job", node=source_node, timeout=TIMEOUT_10MIN
             ) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
                 check_draining_process(

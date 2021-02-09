@@ -6,8 +6,9 @@ from resources.hyperconverged import HyperConverged
 from resources.resource import Resource
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.constants import TIMEOUT_10MIN
 
-TIMEOUT_10MIN = 10 * 60
+
 DEFAULT_HCO_CONDITIONS = {
     Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
     Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
