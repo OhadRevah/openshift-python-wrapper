@@ -38,7 +38,7 @@ class ResourceFieldEqBugWorkaround(object):
 
 def compare_resource_values(resource, path, checks):
     with open(path) as resource_file:
-        file_content = yaml.load(resource_file.read(), Loader=yaml.Loader)
+        file_content = yaml.safe_load(resource_file.read())
     compare_resource_contents(
         resource=resource, file_content=file_content, checks=checks
     )

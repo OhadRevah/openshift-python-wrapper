@@ -5,7 +5,7 @@ import yaml
 @pytest.fixture(scope="module")
 def smbios_from_kubevirt_config_cm(kubevirt_config_cm):
     """ Extract SMBIOS default from kubevirt config map. """
-    return yaml.load(kubevirt_config_cm.instance.data.smbios)
+    return yaml.safe_load(kubevirt_config_cm.instance.data.smbios)
 
 
 @pytest.fixture(scope="module")

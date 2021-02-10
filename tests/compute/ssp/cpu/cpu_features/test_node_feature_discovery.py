@@ -54,9 +54,8 @@ def config_map_cpu_model_dict():
         name="kubevirt-cpu-plugin-configmap", namespace=py_config["hco_namespace"]
     )
 
-    return yaml.load(
+    return yaml.safe_load(
         cpu_plugin_map.instance.data["cpu-plugin-configmap.yaml"],
-        Loader=yaml.Loader,
     )
 
 

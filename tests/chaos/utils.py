@@ -114,7 +114,7 @@ class LitmusScenario:
 
     def _load_config(self):
         with open(os.path.join(self.litmus_dir, "config.yaml"), "r") as data:
-            return yaml.load(data, Loader=yaml.FullLoader)
+            return yaml.safe_load(data)
 
     def _deploy(self):
         script_dir = self.config["repo"]["deploydir"]
