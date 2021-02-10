@@ -120,6 +120,7 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
         cloud_init_data=cloud_init_data,
     ) as vm:
         mac_pool.append_macs(vm=vm)
+        vm.start()
         yield vm
         mac_pool.remove_macs(vm=vm)
 

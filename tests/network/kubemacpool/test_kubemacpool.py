@@ -17,9 +17,7 @@ class TestKMPConnectivity:
     # |       |---eth3:10.200.3.1: Manual MAC not      from pool:10.200.3.2:eth3---|        |
     # |.......|---eth4:10.200.4.1: Automatic mac tuning network :10.200.4.2:eth4---|........|
     @pytest.mark.polarion("CNV-2154")
-    def test_manual_mac_from_pool(
-        self, namespace, started_vmi_a, started_vmi_b, running_vm_a, running_vm_b
-    ):
+    def test_manual_mac_from_pool(self, namespace, running_vm_a, running_vm_b):
         """Test that manually assigned mac address from pool is configured and working"""
         for vm in (running_vm_a, running_vm_b):
             kmp_utils.assert_manual_mac_configured(

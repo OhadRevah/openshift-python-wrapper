@@ -5,13 +5,8 @@ from resources.namespace import Namespace
 from resources.resource import ResourceEditor
 
 import utilities.network
-from tests.network.utils import running_vmi
 from utilities.infra import create_ns
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 from . import utils as kmp_utils
 
@@ -158,37 +153,25 @@ def vm_b(
 
 
 @pytest.fixture(scope="class")
-def started_vmi_a(vm_a):
-    return running_vmi(vm=vm_a)
+def running_vm_a(vm_a):
+    return running_vm(vm=vm_a)
 
 
 @pytest.fixture(scope="class")
-def started_vmi_b(vm_b):
-    return running_vmi(vm=vm_b)
-
-
-@pytest.fixture(scope="class")
-def running_vm_a(vm_a, started_vmi_a):
-    wait_for_vm_interfaces(vmi=started_vmi_a)
-    return vm_a
-
-
-@pytest.fixture(scope="class")
-def running_vm_b(vm_b, started_vmi_b):
-    wait_for_vm_interfaces(vmi=started_vmi_b)
-    return vm_b
+def running_vm_b(vm_b):
+    return running_vm(vm=vm_b)
 
 
 @pytest.fixture(scope="function")
 def restarted_vmi_a(vm_a):
     vm_a.stop(wait=True)
-    return running_vmi(vm=vm_a)
+    return running_vm(vm=vm_a)
 
 
 @pytest.fixture(scope="function")
 def restarted_vmi_b(vm_b):
     vm_b.stop(wait=True)
-    return running_vmi(vm=vm_b)
+    return running_vm(vm=vm_b)
 
 
 @pytest.fixture(scope="class")
