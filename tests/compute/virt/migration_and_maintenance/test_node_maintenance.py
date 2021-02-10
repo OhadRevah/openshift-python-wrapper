@@ -30,18 +30,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 @contextmanager
-def running_sleep_in_linux(vm_cli):
-    process = "sleep 1000"
-    with vm_cli as vm_console:
-        vm_console.sendline(f"nohup {process} &")
-        vm_console.expect("nohup: ")
-    yield
-    with vm_cli as vm_console:
-        vm_console.sendline(f'ps aux | grep "{process}" | grep -v grep | wc -l')
-        vm_console.expect("1")
-
-
-@contextmanager
 def node_mgmt_console(node, node_mgmt):
     try:
         LOGGER.info(f"{node_mgmt.capitalize()} the node {node.name}")
@@ -64,8 +52,8 @@ def node_mgmt_console(node, node_mgmt):
         )
 
 
-def drain_using_console(dyn_client, source_node, source_pod, vm, vm_cli):
-    with running_sleep_in_linux(vm_cli=vm_cli):
+def drain_using_console(dyn_client, source_node, source_pod, vm):
+    with virt_utils.running_sleep_in_linux(vm=vm):
         with node_mgmt_console(node=source_node, node_mgmt="drain"):
             check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
 
@@ -233,10 +221,8 @@ class TestNodeMaintenanceRHEL:
         )
         source_node = source_pod.node
 
-        with running_sleep_in_linux(
-            vm_cli=console.RHEL(
-                vm=golden_image_vm_instance_from_template_multi_storage_scope_class
-            )
+        with virt_utils.running_sleep_in_linux(
+            vm=golden_image_vm_instance_from_template_multi_storage_scope_class
         ):
             with NodeMaintenance(
                 name="node-maintenance-job", node=source_node, timeout=TIMEOUT_10MIN
@@ -262,9 +248,6 @@ class TestNodeMaintenanceRHEL:
             source_node=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
             source_pod=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            vm_cli=console.RHEL(
-                vm=golden_image_vm_instance_from_template_multi_storage_scope_class
-            ),
         )
 
     @pytest.mark.polarion("CNV-4995")
@@ -299,9 +282,6 @@ class TestNodeMaintenanceRHEL:
                 source_node=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
                 source_pod=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod,
                 vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-                vm_cli=console.RHEL(
-                    vm=golden_image_vm_instance_from_template_multi_storage_scope_class
-                ),
             )
 
 

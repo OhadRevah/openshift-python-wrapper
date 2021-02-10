@@ -1,8 +1,10 @@
 import logging
+from contextlib import contextmanager
 
 from resources.node import Node
 from resources.utils import TimeoutSampler
 
+from utilities.infra import run_ssh_commands
 from utilities.virt import kubernetes_taint_exists
 
 
@@ -43,3 +45,40 @@ def wait_for_node_schedulable_status(node, status, timeout=60):
             else:
                 if sample.items[0].spec.unschedulable and kubernetes_taint_exists(node):
                     return
+
+
+def assert_process_not_running(vm, process):
+    assert "1" in run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[
+            ["bash", "-c", f"/usr/bin/ps aux | grep '{process}'| grep -v grep | wc -l"]
+        ],
+    )[0]
+
+
+def kill_running_process(vm, process):
+    process_name = process.split()[0]
+    output = run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[["bash", "-c", f"/usr/bin/pidof '{process_name}' || true"]],
+    )[0]
+    pid = output.strip()
+    if pid:
+        run_ssh_commands(
+            host=vm.ssh_exec,
+            commands=[["bash", "-c", f"kill '{pid}'"]],
+        )
+
+
+@contextmanager
+def running_sleep_in_linux(vm):
+    process = "/usr/bin/sleep 1000"
+    kill_running_process(vm=vm, process=process)
+    run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[["nohup", "bash", "-c", f"{process} >& /dev/null &", "&"]],
+    )
+    assert_process_not_running(vm=vm, process=process)
+    yield
+    assert_process_not_running(vm=vm, process=process)
+    kill_running_process(vm=vm, process=process)
