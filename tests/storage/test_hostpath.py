@@ -23,7 +23,6 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities import console
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import (
@@ -35,7 +34,7 @@ from utilities.storage import (
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
-from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_console
+from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -529,9 +528,10 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     CDI clone function works well. The PVCs will have an annotation 'volume.kubernetes.io/selected-node' containing
     the node name where the pod is scheduled on.
     """
+    dv_name = "cnv-3516-target-dv"
     with create_dv(
         source="pvc",
-        dv_name="cnv-3516-target-dv",
+        dv_name=dv_name,
         namespace=namespace.name,
         source_namespace=data_volume_scope_function.namespace,
         source_pvc=data_volume_scope_function.pvc.name,
@@ -539,15 +539,22 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as target_dv:
-        target_dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND)
-        target_dv.wait_for_status(
-            status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=180
-        )
-        upload_target_pod = get_pod_by_name_prefix(
-            dyn_client=admin_client,
-            pod_prefix="cdi-upload",
-            namespace=namespace.name,
-        )
+        upload_target_pod = None
+        for sample in TimeoutSampler(
+            wait_timeout=20,
+            sleep=1,
+            func=lambda: list(
+                Pod.get(
+                    dyn_client=admin_client,
+                    namespace=namespace.name,
+                    name=f"cdi-upload-{dv_name}",
+                )
+            ),
+        ):
+            if sample:
+                upload_target_pod = sample[0]
+                break
+
         upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
         assert_selected_node_annotation(
             pvc_node_name=target_dv.pvc.selected_node,
@@ -562,11 +569,10 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             labels=Template.generate_template_labels(
                 **py_config["latest_fedora_os_dict"]["template_labels"]
             ),
-            data_volume=target_dv,
+            existing_data_volume=target_dv,
         ) as vm:
-            vm.start(wait=True, timeout=900)
-            vm.vmi.wait_until_running(timeout=300)
-            wait_for_console(vm=vm, console_impl=console.Fedora)
+            running_vm(vm=vm)
+            vm.ssh_exec.executor().is_connective()
 
 
 @pytest.mark.polarion("CNV-3328")

@@ -18,6 +18,7 @@ from ocp_resources.project import Project, ProjectRequest
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.service import Service
 from openshift.dynamic import DynamicClient
+from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import PODS_TO_COLLECT_INFO, TEST_COLLECT_INFO_DIR
@@ -217,10 +218,8 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
         if re.match(pod_prefix, pod.name)
     ]
     if pods:
-        if get_all:
-            return pods
-        else:
-            return pods[0]
+        return pods if get_all else pods[0]
+    raise NotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
 
 
 def run_ssh_commands(host, commands):
