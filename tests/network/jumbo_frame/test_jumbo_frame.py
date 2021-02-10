@@ -19,7 +19,7 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -188,35 +188,23 @@ def bond_bridge_attached_vmb(
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vmia(bridge_attached_vma):
-    vmi = bridge_attached_vma.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def running_bridge_attached_vma(bridge_attached_vma):
+    return running_vm(vm=bridge_attached_vma)
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vmib(bridge_attached_vmb):
-    vmi = bridge_attached_vmb.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def running_bridge_attached_vmb(bridge_attached_vmb):
+    return running_vm(vm=bridge_attached_vmb)
 
 
 @pytest.fixture(scope="class")
-def running_bond_bridge_attached_vmia(bond_bridge_attached_vma):
-    vmi = bond_bridge_attached_vma.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def running_bond_bridge_attached_vma(bond_bridge_attached_vma):
+    return running_vm(vm=bond_bridge_attached_vma)
 
 
 @pytest.fixture(scope="class")
-def running_bond_bridge_attached_vmib(bond_bridge_attached_vmb):
-    vmi = bond_bridge_attached_vmb.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def running_bond_bridge_attached_vmb(bond_bridge_attached_vmb):
+    return running_vm(vm=bond_bridge_attached_vmb)
 
 
 @pytest.mark.bugzilla(
@@ -236,8 +224,8 @@ class TestJumboFrame:
         nad,
         bridge_attached_vma,
         bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
+        running_bridge_attached_vma,
+        running_bridge_attached_vmb,
     ):
         """
         Check connectivity over linux bridge with custom MTU
@@ -247,7 +235,7 @@ class TestJumboFrame:
         assert_ping_successful(
             src_vm=bridge_attached_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmib, name=nad.name
+                vmi=running_bridge_attached_vmb.vmi, name=nad.name
             ),
             packetsize=nad.mtu - ip_header - icmp_header,
         )
@@ -263,8 +251,8 @@ class TestJumboFrame:
         nad,
         bridge_attached_vma,
         bridge_attached_vmb,
-        running_bridge_attached_vmia,
-        running_bridge_attached_vmib,
+        running_bridge_attached_vma,
+        running_bridge_attached_vmb,
     ):
         """
         Check connectivity failed when packet size is higher than custom MTU
@@ -272,7 +260,7 @@ class TestJumboFrame:
         assert_no_ping(
             src_vm=bridge_attached_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmib, name=nad.name
+                vmi=running_bridge_attached_vmb.vmi, name=nad.name
             ),
             packetsize=nad.mtu + 100,
         )
@@ -295,8 +283,8 @@ class TestBondJumboFrame:
         br1bond_nad,
         bond_bridge_attached_vma,
         bond_bridge_attached_vmb,
-        running_bond_bridge_attached_vmia,
-        running_bond_bridge_attached_vmib,
+        running_bond_bridge_attached_vma,
+        running_bond_bridge_attached_vmb,
     ):
         """
         Check connectivity over linux bridge with custom MTU
@@ -306,7 +294,7 @@ class TestBondJumboFrame:
         assert_ping_successful(
             src_vm=bond_bridge_attached_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bond_bridge_attached_vmib, name=br1bond_nad.name
+                vmi=running_bond_bridge_attached_vmb.vmi, name=br1bond_nad.name
             ),
             packetsize=br1bond_nad.mtu - ip_header - icmp_header,
         )
@@ -323,8 +311,8 @@ class TestBondJumboFrame:
         br1bond_nad,
         bond_bridge_attached_vma,
         bond_bridge_attached_vmb,
-        running_bond_bridge_attached_vmia,
-        running_bond_bridge_attached_vmib,
+        running_bond_bridge_attached_vma,
+        running_bond_bridge_attached_vmb,
     ):
         """
         Check connectivity failed when packet size is higher than custom MTU
@@ -332,7 +320,7 @@ class TestBondJumboFrame:
         assert_no_ping(
             src_vm=bond_bridge_attached_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bond_bridge_attached_vmib, name=br1bond_nad.name
+                vmi=running_bond_bridge_attached_vmb.vmi, name=br1bond_nad.name
             ),
             packetsize=br1bond_nad.mtu + 100,
         )
