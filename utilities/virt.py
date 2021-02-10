@@ -1433,8 +1433,9 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
     """
     # For VMs from common templates
     start_vm_timeout = 240
-    windows_vm = vm.os_flavor.startswith("win")
-    if windows_vm:
+
+    # For VMs from common templates (Linux and Windows based)
+    if vm.is_vm_from_template:
         # Windows 10 takes longer to start
         start_vm_timeout = (
             2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
@@ -1450,7 +1451,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         wait_for_vm_interfaces(vmi=vm.vmi)
 
     if enable_ssh:
-        if windows_vm:
+        if vm.os_flavor.startswith("win"):
             wait_for_ssh_connectivity(vm=vm)
         else:
             enable_ssh_service_in_vm(vm=vm, console_impl=CONSOLE_IMPL[vm.os_flavor])
