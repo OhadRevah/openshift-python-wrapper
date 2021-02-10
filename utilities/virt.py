@@ -24,6 +24,7 @@ from resources.virtual_machine import VirtualMachine
 from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
+from utilities.console import CONSOLE_IMPL
 from utilities.constants import OS_LOGIN_PARAMS
 from utilities.infra import (
     BUG_STATUS_CLOSED,
@@ -1425,3 +1426,42 @@ def get_windows_os_dict(windows_version):
         raise KeyError(
             f"Failed to extract {windows_version} from system_windows_os_matrix"
         )
+
+
+def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
+    """
+    Wait for the VMI to be in Running state.
+
+    Args:
+        vm (VirtualMachine): VM object.
+        wait_for_interfaces (bool): Is waiting for VM's interfaces mandatory for declaring VM as running.
+        enable_ssh (bool): Enable SSh service in the VM.
+
+    Returns:
+        VirtualMachine: VM object.
+    """
+    # For VMs from common templates
+    start_vm_timeout = 240
+    windows_vm = vm.os_flavor.startswith("win")
+    if windows_vm:
+        # Windows 10 takes longer to start
+        start_vm_timeout = (
+            2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
+        )
+
+    if not vm.instance.spec.running:
+        vm.start(wait=True, timeout=start_vm_timeout)
+
+    # Verify the VM was started (either in this function or before calling it).
+    vm.vmi.wait_until_running()
+
+    if wait_for_interfaces:
+        wait_for_vm_interfaces(vmi=vm.vmi)
+
+    if enable_ssh:
+        if windows_vm:
+            wait_for_ssh_connectivity(vm=vm)
+        else:
+            enable_ssh_service_in_vm(vm=vm, console_impl=CONSOLE_IMPL[vm.os_flavor])
+
+    return vm

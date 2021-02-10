@@ -136,3 +136,12 @@ class Centos(Console):
     params = OS_LOGIN_PARAMS["centos"]
     USERNAME = params["username"]
     PASSWORD = params["password"]
+
+
+CONSOLE_IMPL = {
+    "rhel": RHEL,
+    "fedora": Fedora,
+    "centos": Centos,
+    "cirros": Cirros,
+    "alpine": Alpine,
+}
