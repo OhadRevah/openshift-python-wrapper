@@ -6,7 +6,6 @@ Common templates test Windows OS support
 import logging
 
 import pytest
-from pytest_testconfig import config as py_config
 
 import tests.compute.ssp.utils as ssp_utils
 import utilities.virt
@@ -15,6 +14,7 @@ from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
 from utilities.infra import BUG_STATUS_CLOSED
+from utilities.virt import running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -26,8 +26,7 @@ LOGGER = logging.getLogger(__name__)
         (
             {
                 "cpu_threads": 2,
-                "username": py_config["windows_username"],
-                "password": py_config["windows_password"],
+                "ssh": False,
             }
         )
     ],
@@ -64,14 +63,8 @@ class TestCommonTemplatesWindows:
     ):
         """ Test CNV common templates VM initiation """
 
-        compute_utils.vm_started(
+        running_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
-        )
-        utilities.virt.wait_for_windows_vm(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
-                "os_version"
-            ],
         )
 
     @pytest.mark.bugzilla(

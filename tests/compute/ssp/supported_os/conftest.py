@@ -132,9 +132,8 @@ def vm_object_from_template(
         if network_configuration
         else None,
         cloud_init_data=cloud_init_data if cloud_init_data else None,
-        username=param_dict.get("username"),
-        password=param_dict.get("password"),
         rhel7_workers=rhel7_workers,
+        ssh=param_dict.get("ssh", True),
     )
 
 

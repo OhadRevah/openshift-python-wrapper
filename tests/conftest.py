@@ -83,7 +83,7 @@ from utilities.virt import (
     generate_yaml_from_template,
     kubernetes_taint_exists,
     nmcli_add_con_cmds,
-    wait_for_vm_interfaces,
+    running_vm,
     wait_for_windows_vm,
 )
 
@@ -1368,20 +1368,16 @@ def vm_instance_from_template(
         node_selector=node_selector,
         diskless_vm=params.get("diskless_vm"),
         cpu_model=params.get("cpu_model") or vm_cpu_model,
-        ssh=params.get("ssh"),
+        ssh=params.get("ssh", True),
         disk_options_vm=params.get("disk_io_option"),
-        username=params.get("username"),
-        password=params.get("password"),
         rhel7_workers=rhel7_workers,
     ) as vm:
         if params.get("start_vm", True):
-            # Higher timeout is needed for golden images (pvc is cloned when the VM is started)
-            vm.start(wait=True, timeout=params.get("vm_wait_timeout", 1800))
-            vm.vmi.wait_until_running()
-            if params.get("guest_agent", True):
-                wait_for_vm_interfaces(
-                    vmi=vm.vmi, timeout=params.get("wait_for_interfaces_timeout", 720)
-                )
+            running_vm(
+                vm=vm,
+                wait_for_interfaces=params.get("guest_agent", True),
+                enable_ssh=vm.ssh,
+            )
         yield vm
 
 
@@ -1562,34 +1558,6 @@ def started_windows_vm(
     wait_for_windows_vm(
         vm=vm_instance_from_template_multi_storage_scope_function,
         version=request.param["os_version"],
-    )
-
-
-@pytest.fixture()
-def golden_image_started_windows_vm(
-    request,
-    golden_image_vm_instance_from_template_multi_storage_scope_function,
-):
-    wait_for_windows_vm(
-        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
-        version=request.param["os_version"],
-        timeout=1800,
-    )
-
-
-@pytest.fixture()
-def golden_image_started_windows_dv_scope_class_vm_scope_function(
-    request,
-    golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-):
-    """
-    VM is created with function scope whereas golden image DV is created with class scope. to be used when a number
-    of tests (each creates its relevant VM) are gathered under a class and use the same golden image DV.
-    """
-    wait_for_windows_vm(
-        vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-        version=request.param["os_version"],
-        timeout=1800,
     )
 
 

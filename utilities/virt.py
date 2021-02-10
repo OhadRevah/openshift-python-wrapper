@@ -753,8 +753,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             disk_io_options=disk_options_vm,
             smm_enabled=smm_enabled,
             efi_params=efi_params,
-            username=username,
-            password=password,
             rhel7_workers=rhel7_workers,
             macs=macs,
             interfaces_types=interfaces_types,
@@ -844,14 +842,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             else "mock_pvc_ns",
         }
 
-        # Add password to VM for Non-Windows VMs
-        self.password = self._get_password_from_cloud_init() or self.password
-
-        # Extract OS from template labels
+        # Set password for non-Windows VMs; for Windows VM, the password is already set in the image
         if "win" not in self.os_flavor:
-            template_kwargs["CLOUD_USER_PASSWORD"] = (
-                self.password or OS_LOGIN_PARAMS[self.os_flavor]["password"]
-            )
+            template_kwargs["CLOUD_USER_PASSWORD"] = OS_LOGIN_PARAMS[self.os_flavor][
+                "password"
+            ]
 
         template_instance = self.get_template_by_labels()
         resources_list = template_instance.process(
@@ -891,10 +886,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         ), f"More than one template matches {self.template_labels}"
 
         return template[0]
-
-    def _get_password_from_cloud_init(self):
-        if self.cloud_init_data:
-            return self.cloud_init_data.get("userData", {}).get("password")
 
 
 def vm_console_run_commands(

@@ -19,7 +19,7 @@ from utilities.infra import BUG_STATUS_CLOSED
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_function,"
     "golden_image_vm_instance_from_template_multi_storage_scope_function, "
-    "golden_image_started_windows_vm, golden_image_exposed_vm_service_multi_storage_scope_function",
+    "golden_image_exposed_vm_service_multi_storage_scope_function",
     [
         pytest.param(
             {
@@ -29,18 +29,12 @@ from utilities.infra import BUG_STATUS_CLOSED
             },
             {
                 "vm_name": "windows-migrate-vm",
-                "start_vm": True,
-                "guest_agent": False,
                 "template_labels": py_config["latest_windows_version"][
                     "template_labels"
                 ],
                 "cpu_threads": 2,
                 "set_vm_common_cpu": True,
-                "ssh": True,
-                "username": py_config["windows_username"],
-                "password": py_config["windows_password"],
             },
-            {"os_version": py_config["latest_windows_version"]["os_version"]},
             {"service_name": "telnet", "service_port": 5985},
             marks=pytest.mark.polarion("CNV-3335"),
         ),
@@ -54,7 +48,6 @@ def test_migrate_vm_windows(
     namespace,
     golden_image_data_volume_multi_storage_scope_function,
     golden_image_vm_instance_from_template_multi_storage_scope_function,
-    golden_image_started_windows_vm,
     golden_image_exposed_vm_service_multi_storage_scope_function,
 ):
     """Test CNV common templates with Windows

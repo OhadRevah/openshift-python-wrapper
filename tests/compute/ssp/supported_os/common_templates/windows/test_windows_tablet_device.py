@@ -58,8 +58,7 @@ def check_windows_vm_tablet_device(vm, driver_state):
 )
 class TestWindowsTabletDevice:
     @pytest.mark.parametrize(
-        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,"
-        "golden_image_started_windows_dv_scope_class_vm_scope_function",
+        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function",
         [
             pytest.param(
                 {
@@ -68,14 +67,10 @@ class TestWindowsTabletDevice:
                         "template_labels"
                     ],
                     "cpu_threads": 2,
-                    "ssh": True,
-                    "username": py_config["windows_username"],
-                    "password": py_config["windows_password"],
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "tablet1", "type": "tablet", "bus": "usb"}
                     ),
                 },
-                {"os_version": py_config["latest_windows_version"]["os_version"]},
                 marks=pytest.mark.polarion("CNV-2644"),
             ),
         ],
@@ -87,7 +82,6 @@ class TestWindowsTabletDevice:
         namespace,
         golden_image_data_volume_multi_storage_scope_class,
         golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-        golden_image_started_windows_dv_scope_class_vm_scope_function,
     ):
 
         LOGGER.info("Test tablet device - USB bus.")
@@ -101,8 +95,7 @@ class TestWindowsTabletDevice:
         )
 
     @pytest.mark.parametrize(
-        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,"
-        "golden_image_started_windows_dv_scope_class_vm_scope_function",
+        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function",
         [
             pytest.param(
                 {
@@ -111,14 +104,10 @@ class TestWindowsTabletDevice:
                         "template_labels"
                     ],
                     "cpu_threads": 2,
-                    "ssh": True,
-                    "username": py_config["windows_username"],
-                    "password": py_config["windows_password"],
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "win_tablet", "type": "tablet", "bus": "virtio"}
                     ),
                 },
-                {"os_version": py_config["latest_windows_version"]["os_version"]},
                 marks=pytest.mark.polarion("CNV-3444"),
             ),
         ],
@@ -130,7 +119,6 @@ class TestWindowsTabletDevice:
         namespace,
         golden_image_data_volume_multi_storage_scope_class,
         golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-        golden_image_started_windows_dv_scope_class_vm_scope_function,
     ):
         """Verify that when a Windows VM is configured with virtio tablet input
         device(virtio drivers do not support tablet device), the VM is running.
@@ -148,8 +136,7 @@ class TestWindowsTabletDevice:
         )
 
     @pytest.mark.parametrize(
-        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,"
-        "golden_image_started_windows_dv_scope_class_vm_scope_function",
+        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function",
         [
             pytest.param(
                 {
@@ -158,11 +145,7 @@ class TestWindowsTabletDevice:
                         "template_labels"
                     ],
                     "cpu_threads": 2,
-                    "ssh": True,
-                    "username": py_config["windows_username"],
-                    "password": py_config["windows_password"],
                 },
-                {"os_version": py_config["latest_windows_version"]["os_version"]},
                 marks=pytest.mark.polarion("CNV-4151"),
             ),
         ],
@@ -174,7 +157,6 @@ class TestWindowsTabletDevice:
         namespace,
         golden_image_data_volume_multi_storage_scope_class,
         golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-        golden_image_started_windows_dv_scope_class_vm_scope_function,
     ):
         """Verify that when a Windows Server VM is configured by default with
         tablet device
@@ -194,8 +176,7 @@ class TestWindowsTabletDevice:
 
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_function,"
-    "golden_image_vm_instance_from_template_multi_storage_scope_function,"
-    "golden_image_started_windows_vm",
+    "golden_image_vm_instance_from_template_multi_storage_scope_function,",
     [
         pytest.param(
             {
@@ -207,11 +188,7 @@ class TestWindowsTabletDevice:
                 "vm_name": "windows-desktop-default-tablet-device",
                 "template_labels": WINDOWS_DESKTOP_VERSION["template_labels"],
                 "cpu_threads": 2,
-                "ssh": True,
-                "username": py_config["windows_username"],
-                "password": py_config["windows_password"],
             },
-            {"os_version": WINDOWS_DESKTOP_VERSION["os_version"]},
             marks=pytest.mark.polarion("CNV-4150"),
         ),
     ],
@@ -222,7 +199,6 @@ def test_windows_desktop_default_tablet_device(
     namespace,
     golden_image_data_volume_multi_storage_scope_function,
     golden_image_vm_instance_from_template_multi_storage_scope_function,
-    golden_image_started_windows_vm,
 ):
     """Verify that when a Desktop Windows VM is configured by default with
     tablet device
