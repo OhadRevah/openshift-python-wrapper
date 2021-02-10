@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.polarion("CNV-4481")
+@pytest.mark.polarion("CNV-4881")
 def test_ccd_links(virtctl_ccd):
     """
     Check virtctl cli link.
