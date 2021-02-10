@@ -12,10 +12,10 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
-from tests.compute.utils import remove_eth0_default_gw, vm_started
+from tests.compute.utils import remove_eth0_default_gw
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import enable_ssh_service_in_vm, wait_for_console
+from utilities.virt import running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ class TestCommonTemplatesRhel:
         rhel_os_matrix__class__,
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_ssh_service_multi_rhel_os_scope_class,
     ):
         """ Test CNV VM creation from template """
 
@@ -59,7 +60,7 @@ class TestCommonTemplatesRhel:
     ):
         """ Test CNV common templates VM initiation """
 
-        vm_started(
+        running_vm(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             wait_for_interfaces="rhel-6" not in [*rhel_os_matrix__class__][0],
         )
@@ -135,8 +136,6 @@ class TestCommonTemplatesRhel:
         rhel_os_matrix__class__,
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-        golden_image_vm_ssh_service_multi_rhel_os_scope_class,
-        bugzilla_connection_params,
     ):
         """ CNV common templates access VM via SSH """
 
@@ -153,12 +152,6 @@ class TestCommonTemplatesRhel:
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
                 console_impl=console.RHEL,
             )
-
-        enable_ssh_service_in_vm(
-            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            console_impl=console.RHEL,
-            systemctl_support="rhel-6" not in [*rhel_os_matrix__class__][0],
-        )
 
         assert golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
