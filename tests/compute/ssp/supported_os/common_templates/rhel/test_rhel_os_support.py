@@ -22,11 +22,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.ci
-@pytest.mark.parametrize(
-    "golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class",
-    [({"username": console.RHEL.USERNAME, "password": console.RHEL.PASSWORD})],
-    indirect=True,
-)
 class TestCommonTemplatesRhel:
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3802")

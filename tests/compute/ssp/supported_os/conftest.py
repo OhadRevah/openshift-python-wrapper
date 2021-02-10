@@ -206,7 +206,6 @@ def golden_image_vm_object_from_template_multi_storage_scope_class(
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class(
-    request,
     rhel7_workers,
     unprivileged_client,
     namespace,
@@ -216,7 +215,6 @@ def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
     cloud_init_data,
 ):
     return vm_object_from_template(
-        request=request,
         rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
@@ -275,7 +273,6 @@ def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_cla
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
-    request,
     rhel7_workers,
     unprivileged_client,
     namespace,
@@ -285,7 +282,6 @@ def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
     cloud_init_data,
 ):
     return vm_object_from_template(
-        request=request,
         rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,

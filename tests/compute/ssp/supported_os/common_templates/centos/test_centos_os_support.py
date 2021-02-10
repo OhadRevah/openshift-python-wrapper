@@ -12,27 +12,14 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
-from tests.compute.utils import vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import enable_ssh_service_in_vm, wait_for_console
+from utilities.virt import running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize(
-    "golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class",
-    [
-        (
-            {
-                "username": console.Centos.USERNAME,
-                "password": console.Centos.PASSWORD,
-            }
-        )
-    ],
-    indirect=True,
-)
 class TestCommonTemplatesCentos:
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-5337")
@@ -44,6 +31,7 @@ class TestCommonTemplatesCentos:
         centos_os_matrix__class__,
         golden_image_data_volume_multi_centos_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        golden_image_vm_ssh_service_multi_centos_scope_class,
     ):
         """ Test CNV VM creation from template """
 
@@ -64,7 +52,7 @@ class TestCommonTemplatesCentos:
     ):
         """ Test CNV common templates VM initiation """
 
-        vm_started(
+        running_vm(
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
@@ -130,15 +118,8 @@ class TestCommonTemplatesCentos:
         centos_os_matrix__class__,
         golden_image_data_volume_multi_centos_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
-        golden_image_vm_ssh_service_multi_centos_scope_class,
-        schedulable_node_ips,
     ):
         """ CNV common templates access VM via SSH """
-
-        enable_ssh_service_in_vm(
-            vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
-            console_impl=console.Centos,
-        )
 
         assert golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
