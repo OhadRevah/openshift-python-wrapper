@@ -99,11 +99,10 @@ class TestPCIPassthroughWinHostDevicesSpec:
 
     @pytest.mark.dependency(name="access_gpus_win_vm")
     @pytest.mark.polarion("CNV-5742")
-    def test_access_gpus_win_vm(self, pci_passthrough_vm):
+    def test_access_gpus_win_vm(self, pci_passthrough_vm, updated_vm_gpus_spec):
         """
         Test Device is accessible in Windows VM with gpus spec.
         """
-        passthrough_utils.update_vm_to_gpus_spec(vm=pci_passthrough_vm)
         passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
 
     @pytest.mark.dependency(depends=["access_gpus_win_vm"])

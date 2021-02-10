@@ -80,3 +80,33 @@ def hco_cr_with_permitted_hostdevices(hyperconverged_resource_scope_class):
         }
     ):
         yield
+
+
+@pytest.fixture()
+def updated_vm_gpus_spec(pci_passthrough_vm):
+    vm_dict = pci_passthrough_vm.instance.to_dict()
+    vm_spec_dict = vm_dict["spec"]["template"]["spec"]
+    vm_spec_dict["domain"]["devices"].pop("hostDevices", "No key Found")
+    ResourceEditor(patches={pci_passthrough_vm: vm_dict}, action="replace").update()
+    ResourceEditor(
+        patches={
+            pci_passthrough_vm: {
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "domain": {
+                                "devices": {
+                                    "gpus": [
+                                        {
+                                            "deviceName": GPU_DEVICE_NAME,
+                                            "name": "gpus",
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ).update()

@@ -1,39 +1,7 @@
 import shlex
 
-from ocp_resources.resource import ResourceEditor
-
-from utilities.constants import GPU_DEVICE_NAME
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity
-
-
-def update_vm_to_gpus_spec(vm):
-    vm_dict = vm.instance.to_dict()
-    vm_spec_dict = vm_dict["spec"]["template"]["spec"]
-    vm_spec_dict["domain"]["devices"].pop("hostDevices", "No key Found")
-    ResourceEditor(patches={vm: vm_dict}, action="replace").update()
-    ResourceEditor(
-        patches={
-            vm: {
-                "spec": {
-                    "template": {
-                        "spec": {
-                            "domain": {
-                                "devices": {
-                                    "gpus": [
-                                        {
-                                            "deviceName": GPU_DEVICE_NAME,
-                                            "name": "gpus",
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    ).update()
 
 
 def verify_gpu_device_exists(vm):
