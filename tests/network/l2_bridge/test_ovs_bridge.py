@@ -8,11 +8,7 @@ from utilities.network import (
     compose_cloud_init_data_dict,
     network_nad,
 )
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 OVS_BR = "test-ovs-br"
@@ -77,10 +73,7 @@ def vma_with_ovs_based_l2(
 
 @pytest.fixture()
 def running_vma_with_ovs_based_l2(vma_with_ovs_based_l2):
-    vmi = vma_with_ovs_based_l2.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+    return running_vm(vm=vma_with_ovs_based_l2)
 
 
 @pytest.fixture()
@@ -117,10 +110,7 @@ def vmb_with_ovs_based_l2(
 
 @pytest.fixture()
 def running_vmb_with_ovs_based_l2(vmb_with_ovs_based_l2):
-    vmi = vmb_with_ovs_based_l2.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+    return running_vm(vm=vmb_with_ovs_based_l2)
 
 
 @pytest.mark.polarion("CNV-5636")

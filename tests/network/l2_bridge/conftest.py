@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
+import shlex
 from ipaddress import ip_interface
 
 import pytest
 
-from tests.compute.utils import rrmngmnt_host
 from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
-from utilities import console
 from utilities.network import cloud_init_network_data, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    vm_console_run_commands,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -154,7 +152,6 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         namespace,
         interfaces,
         ip_addresses,
-        ssh,
         mpls_local_tag,
         mpls_local_ip,
         mpls_dest_ip,
@@ -186,7 +183,6 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
             client=client,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
-            ssh=ssh,
         )
 
     def to_dict(self):
@@ -197,12 +193,6 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
     @property
     def dot1q_ip(self):
         return self.ip_addresses[4]
-
-
-def running_vmi(vm):
-    vm.start(wait=True)
-    vm.vmi.wait_until_running()
-    return vm.vmi
 
 
 def bridge_attached_vm(
@@ -218,7 +208,6 @@ def bridge_attached_vm(
     cloud_init_extra_user_data=None,
     client=None,
     node_selector=None,
-    ssh=False,
 ):
     cloud_init_data = _cloud_init_data(
         vm_name=name,
@@ -244,8 +233,8 @@ def bridge_attached_vm(
         client=client,
         cloud_init_data=cloud_init_data,
         node_selector=node_selector,
-        ssh=ssh,
     ) as vm:
+        vm.start()
         yield vm
 
 
@@ -307,39 +296,28 @@ def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_cli
         mpls_route_next_hop="10.200.4.1",
         client=unprivileged_client,
         node_selector=worker_node2.name,
-        ssh=True,
     )
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_started_vmi_a(l2_bridge_vm_a):
-    return running_vmi(vm=l2_bridge_vm_a)
+def l2_bridge_running_vm_a(l2_bridge_vm_a):
+    return running_vm(vm=l2_bridge_vm_a)
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_started_vmi_b(l2_bridge_vm_b):
-    return running_vmi(vm=l2_bridge_vm_b)
+def l2_bridge_running_vm_b(l2_bridge_vm_b):
+    return running_vm(vm=l2_bridge_vm_b)
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_vm_b_ssh_executor(l2_bridge_vm_b):
-    return rrmngmnt_host(
-        usr=console.Fedora.USERNAME,
-        passwd=console.Fedora.PASSWORD,
-        ip=l2_bridge_vm_b.ssh_service.service_ip,
-        port=l2_bridge_vm_b.ssh_service.service_port,
-    )
-
-
-@pytest.fixture(scope="class")
-def dhcp_client_eth3_nm_connection_name(l2_bridge_vm_b_ssh_executor):
+def dhcp_client_eth3_nm_connection_name(l2_bridge_running_vm_b):
     """
     Extracts connection name from nmcli command by device name (eth3) from the rrmngmnt host on the dhcp client.
 
     Returns:
         str: The connection name
     """
-    host_nmcli = l2_bridge_vm_b_ssh_executor.network.nmcli
+    host_nmcli = l2_bridge_running_vm_b.ssh_exec.network.nmcli
     devices = host_nmcli.get_all_devices()
     connections = host_nmcli.get_all_connections()
     relevant_dev = [dev for dev in devices if dev["name"] == "eth3"]
@@ -354,28 +332,9 @@ def dhcp_client_eth3_nm_connection_name(l2_bridge_vm_b_ssh_executor):
 
 @pytest.fixture(scope="class")
 def configured_l2_bridge_vm_a(
-    l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_started_vmi_a, l2_bridge_started_vmi_b
+    l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_running_vm_a, l2_bridge_running_vm_b
 ):
-    """
-    Waits until l2_bridge_vm_a and l2_bridge_vm_b are running and all interfaces are UP then
-    runs dhcpd server. To avoid incorrect dhcpd IP address allocation
-    this commands are critical to run ONLY after l2_bridge_vm_b is UP and configured
-    """
-    wait_for_vm_interfaces(vmi=l2_bridge_started_vmi_a)
-
-    # This is mandatory step to avoid ip allocation to the incorrect interface
-    wait_for_vm_interfaces(vmi=l2_bridge_started_vmi_b)
-
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=l2_bridge_vm_a,
-        commands=["sudo systemctl start dhcpd"],
+    l2_bridge_running_vm_a.ssh_exec.run_command(
+        command=shlex.split("sudo systemctl start dhcpd")
     )
     return l2_bridge_vm_a
-
-
-@pytest.fixture(scope="class")
-def configured_l2_bridge_vm_b(
-    l2_bridge_vm_b,
-):
-    return l2_bridge_vm_b
