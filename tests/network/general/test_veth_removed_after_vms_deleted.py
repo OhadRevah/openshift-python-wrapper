@@ -9,9 +9,9 @@ import logging
 import pytest
 from resources.utils import TimeoutSampler
 
-import tests.network.utils as network_utils
-import utilities.network
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from tests.network.utils import get_worker_pod
+from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -43,14 +43,14 @@ def count_veth_devices_on_host(pod, bridge):
 
 @pytest.fixture()
 def remove_vath_br1test_nad(namespace):
-    with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
         nad_name=BR1TEST,
         interface_name=BR1TEST,
         namespace=namespace,
     ) as nad:
-        with utilities.network.network_nad(
-            nad_type=utilities.network.LINUX_BRIDGE,
+        with network_nad(
+            nad_type=LINUX_BRIDGE,
             nad_name=BR2TEST,
             interface_name=BR1TEST,
             namespace=namespace,
@@ -62,8 +62,8 @@ def remove_vath_br1test_nad(namespace):
 def remove_vath_bridge_device(
     utility_pods, schedulable_nodes, worker_node1, remove_vath_br1test_nad
 ):
-    with utilities.network.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+    with network_device(
+        interface_type=LINUX_BRIDGE,
         nncp_name="veth-removed",
         interface_name=remove_vath_br1test_nad.bridge_name,
         network_utility_pods=utility_pods,
@@ -86,16 +86,13 @@ def remove_vath_bridge_attached_vma(namespace, unprivileged_client, worker_node1
         node_selector=worker_node1.name,
         teardown=False,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, enable_ssh=False, wait_for_interfaces=False)
         yield vm
 
 
 @pytest.fixture()
 def worker_pod(utility_pods, worker_node1):
-    return network_utils.get_worker_pod(
-        network_utility_pods=utility_pods, worker_node=worker_node1
-    )
+    return get_worker_pod(network_utility_pods=utility_pods, worker_node=worker_node1)
 
 
 @pytest.fixture()

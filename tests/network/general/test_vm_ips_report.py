@@ -10,7 +10,7 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -26,7 +26,7 @@ def assert_ip_mismatch(vm):
 
 
 @pytest.fixture(scope="module")
-def report_masquerade_ip_vm(unprivileged_client, namespace):
+def report_masquerade_ip_vmi(unprivileged_client, namespace):
     name = "report-masquerade-ip-vm"
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -35,27 +35,24 @@ def report_masquerade_ip_vm(unprivileged_client, namespace):
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        vmi = vm.vmi
-        vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vmi)
-        yield vmi
+        running_vm(vm=vm, enable_ssh=False)
+        yield vm.vmi
 
 
 @pytest.mark.polarion("CNV-4455")
-def test_report_masquerade_ip(report_masquerade_ip_vm):
-    assert_ip_mismatch(vm=report_masquerade_ip_vm)
+def test_report_masquerade_ip(report_masquerade_ip_vmi):
+    assert_ip_mismatch(vm=report_masquerade_ip_vmi)
 
 
 @pytest.mark.polarion("CNV-4153")
-def test_report_masquerade_ip_after_migration(report_masquerade_ip_vm):
-    src_node = report_masquerade_ip_vm.instance.status.nodeName
+def test_report_masquerade_ip_after_migration(report_masquerade_ip_vmi):
+    src_node = report_masquerade_ip_vmi.instance.status.nodeName
     with VirtualMachineInstanceMigration(
         name="report-masquerade-ip-migration",
-        namespace=report_masquerade_ip_vm.namespace,
-        vmi=report_masquerade_ip_vm,
+        namespace=report_masquerade_ip_vmi.namespace,
+        vmi=report_masquerade_ip_vmi,
     ) as mig:
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-        assert report_masquerade_ip_vm.instance.status.nodeName != src_node
+        assert report_masquerade_ip_vmi.instance.status.nodeName != src_node
 
-    assert_ip_mismatch(vm=report_masquerade_ip_vm)
+    assert_ip_mismatch(vm=report_masquerade_ip_vmi)
