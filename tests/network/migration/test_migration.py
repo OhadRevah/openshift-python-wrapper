@@ -4,12 +4,14 @@ Network Migration test
 """
 
 import logging
+import re
+import shlex
 
 import pytest
+from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachineInstanceMigration
 
-import utilities.network
-from utilities import console
+from utilities.infra import run_ssh_commands
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
@@ -17,90 +19,46 @@ from utilities.network import (
     get_ipv6_ip_str,
     get_vmi_ip_v4_by_name,
     ip_version_data_from_matrix,
+    network_device,
     network_nad,
 )
-from utilities.virt import (
-    VirtualMachineForTests,
-    enable_ssh_service_in_vm,
-    fedora_vm_body,
-    vm_console_run_commands,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 BR1TEST = "br1test"
+PING_LOG = "ping.log"
 LOGGER = logging.getLogger(__name__)
 
 
 def http_port_accessible(vm, server_ip, server_port):
-    connection_timeout = 60
-
-    # For IPv6 - significantly longer timeout should be used. The reason is that it takes time for the *IPv6
-    # MAC table* to learn the new MAC address for the default gateway, which is the pod bridge.
     if get_ipv6_ip_str(dst_ip=server_ip):
         server_ip = f"'[{server_ip}]'"
-        connection_timeout = 120
 
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=vm,
-        commands=[
-            f"curl --head {server_ip}:{server_port} --connect-timeout {connection_timeout}"
-        ],
-        timeout=connection_timeout,
+    sampler = TimeoutSampler(
+        timeout=120,
+        sleep=5,
+        func=run_ssh_commands,
+        host=vm.ssh_exec,
+        commands=[shlex.split(f"curl --head {server_ip}:{server_port}")],
     )
-
-
-class BridgedFedoraVirtualMachine(VirtualMachineForTests):
-    def __init__(
-        self,
-        name,
-        namespace,
-        client=None,
-        interfaces=None,
-        networks=None,
-        node_selector=None,
-        cloud_init_data=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            client=client,
-            interfaces=interfaces,
-            networks=networks,
-            node_selector=node_selector,
-            cloud_init_data=cloud_init_data,
-        )
-
-    def to_dict(self):
-        self.body = fedora_vm_body(name=self.name)
-        res = super().to_dict()
-        vm_interfaces = res["spec"]["template"]["spec"]["domain"]["devices"][
-            "interfaces"
-        ]
-        for iface in vm_interfaces:
-            if "masquerade" in iface.keys():
-                iface["ports"] = [{"name": "http80", "port": 80, "protocol": "TCP"}]
-
-        res["spec"]["template"]["metadata"]["labels"].update(
-            {"kubevirt.io/domain": self.name}
-        )
-
-        return res
+    for sample in sampler:
+        if sample:
+            return
 
 
 @pytest.fixture(scope="module")
 def vma(namespace, unprivileged_client, ipv6_network_data, bridge_worker_1):
+    name = "vma"
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
         ipv6_network_data=ipv6_network_data,
     )
-
-    with BridgedFedoraVirtualMachine(
+    with VirtualMachineForTests(
         namespace=namespace.name,
-        name="vma",
+        name=name,
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
@@ -112,6 +70,7 @@ def vma(namespace, unprivileged_client, ipv6_network_data, bridge_worker_1):
 
 @pytest.fixture(scope="module")
 def vmb(namespace, unprivileged_client, ipv6_network_data, bridge_worker_2):
+    name = "vmb"
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
@@ -119,9 +78,10 @@ def vmb(namespace, unprivileged_client, ipv6_network_data, bridge_worker_2):
         ipv6_network_data=ipv6_network_data,
     )
 
-    with BridgedFedoraVirtualMachine(
+    with VirtualMachineForTests(
         namespace=namespace.name,
-        name="vmb",
+        name=name,
+        body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
@@ -133,24 +93,12 @@ def vmb(namespace, unprivileged_client, ipv6_network_data, bridge_worker_2):
 
 @pytest.fixture(scope="module")
 def running_vma(vma):
-    vmi = vma.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    enable_ssh_service_in_vm(
-        vm=vma, console_impl=console.Fedora, check_ssh_connectivity=False
-    )
-    yield vma
+    return running_vm(vm=vma)
 
 
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
-    vmi = vmb.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    enable_ssh_service_in_vm(
-        vm=vmb, console_impl=console.Fedora, check_ssh_connectivity=False
-    )
-    yield vmb
+    return running_vm(vm=vmb)
 
 
 @pytest.fixture(scope="module")
@@ -160,7 +108,7 @@ def bridge_worker_1(
     worker_node1,
     nodes_available_nics,
 ):
-    with utilities.network.network_device(
+    with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-1",
         interface_name=BR1TEST,
@@ -178,7 +126,7 @@ def bridge_worker_2(
     worker_node2,
     nodes_available_nics,
 ):
-    with utilities.network.network_device(
+    with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-2",
         interface_name=BR1TEST,
@@ -232,20 +180,23 @@ def ping_in_background(running_vma, running_vmb):
     dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
     assert_ping_successful(src_vm=running_vma, dst_ip=dst_ip)
     LOGGER.info(f"Ping {dst_ip} from {running_vma.name} to {running_vmb.name}")
-    with console.Fedora(vm=running_vma) as vmc:
-        vmc.sendline(f"sudo ping -i 0.1 {dst_ip} > /tmp/ping.log &")
-        vmc.expect(r"\[\d+\].*\d+", timeout=10)
-        vmc.sendline("echo $! > /tmp/ping.pid")
+    run_ssh_commands(
+        host=running_vma.ssh_exec,
+        commands=[shlex.split(f"sudo ping -i 0.1 {dst_ip} >& {PING_LOG} &")],
+    )
 
 
 def assert_low_packet_loss(vm):
-    with console.Fedora(vm=vm) as vmc:
-        vmc.sendline("sudo kill -SIGINT `cat /tmp/ping.pid`")
-        vmc.sendline("grep 'transmitted' /tmp/ping.log")
-        vmc.expect("packet loss", 10)
-        packet_loss = float(str(vmc.before).split()[-2].strip("%"))
-        LOGGER.info(f"Packet loss percentage {packet_loss}")
-        assert packet_loss < 4.0
+    output = run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[
+            shlex.split("sudo kill -SIGINT `pgrep ping`"),
+            shlex.split(f"cat {PING_LOG}"),
+        ],
+    )
+    packet_loss = re.findall(r"\d+.\d+% packet loss", output[1])
+    assert packet_loss
+    assert float(re.findall(r"\d+.\d+", packet_loss[0])[0]) < 2
 
 
 @pytest.fixture()
@@ -255,22 +206,26 @@ def ssh_in_background(running_vma, running_vmb):
     """
     dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
     LOGGER.info(f"Start ssh connection to {running_vmb.name} from {running_vma.name}")
-    with console.Fedora(vm=running_vma) as vm_console:
-        vm_console.sendline(
-            f"sshpass -p fedora ssh -o 'StrictHostKeyChecking no' fedora@{dst_ip} 'sleep 99999'&"
-        )
-        vm_console.expect(r"\[\d+\].*\d+", timeout=10)
-        vm_console.sendline("ps aux | grep 'sleep'")
-        vm_console.expect("sshpass -p zzzzzz", timeout=10)
+    run_ssh_commands(
+        host=running_vma.ssh_exec,
+        commands=[
+            shlex.split(
+                f"sshpass -p fedora ssh -o 'StrictHostKeyChecking no' fedora@{dst_ip} 'sleep 99999' &>1 &"
+            )
+        ],
+    )
+
+    assert_ssh_alive(ssh_vm=running_vma)
 
 
 def assert_ssh_alive(ssh_vm):
     """
     Check the ssh process is alive
     """
-    with console.Fedora(vm=ssh_vm) as tcp_vm_console:
-        tcp_vm_console.sendline("ps aux | grep 'sleep'")
-        tcp_vm_console.expect("sshpass -p zzzzzz", timeout=10)
+    output = run_ssh_commands(
+        host=ssh_vm.ssh_exec, commands=[shlex.split("ps aux | grep 'sleep'")]
+    )
+    assert "sshpass -p zzzzzz" in output[0]
 
 
 @pytest.mark.polarion("CNV-2060")

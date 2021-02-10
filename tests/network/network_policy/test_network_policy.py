@@ -6,10 +6,10 @@ import pytest
 from resources.network_policy import NetworkPolicy
 
 from utilities import console
+from utilities.exceptions import CommandExecFailed
 from utilities.infra import create_ns
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
-    CommandExecFailed,
     VirtualMachineForTests,
     fedora_vm_body,
     vm_console_run_commands,

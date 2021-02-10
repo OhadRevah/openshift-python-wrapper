@@ -26,6 +26,7 @@ from resources.virtual_machine_import import VirtualMachineImport
 import utilities.network
 from utilities.console import CONSOLE_IMPL
 from utilities.constants import OS_LOGIN_PARAMS
+from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -916,14 +917,6 @@ def vm_console_run_commands(
                     raise CommandExecFailed(command)
             else:
                 vmc.expect(".*")
-
-
-class CommandExecFailed(Exception):
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return f"Command: {self.name} - exec failed."
 
 
 def run_command(command, verify_stderr=True):

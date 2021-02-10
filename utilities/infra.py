@@ -1,3 +1,4 @@
+import logging
 import os
 from configparser import ConfigParser
 from pathlib import Path
@@ -12,12 +13,15 @@ from resources.pod import Pod
 from resources.project import Project, ProjectRequest
 from resources.resource import ResourceEditor
 
+from utilities.exceptions import CommandExecFailed
+
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
 BASE_IMAGES_DIR = "cnv-tests"
 NON_EXIST_URL = "https://noneexist.com"
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
+LOGGER = logging.getLogger(__name__)
 
 
 class Images:
@@ -200,3 +204,30 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
             return pods
         else:
             return pods[0]
+
+
+def run_ssh_commands(host, commands):
+    """
+    Run commands via SSH
+
+    Args:
+        host (Host): rrmngmnt host to execute the commands from.
+        commands (list): List of lists with commands to execute.
+
+    Returns:
+        list: List of commands output.
+
+    Raise:
+        CommandExecFailed: If command failed to execute.
+    """
+    results = []
+    with host.executor().session() as ssh_session:
+        for cmd in commands:
+            rc, out, err = ssh_session.run_cmd(cmd=cmd)
+            LOGGER.info(f"[SSH][{host.fqdn}] Executed: {' '.join(cmd)}")
+            if rc:
+                raise CommandExecFailed(name=cmd, err=err)
+
+            results.append(out)
+
+    return results
