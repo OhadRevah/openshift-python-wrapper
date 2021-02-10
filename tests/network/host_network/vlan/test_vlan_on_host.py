@@ -103,6 +103,7 @@ class TestVlanInterface:
         skip_when_one_node,
         skip_rhel7_workers,
         skip_if_workers_vms,
+        skip_insufficient_nodes,
         utility_pods,
         namespace,
         dhcp_client_nodes,

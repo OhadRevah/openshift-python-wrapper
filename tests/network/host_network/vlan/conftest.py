@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import shlex
 
 import pytest
 from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
@@ -11,7 +12,6 @@ from tests.network.host_network.vlan.utils import (
     disable_ipv4_dhcp_client,
     enable_ipv4_dhcp_client,
 )
-from utilities import console
 from utilities.network import (
     LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
@@ -19,12 +19,7 @@ from utilities.network import (
     network_device,
     network_nad,
 )
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    vm_console_run_commands,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -119,16 +114,16 @@ def dhcp_server(running_dhcp_server_vm):
     """
     Once a VM is up and running - start a DHCP server on it.
     """
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=running_dhcp_server_vm,
-        commands=["sudo systemctl start dhcpd"],
+    running_dhcp_server_vm.ssh_exec.run_command(
+        command=shlex.split("sudo systemctl start dhcpd")
     )
     return running_dhcp_server_vm
 
 
 @pytest.fixture(scope="module")
-def dhcp_server_vm(namespace, worker_node1, dhcp_br_nad, unprivileged_client):
+def dhcp_server_vm(
+    skip_insufficient_nodes, namespace, worker_node1, dhcp_br_nad, unprivileged_client
+):
     cloud_init_data = dhcp_server_cloud_init_data(
         dhcp_iface_ip_addr=f"{DHCP_IP_SUBNET}.1"
     )
@@ -157,10 +152,7 @@ def dhcp_server_vm(namespace, worker_node1, dhcp_br_nad, unprivileged_client):
 
 @pytest.fixture(scope="module")
 def running_dhcp_server_vm(dhcp_server_vm):
-    dhcp_server_vm.start(wait=True)
-    dhcp_server_vm.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=dhcp_server_vm.vmi)
-    return dhcp_server_vm
+    return running_vm(vm=dhcp_server_vm)
 
 
 @pytest.fixture(scope="module")
@@ -249,6 +241,15 @@ def disabled_dhcp_client_2(vlan_iface_dhcp_client_2, dhcp_client_2):
     enable_ipv4_dhcp_client(
         vlan_iface_nncp=vlan_iface_dhcp_client_2, selected_node=dhcp_client_2.name
     )
+
+
+@pytest.fixture(scope="module")
+def skip_insufficient_nodes(schedulable_nodes):
+    num_of_nodes = 3
+    if len(schedulable_nodes) < num_of_nodes:
+        pytest.skip(
+            f"Not enough nodes, test needs minimum {num_of_nodes} nodes in the cluster"
+        )
 
 
 # VLAN on BOND fixtures
