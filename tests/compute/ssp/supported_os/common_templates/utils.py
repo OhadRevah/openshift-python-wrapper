@@ -16,6 +16,7 @@ from resources import pod
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.utils import get_windows_timezone, vm_started
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     get_guest_os_info,
     run_virtctl_command,
@@ -333,7 +334,7 @@ def check_machine_type(vm):
     ), f"Machine type does not exist in VM: {vm_machine_type}"
 
 
-def restart_qemu_guest_agent_service(vm, console_impl):
+def restart_qemu_guest_agent_service(vm):
     # Service restart is needed because of bugs 1910326 and 1845127
     # TODO: remove restart_qemu_guest_agent_service when tested opering systems are updated with newer qemu KVM
     # and qemu guest agent versions.
@@ -351,14 +352,10 @@ def restart_qemu_guest_agent_service(vm, console_impl):
         f"Restart qemu-guest-agent service, qemu KVM version: {qemu_kvm_version},"
         f"qemu-guest-agent version: {qemu_guest_agent_version}"
     )
-    cmd = ["sudo systemctl restart qemu-guest-agent"]
-    if "7.7" in vm.vmi.os_version:
-        vm_console_run_commands(
-            console_impl=console_impl, vm=vm, commands=cmd, verify_commands_output=False
-        )
-        console_impl(vm=vm).force_disconnect()
-    else:
-        vm_console_run_commands(console_impl=console_impl, vm=vm, commands=cmd)
+    run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[shlex.split("sudo systemctl restart qemu-guest-agent")],
+    )
 
 
 # Guest agent data comparison functions.

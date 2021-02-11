@@ -182,7 +182,6 @@ class TestCommonTemplatesRhel:
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to newer qemu versions
         common_templates_utils.restart_qemu_guest_agent_service(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            console_impl=console.RHEL,
         )
         common_templates_utils.validate_os_info_virtctl_vs_linux_os(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
