@@ -9,7 +9,7 @@ from pytest_testconfig import config as py_config
 from resources.service import Service
 
 from tests.conftest import vm_instance_from_template
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
 from utilities.virt import get_windows_os_dict
 
 
@@ -47,7 +47,7 @@ def rdp_vm(
 
 
 @pytest.fixture(scope="module")
-def rdp_executor_pod(utility_pods, rdp_vm):
+def rdp_executor_pod(workers_ssh_executors, utility_pods, rdp_vm):
     """
     Return a pod on a different node than the one that runs the VM (rdp_vm).
 
@@ -56,7 +56,7 @@ def rdp_executor_pod(utility_pods, rdp_vm):
     """
     for pod in utility_pods:
         if pod.node.name != rdp_vm.vmi.node.name:
-            return pod
+            return workers_ssh_executors.pod.node
     assert (
         False
     ), f"No Pod found on a different node than the one that runs the VirtualMachine {rdp_vm.name}."
@@ -110,4 +110,4 @@ def test_rdp_for_exposed_win_vm_as_node_port_svc(
     LOGGER.info(
         f"Checking RDP connection to exposed {Service.Type.NODE_PORT} service, Authentication only..."
     )
-    rdp_executor_pod.execute(command=["bash", "-c", rdp_auth_cmd], timeout=300)
+    run_ssh_commands(host=rdp_executor_pod, commands=[["bash", "-c", rdp_auth_cmd]])
