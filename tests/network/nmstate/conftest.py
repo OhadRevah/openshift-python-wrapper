@@ -4,13 +4,13 @@ import logging
 
 import pytest
 
-import tests.network.utils as network_utils
-import utilities.network
+from tests.network.utils import get_worker_pod, wait_for_address_on_iface
+from utilities.network import LINUX_BRIDGE, network_device
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -63,16 +63,12 @@ def nmstate_vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client)
 
 @pytest.fixture(scope="module")
 def running_nmstate_vma(nmstate_vma):
-    nmstate_vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=nmstate_vma.vmi)
-    return nmstate_vma
+    return running_vm(vm=nmstate_vma)
 
 
 @pytest.fixture(scope="module")
 def running_nmstate_vmb(nmstate_vmb):
-    nmstate_vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=nmstate_vmb.vmi)
-    return nmstate_vmb
+    return running_vm(vm=nmstate_vmb)
 
 
 @pytest.fixture(scope="module")
@@ -87,11 +83,11 @@ def bridges_on_management_ifaces_node1(
     """
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
-    worker_pod = network_utils.get_worker_pod(
+    worker_pod = get_worker_pod(
         network_utility_pods=utility_pods, worker_node=worker_node1
     )
-    with utilities.network.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+    with network_device(
+        interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node1.name}",
         interface_name="brext1",
         network_utility_pods=utility_pods,
@@ -102,14 +98,10 @@ def bridges_on_management_ifaces_node1(
         ipv4_dhcp=True,
     ) as br_dev:
         # Wait for bridget to get management ip
-        network_utils.wait_for_address_on_iface(
-            worker_pod=worker_pod, iface_name=br_dev.bridge_name
-        )
+        wait_for_address_on_iface(worker_pod=worker_pod, iface_name=br_dev.bridge_name)
         yield br_dev
     # Verify Ip is back to the port
-    network_utils.wait_for_address_on_iface(
-        worker_pod=worker_pod, iface_name=management_iface
-    )
+    wait_for_address_on_iface(worker_pod=worker_pod, iface_name=management_iface)
 
 
 @pytest.fixture(scope="module")
@@ -120,11 +112,11 @@ def bridges_on_management_ifaces_node2(
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
-    worker_pod = network_utils.get_worker_pod(
+    worker_pod = get_worker_pod(
         network_utility_pods=utility_pods, worker_node=worker_node2
     )
-    with utilities.network.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+    with network_device(
+        interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{worker_node2.name}",
         interface_name="brext2",
         network_utility_pods=utility_pods,
@@ -135,12 +127,8 @@ def bridges_on_management_ifaces_node2(
         ipv4_dhcp=True,
     ) as br_dev:
         # Wait for bridget to get management ip
-        network_utils.wait_for_address_on_iface(
-            worker_pod=worker_pod, iface_name=br_dev.bridge_name
-        )
+        wait_for_address_on_iface(worker_pod=worker_pod, iface_name=br_dev.bridge_name)
         yield br_dev
 
     # Verify Ip is back to the port
-    network_utils.wait_for_address_on_iface(
-        worker_pod=worker_pod, iface_name=management_iface
-    )
+    wait_for_address_on_iface(worker_pod=worker_pod, iface_name=management_iface)
