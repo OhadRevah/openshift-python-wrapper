@@ -9,7 +9,6 @@ import shlex
 
 import pytest
 from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from utilities.infra import run_ssh_commands
 from utilities.network import (
@@ -22,7 +21,12 @@ from utilities.network import (
     network_device,
     network_nad,
 )
-from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    migrate_and_verify,
+    running_vm,
+)
 
 
 BR1TEST = "br1test"
@@ -149,8 +153,9 @@ def br1test_nad(namespace):
 
 
 @pytest.fixture()
-def restarted_vm(vma):
-    vma.restart(wait=True)
+def restarted_vmb(running_vmb):
+    running_vmb.restart(wait=True)
+    return running_vm(vm=running_vmb, enable_ssh=False)
 
 
 @pytest.fixture()
@@ -222,10 +227,20 @@ def assert_ssh_alive(ssh_vm):
     """
     Check the ssh process is alive
     """
-    output = run_ssh_commands(
-        host=ssh_vm.ssh_exec, commands=[shlex.split("ps aux | grep 'sleep'")]
+    output = None
+    sampler = TimeoutSampler(
+        timeout=30,
+        sleep=1,
+        func=run_ssh_commands,
+        host=ssh_vm.ssh_exec,
+        commands=[shlex.split("ps aux | grep 'sleep'")],
     )
-    assert "sshpass -p zzzzzz" in output[0]
+    for sample in sampler:
+        if sample:
+            output = sample[0]
+            break
+
+    assert "sshpass -p zzzzzz" in output
 
 
 @pytest.mark.polarion("CNV-2060")
@@ -238,12 +253,10 @@ def test_ping_vm_migration(
     running_vmb,
     ping_in_background,
 ):
-    src_node = running_vmb.vmi.instance.status.nodeName
-    with VirtualMachineInstanceMigration(
-        name="l2-migration", namespace=running_vmb.namespace, vmi=running_vmb.vmi
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-        assert running_vmb.vmi.instance.status.nodeName != src_node
+    migrate_and_verify(
+        vm=running_vmb,
+        node_before=running_vmb.vmi.instance.status.nodeName,
+    )
 
     assert_low_packet_loss(vm=running_vma)
 
@@ -260,12 +273,10 @@ def test_ssh_vm_migration(
     running_vmb,
     ssh_in_background,
 ):
-    src_node = running_vmb.vmi.instance.status.nodeName
-    with VirtualMachineInstanceMigration(
-        name="tcp-migration", namespace=namespace.name, vmi=running_vmb.vmi
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-        assert running_vmb.vmi.instance.status.nodeName != src_node
+    migrate_and_verify(
+        vm=running_vmb,
+        node_before=running_vmb.vmi.instance.status.nodeName,
+    )
 
     assert_ssh_alive(ssh_vm=running_vma)
 
@@ -280,11 +291,11 @@ def test_connectivity_after_migration_and_restart(
     vmb,
     running_vma,
     running_vmb,
-    restarted_vm,
+    restarted_vmb,
 ):
     assert_ping_successful(
         src_vm=running_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST),
+        dst_ip=get_vmi_ip_v4_by_name(vmi=restarted_vmb.vmi, name=BR1TEST),
     )
 
 
@@ -302,18 +313,13 @@ def test_migration_with_masquerade(
     running_vmb,
     http_service,
 ):
-    vmi_node_before_migration = running_vmb.vmi.instance.status.nodeName
-    with VirtualMachineInstanceMigration(
-        name="masquerade-migration",
-        namespace=running_vmb.namespace,
-        vmi=running_vmb.vmi,
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-        assert running_vmb.vmi.instance.status.nodeName != vmi_node_before_migration
-        assert running_vmb.vmi.instance.status.migrationState.completed
+    migrate_and_verify(
+        vm=running_vmb,
+        node_before=running_vmb.vmi.instance.status.nodeName,
+    )
 
-        http_port_accessible(
-            vm=running_vma,
-            server_ip=running_vmb.custom_service.service_ip,
-            server_port=running_vmb.custom_service.service_port,
-        )
+    http_port_accessible(
+        vm=running_vma,
+        server_ip=running_vmb.custom_service.service_ip,
+        server_port=running_vmb.custom_service.service_port,
+    )

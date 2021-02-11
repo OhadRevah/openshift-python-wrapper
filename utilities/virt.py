@@ -20,7 +20,7 @@ from resources.service import Service
 from resources.service_account import ServiceAccount
 from resources.template import Template
 from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine import VirtualMachine
+from resources.virtual_machine import VirtualMachine, VirtualMachineInstanceMigration
 from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
@@ -1450,3 +1450,18 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
             enable_ssh_service_in_vm(vm=vm, console_impl=CONSOLE_IMPL[vm.os_flavor])
 
     return vm
+
+
+def migrate_and_verify(vm, node_before=None, timeout=720):
+    with VirtualMachineInstanceMigration(
+        name=vm.name,
+        namespace=vm.namespace,
+        vmi=vm.vmi,
+    ) as mig:
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
+
+    if node_before:
+        assert vm.vmi.instance.status.nodeName != node_before
+
+    assert vm.vmi.instance.status.migrationState.completed
+    wait_for_vm_interfaces(vmi=vm.vmi)
