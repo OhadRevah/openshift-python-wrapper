@@ -10,6 +10,7 @@ from resources.utils import TimeoutSampler
 
 from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import TIMEOUT_10MIN
+from utilities.infra import run_ssh_commands
 from utilities.network import BondNodeNetworkConfigurationPolicy, assert_ping_successful
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -169,7 +170,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         )
 
         # REBOOT - Check persistence
-        worker_exec.executor().run_cmd(cmd=["bash", "-c", "sudo reboot"])
+        run_ssh_commands(host=worker_exec, commands=[["bash", "-c", "sudo reboot"]])
         LOGGER.info(f"Wait until {lbodi_bond.node_selector} reboots ...")
         samples = TimeoutSampler(
             timeout=TIMEOUT_10MIN,

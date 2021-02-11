@@ -8,6 +8,7 @@ from collections import OrderedDict
 import pytest
 
 import utilities.network
+from utilities.infra import run_ssh_commands
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -105,8 +106,13 @@ class TestBondModes:
     def test_bond_created(self, workers_ssh_executors, bond_modes_bond):
         bonding_path = f"/sys/class/net/{bond_modes_bond.bond_name}/bonding"
         _exec = workers_ssh_executors[bond_modes_bond.node_selector]
-        mode = _exec.run_command(command=shlex.split(f"cat {bonding_path}/mode"))[1]
-        slaves = _exec.run_command(command=shlex.split(f"cat {bonding_path}/slaves"))[1]
+        mode, slaves = run_ssh_commands(
+            host=_exec,
+            commands=[
+                shlex.split(f"cat {bonding_path}/mode"),
+                shlex.split(f"cat {bonding_path}/slaves"),
+            ],
+        )
         worker_slaves = slaves.split()
         worker_slaves.sort()
         bond_modes_bond.slaves.sort()
