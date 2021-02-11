@@ -6,10 +6,12 @@ import bitmath
 from resources.node_network_state import NodeNetworkState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.infra import run_ssh_commands
 from utilities.network import console_ping
 
 
 LOGGER = logging.getLogger(__name__)
+DHCP_SERVICE_RESTART = "sudo systemctl start dhcpd"
 DHCP_SERVER_CONF_FILE = """
 cat <<EOF >> /etc/dhcp/dhcpd.conf
 default-lease-time 3600;
@@ -88,10 +90,13 @@ def run_test_guest_performance(server_vm, client_vm, listen_ip=None, target_ip=N
         target_ip (str): the IP to connect to (server IP), if not sent then listen_ip will be used.
     """
     _listen_ip = listen_ip or "0.0.0.0"  # When listing on POD network.
-    server_vm.ssh_exec.run_command(command=shlex.split(f"iperf3 -D -sB {_listen_ip}"))
-    iperf_data = client_vm.ssh_exec.run_command(
-        command=shlex.split(f"iperf3 -c {target_ip or listen_ip} -t 5 -J")
-    )[1]
+    run_ssh_commands(
+        host=server_vm.ssh_exec, commands=[shlex.split(f"iperf3 -D -sB {_listen_ip}")]
+    )
+    iperf_data = run_ssh_commands(
+        host=client_vm.ssh_exec,
+        commands=[shlex.split(f"iperf3 -c {target_ip or listen_ip} -t 5 -J")],
+    )[0]
     iperf_json = json.loads(iperf_data)
     sum_sent = iperf_json.get("end").get("sum_sent")
     bits_per_second = int(sum_sent.get("bits_per_second"))

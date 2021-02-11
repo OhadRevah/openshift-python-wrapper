@@ -5,7 +5,7 @@ from netaddr import IPNetwork
 from resources.utils import TimeoutSampler
 
 from tests.network.l2_bridge.conftest import DHCP_IP_RANGE_START
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import run_ssh_commands
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 
 
@@ -20,38 +20,20 @@ class TestL2LinuxBridge:
     transparently via Linux Bridge.
     """
 
-    @pytest.mark.parametrize(
-        "dst_ip",
-        [
-            pytest.param(
-                "l2_bridge_running_vm_b.dot1q_ip",
-                marks=(
-                    pytest.mark.polarion("CNV-2277"),
-                    pytest.mark.bugzilla(
-                        1754283,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
-            ),
-            pytest.param(
-                "l2_bridge_running_vm_b.mpls_local_ip",
-                marks=(pytest.mark.polarion("CNV-2285")),
-            ),
-        ],
-        ids=["dot1q", "mpls"],
-    )
+    @pytest.mark.polarion("CNV-2285")
     def test_connectivity_l2_bridge(
         self,
         skip_if_no_multinic_nodes,
         namespace,
-        dst_ip,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
     ):
         """
-        Test VM to VM connectivity via dot1q/mpls
+        Test VM to VM connectivity via mpls
         """
-        assert_ping_successful(src_vm=l2_bridge_running_vm_b, dst_ip=eval(dst_ip))
+        assert_ping_successful(
+            src_vm=l2_bridge_running_vm_b, dst_ip=l2_bridge_running_vm_b.mpls_local_ip
+        )
 
     @pytest.mark.polarion("CNV-2282")
     def test_dhcp_broadcast(
@@ -59,28 +41,12 @@ class TestL2LinuxBridge:
         skip_if_no_multinic_nodes,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
-        dhcp_client_eth3_nm_connection_name,
         dhcp_nad,
+        started_vmb_dhcp_client,
     ):
         """
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
         """
-        # Start dhcp client in l2_bridge_running_vm_b
-        with l2_bridge_running_vm_b.ssh_exec.executor().session() as ssh_session:
-            ssh_session.run_cmd(
-                cmd=shlex.split(
-                    f"sudo nmcli connection modify '{dhcp_client_eth3_nm_connection_name}' ipv4.method auto"
-                )
-            )
-            ssh_session.run_cmd(
-                cmd=shlex.split(
-                    f"sudo nmcli connection up '{dhcp_client_eth3_nm_connection_name}'"
-                )
-            )
-            ssh_session.run_cmd(
-                cmd=shlex.split("sudo systemctl restart qemu-guest-agent.service")
-            )
-
         current_ip = TimeoutSampler(
             timeout=120,
             sleep=2,
@@ -107,11 +73,14 @@ class TestL2LinuxBridge:
         dst_ip = get_vmi_ip_v4_by_name(
             vmi=l2_bridge_running_vm_b.vmi, name=custom_eth_type_llpd_nad.name
         )
-        out = configured_l2_bridge_vm_a.ssh_exec.run_command(
-            command=shlex.split(
-                f"nping -e eth2 --ether-type {CUSTOM_ETH_PROTOCOL} {dst_ip} -c {num_of_packets} &"
-            )
-        )[1]
+        out = run_ssh_commands(
+            host=configured_l2_bridge_vm_a.ssh_exec,
+            commands=[
+                shlex.split(
+                    f"nping -e eth2 --ether-type {CUSTOM_ETH_PROTOCOL} {dst_ip} -c {num_of_packets} &"
+                )
+            ],
+        )[0]
         assert f"Successful connections: {num_of_packets}" in out
 
     @pytest.mark.polarion("CNV-2674")

@@ -12,6 +12,8 @@ from tests.network.host_network.vlan.utils import (
     disable_ipv4_dhcp_client,
     enable_ipv4_dhcp_client,
 )
+from tests.network.utils import DHCP_SERVICE_RESTART
+from utilities.infra import run_ssh_commands
 from utilities.network import (
     LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
@@ -114,8 +116,9 @@ def dhcp_server(running_dhcp_server_vm):
     """
     Once a VM is up and running - start a DHCP server on it.
     """
-    running_dhcp_server_vm.ssh_exec.run_command(
-        command=shlex.split("sudo systemctl start dhcpd")
+    run_ssh_commands(
+        host=running_dhcp_server_vm.ssh_exec,
+        commands=[shlex.split(DHCP_SERVICE_RESTART)],
     )
     return running_dhcp_server_vm
 

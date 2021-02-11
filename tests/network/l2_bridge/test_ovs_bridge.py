@@ -1,7 +1,9 @@
+import shlex
 from collections import OrderedDict
 
 import pytest
 
+from utilities.infra import run_ssh_commands
 from utilities.network import (
     OVS,
     assert_ping_successful,
@@ -23,9 +25,14 @@ def node1_executor(worker_node1, workers_ssh_executors):
 
 @pytest.fixture()
 def ovs_bridge_on_worker1(node1_executor):
-    node1_executor.run_command(command=["sudo", "ovs-vsctl", "add-br", OVS_BR])
+    cmd = "sudo ovs-vsctl"
+    run_ssh_commands(
+        host=node1_executor, commands=[shlex.split(f"{cmd} add-br {OVS_BR}")]
+    )
     yield OVS_BR
-    node1_executor.run_command(command=["sudo", "ovs-vsctl", "del-br", OVS_BR])
+    run_ssh_commands(
+        host=node1_executor, commands=[shlex.split(f"{cmd} del-br {OVS_BR}")]
+    )
 
 
 @pytest.fixture()

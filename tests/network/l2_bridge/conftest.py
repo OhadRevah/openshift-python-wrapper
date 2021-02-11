@@ -4,7 +4,12 @@ from ipaddress import ip_interface
 
 import pytest
 
-from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
+from tests.network.utils import (
+    DHCP_SERVER_CONF_FILE,
+    DHCP_SERVICE_RESTART,
+    update_cloud_init_extra_user_data,
+)
+from utilities.infra import run_ssh_commands
 from utilities.network import cloud_init_network_data, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -17,7 +22,6 @@ from utilities.virt import (
 #: Test setup
 #       .........                                                                                      ..........
 #       |       |---eth1:10.200.0.1:                                              10.200.0.2:---eth1:|        |
-#       |       |---eth1.10:10.200.1.1 :dot1q test :                            10.200.1.2:eth1.10---|        |
 #       | VM-A  |---eth2:10.200.2.1    : multicast(ICMP), custom eth type test:    10.200.2.2:eth2---|  VM-B  |
 #       |       |---eth3:10.200.3.1    : DHCP test :                               10.200.3.2:eth3---|        |
 #       |.......|---eth4:10.200.4.1    : mpls test :                               10.200.4.2:eth4---|........|
@@ -28,18 +32,6 @@ VMB_MPLS_LOOPBACK_IP = "10.200.200.1/32"
 VMB_MPLS_ROUTE_TAG = 200
 DHCP_IP_RANGE_START = "10.200.3.3"
 DHCP_IP_RANGE_END = "10.200.3.10"
-DOT1Q_VLAN_ID = 10
-
-
-@pytest.fixture(scope="class")
-def dot1q_nad(bridge_device_matrix__class__, network_interface, namespace):
-    with network_nad(
-        namespace=namespace,
-        nad_type=bridge_device_matrix__class__,
-        nad_name="br1test-nad",
-        interface_name=network_interface.bridge_name,
-    ) as nad:
-        yield nad
 
 
 @pytest.fixture(scope="class")
@@ -78,10 +70,8 @@ def mpls_nad(bridge_device_matrix__class__, network_interface, namespace):
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_all_nads(
-    namespace, dot1q_nad, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad
-):
-    return [dot1q_nad.name, custom_eth_type_llpd_nad.name, dhcp_nad.name, mpls_nad.name]
+def l2_bridge_all_nads(namespace, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad):
+    return [custom_eth_type_llpd_nad.name, mpls_nad.name, dhcp_nad.name]
 
 
 def _cloud_init_data(
@@ -99,13 +89,6 @@ def _cloud_init_data(
             "eth1": {"addresses": [f"{ip_addresses[0]}/24"]},
             "eth2": {"addresses": [f"{ip_addresses[1]}/24"]},
             "eth4": {"addresses": [f"{ip_addresses[3]}/24"]},
-        },
-        "vlans": {
-            "eth1.10": {
-                "addresses": [f"{ip_addresses[4]}/24"],
-                "id": 10,
-                "link": "eth1",
-            }
         },
     }
     # Only DHCP server VM (vm-fedora-1) should have IP on eth3 interface
@@ -190,10 +173,6 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         res = super().to_dict()
         return res
 
-    @property
-    def dot1q_ip(self):
-        return self.ip_addresses[4]
-
 
 def bridge_attached_vm(
     name,
@@ -257,7 +236,6 @@ def l2_bridge_vm_a(namespace, worker_node1, l2_bridge_all_nads, unprivileged_cli
         "10.200.2.1",
         "10.200.3.1",
         "10.200.4.1",
-        "10.200.1.1",
     ]
     yield from bridge_attached_vm(
         name="vm-fedora-1",
@@ -282,7 +260,6 @@ def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_cli
         "10.200.2.2",
         "10.200.3.2",
         "10.200.4.2",
-        "10.200.1.2",
     ]
     yield from bridge_attached_vm(
         name="vm-fedora-2",
@@ -334,7 +311,26 @@ def dhcp_client_eth3_nm_connection_name(l2_bridge_running_vm_b):
 def configured_l2_bridge_vm_a(
     l2_bridge_vm_a, l2_bridge_vm_b, l2_bridge_running_vm_a, l2_bridge_running_vm_b
 ):
-    l2_bridge_running_vm_a.ssh_exec.run_command(
-        command=shlex.split("sudo systemctl start dhcpd")
+    run_ssh_commands(
+        host=l2_bridge_running_vm_a.ssh_exec,
+        commands=[shlex.split(DHCP_SERVICE_RESTART)],
     )
     return l2_bridge_vm_a
+
+
+@pytest.fixture()
+def started_vmb_dhcp_client(
+    l2_bridge_running_vm_b, dhcp_client_eth3_nm_connection_name
+):
+    nmcli_cmd = "sudo nmcli connection"
+    # Start dhcp client in l2_bridge_running_vm_b
+    run_ssh_commands(
+        host=l2_bridge_running_vm_b.ssh_exec,
+        commands=[
+            shlex.split(
+                f"{nmcli_cmd} modify '{dhcp_client_eth3_nm_connection_name}' ipv4.method auto"
+            ),
+            shlex.split(f"{nmcli_cmd} up '{dhcp_client_eth3_nm_connection_name}'"),
+            shlex.split("sudo systemctl restart qemu-guest-agent.service"),
+        ],
+    )
