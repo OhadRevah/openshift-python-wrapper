@@ -1,13 +1,14 @@
 import logging
 
 import pytest
-from resources.pod import ExecOnPodError
 
+from utilities.exceptions import CommandExecFailed
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -48,16 +49,12 @@ def ovs_bond_vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bo
 
 @pytest.fixture(scope="module")
 def running_ovs_bond_vma(ovs_bond_vma):
-    ovs_bond_vma.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=ovs_bond_vma.vmi)
-    return ovs_bond_vma
+    return running_vm(vm=ovs_bond_vma)
 
 
 @pytest.fixture(scope="module")
 def running_ovs_bond_vmb(ovs_bond_vmb):
-    ovs_bond_vmb.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=ovs_bond_vmb.vmi)
-    return ovs_bond_vmb
+    return running_vm(vm=ovs_bond_vma)
 
 
 def get_interface_by_attribute(all_connections, att):
@@ -69,32 +66,25 @@ def get_interface_by_attribute(all_connections, att):
 
 
 @pytest.fixture(scope="module")
-def bond_and_privileged_pod(utility_pods):
+def bond_and_privileged_pod(workers_ssh_executors, utility_pods):
     """
     Get OVS BOND from the worker, if OVS BOND not exists the tests should be skipped.
     """
     skip_msg = "BOND is not configured on the workers on primary interface"
     for pod in utility_pods:
+        node_executor = workers_ssh_executors[pod.node.name]
         try:
             # TODO: use rrmngmnt to get info from nmcli
-            all_connections = pod.execute(
-                command=[
-                    "bash",
-                    "-c",
-                    'nmcli -g name con show | \
-                    xargs -i nmcli -t -f connection.interface-name,ovs-port.bond-mode connection show "{}"',
-                ],
-            )
-
+            all_connections = _all_connection(node_executor=node_executor)
             bond = get_interface_by_attribute(
-                all_connections=all_connections, att="ovs-port.bond-mode:balance-slb"
+                all_connections=all_connections[0], att="ovs-port.bond-mode:balance-slb"
             )
 
             if bond:
                 return bond, pod
-            else:
-                pytest.skip(msg=skip_msg)
-        except ExecOnPodError:
+
+            pytest.skip(msg=skip_msg)
+        except CommandExecFailed:
             pytest.skip(msg=skip_msg)
             break
 
@@ -117,15 +107,9 @@ def node_with_bond(privileged_pod):
 
 
 @pytest.fixture(scope="module")
-def slave(privileged_pod, bond, node_with_bond):
-    all_connections = privileged_pod.execute(
-        command=[
-            "bash",
-            "-c",
-            'nmcli -g name con show | \
-            xargs -i nmcli -t -f connection.interface-name,connection.master connection show "{}"',
-        ],
-    )
+def slave(workers_ssh_executors, privileged_pod, bond, node_with_bond):
+    node_executor = workers_ssh_executors[privileged_pod.node.name]
+    all_connections = _all_connection(node_executor=node_executor)
 
     bond_string = f"connection.master:{bond}"
     slave = get_interface_by_attribute(all_connections=all_connections, att=bond_string)
@@ -149,3 +133,17 @@ def disconnected_slave(privileged_pod, slave, bond):
 
     LOGGER.info(f"Reconnecting slave {slave} of bond {bond}")
     privileged_pod.execute(command=["bash", "-c", f"nmcli dev connect {slave}"])
+
+
+def _all_connection(node_executor):
+    return run_ssh_commands(
+        host=node_executor,
+        commands=[
+            [
+                "bash",
+                "-c",
+                'nmcli -g name con show | \
+                xargs -i nmcli -t -f connection.interface-name,ovs-port.bond-mode connection show "{}"',
+            ]
+        ],
+    )[0]
