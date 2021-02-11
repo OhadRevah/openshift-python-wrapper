@@ -16,7 +16,7 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -91,19 +91,13 @@ def rhel7_bridge_attached_vmb(worker_node2, namespace, unprivileged_client, rhel
 
 
 @pytest.fixture(scope="class")
-def rhel7_running_bridge_attached_vmia(rhel7_bridge_attached_vma):
-    vmi = rhel7_bridge_attached_vma.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def rhel7_running_bridge_attached_vma(rhel7_bridge_attached_vma):
+    return running_vm(vm=rhel7_bridge_attached_vma)
 
 
 @pytest.fixture(scope="class")
-def rhel7_running_bridge_attached_vmib(rhel7_bridge_attached_vmb):
-    vmi = rhel7_bridge_attached_vmb.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vmi
+def rhel7_running_bridge_attached_vmb(rhel7_bridge_attached_vmb):
+    return running_vm(vm=rhel7_bridge_attached_vma)
 
 
 @pytest.mark.polarion("CNV-3691")
@@ -115,10 +109,12 @@ def test_l2_bridge_connectivity(
     rhel7_nad,
     rhel7_bridge_attached_vma,
     rhel7_bridge_attached_vmb,
-    rhel7_running_bridge_attached_vmia,
-    rhel7_running_bridge_attached_vmib,
+    rhel7_running_bridge_attached_vma,
+    rhel7_running_bridge_attached_vmb,
 ):
     assert_ping_successful(
-        src_vm=rhel7_running_bridge_attached_vmia,
-        dst_ip=_masquerade_vmib_ip(rhel7_running_bridge_attached_vmib, rhel7_nad.name),
+        src_vm=rhel7_running_bridge_attached_vma,
+        dst_ip=_masquerade_vmib_ip(
+            rhel7_running_bridge_attached_vmb.vmi, rhel7_nad.name
+        ),
     )
