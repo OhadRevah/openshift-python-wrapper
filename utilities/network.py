@@ -4,6 +4,7 @@ import json
 import logging
 import random
 import re
+import shlex
 
 import netaddr
 from openshift.dynamic.exceptions import ConflictError
@@ -18,9 +19,8 @@ from resources.sriov_network import SriovNetwork
 from resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities import console
 from utilities.constants import SRIOV
-from utilities.infra import get_pod_by_name_prefix
+from utilities.infra import get_pod_by_name_prefix, run_ssh_commands
 from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
 
 
@@ -722,21 +722,19 @@ def cloud_init_network_data(data):
     return network_data
 
 
-def console_ping(src_vm, dst_ip, packetsize=None):
+def ping(src_vm, dst_ip, packetsize=None):
     ping_ipv6 = "-6 " if get_ipv6_ip_str(dst_ip=dst_ip) else ""
 
     ping_cmd = f"ping {ping_ipv6}-w 3 {dst_ip}"
     if packetsize:
         ping_cmd += f" -s {packetsize} -M do"
-    with console.Fedora(vm=src_vm) as src_vm_console:
-        LOGGER.info(f'From {src_vm.name} console sending "{ping_cmd}"')
-        src_vm_console.sendline(ping_cmd)
-        while True:
-            line = src_vm_console.readline()
-            m = re.search(b"([0-9]+)% packet loss, ", line)
-            if m is not None:
-                LOGGER.info(f"ping returned {m.string.strip()}")
-                return m.groups()
+
+    out = run_ssh_commands(host=src_vm.ssh_exec, commands=[shlex.split(ping_cmd)])[0]
+    for line in out.splitlines():
+        match = re.search("([0-9]+)% packet loss, ", line)
+        if match:
+            LOGGER.info(f"ping returned {match.string.strip()}")
+            return match.groups()
 
 
 def assert_ping_successful(src_vm, dst_ip, packetsize=None):
@@ -745,7 +743,7 @@ def assert_ping_successful(src_vm, dst_ip, packetsize=None):
         ip_header = 20
         packetsize = packetsize - ip_header - icmp_header
 
-    assert console_ping(src_vm, dst_ip, packetsize)[0] == b"0"
+    assert ping(src_vm, dst_ip, packetsize)[0] == "0"
 
 
 def get_ipv6_address(cnv_resource):

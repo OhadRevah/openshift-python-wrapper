@@ -7,7 +7,7 @@ from resources.node_network_state import NodeNetworkState
 from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.infra import run_ssh_commands
-from utilities.network import console_ping
+from utilities.network import ping
 
 
 LOGGER = logging.getLogger(__name__)
@@ -26,13 +26,7 @@ EOF
 
 
 def assert_no_ping(src_vm, dst_ip, packetsize=None):
-    assert console_ping(src_vm, dst_ip, packetsize)[0] == b"100"
-
-
-def running_vmi(vm):
-    vm.start(wait=True)
-    vm.vmi.wait_until_running()
-    return vm.vmi
+    assert ping(src_vm, dst_ip, packetsize)[0] == "100"
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):
