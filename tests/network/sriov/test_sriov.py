@@ -3,6 +3,7 @@ SR-IOV Tests
 """
 
 import logging
+import shlex
 from ipaddress import ip_interface
 
 import pytest
@@ -11,12 +12,12 @@ from resources.namespace import Namespace
 from resources.utils import TimeoutSampler
 
 from tests.network.utils import assert_no_ping, run_test_guest_performance
-from utilities import console
 from utilities.constants import SRIOV
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
     get_bugzilla_connection_params,
+    run_ssh_commands,
 )
 from utilities.network import (
     assert_ping_successful,
@@ -28,10 +29,8 @@ from utilities.network import (
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
-    enable_ssh_service_in_vm,
     fedora_vm_body,
-    vm_console_run_commands,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -50,24 +49,14 @@ def restart_guest_agent(vm):
         not in BUG_STATUS_CLOSED
     ):
         LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
-        vm_console_run_commands(
-            console_impl=console.Fedora,
-            vm=vm,
-            commands=[f"sudo systemctl {restart}"],
+        run_ssh_commands(
+            host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]
         )
+        running_vm(vm=vm, enable_ssh=False)
     else:
         LOGGER.warning(
             f"bug {bug_num} is resolved. please remove all references to it from the automation"
         )
-    wait_for_vm_interfaces(vmi=vm.vmi)
-
-
-def running_vm(vm):
-    vmi = vm.vmi
-    vmi.wait_until_running()
-    enable_ssh_service_in_vm(vm=vm, console_impl=console.Fedora)
-    restart_guest_agent(vm=vm)
-    return vm
 
 
 def sriov_vm(
@@ -102,9 +91,6 @@ def sriov_vm(
         node_selector=worker.name,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
-        ssh=True,
-        username=console.Fedora.USERNAME,
-        password=console.Fedora.PASSWORD,
         macs={sriov_network.name: sriov_mac},
         interfaces_types={name: SRIOV for name in networks.keys()},
     ) as vm:
@@ -271,7 +257,9 @@ def vm4_interfaces(running_sriov_vm4):
 def rebooted_sriov_vm4(request, running_sriov_vm4):
     LOGGER.info(f"Reboot number {request.param}")
     # Reboot the VM
-    running_sriov_vm4.ssh_exec.run_command(command=["sudo", "reboot"])
+    run_ssh_commands(
+        host=running_sriov_vm4.ssh_exec, commands=[shlex.shlex("sudo reboot")]
+    )
     # Make sure the VM is up, otherwise we will get an old VM interfaces data.
     running_sriov_vm4.ssh_exec.executor().is_connective(tcp_timeout=60)
     restart_guest_agent(vm=running_sriov_vm4)
@@ -280,15 +268,19 @@ def rebooted_sriov_vm4(request, running_sriov_vm4):
 
 def get_sriov1_mtu(vm):
     return int(
-        vm.ssh_exec.run_command(
-            command=["cat", f"/sys/class/net/{VM_SRIOV_IFACE_NAME}/mtu"]
-        )[1]
+        run_ssh_commands(
+            host=vm.ssh_exec,
+            commands=[shlex.split(f"cat /sys/class/net/{VM_SRIOV_IFACE_NAME}/mtu")],
+        )[0]
     )
 
 
 def set_sriov1_mtu(vm, mtu):
-    vm.ssh_exec.run_command(
-        command=["sudo", "ip", "link", "set", VM_SRIOV_IFACE_NAME, "mtu", str(mtu)]
+    run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[
+            shlex.split(f"sudo ip link set {VM_SRIOV_IFACE_NAME} mtu {str(mtu)}")
+        ],
     )
     LOGGER.info(f"wait for {vm.name} {VM_SRIOV_IFACE_NAME} mtu to be {mtu}")
     for sample in TimeoutSampler(timeout=30, sleep=1, func=get_sriov1_mtu, vm=vm):
