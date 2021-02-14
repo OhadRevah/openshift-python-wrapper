@@ -4,13 +4,11 @@ VM with CPU flag
 import pytest
 from resources.utils import TimeoutExpiredError
 
-from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_console,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -25,9 +23,7 @@ def cpu_flag_vm_positive(nodes_common_cpu_model, namespace, unprivileged_client)
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vm.vmi)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -71,12 +67,12 @@ def test_vm_with_cpu_flag_negative(cpu_flag_vm_negative):
 @pytest.mark.polarion("CNV-1269")
 def test_vm_with_cpu_flag_positive_case(cpu_flag_vm_positive, nodes_common_cpu_model):
     """
-    Test VM with cpu flag, test CPU model and console access
+    Test VM with cpu flag, test CPU model and SSH connectivity
     """
+    cpu_flag_vm_positive.ssh_exec.executor().is_connective()
     assert (
         cpu_flag_vm_positive.instance["spec"]["template"]["spec"]["domain"]["cpu"][
             "model"
         ]
         == nodes_common_cpu_model
     )
-    wait_for_console(vm=cpu_flag_vm_positive, console_impl=console.Fedora)

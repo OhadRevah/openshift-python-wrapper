@@ -8,12 +8,11 @@ from resources.configmap import ConfigMap
 from resources.node import Node
 from resources.utils import TimeoutExpiredError
 
-from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -40,9 +39,7 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
-        vm.start(wait=True, timeout=240)
-        vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vm.vmi)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -90,16 +87,14 @@ def cpu_features_vm_negative(request, unprivileged_client, namespace):
 
 def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
     """
-    Test VM with cpu flag, test the VM started and enter the console
+    Test VM with cpu flag, test the VM started and is accessible via SSH
     """
+    cpu_features_vm_positive.ssh_exec.executor().is_connective()
     assert cpu_features_vm_positive.cpu_flags["features"][0]["name"] == (
         cpu_features_vm_positive.instance["spec"]["template"]["spec"]["domain"]["cpu"][
             "features"
         ][0]["name"]
     )
-    with console.Fedora(vm=cpu_features_vm_positive) as vm_console:
-        vm_console.sendline("cat /etc/redhat-release | wc -l\n")
-        vm_console.expect("1", timeout=20)
 
 
 @pytest.mark.parametrize(

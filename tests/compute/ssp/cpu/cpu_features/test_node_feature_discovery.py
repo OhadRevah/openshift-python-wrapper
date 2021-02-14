@@ -9,7 +9,7 @@ from pytest_testconfig import config as py_config
 from resources.configmap import ConfigMap
 from resources.pod import Pod
 
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture(scope="module")
@@ -91,8 +91,7 @@ def cpu_test_vm(namespace):
     with VirtualMachineForTests(
         name=name, namespace=namespace.name, body=fedora_vm_body(name=name)
     ) as vm:
-        vm.start()
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, enable_ssh=False)
         yield vm
 
 
