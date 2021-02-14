@@ -10,6 +10,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
     migrate_and_verify,
+    running_vm,
     wait_for_vm_interfaces,
 )
 
@@ -26,8 +27,7 @@ def vm(request, unprivileged_client, namespace):
         client=unprivileged_client,
         machine_type=request.param.get("machine_type"),
     ) as vm:
-        vm.start()
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, enable_ssh=False)
         yield vm
 
 
@@ -119,7 +119,7 @@ def test_machine_type_after_cm_update(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
     )
 
-    vm.restart()
+    vm.restart(wait=True)
     wait_for_vm_interfaces(vmi=vm.vmi)
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm

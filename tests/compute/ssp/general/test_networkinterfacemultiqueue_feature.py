@@ -6,13 +6,10 @@ import pytest
 from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
 
-from utilities import console
-from utilities.virt import wait_for_console, wait_for_vm_interfaces, wait_for_windows_vm
+from utilities.virt import wait_for_vm_interfaces
 
 
-def _update_and_validate_vm_cpu_spec(
-    vm, network_multiqueue=True, cores=1, sockets=1, threads=1
-):
+def update_cpu_spec(vm, network_multiqueue=True, cores=1, sockets=1, threads=1):
     ResourceEditor(
         {
             vm: {
@@ -35,12 +32,30 @@ def _update_and_validate_vm_cpu_spec(
             }
         }
     ).update()
-    vm.restart(wait=True)
+
+
+def validate_vm_cpu_spec(vm, cores=1, sockets=1, threads=1):
     cpu_spec = vm.instance.spec.template.spec.domain.cpu
     cpu_topology_xml = vm.vmi.xml_dict["domain"]["cpu"]["topology"]
     assert int(cpu_topology_xml["@cores"]) == cpu_spec.cores == cores
     assert int(cpu_topology_xml["@sockets"]) == cpu_spec.sockets == sockets
     assert int(cpu_topology_xml["@threads"]) == cpu_spec.threads == threads
+
+
+def update_validate_cpu_in_vm(
+    vm, network_multiqueue=True, cores=1, sockets=1, threads=1
+):
+    update_cpu_spec(
+        vm=vm,
+        network_multiqueue=network_multiqueue,
+        cores=cores,
+        sockets=sockets,
+        threads=threads,
+    )
+    vm.restart(wait=True)
+    wait_for_vm_interfaces(vmi=vm.vmi)
+    vm.ssh_exec.executor().is_connective(tcp_timeout=120)
+    validate_vm_cpu_spec(vm=vm, cores=cores, sockets=sockets, threads=threads)
 
 
 @pytest.mark.parametrize(
@@ -77,93 +92,54 @@ class TestLatestRHEL:
         self,
         golden_image_vm_instance_from_template_multi_storage_scope_class,
     ):
-        wait_for_vm_interfaces(
-            vmi=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi
-        )
-        wait_for_console(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            console_impl=console.RHEL,
+        golden_image_vm_instance_from_template_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
+            tcp_timeout=120
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_feature_disabled(
         self, golden_image_vm_instance_from_template_multi_storage_scope_class
     ):
-        _update_and_validate_vm_cpu_spec(
+        update_validate_cpu_in_vm(
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
             network_multiqueue=False,
-        )
-        wait_for_vm_interfaces(
-            vmi=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi
-        )
-        wait_for_console(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_four_cores(
         self, golden_image_vm_instance_from_template_multi_storage_scope_class
     ):
-        _update_and_validate_vm_cpu_spec(
+        update_validate_cpu_in_vm(
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class, cores=4
-        )
-        wait_for_vm_interfaces(
-            vmi=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi
-        )
-        wait_for_console(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_four_sockets(
         self, golden_image_vm_instance_from_template_multi_storage_scope_class
     ):
-        _update_and_validate_vm_cpu_spec(
+        update_validate_cpu_in_vm(
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
             sockets=4,
-        )
-        wait_for_vm_interfaces(
-            vmi=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi
-        )
-        wait_for_console(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_four_threads(
         self, golden_image_vm_instance_from_template_multi_storage_scope_class
     ):
-        _update_and_validate_vm_cpu_spec(
+        update_validate_cpu_in_vm(
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
             threads=4,
-        )
-        wait_for_vm_interfaces(
-            vmi=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi
-        )
-        wait_for_console(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            console_impl=console.RHEL,
         )
 
     @pytest.mark.polarion("CNV-3221")
     def test_two_cores_two_sockets_two_threads(
         self, golden_image_vm_instance_from_template_multi_storage_scope_class
     ):
-        _update_and_validate_vm_cpu_spec(
+        update_validate_cpu_in_vm(
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
             cores=4,
             sockets=2,
             threads=2,
-        )
-        wait_for_vm_interfaces(
-            vmi=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi
-        )
-        wait_for_console(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            console_impl=console.RHEL,
         )
 
 
@@ -184,10 +160,6 @@ class TestLatestRHEL:
                 ],
                 "network_model": "virtio",
                 "network_multiqueue": True,
-                "wait_for_interfaces_timeout": 1500,
-                "ssh": True,
-                "username": py_config["windows_username"],
-                "password": py_config["windows_password"],
             },
         )
     ],
@@ -199,17 +171,14 @@ class TestLatestWindows:
     Test networkInterfaceMultiqueue on latest Windows with different cpu core/socket/thread combinations.
     """
 
-    WIN_VER = py_config["latest_windows_version"]["os_version"]
-
     @pytest.mark.run("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
         self,
         golden_image_vm_instance_from_template_multi_storage_scope_class,
     ):
-        wait_for_windows_vm(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            version=self.WIN_VER,
+        golden_image_vm_instance_from_template_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
+            tcp_timeout=120
         )
 
     @pytest.mark.polarion("CNV-3221")
@@ -217,13 +186,9 @@ class TestLatestWindows:
         self,
         golden_image_vm_instance_from_template_multi_storage_scope_class,
     ):
-        _update_and_validate_vm_cpu_spec(
+        update_validate_cpu_in_vm(
             vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
             cores=4,
             sockets=2,
             threads=2,
-        )
-        wait_for_windows_vm(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-            version=self.WIN_VER,
         )

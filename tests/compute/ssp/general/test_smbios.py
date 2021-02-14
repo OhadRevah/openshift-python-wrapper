@@ -11,7 +11,7 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -24,9 +24,7 @@ def configmap_smbios_vm(unprivileged_client, namespace):
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vm.vmi)
+        running_vm(vm=vm)
         yield vm
 
 
