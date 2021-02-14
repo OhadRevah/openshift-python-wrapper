@@ -7,7 +7,7 @@ Common templates RHEL VM migration and SSH access after migration
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import migrate_vm
+from utilities.virt import migrate_and_verify
 
 
 @pytest.mark.smoke
@@ -45,7 +45,9 @@ def test_migrate_vm_rhel(
     Verify VM is migrated and previously-created expose service (SSH)
     can be accessed.
     """
-    migrate_vm(vm=golden_image_vm_instance_from_template_multi_storage_scope_function)
+    migrate_and_verify(
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function
+    )
 
     # Verify successful SSH connection after migration
     assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.executor().is_connective(

@@ -5,11 +5,11 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from resources.resource import ResourceEditor
 
 from tests.compute.ssp import utils as ssp_utils
-from tests.compute.utils import migrate_vm
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    migrate_and_verify,
     wait_for_vm_interfaces,
 )
 
@@ -89,7 +89,7 @@ def test_migrate_vm(
     machine_type_from_kubevirt_config_cm,
     vm,
 ):
-    migrate_vm(vm=vm)
+    migrate_and_verify(vm=vm)
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
@@ -125,7 +125,7 @@ def test_machine_type_after_cm_update(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
     )
 
-    migrate_vm(vm=vm)
+    migrate_and_verify(vm=vm)
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm

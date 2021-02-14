@@ -13,10 +13,9 @@ from resources.resource import ResourceEditor
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 
-from tests.compute.utils import migrate_vm
 from utilities import console
 from utilities.constants import TIMEOUT_10MIN
-from utilities.virt import wait_for_vm_interfaces
+from utilities.virt import migrate_and_verify, wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -303,6 +302,6 @@ def test_always_run_migrate_vm(
 ):
     LOGGER.info("The VM migration with runStrategy 'Always'")
     verify_vm_vmi_status(vm=lifecycle_vm, ready=True)
-    migrate_vm(vm=lifecycle_vm)
+    migrate_and_verify(vm=lifecycle_vm)
     verify_vm_vmi_status(vm=lifecycle_vm, ready=True)
     verify_vm_run_strategy(vm=lifecycle_vm, run_strategy=ALWAYS)

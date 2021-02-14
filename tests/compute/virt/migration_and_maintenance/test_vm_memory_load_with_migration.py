@@ -6,13 +6,13 @@ import shlex
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import migrate_vm
 from utilities import console
 from utilities.constants import TIMEOUT_60MIN
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     enable_ssh_service_in_vm,
+    migrate_and_verify,
     wait_for_vm_interfaces,
 )
 
@@ -68,7 +68,7 @@ def vm_info_before_migrate(vm_with_mem_load):
 
 @pytest.fixture()
 def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
-    migrate_vm(vm=vm_with_mem_load, timeout=TIMEOUT_60MIN)
+    migrate_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_60MIN)
     assert (
         vm_info_before_migrate[0] != vm_with_mem_load.vmi.virt_launcher_pod.node
     ), "migration completed but vm on source node"

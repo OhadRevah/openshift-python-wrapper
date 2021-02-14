@@ -2,9 +2,7 @@
 import logging
 import shlex
 
-import rrmngmnt
 from resources.resource import TIMEOUT
-from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from utilities.virt import vm_console_run_commands, wait_for_vm_interfaces
 
@@ -54,23 +52,6 @@ def fetch_processid_from_windows_vm(vm, process_name):
         fr"wmic process where (Name=\'{process_name}\') get processid /value"
     )
     return vm.ssh_exec.run_command(command=cmd)[1]
-
-
-def migrate_vm(vm, timeout=1500):
-    with VirtualMachineInstanceMigration(
-        name=vm.name,
-        namespace=vm.namespace,
-        vmi=vm.vmi,
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
-
-
-def rrmngmnt_host(usr, passwd, ip, port):
-    host = rrmngmnt.Host(ip=str(ip))
-    host_user = rrmngmnt.user.User(name=usr, password=passwd)
-    host.executor_user = host_user
-    host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(port=port)
-    return host
 
 
 def get_linux_timezone(ssh_exec):

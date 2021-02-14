@@ -12,12 +12,13 @@ from pytest_testconfig import config as py_config
 from resources.resource import ResourceEditor
 from resources.template import Template
 
-from tests.compute.utils import migrate_vm, vm_started
+from tests.compute.utils import vm_started
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
+    migrate_and_verify,
     vm_console_run_commands,
     wait_for_console,
     wait_for_windows_vm,
@@ -248,7 +249,7 @@ class TestEFISecureBootWindows:
     ):
         """Test EFI Windows VM is migrated."""
 
-        migrate_vm(vm=windows_efi_secureboot_vm)
+        migrate_and_verify(vm=windows_efi_secureboot_vm)
         wait_for_windows_vm(
             vm=windows_efi_secureboot_vm,
             version=windows_efi_secureboot_vm.template_labels[0].split("win")[1],
