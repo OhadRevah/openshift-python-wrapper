@@ -9,7 +9,6 @@ from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine
 
 from tests.conftest import vm_instance_from_template
-from utilities import console
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
@@ -17,7 +16,7 @@ from utilities.infra import (
 )
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
-    wait_for_console,
+    running_vm,
     wait_for_vm_interfaces,
 )
 
@@ -125,8 +124,7 @@ def vm_from_golden_image_multi_storage(
         data_volume=golden_image_data_volume_multi_storage_scope_function,
         delete_data_volume_sc_params=request.param.get("delete_sc_params"),
     ) as vm:
-        vm.start(wait=True, timeout=2100)
-        wait_for_vm_interfaces(vmi=vm.vmi)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -165,8 +163,7 @@ def vm_from_golden_image(
         updated_dv_name=request.param.get("updated_dv_name"),
     ) as vm:
         if request.param.get("start_vm", True):
-            vm.start(wait=True, timeout=2100)
-            wait_for_vm_interfaces(vmi=vm.vmi)
+            running_vm(vm=vm)
         yield vm
 
 
@@ -205,7 +202,7 @@ def test_vm_from_golden_image_cluster_default_storage_class(
     golden_image_data_volume_multi_storage_scope_function,
     vm_from_golden_image_multi_storage,
 ):
-    wait_for_console(vm=vm_from_golden_image_multi_storage, console_impl=console.Fedora)
+    vm_from_golden_image_multi_storage.ssh_exec.executor().is_connective()
 
 
 @pytest.mark.parametrize(
@@ -230,7 +227,7 @@ def test_vm_from_golden_image_cluster_default_storage_class(
     indirect=True,
 )
 def test_vm_with_existing_dv(data_volume_scope_function, vm_with_existing_dv):
-    wait_for_console(vm=vm_with_existing_dv, console_impl=console.Fedora)
+    vm_with_existing_dv.ssh_exec.executor().is_connective()
 
 
 @pytest.mark.parametrize(
@@ -262,7 +259,7 @@ def test_vm_dv_with_different_sc(
     # VM cloned PVC storage class is different from the original golden image storage class
     # Using NFS and HPP, as Block <> Filesystem is not supported.
     # TODO: Add OCS - HPP test
-    wait_for_console(vm=vm_from_golden_image, console_impl=console.Fedora)
+    vm_from_golden_image.ssh_exec.executor().is_connective()
 
 
 @pytest.mark.parametrize(
