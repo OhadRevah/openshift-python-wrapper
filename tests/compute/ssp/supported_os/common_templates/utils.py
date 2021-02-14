@@ -139,16 +139,6 @@ def set_vm_tablet_device_dict(tablet_params):
     }
 
 
-def check_vm_system_tablet_device(vm, console_impl, expected_device):
-    """ Verify tablet device parameters in VMI /sys/devices file """
-
-    with console_impl(vm=vm, timeout=1500) as vm_console:
-        vm_console.sendline(r"grep -rs '^QEMU *.* Tablet' /sys/devices ")
-        vm_console.expect(
-            f"/sys/devices/pci(.*)QEMU {expected_device} Tablet", timeout=240
-        )
-
-
 def check_vm_xml_tablet_device(vm):
     """Verifies vm tablet device info in VM XML vs VM instance attributes
     values.

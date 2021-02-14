@@ -7,20 +7,33 @@ https://libvirt.org/formatdomain.html#elementsInput
 """
 
 import logging
+import re
+import shlex
 
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
-from utilities import console
-from utilities.infra import Images
+from utilities.infra import Images, run_ssh_commands
 
 
 LOGGER = logging.getLogger(__name__)
 # Negative tests require a DV, however its content is not important (VM will not be created).
 FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 FAILED_VM_DV_SIZE = Images.Cirros.DEFAULT_DV_SIZE
+
+
+def check_vm_system_tablet_device(vm, expected_device):
+    """ Verify tablet device parameters in VMI /sys/devices file """
+    output = run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[shlex.split(r"grep -rs '^QEMU *.* Tablet' /sys/devices ||true")],
+    )[0]
+
+    assert re.search(
+        rf"/sys/devices/pci(.*)QEMU {expected_device} Tablet", output
+    ), f"Wrong tablet device in VM: {output}, expected: {expected_device}"
 
 
 @pytest.mark.parametrize(
@@ -67,9 +80,8 @@ class TestRHELTabletDevice:
 
         LOGGER.info("Test tablet device - virtio bus.")
 
-        utils.check_vm_system_tablet_device(
+        check_vm_system_tablet_device(
             vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-            console_impl=console.RHEL,
             expected_device="Virtio",
         )
         utils.check_vm_xml_tablet_device(
@@ -106,9 +118,8 @@ class TestRHELTabletDevice:
 
         LOGGER.info("Test tablet device -  USB bus.")
 
-        utils.check_vm_system_tablet_device(
+        check_vm_system_tablet_device(
             vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-            console_impl=console.RHEL,
             expected_device="USB",
         )
         utils.check_vm_xml_tablet_device(
@@ -145,9 +156,8 @@ class TestRHELTabletDevice:
 
         LOGGER.info("Test tablet device - default device bus - USB.")
 
-        utils.check_vm_system_tablet_device(
+        check_vm_system_tablet_device(
             vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
-            console_impl=console.RHEL,
             expected_device="USB",
         )
         utils.check_vm_xml_tablet_device(
