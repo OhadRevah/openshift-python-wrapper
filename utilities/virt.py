@@ -939,7 +939,16 @@ def run_command(command, verify_stderr=True):
         LOGGER.error(f"Failed to run {command}. rc: {p.returncode}")
         return False, out_decoded, err_decoded
 
+    # From this point and onwards we are guaranteed that p.returncode == 0
     if err and verify_stderr:
+        # TODO: This is a workaround for BZ #1911386, once fixed this will be removed
+        if re.match(
+            r'{"component":"","level":"error","msg":"Error when closing file","pos":"os_helper.go:34",'
+            r'"reason":"close (\/.*?\.[\w:]+): file already closed"',
+            err_decoded,
+        ):
+            LOGGER.warning(f"W/A for bug 1911386. error: {err_decoded}")
+            return True, out_decoded, err_decoded
         LOGGER.error(f"Failed to run {command}. error: {err_decoded}")
         return False, out_decoded, err_decoded
 
@@ -967,14 +976,6 @@ def run_virtctl_command(command, namespace=None):
 
     virtctl_cmd += command
     res, out, err = run_command(command=virtctl_cmd)
-    # TODO: This is a workaround for BZ #1911386, once fixed this will be removed
-    if re.match(
-        r'{"component":"","level":"error","msg":"Error when closing file","pos":"os_helper.go:34",'
-        r'"reason":"close (\/.*?\.[\w:]+): file already closed"',
-        err,
-    ):
-        LOGGER.warning(f"W/A for bug 1911386. error: {err}")
-        return True, out, err
 
     return res, out, err
 
