@@ -57,11 +57,11 @@ provider_matrix = [
         "rhv44": {
             "type": "ovirt",
             "version": "4.4",
-            "fqdn": "rhev-blue-01.rdu2.scalelab.redhat.com",
-            "api_url": "https://rhev-blue-01.rdu2.scalelab.redhat.com/ovirt-engine/api",
+            "fqdn": "env-rhv44-mgr.cfme2.lab.eng.rdu2.redhat.com",
+            "api_url": "https://env-rhv44-mgr.cfme2.lab.eng.rdu2.redhat.com/ovirt-engine/api",
             "username": "admin@internal",
-            "password": "qum5net",
-            "cluster_name": "iscsi",
+            "password": "Tux4Linux!",
+            "cluster_name": "Default",
         }
     },
     {

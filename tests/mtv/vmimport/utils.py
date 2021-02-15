@@ -180,15 +180,38 @@ class Source:
             "volumes_details": [
                 {
                     "disk_name": "Hard disk 1",
-                    "storage_name": "rhv-v2v-performance-testing",
-                },
-                {
-                    "disk_name": "Hard disk 2",
                     "storage_name": "v2v_general_porpuse_ISCSI_DC",
                 },
                 {
+                    "disk_name": "Hard disk 2",
+                    "storage_name": "rhv-v2v-performance-testing",
+                },
+                {
                     "disk_name": "Hard disk 3",
-                    "storage_name": "b02-h27-localdisk",
+                    "storage_name": "mtv-scale-datastore",
+                },
+            ],
+        },
+        "cirros-3disks-env-rhv44-mgr.cfme2.lab.eng.rdu2.redhat.com": {
+            "name": "v2v-3disks",
+            "cpu_cores": 1,
+            "cpu_sockets": 1,
+            "cpu_threads": 1,
+            "machine_type": "q35",
+            "network_interfaces": 0,
+            "volumes": 3,
+            "volumes_details": [
+                {
+                    "disk_name": "RHEL8-KK_Disk1_v2v-3disks",
+                    "storage_name": "templates_netapp_rdu_02",
+                },  # Rhv: storage domain, VMWare: datastore
+                {
+                    "disk_name": "v2v-3disks_Disk1",
+                    "storage_name": "env-rhv44-02-nfs-data",
+                },
+                {
+                    "disk_name": "v2v-3disks_Disk2",
+                    "storage_name": "iscsi_data_netapp_rdu_02",
                 },
             ],
         },
