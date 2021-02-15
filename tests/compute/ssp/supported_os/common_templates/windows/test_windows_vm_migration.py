@@ -7,9 +7,11 @@ Common templates Windows VM migration and SSH access after migration
 import pytest
 from pytest_testconfig import config as py_config
 
-import utilities.virt
-from tests.compute.ssp.supported_os.common_templates import utils
+from tests.compute.ssp.supported_os.common_templates.utils import (
+    check_telnet_connection,
+)
 from utilities.infra import BUG_STATUS_CLOSED
+from utilities.virt import migrate_and_verify, wait_for_windows_vm
 
 
 @pytest.mark.bugzilla(
@@ -55,22 +57,22 @@ def test_migrate_vm_windows(
     can be accessed.
     """
 
-    assert utils.check_telnet_connection(
+    assert check_telnet_connection(
         ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
         port=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
     ), "Failed to login via Telnet"
 
-    utilities.migrate_and_verify(
+    migrate_and_verify(
         vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
 
-    utilities.virt.wait_for_windows_vm(
+    wait_for_windows_vm(
         vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
         version=py_config["latest_windows_version"]["os_version"],
         timeout=1800,
     )
 
-    assert utils.check_telnet_connection(
+    assert check_telnet_connection(
         ip=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_ip,
         port=golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service.service_port,
     ), "Failed to login via Telnet after migration"
