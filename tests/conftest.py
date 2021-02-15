@@ -1764,11 +1764,17 @@ def format_cpu_model_name(cpu_model_str):
 
 @pytest.fixture(scope="session")
 def nodes_common_cpu_model(utility_pods):
+    skylake_server = "Skylake-Server"
+    cascadelake_server_notsx = "Cascadelake-Server-noTSX"
+    intel_xeon = "Intel(R) Xeon(R)"
+
     def _node_cpu_name(node_cpu_model):
         # Some CPU models provide a name that needs to be mapped to CPU microarchitecture
         cpus_model_name_to_architecture_dict = {
-            "Intel(R) Xeon(R) Gold 6130": "Skylake-Server",
-            "Intel(R) Xeon(R) Gold 6152": "Skylake-Server",
+            f"{intel_xeon} Gold 6130": skylake_server,
+            f"{intel_xeon} Gold 6152": skylake_server,
+            f"{intel_xeon} Silver 4216": cascadelake_server_notsx,
+            f"{intel_xeon} Gold 5218R": cascadelake_server_notsx,
         }
         for cpu_name, architecture in cpus_model_name_to_architecture_dict.items():
             if cpu_name in node_cpu_model:
@@ -1789,9 +1795,10 @@ def nodes_common_cpu_model(utility_pods):
         # Select the oldest CPU model, list ordered by model release, descending
         # TODO: Add AMD models
         cpus_models_list = [
+            cascadelake_server_notsx,
             "Skylake-Server-noTSX-IBRS",
             "Skylake-Server-IBRS",
-            "Skylake-Server",
+            skylake_server,
             "Skylake-Client-noTSX-IBRS",
             "Skylake-Client-IBRS",
             "Skylake-Client",
