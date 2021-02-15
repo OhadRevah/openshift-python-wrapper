@@ -121,7 +121,7 @@ class TestCommonTemplatesFedora:
         )
 
     @pytest.mark.smoke
-    @pytest.mark.dependency(name="vm_console", depends=["start_vm"])
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3344")
     def test_vm_console(
         self,
@@ -139,7 +139,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
 
-    @pytest.mark.dependency(depends=["vm_console"])
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3348")
     def test_os_version(
         self,

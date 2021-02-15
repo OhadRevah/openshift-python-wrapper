@@ -56,7 +56,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(name="vm_console", depends=["start_vm"])
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-5341")
     def test_vm_console(
         self,
@@ -74,7 +74,7 @@ class TestCommonTemplatesCentos:
             console_impl=console.Centos,
         )
 
-    @pytest.mark.dependency(depends=["vm_console"])
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-5342")
     def test_os_version(
         self,

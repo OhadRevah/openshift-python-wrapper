@@ -64,7 +64,7 @@ class TestCommonTemplatesRhel:
             systemctl_support=systemctl_support,
         )
 
-    @pytest.mark.dependency(name="vm_console", depends=["start_vm"])
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
         self,
@@ -83,7 +83,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         )
 
-    @pytest.mark.dependency(depends=["vm_console"])
+    @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3318")
     def test_os_version(
         self,
