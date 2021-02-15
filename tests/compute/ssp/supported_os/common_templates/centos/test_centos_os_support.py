@@ -88,7 +88,6 @@ class TestCommonTemplatesCentos:
 
         common_templates_utils.vm_os_version(
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
-            console_impl=console.Centos,
         )
 
     @pytest.mark.dependency(depends=["create_vm"])

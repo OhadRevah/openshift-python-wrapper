@@ -17,12 +17,7 @@ from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.utils import get_windows_timezone, vm_started
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    get_guest_os_info,
-    run_virtctl_command,
-    vm_console_run_commands,
-    wait_for_windows_vm,
-)
+from utilities.virt import get_guest_os_info, run_virtctl_command, wait_for_windows_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -45,8 +40,8 @@ def reboot_vm(vm):
             pass
 
 
-def vm_os_version(vm, console_impl):
-    """ Verify VM os version using console """
+def vm_os_version(vm):
+    """ Verify VM os version using SSH """
 
     # vm.name format is <os type>-<os major version>[-<minor version>-]<random>-<random>
     # For example: fedora-32-1601036283-2909632 or rhel-8-2-1601034311-6416788
@@ -56,9 +51,9 @@ def vm_os_version(vm, console_impl):
     # Replace rhel with "redhat"
     os_name = "redhat" if "rhel" in os_release_name else os_release_name
     os = re.search(r"(\w+-)?(\d+(-\d+)?)(-\d+-\d+)$", vm.name).group(2)
-    command = [f"cat /etc/{os_name}-release | grep {os.replace('-', '.')}"]
+    command = shlex.split(f"cat /etc/{os_name}-release | grep {os.replace('-', '.')}")
 
-    vm_console_run_commands(console_impl=console_impl, vm=vm, commands=command)
+    run_ssh_commands(host=vm.ssh_exec, commands=[command])
 
 
 def check_telnet_connection(ip, port):
