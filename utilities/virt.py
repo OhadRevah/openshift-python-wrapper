@@ -1413,7 +1413,7 @@ def get_windows_os_dict(windows_version):
         )
 
 
-def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
+def running_vm(vm, wait_for_interfaces=True, enable_ssh=True, systemctl_support=True):
     """
     Wait for the VMI to be in Running state.
 
@@ -1421,6 +1421,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         vm (VirtualMachine): VM object.
         wait_for_interfaces (bool): Is waiting for VM's interfaces mandatory for declaring VM as running.
         enable_ssh (bool): Enable SSh service in the VM.
+        systemctl_support(bool): OS support of systemctl commend
 
     Returns:
         VirtualMachine: VM object.
@@ -1448,7 +1449,11 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         if vm.os_flavor.startswith("win"):
             wait_for_ssh_connectivity(vm=vm)
         else:
-            enable_ssh_service_in_vm(vm=vm, console_impl=CONSOLE_IMPL[vm.os_flavor])
+            enable_ssh_service_in_vm(
+                vm=vm,
+                console_impl=CONSOLE_IMPL[vm.os_flavor],
+                systemctl_support=systemctl_support,
+            )
 
     return vm
 
