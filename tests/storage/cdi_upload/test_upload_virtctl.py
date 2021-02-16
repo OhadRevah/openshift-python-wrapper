@@ -15,7 +15,7 @@ from resources.route import Route
 
 import tests.storage.utils as storage_utils
 from utilities import console
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import (
     ErrorMsg,
     create_dummy_first_consumer_pod,
@@ -290,6 +290,9 @@ def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
         yield pvc
 
 
+@pytest.mark.bugzilla(
+    1927473, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-3727")
 def test_virtctl_image_upload_with_exist_pvc(
     empty_pvc,
