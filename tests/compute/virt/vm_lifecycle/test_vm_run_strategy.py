@@ -5,16 +5,16 @@
 
 import logging
 import re
+import shlex
 
 import pytest
 from kubernetes.client.rest import ApiException
-from pexpect import EOF
 from resources.resource import ResourceEditor
 from resources.utils import TimeoutSampler
 from resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 
-from utilities import console
 from utilities.constants import TIMEOUT_10MIN
+from utilities.infra import run_ssh_commands
 from utilities.virt import migrate_and_verify, wait_for_vm_interfaces
 
 
@@ -149,6 +149,13 @@ def start_vm_if_not_running(lifecycle_vm):
     wait_for_vm_interfaces(vmi=lifecycle_vm.vmi)
 
 
+@pytest.fixture(scope="module")
+def stop_vm_if_running(lifecycle_vm):
+    # Tests should start with a stopped VM
+    if lifecycle_vm.ready:
+        lifecycle_vm.stop(wait=True)
+
+
 def run_vm_action(vm, vm_action, expected_exceptions=None):
     LOGGER.info(f"{vm_action} VM")
 
@@ -208,6 +215,7 @@ def pause_unpause_vmi_and_verify_status(vm):
     verify_vm_vmi_status(vm=vm, ready=True)
 
 
+@pytest.mark.usefixtures("stop_vm_if_running")
 class TestRunStrategy:
     @pytest.mark.parametrize(
         "vm_action",
@@ -247,9 +255,9 @@ class TestRunStrategy:
         status = RUN_STRATEGY_SHUTDOWN_STATUS[run_strategy]
 
         # send poweroff
-        with pytest.raises(EOF):
-            with console.Fedora(vm=lifecycle_vm, timeout=TIMEOUT_10MIN) as vm_console:
-                vm_console.sendline(s="sudo poweroff")
+        run_ssh_commands(
+            host=lifecycle_vm.ssh_exec, commands=[shlex.split("sudo poweroff")]
+        )
 
         # runStrategy "Always" first terminates the pod, then re-raises it
         # The other two runStrategies go directly to completed

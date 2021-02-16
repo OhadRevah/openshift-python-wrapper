@@ -8,13 +8,9 @@ from resources.utils import TimeoutSampler
 
 from tests.compute.utils import get_linux_timezone, get_windows_timezone
 from tests.conftest import vm_instance_from_template
-from utilities import console
-from utilities.virt import (
-    enable_ssh_service_in_vm,
-    wait_for_ssh_connectivity,
-    wait_for_vm_interfaces,
-    wait_for_windows_vm,
-)
+from utilities.exceptions import CommandExecFailed
+from utilities.infra import run_ssh_commands
+from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -39,13 +35,6 @@ def persistence_vm(
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_class,
     ) as vm:
-        if RHEL in vm.name:
-            enable_ssh_service_in_vm(vm=vm, console_impl=console.RHEL)
-        elif WIN in vm.name:
-            wait_for_windows_vm(
-                vm=vm, version=py_config["latest_windows_version"]["os_version"]
-            )
-
         yield vm
 
 
@@ -80,17 +69,19 @@ def restarted_persistence_vm(request, persistence_vm):
 
     # wait for the VM to come back up
     wait_for_vm_interfaces(vmi=persistence_vm.vmi)
-    wait_for_ssh_connectivity(vm=persistence_vm, timeout=1800 if os == WIN else 300)
+    wait_for_ssh_connectivity(
+        vm=persistence_vm, timeout=1800 if os == WIN else 300, tcp_timeout=120
+    )
 
 
-def run_os_command(vm, os, command_dict):
-    cmd = command_dict[os]
-    rc, out, err = vm.ssh_exec.run_command(command=shlex.split(cmd))
-    # On a successful command execution the return code is 0,
-    # however on a successful reboot execution, the return code is -1
-    if "reboot" not in cmd:
-        assert not rc, f"Fail to run command {cmd}, error: {err}."
-    return out
+def run_os_command(vm, command):
+    try:
+        return run_ssh_commands(host=vm.ssh_exec, commands=[shlex.split(command)])[0]
+    except CommandExecFailed:
+        # On a successful command execution the return code is 0,
+        # however on RHEL, a successful reboot command execution return code is -1
+        if "reboot" not in command:
+            raise
 
 
 def wait_for_user_agent_down(vm, timeout):
@@ -132,7 +123,7 @@ def set_timezone(vm, os, timezone):
     }
 
     LOGGER.info(f"Setting timezone: {timezone}")
-    run_os_command(vm=vm, os=os, command_dict=commands)
+    run_os_command(vm=vm, command=commands[os])
 
     LOGGER.info("Verifying timezone change")
     assert get_timezone(vm=vm, os=os) == timezone
@@ -145,21 +136,24 @@ def touch_file(vm, os):
     }
 
     LOGGER.info(f"Creating file: {NEW_FILENAME}")
-    run_os_command(vm=vm, os=os, command_dict=commands)
+    run_os_command(vm=vm, command=commands[os])
 
     LOGGER.info("Verifying file creation")
     assert grep_file(vm=vm, os=os)
 
 
 def grep_file(vm, os):
-    commands = {RHEL: f"ls | grep {NEW_FILENAME}", WIN: f"dir | findstr {NEW_FILENAME}"}
-    found_file = vm.ssh_exec.run_command(command=shlex.split(commands[os]))[1]
+    commands = {
+        RHEL: f"ls | grep {NEW_FILENAME} ||true",
+        WIN: f"dir | findstr {NEW_FILENAME} || ver>nul",
+    }
+    found_file = run_os_command(vm=vm, command=commands[os])
     return found_file
 
 
 def delete_file(vm, os):
     commands = {RHEL: f"rm {NEW_FILENAME}", WIN: f"del {NEW_FILENAME}"}
-    run_os_command(vm=vm, os=os, command_dict=commands)
+    run_os_command(vm=vm, command=commands[os])
     assert not grep_file(vm=vm, os=os)
 
 
@@ -170,13 +164,13 @@ def set_passwd(vm, os, passwd):
     }
 
     LOGGER.info(f"Setting password: {passwd}")
-    run_os_command(vm=vm, os=os, command_dict=commands)
+    run_os_command(vm=vm, command=commands[os])
 
     # Update the VM object password
     vm.password = passwd
 
     LOGGER.info("Verifying password change")
-    vm.ssh_exec.run_command(command=["dir"])
+    vm.ssh_exec.executor().is_connective()
 
 
 def guest_reboot(vm, os):
@@ -192,11 +186,11 @@ def guest_reboot(vm, os):
     }
 
     LOGGER.info("Stopping user agent")
-    run_os_command(vm=vm, os=os, command_dict=commands["stop-user-agent"])
+    run_os_command(vm=vm, command=commands["stop-user-agent"][os])
     wait_for_user_agent_down(vm=vm, timeout=120)
 
     LOGGER.info(f"Rebooting {vm.name} from guest")
-    run_os_command(vm=vm, os=os, command_dict=commands["reboot"])
+    run_os_command(vm=vm, command=commands["reboot"][os])
 
 
 def verify_changes(vm, os):
@@ -221,9 +215,6 @@ def verify_changes(vm, os):
             {
                 "vm_name": "persistence-rhel-vm",
                 "template_labels": py_config["latest_rhel_version"]["template_labels"],
-                "username": console.RHEL.USERNAME,
-                "password": console.RHEL.PASSWORD,
-                "ssh": True,
             },
         ]
     ],

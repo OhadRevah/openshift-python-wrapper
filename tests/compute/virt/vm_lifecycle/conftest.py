@@ -11,6 +11,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
+    running_vm,
 )
 
 
@@ -26,8 +27,9 @@ def container_disk_vm(namespace, unprivileged_client, admin_client=None):
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
         run_strategy=default_run_strategy,
-        ssh=True,
     ) as vm:
+        # Run the VM to enable SSH
+        running_vm(vm=vm)
         yield vm
 
 
@@ -55,8 +57,9 @@ def data_volume_vm(admin_client, unprivileged_client, namespace):
             ),
             data_volume=dv,
             run_strategy=default_run_strategy,
-            ssh=True,
         ) as vm:
+            # Run the VM to enable SSH
+            running_vm(vm=vm)
             yield vm
 
 

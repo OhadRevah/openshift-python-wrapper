@@ -5,12 +5,11 @@ import logging
 
 import pytest
 
-from utilities import console
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    vm_console_run_commands,
+    running_vm,
     wait_for_vm_interfaces,
 )
 
@@ -28,8 +27,7 @@ def vm_to_restart(unprivileged_client, namespace):
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm)
         yield vm
 
 
@@ -43,6 +41,4 @@ def test_vm_restart(vm_to_restart):
     vm_to_restart.start(wait=True)
     vm_to_restart.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vm_to_restart.vmi)
-    vm_console_run_commands(
-        console_impl=console.Fedora, vm=vm_to_restart, commands=["cat /proc/cmdline"]
-    )
+    vm_to_restart.ssh_exec.executor().is_connective()
