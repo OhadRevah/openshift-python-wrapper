@@ -167,6 +167,7 @@ def http_service(namespace, running_vma, running_vmb):
         service_type=Service.Type.CLUSTER_IP,
         ip_family_policy=IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     )
+    LOGGER.info(f"HTTP service was created on node {running_vmb.vmi.node.name}")
 
     # Check that http service on port 80 can be accessed by all cluster IPs
     # before vmi migration.
@@ -178,7 +179,7 @@ def http_service(namespace, running_vma, running_vmb):
         )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def ping_in_background(running_vma, running_vmb):
     dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
     assert_ping_successful(src_vm=running_vma, dst_ip=dst_ip)
@@ -202,7 +203,7 @@ def assert_low_packet_loss(vm):
     assert float(re.findall(r"\d+.\d+", packet_loss[0])[0]) < 2
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def ssh_in_background(running_vma, running_vmb):
     """
     Start ssh connection to the vm
@@ -219,6 +220,14 @@ def ssh_in_background(running_vma, running_vmb):
     )
 
     assert_ssh_alive(ssh_vm=running_vma)
+
+
+@pytest.fixture(scope="module")
+def migrated_vmb(running_vmb, http_service):
+    migrate_and_verify(
+        vm=running_vmb,
+        node_before=running_vmb.vmi.instance.status.nodeName,
+    )
 
 
 def assert_ssh_alive(ssh_vm):
@@ -250,16 +259,11 @@ def test_ping_vm_migration(
     running_vma,
     running_vmb,
     ping_in_background,
+    migrated_vmb,
 ):
-    migrate_and_verify(
-        vm=running_vmb,
-        node_before=running_vmb.vmi.instance.status.nodeName,
-    )
-
     assert_low_packet_loss(vm=running_vma)
 
 
-@pytest.mark.dependency(name="ssh_vm_migration")
 @pytest.mark.polarion("CNV-2063")
 def test_ssh_vm_migration(
     skip_rhel7_workers,
@@ -270,16 +274,11 @@ def test_ssh_vm_migration(
     running_vma,
     running_vmb,
     ssh_in_background,
+    migrated_vmb,
 ):
-    migrate_and_verify(
-        vm=running_vmb,
-        node_before=running_vmb.vmi.instance.status.nodeName,
-    )
-
     assert_ssh_alive(ssh_vm=running_vma)
 
 
-@pytest.mark.dependency(depends=["ssh_vm_migration"])
 @pytest.mark.polarion("CNV-5565")
 def test_connectivity_after_migration_and_restart(
     skip_rhel7_workers,
@@ -309,13 +308,11 @@ def test_migration_with_masquerade(
     vmb,
     running_vma,
     running_vmb,
-    http_service,
+    migrated_vmb,
 ):
-    migrate_and_verify(
-        vm=running_vmb,
-        node_before=running_vmb.vmi.instance.status.nodeName,
+    LOGGER.info(
+        f"Testing HTTP service after migration on node {running_vmb.vmi.node.name}"
     )
-
     http_port_accessible(
         vm=running_vma,
         server_ip=running_vmb.custom_service.service_ip(
