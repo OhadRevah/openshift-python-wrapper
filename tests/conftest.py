@@ -150,7 +150,7 @@ def _prepare_test_dir_log(item, prefix):
         test_dir_log = os.path.join(
             TEST_COLLECT_INFO_DIR,
             item.fspath.dirname.split("/tests/")[-1],
-            item.fspath.basename.strip(".py"),
+            item.fspath.basename.partition(".py")[0],
             test_cls_name,
             item.name,
             prefix,
