@@ -64,6 +64,7 @@ from utilities.infra import (
     get_bug_status,
     get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
+    run_ssh_commands,
 )
 from utilities.network import (
     OVS,
@@ -1061,11 +1062,13 @@ def leftovers(identity_provider_config):
 
 
 @pytest.fixture(scope="session")
-def workers_type(utility_pods):
-    for pod in utility_pods:
-        out = pod.execute(
-            command=["bash", "-c", "dmesg | grep 'Hypervisor detected' | wc -l"]
-        )
+def workers_type(workers_ssh_executors):
+    for _, exec in workers_ssh_executors.items():
+        out = run_ssh_commands(
+            host=exec,
+            commands=[["bash", "-c", "dmesg | grep 'Hypervisor detected' | wc -l"]],
+        )[0]
+
         if int(out) > 0:
             return ClusterHosts.Type.VIRTUAL
 
