@@ -9,7 +9,7 @@ import logging
 import pytest
 from resources.utils import TimeoutSampler
 
-from tests.network.utils import get_worker_pod
+from utilities.infra import run_ssh_commands
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -19,26 +19,33 @@ BR1TEST = "br1test"
 BR2TEST = "br2test"
 
 
-def count_veth_devices_on_host(pod, bridge):
+def count_veth_devices_on_host(worker1_executor, bridge):
     """
     Return how many veth devices exist on the host running pod
 
     Args:
-        pod (Pod): Pod object.
+        worker_exec (Host): Worker executor.
         bridge (str): Master bridge name.
 
     Returns:
         int: number of veth devices on host for bridge.
     """
-    out = pod.execute(
-        command=[
-            "bash",
-            "-c",
-            f"ip -o link show type veth | grep 'master {bridge}' | wc -l",
-        ]
-    )
-
+    out = run_ssh_commands(
+        host=worker1_executor,
+        commands=[
+            [
+                "bash",
+                "-c",
+                f"ip -o link show type veth | grep 'master {bridge}' | wc -l",
+            ]
+        ],
+    )[0]
     return int(out.strip())
+
+
+@pytest.fixture()
+def worker1_executor(workers_ssh_executors, worker_node1):
+    return workers_ssh_executors[worker_node1.name]
 
 
 @pytest.fixture()
@@ -91,17 +98,11 @@ def remove_vath_bridge_attached_vma(namespace, unprivileged_client, worker_node1
 
 
 @pytest.fixture()
-def worker_pod(utility_pods, worker_node1):
-    return get_worker_pod(network_utility_pods=utility_pods, worker_node=worker_node1)
-
-
-@pytest.fixture()
-def veth_interfaces_exists(
-    utility_pods, worker_node1, worker_pod, remove_vath_bridge_device
-):
+def veth_interfaces_exists(worker1_executor, remove_vath_bridge_device):
     assert (
         count_veth_devices_on_host(
-            pod=worker_pod, bridge=remove_vath_bridge_device.bridge_name
+            worker1_executor=worker1_executor,
+            bridge=remove_vath_bridge_device.bridge_name,
         )
         == 2
     )
@@ -110,9 +111,7 @@ def veth_interfaces_exists(
 @pytest.mark.polarion("CNV-681")
 def test_veth_removed_from_host_after_vm_deleted(
     skip_rhel7_workers,
-    worker_node1,
-    utility_pods,
-    worker_pod,
+    worker1_executor,
     remove_vath_br1test_nad,
     remove_vath_bridge_device,
     remove_vath_bridge_attached_vma,
@@ -126,7 +125,7 @@ def test_veth_removed_from_host_after_vm_deleted(
         timeout=180,
         sleep=1,
         func=count_veth_devices_on_host,
-        pod=worker_pod,
+        worker1_executor=worker1_executor,
         bridge=remove_vath_bridge_device.bridge_name,
     )
     for sample in sampler:
