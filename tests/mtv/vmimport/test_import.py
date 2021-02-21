@@ -3,7 +3,6 @@ import multiprocessing
 
 import ovirtsdk4.types
 import pytest
-from pytest_testconfig import py_config
 from resources.configmap import ConfigMap
 from resources.datavolume import DataVolume
 from resources.persistent_volume_claim import PersistentVolumeClaim
@@ -15,6 +14,7 @@ from resources.virtual_machine_import import VirtualMachineImport
 from tests.mtv.vmimport import utils
 from tests.mtv.vmimport.utils import ResourceMappingItem, Source
 from utilities.constants import TIMEOUT_10MIN
+from utilities.storage import get_storage_class_dict_from_matrix
 from utilities.virt import import_vm
 
 
@@ -435,6 +435,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     secret,
     resource_mapping,
     no_vms_in_namespace,
+    default_sc_multi_storage,
 ):
 
     # Verify:
@@ -447,8 +448,10 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     source_data_volumes_config = expected_vm_config["volumes_details"]
 
     # in the internal mapping we use  the same destination storage class&volume mode for all items
-    _sc_name = py_config["default_storage_class"]
-    _vol_mod = py_config["default_volume_mode"]
+    _sc_name = default_sc_multi_storage[0].name
+    _storage_dic = get_storage_class_dict_from_matrix(storage_class=_sc_name)[_sc_name]
+    _vol_mod = _storage_dic["volume_mode"]
+    _acc_mod = _storage_dic["access_mode"]
 
     # all 3 disks are expected to be of the global_config default storage class at the end.
     expected_vm_config["expected_storage_class"] = _sc_name
@@ -469,6 +472,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
                     target_name=_sc_name,  # disk1 is overridden by Storage Name
                     source_name=source_data_volumes_config[1]["storage_name"],
                     target_volume_mode=_vol_mod,
+                    target_access_modes=_acc_mod,
                 ),
             ],
             disk_mappings=[
@@ -476,6 +480,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
                     target_name=_sc_name,  # disk2 is overridden by DiskName
                     source_name=source_data_volumes_config[2]["disk_name"],
                     target_volume_mode=_vol_mod,
+                    target_access_modes=_acc_mod,
                 )
             ],
         ),
