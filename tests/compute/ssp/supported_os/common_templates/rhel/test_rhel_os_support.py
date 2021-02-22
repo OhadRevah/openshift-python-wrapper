@@ -148,7 +148,6 @@ class TestCommonTemplatesRhel:
         if "rhel-8-2" in [*rhel_os_matrix__class__][0] and rhel7_workers:
             remove_eth0_default_gw(
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-                console_impl=console.RHEL,
             )
 
         assert golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501

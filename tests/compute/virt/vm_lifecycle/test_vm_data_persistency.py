@@ -76,7 +76,7 @@ def restarted_persistence_vm(request, persistence_vm):
 
 def run_os_command(vm, command):
     try:
-        return run_ssh_commands(host=vm.ssh_exec, commands=[shlex.split(command)])[0]
+        return run_ssh_commands(host=vm.ssh_exec, commands=shlex.split(command))[0]
     except CommandExecFailed:
         # On a successful command execution the return code is 0,
         # however on RHEL, a successful reboot command execution return code is -1

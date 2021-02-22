@@ -21,9 +21,7 @@ def gpu_nodes(workers_ssh_executors, schedulable_nodes):
     for node in schedulable_nodes:
         out = run_ssh_commands(
             host=workers_ssh_executors[node.name],
-            commands=[
-                ["bash", "-c", "/sbin/lspci -nnk | grep Tesla | cut -d ' ' -f 12"]
-            ],
+            commands=["bash", "-c", "/sbin/lspci -nnk | grep Tesla | cut -d ' ' -f 12"],
         )
         if out[0].rstrip().strip("[]") == GPU_DEVICE_ID:
             nodes.append(node)

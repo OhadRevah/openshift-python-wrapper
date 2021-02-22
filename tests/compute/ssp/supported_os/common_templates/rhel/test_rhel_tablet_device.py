@@ -28,7 +28,7 @@ def check_vm_system_tablet_device(vm, expected_device):
     """ Verify tablet device parameters in VMI /sys/devices file """
     output = run_ssh_commands(
         host=vm.ssh_exec,
-        commands=[shlex.split(r"grep -rs '^QEMU *.* Tablet' /sys/devices ||true")],
+        commands=shlex.split(r"grep -rs '^QEMU *.* Tablet' /sys/devices ||true"),
     )[0]
 
     assert re.search(

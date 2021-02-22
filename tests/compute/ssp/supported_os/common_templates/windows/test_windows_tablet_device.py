@@ -14,6 +14,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
+from utilities.infra import run_ssh_commands
 from utilities.virt import get_windows_os_dict
 
 
@@ -29,9 +30,10 @@ WINDOWS_DESKTOP_VERSION = get_windows_os_dict(windows_version="win-10")
 def check_windows_vm_tablet_device(vm, driver_state):
     """ Verify tablet device values in Windows VMI using driverquery """
 
-    windows_driver_query = vm.ssh_exec.run_command(
-        command=shlex.split("%systemroot%\\\\system32\\\\driverquery /fo list /v"),
-    )[1]
+    windows_driver_query = run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=shlex.split("%systemroot%\\\\system32\\\\driverquery /fo list /v"),
+    )[0]
 
     assert re.search(
         f"Module Name:(.*)HidUsb(.*)Display Name:(.*)Microsoft "

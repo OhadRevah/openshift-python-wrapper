@@ -51,7 +51,9 @@ def assert_process_not_running(vm, process):
     assert "1" in run_ssh_commands(
         host=vm.ssh_exec,
         commands=[
-            ["bash", "-c", f"/usr/bin/ps aux | grep '{process}'| grep -v grep | wc -l"]
+            "bash",
+            "-c",
+            f"/usr/bin/ps aux | grep '{process}'| grep -v grep | wc -l",
         ],
     )[0]
 
@@ -60,13 +62,13 @@ def kill_running_process(vm, process):
     process_name = process.split()[0]
     output = run_ssh_commands(
         host=vm.ssh_exec,
-        commands=[["bash", "-c", f"/usr/bin/pidof '{process_name}' || true"]],
+        commands=["bash", "-c", f"/usr/bin/pidof '{process_name}' || true"],
     )[0]
     pid = output.strip()
     if pid:
         run_ssh_commands(
             host=vm.ssh_exec,
-            commands=[["bash", "-c", f"kill '{pid}'"]],
+            commands=["bash", "-c", f"kill '{pid}'"],
         )
 
 
@@ -76,7 +78,7 @@ def running_sleep_in_linux(vm):
     kill_running_process(vm=vm, process=process)
     run_ssh_commands(
         host=vm.ssh_exec,
-        commands=[["nohup", "bash", "-c", f"{process} >& /dev/null &", "&"]],
+        commands=["nohup", "bash", "-c", f"{process} >& /dev/null &", "&"],
     )
     assert_process_not_running(vm=vm, process=process)
     yield

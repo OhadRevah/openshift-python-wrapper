@@ -256,7 +256,7 @@ class TestRunStrategy:
 
         # send poweroff
         run_ssh_commands(
-            host=lifecycle_vm.ssh_exec, commands=[shlex.split("sudo poweroff")]
+            host=lifecycle_vm.ssh_exec, commands=shlex.split("sudo poweroff")
         )
 
         # runStrategy "Always" first terminates the pod, then re-raises it

@@ -30,9 +30,10 @@ def stop_start_vm(vm, wait_for_interfaces=True):
 
 def reboot_vm(vm):
     try:
-        vm.ssh_exec.run_command(
-            command=shlex.split("powershell restart-computer -force")
-        )[1]
+        run_ssh_commands(
+            host=vm.ssh_exec,
+            commands=shlex.split("powershell restart-computer -force"),
+        )[0]
     # When a reboot command is executed, a resources.pod.ExecOnPodError exception is raised:
     # "connection reset by peer"
     except pod.ExecOnPodError as e:
@@ -53,7 +54,7 @@ def vm_os_version(vm):
     os = re.search(r"(\w+-)?(\d+(-\d+)?)(-\d+-\d+)$", vm.name).group(2)
     command = shlex.split(f"cat /etc/{os_name}-release | grep {os.replace('-', '.')}")
 
-    run_ssh_commands(host=vm.ssh_exec, commands=[command])
+    run_ssh_commands(host=vm.ssh_exec, commands=command)
 
 
 def check_telnet_connection(ip, port):
@@ -114,12 +115,14 @@ def check_windows_vm_hvinfo(vm):
     sampler = TimeoutSampler(
         timeout=90,
         sleep=15,
-        func=vm.ssh_exec.run_command,
-        command=shlex.split("C:\\\\hvinfo\\\\hvinfo.exe"),
+        func=run_ssh_commands,
+        host=vm.ssh_exec,
+        commands=shlex.split("C:\\\\hvinfo\\\\hvinfo.exe"),
     )
     for sample in sampler:
-        if sample[1] and "connect: connection refused" not in sample[1]:
-            hvinfo_dict = json.loads(sample[1])
+        output = sample[0]
+        if output and "connect: connection refused" not in output:
+            hvinfo_dict = json.loads(output)
             break
 
     assert hvinfo_dict["HyperVsupport"]
@@ -176,7 +179,7 @@ def add_windows_license(vm, windows_license):
     cmd = shlex.split(
         f"cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ipk {windows_license}"
     )
-    addition_status = vm.ssh_exec.run_command(command=cmd)[1]
+    addition_status = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
     assert re.match(
         r"Installed product key [a-z0-9-]+ successfully.",
         addition_status,
@@ -187,7 +190,7 @@ def add_windows_license(vm, windows_license):
 def activate_windows_online(vm):
     LOGGER.info("Activate Windows license online.")
     cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato")
-    online_activation_status = vm.ssh_exec.run_command(command=cmd)[1]
+    online_activation_status = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
     assert re.match(
         r"Activating Windows\(R\), (ServerStandard|Professional) edition "
         r"\(.*\) \.+.*Product activated successfully",
@@ -202,7 +205,7 @@ def is_windows_activated(vm):
     cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr")
     return (
         "The machine is permanently activated"
-        in vm.ssh_exec.run_command(command=cmd)[1]
+        in run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
     )
 
 
@@ -339,7 +342,7 @@ def restart_qemu_guest_agent_service(vm):
     )
     run_ssh_commands(
         host=vm.ssh_exec,
-        commands=[shlex.split("sudo systemctl restart qemu-guest-agent")],
+        commands=shlex.split("sudo systemctl restart qemu-guest-agent"),
     )
 
 
@@ -396,7 +399,9 @@ def validate_os_info_virtctl_vs_windows_os(vm):
     windows_info = get_windows_os_info(ssh_exec=vm.ssh_exec)
 
     data_mismatch = []
-    if virtctl_info["guestAgentVersion"] != windows_info["guestAgentVersion"]:
+    if version.parse(virtctl_info["guestAgentVersion"]) != version.parse(
+        windows_info["guestAgentVersion"]
+    ):
         data_mismatch.append("GA version mismatch")
     if virtctl_info["hostname"] != windows_info["hostname"]:
         data_mismatch.append("hostname mismatch")
@@ -440,17 +445,25 @@ def validate_fs_info_virtctl_vs_windows_os(vm):
 
 
 def validate_user_info_virtctl_vs_windows_os(vm):
+    def _get_vm_timezone_diff():
+        vm_timezone_diff = get_virtctl_os_info(vm=vm)["timezone"]
+        # Get timezone diff from UTC
+        # For example: 'Pacific Standard Time, -28800' -> return 28800
+        return int(re.search(r".*, -(\d+)", vm_timezone_diff).group(1))
+
     virtctl_info = get_virtctl_user_info(vm=vm)
     cnv_info = get_cnv_user_info(vm=vm)
     libvirt_info = get_libvirt_user_info(vm=vm)
-    windows_info = vm.ssh_exec.run_command(command=shlex.split("quser"))[1]
+    windows_info = run_ssh_commands(host=vm.ssh_exec, commands=["quser"])[0]
 
+    # Match timezone to VM's timezone and not use UTC
+    virtctl_time = virtctl_info["loginTime"] - _get_vm_timezone_diff()
     data_mismatch = []
     if virtctl_info["userName"].lower() not in windows_info:
         data_mismatch.append("user name mismatch")
     # Windows date format - 11/4/2020 (-m/-d/Y)
     if (
-        datetime.utcfromtimestamp(virtctl_info["loginTime"]).strftime("%-m/%-d/%Y")
+        datetime.utcfromtimestamp(virtctl_time).strftime("%-m/%-d/%Y")
         not in windows_info
     ):
         data_mismatch.append("login time mismatch")
@@ -467,7 +480,7 @@ def validate_os_info_vmi_vs_windows_os(vm):
     cmd = shlex.split(
         "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     )
-    windows_info = vm.ssh_exec.run_command(command=cmd)[1]
+    windows_info = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
 
     data_mismatch = []
     for key, val in vmi_info.items():
@@ -591,13 +604,13 @@ def get_windows_os_info(ssh_exec):
     ga_ver_cmd = shlex.split(
         'wmic datafile "C:\\\\\\\\Program Files\\\\\\\\Qemu-ga\\\\\\\\qemu-ga.exe" get Version /value'
     )
-    ga_ver = ssh_exec.run_command(command=ga_ver_cmd)[1].strip()
+    ga_ver = run_ssh_commands(host=ssh_exec, commands=ga_ver_cmd)[0].strip()
     hostname_cmd = shlex.split("wmic os get CSName /value")
-    hostname = ssh_exec.run_command(command=hostname_cmd)[1]
+    hostname = run_ssh_commands(host=ssh_exec, commands=hostname_cmd)[0]
     os_release_cmd = shlex.split(
         "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     )
-    os_release = ssh_exec.run_command(command=os_release_cmd)[1]
+    os_release = run_ssh_commands(host=ssh_exec, commands=os_release_cmd)[0]
     timezone = get_windows_timezone(ssh_exec=ssh_exec)
 
     return {
@@ -655,7 +668,7 @@ def get_libvirt_fs_info(vm):
 
 def get_linux_fs_info(ssh_exec):
     cmd = shlex.split("df -TB1 | grep /dev/vd")
-    _, out, _ = ssh_exec.run_command(command=cmd)
+    out = run_ssh_commands(host=ssh_exec, commands=cmd)[0]
     disks = out.strip().split()
     return {
         "name": disks[0].split("/dev/")[1],
@@ -668,11 +681,15 @@ def get_linux_fs_info(ssh_exec):
 
 def get_windows_fs_info(ssh_exec):
     disk_name_cmd = shlex.split("fsutil volume list")
-    disk_name = ssh_exec.run_command(command=disk_name_cmd)[1]
+    disk_name = run_ssh_commands(host=ssh_exec, commands=disk_name_cmd)[0]
     disk_space_cmd = shlex.split("fsutil volume diskfree C:")
-    disk_space = ssh_exec.run_command(command=disk_space_cmd)[1].strip().split("\r\n")
+    disk_space = (
+        run_ssh_commands(host=ssh_exec, commands=disk_space_cmd)[0]
+        .strip()
+        .split("\r\n")
+    )
     fs_type_cmd = shlex.split("fsutil fsinfo volumeinfo C:")
-    fs_type = ssh_exec.run_command(command=fs_type_cmd)[1]
+    fs_type = run_ssh_commands(host=ssh_exec, commands=fs_type_cmd)[0]
 
     return f"{disk_name} {windows_disk_space_parser(disk_space)} {fs_type}"
 
@@ -706,9 +723,11 @@ def get_libvirt_user_info(vm):
 
 def get_linux_user_info(ssh_exec):
     cmd = shlex.split("lastlog | grep tty; who | awk \"'{print$3}'\"")
-    _, out, _ = ssh_exec.run_command(command=cmd)
+    out = run_ssh_commands(host=ssh_exec, commands=cmd)[0]
     users = out.strip().split()
-    date = datetime.strptime(f"{users[8]} {users[5]}", "%Y-%m-%d %H:%M:%S")
+    date = datetime.strptime(
+        f"{users[7]}-{users[3]}-{users[4]} {users[5]}", "%Y-%b-%d %H:%M:%S"
+    )
     timestamp = date.replace(
         tzinfo=timezone(timedelta(seconds=int(ssh_exec.os.timezone.offset) * 36))
     ).timestamp()
@@ -755,8 +774,8 @@ def convert_disk_size(value, si_prefix=True):
 
 
 def guest_agent_version_parser(version_string):
-    # Return qemu-guest-agent version (including build number, e.g: "4.2.0-34")
-    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+\-[0-9]+", version_string).group(0)
+    # Return qemu-guest-agent version (including build number, e.g: "4.2.0-34" or "100.0.0.0" for Windows)
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+[.|-][0-9]+", version_string).group(0)
 
 
 def windows_disk_space_parser(fsinfo_list):
