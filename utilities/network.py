@@ -377,7 +377,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         vlan=None,
         client=None,
         mtu=None,
-        tuning_type=None,
+        tuning_type="cnv-tuning",
         teardown=True,
     ):
         super().__init__(
