@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def oom_vm(request, namespace, unprivileged_client, rhel7_workers):
+def oom_vm(namespace, unprivileged_client, rhel7_workers):
     name = "oom-vm"
     with VirtualMachineForTests(
         name=name,
@@ -39,9 +39,6 @@ def oom_vm(request, namespace, unprivileged_client, rhel7_workers):
         cpu_cores=2,
         cpu_requests="2",
         cpu_limits="2",
-        memory_requests=request.param["requests"],
-        memory_limits=request.param["limits"],
-        memory_guest=request.param["guest"],
         username=console.Fedora.USERNAME,
         password=console.Fedora.PASSWORD,
         rhel7_workers=rhel7_workers,
@@ -95,22 +92,7 @@ def wait_vm_oom(vm):
         return True
 
 
-@pytest.mark.parametrize(
-    "oom_vm",
-    [
-        pytest.param(
-            {"requests": "8192Mi", "limits": "8192Mi", "guest": "8192Mi"},
-            marks=(pytest.mark.polarion("CNV-4482"),),
-            id="case: guest memory == memory requests & limits",
-        ),
-        pytest.param(
-            {"requests": "8292Mi", "limits": "8292Mi", "guest": "8192Mi"},
-            marks=pytest.mark.polarion("CNV-5321"),
-            id="case: memory requests & limits > guest memory",
-        ),
-    ],
-    indirect=True,
-)
+@pytest.mark.polarion("CNV-5321")
 def test_vm_oom(oom_vm):
     start_vm_stress(vm=oom_vm, console_impl=console.Fedora)
     with start_file_transfer(vm_ssh=oom_vm.ssh_exec):
