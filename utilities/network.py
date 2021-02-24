@@ -722,10 +722,10 @@ def cloud_init_network_data(data):
     return network_data
 
 
-def ping(src_vm, dst_ip, packetsize=None):
+def ping(src_vm, dst_ip, packetsize=None, count=None):
     ping_ipv6 = "-6 " if get_ipv6_ip_str(dst_ip=dst_ip) else ""
 
-    ping_cmd = f"ping {ping_ipv6}-w 3 {dst_ip}"
+    ping_cmd = f"ping {ping_ipv6}-w {count if count else '3'} {dst_ip}"
     if packetsize:
         ping_cmd += f" -s {packetsize} -M do"
 
@@ -737,13 +737,15 @@ def ping(src_vm, dst_ip, packetsize=None):
             return match.groups()
 
 
-def assert_ping_successful(src_vm, dst_ip, packetsize=None):
+def assert_ping_successful(src_vm, dst_ip, packetsize=None, count=None):
     if packetsize and packetsize > 1500:
         icmp_header = 8
         ip_header = 20
         packetsize = packetsize - ip_header - icmp_header
 
-    assert ping(src_vm, dst_ip, packetsize)[0] == "0"
+    assert (
+        ping(src_vm=src_vm, dst_ip=dst_ip, packetsize=packetsize, count=count)[0] == "0"
+    )
 
 
 def get_ipv6_address(cnv_resource):

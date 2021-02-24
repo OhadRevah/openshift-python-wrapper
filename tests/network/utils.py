@@ -25,8 +25,11 @@ EOF
 """
 
 
-def assert_no_ping(src_vm, dst_ip, packetsize=None):
-    assert ping(src_vm, dst_ip, packetsize)[0] == "100"
+def assert_no_ping(src_vm, dst_ip, packetsize=None, count=None):
+    assert (
+        ping(src_vm=src_vm, dst_ip=dst_ip, packetsize=packetsize, count=count)[0]
+        == "100"
+    )
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):
