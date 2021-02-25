@@ -3,6 +3,7 @@ GPU PCI Passthrough VM
 """
 
 import random
+import shlex
 
 import pytest
 from ocp_resources.resource import ResourceEditor
@@ -51,6 +52,12 @@ def pci_passthrough_vm(
         data_volume=golden_image_data_volume_scope_class,
         node_selector=random.choice(gpu_nodes).name,
     ) as pci_passthrough_vm:
+        if pci_passthrough_vm.os_flavor.startswith("win"):
+            # Install NVIDIA Drivers placed on the Windows-10 or win2k19 Images.
+            run_ssh_commands(
+                host=pci_passthrough_vm.ssh_exec,
+                commands=[shlex.split("C:\\\\NVIDIA\\\\International\\\\setup.exe -s")],
+            )
         yield pci_passthrough_vm
 
 
