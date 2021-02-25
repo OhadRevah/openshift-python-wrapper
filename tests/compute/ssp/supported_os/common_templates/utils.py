@@ -17,7 +17,12 @@ from packaging import version
 
 from tests.compute.utils import get_windows_timezone, vm_started
 from utilities.infra import run_ssh_commands
-from utilities.virt import get_guest_os_info, run_virtctl_command, wait_for_windows_vm
+from utilities.virt import (
+    get_guest_os_info,
+    run_virtctl_command,
+    wait_for_ssh_connectivity,
+    wait_for_vm_interfaces,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -69,7 +74,7 @@ def check_telnet_connection(ip, port):
 
     LOGGER.info("Check telnet connection to VM.")
     sampler = TimeoutSampler(
-        wait_timeout=120,
+        wait_timeout=180,
         sleep=15,
         exceptions=ConnectionRefusedError,
         func=socket.create_connection,
@@ -209,14 +214,15 @@ def is_windows_activated(vm):
     )
 
 
-def check_windows_activated_license(vm, reset_action, version):
+def check_windows_activated_license(vm, reset_action):
     """ Verify VM activation mode after VM reset (reboot / stop and start) """
 
     if "stop_start" in reset_action:
         stop_start_vm(vm=vm, wait_for_interfaces=False)
     if "reboot" in reset_action:
         reboot_vm(vm=vm)
-    wait_for_windows_vm(vm=vm, version=version)
+    wait_for_vm_interfaces(vmi=vm.vmi, timeout=1800)
+    wait_for_ssh_connectivity(vm=vm)
     assert is_windows_activated(vm=vm), "VM license is not activated after restart."
 
 
@@ -227,7 +233,7 @@ def add_activate_windows_license(vm, license_key):
 
     add_windows_license(vm=vm, windows_license=license_key)
     activate_windows_online(vm=vm)
-    assert is_windows_activated(vm=vm), "VM license is not " "activated."
+    assert is_windows_activated(vm=vm), "VM license is not activated."
 
 
 def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):

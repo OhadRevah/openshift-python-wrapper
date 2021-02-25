@@ -188,9 +188,6 @@ class TestCommonTemplatesWindows:
         common_templates_utils.check_windows_activated_license(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             reset_action="stop_start",
-            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
-                "os_version"
-            ],
         )
 
     @pytest.mark.dependency(depends=["start_vm"])
@@ -217,9 +214,6 @@ class TestCommonTemplatesWindows:
         common_templates_utils.check_windows_activated_license(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             reset_action="reboot",
-            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
-                "os_version"
-            ],
         )
 
     @pytest.mark.dependency(depends=["start_vm"])

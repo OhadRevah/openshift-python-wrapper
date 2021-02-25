@@ -11,7 +11,7 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     check_telnet_connection,
 )
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import migrate_and_verify, wait_for_windows_vm
+from utilities.virt import migrate_and_verify, wait_for_ssh_connectivity
 
 
 @pytest.mark.bugzilla(
@@ -66,10 +66,8 @@ def test_migrate_vm_windows(
         vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
 
-    wait_for_windows_vm(
-        vm=golden_image_vm_instance_from_template_multi_storage_scope_function,
-        version=py_config["latest_windows_version"]["os_version"],
-        timeout=1800,
+    wait_for_ssh_connectivity(
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
 
     assert check_telnet_connection(
