@@ -6,14 +6,13 @@ import shlex
 import pytest
 from pytest_testconfig import config as py_config
 
-from utilities import console
 from utilities.constants import TIMEOUT_60MIN
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
-    enable_ssh_service_in_vm,
     migrate_and_verify,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -40,9 +39,7 @@ def vm_with_mem_load(
         data_volume=data_volume_scope_function,
         cpu_model=nodes_common_cpu_model,
     ) as vm:
-        vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vm.vmi)
-        enable_ssh_service_in_vm(vm=vm, console_impl=console.Fedora)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -54,7 +51,7 @@ def start_vm_stress(vm_with_mem_load):
         "nohup sudo stress-ng --vm 1 --vm-bytes 15% --vm-method all --verify -t 15m -v --hdd 1 --io 1 "
         "&> /tmp/OUT1 & echo $!"
     )
-    vm_with_mem_load.ssh_exec.run_command(command=shlex.split(command))
+    run_ssh_commands(host=vm_with_mem_load.ssh_exec, commands=shlex.split(command))
 
 
 @pytest.fixture()
@@ -71,9 +68,10 @@ def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
 
 def get_stress_ng_pid(ssh_exec):
     LOGGER.info("Get pid of stress-ng")
-    return ssh_exec.run_command(
-        command=shlex.split("pgrep stress-ng"), tcp_timeout=60, io_timeout=60
-    )[1]
+    return run_ssh_commands(
+        host=ssh_exec,
+        commands=shlex.split("pgrep stress-ng"),
+    )[0]
 
 
 @pytest.mark.parametrize(

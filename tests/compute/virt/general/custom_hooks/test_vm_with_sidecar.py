@@ -2,17 +2,16 @@
 VM with sidecar
 """
 
+import shlex
+
 import pytest
 
-from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    vm_console_run_commands,
-    wait_for_console,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -57,27 +56,20 @@ def sidecar_vm(namespace, unprivileged_client):
     with FedoraVirtualMachineWithSideCar(
         name=name, namespace=namespace.name, client=unprivileged_client
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm)
         yield vm
 
 
-@pytest.fixture()
-def running_sidecar_vm(sidecar_vm):
-    wait_for_vm_interfaces(vmi=sidecar_vm.vmi)
-    yield sidecar_vm
-
-
 @pytest.mark.polarion("CNV-840")
-def test_vm_with_sidecar_hook(running_sidecar_vm):
+def test_vm_with_sidecar_hook(sidecar_vm):
     """
     Test VM with sidecar hook, Install dmidecode with annotation
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
     And check that package includes manufacturer: "Radical Edward"
     """
-    wait_for_console(vm=running_sidecar_vm, console_impl=console.Fedora)
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=running_sidecar_vm,
-        commands=["sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward'\n"],
+    run_ssh_commands(
+        host=sidecar_vm.ssh_exec,
+        commands=shlex.split(
+            "sudo dmidecode -s baseboard-manufacturer | grep 'Radical Edward'\n"
+        ),
     )

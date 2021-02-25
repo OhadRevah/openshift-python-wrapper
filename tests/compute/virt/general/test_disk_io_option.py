@@ -4,8 +4,7 @@ from pytest_testconfig import config as py_config
 
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
-from utilities import console
-from utilities.virt import get_guest_os_info, wait_for_console, wait_for_windows_vm
+from utilities.virt import get_guest_os_info
 
 
 pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
@@ -67,18 +66,8 @@ def disk_options_vm(
         network_configuration=network_configuration,
     ) as vm:
         if rhel7_workers:
-            remove_eth0_default_gw(vm=vm, console_impl=console.RHEL)
+            remove_eth0_default_gw(vm=vm)
         yield vm
-
-
-@pytest.fixture()
-def windows_vm(
-    request,
-    disk_options_vm,
-):
-    wait_for_windows_vm(
-        vm=disk_options_vm, version=request.param["os_version"], timeout=2100
-    )
 
 
 @pytest.mark.parametrize(
@@ -122,7 +111,6 @@ def test_vm_with_disk_io_option_rhel(
     disk_options_vm,
     expected_disk_io_option,
 ):
-    wait_for_console(vm=disk_options_vm, console_impl=console.RHEL)
     check_disk_io_option_on_domain_xml(
         vm=disk_options_vm,
         expected_disk_io_option=expected_disk_io_option,
@@ -131,7 +119,7 @@ def test_vm_with_disk_io_option_rhel(
 
 @pytest.mark.tier3
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function, disk_options_vm, windows_vm, expected_disk_io_option",
+    "golden_image_data_volume_scope_function, disk_options_vm, expected_disk_io_option",
     [
         pytest.param(
             {
@@ -140,17 +128,9 @@ def test_vm_with_disk_io_option_rhel(
                 "dv_size": WINDOWS_LATEST["dv_size"],
                 "storage_class": STORAGE_CLASS,
             },
-            {
-                **_vm_test_params(
-                    template_labels=WINDOWS_LATEST["template_labels"], cpu_threads=2
-                ),
-                **{
-                    "ssh": True,
-                    "username": py_config["windows_username"],
-                    "password": py_config["windows_password"],
-                },
-            },
-            {"os_version": WINDOWS_LATEST["os_version"]},
+            _vm_test_params(
+                template_labels=WINDOWS_LATEST["template_labels"], cpu_threads=2
+            ),
             "native",
             marks=pytest.mark.polarion("CNV-4692"),
         ),
@@ -158,7 +138,6 @@ def test_vm_with_disk_io_option_rhel(
     indirect=[
         "golden_image_data_volume_scope_function",
         "disk_options_vm",
-        "windows_vm",
     ],
 )
 def test_vm_with_disk_io_option_windows(
@@ -166,7 +145,6 @@ def test_vm_with_disk_io_option_windows(
     namespace,
     golden_image_data_volume_scope_function,
     disk_options_vm,
-    windows_vm,
     expected_disk_io_option,
 ):
     check_disk_io_option_on_domain_xml(

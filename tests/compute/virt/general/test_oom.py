@@ -3,20 +3,19 @@ Test VM with memory requests/limits and guest memory for OOM.
 """
 
 import logging
+import shlex
 from contextlib import contextmanager
 from multiprocessing import Process
 
 import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities import console
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    run_command,
-    vm_console_run_commands,
-    wait_for_console,
+    running_vm,
 )
 
 
@@ -35,24 +34,20 @@ def oom_vm(namespace, unprivileged_client, rhel7_workers):
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         running=True,
-        ssh=True,
         cpu_cores=2,
         cpu_requests="2",
         cpu_limits="2",
-        username=console.Fedora.USERNAME,
-        password=console.Fedora.PASSWORD,
         rhel7_workers=rhel7_workers,
     ) as vm:
-        vm.vmi.wait_until_running()
-        wait_for_console(vm=vm, console_impl=console.Fedora)
+        running_vm(vm=vm)
         yield vm
 
 
-def start_vm_stress(vm, console_impl):
-    commands = [
-        "nohup stress-ng --vm 1 --vm-bytes 100% --vm-method all --verify -t 15m -v --hdd 1 --io 1 &",
-    ]
-    vm_console_run_commands(console_impl=console_impl, vm=vm, commands=commands)
+def start_vm_stress(vm):
+    commands = shlex.split(
+        "nohup stress-ng --vm 1 --vm-bytes 100% --vm-method all --verify -t 15m -v --hdd 1 --io 1 &"
+    )
+    run_ssh_commands(host=vm.ssh_exec, commands=commands)
 
 
 @contextmanager
@@ -63,9 +58,9 @@ def start_file_transfer(vm_ssh):
         while True:
             vm_ssh.fs.put(path_src=file_name, path_dst=file_name)
 
-    run_command(
-        command=["dd", "if=/dev/zero", f"of={file_name}", "bs=100M", "count=1"],
-        verify_stderr=False,
+    run_ssh_commands(
+        host=vm_ssh,
+        commands=["dd", "if=/dev/zero", f"of={file_name}", "bs=100M", "count=1"],
     )
 
     transfer = Process(target=_transfer_loop)
@@ -75,7 +70,7 @@ def start_file_transfer(vm_ssh):
         yield
     finally:
         transfer.terminate()
-        run_command(command=["rm", "-f", file_name])
+        run_ssh_commands(host=vm_ssh, commands=["rm", "-f", file_name])
 
 
 def wait_vm_oom(vm):
@@ -94,6 +89,6 @@ def wait_vm_oom(vm):
 
 @pytest.mark.polarion("CNV-5321")
 def test_vm_oom(oom_vm):
-    start_vm_stress(vm=oom_vm, console_impl=console.Fedora)
+    start_vm_stress(vm=oom_vm)
     with start_file_transfer(vm_ssh=oom_vm.ssh_exec):
         assert wait_vm_oom(vm=oom_vm), "VM crashed"

@@ -2,14 +2,16 @@
 Test VM with RNG
 """
 
+import shlex
+
 import pytest
 
-from utilities import console
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_vm_interfaces,
+    running_vm,
 )
 
 
@@ -22,9 +24,7 @@ def rng_vm(unprivileged_client, namespace):
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        wait_for_vm_interfaces(vmi=vm.vmi)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -35,12 +35,17 @@ def test_vm_with_rng(rng_vm):
      - check random device should be present
      - create random data with each device
     """
-    with console.Fedora(vm=rng_vm) as vm_console:
-        vm_console.sendline("cat /sys/devices/virtual/misc/hw_random/rng_current")
-        vm_console.expect("virtio_rng.0", timeout=20)
-        for device in ["random", "hwrng"]:
-            vm_console.sendline(
-                f"sudo dd count=10 bs=1024 if=/dev/{device} of=/tmp/{device}.txt"
-            )
-            vm_console.sendline(f"ls /tmp/{device}.txt | wc -l")
-            vm_console.expect("1", timeout=20)
+    rng_current_cmd = ["cat", "/sys/devices/virtual/misc/hw_random/rng_current"]
+
+    rng_commnds = [
+        shlex.split(
+            f"sudo dd count=10 bs=1024 if=/dev/{device} of=/tmp/{device}.txt && ls /tmp/{device}.txt | wc -l"
+        )
+        for device in ["random", "hwrng"]
+    ] + [rng_current_cmd]
+    rng_output = run_ssh_commands(
+        host=rng_vm.ssh_exec,
+        commands=rng_commnds,
+    )
+    assert set(rng_output[:2]) == {"1\n"}, f"Expected:1, actual: {rng_output[:2]}"
+    assert rng_output[-1].strip() == "virtio_rng.0", f"rng_current: {rng_output[0]}"

@@ -10,6 +10,7 @@ RH00076 - Red Hat Enterprise Linux High Touch Beta
 
 import base64
 import logging
+import shlex
 
 import pytest
 from ocp_resources.secret import Secret
@@ -17,8 +18,8 @@ from pytest_testconfig import config as py_config
 
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
-from utilities import console
-from utilities.virt import RHEL_CLOUD_INIT_PASSWORD, vm_console_run_commands
+from utilities.infra import run_ssh_commands
+from utilities.virt import RHEL_CLOUD_INIT_PASSWORD
 
 
 LOGGER = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ def rhsm_vm(
         cloud_init_data=rhsm_cloud_init_data,
     ) as rhsm_vm:
         if rhel7_workers:
-            remove_eth0_default_gw(vm=rhsm_vm, console_impl=console.RHEL)
+            remove_eth0_default_gw(vm=rhsm_vm)
         yield rhsm_vm
 
 
@@ -84,18 +85,16 @@ def rhsm_vm(
 def registered_rhsm(rhsm_vm):
     LOGGER.info("Register the VM with RedHat Subscription Manager")
 
-    vm_console_run_commands(
-        console_impl=console.RHEL,
-        vm=rhsm_vm,
-        commands=[
+    run_ssh_commands(
+        host=rhsm_vm.ssh_exec,
+        commands=shlex.split(
             "sudo subscription-manager register "
             "--serverurl=subscription.rhsm.stage.redhat.com:443/subscription "
             "--baseurl=https://cdn.stage.redhat.com "
             f"--username=`sudo cat /mnt/{SECRET_NAME}/username` "
             f"--password=`sudo cat /mnt/{SECRET_NAME}/password` "
             "--auto-attach"
-        ],
-        timeout=180,
+        ),
     )
 
 
@@ -132,9 +131,7 @@ def test_rhel_yum_update(
     rhsm_vm,
     registered_rhsm,
 ):
-    vm_console_run_commands(
-        console_impl=console.RHEL,
-        vm=rhsm_vm,
-        commands=["sudo yum update -y curl"],
-        timeout=180,
+    run_ssh_commands(
+        host=rhsm_vm.ssh_exec,
+        commands=shlex.split("sudo yum update -y curl"),
     )

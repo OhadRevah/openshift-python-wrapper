@@ -12,16 +12,13 @@ from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import vm_started
-from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.infra import BUG_STATUS_CLOSED, Images, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     migrate_and_verify,
-    vm_console_run_commands,
-    wait_for_console,
-    wait_for_windows_vm,
+    running_vm,
+    wait_for_ssh_connectivity,
 )
 
 
@@ -44,9 +41,9 @@ def rhel_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_cla
         memory_requests=f"{VM_MEMORY}Gi",
         smm_enabled=True,
         efi_params={"secureBoot": True},
+        os_flavor="rhel",
     ) as vm:
-        vm_started(vm=vm)
-        wait_for_console(vm=vm, console_impl=console.RHEL)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -71,10 +68,7 @@ def windows_efi_secureboot_vm(
         efi_params={"secureBoot": True},
         cpu_model=nodes_common_cpu_model,
     ) as vm:
-        vm_started(vm=vm, wait_for_interfaces=False)
-        wait_for_windows_vm(
-            vm=vm, version=vm.template_labels[0].split("win")[1], timeout=1800
-        )
+        running_vm(vm=vm)
         yield vm
 
 
@@ -101,16 +95,16 @@ def validate_linux_efi(vm):
     """
     Verify guest OS is using EFI.
     """
-    vm_console_run_commands(
-        console_impl=console.RHEL, vm=vm, commands=["ls -ld /sys/firmware/efi"]
-    )
+    run_ssh_commands(host=vm.ssh_exec, commands=["ls", "-ld", "/sys/firmware/efi"])
 
 
 def validate_windows_efi(ssh_exec):
     """
     Verify guest OS is using EFI.
     """
-    _, out, _ = ssh_exec.run_command(command=shlex.split("bcdedit | findstr EFI"))
+    out = run_ssh_commands(
+        host=ssh_exec, commands=shlex.split("bcdedit | findstr EFI")
+    )[0]
     assert (
         "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out
     ), f"EFI boot not fount in path. bcdedit output:\n{out}"
@@ -129,7 +123,7 @@ def _update_vm_efi_spec(vm):
         }
     ).update()
     vm.restart(wait=True)
-    wait_for_console(vm=vm, console_impl=console.RHEL)
+    wait_for_ssh_connectivity(vm=vm)
 
 
 @pytest.mark.parametrize(
@@ -168,12 +162,22 @@ class TestEFISecureBootRHEL:
         """
         Test EFI secureBoot VM cpu and memory values specified in spec match
         """
-        vm_console_run_commands(
-            console_impl=console.RHEL,
-            vm=rhel_efi_secureboot_vm,
+        run_ssh_commands(
+            host=rhel_efi_secureboot_vm.ssh_exec,
             commands=[
-                f"sudo dmidecode -t 17 | awk '/Size/{{print $2,$3}}' | grep \"{VM_MEMORY} GB\"",
-                f"nproc | grep {VM_CPU}",
+                [
+                    "sudo",
+                    "dmidecode",
+                    "-t",
+                    "17",
+                    "|",
+                    "awk",
+                    "\"'/Size/{print $2,$3}'\"",
+                    "|",
+                    "grep",
+                    f"{VM_MEMORY} GB",
+                ],
+                shlex.split(f"nproc | grep {VM_CPU}"),
             ],
         )
 

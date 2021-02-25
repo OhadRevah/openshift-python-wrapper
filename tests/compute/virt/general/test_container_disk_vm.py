@@ -1,11 +1,10 @@
 import pytest
 
-from utilities.console import Fedora
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
-    wait_for_console,
+    running_vm,
 )
 
 
@@ -23,5 +22,4 @@ def test_container_disk_vm(
         body=fedora_vm_body(name=name),
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        wait_for_console(vm=vm, console_impl=Fedora)
+        running_vm(vm=vm)

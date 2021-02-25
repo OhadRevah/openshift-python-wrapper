@@ -6,11 +6,12 @@ import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.service_account import ServiceAccount
 
-from utilities import console
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    running_vm,
 )
 
 
@@ -21,7 +22,7 @@ def service_account(namespace):
 
 
 @pytest.fixture()
-def vm_vmi(namespace, service_account, unprivileged_client):
+def service_account_vm(namespace, service_account, unprivileged_client):
     name = "service-account-vm"
     with VirtualMachineForTests(
         name=name,
@@ -31,34 +32,34 @@ def vm_vmi(namespace, service_account, unprivileged_client):
         client=unprivileged_client,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        yield vm.vmi
+        running_vm(vm=vm)
+        yield vm
 
 
 @pytest.mark.polarion("CNV-1000")
-def test_vm_with_specified_service_account(vm_vmi):
+def test_vm_with_specified_service_account(service_account_vm):
     """
     Verifies VM with specified ServiceAccount
     """
 
-    pod_sa = vm_vmi.virt_launcher_pod.execute(
+    pod_sa = service_account_vm.vmi.virt_launcher_pod.execute(
         command=["cat", "/var/run/secrets/kubernetes.io/serviceaccount/namespace"],
         container="compute",
     )
-    assert pod_sa == vm_vmi.namespace, "ServiceAccount should be attached to the POD"
+    vm_namespace = service_account_vm.namespace
+    assert pod_sa == vm_namespace, "ServiceAccount should be attached to the POD"
 
     # Verifies that ServiceAccount is attached to VMI
-    with console.Fedora(vm=vm_vmi) as vm_console:
-        vm_console.sendline("sudo su -")
-        vm_console.expect("#")
-        vm_console.sendline("mount /dev/sda /mnt")
-        vm_console.sendline("echo rc==$?==")
-        vm_console.expect("rc==0==")
-        vm_console.sendline("cat /mnt/namespace")
-        vm_console.expect(vm_vmi.namespace)
-        vm_console.sendline("exit")
-        vm_console.expect("$")
+    output = run_ssh_commands(
+        host=service_account_vm.ssh_exec,
+        commands=[
+            ["sudo", "mount", "/dev/sda", "/mnt"],
+            ["sudo", "cat", "/mnt/namespace"],
+        ],
+    )
+    assert (
+        output[1] == vm_namespace
+    ), f"Wrong ServiceAccount attachment, VM: {vm_namespace}, OS: {output[1]}"
 
 
 @pytest.mark.polarion("CNV-1001")

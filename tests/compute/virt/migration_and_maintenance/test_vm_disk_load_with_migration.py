@@ -9,12 +9,8 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
-from utilities import console
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    enable_ssh_service_in_vm,
-    migrate_and_verify,
-)
+from utilities.infra import run_ssh_commands
+from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD, migrate_and_verify, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -45,7 +41,7 @@ def vm_with_fio(
         cloud_init_data=vm_cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model,
     ) as vm_with_fio:
-        enable_ssh_service_in_vm(vm=vm_with_fio, console_impl=console.Fedora)
+        running_vm(vm=vm_with_fio)
         yield vm_with_fio
 
 
@@ -63,7 +59,7 @@ def run_fio_in_vm(vm_with_fio):
         "--rwmixread=75 --numjobs=8 >& /dev/null &",
         "&",
     ]
-    vm_with_fio.ssh_exec.run_command(command=fio_cmd)
+    run_ssh_commands(host=vm_with_fio.ssh_exec, commands=fio_cmd)
 
 
 def get_disk_usage(ssh_exec):
@@ -72,9 +68,9 @@ def get_disk_usage(ssh_exec):
         for sample in TimeoutSampler(
             wait_timeout=60,
             sleep=5,
-            func=ssh_exec.run_command,
-            command=shlex.split("sudo iotop -b -n 1 -o"),
-            tcp_timeout=60,
+            func=run_ssh_commands,
+            host=ssh_exec,
+            commands=shlex.split("sudo iotop -b -n 1 -o"),
         ):
             if sample:
                 return sample
@@ -82,7 +78,7 @@ def get_disk_usage(ssh_exec):
     iotop_output = _wait_for_iotop_output()
     LOGGER.info(f"iotop output: {iotop_output}")
     # Example output for regex: 'Actual DISK READ:       3.00 M/s | Actual DISK WRITE:    1303.72 '
-    iotop_read_write_str = re.search(r"Actual DISK READ: .* ", iotop_output[1]).group(0)
+    iotop_read_write_str = re.search(r"Actual DISK READ: .* ", iotop_output[0]).group(0)
     # Example value of read_write_values : ('3.00', '3.72')
     read_write_values = re.search(
         r"READ:.*(\d+\.\d+) .*WRITE:.*(\d+\.\d+)", iotop_read_write_str
@@ -108,9 +104,6 @@ def get_disk_usage(ssh_exec):
                     "template_labels"
                 ],
                 "cpu_threads": 2,
-                "ssh": True,
-                "username": console.Fedora.USERNAME,
-                "password": console.Fedora.PASSWORD,
             },
             marks=pytest.mark.polarion("CNV-4663"),
         ),
