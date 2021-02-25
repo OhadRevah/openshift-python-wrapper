@@ -291,7 +291,7 @@ def test_missing_golden_image(
 
     # Verify VM error on missing source PVC
     for sample in TimeoutSampler(
-        timeout=120,
+        wait_timeout=120,
         sleep=5,
         func=lambda: list(
             VirtualMachine.get(

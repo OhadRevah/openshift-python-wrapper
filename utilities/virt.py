@@ -66,7 +66,7 @@ def wait_for_vm_interfaces(vmi, timeout=720):
     Raises:
         TimeoutExpiredError: After timeout reached.
     """
-    sampler = TimeoutSampler(timeout=timeout, sleep=1, func=lambda: vmi.instance)
+    sampler = TimeoutSampler(wait_timeout=timeout, sleep=1, func=lambda: vmi.instance)
     LOGGER.info(f"Wait until guest agent is active on {vmi.name}")
     try:
         for sample in sampler:
@@ -1194,7 +1194,6 @@ def enable_ssh_service_in_vm(
         r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
         r" /etc/ssh/sshd_config",
     ]
-
     vm_console_run_commands(
         console_impl=console_impl,
         vm=vm,
@@ -1227,7 +1226,7 @@ def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
     LOGGER.info(f"Wait for {vm.name} SSH service to be active.")
 
     sampler = TimeoutSampler(
-        timeout=30,
+        wait_timeout=30,
         sleep=5,
         func=ssh_service_activated,
         exceptions=(pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF),
@@ -1258,7 +1257,7 @@ def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
     LOGGER.info(f"Wait for {vm.name} SSH connectivity.")
 
     sampler = TimeoutSampler(
-        timeout=timeout,
+        wait_timeout=timeout,
         sleep=5,
         func=vm.ssh_exec.executor().is_connective,
         tcp_timeout=tcp_timeout,
@@ -1370,7 +1369,7 @@ def wait_for_windows_vm(vm, version, timeout=1500):
     )
 
     sampler = TimeoutSampler(
-        timeout=timeout,
+        wait_timeout=timeout,
         sleep=15,
         func=vm.ssh_exec.run_command,
         command=shlex.split("wmic os get Caption /value"),
@@ -1445,7 +1444,7 @@ def import_vm(
 # TODO: Remove once bug 1886453 is fixed
 def get_guest_os_info(vmi):
     sampler = TimeoutSampler(
-        timeout=360,
+        wait_timeout=360,
         sleep=5,
         func=lambda: vmi.instance.status.guestOSInfo,
     )

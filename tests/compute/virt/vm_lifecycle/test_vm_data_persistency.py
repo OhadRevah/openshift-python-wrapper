@@ -89,7 +89,7 @@ def wait_for_user_agent_down(vm, timeout):
         f"Waiting up to {round(timeout / 60)} minutes for user agent to go down on {vm.name}"
     )
     for sample in TimeoutSampler(
-        timeout=timeout,
+        wait_timeout=timeout,
         sleep=2,
         func=lambda: [
             condition

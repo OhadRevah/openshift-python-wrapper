@@ -41,7 +41,7 @@ def wait_for_hco_conditions(
 
     actual_hco_conditions = {}
     samples = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=sleep,
         func=lambda: list(
             HyperConverged.get(

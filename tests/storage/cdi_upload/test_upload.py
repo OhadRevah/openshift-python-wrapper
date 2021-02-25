@@ -32,7 +32,7 @@ HTTP_OK = 200
 
 def wait_for_upload_response_code(token, data, response_code, asynchronous=False):
     kwargs = {
-        "timeout": 60,
+        "wait_timeout": 60,
         "sleep": 5,
         "func": storage_utils.upload_image,
         "token": token,

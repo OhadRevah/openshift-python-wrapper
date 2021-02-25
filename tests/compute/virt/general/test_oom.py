@@ -82,7 +82,7 @@ def wait_vm_oom(vm):
     LOGGER.info(f"Monitoring VM {vm.name} under stress for 15 min")
     virt_launcher_pod = vm.vmi.virt_launcher_pod
     samples = TimeoutSampler(
-        timeout=900, sleep=1, func=lambda: virt_launcher_pod.status
+        wait_timeout=900, sleep=1, func=lambda: virt_launcher_pod.status
     )
     try:
         for sample in samples:

@@ -157,7 +157,7 @@ def no_migration_job(
 
 def migration_job_sampler(dyn_client, namespace):
     samples = TimeoutSampler(
-        timeout=30,
+        wait_timeout=30,
         sleep=2,
         func=get_migration_job,
         dyn_client=dyn_client,

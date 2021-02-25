@@ -73,7 +73,7 @@ def import_name(vm_name):
 
 def wait_for_source_vm_status(provider, provider_data, source_vm_name, state):
     samples = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=provider.vm,
         name=source_vm_name,

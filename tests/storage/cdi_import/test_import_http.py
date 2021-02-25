@@ -584,7 +584,7 @@ def test_certconfigmap_incorrect_cert(
 def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_function):
     with pytest.raises(TimeoutExpiredError):
         samples = TimeoutSampler(
-            timeout=60,
+            wait_timeout=60,
             sleep=10,
             func=lambda: data_volume_multi_storage_scope_function.status
             != DataVolume.Status.IMPORT_SCHEDULED,

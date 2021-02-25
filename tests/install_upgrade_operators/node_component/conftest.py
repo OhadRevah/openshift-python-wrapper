@@ -379,7 +379,7 @@ def apply_np_changes(
 def wait_for_dp(dp):
     LOGGER.info(f"Waiting for deployment {dp.name} to be up to date.")
     samples = TimeoutSampler(
-        timeout=240,
+        wait_timeout=240,
         sleep=5,
         func=lambda: dp.instance.to_dict(),
     )
@@ -399,7 +399,7 @@ def wait_for_dp(dp):
 def wait_for_ds(ds):
     LOGGER.info(f"Waiting for daemonset {ds.name} to be up to date.")
     samples = TimeoutSampler(
-        timeout=240,
+        wait_timeout=240,
         sleep=5,
         func=lambda: ds.instance.to_dict(),
     )
@@ -553,7 +553,7 @@ def update_subscription_config(admin_client, hco_namespace, sub, config):
     LOGGER.info("Verify that there no terminating operator pods.")
     sample = None
     samples = TimeoutSampler(
-        timeout=300,
+        wait_timeout=300,
         sleep=20,
         func=get_terminating_operators_pods,
         admin_client=admin_client,

@@ -35,7 +35,7 @@ def wait_for_dvs_import_completed(dvs_list):
 
     LOGGER.info("Wait for DVs import to end.")
     samples = TimeoutSampler(
-        timeout=1200,
+        wait_timeout=1200,
         sleep=10,
         func=_dvs_import_completed,
     )
@@ -76,7 +76,7 @@ def wait_for_operator_replacement(
 ):
 
     operator_sampler = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=get_operator_by_name,
         dyn_client=dyn_client,
@@ -129,7 +129,7 @@ def pod_status_and_image(
         f"Wait for {new_operator_pod.name} to get updated image version {image_ver}"
     )
     image_sampler = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=lambda: new_operator_pod.instance.spec.containers[0].image == image_ver,
     )
@@ -205,7 +205,7 @@ def get_clusterversion(dyn_client):
 
 def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=get_new_csv,
         dyn_client=dyn_client,
@@ -268,7 +268,7 @@ def approve_install_plan(install_plan):
 
 def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
     samples = TimeoutSampler(
-        timeout=120,
+        wait_timeout=120,
         sleep=1,
         func=get_install_plan,
         dyn_client=dyn_client,
@@ -364,7 +364,7 @@ def get_nodes_status(nodes):
 def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
     nodes_status_after_upgrade = None
     nodes_sampler = TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=5,
         func=get_nodes_status,
         nodes=nodes,
@@ -508,7 +508,7 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
     ocp_version = extract_ocp_version(ocp_image=ocp_image)
 
     samples = TimeoutSampler(
-        timeout=TIMEOUT_60MIN,
+        wait_timeout=TIMEOUT_60MIN,
         sleep=10,
         func=get_clusterversion,
         exceptions=(

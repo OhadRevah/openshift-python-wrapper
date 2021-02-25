@@ -69,7 +69,7 @@ def check_telnet_connection(ip, port):
 
     LOGGER.info("Check telnet connection to VM.")
     sampler = TimeoutSampler(
-        timeout=120,
+        wait_timeout=120,
         sleep=15,
         exceptions=ConnectionRefusedError,
         func=socket.create_connection,
@@ -113,7 +113,7 @@ def check_windows_vm_hvinfo(vm):
     hvinfo_dict = None
 
     sampler = TimeoutSampler(
-        timeout=90,
+        wait_timeout=90,
         sleep=15,
         func=run_ssh_commands,
         host=vm.ssh_exec,
@@ -355,7 +355,9 @@ def validate_os_info_virtctl_vs_linux_os(vm):
         linux_info = get_linux_os_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    os_info_sampler = TimeoutSampler(timeout=330, sleep=30, func=_get_os_info, vm=vm)
+    os_info_sampler = TimeoutSampler(
+        wait_timeout=330, sleep=30, func=_get_os_info, vm=vm
+    )
     check_guest_agent_sampler_data(sampler=os_info_sampler)
 
 
@@ -367,7 +369,9 @@ def validate_fs_info_virtctl_vs_linux_os(vm):
         linux_info = get_linux_fs_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    fs_info_sampler = TimeoutSampler(timeout=330, sleep=30, func=_get_fs_info, vm=vm)
+    fs_info_sampler = TimeoutSampler(
+        wait_timeout=330, sleep=30, func=_get_fs_info, vm=vm
+    )
     check_guest_agent_sampler_data(sampler=fs_info_sampler)
 
 
@@ -379,7 +383,9 @@ def validate_user_info_virtctl_vs_linux_os(vm):
         linux_info = get_linux_user_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    user_info_sampler = TimeoutSampler(timeout=30, sleep=10, func=_get_user_info, vm=vm)
+    user_info_sampler = TimeoutSampler(
+        wait_timeout=30, sleep=10, func=_get_user_info, vm=vm
+    )
     check_guest_agent_sampler_data(sampler=user_info_sampler)
 
 
@@ -429,7 +435,9 @@ def validate_fs_info_virtctl_vs_windows_os(vm):
         return virtctl_info, cnv_info, libvirt_info, windows_info
 
     virtctl_info = cnv_info = libvirt_info = windows_info = None
-    fs_info_sampler = TimeoutSampler(timeout=330, sleep=30, func=_get_fs_info, vm=vm)
+    fs_info_sampler = TimeoutSampler(
+        wait_timeout=330, sleep=30, func=_get_fs_info, vm=vm
+    )
 
     try:
         for virtctl_info, cnv_info, libvirt_info, windows_info in fs_info_sampler:
@@ -795,7 +803,7 @@ def windows_disk_space_parser(fsinfo_list):
 # TODO: Remove once bug 1886453 is fixed
 def wait_for_virtctl_output(cmd, namespace):
     for res, output, err in TimeoutSampler(
-        timeout=360,
+        wait_timeout=360,
         sleep=5,
         func=run_virtctl_command,
         command=cmd,

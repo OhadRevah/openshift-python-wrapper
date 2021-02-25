@@ -105,7 +105,7 @@ def is_cdi_worker_pod(dyn_client, pod_name, storage_ns_name):
     """pod_name can also be partial pod name"""
     LOGGER.info("waiting for worker pod")
     sampler = TimeoutSampler(
-        timeout=30,
+        wait_timeout=30,
         sleep=1,
         func=_pods_list,
         dyn_client=dyn_client,

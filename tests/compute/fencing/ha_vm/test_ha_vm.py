@@ -147,7 +147,9 @@ def wait_node_restored(node):
 
 def wait_node_status(node, status=True):
     """Wait for node status Ready (status=True) or NotReady (status=False)"""
-    for sample in TimeoutSampler(timeout=60, sleep=1, func=lambda: node.kubelet_ready):
+    for sample in TimeoutSampler(
+        wait_timeout=60, sleep=1, func=lambda: node.kubelet_ready
+    ):
         if (status and sample) or (not status and not sample):
             return
 

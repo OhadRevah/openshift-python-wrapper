@@ -151,7 +151,7 @@ def refresh_cdi_certificates(secrets):
                 LOGGER.info(f"Wait for Secret {secret.name} to be updated")
                 res.update()
                 for sample in TimeoutSampler(
-                    timeout=20,
+                    wait_timeout=20,
                     sleep=10,
                     func=lambda: secret.certificate_not_before
                     != secret.certificate_not_after,

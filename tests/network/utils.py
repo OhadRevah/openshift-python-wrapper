@@ -48,7 +48,7 @@ def wait_for_address_on_iface(worker_pod, iface_name):
     sample = None
     log = "Worker ip address for {iface_name} : {sample}"
     samples = TimeoutSampler(
-        timeout=120,
+        wait_timeout=120,
         sleep=1,
         func=NodeNetworkState(worker_pod.node.name).ipv4,
         iface=iface_name,

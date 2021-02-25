@@ -523,7 +523,7 @@ def login_to_account(api_address, user, password=None):
         login_command += f" -p {password}"
 
     samples = TimeoutSampler(
-        timeout=60,
+        wait_timeout=60,
         sleep=3,
         exceptions=CalledProcessError,
         func=Popen,
@@ -620,7 +620,7 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
     def _wait_sampler(reason):
         sampler = TimeoutSampler(
-            timeout=60, sleep=1, func=lambda: dp.instance.status.conditions
+            wait_timeout=60, sleep=1, func=lambda: dp.instance.status.conditions
         )
         for sample in sampler:
             for _spl in sample:
@@ -1548,7 +1548,7 @@ def sa_ready(namespace):
     #  The Pod creating will fail if we try to create it before.
     default_sa = ServiceAccount(name="default", namespace=namespace.name)
     sampler = TimeoutSampler(
-        timeout=10, sleep=1, func=lambda: default_sa.instance.secrets
+        wait_timeout=10, sleep=1, func=lambda: default_sa.instance.secrets
     )
     for sample in sampler:
         if sample:

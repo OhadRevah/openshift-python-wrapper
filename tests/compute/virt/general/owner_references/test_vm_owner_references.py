@@ -13,7 +13,9 @@ from utilities.virt import (
 
 
 def _wait_for_virt_launcher_pod(vmi):
-    samples = TimeoutSampler(timeout=30, sleep=1, func=lambda: vmi.virt_launcher_pod)
+    samples = TimeoutSampler(
+        wait_timeout=30, sleep=1, func=lambda: vmi.virt_launcher_pod
+    )
     for sample in samples:
         if sample:
             return

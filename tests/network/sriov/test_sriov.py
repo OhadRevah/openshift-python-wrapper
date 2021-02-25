@@ -283,7 +283,7 @@ def set_sriov1_mtu(vm, mtu):
         ],
     )
     LOGGER.info(f"wait for {vm.name} {VM_SRIOV_IFACE_NAME} mtu to be {mtu}")
-    for sample in TimeoutSampler(timeout=30, sleep=1, func=get_sriov1_mtu, vm=vm):
+    for sample in TimeoutSampler(wait_timeout=30, sleep=1, func=get_sriov1_mtu, vm=vm):
         if sample == mtu:
             return
 

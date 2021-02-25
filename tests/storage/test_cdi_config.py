@@ -43,7 +43,7 @@ def cdiconfig_update(
         }
     ):
         samples = TimeoutSampler(
-            timeout=30,
+            wait_timeout=30,
             sleep=1,
             func=lambda: cdiconfig.scratch_space_storage_class_from_status
             == storage_class_type,

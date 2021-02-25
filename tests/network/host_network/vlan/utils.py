@@ -87,7 +87,7 @@ def sampling_handler(
     node = None
     try:
         sampled_ip_search = TimeoutSampler(
-            timeout=timeout, sleep=interval, func=sampled_func
+            wait_timeout=timeout, sleep=interval, func=sampled_func
         )
         for sample in sampled_ip_search:
             if sample[0]:

@@ -173,7 +173,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         run_ssh_commands(host=worker_exec, commands=[["bash", "-c", "sudo reboot"]])
         LOGGER.info(f"Wait until {lbodi_bond.node_selector} reboots ...")
         samples = TimeoutSampler(
-            timeout=TIMEOUT_10MIN,
+            wait_timeout=TIMEOUT_10MIN,
             sleep=SLEEP,
             func=worker_exec.executor().is_connective,
         )

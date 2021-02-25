@@ -63,7 +63,7 @@ def scratch_pvc_bound(scratch_pvc):
     in order to avoid 'missing' it and assuring 'Bound' status was reached on it
     """
     sampler = TimeoutSampler(
-        timeout=60,
+        wait_timeout=60,
         sleep=1,
         func=lambda: scratch_pvc.exists
         and scratch_pvc.status == PersistentVolumeClaim.Status.BOUND,
@@ -117,7 +117,7 @@ def test_upload_https_scratch_space_delete_pvc(
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
-                timeout=120,
+                wait_timeout=120,
                 sleep=5,
                 func=storage_utils.upload_image,
                 token=token,
@@ -488,7 +488,7 @@ def test_scratch_space_upload_data_volume(
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
-                timeout=120,
+                wait_timeout=120,
                 sleep=5,
                 func=storage_utils.upload_image,
                 token=token,

@@ -103,7 +103,7 @@ class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
         res = self.to_dict()
         res["spec"]["desiredState"]["interfaces"][0]["state"] = IFACE_ABSENT_STATE
         samples = TimeoutSampler(
-            timeout=3,
+            wait_timeout=3,
             sleep=1,
             exceptions=ConflictError,
             func=self.update,
@@ -518,7 +518,7 @@ NAD_TYPE = {
 
 
 def get_vmi_ip_v4_by_name(vmi, name):
-    sampler = TimeoutSampler(timeout=120, sleep=1, func=lambda: vmi.interfaces)
+    sampler = TimeoutSampler(wait_timeout=120, sleep=1, func=lambda: vmi.interfaces)
     try:
         for sample in sampler:
             for iface in sample:
@@ -653,7 +653,7 @@ class MacPool:
         return self.mac_sampler(func=random.choice, seq=self.pool)
 
     def mac_sampler(self, func, *args, **kwargs):
-        sampler = TimeoutSampler(timeout=20, sleep=1, func=func, *args, **kwargs)
+        sampler = TimeoutSampler(wait_timeout=20, sleep=1, func=func, *args, **kwargs)
         for sample in sampler:
             mac = self.int_to_mac(num=sample)
             if mac not in self.used_macs:
@@ -827,7 +827,7 @@ def ovs_pods(admin_client, hco_namespace):
 def wait_for_ovs_pods(admin_client, hco_namespace, count=0):
     LOGGER.info(f"Wait for number of OVS pods to be: {count}")
     samples = TimeoutSampler(
-        timeout=150,
+        wait_timeout=150,
         sleep=1,
         func=ovs_pods,
         admin_client=admin_client,
@@ -850,7 +850,7 @@ def wait_for_ovs_status(network_addons_config, status=True):
     resource_log = f"{network_addons_config.kind} {network_addons_config.name}"
     LOGGER.info(f"Wait for {resource_log} OVS to be {opt_log}")
     samples = TimeoutSampler(
-        timeout=60,
+        wait_timeout=60,
         sleep=1,
         func=lambda: network_addons_config.instance.to_dict()["spec"].get("ovs"),
     )
@@ -897,7 +897,9 @@ def get_ovs_daemonset(admin_client, hco_namespace):
 
 
 def wait_for_ovs_daemonset_deleted(ovs_daemonset):
-    samples = TimeoutSampler(timeout=90, sleep=1, func=lambda: ovs_daemonset.exists)
+    samples = TimeoutSampler(
+        wait_timeout=90, sleep=1, func=lambda: ovs_daemonset.exists
+    )
     try:
         for sample in samples:
             if not sample:
@@ -910,7 +912,7 @@ def wait_for_ovs_daemonset_deleted(ovs_daemonset):
 
 def wait_for_ovs_daemonset_resource(admin_client, hco_namespace):
     samples = TimeoutSampler(
-        timeout=30,
+        wait_timeout=30,
         sleep=1,
         func=get_ovs_daemonset,
         admin_client=admin_client,

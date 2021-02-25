@@ -177,7 +177,7 @@ def run_vm_action(vm, vm_action, expected_exceptions=None):
             return True
 
     for sample in TimeoutSampler(
-        timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=2,
         func=_vm_run_action,
     ):

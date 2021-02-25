@@ -83,7 +83,7 @@ def upload_token_request(storage_ns_name, pvc_name, data):
         token = utr.create().status.token
         LOGGER.info("Ensure upload was successful")
         sampler = TimeoutSampler(
-            timeout=120, sleep=5, func=upload_image, token=token, data=data
+            wait_timeout=120, sleep=5, func=upload_image, token=token, data=data
         )
         for sample in sampler:
             if sample == 200:

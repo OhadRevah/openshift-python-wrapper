@@ -61,7 +61,7 @@ def check_vmi_metric(prometheus):
 def check_vmi_count_metric(expected_vmi_count, prometheus):
     LOGGER.info(f"Check VMI metric expected: {expected_vmi_count}")
     samples = TimeoutSampler(
-        timeout=100,
+        wait_timeout=100,
         sleep=5,
         func=check_vmi_metric,
         prometheus=prometheus,

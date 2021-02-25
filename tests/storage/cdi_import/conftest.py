@@ -26,7 +26,7 @@ def wait_for_importer_container_message(importer_pod, msg):
     LOGGER.info(f"Wait for {importer_pod.name} container to show message: {msg}")
     try:
         sampled_msg = TimeoutSampler(
-            timeout=120,
+            wait_timeout=120,
             sleep=5,
             func=lambda: importer_container_status_reason(importer_pod)
             == Pod.Status.CRASH_LOOPBACK_OFF

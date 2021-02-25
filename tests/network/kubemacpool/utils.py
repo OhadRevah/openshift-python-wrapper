@@ -53,7 +53,7 @@ def get_pods(dyn_client, namespace, label=None):
 
 def wait_for_kmp_pods_creation(dyn_client, namespace, replicas):
     samples = TimeoutSampler(
-        timeout=120,
+        wait_timeout=120,
         sleep=1,
         func=get_pods,
         dyn_client=dyn_client,
@@ -78,7 +78,7 @@ def wait_for_kmp_pods_to_be_in_crashloop(dyn_client, namespace):
             f"Wait for {pod.name} container status to be {Pod.Status.CRASH_LOOPBACK_OFF}"
         )
         pod_states = TimeoutSampler(
-            timeout=30,
+            wait_timeout=30,
             sleep=1,
             func=lambda: pod.instance.status.containerStatuses[0].state,
         )

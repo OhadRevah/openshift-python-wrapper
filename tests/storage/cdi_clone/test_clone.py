@@ -21,7 +21,7 @@ WINDOWS_CLONE_TIMEOUT = 40 * 60
 
 def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
     for sample in TimeoutSampler(
-        timeout=20,
+        wait_timeout=20,
         sleep=1,
         func=lambda: snapshot.exists
         and snapshot.instance["spec"]["source"]["persistentVolumeClaimName"]

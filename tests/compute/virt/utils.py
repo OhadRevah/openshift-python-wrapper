@@ -30,7 +30,7 @@ def wait_for_node_schedulable_status(node, status, timeout=60):
     )
 
     sampler = TimeoutSampler(
-        timeout=timeout,
+        wait_timeout=timeout,
         sleep=1,
         func=node.api().get,
         label_selector=f"kubernetes.io/hostname={node.name}",

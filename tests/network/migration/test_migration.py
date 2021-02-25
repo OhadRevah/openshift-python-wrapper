@@ -40,7 +40,7 @@ def http_port_accessible(vm, server_ip, server_port):
         server_ip = f"'[{server_ip}]'"
 
     sampler = TimeoutSampler(
-        timeout=120,
+        wait_timeout=120,
         sleep=5,
         func=run_ssh_commands,
         host=vm.ssh_exec,
@@ -236,7 +236,7 @@ def assert_ssh_alive(ssh_vm):
     """
     output = None
     sampler = TimeoutSampler(
-        timeout=30,
+        wait_timeout=30,
         sleep=1,
         func=run_ssh_commands,
         host=ssh_vm.ssh_exec,

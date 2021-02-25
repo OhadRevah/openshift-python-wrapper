@@ -185,7 +185,7 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
     """
     LOGGER.info("Waiting for cdi-upload worker pod and scratch pvc")
     sampler = TimeoutSampler(
-        timeout=30,
+        wait_timeout=30,
         sleep=5,
         func=_get_pod_and_scratch_pvc,
         dyn_client=dyn_client,

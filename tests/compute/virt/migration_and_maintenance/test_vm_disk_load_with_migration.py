@@ -71,7 +71,7 @@ def get_disk_usage(ssh_exec):
     def _wait_for_iotop_output():
         # After migration, the SSH connection may not be accessible for a brief moment ("No route to host")
         for sample in TimeoutSampler(
-            timeout=60,
+            wait_timeout=60,
             sleep=5,
             func=ssh_exec.run_command,
             command=shlex.split("sudo iotop -b -n 1 -o"),

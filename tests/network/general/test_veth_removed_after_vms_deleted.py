@@ -122,7 +122,7 @@ def test_veth_removed_from_host_after_vm_deleted(
     """
     remove_vath_bridge_attached_vma.delete(wait=True)
     sampler = TimeoutSampler(
-        timeout=180,
+        wait_timeout=180,
         sleep=1,
         func=count_veth_devices_on_host,
         worker1_executor=worker1_executor,

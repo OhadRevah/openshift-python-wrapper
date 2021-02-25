@@ -39,7 +39,9 @@ class Console(object):
 
     def connect(self):
         LOGGER.info(f"Connect to {self.vm.name} console")
-        self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+        self.console_eof_sampler(
+            func=pexpect.spawn, command=self.cmd, timeout=self.timeout
+        )
 
         self._connect()
 
@@ -54,12 +56,16 @@ class Console(object):
             self.child.expect("Password:")
             LOGGER.info(f"{self.vm.name}: Using password {self.password}")
             self.child.sendline(self.password)
+
         self.child.expect(self.prompt, timeout=150)
         LOGGER.info(f"{self.vm.name}: Got prompt.")
 
     def disconnect(self):
         if self.child.terminated:
-            self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+            self.console_eof_sampler(
+                func=pexpect.spawn, command=self.cmd, timeout=self.timeout
+            )
+
         self.child.send("\n\n")
         self.child.expect(self.prompt)
         self.child.send("exit")
@@ -72,16 +78,19 @@ class Console(object):
         Method is a workaround for RHEL 7.7.
         For some reason, console may not be logged out successfully in __exit__()
         """
-        self.console_eof_sampler(pexpect.spawn, self.cmd, [], self.timeout)
+        self.console_eof_sampler(
+            func=pexpect.spawn, command=self.cmd, timeout=self.timeout
+        )
         self.disconnect()
 
-    def console_eof_sampler(self, func, *func_args):
-        sampler = TimeoutSampler(  # noqa: FCFN001
-            300,
-            5,
-            func,
-            pexpect.exceptions.EOF,
-            *func_args,
+    def console_eof_sampler(self, func, command, timeout):
+        sampler = TimeoutSampler(
+            wait_timeout=300,
+            sleep=5,
+            func=func,
+            exceptions=pexpect.exceptions.EOF,
+            command=command,
+            timeout=timeout,
         )
         for sample in sampler:
             if sample:

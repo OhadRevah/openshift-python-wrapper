@@ -226,7 +226,7 @@ class VMWare(Provider):
         Waits and provides updates on a vSphere task.
         """
         for sample in TimeoutSampler(
-            timeout=60,
+            wait_timeout=60,
             sleep=2,
             func=lambda: task.info.state != vim.TaskInfo.State.running,
         ):
