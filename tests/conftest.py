@@ -1343,6 +1343,7 @@ def vm_instance_from_template(
         host_device_name=params.get("host_device_name"),
         gpu_name=params.get("gpu_name"),
         rhel7_workers=rhel7_workers,
+        cloned_dv_size=params.get("cloned_dv_size"),
     ) as vm:
         if params.get("start_vm", True):
             running_vm(

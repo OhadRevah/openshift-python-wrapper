@@ -62,13 +62,16 @@ class Images:
     class Windows:
         WIM10_IMG = "win_10.qcow2"
         WIM10_EFI_IMG = "win_10_efi.qcow2"
+        WIM10_NVIDIA_IMG = "win_10_nv.qcow2"
         WIN12_IMG = "win_12.qcow2"
         WIN16_IMG = "win_16.qcow2"
         WIN19_IMG = "win_19.qcow2"
+        WIN19_NVIDIA_IMG = "win_19_nv.qcow2"
         WIN19_RAW = "win19.raw"
         DIR = f"{BASE_IMAGES_DIR}/windows-images"
         RAW_DIR = f"{DIR}/raw_images"
         DEFAULT_DV_SIZE = "60Gi"
+        NVIDIA_DV_SIZE = "70Gi"
 
     class Fedora:
         FEDORA32_IMG = "Fedora-Cloud-Base-32-1.6.x86_64.qcow2"

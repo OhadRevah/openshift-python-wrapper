@@ -762,6 +762,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         interfaces_types=None,
         host_device_name=None,
         gpu_name=None,
+        cloned_dv_size=None,
     ):
         """
         VM creation using common templates.
@@ -813,6 +814,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.node_selector = node_selector
         self.termination_grace_period = termination_grace_period
         self.cloud_init_data = cloud_init_data
+        self.cloned_dv_size = cloned_dv_size
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -853,6 +855,12 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             ] = self.data_volume.pvc.instance.spec.storageClassName
             dv_pvc_spec["accessModes"] = self.data_volume.pvc.instance.spec.accessModes
             dv_pvc_spec["volumeMode"] = self.data_volume.pvc.instance.spec.volumeMode
+            # dataVolumeTemplates needs to be updated with the needed storage size,
+            # if the size of the golden_image is more than the Template's default storage size.
+            if self.cloned_dv_size:
+                dv_pvc_spec.setdefault("resources", {}).setdefault("requests", {})[
+                    "storage"
+                ] = self.cloned_dv_size
 
         return res
 
