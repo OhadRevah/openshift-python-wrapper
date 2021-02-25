@@ -6,11 +6,6 @@ from ocp_resources.resource import ResourceEditor
 
 
 @pytest.fixture()
-def feature_gate_data(kubevirt_config_cm):
-    return kubevirt_config_cm.instance["data"]["feature-gates"].split(",")
-
-
-@pytest.fixture()
 def enabled_hotplugvolumes_feature_gate(hyperconverged_resource):
     with ResourceEditor(
         patches={

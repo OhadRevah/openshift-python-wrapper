@@ -301,3 +301,8 @@ def skip_block_volumemode_scope_function(storage_class_matrix__function__):
 @pytest.fixture(scope="module")
 def skip_block_volumemode_scope_module(storage_class_matrix__module__):
     _skip_block_volumemode(storage_class_matrix=storage_class_matrix__module__)
+
+
+@pytest.fixture()
+def feature_gate_data(kubevirt_config_cm):
+    return kubevirt_config_cm.instance["data"]["feature-gates"].split(",")
