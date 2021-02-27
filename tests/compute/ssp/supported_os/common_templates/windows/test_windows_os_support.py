@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
     ],
     indirect=True,
 )
+@pytest.mark.ibm_bare_metal
 class TestCommonTemplatesWindows:
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-2196")

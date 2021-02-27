@@ -206,6 +206,7 @@ def test_node_drain_using_console_fedora(
     "skip_access_mode_rwo_scope_class",
     "golden_image_data_volume_multi_storage_scope_class",
 )
+@pytest.mark.ibm_bare_metal
 class TestNodeMaintenanceRHEL:
     @pytest.mark.polarion("CNV-2286")
     def test_node_maintenance_job_rhel(
@@ -310,6 +311,7 @@ class TestNodeMaintenanceRHEL:
     "skip_access_mode_rwo_scope_class",
     "golden_image_data_volume_multi_storage_scope_class",
 )
+@pytest.mark.ibm_bare_metal
 class TestNodeCordonAndDrain:
     @pytest.mark.bugzilla(
         1911118, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
