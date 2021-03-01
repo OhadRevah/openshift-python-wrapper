@@ -399,6 +399,7 @@ def pytest_sessionstart(session):
         # Some tests extract a single OS from the matrix and may fail if running with
         # passed values from cli
         py_config["system_windows_os_matrix"] = py_config["windows_os_matrix"]
+        py_config["system_rhel_os_matrix"] = py_config["rhel_os_matrix"]
 
         # Update OS matrix list with the latest OS if running with os_group
         if session.config.getoption("latest_rhel"):
@@ -1357,6 +1358,7 @@ def vm_instance_from_template(
             running_vm(
                 vm=vm,
                 wait_for_interfaces=params.get("guest_agent", True),
+                systemctl_support=params.get("systemctl_support", True),
                 enable_ssh=vm.ssh,
             )
         yield vm

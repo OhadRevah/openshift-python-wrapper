@@ -1482,10 +1482,19 @@ def get_windows_os_dict(windows_version):
     ]
     if windows_os_dict:
         return windows_os_dict[0]
-    else:
-        raise KeyError(
-            f"Failed to extract {windows_version} from system_windows_os_matrix"
-        )
+    raise KeyError(f"Failed to extract {windows_version} from system_windows_os_matrix")
+
+
+def get_rhel_os_dict(rhel_version):
+    rhel_os_dict = [
+        os_dict
+        for rhel_os in py_config["system_rhel_os_matrix"]
+        for os_name, os_dict in rhel_os.items()
+        if os_name == rhel_version
+    ]
+    if rhel_os_dict:
+        return rhel_os_dict[0]
+    raise KeyError(f"Failed to extract {rhel_version} from system_rhel_os_matrix")
 
 
 def running_vm(vm, wait_for_interfaces=True, enable_ssh=True, systemctl_support=True):
