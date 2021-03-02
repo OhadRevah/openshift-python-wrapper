@@ -2,7 +2,7 @@
 import logging
 import shlex
 
-from resources.resource import TIMEOUT
+from ocp_resources.resource import TIMEOUT
 
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_vm_interfaces

@@ -6,8 +6,8 @@ import logging
 
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.datavolume import DataVolume
-from resources.service_account import ServiceAccount
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.service_account import ServiceAccount
 
 from tests.storage.restricted_namespace_cloning.conftest import (
     DV_PARAMS,

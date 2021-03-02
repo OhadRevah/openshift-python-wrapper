@@ -12,8 +12,8 @@ import base64
 import logging
 
 import pytest
+from ocp_resources.secret import Secret
 from pytest_testconfig import config as py_config
-from resources.secret import Secret
 
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template

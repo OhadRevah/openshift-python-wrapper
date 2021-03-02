@@ -3,8 +3,8 @@ import re
 import shlex
 
 import pytest
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
-from resources.utils import TimeoutSampler
 
 from tests.compute.utils import get_linux_timezone, get_windows_timezone
 from tests.conftest import vm_instance_from_template

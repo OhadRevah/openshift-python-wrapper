@@ -7,11 +7,11 @@ HA VM reboot and provisioning scenario tests.
 import logging
 
 import pytest
+from ocp_resources.machine import Machine
+from ocp_resources.machine_health_check import MachineHealthCheck
+from ocp_resources.template import Template
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
-from resources.machine import Machine
-from resources.machine_health_check import MachineHealthCheck
-from resources.template import Template
-from resources.utils import TimeoutSampler
 
 from utilities import console
 from utilities.virt import (

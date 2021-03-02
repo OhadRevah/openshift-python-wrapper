@@ -3,13 +3,13 @@ import multiprocessing
 
 import ovirtsdk4.types
 import pytest
-from resources.configmap import ConfigMap
-from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.secret import Secret
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachine
-from resources.virtual_machine_import import VirtualMachineImport
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.secret import Secret
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_import import VirtualMachineImport
 
 from tests.mtv.vmimport import utils
 from tests.mtv.vmimport.utils import ResourceMappingItem, Source

@@ -8,16 +8,16 @@ import logging
 import os
 
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.cdi_config import CDIConfig
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.route import Route
+from ocp_resources.secret import Secret
+from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
-from resources.cdi import CDI
-from resources.cdi_config import CDIConfig
-from resources.configmap import ConfigMap
-from resources.datavolume import DataVolume
-from resources.deployment import Deployment
-from resources.resource import ResourceEditor
-from resources.route import Route
-from resources.secret import Secret
-from resources.storage_class import StorageClass
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
 from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, Images, get_cert

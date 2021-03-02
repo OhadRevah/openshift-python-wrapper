@@ -5,8 +5,8 @@ import re
 import shlex
 
 import pytest
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
-from resources.utils import TimeoutSampler
 
 from tests.conftest import vm_instance_from_template
 from utilities import console

@@ -7,17 +7,19 @@ import re
 import shlex
 
 import netaddr
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.node_network_configuration_policy import (
+    NodeNetworkConfigurationPolicy,
+)
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.pod import Pod
+from ocp_resources.resource import ResourceEditor, sub_resource_level
+from ocp_resources.sriov_network import SriovNetwork
+from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
-from resources.daemonset import DaemonSet
-from resources.network_attachment_definition import NetworkAttachmentDefinition
-from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
-from resources.node_network_state import NodeNetworkState
-from resources.pod import Pod
-from resources.resource import ResourceEditor, sub_resource_level
-from resources.sriov_network import SriovNetwork
-from resources.sriov_network_node_policy import SriovNetworkNodePolicy
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import SRIOV
 from utilities.infra import get_pod_by_name_prefix, run_ssh_commands

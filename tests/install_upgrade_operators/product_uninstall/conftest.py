@@ -1,5 +1,5 @@
 import pytest
-from resources.kubevirt import KubeVirt
+from ocp_resources.kubevirt import KubeVirt
 
 
 @pytest.fixture()

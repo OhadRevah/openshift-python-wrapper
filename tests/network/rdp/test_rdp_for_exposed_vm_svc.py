@@ -5,8 +5,8 @@ Test RDP - Expose Windows VirtualMachine (latest version) as a service and use f
 import logging
 
 import pytest
+from ocp_resources.service import Service
 from pytest_testconfig import config as py_config
-from resources.service import Service
 
 from tests.conftest import vm_instance_from_template
 from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands

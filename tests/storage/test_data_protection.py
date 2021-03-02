@@ -6,12 +6,12 @@ CDI data protection test suite
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.storage_class import StorageClass
 from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
-from resources.cdi import CDI
-from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.storage_class import StorageClass
 
 from utilities.infra import Images
 from utilities.storage import (

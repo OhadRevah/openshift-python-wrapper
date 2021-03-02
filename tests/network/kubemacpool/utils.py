@@ -2,8 +2,8 @@ import logging
 from collections import namedtuple
 from ipaddress import ip_interface
 
-from resources.pod import Pod
-from resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.pod import Pod
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.network import cloud_init_network_data, get_vmi_mac_address_by_iface_name
 from utilities.virt import (

@@ -1,8 +1,8 @@
 import logging
 from contextlib import contextmanager
 
-from resources.node import Node
-from resources.utils import TimeoutSampler
+from ocp_resources.node import Node
+from ocp_resources.utils import TimeoutSampler
 
 from utilities.infra import run_ssh_commands
 from utilities.virt import kubernetes_taint_exists

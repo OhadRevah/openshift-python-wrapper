@@ -1,4 +1,4 @@
-from resources.virtual_machine_import import VirtualMachineImport
+from ocp_resources.virtual_machine_import import VirtualMachineImport
 
 from utilities.storage import get_storage_class_dict_from_matrix
 

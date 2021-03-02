@@ -3,10 +3,10 @@ import time
 
 import pytest
 from kubernetes.client.rest import ApiException
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.template import Template
 
 from tests.storage import utils
 from utilities import console

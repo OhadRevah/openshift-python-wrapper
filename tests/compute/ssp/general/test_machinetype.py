@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 from openshift.dynamic.exceptions import UnprocessibleEntityError
-from resources.resource import ResourceEditor
 
 from tests.compute.ssp import utils as ssp_utils
 from utilities.virt import (

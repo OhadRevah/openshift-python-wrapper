@@ -7,11 +7,11 @@ Upload using virtctl
 import logging
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.route import Route
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.route import Route
 
 import tests.storage.utils as storage_utils
 from utilities import console

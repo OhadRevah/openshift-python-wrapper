@@ -6,7 +6,7 @@ import logging
 import subprocess
 
 import pytest
-from resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutSampler
 
 from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import TIMEOUT_10MIN

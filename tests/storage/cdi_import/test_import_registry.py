@@ -4,10 +4,10 @@ import multiprocessing
 
 import pytest
 from kubernetes.client.rest import ApiException
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import ResourceEditor
 from pytest_testconfig import config as py_config
-from resources.configmap import ConfigMap
-from resources.datavolume import DataVolume
-from resources.resource import ResourceEditor
 
 import utilities.storage
 from tests.storage import utils

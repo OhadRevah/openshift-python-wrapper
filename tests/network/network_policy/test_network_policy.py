@@ -4,7 +4,7 @@ Network policy tests
 import shlex
 
 import pytest
-from resources.network_policy import NetworkPolicy
+from ocp_resources.network_policy import NetworkPolicy
 
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import create_ns, run_ssh_commands

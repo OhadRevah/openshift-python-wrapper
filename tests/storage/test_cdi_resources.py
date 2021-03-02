@@ -1,19 +1,19 @@
 import logging
 
 import pytest
+from ocp_resources.cluster_role import ClusterRole
+from ocp_resources.cluster_role_binding import ClusterRoleBinding
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.pod import Pod
+from ocp_resources.replicaset import ReplicaSet
+from ocp_resources.role import Role
+from ocp_resources.role_binding import RoleBinding
+from ocp_resources.service import Service
+from ocp_resources.service_account import ServiceAccount
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
-from resources.cluster_role import ClusterRole
-from resources.cluster_role_binding import ClusterRoleBinding
-from resources.custom_resource_definition import CustomResourceDefinition
-from resources.datavolume import DataVolume
-from resources.deployment import Deployment
-from resources.pod import Pod
-from resources.replicaset import ReplicaSet
-from resources.role import Role
-from resources.role_binding import RoleBinding
-from resources.service import Service
-from resources.service_account import ServiceAccount
-from resources.utils import TimeoutSampler
 
 from tests.storage import utils as storage_utils
 from utilities import storage as utils

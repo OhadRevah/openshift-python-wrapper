@@ -5,7 +5,7 @@ Tests to check, the default Security Context Constraint
 """
 
 import pytest
-from resources.security_context_constraints import SecurityContextConstraints
+from ocp_resources.security_context_constraints import SecurityContextConstraints
 
 
 @pytest.fixture(scope="module")

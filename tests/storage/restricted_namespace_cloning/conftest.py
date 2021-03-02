@@ -4,7 +4,7 @@
 Pytest conftest file for CNV Storage restricted namespace cloning tests
 """
 import pytest
-from resources.namespace import Namespace
+from ocp_resources.namespace import Namespace
 
 from utilities.infra import Images
 

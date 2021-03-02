@@ -2,7 +2,7 @@ import re
 
 import pytest
 import xmltodict
-from resources.sriov_network import SriovNetwork
+from ocp_resources.sriov_network import SriovNetwork
 
 from utilities.network import sriov_network_dict
 from utilities.virt import (

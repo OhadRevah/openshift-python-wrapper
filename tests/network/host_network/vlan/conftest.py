@@ -4,7 +4,9 @@ import logging
 import shlex
 
 import pytest
-from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
+from ocp_resources.node_network_configuration_policy import (
+    NodeNetworkConfigurationPolicy,
+)
 
 from tests.network.host_network.vlan.utils import (
     DHCP_IP_SUBNET,

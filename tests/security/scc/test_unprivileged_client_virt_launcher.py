@@ -1,6 +1,6 @@
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.pod import Pod
+from ocp_resources.pod import Pod
 
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

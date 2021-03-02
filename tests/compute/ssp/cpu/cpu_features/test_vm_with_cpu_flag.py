@@ -2,7 +2,7 @@
 VM with CPU flag
 """
 import pytest
-from resources.utils import TimeoutExpiredError
+from ocp_resources.utils import TimeoutExpiredError
 
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

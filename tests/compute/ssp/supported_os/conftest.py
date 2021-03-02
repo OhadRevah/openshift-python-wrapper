@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from resources.service import Service
-from resources.template import Template
+from ocp_resources.service import Service
+from ocp_resources.template import Template
 
 from utilities.storage import data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate

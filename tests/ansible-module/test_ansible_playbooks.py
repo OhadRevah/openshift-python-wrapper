@@ -7,9 +7,9 @@ import shutil
 import subprocess
 
 import pytest
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.template import Template
-from resources.virtual_machine import (
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.template import Template
+from ocp_resources.virtual_machine import (
     VirtualMachine,
     VirtualMachineInstance,
     VirtualMachineInstancePreset,

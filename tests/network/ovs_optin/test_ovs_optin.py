@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from resources.resource import ResourceEditor
+from ocp_resources.resource import ResourceEditor
 
 from utilities.network import (
     DEPLOY_OVS,

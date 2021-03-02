@@ -1,6 +1,6 @@
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.resource import ResourceEditor
+from ocp_resources.resource import ResourceEditor
 
 from tests.install_upgrade_operators.node_component.utils import (
     NODE_PLACEMENT_INFRA,

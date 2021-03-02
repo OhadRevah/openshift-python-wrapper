@@ -7,12 +7,12 @@ from pathlib import Path
 import bugzilla
 import kubernetes
 import requests
+from ocp_resources.namespace import Namespace
+from ocp_resources.pod import Pod
+from ocp_resources.project import Project, ProjectRequest
+from ocp_resources.resource import ResourceEditor
 from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
-from resources.namespace import Namespace
-from resources.pod import Pod
-from resources.project import Project, ProjectRequest
-from resources.resource import ResourceEditor
 
 from utilities.exceptions import CommandExecFailed
 

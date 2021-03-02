@@ -10,10 +10,10 @@ from datetime import datetime
 import docker
 import requests
 import yaml
+from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.node import Node
+from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from pytest_testconfig import py_config
-from resources.hyperconverged import HyperConverged
-from resources.node import Node
-from resources.virtual_machine import VirtualMachineInstanceMigration
 
 
 LOGGER = logging.getLogger(__name__)

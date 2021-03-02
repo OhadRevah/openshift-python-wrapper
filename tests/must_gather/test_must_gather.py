@@ -5,19 +5,19 @@ import re
 
 import pytest
 import yaml
+from ocp_resources.api_service import APIService
+from ocp_resources.cdi_config import CDIConfig
+from ocp_resources.imagestreamtag import ImageStreamTag
+from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
+from ocp_resources.namespace import Namespace
+from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.pod import Pod
+from ocp_resources.template import Template
+from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
+from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
-from resources.api_service import APIService
-from resources.cdi_config import CDIConfig
-from resources.imagestreamtag import ImageStreamTag
-from resources.mutating_webhook_config import MutatingWebhookConfiguration
-from resources.namespace import Namespace
-from resources.network_addons_config import NetworkAddonsConfig
-from resources.network_attachment_definition import NetworkAttachmentDefinition
-from resources.node_network_state import NodeNetworkState
-from resources.pod import Pod
-from resources.template import Template
-from resources.validating_webhook_config import ValidatingWebhookConfiguration
-from resources.virtual_machine import VirtualMachine
 
 from tests.must_gather import utils
 from utilities.infra import BUG_STATUS_CLOSED

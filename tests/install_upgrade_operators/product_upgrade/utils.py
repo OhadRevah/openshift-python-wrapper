@@ -2,23 +2,23 @@ import logging
 import re
 from multiprocessing import Process
 
+from ocp_resources.cluster_service_version import ClusterServiceVersion
+from ocp_resources.cluster_version import ClusterVersion
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.installplan import InstallPlan
+from ocp_resources.package_manifest import PackageManifest
+from ocp_resources.pod import Pod
+from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.subscription import Subscription
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from openshift.dynamic.exceptions import (
     InternalServerError,
     NotFoundError,
     ResourceNotFoundError,
 )
-from resources.cluster_service_version import ClusterServiceVersion
-from resources.cluster_version import ClusterVersion
-from resources.datavolume import DataVolume
-from resources.deployment import Deployment
-from resources.hyperconverged import HyperConverged
-from resources.installplan import InstallPlan
-from resources.package_manifest import PackageManifest
-from resources.pod import Pod
-from resources.resource import Resource, ResourceEditor
-from resources.subscription import Subscription
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from tests.install_upgrade_operators.utils import wait_for_hco_conditions
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_60MIN

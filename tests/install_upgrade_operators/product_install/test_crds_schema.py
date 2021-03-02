@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
-from resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
 
 
 @pytest.fixture(scope="module")

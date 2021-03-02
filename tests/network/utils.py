@@ -3,8 +3,8 @@ import logging
 import shlex
 
 import bitmath
-from resources.node_network_state import NodeNetworkState
-from resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.infra import run_ssh_commands
 from utilities.network import ping

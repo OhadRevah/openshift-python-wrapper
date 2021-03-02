@@ -8,13 +8,13 @@ import logging
 import multiprocessing
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.pod import Pod
+from ocp_resources.resource import Resource
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.pod import Pod
-from resources.resource import Resource
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils

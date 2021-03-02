@@ -1,8 +1,8 @@
 import pytest
-from resources.daemonset import DaemonSet
-from resources.deployment import Deployment
-from resources.namespace import Namespace
-from resources.resource import ResourceEditor
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.deployment import Deployment
+from ocp_resources.namespace import Namespace
+from ocp_resources.resource import ResourceEditor
 
 import utilities.network
 from utilities.infra import create_ns

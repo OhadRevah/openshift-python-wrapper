@@ -2,7 +2,7 @@ import logging
 from ipaddress import ip_interface
 
 import pytest
-from resources.datavolume import DataVolume
+from ocp_resources.datavolume import DataVolume
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console

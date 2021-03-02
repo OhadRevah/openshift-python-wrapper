@@ -2,7 +2,7 @@ import logging
 import os
 
 import pexpect
-from resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import OS_LOGIN_PARAMS
 

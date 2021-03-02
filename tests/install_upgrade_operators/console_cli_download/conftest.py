@@ -1,5 +1,5 @@
 import pytest
-from resources.console_cli_download import ConsoleCLIDownload
+from ocp_resources.console_cli_download import ConsoleCLIDownload
 
 
 @pytest.fixture()

@@ -7,9 +7,9 @@ import shlex
 from ipaddress import ip_interface
 
 import pytest
+from ocp_resources.namespace import Namespace
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
-from resources.namespace import Namespace
-from resources.utils import TimeoutSampler
 
 from tests.network.utils import assert_no_ping, run_test_guest_performance
 from utilities.constants import SRIOV

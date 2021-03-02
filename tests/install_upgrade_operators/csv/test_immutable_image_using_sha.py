@@ -1,5 +1,5 @@
 import pytest
-from resources.package_manifest import PackageManifest
+from ocp_resources.package_manifest import PackageManifest
 
 
 @pytest.fixture()

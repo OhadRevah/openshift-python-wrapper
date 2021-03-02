@@ -17,43 +17,45 @@ import bcrypt
 import kubernetes
 import pytest
 import rrmngmnt
-from openshift.dynamic import DynamicClient
-from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
-from pytest_testconfig import config as py_config
-from resources.cluster_role import ClusterRole
-from resources.cluster_service_version import ClusterServiceVersion
-from resources.configmap import ConfigMap
-from resources.custom_resource_definition import CustomResourceDefinition
-from resources.daemonset import DaemonSet
-from resources.datavolume import DataVolume
-from resources.deployment import Deployment
-from resources.hyperconverged import HyperConverged
-from resources.mutating_webhook_config import MutatingWebhookConfiguration
-from resources.namespace import Namespace
-from resources.network import Network
-from resources.network_addons_config import NetworkAddonsConfig
-from resources.network_attachment_definition import NetworkAttachmentDefinition
-from resources.node import Node
-from resources.node_network_configuration_policy import NodeNetworkConfigurationPolicy
-from resources.node_network_state import NodeNetworkState
-from resources.oauth import OAuth
-from resources.persistent_volume import PersistentVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.pod import Pod
-from resources.resource import ResourceEditor
-from resources.role_binding import RoleBinding
-from resources.secret import Secret
-from resources.service import Service
-from resources.service_account import ServiceAccount
-from resources.sriov_network_node_state import SriovNetworkNodeState
-from resources.storage_class import StorageClass
-from resources.template import Template
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine import (
+from ocp_resources.cluster_role import ClusterRole
+from ocp_resources.cluster_service_version import ClusterServiceVersion
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
+from ocp_resources.namespace import Namespace
+from ocp_resources.network import Network
+from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.node import Node
+from ocp_resources.node_network_configuration_policy import (
+    NodeNetworkConfigurationPolicy,
+)
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.oauth import OAuth
+from ocp_resources.persistent_volume import PersistentVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.pod import Pod
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.role_binding import RoleBinding
+from ocp_resources.secret import Secret
+from ocp_resources.service import Service
+from ocp_resources.service_account import ServiceAccount
+from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.template import Template
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import (
     VirtualMachine,
     VirtualMachineInstance,
     VirtualMachineInstanceMigration,
 )
+from openshift.dynamic import DynamicClient
+from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
+from pytest_testconfig import config as py_config
 
 from utilities.constants import SRIOV
 from utilities.infra import (

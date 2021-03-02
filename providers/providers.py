@@ -3,9 +3,9 @@ import logging
 import re
 
 import ovirtsdk4
+from ocp_resources.utils import TimeoutSampler
 from pyVim.connect import Disconnect, SmartConnectNoSSL
 from pyVmomi import vim
-from resources.utils import TimeoutSampler
 
 from utilities.infra import MissingResourceException
 

@@ -1,9 +1,9 @@
 import os
 
-from resources.datavolume import DataVolume
-from resources.storage_class import StorageClass
-from resources.template import Template
-from resources.virtual_machine import VirtualMachine
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.template import Template
+from ocp_resources.virtual_machine import VirtualMachine
 
 from utilities.infra import Images
 

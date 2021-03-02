@@ -5,8 +5,8 @@ CDI disk preallocation test suite
 """
 
 import pytest
-from resources.datavolume import DataVolume
-from resources.resource import NamespacedResource, ResourceEditor
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import NamespacedResource, ResourceEditor
 
 from utilities.infra import (
     BUG_STATUS_CLOSED,

@@ -1,4 +1,4 @@
-from resources.resource import ResourceEditor
+from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import GPU_DEVICE_NAME
 

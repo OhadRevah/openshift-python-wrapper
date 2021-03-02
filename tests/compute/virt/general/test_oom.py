@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from multiprocessing import Process
 
 import pytest
-from resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities import console
 from utilities.virt import (

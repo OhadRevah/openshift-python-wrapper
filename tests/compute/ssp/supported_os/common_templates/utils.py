@@ -11,9 +11,9 @@ from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree
 
 import bitmath
+from ocp_resources import pod
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from packaging import version
-from resources import pod
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.utils import get_windows_timezone, vm_started
 from utilities.infra import run_ssh_commands

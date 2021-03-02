@@ -8,15 +8,15 @@ import urllib.request
 from contextlib import contextmanager
 
 import requests
+from ocp_resources.cdi_config import CDIConfig
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.pod import Pod
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.utils import TimeoutExpiredError
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
-from resources.cdi_config import CDIConfig
-from resources.datavolume import DataVolume
-from resources.deployment import Deployment
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.pod import Pod
-from resources.storage_class import StorageClass
-from resources.utils import TimeoutExpiredError
 
 from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 from utilities.virt import run_virtctl_command

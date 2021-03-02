@@ -1,5 +1,5 @@
 import pytest
-from resources.chaos_engine import ChaosEngine
+from ocp_resources.chaos_engine import ChaosEngine
 
 from tests.chaos.utils import BackgroundLoop, ChaosScenario, LitmusScenario
 from utilities.virt import VirtualMachineForTests, fedora_vm_body

@@ -1,6 +1,6 @@
 import pytest
+from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
-from resources.storage_class import StorageClass
 
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template

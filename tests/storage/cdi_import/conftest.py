@@ -5,9 +5,9 @@ CDI Import
 import logging
 
 import pytest
-from resources.pod import Pod
-from resources.storage_class import StorageClass
-from resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.pod import Pod
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 

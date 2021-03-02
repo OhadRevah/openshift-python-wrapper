@@ -4,19 +4,19 @@ import logging
 from contextlib import contextmanager
 
 import requests
+from ocp_resources.cluster_role import ClusterRole
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.pod import Pod
+from ocp_resources.role_binding import RoleBinding
+from ocp_resources.route import Route
+from ocp_resources.service import Service
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.upload_token_request import UploadTokenRequest
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.volume_snapshot import VolumeSnapshotClass
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
-from resources.cluster_role import ClusterRole
-from resources.configmap import ConfigMap
-from resources.datavolume import DataVolume
-from resources.pod import Pod
-from resources.role_binding import RoleBinding
-from resources.route import Route
-from resources.service import Service
-from resources.storage_class import StorageClass
-from resources.upload_token_request import UploadTokenRequest
-from resources.utils import TimeoutSampler
-from resources.volume_snapshot import VolumeSnapshotClass
 
 from tests.conftest import vm_instance_from_template
 from utilities import console

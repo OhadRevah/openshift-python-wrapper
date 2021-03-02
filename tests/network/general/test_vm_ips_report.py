@@ -3,8 +3,8 @@ Report VM IP
 """
 
 import pytest
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstanceMigration
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

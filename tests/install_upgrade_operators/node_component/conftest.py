@@ -3,20 +3,20 @@ from collections import defaultdict
 
 import pytest
 from kubernetes.client.rest import ApiException
+from ocp_resources.cdi import CDI
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.deployment import Deployment
+from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.node import Node
+from ocp_resources.pod import Pod
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.ssp import SSP
+from ocp_resources.subscription import Subscription
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine_import_configs import VMImportConfig
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
-from resources.cdi import CDI
-from resources.daemonset import DaemonSet
-from resources.deployment import Deployment
-from resources.kubevirt import KubeVirt
-from resources.network_addons_config import NetworkAddonsConfig
-from resources.node import Node
-from resources.pod import Pod
-from resources.resource import ResourceEditor
-from resources.ssp import SSP
-from resources.subscription import Subscription
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine_import_configs import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,

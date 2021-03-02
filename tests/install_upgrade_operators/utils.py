@@ -1,10 +1,10 @@
 import logging
 
+from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.resource import Resource
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
-from resources.hyperconverged import HyperConverged
-from resources.resource import Resource
-from resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_10MIN
 

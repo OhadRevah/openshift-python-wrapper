@@ -1,9 +1,9 @@
 import pytest
+from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
 from openshift.dynamic.exceptions import BadRequestError
-from resources.kubevirt import KubeVirt
-from resources.resource import ResourceEditor
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachine
 
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 

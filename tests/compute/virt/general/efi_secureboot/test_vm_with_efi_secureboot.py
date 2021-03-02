@@ -7,10 +7,10 @@ import os
 import shlex
 
 import pytest
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
-from resources.resource import ResourceEditor
-from resources.template import Template
 
 from tests.compute.utils import vm_started
 from utilities import console

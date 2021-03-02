@@ -1,13 +1,13 @@
 from copy import deepcopy
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.operator_hub import OperatorHub
+from ocp_resources.operator_source import OperatorSource
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.secret import Secret
+from ocp_resources.template import Template
 from pytest_testconfig import py_config
-from resources.datavolume import DataVolume
-from resources.operator_hub import OperatorHub
-from resources.operator_source import OperatorSource
-from resources.resource import ResourceEditor
-from resources.secret import Secret
-from resources.template import Template
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 import utilities.network

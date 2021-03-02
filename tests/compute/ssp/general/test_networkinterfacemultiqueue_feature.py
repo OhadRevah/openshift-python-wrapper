@@ -3,8 +3,8 @@ Test networkInterfaceMultiqueue feature with cpu core/socket/thread combinations
 """
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 from pytest_testconfig import config as py_config
-from resources.resource import ResourceEditor
 
 from utilities.virt import wait_for_vm_interfaces
 

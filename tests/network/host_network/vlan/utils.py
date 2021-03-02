@@ -1,6 +1,6 @@
 import logging
 
-from resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
 from utilities.network import cloud_init_network_data

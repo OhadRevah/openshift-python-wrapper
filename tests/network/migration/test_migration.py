@@ -8,8 +8,8 @@ import re
 import shlex
 
 import pytest
-from resources.service import Service
-from resources.utils import TimeoutSampler
+from ocp_resources.service import Service
+from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK
 from utilities.infra import run_ssh_commands

@@ -5,12 +5,12 @@ import threading
 from multiprocessing.pool import ThreadPool
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.secret import Secret
+from ocp_resources.upload_token_request import UploadTokenRequest
+from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
-from resources.datavolume import DataVolume
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.secret import Secret
-from resources.upload_token_request import UploadTokenRequest
-from resources.utils import TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils as storage_utils

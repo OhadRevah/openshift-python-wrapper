@@ -5,10 +5,10 @@ Clone tests
 """
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
-from resources.utils import TimeoutSampler
-from resources.volume_snapshot import VolumeSnapshot
 
 import utilities.storage
 from tests.storage import utils

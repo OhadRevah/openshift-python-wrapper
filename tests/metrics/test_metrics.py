@@ -1,6 +1,6 @@
 import pytest
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstance
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachineInstance
 
 from tests.compute.utils import vm_started
 from utilities.virt import (

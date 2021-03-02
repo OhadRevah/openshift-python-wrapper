@@ -3,8 +3,8 @@
 import logging
 
 import pytest
-from resources.custom_resource_definition import CustomResourceDefinition
-from resources.ssp import SSP
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.ssp import SSP
 
 
 CONDITIONS_DICT = {

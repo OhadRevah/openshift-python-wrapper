@@ -9,12 +9,12 @@ from subprocess import STDOUT, check_output
 
 import pytest
 import yaml
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.secret import Secret
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_import import ResourceMapping
 from pytest_testconfig import py_config
-from resources.resource import ResourceEditor
-from resources.secret import Secret
-from resources.storage_class import StorageClass
-from resources.virtual_machine import VirtualMachine
-from resources.virtual_machine_import import ResourceMapping
 
 import utilities.network
 from providers import providers

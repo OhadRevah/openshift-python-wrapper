@@ -1,8 +1,8 @@
 import logging
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 from openshift.dynamic.exceptions import ForbiddenError
-from resources.resource import ResourceEditor
 
 from tests.install_upgrade_operators.node_component.utils import (
     INFRA_LABEL_1,

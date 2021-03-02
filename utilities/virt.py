@@ -13,16 +13,19 @@ import pexpect
 import requests
 import rrmngmnt
 import yaml
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.route import Route
+from ocp_resources.secret import Secret
+from ocp_resources.service import Service
+from ocp_resources.service_account import ServiceAccount
+from ocp_resources.template import Template
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import (
+    VirtualMachine,
+    VirtualMachineInstanceMigration,
+)
+from ocp_resources.virtual_machine_import import VirtualMachineImport
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
-from resources.route import Route
-from resources.secret import Secret
-from resources.service import Service
-from resources.service_account import ServiceAccount
-from resources.template import Template
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine import VirtualMachine, VirtualMachineInstanceMigration
-from resources.virtual_machine_import import VirtualMachineImport
 
 import utilities.network
 from utilities.console import CONSOLE_IMPL

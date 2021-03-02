@@ -7,9 +7,9 @@ HonorWaitForFirstConsumer test suite
 import logging
 
 import pytest
-from resources.datavolume import DataVolume
-from resources.resource import ResourceEditor
-from resources.storage_class import StorageClass
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.storage_class import StorageClass
 
 import tests.storage.utils as storage_utils
 from utilities.constants import TIMEOUT_10MIN

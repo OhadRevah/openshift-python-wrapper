@@ -10,10 +10,10 @@ from subprocess import check_output
 
 import pytest
 import yaml
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
-from resources.configmap import ConfigMap
-from resources.custom_resource_definition import CustomResourceDefinition
-from resources.pod import Pod
 
 import utilities.network
 from tests.must_gather import utils as mg_utils

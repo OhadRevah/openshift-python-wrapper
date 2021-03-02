@@ -5,8 +5,8 @@ Pytest conftest file for CNV network tests
 """
 
 import pytest
+from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
-from resources.pod import Pod
 
 from utilities.network import (
     get_ipv6_address,

@@ -7,20 +7,20 @@ import logging
 from multiprocessing.pool import ThreadPool
 
 import pytest
+from ocp_resources.cluster_role import ClusterRole
+from ocp_resources.cluster_role_binding import ClusterRoleBinding
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.deployment import Deployment
+from ocp_resources.hostpath_provisioner import HostPathProvisioner
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.pod import Pod
+from ocp_resources.security_context_constraints import SecurityContextConstraints
+from ocp_resources.service_account import ServiceAccount
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.template import Template
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
-from resources.cluster_role import ClusterRole
-from resources.cluster_role_binding import ClusterRoleBinding
-from resources.daemonset import DaemonSet
-from resources.datavolume import DataVolume
-from resources.deployment import Deployment
-from resources.hostpath_provisioner import HostPathProvisioner
-from resources.persistent_volume_claim import PersistentVolumeClaim
-from resources.pod import Pod
-from resources.security_context_constraints import SecurityContextConstraints
-from resources.service_account import ServiceAccount
-from resources.storage_class import StorageClass
-from resources.template import Template
-from resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
 from utilities import console

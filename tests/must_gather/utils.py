@@ -5,8 +5,8 @@ import os
 import re
 
 import yaml
+from ocp_resources.service import Service
 from openshift.dynamic.client import ResourceField
-from resources.service import Service
 
 
 DEFAULT_NAMESPACE = "default"

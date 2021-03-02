@@ -9,9 +9,9 @@ import os
 import re
 
 import pytest
+from ocp_resources.resource import Resource
+from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
-from resources.resource import Resource
-from resources.template import Template
 
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import (

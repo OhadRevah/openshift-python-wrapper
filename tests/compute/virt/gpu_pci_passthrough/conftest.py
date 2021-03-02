@@ -5,7 +5,7 @@ GPU PCI Passthrough VM
 import random
 
 import pytest
-from resources.resource import ResourceEditor
+from ocp_resources.resource import ResourceEditor
 
 from tests.conftest import vm_instance_from_template
 from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME

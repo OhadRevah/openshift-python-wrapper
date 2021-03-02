@@ -1,12 +1,12 @@
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.template import Template
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
-from resources.datavolume import DataVolume
-from resources.resource import ResourceEditor
-from resources.storage_class import StorageClass
-from resources.template import Template
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachine
 
 from tests.conftest import vm_instance_from_template
 from utilities.infra import (

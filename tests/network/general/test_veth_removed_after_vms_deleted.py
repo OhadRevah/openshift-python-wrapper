@@ -7,7 +7,7 @@ Veth interfaces deleted after VMs are removed
 import logging
 
 import pytest
-from resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutSampler
 
 from utilities.infra import run_ssh_commands
 from utilities.network import LINUX_BRIDGE, network_device, network_nad

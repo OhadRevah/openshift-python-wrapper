@@ -4,13 +4,13 @@
 import logging
 
 import pytest
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.route import Route
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
-from resources.configmap import ConfigMap
-from resources.datavolume import DataVolume
-from resources.resource import ResourceEditor
-from resources.route import Route
-from resources.storage_class import StorageClass
-from resources.utils import TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils

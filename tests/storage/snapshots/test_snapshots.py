@@ -8,8 +8,8 @@ import logging
 
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.virtual_machine_restore import VirtualMachineRestore
-from resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_resources.virtual_machine_restore import VirtualMachineRestore
+from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from utilities import console
 

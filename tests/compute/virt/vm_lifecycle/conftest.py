@@ -1,10 +1,10 @@
 from contextlib import contextmanager
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.template import Template
+from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
-from resources.datavolume import DataVolume
-from resources.template import Template
-from resources.virtual_machine import VirtualMachine
 
 from utilities.storage import create_dv, get_images_external_http_server
 from utilities.virt import (

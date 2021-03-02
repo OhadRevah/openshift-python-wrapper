@@ -5,9 +5,9 @@ from xml.etree import ElementTree
 
 import pytest
 import yaml
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
-from resources.configmap import ConfigMap
-from resources.pod import Pod
 
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 

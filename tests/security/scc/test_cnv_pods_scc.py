@@ -7,8 +7,8 @@ Tests to check, HCO Namespace Pod's, Security Context Constraint
 import logging
 
 import pytest
+from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
-from resources.pod import Pod
 
 
 LOGGER = logging.getLogger(__name__)

@@ -2,11 +2,11 @@
 VM with CPU features
 """
 import pytest
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.node import Node
+from ocp_resources.utils import TimeoutExpiredError
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
-from resources.configmap import ConfigMap
-from resources.node import Node
-from resources.utils import TimeoutExpiredError
 
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,

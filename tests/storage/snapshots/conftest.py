@@ -6,10 +6,10 @@ Pytest conftest file for CNV Storage snapshots tests
 import logging
 
 import pytest
-from resources.datavolume import DataVolume
-from resources.role_binding import RoleBinding
-from resources.storage_class import StorageClass
-from resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.role_binding import RoleBinding
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.conftest import UNPRIVILEGED_USER
 from tests.storage.utils import set_permissions

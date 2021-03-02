@@ -2,8 +2,8 @@ import logging
 from collections import OrderedDict
 
 import pytest
+from ocp_resources.daemonset import DaemonSet
 from pytest_testconfig import config as py_config
-from resources.daemonset import DaemonSet
 
 from utilities.infra import get_pod_by_name_prefix
 from utilities.network import (

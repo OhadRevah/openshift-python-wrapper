@@ -2,7 +2,7 @@ import shlex
 
 import pytest
 from netaddr import IPNetwork
-from resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutSampler
 
 from tests.network.l2_bridge.conftest import DHCP_IP_RANGE_START
 from utilities.infra import run_ssh_commands

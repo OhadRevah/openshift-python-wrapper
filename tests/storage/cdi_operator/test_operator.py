@@ -1,7 +1,7 @@
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
-from resources.cdi import CDI
-from resources.pod import Pod
 
 
 @pytest.mark.destructive

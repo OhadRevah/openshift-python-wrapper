@@ -4,7 +4,7 @@ Check VM with Service Account
 
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.service_account import ServiceAccount
+from ocp_resources.service_account import ServiceAccount
 
 from utilities import console
 from utilities.virt import (

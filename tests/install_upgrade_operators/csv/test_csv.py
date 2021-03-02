@@ -1,7 +1,7 @@
 from base64 import b64decode
 
 import pytest
-from resources.cluster_service_version import ClusterServiceVersion
+from ocp_resources.cluster_service_version import ClusterServiceVersion
 
 
 # Check CSV properties like keywords, title, provided by, links etc.

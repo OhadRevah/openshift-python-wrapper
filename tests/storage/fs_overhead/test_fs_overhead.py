@@ -1,8 +1,8 @@
 import math
 
 import pytest
-from resources.datavolume import DataVolume
-from resources.storage_class import StorageClass
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.storage_class import StorageClass
 
 from utilities.infra import Images
 from utilities.storage import ErrorMsg, downloaded_image, virtctl_upload_dv

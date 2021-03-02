@@ -8,11 +8,11 @@ from contextlib import contextmanager
 from subprocess import run
 
 import pytest
+from ocp_resources.node_maintenance import NodeMaintenance
+from ocp_resources.pod import Pod
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from pytest_testconfig import config as py_config
-from resources.node_maintenance import NodeMaintenance
-from resources.pod import Pod
-from resources.utils import TimeoutExpiredError, TimeoutSampler
-from resources.virtual_machine import VirtualMachineInstanceMigration
 
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils

@@ -2,7 +2,7 @@
 Automation for Hot Plug
 """
 import pytest
-from resources.resource import ResourceEditor
+from ocp_resources.resource import ResourceEditor
 
 
 @pytest.fixture()

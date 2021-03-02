@@ -9,9 +9,9 @@ import shlex
 
 import pytest
 from kubernetes.client.rest import ApiException
-from resources.resource import ResourceEditor
-from resources.utils import TimeoutSampler
-from resources.virtual_machine import VirtualMachine, VirtualMachineInstance
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands

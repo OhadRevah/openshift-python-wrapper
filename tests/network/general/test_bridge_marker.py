@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from resources.utils import TimeoutExpiredError
+from ocp_resources.utils import TimeoutExpiredError
 
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
