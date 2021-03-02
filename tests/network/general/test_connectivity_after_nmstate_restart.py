@@ -195,8 +195,10 @@ def test_nmstate_restart_and_check_connectivity(
 
         nmstate_ds.wait_until_deployed()
         LOGGER.info(f"{ping_log} after NMstate PODs redeployed")
+
+        LOGGER.info(f"Ping number: {idx}")
         assert_ping_successful(
             src_vm=nmstate_linux_bridge_attached_running_vma,
             dst_ip=dst_ip,
-            count="120",
+            count="60",
         )
