@@ -14,9 +14,15 @@ from utilities.network import (
     compose_cloud_init_data_dict,
     get_ipv6_address,
     get_vmi_ip_v4_by_name,
+    network_device,
     network_nad,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+
+
+@pytest.fixture(scope="module")
+def ovs_linux_bridge_device_name(index_number):
+    yield f"br{next(index_number)}test"
 
 
 def _masquerade_vmib_ip(vmib, bridge, ipv6_testing):
@@ -35,25 +41,73 @@ def _masquerade_vmib_ip(vmib, bridge, ipv6_testing):
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_nad(bridge_device_matrix__class__, namespace, network_interface):
+def ovs_linux_bridge_device_worker_1(
+    bridge_device_matrix__class__,
+    nodes_available_nics,
+    utility_pods,
+    worker_node1,
+    ovs_linux_bridge_device_name,
+):
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name=f"ovs-linux-bridge-{worker_node1.name}",
+        interface_name=ovs_linux_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.name,
+        ports=[nodes_available_nics[worker_node1.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def ovs_linux_bridge_device_worker_2(
+    bridge_device_matrix__class__,
+    nodes_available_nics,
+    utility_pods,
+    worker_node2,
+    ovs_linux_bridge_device_name,
+):
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name=f"ovs-linux-bridge-{worker_node2.name}",
+        interface_name=ovs_linux_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[nodes_available_nics[worker_node2.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def ovs_linux_nad(
+    bridge_device_matrix__class__,
+    namespace,
+    ovs_linux_bridge_device_worker_1,
+    ovs_linux_bridge_device_worker_2,
+    ovs_linux_bridge_device_name,
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="br1test-nad",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{ovs_linux_bridge_device_name}-nad",
+        interface_name=ovs_linux_bridge_device_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1vlan100_nad(
-    bridge_device_matrix__class__, namespace, network_interface
+    bridge_device_matrix__class__,
+    namespace,
+    ovs_linux_bridge_device_worker_1,
+    ovs_linux_bridge_device_worker_2,
+    ovs_linux_bridge_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="br1vlan100-nad",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{ovs_linux_bridge_device_name}-vlan100-nad",
+        interface_name=ovs_linux_bridge_device_name,
         vlan=100,
     ) as nad:
         yield nad
@@ -61,13 +115,17 @@ def ovs_linux_br1vlan100_nad(
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1vlan200_nad(
-    bridge_device_matrix__class__, namespace, network_interface
+    bridge_device_matrix__class__,
+    namespace,
+    ovs_linux_bridge_device_worker_1,
+    ovs_linux_bridge_device_worker_2,
+    ovs_linux_bridge_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="br1vlan200-nad",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{ovs_linux_bridge_device_name}-vlan200-nad",
+        interface_name=ovs_linux_bridge_device_name,
         vlan=200,
     ) as nad:
         yield nad
@@ -75,13 +133,17 @@ def ovs_linux_br1vlan200_nad(
 
 @pytest.fixture(scope="class")
 def ovs_linux_br1vlan300_nad(
-    bridge_device_matrix__class__, namespace, network_interface
+    bridge_device_matrix__class__,
+    namespace,
+    ovs_linux_bridge_device_worker_1,
+    ovs_linux_bridge_device_worker_2,
+    ovs_linux_bridge_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="br1vlan300-nad",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{ovs_linux_bridge_device_name}-vlan300-nad",
+        interface_name=ovs_linux_bridge_device_name,
         vlan=300,
     ) as nad:
         yield nad
@@ -207,7 +269,6 @@ class TestConnectivity:
         ip_stack_version_matrix__module__,
         rhel7_workers,
         namespace,
-        network_interface,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
         ovs_linux_bridge_attached_running_vma,
@@ -239,7 +300,6 @@ class TestConnectivity:
         skip_if_no_multinic_nodes,
         skip_if_workers_vms,
         namespace,
-        network_interface,
         ovs_linux_br1vlan100_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
@@ -264,7 +324,6 @@ class TestConnectivity:
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         namespace,
-        network_interface,
         ovs_linux_br1vlan300_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
@@ -285,7 +344,6 @@ class TestConnectivity:
         skip_rhel7_workers,
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
-        network_interface,
         ovs_linux_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
