@@ -5,7 +5,7 @@ import shlex
 from ocp_resources.resource import TIMEOUT
 
 from utilities.infra import run_ssh_commands
-from utilities.virt import wait_for_vm_interfaces
+from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -72,3 +72,21 @@ def get_windows_timezone(ssh_exec, get_standard_name=False):
         f'powershell -command "Get-TimeZone {standard_name_cmd}"'
     )
     return run_ssh_commands(host=ssh_exec, commands=[timezone_cmd])[0]
+
+
+def validate_pause_unpause_windows_vm(vm):
+    process_name = "mspaint.exe"
+    pre_pause_processid = start_and_fetch_processid_on_windows_vm(
+        vm=vm,
+        process_name=process_name,
+    )
+    LOGGER.info(f"Pre pause processid is: {pre_pause_processid}")
+    vm.vmi.pause(wait=True)
+    vm.vmi.unpause(wait=True)
+    wait_for_ssh_connectivity(vm=vm)
+    post_pause_processid = fetch_processid_from_windows_vm(
+        vm=vm,
+        process_name=process_name,
+    )
+    LOGGER.info(f"Post pause processid is: {post_pause_processid}")
+    assert post_pause_processid == pre_pause_processid

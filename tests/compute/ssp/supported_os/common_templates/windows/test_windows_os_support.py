@@ -8,7 +8,6 @@ import logging
 import pytest
 
 import tests.compute.ssp.utils as ssp_utils
-import utilities.virt
 from tests.compute import utils as compute_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
@@ -250,32 +249,9 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test VM pause and unpause """
-
-        pre_pause_processid = compute_utils.start_and_fetch_processid_on_windows_vm(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            process_name="mspaint.exe",
+        compute_utils.validate_pause_unpause_windows_vm(
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
-        LOGGER.info(f"Pre pause processid is: {pre_pause_processid}")
-        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.pause(
-            wait=True
-        )
-
-        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.vmi.unpause(
-            wait=True
-        )
-
-        utilities.virt.wait_for_windows_vm(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            version=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
-                "os_version"
-            ],
-        )
-        post_pause_processid = compute_utils.fetch_processid_from_windows_vm(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            process_name="mspaint.exe",
-        )
-        LOGGER.info(f"Post pause processid is: {post_pause_processid}")
-        assert pre_pause_processid == post_pause_processid
 
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4203")
