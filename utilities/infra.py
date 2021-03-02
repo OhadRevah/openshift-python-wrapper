@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -194,10 +195,18 @@ def get_bugzilla_connection_params():
 
 
 def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
+    """
+    Args:
+        pod_prefix: str or regex pattern
+        get_all (bool): Return all pods if True else only the first one
+
+    Returns:
+        A list of all matching pods if get_all else only the first pod
+    """
     pods = [
         pod
         for pod in Pod.get(dyn_client=dyn_client, namespace=namespace)
-        if pod.name.startswith(pod_prefix)
+        if re.match(pod_prefix, pod.name)
     ]
     if pods:
         if get_all:
