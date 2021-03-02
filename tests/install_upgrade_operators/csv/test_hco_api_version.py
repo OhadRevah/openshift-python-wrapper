@@ -1,0 +1,10 @@
+import pytest
+from ocp_resources.resource import Resource
+
+
+@pytest.mark.polarion("CNV-5832")
+def test_hyperconverged_cr_api_version(hyperconverged_resource):
+    """
+    This test will check the Hyperconverged CR's api_version for v1beta1
+    """
+    assert Resource.ApiVersion.V1BETA1 in hyperconverged_resource.instance.apiVersion
