@@ -94,7 +94,7 @@ def wait_for_kmp_pods_to_be_in_crashloop(dyn_client, namespace):
             raise
 
 
-def create_vm(name, namespace, iface_config, client, mac_pool):
+def create_vm(name, namespace, iface_config, node_selector, client, mac_pool):
     network_data_data = {}
     _data = {
         iface: {"addresses": [f"{iface_config[iface].ip_address}/24"]}
@@ -116,6 +116,7 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
         namespace=namespace.name,
         name=name,
         iface_config=iface_config,
+        node_selector=node_selector,
         client=client,
         cloud_init_data=cloud_init_data,
     ) as vm:
@@ -127,7 +128,13 @@ def create_vm(name, namespace, iface_config, client, mac_pool):
 
 class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
     def __init__(
-        self, name, namespace, iface_config, client=None, cloud_init_data=None
+        self,
+        name,
+        namespace,
+        iface_config,
+        node_selector,
+        client=None,
+        cloud_init_data=None,
     ):
         self.iface_config = iface_config
 
@@ -139,6 +146,7 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
             name=name,
             namespace=namespace,
             networks=networks,
+            node_selector=node_selector,
             interfaces=networks.keys(),
             client=client,
             cloud_init_data=cloud_init_data,

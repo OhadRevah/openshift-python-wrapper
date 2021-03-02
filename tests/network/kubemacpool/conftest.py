@@ -4,59 +4,99 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
-import utilities.network
 from utilities.infra import create_ns
+from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 from . import utils as kmp_utils
 
 
 @pytest.fixture(scope="module")
-def bridge_device(
+def kubemacpool_bridge_device_name(index_number):
+    yield f"br{next(index_number)}test"
+
+
+@pytest.fixture(scope="module")
+def kubemacpool_bridge_device_worker_1(
     skip_if_no_multinic_nodes,
-    hosts_common_available_ports,
+    worker_node1,
+    kubemacpool_bridge_device_name,
     utility_pods,
-    schedulable_nodes,
+    nodes_available_nics,
 ):
-    with utilities.network.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
-        nncp_name="kubemacpool",
-        interface_name="br1test",
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"kubemacpool-{worker_node1.name}",
+        interface_name=kubemacpool_bridge_device_name,
         network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
-        ports=[hosts_common_available_ports[0]],
+        node_selector=worker_node1.name,
+        ports=[nodes_available_nics[worker_node1.name][0]],
     ) as dev:
         yield dev
 
 
 @pytest.fixture(scope="module")
-def manual_mac_nad(namespace, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name="manual-mac-nad",
-        interface_name=bridge_device.bridge_name,
+def kubemacpool_bridge_device_worker_2(
+    skip_if_no_multinic_nodes,
+    worker_node2,
+    kubemacpool_bridge_device_name,
+    utility_pods,
+    nodes_available_nics,
+):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"kubemacpool-{worker_node2.name}",
+        interface_name=kubemacpool_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[nodes_available_nics[worker_node2.name][0]],
+    ) as dev:
+        yield dev
+
+
+@pytest.fixture(scope="module")
+def manual_mac_nad(
+    namespace,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-manual-mac-nad",
+        interface_name=kubemacpool_bridge_device_name,
         namespace=namespace,
     ) as manual_mac_nad:
         yield manual_mac_nad
 
 
 @pytest.fixture(scope="module")
-def automatic_mac_nad(namespace, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name="automatic-mac-nad",
-        interface_name=bridge_device.bridge_name,
+def automatic_mac_nad(
+    namespace,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-automatic-mac-nad",
+        interface_name=kubemacpool_bridge_device_name,
         namespace=namespace,
     ) as automatic_mac_nad:
         yield automatic_mac_nad
 
 
 @pytest.fixture(scope="module")
-def manual_mac_out_of_pool_nad(namespace, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name="manual-out-pool-mac-nad",
-        interface_name=bridge_device.bridge_name,
+def manual_mac_out_of_pool_nad(
+    namespace,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-manual-out-pool-mac-nad",
+        interface_name=kubemacpool_bridge_device_name,
         namespace=namespace,
         tuning=True,
     ) as manual_mac_out_pool_nad:
@@ -64,11 +104,16 @@ def manual_mac_out_of_pool_nad(namespace, bridge_device):
 
 
 @pytest.fixture(scope="module")
-def automatic_mac_tuning_net_nad(namespace, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name="automatic-mac-tun-net-nad",
-        interface_name=bridge_device.bridge_name,
+def automatic_mac_tuning_net_nad(
+    namespace,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-automatic-mac-tun-net-nad",
+        interface_name=kubemacpool_bridge_device_name,
         namespace=namespace,
         tuning=True,
     ) as automatic_mac_tuning_net_nad:
@@ -76,22 +121,32 @@ def automatic_mac_tuning_net_nad(namespace, bridge_device):
 
 
 @pytest.fixture(scope="class")
-def opted_out_ns_nad(opted_out_ns, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name=f"{opted_out_ns.name}-nad",
-        interface_name=bridge_device.bridge_name,
+def opted_out_ns_nad(
+    opted_out_ns,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-{opted_out_ns.name}-nad",
+        interface_name=kubemacpool_bridge_device_name,
         namespace=opted_out_ns,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def wrong_label_ns_nad(wrong_label_ns, bridge_device):
-    with utilities.network.network_nad(
-        nad_type=bridge_device.bridge_type,
-        nad_name=f"{wrong_label_ns.name}-nad",
-        interface_name=bridge_device.bridge_name,
+def wrong_label_ns_nad(
+    wrong_label_ns,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-{wrong_label_ns.name}-nad",
+        interface_name=kubemacpool_bridge_device_name,
         namespace=wrong_label_ns,
     ) as nad:
         yield nad
@@ -116,7 +171,8 @@ def all_nads(
 def vm_a(
     namespace,
     all_nads,
-    bridge_device,
+    worker_node1,
+    kubemacpool_bridge_device_worker_1,
     mac_pool,
     unprivileged_client,
 ):
@@ -127,6 +183,7 @@ def vm_a(
         name="vm-fedora-a",
         iface_config=requested_network_config,
         namespace=namespace,
+        node_selector=worker_node1.name,
         client=unprivileged_client,
         mac_pool=mac_pool,
     )
@@ -136,7 +193,8 @@ def vm_a(
 def vm_b(
     namespace,
     all_nads,
-    bridge_device,
+    worker_node2,
+    kubemacpool_bridge_device_worker_2,
     mac_pool,
     unprivileged_client,
 ):
@@ -147,6 +205,7 @@ def vm_b(
         name="vm-fedora-b",
         iface_config=requested_network_config,
         namespace=namespace,
+        node_selector=worker_node2.name,
         client=unprivileged_client,
         mac_pool=mac_pool,
     )
