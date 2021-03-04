@@ -7,7 +7,7 @@ Common templates RHEL VM migration and SSH access after migration
 import pytest
 from pytest_testconfig import config as py_config
 
-from utilities.virt import migrate_and_verify
+from utilities.virt import migrate_and_verify, wait_for_ssh_connectivity
 
 
 @pytest.mark.smoke
@@ -50,6 +50,6 @@ def test_migrate_vm_rhel(
     )
 
     # Verify successful SSH connection after migration
-    assert golden_image_vm_instance_from_template_multi_storage_scope_function.ssh_exec.executor().is_connective(
-        tcp_timeout=240
-    ), "Failed to login via SSH after migration"
+    wait_for_ssh_connectivity(
+        vm=golden_image_vm_instance_from_template_multi_storage_scope_function
+    )
