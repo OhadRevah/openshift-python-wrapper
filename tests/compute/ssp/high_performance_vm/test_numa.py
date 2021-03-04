@@ -1,4 +1,5 @@
 import re
+import shlex
 
 import pytest
 import xmltodict
@@ -13,8 +14,34 @@ from utilities.virt import (
 
 
 pytestmark = pytest.mark.usefixtures(
-    "skip_if_workers_vms", "skip_if_no_cpumanager_workers"
+    "skip_if_workers_vms",
+    "skip_if_no_cpumanager_workers",
+    "skip_if_numa_not_configured_or_enabled",
 )
+
+
+@pytest.fixture(scope="module")
+def skip_if_numa_not_configured_or_enabled(workers_ssh_executors):
+    cmd = shlex.split("cat /etc/kubernetes/kubelet.conf | grep -i single-numa-node")
+    if not check_numa_config_on_node(
+        cmd=cmd, workers_ssh_executors=workers_ssh_executors
+    ):
+        pytest.skip(msg="Test should run on nodes with single-numa-node")
+
+    cmd = shlex.split("cat /etc/kubernetes/kubelet.conf | grep -w TopologyManager")
+    if not check_numa_config_on_node(
+        cmd=cmd, workers_ssh_executors=workers_ssh_executors
+    ):
+        pytest.skip(msg="Test should run on nodes with TopologyManager enabled")
+
+
+def check_numa_config_on_node(cmd, workers_ssh_executors):
+    return any(
+        [
+            True if not node_exec.run_command(command=cmd)[0] else False
+            for node_exec in workers_ssh_executors.values()
+        ]
+    )
 
 
 @pytest.fixture(scope="module")
