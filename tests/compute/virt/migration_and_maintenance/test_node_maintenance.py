@@ -16,13 +16,13 @@ from pytest_testconfig import config as py_config
 
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
-from utilities import console
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    running_vm,
 )
 
 
@@ -102,8 +102,7 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
         client=unprivileged_client,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm)
         yield vm
 
 
@@ -180,7 +179,6 @@ def test_node_drain_using_console_fedora(
         source_node=vm_container_disk_fedora.vmi.virt_launcher_pod.node,
         source_pod=vm_container_disk_fedora.vmi.virt_launcher_pod,
         vm=vm_container_disk_fedora,
-        vm_cli=console.Fedora(vm_container_disk_fedora),
     )
 
 
