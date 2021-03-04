@@ -1804,6 +1804,7 @@ def nodes_common_cpu_model(utility_pods):
             "Skylake-Client-noTSX-IBRS",
             "Skylake-Client-IBRS",
             "Skylake-Client",
+            "Skylake-IBRS",
             "Broadwell-IBRS",
             "Broadwell",
             "Haswell-noTSX-IBRS",
