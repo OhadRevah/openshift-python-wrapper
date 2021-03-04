@@ -1,8 +1,10 @@
 import pytest
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
+from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from utilities.infra import create_ns
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
@@ -374,3 +376,21 @@ def deleted_ovnkube_node_pod(admin_client, ovn_ns):
     )
     assert pods, "No ovnkube-node pods were found"
     pods[0].delete(wait=True)
+
+
+@pytest.fixture(scope="session")
+def kmp_vm_label(admin_client):
+    kmp_vm_webhook = "mutatevirtualmachines.kubemacpool.io"
+    kmp_webhook_config = MutatingWebhookConfiguration(
+        client=admin_client, name="kubemacpool-mutator"
+    )
+
+    for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
+        if webhook["name"] == kmp_vm_webhook:
+            return {
+                ldict["key"]: ldict["values"][0]
+                for ldict in webhook["namespaceSelector"]["matchExpressions"]
+                if ldict["key"] == kmp_vm_webhook
+            }
+
+    raise ResourceNotFoundError(f"Webhook {kmp_vm_webhook} was not found")

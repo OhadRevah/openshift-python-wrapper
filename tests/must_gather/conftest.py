@@ -117,12 +117,10 @@ def running_hco_containers(admin_client, hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def node_gather_unprivileged_namespace(unprivileged_client, kmp_vm_label, admin_client):
+def node_gather_unprivileged_namespace(unprivileged_client):
     yield from create_ns(
         client=unprivileged_client,
         name="node-gather-unprivileged",
-        kmp_vm_label=kmp_vm_label,
-        admin_client=admin_client,
     )
 
 

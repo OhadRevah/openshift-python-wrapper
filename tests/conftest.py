@@ -26,7 +26,6 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
 from ocp_resources.network_addons_config import NetworkAddonsConfig
@@ -44,7 +43,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic import DynamicClient
-from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
+from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (
@@ -911,26 +910,8 @@ class UtilityDaemonSet(DaemonSet):
         return res
 
 
-@pytest.fixture(scope="session")
-def kmp_vm_label(admin_client):
-    kmp_vm_webhook = "mutatevirtualmachines.kubemacpool.io"
-    kmp_webhook_config = MutatingWebhookConfiguration(
-        client=admin_client, name="kubemacpool-mutator"
-    )
-
-    for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
-        if webhook["name"] == kmp_vm_webhook:
-            return {
-                ldict["key"]: ldict["values"][0]
-                for ldict in webhook["namespaceSelector"]["matchExpressions"]
-                if ldict["key"] == kmp_vm_webhook
-            }
-
-    raise ResourceNotFoundError(f"Webhook {kmp_vm_webhook} was not found")
-
-
 @pytest.fixture(scope="module")
-def namespace(request, unprivileged_client, admin_client, kmp_vm_label):
+def namespace(request, unprivileged_client):
     """ Generate namespace from the test's module name """
     client = True
     if hasattr(request, "param"):
@@ -941,8 +922,6 @@ def namespace(request, unprivileged_client, admin_client, kmp_vm_label):
         name=generate_namespace_name(
             file_path=request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
         ),
-        admin_client=admin_client,
-        kmp_vm_label=kmp_vm_label,
     )
 
 
