@@ -52,7 +52,13 @@ def http_port_accessible(vm, server_ip, server_port):
 
 
 @pytest.fixture(scope="module")
-def vma(namespace, unprivileged_client, ipv6_network_data, bridge_worker_1):
+def vma(
+    namespace,
+    unprivileged_client,
+    nodes_common_cpu_model,
+    ipv6_network_data,
+    bridge_worker_1,
+):
     name = "vma"
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
@@ -68,13 +74,20 @@ def vma(namespace, unprivileged_client, ipv6_network_data, bridge_worker_1):
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
         cloud_init_data=cloud_init_data,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         vm.start(wait=True)
         yield vm
 
 
 @pytest.fixture(scope="module")
-def vmb(namespace, unprivileged_client, ipv6_network_data, bridge_worker_2):
+def vmb(
+    namespace,
+    unprivileged_client,
+    nodes_common_cpu_model,
+    ipv6_network_data,
+    bridge_worker_2,
+):
     name = "vmb"
     networks = {BR1TEST: BR1TEST}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
@@ -91,6 +104,7 @@ def vmb(namespace, unprivileged_client, ipv6_network_data, bridge_worker_2):
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
         cloud_init_data=cloud_init_data,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         vm.start(wait=True)
         yield vm
