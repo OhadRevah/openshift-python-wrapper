@@ -258,7 +258,7 @@ def rebooted_sriov_vm4(request, running_sriov_vm4):
     LOGGER.info(f"Reboot number {request.param}")
     # Reboot the VM
     run_ssh_commands(
-        host=running_sriov_vm4.ssh_exec, commands=[shlex.shlex("sudo reboot")]
+        host=running_sriov_vm4.ssh_exec, commands=[shlex.split("sudo reboot")]
     )
     # Make sure the VM is up, otherwise we will get an old VM interfaces data.
     running_sriov_vm4.ssh_exec.executor().is_connective(tcp_timeout=60)
