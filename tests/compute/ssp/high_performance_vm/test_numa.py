@@ -5,6 +5,7 @@ import pytest
 import xmltodict
 from ocp_resources.sriov_network import SriovNetwork
 
+from utilities.constants import SRIOV
 from utilities.network import sriov_network_dict
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -98,6 +99,7 @@ def vm_numa_sriov(namespace, unprivileged_client, sriov_net):
         cpu_placement=True,
         networks=networks,
         interfaces=networks.keys(),
+        interfaces_types={name: SRIOV for name in networks.keys()},
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()
