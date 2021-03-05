@@ -10,6 +10,7 @@ import os.path
 import re
 import shlex
 import shutil
+from collections import Counter
 from contextlib import contextmanager
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -1755,77 +1756,40 @@ def skip_access_mode_rwo_scope_class(storage_class_matrix__class__):
     _skip_access_mode_rwo(storage_class_matrix=storage_class_matrix__class__)
 
 
-def format_cpu_model_name(cpu_model_str):
-    # Example of CPU model name format:
-    # model name   : Intel Core Processor (Haswell, no TSX, IBRS)
-    # Example of CPU model format in VM spec: "Haswell-noTSX-IBRS
-    return re.sub(r", ", "-", re.search(r".*\((.*)\)", cpu_model_str).group(1)).replace(
-        " ", ""
-    )
-
-
 @pytest.fixture(scope="session")
-def nodes_common_cpu_model(utility_pods):
-    skylake_server = "Skylake-Server"
-    cascadelake_server_notsx = "Cascadelake-Server-noTSX"
-    intel_xeon = "Intel(R) Xeon(R)"
+def nodes_common_cpu_model(schedulable_nodes):
+    cpu_label_prefix = "feature.node.kubernetes.io/cpu-model-"
+    # CPU families; descending
+    # TODO: Add AMD models
+    cpus_families_list = [
+        "Cascadelake",
+        "Skylake",
+        "Broadwell",
+        "Haswell",
+        "IvyBridge",
+        "SandyBridge",
+        "Westmere",
+    ]
 
-    def _node_cpu_name(node_cpu_model):
-        # Some CPU models provide a name that needs to be mapped to CPU microarchitecture
-        cpus_model_name_to_architecture_dict = {
-            f"{intel_xeon} Gold 6130": skylake_server,
-            f"{intel_xeon} Gold 6152": skylake_server,
-            f"{intel_xeon} Silver 4216": cascadelake_server_notsx,
-            f"{intel_xeon} Gold 5218R": cascadelake_server_notsx,
-        }
-        for cpu_name, architecture in cpus_model_name_to_architecture_dict.items():
-            if cpu_name in node_cpu_model:
-                return architecture
+    def _format_cpu_name(cpu_name):
+        return re.match(rf"{cpu_label_prefix}(.*)", cpu_name).group(1)
 
-    nodes_cpus_list = []
-    cmd = ["grep", "-m1", "model name", "/proc/cpuinfo"]
-    for pod in utility_pods:
-        nodes_cpus_list.append(pod.execute(command=cmd))
-
-    # All nodes have the same CPU
-    if len(set(nodes_cpus_list)) == 1:
-        cpu_model = nodes_cpus_list[0]
-        return _node_cpu_name(node_cpu_model=cpu_model) or format_cpu_model_name(
-            cpu_model_str=cpu_model
-        )
-    else:
-        # Select the oldest CPU model, list ordered by model release, descending
-        # TODO: Add AMD models
-        cpus_models_list = [
-            cascadelake_server_notsx,
-            "Skylake-Server-noTSX-IBRS",
-            "Skylake-Server-IBRS",
-            skylake_server,
-            "Skylake-Client-noTSX-IBRS",
-            "Skylake-Client-IBRS",
-            "Skylake-Client",
-            "Skylake-IBRS",
-            "Broadwell-IBRS",
-            "Broadwell",
-            "Haswell-noTSX-IBRS",
-            "Haswell-noTSX",
-            "Haswell",
-            "IvyBridge-IBRS",
-            "IvyBridge",
-            "SandyBridge-IBRS",
-            "SandyBridge",
-            "Westmere-IBRS",
-            "Westmere",
+    nodes_cpus_list = [
+        [
+            label
+            for label, value in node.labels.items()
+            if re.match(rf"{cpu_label_prefix}.*", label) and value == "true"
         ]
-        cpu_index = 0
-        for node_cpu_model in nodes_cpus_list:
-            node_cpu_model = _node_cpu_name(
-                node_cpu_model=node_cpu_model
-            ) or format_cpu_model_name(cpu_model_str=node_cpu_model)
-            # Get the index of the node's CPU in cpus_models_list
-            node_cpu_index = cpus_models_list.index(node_cpu_model)
-            cpu_index = node_cpu_index if node_cpu_index > cpu_index else cpu_index
-        return cpus_models_list[cpu_index]
+        for node in schedulable_nodes
+    ]
+    # Count how many times each model appears in the list of nodes cpus lists
+    cpus_dict = Counter(cpu for node_cpus in nodes_cpus_list for cpu in set(node_cpus))
+
+    # CPU model which is common for all nodes and a first match for cpu family in cpus_families_list
+    for cpus_family in cpus_families_list:
+        for cpu, counter in cpus_dict.items():
+            if counter == len(schedulable_nodes) and cpus_family in cpu:
+                return _format_cpu_name(cpu_name=cpu)
 
 
 @pytest.fixture(scope="session")

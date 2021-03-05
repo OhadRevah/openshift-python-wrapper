@@ -57,6 +57,7 @@ fcfn_exclude_functions =
     addoption,
     CreateContainerView,
     defaultdict,
+    Counter,
 
 enable-extensions =
     PID,
