@@ -1,6 +1,6 @@
 import pytest_testconfig
-from resources.datavolume import DataVolume
-from resources.storage_class import StorageClass
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.storage_class import StorageClass
 
 
 global config
