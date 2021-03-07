@@ -89,6 +89,7 @@ def vm_object_from_template(
     rhel7_workers=False,
     request=None,
     os_matrix=None,
+    cpu_model=None,
 ):
     """Instantiate a VM object
 
@@ -134,6 +135,7 @@ def vm_object_from_template(
         cloud_init_data=cloud_init_data if cloud_init_data else None,
         rhel7_workers=rhel7_workers,
         ssh=param_dict.get("ssh", True),
+        cpu_model=cpu_model,
     )
 
 
@@ -213,6 +215,7 @@ def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
     golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
+    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         rhel7_workers=rhel7_workers,
@@ -222,6 +225,7 @@ def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         data_volume_object=golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
+        cpu_model=nodes_common_cpu_model,
     )
 
 
@@ -235,6 +239,7 @@ def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_cl
     golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
+    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         request=request,
@@ -245,6 +250,7 @@ def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_cl
         data_volume_object=golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
+        cpu_model=nodes_common_cpu_model,
     )
 
 
@@ -258,6 +264,7 @@ def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_cla
     golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
+    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         request=request,
@@ -268,6 +275,7 @@ def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_cla
         data_volume_object=golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
+        cpu_model=nodes_common_cpu_model,
     )
 
 
@@ -280,6 +288,7 @@ def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
     golden_image_data_volume_multi_centos_multi_storage_scope_class,
     network_configuration,
     cloud_init_data,
+    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         rhel7_workers=rhel7_workers,
@@ -289,6 +298,7 @@ def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
         data_volume_object=golden_image_data_volume_multi_centos_multi_storage_scope_class,
         network_configuration=network_configuration,
         cloud_init_data=cloud_init_data,
+        cpu_model=nodes_common_cpu_model,
     )
 
 

@@ -15,7 +15,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 from tests.compute.utils import remove_eth0_default_gw
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import running_vm, wait_for_console
+from utilities.virt import migrate_and_verify, running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -237,6 +237,24 @@ class TestCommonTemplatesRhel:
         ssp_utils.check_vm_xml_smbios(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             cm_values=smbios_from_kubevirt_config_cm,
+        )
+
+    @pytest.mark.polarion("CNV-3038")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    def test_migrate_vm(
+        self,
+        skip_upstream,
+        skip_access_mode_rwo_scope_function,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix__class__,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+    ):
+        """ Test SSH connectivity after migration"""
+        migrate_and_verify(
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            check_ssh_connectivity=True,
         )
 
     @pytest.mark.dependency(depends=["create_vm"])

@@ -13,7 +13,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import running_vm, wait_for_console
+from utilities.virt import migrate_and_verify, running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -266,6 +266,24 @@ class TestCommonTemplatesFedora:
     ):
         common_templates_utils.check_machine_type(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        )
+
+    @pytest.mark.smoke
+    @pytest.mark.polarion("CNV-5842")
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    def test_migrate_vm_rhel(
+        self,
+        skip_upstream,
+        skip_access_mode_rwo_scope_function,
+        namespace,
+        fedora_os_matrix__class__,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+    ):
+        """ Test SSH connectivity after migration"""
+        migrate_and_verify(
+            vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+            check_ssh_connectivity=True,
         )
 
     @pytest.mark.smoke

@@ -16,6 +16,7 @@ from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import Images, run_ssh_commands
+from utilities.virt import migrate_and_verify
 
 
 LOGGER = logging.getLogger(__name__)
@@ -162,6 +163,38 @@ class TestRHELTabletDevice:
         )
         utils.check_vm_xml_tablet_device(
             vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function
+        )
+
+    @pytest.mark.parametrize(
+        "golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function",
+        [
+            pytest.param(
+                {
+                    "vm_name": "rhel-migrate-tablet-device-vm",
+                    "template_labels": py_config["latest_rhel_version"][
+                        "template_labels"
+                    ],
+                    "vm_dict": utils.set_vm_tablet_device_dict(
+                        {"name": "my_tablet", "type": "tablet", "bus": "usb"}
+                    ),
+                    "set_vm_common_cpu": True,
+                },
+                marks=pytest.mark.polarion("CNV-5833"),
+            ),
+        ],
+        indirect=True,
+    )
+    def test_tablet_device_migrate_vm(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        golden_image_data_volume_multi_storage_scope_class,
+        golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
+    ):
+        migrate_and_verify(
+            vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
+            check_ssh_connectivity=True,
         )
 
 
