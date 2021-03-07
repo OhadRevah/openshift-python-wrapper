@@ -240,7 +240,6 @@ def ssh_in_background(running_vma, running_vmb):
 def migrated_vmb(running_vmb, http_service):
     migrate_and_verify(
         vm=running_vmb,
-        node_before=running_vmb.vmi.instance.status.nodeName,
     )
 
 

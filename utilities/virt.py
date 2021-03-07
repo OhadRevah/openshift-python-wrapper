@@ -1521,7 +1521,9 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True, systemctl_support=
     return vm
 
 
-def migrate_and_verify(vm, node_before=None, timeout=720):
+def migrate_and_verify(vm, timeout=720):
+    node_before = vm.vmi.node
+    LOGGER.info(f"VMI is running on {node_before.name} before migration.")
     with VirtualMachineInstanceMigration(
         name=vm.name,
         namespace=vm.namespace,
@@ -1529,8 +1531,7 @@ def migrate_and_verify(vm, node_before=None, timeout=720):
     ) as mig:
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
 
-    if node_before:
-        assert vm.vmi.instance.status.nodeName != node_before
+    assert vm.vmi.node != node_before
 
     assert vm.vmi.instance.status.migrationState.completed
     wait_for_vm_interfaces(vmi=vm.vmi)
