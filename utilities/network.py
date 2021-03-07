@@ -22,7 +22,7 @@ from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import SRIOV
-from utilities.infra import get_pod_by_name_prefix, run_ssh_commands
+from utilities.infra import get_pod_by_name_prefix
 from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
 
 
@@ -731,8 +731,9 @@ def ping(src_vm, dst_ip, packetsize=None, count=None):
     if packetsize:
         ping_cmd += f" -s {packetsize} -M do"
 
-    out = run_ssh_commands(host=src_vm.ssh_exec, commands=[shlex.split(ping_cmd)])[0]
-    for line in out.splitlines():
+    rc, out, err = src_vm.ssh_exec.run_command(command=shlex.split(ping_cmd))
+    out_to_process = err or out
+    for line in out_to_process.splitlines():
         match = re.search("([0-9]+)% packet loss, ", line)
         if match:
             LOGGER.info(f"ping returned {match.string.strip()}")

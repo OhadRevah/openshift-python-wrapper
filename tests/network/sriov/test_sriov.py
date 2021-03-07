@@ -250,7 +250,13 @@ def running_sriov_vm4(sriov_vm4):
 
 @pytest.fixture(scope="class")
 def vm4_interfaces(running_sriov_vm4):
-    return running_sriov_vm4.vmi.interfaces
+    sampler = TimeoutSampler(
+        wait_timeout=60, sleep=10, func=lambda: running_sriov_vm4.vmi.interfaces
+    )
+    for sample in sampler:
+        if len(sample) == 2:
+            return sample
+        restart_guest_agent(vm=running_sriov_vm4)
 
 
 @pytest.fixture(params=list(range(1, 6)))
