@@ -25,19 +25,19 @@ def ovs_linux_bridge_device_name(index_number):
     yield f"br{next(index_number)}test"
 
 
-def _masquerade_vmib_ip(vmib, bridge, ipv6_testing):
+def _masquerade_vmib_ip(vmb, bridge, ipv6_testing):
     # Using masquerade we can just ping vmb pods ip
     masquerade_interface = [
         i
-        for i in vmib.instance.spec.domain.devices.interfaces
+        for i in vmb.vmi.instance.spec.domain.devices.interfaces
         if i["name"] == bridge and "masquerade" in i.keys()
     ]
     if masquerade_interface:
         if ipv6_testing:
-            return get_ipv6_address(cnv_resource=vmib)
-        return vmib.virt_launcher_pod.instance.status.podIP
+            return get_ipv6_address(cnv_resource=vmb)
+        return vmb.vmi.virt_launcher_pod.instance.status.podIP
 
-    return get_vmi_ip_v4_by_name(vmi=vmib, name=bridge)
+    return get_vmi_ip_v4_by_name(vm=vmb, name=bridge)
 
 
 @pytest.fixture(scope="class")
@@ -287,7 +287,7 @@ class TestConnectivity:
         assert_ping_successful(
             src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=_masquerade_vmib_ip(
-                vmib=ovs_linux_bridge_attached_running_vmb.vmi,
+                vmb=ovs_linux_bridge_attached_running_vmb,
                 bridge=bridge,
                 ipv6_testing=ipv6_testing,
             ),
@@ -309,7 +309,7 @@ class TestConnectivity:
         assert_ping_successful(
             src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bridge_attached_running_vmb.vmi,
+                vm=ovs_linux_bridge_attached_running_vmb,
                 name=ovs_linux_br1vlan100_nad.name,
             ),
         )
@@ -333,7 +333,7 @@ class TestConnectivity:
         assert_no_ping(
             src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bridge_attached_running_vmb.vmi,
+                vm=ovs_linux_bridge_attached_running_vmb,
                 name=ovs_linux_br1vlan300_nad.name,
             ),
         )
@@ -358,7 +358,7 @@ class TestConnectivity:
             server_vm=ovs_linux_bridge_attached_vma,
             client_vm=ovs_linux_bridge_attached_vmb,
             listen_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bridge_attached_running_vma.vmi, name=ovs_linux_nad.name
+                vm=ovs_linux_bridge_attached_running_vma, name=ovs_linux_nad.name
             ),
         )
         assert bits_per_second >= expected_res

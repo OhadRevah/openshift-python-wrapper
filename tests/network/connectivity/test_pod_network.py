@@ -92,7 +92,7 @@ def test_connectivity_over_pod_network(
     Check connectivity
     """
     if ip_stack_version_matrix__module__ == IPV6_STR:
-        dst_ip = get_ipv6_address(cnv_resource=pod_net_running_vmb.vmi)
+        dst_ip = get_ipv6_address(cnv_resource=pod_net_running_vmb)
         assert (
             dst_ip
         ), f"Cannot get valid IPv6 address from {pod_net_running_vmb.vmi.name}."

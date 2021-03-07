@@ -39,6 +39,7 @@ from utilities.infra import (
     get_bug_status,
     get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
+    run_ssh_commands,
 )
 
 
@@ -51,7 +52,7 @@ FEDORA_CLOUD_INIT_PASSWORD = {
     "userData": {"password": "fedora", "chpasswd": "{ expire: False }"}
 }
 RHEL_CLOUD_INIT_PASSWORD = {
-    "userData": {"password": "redhat", "chpasswd": "{ expire: " "False }"}
+    "userData": {"password": "redhat", "chpasswd": "{ expire: False }"}
 }
 
 
@@ -1075,7 +1076,7 @@ class ServiceForVirtualMachineForTests(Service):
     def service_ip(self, ip_family=None):
         if self.rhel7_workers:
             return utilities.network.get_vmi_ip_v4_by_name(
-                vmi=self.vmi, name=[*self.vm.networks][0]
+                vm=self.vm, name=[*self.vm.networks][0]
             )
 
         if self.service_type == Service.Type.CLUSTER_IP:
@@ -1537,3 +1538,24 @@ def migrate_and_verify(vm, timeout=720, check_ssh_connectivity=False):
     wait_for_vm_interfaces(vmi=vm.vmi)
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
+
+
+# TODO : remove restart_guest_agent and replace all calls to it with wait_for_vm_interfaces once BZ 1907707 is fixed
+def restart_guest_agent(vm):
+    bug_num = 1907707
+    restart = "restart qemu-guest-agent"
+    if (
+        get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_num
+        )
+        not in BUG_STATUS_CLOSED
+    ):
+        LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
+        run_ssh_commands(
+            host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]
+        )
+        running_vm(vm=vm, enable_ssh=False)
+    else:
+        LOGGER.warning(
+            f"bug {bug_num} is resolved. please remove all references to it from the automation"
+        )

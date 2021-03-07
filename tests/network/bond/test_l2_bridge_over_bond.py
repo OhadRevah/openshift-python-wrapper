@@ -212,7 +212,7 @@ class TestBondConnectivity:
         assert_ping_successful(
             src_vm=ovs_linux_bond_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=ovs_linux_bond_bridge_attached_running_vmb.vmi,
+                vm=ovs_linux_bond_bridge_attached_running_vmb,
                 name=ovs_linux_br1bond_nad.name,
             ),
         )

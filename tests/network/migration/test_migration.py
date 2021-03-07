@@ -195,7 +195,7 @@ def http_service(namespace, running_vma, running_vmb):
 
 @pytest.fixture(scope="module")
 def ping_in_background(running_vma, running_vmb):
-    dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
+    dst_ip = get_vmi_ip_v4_by_name(vm=running_vmb, name=BR1TEST)
     assert_ping_successful(src_vm=running_vma, dst_ip=dst_ip)
     LOGGER.info(f"Ping {dst_ip} from {running_vma.name} to {running_vmb.name}")
     run_ssh_commands(
@@ -222,7 +222,7 @@ def ssh_in_background(running_vma, running_vmb):
     """
     Start ssh connection to the vm
     """
-    dst_ip = get_vmi_ip_v4_by_name(vmi=running_vmb.vmi, name=BR1TEST)
+    dst_ip = get_vmi_ip_v4_by_name(vm=running_vmb, name=BR1TEST)
     LOGGER.info(f"Start ssh connection to {running_vmb.name} from {running_vma.name}")
     run_ssh_commands(
         host=running_vma.ssh_exec,
@@ -305,7 +305,7 @@ def test_connectivity_after_migration_and_restart(
 ):
     assert_ping_successful(
         src_vm=running_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vmi=restarted_vmb.vmi, name=BR1TEST),
+        dst_ip=get_vmi_ip_v4_by_name(vm=restarted_vmb, name=BR1TEST),
     )
 
 

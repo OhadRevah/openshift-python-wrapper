@@ -23,7 +23,11 @@ from pytest_testconfig import config as py_config
 
 from utilities.constants import SRIOV
 from utilities.infra import get_pod_by_name_prefix
-from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
+from utilities.virt import (
+    FEDORA_CLOUD_INIT_PASSWORD,
+    restart_guest_agent,
+    wait_for_vm_interfaces,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -519,24 +523,40 @@ NAD_TYPE = {
 }
 
 
-def get_vmi_ip_v4_by_name(vmi, name):
-    sampler = TimeoutSampler(wait_timeout=120, sleep=1, func=lambda: vmi.interfaces)
+def get_vmi_ip_v4_by_name(vm, name):
+    vmi = vm.vmi
+
+    def _get_iface_by_name(vmi_interfaces):
+        iface = [_iface for _iface in vmi_interfaces if _iface.name == name]
+        if not iface:
+            raise IfaceNotFound(name=name)
+        return iface[0]
+
+    def _extract_interface_ips():
+        vmi_interfaces = vm.vmi.interfaces
+        iface_ips = _get_iface_by_name(vmi_interfaces=vmi_interfaces).ipAddresses
+        if iface_ips:
+            return iface_ips
+
+    def _get_interface_ips():
+        # TODO : remove restart_guest_agent and replace all calls to it with _extract_interface_ips once
+        #  BZ 1907707 is fixed
+        vmi_ips = _extract_interface_ips()
+        if vmi_ips:
+            return vmi_ips
+
+        restart_guest_agent(vm=vm)
+        wait_for_vm_interfaces(vmi=vmi)
+        return _extract_interface_ips()
+
+    sampler = TimeoutSampler(wait_timeout=120, sleep=1, func=_get_interface_ips)
     try:
-        for sample in sampler:
-            for iface in sample:
-                if iface.name == name:
-                    for ipaddr in iface.ipAddresses:
-                        try:
-                            ip = ipaddress.ip_interface(address=ipaddr)
-                            if ip.version == 4:
-                                return ip.ip
-                        # ipaddress module fails to identify IPv6 with % as a valid IP
-                        except ValueError as error:
-                            if (
-                                "does not appear to be an IPv4 or IPv6 "
-                                "interface" in str(error)
-                            ):
-                                continue
+        for ip_addresses in sampler:
+            for ip_address in ip_addresses:
+                ip = ipaddress.ip_interface(address=ip_address)
+                if ip.version == 4:
+                    return ip.ip
+
     except TimeoutExpiredError:
         raise IpNotFound(name)
 
@@ -753,17 +773,17 @@ def assert_ping_successful(src_vm, dst_ip, packetsize=None, count=None):
 
 def get_ipv6_address(cnv_resource):
     """
-    Attempt to find an IPv6 address in one of 2 possible resources - VirtualMachineInstance or Pod.
+    Attempt to find an IPv6 address in one of 2 possible sources - VirtualMachineInstance or Pod.
 
     Args:
-        cnv_resource (Resource): VirtualMachineInstance or Pod
+        cnv_resource (Resource): VirtualMachine or Pod
 
     Returns:
         str: First found IPv6 address, or None.
     """
     try:
-        # Assume the resource type is VMI.
-        addr_list = cnv_resource.interfaces[0]["ipAddresses"]
+        # Assume the resource type is VM
+        addr_list = cnv_resource.vmi.interfaces[0]["ipAddresses"]
     except AttributeError:
         # Base assumption failed - so now assume the resource type is Pod.
         addr_list = [ip_addr["ip"] for ip_addr in cnv_resource.instance.status.podIPs]

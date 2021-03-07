@@ -13,12 +13,7 @@ from pytest_testconfig import config as py_config
 
 from tests.network.utils import assert_no_ping, run_test_guest_performance
 from utilities.constants import SRIOV
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-    run_ssh_commands,
-)
+from utilities.infra import run_ssh_commands
 from utilities.network import (
     assert_ping_successful,
     cloud_init_network_data,
@@ -30,33 +25,13 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    restart_guest_agent,
     running_vm,
 )
 
 
 LOGGER = logging.getLogger(__name__)
 VM_SRIOV_IFACE_NAME = "sriov1"
-
-
-# TODO : remove restart_guest_agent and replace all calls to it with wait_for_vm_interfaces once BZ 1907707 is fixed
-def restart_guest_agent(vm):
-    bug_num = 1907707
-    restart = "restart qemu-guest-agent"
-    if (
-        get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_num
-        )
-        not in BUG_STATUS_CLOSED
-    ):
-        LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
-        run_ssh_commands(
-            host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]
-        )
-        running_vm(vm=vm, enable_ssh=False)
-    else:
-        LOGGER.warning(
-            f"bug {bug_num} is resolved. please remove all references to it from the automation"
-        )
 
 
 def sriov_vm(
@@ -326,9 +301,7 @@ class TestPingConnectivity:
     ):
         assert_ping_successful(
             src_vm=running_sriov_vm1,
-            dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_sriov_vm2.vmi, name=sriov_network.name
-            ),
+            dst_ip=get_vmi_ip_v4_by_name(vm=running_sriov_vm2, name=sriov_network.name),
         )
 
     @pytest.mark.polarion("CNV-4505")
@@ -343,9 +316,7 @@ class TestPingConnectivity:
     ):
         assert_ping_successful(
             src_vm=running_sriov_vm1,
-            dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_sriov_vm2.vmi, name=sriov_network.name
-            ),
+            dst_ip=get_vmi_ip_v4_by_name(vm=running_sriov_vm2, name=sriov_network.name),
             packetsize=9000,
         )
 
@@ -361,7 +332,7 @@ class TestPingConnectivity:
         assert_ping_successful(
             src_vm=running_sriov_vm3,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_sriov_vm4.vmi, name=sriov_network_vlan.name
+                vm=running_sriov_vm4, name=sriov_network_vlan.name
             ),
         )
 
@@ -377,7 +348,7 @@ class TestPingConnectivity:
         assert_no_ping(
             src_vm=running_sriov_vm1,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_sriov_vm4.vmi, name=sriov_network_vlan.name
+                vm=running_sriov_vm4, name=sriov_network_vlan.name
             ),
         )
 

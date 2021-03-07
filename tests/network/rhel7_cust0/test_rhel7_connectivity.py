@@ -30,7 +30,7 @@ def _masquerade_vmib_ip(vmib, bridge):
     if masquerade_interface:
         return vmib.virt_launcher_pod.instance.status.podIP
 
-    return get_vmi_ip_v4_by_name(vmi=vmib, name=bridge)
+    return get_vmi_ip_v4_by_name(vm=vmib, name=bridge)
 
 
 @pytest.fixture(scope="class")

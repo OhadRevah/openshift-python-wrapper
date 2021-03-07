@@ -51,7 +51,7 @@ class TestL2LinuxBridge:
             wait_timeout=120,
             sleep=2,
             func=get_vmi_ip_v4_by_name,
-            vmi=l2_bridge_running_vm_b.vmi,
+            vm=l2_bridge_running_vm_b,
             name=dhcp_nad.name,
         )
         for address in current_ip:
@@ -71,7 +71,7 @@ class TestL2LinuxBridge:
         """
         num_of_packets = 10
         dst_ip = get_vmi_ip_v4_by_name(
-            vmi=l2_bridge_running_vm_b.vmi, name=custom_eth_type_llpd_nad.name
+            vm=l2_bridge_running_vm_b, name=custom_eth_type_llpd_nad.name
         )
         out = run_ssh_commands(
             host=configured_l2_bridge_vm_a.ssh_exec,

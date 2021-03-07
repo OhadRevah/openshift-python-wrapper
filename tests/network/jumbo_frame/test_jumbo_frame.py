@@ -234,9 +234,7 @@ class TestJumboFrame:
         ip_header = 20
         assert_ping_successful(
             src_vm=bridge_attached_vma,
-            dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmb.vmi, name=nad.name
-            ),
+            dst_ip=get_vmi_ip_v4_by_name(vm=running_bridge_attached_vmb, name=nad.name),
             packetsize=nad.mtu - ip_header - icmp_header,
         )
 
@@ -259,9 +257,7 @@ class TestJumboFrame:
         """
         assert_no_ping(
             src_vm=bridge_attached_vma,
-            dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bridge_attached_vmb.vmi, name=nad.name
-            ),
+            dst_ip=get_vmi_ip_v4_by_name(vm=running_bridge_attached_vmb, name=nad.name),
             packetsize=nad.mtu + 100,
         )
 
@@ -294,7 +290,7 @@ class TestBondJumboFrame:
         assert_ping_successful(
             src_vm=bond_bridge_attached_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bond_bridge_attached_vmb.vmi, name=br1bond_nad.name
+                vm=running_bond_bridge_attached_vmb, name=br1bond_nad.name
             ),
             packetsize=br1bond_nad.mtu - ip_header - icmp_header,
         )
@@ -320,7 +316,7 @@ class TestBondJumboFrame:
         assert_no_ping(
             src_vm=bond_bridge_attached_vma,
             dst_ip=get_vmi_ip_v4_by_name(
-                vmi=running_bond_bridge_attached_vmb.vmi, name=br1bond_nad.name
+                vm=running_bond_bridge_attached_vmb, name=br1bond_nad.name
             ),
             packetsize=br1bond_nad.mtu + 100,
         )

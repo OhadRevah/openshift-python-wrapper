@@ -164,7 +164,7 @@ def test_nmstate_restart_and_check_connectivity(
     nmstate_linux_bridge_attached_running_vmb,
 ):
     dst_ip = get_vmi_ip_v4_by_name(
-        vmi=nmstate_linux_bridge_attached_running_vmb.vmi,
+        vm=nmstate_linux_bridge_attached_running_vmb,
         name=nmstate_linux_nad.name,
     )
     ping_log = (
