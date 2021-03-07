@@ -136,7 +136,7 @@ TEAM_MARKERS = {
     "compute": ["compute", "metrics"],
     "network": ["network"],
     "storage": ["storage"],
-    "v2v": ["vmimport"],
+    "mtv": ["mtv"],
     "iuo": ["csv", "install_upgrade_operators", "security", "must_gather"],
 }
 
