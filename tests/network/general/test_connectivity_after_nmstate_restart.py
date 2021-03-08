@@ -5,7 +5,7 @@ import pytest
 from ocp_resources.daemonset import DaemonSet
 from pytest_testconfig import config as py_config
 
-from utilities.infra import get_pod_by_name_prefix
+from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
@@ -153,6 +153,9 @@ def nmstate_linux_bridge_attached_running_vmb(nmstate_linux_bridge_attached_vmb)
     return running_vm(vm=nmstate_linux_bridge_attached_vmb)
 
 
+@pytest.mark.bugzilla(
+    1936432, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-5780")
 def test_nmstate_restart_and_check_connectivity(
     admin_client,
