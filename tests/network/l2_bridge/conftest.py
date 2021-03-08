@@ -10,7 +10,7 @@ from tests.network.utils import (
     update_cloud_init_extra_user_data,
 )
 from utilities.infra import run_ssh_commands
-from utilities.network import cloud_init_network_data, network_nad
+from utilities.network import cloud_init_network_data, network_device, network_nad
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -35,36 +35,95 @@ DHCP_IP_RANGE_END = "10.200.3.10"
 
 
 @pytest.fixture(scope="class")
-def dhcp_nad(bridge_device_matrix__class__, network_interface, namespace):
+def l2_bridge_device_name(index_number):
+    yield f"br{next(index_number)}test"
+
+
+@pytest.fixture(scope="class")
+def l2_bridge_device_worker_1(
+    bridge_device_matrix__class__,
+    nodes_available_nics,
+    utility_pods,
+    worker_node1,
+    l2_bridge_device_name,
+):
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name=f"l2-bridge-{worker_node1.name}",
+        interface_name=l2_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.name,
+        ports=[nodes_available_nics[worker_node1.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def l2_bridge_device_worker_2(
+    bridge_device_matrix__class__,
+    nodes_available_nics,
+    utility_pods,
+    worker_node2,
+    l2_bridge_device_name,
+):
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name=f"l2-bridge-{worker_node2.name}",
+        interface_name=l2_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[nodes_available_nics[worker_node2.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def dhcp_nad(
+    bridge_device_matrix__class__,
+    namespace,
+    l2_bridge_device_worker_1,
+    l2_bridge_device_worker_2,
+    l2_bridge_device_name,
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="dhcp-broadcast",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{l2_bridge_device_name}-dhcp-broadcast-nad",
+        interface_name=l2_bridge_device_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
 def custom_eth_type_llpd_nad(
-    bridge_device_matrix__class__, network_interface, namespace
+    bridge_device_matrix__class__,
+    namespace,
+    l2_bridge_device_worker_1,
+    l2_bridge_device_worker_2,
+    l2_bridge_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="custom-eth-type-icmp",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{l2_bridge_device_name}-custom-eth-type-icmp-nad",
+        interface_name=l2_bridge_device_name,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def mpls_nad(bridge_device_matrix__class__, network_interface, namespace):
+def mpls_nad(
+    bridge_device_matrix__class__,
+    namespace,
+    l2_bridge_device_worker_1,
+    l2_bridge_device_worker_2,
+    l2_bridge_device_name,
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="mpls",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{l2_bridge_device_name}-mpls-nad",
+        interface_name=l2_bridge_device_name,
     ) as nad:
         yield nad
 
