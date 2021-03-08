@@ -14,7 +14,6 @@ from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     enable_ssh_service_in_vm,
     migrate_and_verify,
-    wait_for_ssh_connectivity,
 )
 
 
@@ -129,6 +128,5 @@ def test_fedora_vm_load_migration(
     run_fio_in_vm,
 ):
     LOGGER.info("Test migrate VM with disk load")
-    migrate_and_verify(vm=vm_with_fio)
-    wait_for_ssh_connectivity(vm=vm_with_fio)
+    migrate_and_verify(vm=vm_with_fio, check_ssh_connectivity=True)
     get_disk_usage(ssh_exec=vm_with_fio.ssh_exec)

@@ -45,6 +45,7 @@ def test_migrate_vm_rhel(
     Verify VM is migrated and previously-created expose service (SSH)
     can be accessed.
     """
+    # File removed in https://code.engineering.redhat.com/gerrit/#/c/230003/7
     migrate_and_verify(
         vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )

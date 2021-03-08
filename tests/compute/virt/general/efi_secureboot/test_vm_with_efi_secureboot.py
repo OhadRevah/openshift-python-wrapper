@@ -55,6 +55,7 @@ def windows_efi_secureboot_vm(
     namespace,
     unprivileged_client,
     golden_image_data_volume_scope_class,
+    nodes_common_cpu_model,
 ):
     """ Create VM with EFI secureBoot set as True """
     with VirtualMachineForTestsFromTemplate(
@@ -68,9 +69,7 @@ def windows_efi_secureboot_vm(
         cpu_cores=VM_CPU,
         smm_enabled=True,
         efi_params={"secureBoot": True},
-        ssh=True,
-        username=py_config["windows_username"],
-        password=py_config["windows_password"],
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         vm_started(vm=vm, wait_for_interfaces=False)
         wait_for_windows_vm(
@@ -249,11 +248,6 @@ class TestEFISecureBootWindows:
     ):
         """Test EFI Windows VM is migrated."""
 
-        migrate_and_verify(vm=windows_efi_secureboot_vm)
-        wait_for_windows_vm(
-            vm=windows_efi_secureboot_vm,
-            version=windows_efi_secureboot_vm.template_labels[0].split("win")[1],
-            timeout=1800,
-        )
+        migrate_and_verify(vm=windows_efi_secureboot_vm, check_ssh_connectivity=True)
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)

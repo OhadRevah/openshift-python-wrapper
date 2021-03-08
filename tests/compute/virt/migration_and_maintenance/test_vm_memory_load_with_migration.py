@@ -33,14 +33,12 @@ def vm_with_mem_load(
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         running=True,
-        ssh=True,
         cpu_cores=2,
         cpu_requests="2",
         cpu_limits="2",
         memory_requests="4196Mi",
         data_volume=data_volume_scope_function,
-        username=console.Fedora.USERNAME,
-        password=console.Fedora.PASSWORD,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         vm.vmi.wait_until_running()
         wait_for_vm_interfaces(vmi=vm.vmi)
@@ -69,9 +67,6 @@ def vm_info_before_migrate(vm_with_mem_load):
 @pytest.fixture()
 def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
     migrate_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_60MIN)
-    assert (
-        vm_info_before_migrate[0] != vm_with_mem_load.vmi.virt_launcher_pod.node
-    ), "migration completed but vm on source node"
 
 
 def get_stress_ng_pid(ssh_exec):

@@ -65,7 +65,7 @@ def test_migrate_vm_windows(
     migrate_and_verify(
         vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
-
+    # File removed in https://code.engineering.redhat.com/gerrit/#/c/230003/7
     wait_for_ssh_connectivity(
         vm=golden_image_vm_instance_from_template_multi_storage_scope_function
     )
