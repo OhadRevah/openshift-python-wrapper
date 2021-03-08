@@ -105,6 +105,7 @@ def lbodi_pod_with_bond(utility_pods, lbodi_bond):
             return pod
 
 
+@pytest.mark.usefixtures("skip_if_workers_bms")
 @pytest.mark.destructive
 class TestBondConnectivityWithNodesDefaultInterface:
     @pytest.mark.polarion("CNV-3432")

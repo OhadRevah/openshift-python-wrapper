@@ -193,6 +193,7 @@ def ovs_linux_bond_bridge_attached_running_vmb(ovs_linux_bond_bridge_attached_vm
     return running_vm(vm=ovs_linux_bond_bridge_attached_vmb)
 
 
+@pytest.mark.usefixtures("skip_if_workers_bms")
 class TestBondConnectivity:
     @pytest.mark.polarion("CNV-3366")
     def test_bond(

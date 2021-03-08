@@ -8,6 +8,7 @@ import pytest
 from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
 
+from utilities.infra import ClusterHosts
 from utilities.network import (
     get_ipv6_address,
     ip_version_data_from_matrix,
@@ -30,6 +31,12 @@ def bond_supported(hosts_common_available_ports):
 def skip_no_bond_support(bond_supported):
     if not bond_supported:
         pytest.skip(msg="No BOND support")
+
+
+@pytest.fixture(scope="module")
+def skip_if_workers_bms(workers_type):
+    if workers_type == ClusterHosts.Type.PHYSICAL:
+        pytest.skip(msg="This test(s) cannot run on BM cluster.")
 
 
 def get_index_number():

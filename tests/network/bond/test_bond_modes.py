@@ -100,7 +100,7 @@ def bond_modes_vm(
         yield vm
 
 
-@pytest.mark.usefixtures("skip_no_bond_support")
+@pytest.mark.usefixtures("skip_no_bond_support", "skip_if_workers_bms")
 class TestBondModes:
     @pytest.mark.polarion("CNV-4382")
     def test_bond_created(self, workers_ssh_executors, bond_modes_bond):
