@@ -1932,6 +1932,8 @@ def default_sc(admin_client):
     ]
     if default_sc_list:
         yield default_sc_list[0]
+    else:
+        yield
 
 
 @pytest.fixture(scope="session")
