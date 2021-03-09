@@ -10,7 +10,7 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from utilities.infra import Images
+from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -18,6 +18,9 @@ LOGGER = logging.getLogger(__name__)
 FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
+@pytest.mark.bugzilla(
+    1936926, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_function,"
     "golden_image_vm_object_from_template_multi_storage_scope_function",
