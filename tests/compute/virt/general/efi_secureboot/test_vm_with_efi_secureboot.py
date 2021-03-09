@@ -30,7 +30,9 @@ WIN_EFI_IMG = os.path.join(Images.Windows.DIR, Images.Windows.WIM10_EFI_IMG)
 
 
 @pytest.fixture(scope="class")
-def rhel_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_class):
+def rhel_efi_secureboot_vm(
+    namespace, unprivileged_client, data_volume_scope_class, nodes_common_cpu_model
+):
     """ Create VM with EFI secureBoot set as True """
     with VirtualMachineForTests(
         name="rhel-efi-secureboot-default",
@@ -42,6 +44,7 @@ def rhel_efi_secureboot_vm(namespace, unprivileged_client, data_volume_scope_cla
         smm_enabled=True,
         efi_params={"secureBoot": True},
         os_flavor="rhel",
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
         yield vm
