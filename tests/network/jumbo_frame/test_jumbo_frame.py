@@ -24,18 +24,29 @@ from utilities.virt import (
 
 
 @pytest.fixture(scope="class")
-def bond1(
-    index_number, skip_no_bond_support, utility_pods, hosts_common_available_ports
+def jumbo_frame_bond_name(index_number):
+    yield f"jumbo-frame-bond-{next(index_number)}"
+
+
+@pytest.fixture(scope="class")
+def jumbo_frame_bond1_worker_1(
+    index_number,
+    skip_no_bond_support,
+    utility_pods,
+    worker_node1,
+    jumbo_frame_bond_name,
+    nodes_available_nics,
 ):
     """
     Create BOND if setup support BOND
     """
     bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name=f"bond{bond_idx}nncp",
-        bond_name=f"bond{bond_idx}",
-        slaves=hosts_common_available_ports[0:2],
+        name=f"jumbo-frame-bond{bond_idx}nncp",
+        bond_name=jumbo_frame_bond_name,
+        slaves=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
+        node_selector=worker_node1.name,
         mode="active-backup",
         mtu=9000,
     ) as bond:
@@ -43,19 +54,77 @@ def bond1(
 
 
 @pytest.fixture(scope="class")
-def bridge_on_bond(
-    bridge_device_matrix__class__, bond1, utility_pods, schedulable_nodes
+def jumbo_frame_bond1_worker_2(
+    index_number,
+    skip_no_bond_support,
+    utility_pods,
+    worker_node2,
+    jumbo_frame_bond_name,
+    nodes_available_nics,
+):
+    """
+    Create BOND if setup support BOND
+    """
+    bond_idx = next(index_number)
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"jumbo-frame-bond{bond_idx}nncp",
+        bond_name=jumbo_frame_bond_name,
+        slaves=nodes_available_nics[worker_node2.name][0:2],
+        worker_pods=utility_pods,
+        node_selector=worker_node2.name,
+        mode="active-backup",
+        mtu=9000,
+    ) as bond:
+        yield bond
+
+
+@pytest.fixture(scope="class")
+def jumbo_frame_bridge_device_name(index_number):
+    yield f"br{next(index_number)}test"
+
+
+@pytest.fixture(scope="class")
+def jumbo_frame_bridge_on_bond_worker_1(
+    bridge_device_matrix__class__,
+    worker_node1,
+    jumbo_frame_bond1_worker_1,
+    jumbo_frame_bridge_device_name,
+    utility_pods,
 ):
     """
     Create bridge and attach the BOND to it
     """
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name="bridge-on-bond",
-        interface_name="br1bond",
+        nncp_name=f"jumbo-frame-bridge-on-bond-{worker_node1.name}",
+        interface_name=jumbo_frame_bridge_device_name,
         network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
-        ports=[bond1.bond_name],
+        node_selector=worker_node1.name,
+        ports=[jumbo_frame_bond1_worker_1.bond_name],
+        mtu=9000,
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def jumbo_frame_bridge_on_bond_worker_2(
+    bridge_device_matrix__class__,
+    worker_node2,
+    jumbo_frame_bond1_worker_2,
+    jumbo_frame_bridge_device_name,
+    utility_pods,
+):
+    """
+    Create bridge and attach the BOND to it
+    """
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name=f"jumbo-frame-bridge-on-bond-{worker_node2.name}",
+        interface_name=jumbo_frame_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[jumbo_frame_bond1_worker_2.bond_name],
+        mtu=9000,
     ) as br:
         yield br
 
@@ -65,13 +134,15 @@ def nad(
     bridge_device_matrix__class__,
     namespace,
     utility_pods,
-    network_interface,
+    jumbo_frame_bridge_on_bond_worker_1,
+    jumbo_frame_bridge_on_bond_worker_2,
+    jumbo_frame_bridge_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="br1test-nad",
-        interface_name=network_interface.bridge_name,
+        nad_name=f"{jumbo_frame_bridge_device_name}-nad",
+        interface_name=jumbo_frame_bridge_device_name,
         tuning=True,
         mtu=9000,
     ) as nad:
@@ -79,12 +150,19 @@ def nad(
 
 
 @pytest.fixture(scope="class")
-def br1bond_nad(skip_no_bond_support, bridge_device_matrix__class__, namespace):
+def br1bond_nad(
+    skip_no_bond_support,
+    bridge_device_matrix__class__,
+    namespace,
+    jumbo_frame_bridge_on_bond_worker_1,
+    jumbo_frame_bridge_on_bond_worker_2,
+    jumbo_frame_bridge_device_name,
+):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name="br1bond-nad",
-        interface_name="br1bond",
+        nad_name=f"{jumbo_frame_bridge_device_name}-bond-nad",
+        interface_name=f"{jumbo_frame_bridge_device_name}-bond",
         tuning=True,
         mtu=9000,
     ) as nad:
@@ -139,7 +217,11 @@ def bridge_attached_vmb(worker_node2, namespace, unprivileged_client, nad):
 
 @pytest.fixture(scope="class")
 def bond_bridge_attached_vma(
-    worker_node1, namespace, unprivileged_client, br1bond_nad, bridge_on_bond
+    worker_node1,
+    namespace,
+    unprivileged_client,
+    br1bond_nad,
+    jumbo_frame_bridge_on_bond_worker_1,
 ):
     name = "bond-vma"
     networks = OrderedDict()
@@ -164,7 +246,11 @@ def bond_bridge_attached_vma(
 
 @pytest.fixture(scope="class")
 def bond_bridge_attached_vmb(
-    worker_node2, namespace, unprivileged_client, br1bond_nad, bridge_on_bond
+    worker_node2,
+    namespace,
+    unprivileged_client,
+    br1bond_nad,
+    jumbo_frame_bridge_on_bond_worker_2,
 ):
     name = "bond-vmb"
     networks = OrderedDict()
@@ -211,7 +297,6 @@ def running_bond_bridge_attached_vmb(bond_bridge_attached_vmb):
     1814614, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.usefixtures("skip_rhel7_workers")
-@pytest.mark.parametrize("network_interface", [{"mtu": 9000}], indirect=True)
 class TestJumboFrame:
     @pytest.mark.polarion("CNV-2685")
     def test_connectivity_over_linux_bridge_large_mtu(
@@ -219,7 +304,8 @@ class TestJumboFrame:
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
-        network_interface,
+        jumbo_frame_bridge_on_bond_worker_1,
+        jumbo_frame_bridge_on_bond_worker_2,
         namespace,
         nad,
         bridge_attached_vma,
@@ -244,7 +330,8 @@ class TestJumboFrame:
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
-        network_interface,
+        jumbo_frame_bridge_on_bond_worker_1,
+        jumbo_frame_bridge_on_bond_worker_2,
         namespace,
         nad,
         bridge_attached_vma,
@@ -275,7 +362,8 @@ class TestBondJumboFrame:
         skip_when_one_node,
         skip_no_bond_support,
         namespace,
-        bridge_on_bond,
+        jumbo_frame_bridge_on_bond_worker_1,
+        jumbo_frame_bridge_on_bond_worker_2,
         br1bond_nad,
         bond_bridge_attached_vma,
         bond_bridge_attached_vmb,
@@ -303,7 +391,8 @@ class TestBondJumboFrame:
         skip_when_one_node,
         skip_no_bond_support,
         namespace,
-        bridge_on_bond,
+        jumbo_frame_bridge_on_bond_worker_1,
+        jumbo_frame_bridge_on_bond_worker_2,
         br1bond_nad,
         bond_bridge_attached_vma,
         bond_bridge_attached_vmb,
