@@ -92,7 +92,7 @@ def node_filter(pod, schedulable_nodes):
 
 
 @pytest.fixture()
-def vm_container_disk_fedora(namespace, unprivileged_client):
+def vm_container_disk_fedora(namespace, unprivileged_client, nodes_common_cpu_model):
     name = f"vm-nodemaintenance-{random.randrange(99999)}"
     with VirtualMachineForTests(
         name=name,
@@ -101,6 +101,7 @@ def vm_container_disk_fedora(namespace, unprivileged_client):
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
         cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
         yield vm
