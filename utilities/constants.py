@@ -49,10 +49,6 @@ OS_LOGIN_PARAMS = {
     },
 }
 
-# GPU constants
-GPU_DEVICE_NAME = "nvidia.com/GV100GL_Tesla_V100"
-GPU_DEVICE_ID = "10de:1db6"
-
 # IP stack families constants
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"
 
