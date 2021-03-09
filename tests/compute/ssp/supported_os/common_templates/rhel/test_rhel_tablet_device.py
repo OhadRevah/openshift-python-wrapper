@@ -269,13 +269,11 @@ class TestRHELTabletDeviceNegative:
 
         LOGGER.info("Test tablet device - wrong device bus.")
 
-        with pytest.raises(UnprocessibleEntityError) as vm_exception:
+        with pytest.raises(
+            UnprocessibleEntityError,
+            match=r".*Input device can have only virtio or usb bus.*",
+        ):
             golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_function.create()
-
-            assert (
-                "Input device can have only virtio or usb bus"
-                in vm_exception.value.body.decode()
-            ), f"VM failure with wrong reason {vm_exception}"
 
     @pytest.mark.parametrize(
         "golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_function",
@@ -306,10 +304,8 @@ class TestRHELTabletDeviceNegative:
 
         LOGGER.info("Test tablet device - wrong device type.")
 
-        with pytest.raises(UnprocessibleEntityError) as vm_exception:
+        with pytest.raises(
+            UnprocessibleEntityError,
+            match=r".*Input device can have only tablet type.*",
+        ):
             golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_function.create()
-
-            assert (
-                "Input Device Can Have Only Tablet Type"
-                in vm_exception.value.body.decode()
-            ), f"VM failure with wrong reason {vm_exception}"

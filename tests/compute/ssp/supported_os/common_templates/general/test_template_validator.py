@@ -44,9 +44,7 @@ def test_template_validation_min_memory(
 ):
     LOGGER.info("Test template validator - minimum required memory")
 
-    with pytest.raises(UnprocessibleEntityError) as vm_exception:
+    with pytest.raises(
+        UnprocessibleEntityError, match=r".*This VM requires more memory.*"
+    ):
         golden_image_vm_object_from_template_multi_storage_scope_function.create()
-
-        assert (
-            "This VM requires more memory" in vm_exception.value.body.decode()
-        ), f"VM failure with wrong reason {vm_exception}"
