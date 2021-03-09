@@ -540,6 +540,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as target_dv:
         target_dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND)
+        target_dv.wait_for_status(
+            status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=180
+        )
         upload_target_pod = get_pod_by_name_prefix(
             dyn_client=admin_client,
             pod_prefix="cdi-upload",
