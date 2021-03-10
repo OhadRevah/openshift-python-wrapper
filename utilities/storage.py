@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import socket
 import ssl
@@ -509,28 +510,21 @@ def data_volume_template_dict(
     target_dv_name,
     target_dv_namespace,
     source_dv,
-    worker_node=None,
+    volume_mode=None,
+    size=None,
 ):
-    # worker node used and mandatory only in case of hpp SC
     source_dv_pvc = source_dv.instance.spec.pvc
-    data_volume_template_dict = DataVolume(
+    return DataVolume(
         name=target_dv_name,
         namespace=target_dv_namespace,
         source="pvc",
         storage_class=source_dv_pvc.storageClassName,
-        volume_mode=source_dv_pvc.volumeMode,
+        volume_mode=volume_mode or source_dv_pvc.volumeMode,
         access_modes=",".join(source_dv_pvc.accessModes),
-        size=source_dv_pvc.resources.requests.storage,
+        size=size or source_dv.size,
         source_pvc=source_dv.name,
         source_namespace=source_dv.namespace,
     ).to_dict()
-
-    if sc_is_hpp_with_immediate_volume_binding(sc=source_dv_pvc.storageClassName):
-        data_volume_template_dict["metadata"].setdefault("annotations", {})[
-            "kubevirt.io/provisionOnNode"
-        ] = worker_node.name
-
-    return data_volume_template_dict
 
 
 def get_images_server_url(schema):
@@ -564,3 +558,13 @@ def get_images_server_url(schema):
             f"URL Error when testing connectivity to {server} {schema.upper()} server.\nError: {e}"
         )
         raise
+
+
+def overhead_size_for_dv(image_size, overhead_value):
+    """
+    Calculate the size of the dv to include overhead and rounds up
+
+    DV creation can be with a fraction only if the corresponding  mebibyte is an integer
+    """
+    dv_size = image_size / (1 - overhead_value) * 1024
+    return f"{math.ceil(dv_size)}Mi"

@@ -1,11 +1,14 @@
-import math
-
 import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.storage_class import StorageClass
 
 from utilities.infra import Images
-from utilities.storage import ErrorMsg, downloaded_image, virtctl_upload_dv
+from utilities.storage import (
+    ErrorMsg,
+    downloaded_image,
+    overhead_size_for_dv,
+    virtctl_upload_dv,
+)
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -14,16 +17,6 @@ pytestmark = pytest.mark.post_upgrade
 FEDORA_IMAGE = Images.Fedora.FEDORA33_IMG
 LOCAL_NAME = f"/tmp/{FEDORA_IMAGE}"
 FEDORA_IMAGE_SIZE_GI = 4
-
-
-def overhead_size_for_dv(image_size, overhead_value):
-    """
-    Calculate the size of the dv to include overhead and rounds up
-
-    DV creation can be with a fraction only if the corresponding  mebibyte is an integer
-    """
-    dv_size = image_size / (1 - overhead_value) * 1024
-    return f"{math.ceil(dv_size)}Mi"
 
 
 @pytest.fixture(scope="module")

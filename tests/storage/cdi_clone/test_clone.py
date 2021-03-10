@@ -6,14 +6,21 @@ Clone tests
 
 import pytest
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
 
-import utilities.storage
 from tests.storage import utils
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images
+from utilities.storage import (
+    create_dv,
+    data_volume_template_dict,
+    get_images_server_url,
+    overhead_size_for_dv,
+)
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 WINDOWS_CLONE_TIMEOUT = 40 * 60
@@ -29,6 +36,44 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
     ):
         if sample:
             break
+
+
+def create_vm_from_clone_dv_template(
+    vm_name, dv_name, namespace_name, source_dv, client, volume_mode, size=None
+):
+    with VirtualMachineForTests(
+        name=vm_name,
+        namespace=namespace_name,
+        client=client,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template=data_volume_template_dict(
+            target_dv_name=dv_name,
+            target_dv_namespace=namespace_name,
+            source_dv=source_dv,
+            volume_mode=volume_mode,
+            size=size,
+        ),
+    ) as vm:
+        running_vm(
+            vm=vm, wait_for_interfaces=False, enable_ssh=False, systemctl_support=False
+        )
+        utils.check_disk_count_in_vm(vm=vm)
+
+
+@pytest.fixture()
+def ceph_rbd_data_volume(request, namespace):
+    with create_dv(
+        source="http",
+        dv_name="ceph-rbd-dv",
+        namespace=namespace.name,
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        content_type=DataVolume.ContentType.KUBEVIRT,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        storage_class=StorageClass.Types.CEPH_RBD,
+        volume_mode=request.param["volume_mode"],
+        access_modes=DataVolume.AccessMode.RWO,
+    ) as dv:
+        yield dv
 
 
 @pytest.mark.tier3
@@ -65,7 +110,7 @@ def test_successful_clone_of_large_image(
         DataVolume.Condition.Type.RUNNING,
         DataVolume.Condition.Type.READY,
     ]
-    with utilities.storage.create_dv(
+    with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
@@ -105,7 +150,7 @@ def test_successful_vm_restart_with_cloned_dv(
     namespace,
     data_volume_multi_storage_scope_function,
 ):
-    with utilities.storage.create_dv(
+    with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
@@ -157,7 +202,7 @@ def test_successful_vm_from_cloned_dv_windows(
     vm_params,
     namespace,
 ):
-    with utilities.storage.create_dv(
+    with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=data_volume_multi_storage_scope_function.namespace,
@@ -199,7 +244,7 @@ def test_disk_image_after_clone(
     data_volume_multi_storage_scope_function,
     unprivileged_client,
 ):
-    with utilities.storage.create_dv(
+    with create_dv(
         source="pvc",
         dv_name="dv-cnv-4035",
         namespace=namespace.name,
@@ -242,7 +287,7 @@ def test_successful_snapshot_clone(
     namespace,
     data_volume_multi_storage_scope_function,
 ):
-    with utilities.storage.create_dv(
+    with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
@@ -270,3 +315,57 @@ def test_successful_snapshot_clone(
             == "true"
         ), "Smart clone annotation does not exist on target PVC"
         snapshot.wait_deleted()
+
+
+@pytest.mark.parametrize(
+    "ceph_rbd_data_volume",
+    [
+        pytest.param(
+            {
+                "volume_mode": DataVolume.VolumeMode.FILE,
+            },
+            marks=(pytest.mark.polarion("CNV-5607")),
+        ),
+    ],
+    indirect=True,
+)
+def test_clone_from_fs_to_block_using_dv_template(
+    namespace, unprivileged_client, ceph_rbd_data_volume
+):
+    create_vm_from_clone_dv_template(
+        vm_name="vm-5607",
+        dv_name="dv-5607",
+        namespace_name=namespace.name,
+        source_dv=ceph_rbd_data_volume,
+        client=unprivileged_client,
+        volume_mode=DataVolume.VolumeMode.BLOCK,
+    )
+
+
+@pytest.mark.parametrize(
+    "ceph_rbd_data_volume",
+    [
+        pytest.param(
+            {
+                "volume_mode": DataVolume.VolumeMode.BLOCK,
+            },
+            marks=(pytest.mark.polarion("CNV-5608")),
+        ),
+    ],
+    indirect=True,
+)
+def test_clone_from_block_to_fs_using_dv_template(
+    namespace, unprivileged_client, ceph_rbd_data_volume
+):
+    create_vm_from_clone_dv_template(
+        vm_name="vm-5608",
+        dv_name="dv-5608",
+        namespace_name=namespace.name,
+        source_dv=ceph_rbd_data_volume,
+        client=unprivileged_client,
+        volume_mode=DataVolume.VolumeMode.FILE,
+        # add fs overhead and round up the result
+        size=overhead_size_for_dv(
+            image_size=int(ceph_rbd_data_volume.size[:-2]), overhead_value=0.055
+        ),
+    )
