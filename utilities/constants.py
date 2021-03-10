@@ -1,4 +1,20 @@
 #  Network constants
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.node_network_configuration_policy import (
+    NodeNetworkConfigurationPolicy,
+)
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.persistent_volume import PersistentVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.service import Service
+from ocp_resources.virtual_machine import (
+    VirtualMachine,
+    VirtualMachineInstance,
+    VirtualMachineInstanceMigration,
+)
+
+
 SRIOV = "sriov"
 
 #  Time constants
@@ -39,3 +55,27 @@ GPU_DEVICE_ID = "10de:1db6"
 
 # IP stack families constants
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"
+
+# Collect logs constants
+TEST_LOG_FILE = "pytest-tests.log"
+TEST_COLLECT_INFO_DIR = "tests-collected-info"
+RESOURCES_TO_COLLECT_INFO = [
+    DataVolume,
+    PersistentVolume,
+    PersistentVolumeClaim,
+    VirtualMachine,
+    VirtualMachineInstance,
+    VirtualMachineInstanceMigration,
+    NetworkAttachmentDefinition,
+    NodeNetworkConfigurationPolicy,
+    NodeNetworkState,
+    Service,
+]
+PODS_TO_COLLECT_INFO = [
+    "virt-launcher",
+    "virt-api",
+    "virt-controller",
+    "virt-handler",
+    "virt-template-validator",
+    "cdi-importer",
+]

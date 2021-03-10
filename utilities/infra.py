@@ -11,9 +11,11 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.service import Service
 from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
 
+from utilities.constants import PODS_TO_COLLECT_INFO, TEST_COLLECT_INFO_DIR
 from utilities.exceptions import CommandExecFailed
 
 
@@ -243,3 +245,67 @@ def run_ssh_commands(host, commands):
             results.append(out)
 
     return results
+
+
+def prepare_test_dir_log(item, prefix):
+    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
+        test_cls_name = item.cls.__name__ if item.cls else ""
+        test_dir_log = os.path.join(
+            TEST_COLLECT_INFO_DIR,
+            item.fspath.dirname.split("/tests/")[-1],
+            item.fspath.basename.partition(".py")[0],
+            test_cls_name,
+            item.name,
+            prefix,
+        )
+        os.environ["TEST_DIR_LOG"] = test_dir_log
+        os.makedirs(test_dir_log, exist_ok=True)
+
+
+def collect_logs_prepare_dirs():
+    test_dir = os.environ.get("TEST_DIR_LOG")
+    pods_dir = os.path.join(test_dir, "Pods")
+    os.makedirs(test_dir, exist_ok=True)
+    os.makedirs(pods_dir, exist_ok=True)
+    return test_dir, pods_dir
+
+
+def collect_logs_resources(resources_to_collect, namespace_name=None):
+    get_kwargs = {"dyn_client": get_admin_client()}
+    test_dir, _ = collect_logs_prepare_dirs()
+    for _resources in resources_to_collect:
+        resource_dir = os.path.join(test_dir, _resources.__name__)
+
+        if _resources == Service:
+            get_kwargs["namespace"] = namespace_name
+
+        for resource_obj in _resources.get(**get_kwargs):
+            if not os.path.isdir(resource_dir):
+                os.makedirs(resource_dir, exist_ok=True)
+
+            with open(
+                os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
+            ) as fd:
+                fd.write(resource_obj.instance.to_str())
+
+
+def collect_logs_pods(pods):
+    _, pods_dir = collect_logs_prepare_dirs()
+    for pod in pods:
+        kwargs = {}
+        for pod_prefix in PODS_TO_COLLECT_INFO:
+            if pod.name.startswith(pod_prefix):
+                if pod_prefix == "virt-launcher":
+                    kwargs = {"container": "compute"}
+
+                with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
+                    fd.write(pod.log(**kwargs))
+
+                with open(os.path.join(pods_dir, f"{pod.name}.yaml"), "w") as fd:
+                    fd.write(pod.instance.to_str())
+
+
+def generate_namespace_name(file_path):
+    return (file_path.strip(".py").replace("/", "-").replace("_", "-"))[-63:].split(
+        "-", 1
+    )[-1]

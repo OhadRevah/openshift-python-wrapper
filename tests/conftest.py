@@ -23,7 +23,6 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.hyperconverged import HyperConverged
@@ -31,44 +30,42 @@ from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
 from ocp_resources.network_addons_config import NetworkAddonsConfig
-from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node import Node
-from ocp_resources.node_network_configuration_policy import (
-    NodeNetworkConfigurationPolicy,
-)
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.oauth import OAuth
-from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
-from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.virtual_machine import (
-    VirtualMachine,
-    VirtualMachineInstance,
-    VirtualMachineInstanceMigration,
-)
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import SRIOV
+from utilities.constants import (
+    RESOURCES_TO_COLLECT_INFO,
+    SRIOV,
+    TEST_COLLECT_INFO_DIR,
+    TEST_LOG_FILE,
+)
 from utilities.hco import apply_np_changes
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
+    collect_logs_pods,
+    collect_logs_resources,
     create_ns,
+    generate_namespace_name,
     get_admin_client,
     get_bug_status,
     get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
+    prepare_test_dir_log,
     run_ssh_commands,
 )
 from utilities.network import (
@@ -106,29 +103,7 @@ HTPASSWD_PROVIDER_DICT = {
     "htpasswd": {"fileData": {"name": HTTP_SECRET_NAME}},
 }
 ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
-TEST_LOG_FILE = "pytest-tests.log"
-TEST_COLLECT_INFO_DIR = "tests-collected-info"
-RESOURCES_TO_COLLECT_INFO = [
-    DataVolume,
-    PersistentVolume,
-    PersistentVolumeClaim,
-    VirtualMachine,
-    VirtualMachineInstance,
-    VirtualMachineInstanceMigration,
-    NetworkAttachmentDefinition,
-    NodeNetworkConfigurationPolicy,
-    NodeNetworkState,
-    Service,
-]
 
-PODS_TO_COLLECT_INFO = [
-    "virt-launcher",
-    "virt-api",
-    "virt-controller",
-    "virt-handler",
-    "virt-template-validator",
-    "cdi-importer",
-]
 TESTS_MARKERS = ["destructive", "chaos", "tier3"]
 
 TEAM_MARKERS = {
@@ -148,21 +123,6 @@ def _separator(symbol_, val=None):
 
     sepa = int((terminal_width - len(val) - 2) // 2)
     return f"{symbol_ * sepa} {val} {symbol_ * sepa}"
-
-
-def _prepare_test_dir_log(item, prefix):
-    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
-        test_cls_name = item.cls.__name__ if item.cls else ""
-        test_dir_log = os.path.join(
-            TEST_COLLECT_INFO_DIR,
-            item.fspath.dirname.split("/tests/")[-1],
-            item.fspath.basename.partition(".py")[0],
-            test_cls_name,
-            item.name,
-            prefix,
-        )
-        os.environ["TEST_DIR_LOG"] = test_dir_log
-        os.makedirs(test_dir_log, exist_ok=True)
 
 
 def pytest_addoption(parser):
@@ -320,15 +280,15 @@ def pytest_runtest_setup(item):
         if previousfailed is not None:
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
-    _prepare_test_dir_log(item=item, prefix="setup")
+    prepare_test_dir_log(item=item, prefix="setup")
 
 
 def pytest_runtest_call(item):
-    _prepare_test_dir_log(item=item, prefix="call")
+    prepare_test_dir_log(item=item, prefix="call")
 
 
 def pytest_runtest_teardown(item):
-    _prepare_test_dir_log(item=item, prefix="teardown")
+    prepare_test_dir_log(item=item, prefix="teardown")
 
 
 def pytest_generate_tests(metafunc):
@@ -459,55 +419,26 @@ def pytest_sessionfinish(session, exitstatus):
 def pytest_exception_interact(node, call, report):
     if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
         try:
-            dyn_client = get_admin_client()
-            test_dir = os.environ.get("TEST_DIR_LOG")
-            pods_dir = os.path.join(test_dir, "Pods")
-            os.makedirs(test_dir, exist_ok=True)
-            os.makedirs(pods_dir, exist_ok=True)
-            test_namespace_name = generate_namespace_name(pytest_obj=node)
-            namespace = list(
-                Namespace.get(dyn_client=dyn_client, name=test_namespace_name)
+            namespace_name = generate_namespace_name(
+                file_path=node.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
             )
-            resource_namespace_name = namespace[0].name if namespace else None
-            get_kwargs = {"dyn_client": dyn_client}
+            dyn_client = get_admin_client()
+            collect_logs_resources(
+                namespace_name=namespace_name,
+                resources_to_collect=RESOURCES_TO_COLLECT_INFO,
+            )
+            pods = list(Pod.get(dyn_client=dyn_client))
+            collect_logs_pods(pods=pods)
 
-            for _resources in RESOURCES_TO_COLLECT_INFO:
-                resource_dir = os.path.join(test_dir, _resources.__name__)
-
-                if _resources == Service:
-                    get_kwargs["namespace"] = resource_namespace_name
-
-                for resource_obj in _resources.get(**get_kwargs):
-                    if not os.path.isdir(resource_dir):
-                        os.makedirs(resource_dir, exist_ok=True)
-
-                    with open(
-                        os.path.join(resource_dir, f"{resource_obj.name}.yaml"), "w"
-                    ) as fd:
-                        fd.write(resource_obj.instance.to_str())
-
-            for pod in Pod.get(dyn_client=dyn_client):
-                kwargs = {}
-                for pod_prefix in PODS_TO_COLLECT_INFO:
-                    if pod.name.startswith(pod_prefix):
-                        if pod_prefix == "virt-launcher":
-                            kwargs = {"container": "compute"}
-
-                        with open(os.path.join(pods_dir, f"{pod.name}.log"), "w") as fd:
-                            fd.write(pod.log(**kwargs))
-
-                        with open(
-                            os.path.join(pods_dir, f"{pod.name}.yaml"), "w"
-                        ) as fd:
-                            fd.write(pod.instance.to_str())
-        except Exception:
+        except Exception as exp:
+            LOGGER.debug(f"Failed to collect logs: {exp}")
             return
 
 
 @pytest.fixture(scope="session", autouse=True)
 def tests_log_file():
     with open(TEST_LOG_FILE, "w"):
-        pass
+        LOGGER.debug(f"Open {TEST_LOG_FILE} for writing.")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -1007,19 +938,12 @@ def namespace(request, unprivileged_client, admin_client, kmp_vm_label):
 
     yield from create_ns(
         client=unprivileged_client if client else None,
-        name=generate_namespace_name(pytest_obj=request),
+        name=generate_namespace_name(
+            file_path=request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
+        ),
         admin_client=admin_client,
         kmp_vm_label=kmp_vm_label,
     )
-
-
-def generate_namespace_name(pytest_obj):
-    return (
-        pytest_obj.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
-        .strip(".py")
-        .replace("/", "-")
-        .replace("_", "-")
-    )[-63:].split("-", 1)[-1]
 
 
 @pytest.fixture(scope="session")
