@@ -25,7 +25,7 @@ from utilities.constants import PODS_TO_COLLECT_INFO, TEST_COLLECT_INFO_DIR
 from utilities.exceptions import CommandExecFailed
 
 
-BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED")
+BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
 BASE_IMAGES_DIR = "cnv-tests"
 NON_EXIST_URL = "https://noneexist.com"
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
