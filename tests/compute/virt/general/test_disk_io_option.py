@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
@@ -10,12 +12,10 @@ from utilities.virt import get_guest_os_info
 pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
 
 
+LOGGER = logging.getLogger(__name__)
 WINDOWS_LATEST = py_config["latest_windows_version"]
 RHEL_LATEST = py_config["latest_rhel_version"]
-RHEL_VERSION_IMAGE_PATH = RHEL_LATEST["image_path"]
-RHEL_VERSION_IMAGE_SIZE = RHEL_LATEST["dv_size"]
 RHEL_VERSION_TEMPLATE_LABELS = RHEL_LATEST["template_labels"]
-RHEL_DV_NAME = RHEL_VERSION_TEMPLATE_LABELS["os"]
 # Use OCS SC for Block disk IO logic
 STORAGE_CLASS = StorageClass.Types.CEPH_RBD
 
@@ -34,6 +34,7 @@ def _vm_test_params(
 
 
 def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
+    LOGGER.info(f"Check disk IO option in {vm.name} domain xml")
     guest_os_info = get_guest_os_info(vmi=vm.vmi)
     driver_io = None
     if "Windows" not in guest_os_info["name"]:
@@ -55,14 +56,14 @@ def disk_options_vm(
     unprivileged_client,
     rhel7_workers,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_volume_scope_class,
     network_configuration,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_class,
         network_configuration=network_configuration,
     ) as vm:
         if rhel7_workers:
@@ -71,50 +72,53 @@ def disk_options_vm(
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function, disk_options_vm, expected_disk_io_option",
+    "golden_image_data_volume_scope_class,",
     [
         pytest.param(
             {
-                "dv_name": RHEL_DV_NAME,
-                "image": RHEL_VERSION_IMAGE_PATH,
-                "dv_size": RHEL_VERSION_IMAGE_SIZE,
+                "dv_name": RHEL_VERSION_TEMPLATE_LABELS["os"],
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
                 "storage_class": STORAGE_CLASS,
             },
-            _vm_test_params(
-                disk_io_option="threads",
-                template_labels=RHEL_VERSION_TEMPLATE_LABELS,
-            ),
-            "threads",
-            marks=(pytest.mark.polarion("CNV-4567"),),
-        ),
-        pytest.param(
-            {
-                "dv_name": RHEL_DV_NAME,
-                "image": RHEL_VERSION_IMAGE_PATH,
-                "dv_size": RHEL_VERSION_IMAGE_SIZE,
-                "storage_class": STORAGE_CLASS,
-            },
-            _vm_test_params(
-                template_labels=RHEL_VERSION_TEMPLATE_LABELS,
-            ),
-            "native",
-            marks=pytest.mark.polarion("CNV-4560"),
         ),
     ],
-    indirect=["golden_image_data_volume_scope_function", "disk_options_vm"],
+    indirect=True,
 )
-def test_vm_with_disk_io_option_rhel(
-    skip_upstream,
-    unprivileged_client,
-    namespace,
-    golden_image_data_volume_scope_function,
-    disk_options_vm,
-    expected_disk_io_option,
-):
-    check_disk_io_option_on_domain_xml(
-        vm=disk_options_vm,
-        expected_disk_io_option=expected_disk_io_option,
+class TestRHELIOOptions:
+    @pytest.mark.parametrize(
+        "disk_options_vm, expected_disk_io_option",
+        [
+            pytest.param(
+                _vm_test_params(
+                    disk_io_option="threads",
+                    template_labels=RHEL_VERSION_TEMPLATE_LABELS,
+                ),
+                "threads",
+                marks=(pytest.mark.polarion("CNV-4567"),),
+            ),
+            pytest.param(
+                _vm_test_params(
+                    template_labels=RHEL_VERSION_TEMPLATE_LABELS,
+                ),
+                "native",
+                marks=pytest.mark.polarion("CNV-4560"),
+            ),
+        ],
+        indirect=["disk_options_vm"],
     )
+    def test_vm_with_disk_io_option_rhel(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        disk_options_vm,
+        expected_disk_io_option,
+    ):
+        check_disk_io_option_on_domain_xml(
+            vm=disk_options_vm,
+            expected_disk_io_option=expected_disk_io_option,
+        )
 
 
 @pytest.mark.tier3
