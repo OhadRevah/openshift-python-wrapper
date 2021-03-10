@@ -84,16 +84,6 @@ RUN_STRATEGY_SHUTDOWN_STATUS = {
 
 
 @pytest.fixture()
-def skip_containerdisk_vm(lifecycle_vm):
-    if [
-        True
-        for volume in lifecycle_vm.instance.spec.template.spec.volumes
-        if volume.get("containerDisk")
-    ]:
-        pytest.skip("Skip test for VM using container disk.")
-
-
-@pytest.fixture()
 def skip_run_strategy_halted(run_strategy_matrix__class__):
     if run_strategy_matrix__class__ == HALTED:
         pytest.skip("Skip test for VM with Halted runStrategy")
@@ -215,6 +205,14 @@ def pause_unpause_vmi_and_verify_status(vm):
     verify_vm_vmi_status(vm=vm, ready=True)
 
 
+def migrate_validate_run_strategy_vm(vm, run_strategy):
+    LOGGER.info(f"The VM migration with runStrategy {run_strategy}")
+    verify_vm_vmi_status(vm=vm, ready=True)
+    migrate_and_verify(vm=vm)
+    verify_vm_vmi_status(vm=vm, ready=True)
+    verify_vm_run_strategy(vm=vm, run_strategy=run_strategy)
+
+
 @pytest.mark.usefixtures("stop_vm_if_running")
 class TestRunStrategy:
     @pytest.mark.parametrize(
@@ -306,10 +304,26 @@ def test_run_strategy_pause_unpause_vmi(
     indirect=True,
 )
 def test_always_run_migrate_vm(
-    skip_upstream, skip_containerdisk_vm, lifecycle_vm, request_updated_vm_run_strategy
+    skip_upstream, lifecycle_vm, request_updated_vm_run_strategy
 ):
-    LOGGER.info("The VM migration with runStrategy 'Always'")
-    verify_vm_vmi_status(vm=lifecycle_vm, ready=True)
-    migrate_and_verify(vm=lifecycle_vm)
-    verify_vm_vmi_status(vm=lifecycle_vm, ready=True)
-    verify_vm_run_strategy(vm=lifecycle_vm, run_strategy=ALWAYS)
+    migrate_validate_run_strategy_vm(vm=lifecycle_vm, run_strategy=ALWAYS)
+
+
+@pytest.mark.parametrize(
+    "request_updated_vm_run_strategy",
+    [
+        pytest.param(
+            {"run_strategy": MANUAL},
+            marks=pytest.mark.polarion("CNV-5893"),
+            id="Manual",
+        )
+    ],
+    indirect=True,
+)
+def test_manual_run_migrate_vm(
+    skip_upstream,
+    lifecycle_vm,
+    request_updated_vm_run_strategy,
+    start_vm_if_not_running,
+):
+    migrate_validate_run_strategy_vm(vm=lifecycle_vm, run_strategy=MANUAL)
