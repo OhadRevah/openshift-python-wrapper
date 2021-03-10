@@ -7,8 +7,6 @@ Tests to check, HCO Namespace Pod's, Security Context Constraint
 import logging
 
 import pytest
-from ocp_resources.pod import Pod
-from pytest_testconfig import config as py_config
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,11 +22,6 @@ POD_SCC_WHITELIST = [
     "kubevirt-handler",
     "kubevirt-node-labeller",
 ]
-
-
-@pytest.fixture(scope="module")
-def cnv_pods(admin_client):
-    yield list(Pod.get(dyn_client=admin_client, namespace=py_config["hco_namespace"]))
 
 
 @pytest.mark.polarion("CNV-4438")

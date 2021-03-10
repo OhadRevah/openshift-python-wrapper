@@ -2127,3 +2127,29 @@ def hyperconverged_with_node_placement(
 @pytest.fixture(scope="module")
 def hostpath_provisioner():
     yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+
+
+@pytest.fixture(scope="module")
+def cnv_pods(admin_client):
+    yield list(Pod.get(dyn_client=admin_client, namespace=py_config["hco_namespace"]))
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cluster_sanity(nodes, cnv_pods, cluster_storage_classes):
+    sc_names = [sc.name for sc in cluster_storage_classes]
+    config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
+    exists_sc = [scn for scn in config_sc if scn in sc_names]
+    assert len(config_sc) == len(
+        exists_sc
+    ), f"Cluster is missing storage some storage class. Expected {config_sc}, On cluster {exists_sc}"
+
+    for node in nodes:
+        node_name = node.name
+        assert node.kubelet_ready, f"{node_name}is not in {node.Status.READY} state"
+        assert (
+            node.instance.spec.unschedulable is None
+        ), f"{node_name} is un-schedulable"
+
+    for pod in cnv_pods:
+        pod_status = pod.instance.status.phase
+        assert pod_status == pod.Status.RUNNING, f"{pod.name} status is: {pod_status}"
