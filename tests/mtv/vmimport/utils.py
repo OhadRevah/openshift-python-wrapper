@@ -79,13 +79,14 @@ class Source:
     }
     vms = {
         "cirros": {
-            "name": "v2v-cirros-vm-for-tests",
+            "name": "mtv-rh7-with-qemu-guest-agent",
             "cpu_cores": 1,
             "cpu_sockets": 1,
             "cpu_threads": 1,
             "machine_type": "q35",
             "network_interfaces": 1,
             "volumes": 1,
+            "guest_agent": True,
         },
         "cirros2": {
             "name": "v2v-cirros-vm-for-tests2",

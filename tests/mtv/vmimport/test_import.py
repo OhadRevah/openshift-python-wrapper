@@ -15,7 +15,7 @@ from tests.mtv.vmimport import utils
 from tests.mtv.vmimport.utils import ResourceMappingItem, Source
 from utilities.constants import TIMEOUT_10MIN
 from utilities.storage import get_storage_class_dict_from_matrix
-from utilities.virt import import_vm
+from utilities.virt import import_vm, wait_for_guest_agent
 
 
 LOGGER = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ def _test_import_vm(
     provider_mappings=None,
     resource_mapping_name=None,
     resource_mapping_namespace=None,
+    wait_for_guest_os=False,
 ):
     with import_vm(
         name=name,
@@ -58,6 +59,7 @@ def _test_import_vm(
             else VirtualMachineImport.SucceededConditionReason.VIRTUAL_MACHINE_READY
         )
         vmimport.vm.vmi.wait_until_running()
+
         check_cnv_vm_config(
             vm=vmimport.vm,
             provider=provider,
@@ -65,6 +67,9 @@ def _test_import_vm(
             source_vm_name=vm_name,
             expected_vm_config=vm_config,
         )
+
+        if wait_for_guest_os:
+            wait_for_guest_agent(vmi=vmimport.vm.vmi)
 
 
 def import_name(vm_name):
@@ -237,6 +242,7 @@ def test_vm_import(
         start_vm=True,
         provider=provider,
         provider_mappings=providers_mapping_network_only,
+        wait_for_guest_os=vm_config.get("guest_agent", False),
     )
 
 
