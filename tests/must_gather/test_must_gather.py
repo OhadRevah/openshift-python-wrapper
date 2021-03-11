@@ -103,6 +103,39 @@ def test_namespace(cnv_must_gather, namespace):
     )
 
 
+@pytest.mark.polarion("CNV-5885")
+def test_no_upstream_only_namespaces(cnv_must_gather):
+    """
+    After running must-gather command on the cluster, there are some upstream-only namespaces
+    present. We counter "POD Error from server (NotFound)" in the logs as there no upstream-only
+    namespaces present. This test case will ensure that there is no logs showing "POD Error from
+    server (NotFound)" in the must-gather command execution.
+    """
+    upstream_namespaces = [
+        "kubevirt-hyperconverged",
+        "cluster-network-addons",
+        "sriov-network-operator",
+        "kubevirt-web-ui",
+        "cdi",
+    ]
+    ns_errors = {"upstream": [], "unexpected": []}
+    with open(utils.get_must_gather_output_file(cnv_must_gather)) as cmd_output:
+        for line in cmd_output.readlines():
+            match_output = re.search(
+                r"POD Error from server \(NotFound\): namespaces \"(\S+)\" not found",
+                line,
+            )
+            if match_output:
+                found_ns = match_output.group(1)
+                if found_ns in upstream_namespaces:
+                    ns_errors["upstream"].append(found_ns)
+                else:
+                    ns_errors["unexpected"].append(found_ns)
+    assert not any(
+        ns_errors.values()
+    ), f"Found namespace errors in must-gather. {ns_errors}"
+
+
 @pytest.mark.parametrize(
     "label_selector, resource_namespace",
     [

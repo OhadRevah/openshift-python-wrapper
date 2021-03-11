@@ -294,6 +294,10 @@ def get_log_dir(path):
     raise FileNotFoundError(f"No log directory was created in '{path}'")
 
 
+def get_must_gather_output_file(path):
+    return f"{path}/../output.txt"
+
+
 def assert_nft_collection(nft_files, nftables, node_name):
     assert len(nft_files) == len(nftables), (
         "difference in number of collected nftables\n"

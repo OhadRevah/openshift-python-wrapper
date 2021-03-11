@@ -5,6 +5,7 @@ must gather test
 """
 
 import logging
+import os
 import shutil
 from subprocess import check_output
 
@@ -49,10 +50,9 @@ def cnv_must_gather(
     Run cnv-must-gather for data collection.
     """
     path = tmpdir_factory.mktemp("must_gather")
+    output_file = os.path.join(path, "output.txt")
     try:
-        must_gather_cmd = (
-            f"oc adm must-gather --image={must_gather_image_url} --dest-dir={path}"
-        )
+        must_gather_cmd = f"oc adm must-gather --image={must_gather_image_url} --dest-dir={path} &> {output_file}"
         LOGGER.info(f"Running: {must_gather_cmd}")
         check_output(must_gather_cmd, shell=True)
         must_gather_log_dir = mg_utils.get_log_dir(path=path)

@@ -15,6 +15,7 @@ exclude =
 
 fcfn_exclude_functions =
     re,
+    group,
     os,
     parser,
     urllib,
