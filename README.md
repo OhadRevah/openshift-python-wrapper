@@ -295,6 +295,57 @@ image PVC.
 When using the fixtures, note their scopes. As golden image may be created once per class,
 it can be used by multiple VMs created under that class (scoped as function).
 
+
+## Running tests in disconnected environment (inside the container)
+
+If your cluster does not have access to internal RedHat network - you may build cnv-tests container and run it
+directly on a cluster.
+
+### Building and pushing cnv-tests container image
+
+Container can be generated and pushed using make targets.
+
+```
+make build-container
+make push-container
+```
+
+##### optional parameters
+
+```
+export IMAGE_BUILD_CMD=<docker/podman>               # default "docker"
+export IMAGE_REGISTRY=<container image registry>     # default "quay.io"
+export REGISTRY_NAMESPACE=<your quay.io namespace>   # default "openshift-cnv"
+export OPERATOR_IMAGE_NAME=<image name>              # default "cnv-tests"
+export IMAGE_TAG=<the image tag to use>              # default "latest"
+```
+
+### Running containerized tests examples
+
+For running tests you need to have HTTP server with images running and accessible from the cluster.
+
+Also need to create the folder which should contain `kubeconfig`, binaries `oc`, `virtctl` and __ssh key__ for access
+to nodes. This folder should be mounted to container during the run.
+
+
+#### Running default set of tests
+```
+docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e HOST_SSH_KEY=/mnt/host/id_rsa -e KUBECONFIG=/mnt/host/kubeconfig -e HTTP_IMAGE_SERVER="X.X.X.X" quay.io/openshift-cnv/cnv-tests
+```
+
+#### Smoke tests
+```
+docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e HOST_SSH_KEY=/mnt/host/id_rsa -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
+pipenv run pytest --tc=server_url:"X.X.X.X" --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m smoke
+```
+
+#### IBM cloud Win10 tests
+```
+docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e HOST_SSH_KEY=/mnt/host/id_rsa -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
+pipenv run pytest --tc=server_url:"X.X.X.X" --windows-os-matrix=win-10 --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m ibm_bare_metal
+```
+
+
 # Network utility container
 Check containers/utility/README.md
 

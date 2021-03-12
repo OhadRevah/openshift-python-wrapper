@@ -1,0 +1,22 @@
+FROM centos:8
+
+RUN yum -y install epel-release
+RUN yum -y install --setopt=skip_missing_names_on_install=False \
+python3-pip \
+python3-devel \
+gcc \
+git \
+libcurl-devel \
+libxslt-devel \
+libxml2-devel \
+openssl-devel
+
+RUN git config --global http.sslVerify false
+RUN pip3 install pipenv
+RUN git clone https://code.engineering.redhat.com/gerrit/cnv-tests
+WORKDIR cnv-tests
+
+RUN pipenv install --skip-lock
+ENV PATH "$PATH:/mnt/host"
+
+CMD pipenv run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only

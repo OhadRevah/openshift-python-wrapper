@@ -36,6 +36,15 @@ export KUBECONFIG ?= local-cluster/kubevirtci/_ci-configs/$(KUBEVIRT_PROVIDER)/.
 # Expose local binaries to tests
 export PATH := $(BIN_DIR):$(PATH)
 
+# Building cnv-tests container for disconnected clusters
+IMAGE_BUILD_CMD ?= "docker"
+IMAGE_REGISTRY ?= "quay.io"
+REGISTRY_NAMESPACE ?= "openshift-cnv"
+OPERATOR_IMAGE_NAME="cnv-tests"
+IMAGE_TAG ?= "latest"
+
+FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE_NAME):$(IMAGE_TAG)"
+
 all: check
 
 check:
@@ -69,10 +78,18 @@ $(VIRTCTL): $(BIN_DIR)
 	VIRTCTL_DEST=$(VIRTCTL) $(install_virtctl)
 	touch $(VIRTCTL)
 
+build-container:
+	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile.disconnected -t $(FULL_OPERATOR_IMAGE) .
+
+push-container:
+	$(IMAGE_BUILD_CMD) push $(FULL_OPERATOR_IMAGE)
+
 .PHONY: \
 	check \
 	cluster-down \
 	cluster-install-hco \
 	cluster-tests \
 	cluster-up \
-	tests
+	tests \
+	build-container \
+	push-container
