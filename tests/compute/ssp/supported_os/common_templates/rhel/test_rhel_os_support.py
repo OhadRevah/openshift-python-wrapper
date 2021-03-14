@@ -12,7 +12,11 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
-from tests.compute.utils import remove_eth0_default_gw
+from tests.compute.utils import (
+    remove_eth0_default_gw,
+    validate_libvirt_persistent_domain,
+    validate_pause_unpause_linux_vm,
+)
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_and_verify, running_vm, wait_for_console
@@ -238,8 +242,23 @@ class TestCommonTemplatesRhel:
             cm_values=smbios_from_kubevirt_config,
         )
 
+    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.polarion("CNV-5916")
+    def test_pause_unpause_vm(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix__class__,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+    ):
+        validate_pause_unpause_linux_vm(
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        )
+
     @pytest.mark.polarion("CNV-3038")
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(name="migrate_vm", depends=["vm_expose_ssh"])
     def test_migrate_vm(
         self,
         skip_upstream,
@@ -249,11 +268,33 @@ class TestCommonTemplatesRhel:
         rhel_os_matrix__class__,
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        ping_process_in_rhel_os,
     ):
         """ Test SSH connectivity after migration"""
         migrate_and_verify(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
+        )
+        validate_libvirt_persistent_domain(
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+        )
+
+    @pytest.mark.polarion("CNV-5902")
+    @pytest.mark.dependency(depends=["migrate_vm"])
+    def test_pause_unpause_after_migrate(
+        self,
+        skip_upstream,
+        skip_access_mode_rwo_scope_function,
+        unprivileged_client,
+        namespace,
+        rhel_os_matrix__class__,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        ping_process_in_rhel_os,
+    ):
+        validate_pause_unpause_linux_vm(
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+            pre_pause_pid=ping_process_in_rhel_os,
         )
 
     @pytest.mark.dependency(depends=["create_vm"])

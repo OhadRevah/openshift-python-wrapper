@@ -12,6 +12,10 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
+from tests.compute.utils import (
+    validate_libvirt_persistent_domain,
+    validate_pause_unpause_linux_vm,
+)
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_and_verify, running_vm, wait_for_console
@@ -224,8 +228,23 @@ class TestCommonTemplatesCentos:
             cm_values=smbios_from_kubevirt_config,
         )
 
+    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.polarion("CNV-5918")
+    def test_pause_unpause_vm(
+        self,
+        skip_upstream,
+        unprivileged_client,
+        namespace,
+        centos_os_matrix__class__,
+        golden_image_data_volume_multi_centos_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+    ):
+        validate_pause_unpause_linux_vm(
+            vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        )
+
     @pytest.mark.polarion("CNV-5841")
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(name="migrate_vm", depends=["vm_expose_ssh"])
     def test_migrate_vm(
         self,
         centos_os_matrix__class__,
@@ -234,11 +253,32 @@ class TestCommonTemplatesCentos:
         namespace,
         golden_image_data_volume_multi_centos_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        ping_process_in_centos_os,
     ):
         """ Test SSH connectivity after migration"""
         migrate_and_verify(
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
             check_ssh_connectivity=True,
+        )
+        validate_libvirt_persistent_domain(
+            vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
+        )
+
+    @pytest.mark.polarion("CNV-5904")
+    @pytest.mark.dependency(depends=["migrate_vm"])
+    def test_pause_unpause_after_migrate(
+        self,
+        centos_os_matrix__class__,
+        skip_upstream,
+        skip_access_mode_rwo_scope_function,
+        namespace,
+        golden_image_data_volume_multi_centos_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        ping_process_in_centos_os,
+    ):
+        validate_pause_unpause_linux_vm(
+            vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+            pre_pause_pid=ping_process_in_centos_os,
         )
 
     @pytest.mark.dependency(depends=["create_vm"])

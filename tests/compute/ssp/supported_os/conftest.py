@@ -4,6 +4,10 @@ import pytest
 from ocp_resources.service import Service
 from ocp_resources.template import Template
 
+from tests.compute.utils import (
+    start_and_fetch_processid_on_linux_vm,
+    start_and_fetch_processid_on_windows_vm,
+)
 from utilities.storage import data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
@@ -399,3 +403,50 @@ def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
     if "win-12" in [*windows_os_matrix__class__][0]:
         pytest.skip("win-12 doesn't support powershell commands")
+
+
+@pytest.fixture(scope="class")
+def mspaint_process_in_windows_os(
+    golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+):
+    process_name = "mspaint.exe"
+    return start_and_fetch_processid_on_windows_vm(
+        vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        process_name=process_name,
+    )
+
+
+@pytest.fixture(scope="class")
+def ping_process_in_fedora_os(
+    golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+):
+    process_name = "ping"
+    return start_and_fetch_processid_on_linux_vm(
+        vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+        process_name=process_name,
+        args="localhost",
+    )
+
+
+@pytest.fixture(scope="class")
+def ping_process_in_rhel_os(
+    golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+):
+    process_name = "ping"
+    return start_and_fetch_processid_on_linux_vm(
+        vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        process_name=process_name,
+        args="localhost",
+    )
+
+
+@pytest.fixture(scope="class")
+def ping_process_in_centos_os(
+    golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+):
+    process_name = "ping"
+    return start_and_fetch_processid_on_linux_vm(
+        vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        process_name=process_name,
+        args="localhost",
+    )

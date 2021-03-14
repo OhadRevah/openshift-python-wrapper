@@ -8,9 +8,12 @@ import logging
 import pytest
 
 import tests.compute.ssp.utils as ssp_utils
-from tests.compute import utils as compute_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
+)
+from tests.compute.utils import (
+    validate_libvirt_persistent_domain,
+    validate_pause_unpause_windows_vm,
 )
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_and_verify, running_vm
@@ -256,7 +259,7 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """ Test VM pause and unpause """
-        compute_utils.validate_pause_unpause_windows_vm(
+        validate_pause_unpause_windows_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
@@ -279,7 +282,7 @@ class TestCommonTemplatesWindows:
         )
 
     @pytest.mark.ibm_bare_metal
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(name="migrate_vm", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3335")
     def test_migrate_vm(
         self,
@@ -290,11 +293,33 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        mspaint_process_in_windows_os,
     ):
         """ Test SSH connectivity after migration"""
         migrate_and_verify(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
+        )
+        validate_libvirt_persistent_domain(
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        )
+
+    @pytest.mark.polarion("CNV-5903")
+    @pytest.mark.dependency(depends=["migrate_vm"])
+    def test_pause_unpause_after_migrate(
+        self,
+        skip_upstream,
+        skip_access_mode_rwo_scope_function,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix__class__,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        mspaint_process_in_windows_os,
+    ):
+        validate_pause_unpause_windows_vm(
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            pre_pause_pid=mspaint_process_in_windows_os,
         )
 
     @pytest.mark.ibm_bare_metal
