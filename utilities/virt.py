@@ -56,43 +56,20 @@ RHEL_CLOUD_INIT_PASSWORD = {
 }
 
 
-def wait_for_vm_interfaces(vmi, timeout=720):
-    """
-    Wait until guest agent report VMI network interfaces.
-
-    Args:
-        vmi (VirtualMachineInstance): VMI object.
-        timeout (int): Maximum time to wait for interfaces status
-
-    Returns:
-        bool: True if agent report VMI interfaces.
-
-    Raises:
-        TimeoutExpiredError: After timeout reached.
-    """
-    sampler = TimeoutSampler(wait_timeout=timeout, sleep=1, func=lambda: vmi.instance)
+def wait_for_guest_agent(vmi, timeout=720):
     LOGGER.info(f"Wait until guest agent is active on {vmi.name}")
+
+    sampler = TimeoutSampler(wait_timeout=timeout, sleep=1, func=lambda: vmi.instance)
     try:
         for sample in sampler:
-            #  Check if guest agent is activate
             agent_status = [
-                i
-                for i in sample.get("status", {}).get("conditions", {})
-                if i.get("type") == "AgentConnected" and i.get("status") == "True"
+                condition
+                for condition in sample.get("status", {}).get("conditions", {})
+                if condition.get("type") == "AgentConnected"
+                and condition.get("status") == "True"
             ]
             if agent_status:
-                LOGGER.info(f"Wait until {vmi.name} report network interfaces status")
-                for sample in sampler:
-                    #  Get MVI interfaces from guest agent
-                    ifcs = sample.get("status", {}).get("interfaces", [])
-                    active_ifcs = [
-                        i for i in ifcs if i.get("ipAddress") and i.get("interfaceName")
-                    ]
-                    if len(active_ifcs) == len(ifcs):
-                        return True
-                LOGGER.error(
-                    f"{vmi.name} did not report network interfaces status in given time"
-                )
+                return True
 
     except TimeoutExpiredError:
         LOGGER.error(f"Guest agent is not installed or not active on {vmi.name}")
@@ -107,6 +84,37 @@ def wait_for_vm_interfaces(vmi, timeout=720):
             )
         else:
             raise
+
+
+def wait_for_vm_interfaces(vmi, timeout=720):
+    """
+    Wait until guest agent report VMI network interfaces.
+
+    Args:
+        vmi (VirtualMachineInstance): VMI object.
+        timeout (int): Maximum time to wait for interfaces status
+
+    Returns:
+        bool: True if agent report VMI interfaces.
+
+    Raises:
+        TimeoutExpiredError: After timeout reached.
+    """
+    # TODO: remove the if once bug 1886453 is fixed
+    if wait_for_guest_agent(vmi=vmi, timeout=timeout):
+        LOGGER.info(f"Wait for {vmi.name} network interfaces")
+        sampler = TimeoutSampler(
+            wait_timeout=timeout, sleep=1, func=lambda: vmi.instance
+        )
+        for sample in sampler:
+            interfaces = sample.get("status", {}).get("interfaces", [])
+            active_interfaces = [
+                interface
+                for interface in interfaces
+                if interface.get("ipAddress") and interface.get("interfaceName")
+            ]
+            if len(active_interfaces) == len(interfaces):
+                return True
 
 
 def generate_cloud_init_data(data):
