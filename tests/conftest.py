@@ -66,6 +66,8 @@ from utilities.infra import (
     get_schedulable_nodes_ips,
     prepare_test_dir_log,
     run_ssh_commands,
+    separator,
+    setup_logging,
 )
 from utilities.network import (
     OVS,
@@ -91,6 +93,7 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
+BASIC_LOGGER = logging.getLogger("basic")
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
 HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
@@ -113,15 +116,6 @@ TEAM_MARKERS = {
     "mtv": ["mtv"],
     "iuo": ["csv", "install_upgrade_operators", "security", "must_gather"],
 }
-
-
-def _separator(symbol_, val=None):
-    terminal_width = shutil.get_terminal_size(fallback=(120, 40))[0]
-    if not val:
-        return f"{symbol_ * terminal_width}"
-
-    sepa = int((terminal_width - len(val) - 2) // 2)
-    return f"{symbol_ * sepa} {val} {symbol_ * sepa}"
 
 
 def pytest_addoption(parser):
@@ -260,20 +254,41 @@ def pytest_collection_modifyitems(session, config, items):
     config.hook.pytest_deselected(items=discard)
 
 
+def pytest_report_teststatus(report, config):
+    test_name = report.head_line
+    when = report.when
+    call_str = "call"
+    if report.passed:
+        if when == call_str:
+            BASIC_LOGGER.info(f"\nTEST: {test_name} STATUS: \033[0;32mPASSED\033[0m")
+
+    elif report.skipped:
+        BASIC_LOGGER.info(f"\nTEST: {test_name} STATUS: \033[1;33mSKIPPED\033[0m")
+
+    elif report.failed:
+        if when != call_str:
+            BASIC_LOGGER.info(
+                f"\nTEST: {test_name} STATUS: [{when}] \033[0;31mERROR\033[0m"
+            )
+        else:
+            BASIC_LOGGER.info(f"\nTEST: {test_name} STATUS: \033[0;31mFAILED\033[0m")
+
+
 def pytest_runtest_makereport(item, call):
     """
     incremental tests implementation
     """
-    if "incremental" in item.keywords:
-        if call.excinfo is not None:
-            parent = item.parent
-            parent._previousfailed = item
+    if call.excinfo is not None and "incremental" in item.keywords:
+        parent = item.parent
+        parent._previousfailed = item
 
 
 def pytest_runtest_setup(item):
     """
     Use incremental
     """
+    BASIC_LOGGER.info(f"{separator(symbol_='-', val=item.name)}")
+    BASIC_LOGGER.info(f"{separator(symbol_='-', val='SETUP')}")
     if "incremental" in item.keywords:
         previousfailed = getattr(item.parent, "_previousfailed", None)
         if previousfailed is not None:
@@ -283,10 +298,12 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_call(item):
+    BASIC_LOGGER.info(f"{separator(symbol_='-', val='CALL')}")
     prepare_test_dir_log(item=item, prefix="call")
 
 
 def pytest_runtest_teardown(item):
+    BASIC_LOGGER.info(f"{separator(symbol_='-', val='TEARDOWN')}")
     prepare_test_dir_log(item=item, prefix="teardown")
 
 
@@ -322,39 +339,11 @@ def pytest_generate_tests(metafunc):
         )
 
 
-def pytest_runtest_logreport(report):
-    is_setup = report.when == "setup"
-    is_test = report.when == "call"
-    scope_section_separator = f"\n{_separator(symbol_='-', val=report.when.upper())}\n"
-    test_status_str = f"\n\nSTATUS: {report.outcome.upper()}\n"
-
-    with open(TEST_LOG_FILE, "a", buffering=1) as fd:
-        if is_setup:
-            fd.write(f"\n{_separator(val=report.nodeid, symbol_='#')}\n")
-
-        log_section = [
-            section[1] for section in report.sections if report.when in section[0]
-        ]
-
-        if log_section:
-            fd.write(scope_section_separator)
-            fd.write(f"{log_section[0]}")
-        else:
-            if is_test:
-                fd.write(scope_section_separator)
-
-        if is_test and not report.failed:
-            fd.write(test_status_str)
-
-        if report.failed:
-            if not log_section and not is_test:
-                fd.write(scope_section_separator)
-
-            fd.write(test_status_str)
-            fd.write(f"{report.longreprtext}\n")
-
-
 def pytest_sessionstart(session):
+    if os.path.exists(TEST_LOG_FILE):
+        os.remove(TEST_LOG_FILE)
+
+    setup_logging(log_file=TEST_LOG_FILE)
     py_config_scs = py_config.get("storage_class_matrix", {})
     # Only HPP storage is supported when running with RHEL7 workers.
     if session.config.getoption("rhel7_workers"):
@@ -402,20 +391,23 @@ def pytest_sessionstart(session):
 
 def pytest_sessionfinish(session, exitstatus):
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-    passed_str = "passed"
-    skipped_str = "skipped"
-    failed_str = "failed"
-
-    passed = len(reporter.stats.get(passed_str, []))
-    skipped = len(reporter.stats.get(skipped_str, []))
-    failed = len(reporter.stats.get(failed_str, []))
-    summary = f"{passed} {passed_str}, {skipped} {skipped_str}, {failed} {failed_str}"
-
-    with open(TEST_LOG_FILE, "a", buffering=1) as fd:
-        fd.write(f"\n{_separator(symbol_='-', val=summary)}")
+    deselected_str = "deselected"
+    deselected = len(reporter.stats.get(deselected_str, []))
+    summary = (
+        f"{deselected} {deselected_str}, "
+        f"{reporter.pass_count} {'passed'}, "
+        f"{reporter.skip_count} {'skipped'}, "
+        f"{reporter.fail_count} {'failed'}, "
+        f"{reporter.error_count} {'error'} "
+        f"{reporter.xfail_count} {'xfail'} "
+        f"{reporter.xpass_count} {'xpass'} "
+    )
+    BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
 
 
 def pytest_exception_interact(node, call, report):
+    BASIC_LOGGER.error(report.longreprtext)
+
     if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
         try:
             namespace_name = generate_namespace_name(
@@ -432,12 +424,6 @@ def pytest_exception_interact(node, call, report):
         except Exception as exp:
             LOGGER.debug(f"Failed to collect logs: {exp}")
             return
-
-
-@pytest.fixture(scope="session", autouse=True)
-def tests_log_file():
-    with open(TEST_LOG_FILE, "w"):
-        LOGGER.debug(f"Open {TEST_LOG_FILE} for writing.")
 
 
 @pytest.fixture(scope="session", autouse=True)

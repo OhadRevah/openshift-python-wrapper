@@ -35,6 +35,7 @@ docker="*"
 pyvmomi="*"
 pytest-dependency="*"
 pytest-progress="*"  # https://github.com/ssrikanta/pytest-progress
+colorlog="*"
 
 [requires]
 python_version = "3"

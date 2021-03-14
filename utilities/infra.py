@@ -1,12 +1,15 @@
 import logging
 import os
 import re
+import shutil
 from configparser import ConfigParser
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import bugzilla
 import kubernetes
 import requests
+from colorlog import ColoredFormatter
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
@@ -309,3 +312,56 @@ def generate_namespace_name(file_path):
     return (file_path.strip(".py").replace("/", "-").replace("_", "-"))[-63:].split(
         "-", 1
     )[-1]
+
+
+def setup_logging(log_file="/tmp/pytest-tests.log"):
+    logger_obj = logging.getLogger()
+    basic_logger = logging.getLogger("basic")
+
+    root_log_formatter = logging.Formatter(fmt="%(message)s")
+    log_formatter = ColoredFormatter(
+        fmt="%(name)s %(asctime)s %(log_color)s%(levelname) s%(reset)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        log_colors={
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "red,bg_white",
+        },
+        secondary_log_colors={},
+    )
+
+    console_handler = logging.StreamHandler()
+    log_handler = RotatingFileHandler(
+        filename=log_file, maxBytes=100 * 1024 * 1024, backupCount=20
+    )
+    basic_console_handler = logging.StreamHandler()
+    basic_log_handler = RotatingFileHandler(
+        filename=log_file, maxBytes=100 * 1024 * 1024, backupCount=20
+    )
+
+    basic_log_handler.setFormatter(fmt=root_log_formatter)
+    basic_console_handler.setFormatter(fmt=root_log_formatter)
+    basic_logger.addHandler(hdlr=basic_log_handler)
+    basic_logger.addHandler(hdlr=basic_console_handler)
+    basic_logger.setLevel(level=logging.INFO)
+
+    log_handler.setFormatter(fmt=log_formatter)
+    console_handler.setFormatter(fmt=log_formatter)
+
+    logger_obj.addHandler(hdlr=console_handler)
+    logger_obj.addHandler(hdlr=log_handler)
+    logger_obj.setLevel(level=logging.INFO)
+
+    logger_obj.propagate = False
+    basic_logger.propagate = False
+
+
+def separator(symbol_, val=None):
+    terminal_width = shutil.get_terminal_size(fallback=(120, 40))[0]
+    if not val:
+        return f"{symbol_ * terminal_width}"
+
+    sepa = int((terminal_width - len(val) - 2) // 2)
+    return f"{symbol_ * sepa} {val} {symbol_ * sepa}"

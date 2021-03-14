@@ -20,6 +20,7 @@ fcfn_exclude_functions =
     urllib,
     shutil,
     LOGGER,
+    BASIC_LOGGER,
     get_plugin,
     ElementTree,
     xml_doc,
