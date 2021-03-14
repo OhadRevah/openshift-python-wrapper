@@ -3,6 +3,8 @@ import shlex
 from ipaddress import ip_interface
 
 import pytest
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.resource import ResourceEditor
 
 from tests.network.utils import (
     DHCP_SERVER_CONF_FILE,
@@ -393,3 +395,35 @@ def started_vmb_dhcp_client(
             shlex.split("sudo systemctl restart qemu-guest-agent.service"),
         ],
     )
+
+
+@pytest.fixture()
+def modified_nncp(configured_l2_bridge_vm_a, l2_bridge_device_worker_1):
+    # Get the current MTU of the bridge. It can be taken from any NodeNetworkState, but get it specifically from
+    # the VMI's hosting node, to make sure the NNCP includes an actual diff from the current state where the VMI runs.
+    nns = NodeNetworkState(name=configured_l2_bridge_vm_a.vmi.node.name)
+    bridge_mtu = [
+        br
+        for br in nns.interfaces
+        if br["name"] == l2_bridge_device_worker_1.bridge_name
+    ][0]["mtu"]
+
+    l2_bridge_device_worker_1.iface.update({"mtu": bridge_mtu - 100})
+    ResourceEditor(
+        patches={
+            l2_bridge_device_worker_1: {
+                "spec": {
+                    "desiredState": {
+                        "interfaces": l2_bridge_device_worker_1.iface,
+                    },
+                },
+            },
+        }
+    ).update(backup_resources=True)
+
+
+@pytest.fixture()
+def restarted_vms(configured_l2_bridge_vm_a, l2_bridge_running_vm_b):
+    for vm in (configured_l2_bridge_vm_a, l2_bridge_running_vm_b):
+        vm.stop(wait=True)
+        running_vm(vm=vm, enable_ssh=False)
