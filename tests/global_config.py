@@ -67,23 +67,18 @@ windows_username = "Administrator"
 windows_password = "Heslo123"
 
 region = "USA"
-usa_server = "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
-emea_server = "cnv-qe-server.scl.lab.tlv.redhat.com"
-USA = {
-    "http_server": f"http://{usa_server}/files/",
-    "https_server": f"https://{usa_server}/files/",
-    "http_server_auth": f"http://{usa_server}/files/mod-auth-basic/",
-    "registry_server": f"docker://{usa_server}",
+server_url = ""  # Send --tc=server_url:<url> to override servers region URL
+servers_url = {
+    "USA": "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com",
+    "EMEA": "cnv-qe-server.scl.lab.tlv.redhat.com",
+}
+servers = {
+    "http_server": "http://{server}/files/",
+    "https_server": "https://{server}/files/",
+    "http_server_auth": "http://{server}/files/mod-auth-basic/",
+    "registry_server": "docker://{server}",
     "https_cert": "usa_https.crt",
     "registry_cert": "usa_registry.crt",
-}
-EMEA = {
-    "http_server": f"http://{emea_server}/files/",
-    "https_server": f"https://{emea_server}/files/",
-    "http_server_auth": f"http://{emea_server}/files/mod-auth-basic/",
-    "registry_server": f"docker://{emea_server}",
-    "https_cert": "emea_https.crt",
-    "registry_cert": "emea_registry.crt",
 }
 
 nic_models_matrix = [

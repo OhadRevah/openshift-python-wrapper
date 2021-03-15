@@ -289,7 +289,7 @@ def get_images_external_http_server():
     """
     Fetch http_server url from config and return if available.
     """
-    server = py_config[py_config["region"]]["http_server"]
+    server = py_config["servers"]["http_server"]
     try:
         LOGGER.info(f"Testing connectivity to {server} HTTP server")
         assert urllib.request.urlopen(server, timeout=60).getcode() == 200
@@ -306,8 +306,7 @@ def get_images_https_server():
     """
     Fetch https_server url from config and return if available.
     """
-    region = py_config["region"]
-    server = py_config[region]["https_server"]
+    server = py_config["servers"]["https_server"]
 
     myssl = ssl.create_default_context()
     myssl.check_hostname = False

@@ -25,7 +25,7 @@ QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros.qcow2:latest"
-REGISTRY_TLS_SELF_SIGNED_SERVER = py_config[py_config["region"]]["registry_server"]
+REGISTRY_TLS_SELF_SIGNED_SERVER = py_config["servers"]["registry_server"]
 
 
 @pytest.fixture()
@@ -40,7 +40,7 @@ def disable_tls_registry(configmap_with_cert):
         {
             cdi_insecure_registries: {
                 "data": {
-                    py_config[py_config["region"]][
+                    py_config["servers"][
                         "registry_cert"
                     ]: f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443",
                 }
@@ -55,9 +55,7 @@ def configmap_with_cert(namespace):
         name="registry-cm-cert",
         namespace=namespace.name,
         data={
-            py_config[py_config["region"]]["registry_cert"]: get_cert(
-                server_type="registry_cert"
-            )
+            py_config["servers"]["registry_cert"]: get_cert(server_type="registry_cert")
         },
     ) as configmap:
         yield configmap
@@ -65,7 +63,7 @@ def configmap_with_cert(namespace):
 
 @pytest.fixture()
 def update_configmap_with_cert(request, configmap_with_cert):
-    cert_name = py_config[py_config["region"]]["registry_cert"]
+    cert_name = py_config["servers"]["registry_cert"]
     injected_content = request.param["injected_content"]
     ResourceEditor(
         {

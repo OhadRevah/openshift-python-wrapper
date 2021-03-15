@@ -111,9 +111,7 @@ def create_ns(name, client=None, kmp_vm_label=None, admin_client=None):
 
 
 def get_cert(server_type):
-    path = os.path.join(
-        "tests/storage/cdi_import", py_config[py_config["region"]][server_type]
-    )
+    path = os.path.join("tests/storage/cdi_import", py_config["servers"][server_type])
     with open(path, "r") as cert_content:
         data = cert_content.read()
     return data

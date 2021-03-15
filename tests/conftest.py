@@ -454,6 +454,13 @@ def pytest_sessionstart(session):
 
     config_default_storage_class(session=session)
 
+    # Set py_config["servers"]
+    # Send --tc=server_url:<url> to override servers region URL
+    server = py_config["server_url"] or py_config["servers_url"][py_config["region"]]
+    py_config["servers"] = {
+        name: srv.format(server=server) for name, srv in py_config["servers"].items()
+    }
+
 
 def pytest_sessionfinish(session, exitstatus):
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")

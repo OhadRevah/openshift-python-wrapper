@@ -92,7 +92,7 @@ def images_internal_http_server(internal_http_deployment, internal_http_service)
 
 @pytest.fixture(scope="session")
 def images_private_registry_server():
-    return py_config[py_config["region"]]["registry_server"]
+    return py_config["servers"]["registry_server"]
 
 
 @pytest.fixture()
