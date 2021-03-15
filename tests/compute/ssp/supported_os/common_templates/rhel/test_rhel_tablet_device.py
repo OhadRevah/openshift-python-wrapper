@@ -42,9 +42,9 @@ def check_vm_system_tablet_device(vm, expected_device):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_version"]["image_path"],
-                "dv_size": py_config["latest_rhel_version"]["dv_size"],
+                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_rhel_os_dict"]["image_path"],
+                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
             },
         ),
     ],
@@ -58,7 +58,7 @@ class TestRHELTabletDevice:
                 {
                     "vm_name": "rhel-virtio-tablet-device-vm",
                     "start_vm": True,
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -96,7 +96,7 @@ class TestRHELTabletDevice:
                 {
                     "vm_name": "rhel-usb-tablet-device-vm",
                     "start_vm": True,
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -134,7 +134,7 @@ class TestRHELTabletDevice:
                 {
                     "vm_name": "rhel-default-tablet-device-vm",
                     "start_vm": True,
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -171,7 +171,7 @@ class TestRHELTabletDevice:
             pytest.param(
                 {
                     "vm_name": "rhel-migrate-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -218,7 +218,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-ps2-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -230,7 +230,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-zen-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -242,7 +242,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-tranition-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(
@@ -281,7 +281,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-keyboard-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_version"][
+                    "template_labels": py_config["latest_rhel_os_dict"][
                         "template_labels"
                     ],
                     "vm_dict": utils.set_vm_tablet_device_dict(

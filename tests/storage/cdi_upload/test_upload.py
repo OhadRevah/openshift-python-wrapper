@@ -375,8 +375,8 @@ def test_successful_upload_missing_file_in_transit(
     [
         pytest.param(
             {
-                "image_path": py_config["latest_rhel_version"]["image_path"],
-                "image_file": py_config["latest_rhel_version"]["image_name"],
+                "image_path": py_config["latest_rhel_os_dict"]["image_path"],
+                "image_file": py_config["latest_rhel_os_dict"]["image_name"],
             },
             {
                 "dv_name": "cnv-4511",

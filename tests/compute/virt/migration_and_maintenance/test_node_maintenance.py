@@ -192,13 +192,13 @@ def test_node_drain_using_console_fedora(
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_version"]["image_path"],
-                "dv_size": py_config["latest_rhel_version"]["dv_size"],
+                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_rhel_os_dict"]["image_path"],
+                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
             },
             {
                 "vm_name": "rhel8-template-node-maintenance",
-                "template_labels": py_config["latest_rhel_version"]["template_labels"],
+                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
                 "set_vm_common_cpu": True,
             },
         )
@@ -294,13 +294,13 @@ class TestNodeMaintenanceRHEL:
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_windows_version"]["template_labels"]["os"],
-                "image": py_config["latest_windows_version"]["image_path"],
-                "dv_size": py_config["latest_windows_version"]["dv_size"],
+                "dv_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_windows_os_dict"]["image_path"],
+                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
             },
             {
                 "vm_name": "wind-template-node-cordon-and-drain",
-                "template_labels": py_config["latest_windows_version"][
+                "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
                 "cpu_threads": 2,

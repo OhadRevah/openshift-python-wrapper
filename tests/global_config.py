@@ -5,25 +5,10 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
-from utilities.infra import Images
+from utilities.infra import Images, generate_latest_os_dict
 
 
 global config
-
-
-def _generate_latest_os_dict(os_list):
-    """
-    Args:
-        os_list (list): [rhel|windows|fedora]_os_matrix - a list of dicts
-
-    Returns:
-        dict: Latest supported OS else raises an exception.
-    """
-    for os_dict in os_list:
-        for os_values in os_dict.values():
-            if os_values.get("latest"):
-                return os_values
-    assert False, f"No OS is marked as 'latest': {os_list}"
 
 
 def _get_default_storage_class(sc_list):
@@ -394,10 +379,10 @@ centos_os_matrix = [
     },
 ]
 
-latest_rhel_version = _generate_latest_os_dict(os_list=rhel_os_matrix)
-latest_windows_version = _generate_latest_os_dict(os_list=windows_os_matrix)
-latest_fedora_version = _generate_latest_os_dict(os_list=fedora_os_matrix)
-latest_centos_version = _generate_latest_os_dict(os_list=centos_os_matrix)
+_, latest_rhel_os_dict = generate_latest_os_dict(os_list=rhel_os_matrix)
+_, latest_windows_os_dict = generate_latest_os_dict(os_list=windows_os_matrix)
+_, latest_fedora_os_dict = generate_latest_os_dict(os_list=fedora_os_matrix)
+_, latest_centos_os_dict = generate_latest_os_dict(os_list=centos_os_matrix)
 
 ip_stack_version_matrix = [
     "ipv4",

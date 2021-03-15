@@ -13,8 +13,8 @@ pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
 
 
 LOGGER = logging.getLogger(__name__)
-WINDOWS_LATEST = py_config["latest_windows_version"]
-RHEL_LATEST = py_config["latest_rhel_version"]
+WINDOWS_LATEST = py_config["latest_windows_os_dict"]
+RHEL_LATEST = py_config["latest_rhel_os_dict"]
 RHEL_VERSION_TEMPLATE_LABELS = RHEL_LATEST["template_labels"]
 # Use OCS SC for Block disk IO logic
 STORAGE_CLASS = StorageClass.Types.CEPH_RBD

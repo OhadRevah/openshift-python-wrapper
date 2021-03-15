@@ -67,14 +67,14 @@ def update_validate_cpu_in_vm(
     [
         (
             {
-                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_version"]["image_path"],
-                "dv_size": py_config["latest_rhel_version"]["dv_size"],
+                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_rhel_os_dict"]["image_path"],
+                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
             },
             {
-                "vm_name": py_config["latest_rhel_version"]["template_labels"]["os"],
+                "vm_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
                 "template_labels": {
-                    "os": py_config["latest_rhel_version"]["template_labels"]["os"],
+                    "os": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
                     "workload": "desktop",
                     "flavor": "large",
                 },
@@ -152,13 +152,13 @@ class TestLatestRHEL:
     [
         (
             {
-                "dv_name": py_config["latest_windows_version"]["template_labels"]["os"],
-                "image": py_config["latest_windows_version"]["image_path"],
-                "dv_size": py_config["latest_windows_version"]["dv_size"],
+                "dv_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_windows_os_dict"]["image_path"],
+                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
             },
             {
-                "vm_name": py_config["latest_windows_version"]["template_labels"]["os"],
-                "template_labels": py_config["latest_windows_version"][
+                "vm_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
+                "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
                 "network_model": "virtio",

@@ -208,13 +208,13 @@ def verify_changes(vm, os):
         [
             {
                 "dv_name": "persistence-rhel-dv",
-                "image": py_config["latest_rhel_version"]["image_path"],
-                "dv_size": py_config["latest_rhel_version"]["dv_size"],
+                "image": py_config["latest_rhel_os_dict"]["image_path"],
+                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "persistence-rhel-vm",
-                "template_labels": py_config["latest_rhel_version"]["template_labels"],
+                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
             },
         ]
     ],
@@ -251,13 +251,13 @@ class TestRestartPersistenceLinux:
         [
             {
                 "dv_name": "persistence-windows-dv",
-                "image": py_config["latest_windows_version"]["image_path"],
-                "dv_size": py_config["latest_windows_version"]["dv_size"],
+                "image": py_config["latest_windows_os_dict"]["image_path"],
+                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "persistence-windows-vm",
-                "template_labels": py_config["latest_windows_version"][
+                "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
                 "ssh": True,

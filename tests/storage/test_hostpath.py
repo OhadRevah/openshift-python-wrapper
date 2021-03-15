@@ -206,7 +206,7 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
         pytest.param(
             {
                 "name": "cnv-2817",
-                "url": f"{get_images_external_http_server()}{py_config['latest_fedora_version']['image_path']}",
+                "url": f"{get_images_external_http_server()}{py_config['latest_fedora_os_dict']['image_path']}",
                 "size": Images.Fedora.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-2327")),
@@ -387,7 +387,7 @@ def test_hpp_upload_virtctl(
     """
     Check that upload disk image via virtctl tool works
     """
-    latest_fedora_image = py_config["latest_fedora_version"]["image_name"]
+    latest_fedora_image = py_config["latest_fedora_os_dict"]["image_name"]
     local_name = f"{tmpdir}/{latest_fedora_image}"
     remote_name = f"{Images.Fedora.DIR}/{latest_fedora_image}"
     downloaded_image(remote_name=remote_name, local_name=local_name)
@@ -509,7 +509,7 @@ def test_hostpath_registry_import_dv(
         pytest.param(
             {
                 "dv_name": "cnv-3516-source-dv",
-                "image": py_config["latest_fedora_version"]["image_path"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
                 "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
                 "storage_class": StorageClass.Types.HOSTPATH,
             },
@@ -560,7 +560,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             namespace=namespace.name,
             client=admin_client,
             labels=Template.generate_template_labels(
-                **py_config["latest_fedora_version"]["template_labels"]
+                **py_config["latest_fedora_os_dict"]["template_labels"]
             ),
             data_volume=target_dv,
         ) as vm:

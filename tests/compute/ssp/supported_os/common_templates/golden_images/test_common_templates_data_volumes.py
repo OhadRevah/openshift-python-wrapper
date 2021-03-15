@@ -122,7 +122,7 @@ def vm_from_golden_image_multi_storage(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(
-            **py_config["latest_fedora_version"]["template_labels"]
+            **py_config["latest_fedora_os_dict"]["template_labels"]
         ),
         data_volume=golden_image_data_volume_multi_storage_scope_function,
         delete_data_volume_sc_params=request.param.get("delete_sc_params"),
@@ -159,7 +159,7 @@ def vm_from_golden_image(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(
-            **py_config["latest_fedora_version"]["template_labels"]
+            **py_config["latest_fedora_os_dict"]["template_labels"]
         ),
         data_volume=golden_image_data_volume_scope_function,
         updated_storage_class_params=request.param.get("updated_storage_class_params"),
@@ -177,7 +177,7 @@ def vm_missing_golden_image(unprivileged_client, namespace):
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(
-            **py_config["latest_fedora_version"]["template_labels"]
+            **py_config["latest_fedora_os_dict"]["template_labels"]
         ),
     ) as vm:
         yield vm
@@ -188,9 +188,9 @@ def vm_missing_golden_image(unprivileged_client, namespace):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_fedora_version"]["template_labels"]["os"],
-                "image": py_config["latest_fedora_version"]["image_path"],
-                "dv_size": py_config["latest_fedora_version"]["dv_size"],
+                "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
+                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
             },
             {
                 "delete_sc_params": True,
@@ -214,13 +214,13 @@ def test_vm_from_golden_image_cluster_default_storage_class(
         pytest.param(
             {
                 "dv_name": "dv-fedora",
-                "image": py_config["latest_fedora_version"]["image_path"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_fedora_version"]["dv_size"],
+                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
             },
             {
                 "vm_name": "fedora-vm",
-                "template_labels": py_config["latest_fedora_version"][
+                "template_labels": py_config["latest_fedora_os_dict"][
                     "template_labels"
                 ],
             },
@@ -238,10 +238,10 @@ def test_vm_with_existing_dv(data_volume_scope_function, vm_with_existing_dv):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_fedora_version"]["template_labels"]["os"],
-                "image": py_config["latest_fedora_version"]["image_path"],
+                "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
                 "storage_class": StorageClass.Types.HOSTPATH,
-                "dv_size": py_config["latest_fedora_version"]["dv_size"],
+                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
             },
             {
                 "updated_storage_class_params": {
@@ -271,8 +271,8 @@ def test_vm_dv_with_different_sc(
         pytest.param(
             {
                 "dv_name": "fedora-dv",
-                "image": py_config["latest_fedora_version"]["image_path"],
-                "dv_size": py_config["latest_fedora_version"]["dv_size"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
+                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {

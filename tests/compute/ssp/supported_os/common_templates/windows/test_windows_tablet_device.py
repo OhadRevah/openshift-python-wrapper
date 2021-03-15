@@ -54,9 +54,9 @@ def check_windows_vm_tablet_device(vm, driver_state):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_windows_version"]["template_labels"]["os"],
-                "image": py_config["latest_windows_version"]["image_path"],
-                "dv_size": py_config["latest_windows_version"]["dv_size"],
+                "dv_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_windows_os_dict"]["image_path"],
+                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
             },
         ),
     ],
@@ -69,7 +69,7 @@ class TestWindowsTabletDevice:
             pytest.param(
                 {
                     "vm_name": "windows-usb-tablet-device-vm",
-                    "template_labels": py_config["latest_windows_version"][
+                    "template_labels": py_config["latest_windows_os_dict"][
                         "template_labels"
                     ],
                     "cpu_threads": 2,
@@ -106,7 +106,7 @@ class TestWindowsTabletDevice:
             pytest.param(
                 {
                     "vm_name": "windows-virtio-tablet-device-vm",
-                    "template_labels": py_config["latest_windows_version"][
+                    "template_labels": py_config["latest_windows_os_dict"][
                         "template_labels"
                     ],
                     "cpu_threads": 2,
@@ -147,7 +147,7 @@ class TestWindowsTabletDevice:
             pytest.param(
                 {
                     "vm_name": "windows-server-default-tablet-device",
-                    "template_labels": py_config["latest_windows_version"][
+                    "template_labels": py_config["latest_windows_os_dict"][
                         "template_labels"
                     ],
                     "cpu_threads": 2,

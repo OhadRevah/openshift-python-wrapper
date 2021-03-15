@@ -20,8 +20,8 @@ from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
-LATEST_RHEL_IMAGE = py_config["latest_rhel_version"]["image_path"]
-RHEL_IMAGE_SIZE = py_config["latest_rhel_version"]["dv_size"]
+LATEST_RHEL_IMAGE = py_config["latest_rhel_os_dict"]["image_path"]
+RHEL_IMAGE_SIZE = py_config["latest_rhel_os_dict"]["dv_size"]
 GOLDEN_IMAGES_NAMESPACE = py_config["golden_images_namespace"]
 
 
@@ -113,7 +113,7 @@ def test_regular_user_can_create_vm_from_cloned_dv(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(
-            **py_config["latest_rhel_version"]["template_labels"]
+            **py_config["latest_rhel_os_dict"]["template_labels"]
         ),
         data_volume_template=data_volume_template_dict(
             target_dv_name=f"user-dv-{time.time()}".replace(".", "-"),

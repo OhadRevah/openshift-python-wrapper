@@ -28,9 +28,9 @@ pytestmark = pytest.mark.destructive
 
 LOGGER = logging.getLogger(__name__)
 DV_DICT = {
-    "dv_name": py_config["latest_fedora_version"]["template_labels"]["os"],
-    "image": py_config["latest_fedora_version"]["image_path"],
-    "dv_size": py_config["latest_fedora_version"]["dv_size"],
+    "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
+    "image": py_config["latest_fedora_os_dict"]["image_path"],
+    "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
     "storage_class": "nfs",
     "access_modes": "ReadWriteMany",
     "volume_mode": "Filesystem",
@@ -85,7 +85,7 @@ def ha_vm_dv_disk(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(
-            **py_config["latest_fedora_version"]["template_labels"]
+            **py_config["latest_fedora_os_dict"]["template_labels"]
         ),
         data_volume=golden_image_data_volume_scope_function,
         run_strategy=run_strategy,

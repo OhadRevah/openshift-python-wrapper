@@ -365,3 +365,18 @@ def separator(symbol_, val=None):
 
     sepa = int((terminal_width - len(val) - 2) // 2)
     return f"{symbol_ * sepa} {val} {symbol_ * sepa}"
+
+
+def generate_latest_os_dict(os_list):
+    """
+    Args:
+        os_list (list): [rhel|windows|fedora]_os_matrix - a list of dicts
+
+    Returns:
+        tuple: (Latest OS name, latest supported OS dict) else raises an exception.
+    """
+    for os_dict in os_list:
+        for os_version, os_values in os_dict.items():
+            if os_values.get("latest"):
+                return os_version, os_values
+    assert False, f"No OS is marked as 'latest': {os_list}"

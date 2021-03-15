@@ -59,6 +59,7 @@ from utilities.infra import (
     collect_logs_pods,
     collect_logs_resources,
     create_ns,
+    generate_latest_os_dict,
     generate_namespace_name,
     get_admin_client,
     get_bug_status,
@@ -120,6 +121,7 @@ TEAM_MARKERS = {
 
 def pytest_addoption(parser):
     matrix_group = parser.getgroup(name="Matrix")
+    os_group = parser.getgroup(name="OS")
     upgrade_group = parser.getgroup(name="Upgrade")
     workers_group = parser.getgroup(name="Workers")
     storage_group = parser.getgroup(name="Storage")
@@ -147,6 +149,28 @@ def pytest_addoption(parser):
     matrix_group.addoption("--vm-volumes-matrix", help="VM volumes matrix to use")
     matrix_group.addoption("--run-strategy-matrix", help="RunStrategy matrix to use")
 
+    # OS addoption
+    os_group.addoption(
+        "--latest-rhel",
+        action="store_true",
+        help="Run matrix tests with latest RHEL OS",
+    )
+    os_group.addoption(
+        "--latest-fedora",
+        action="store_true",
+        help="Run matrix tests with latest Fedora OS",
+    )
+    os_group.addoption(
+        "--latest-windows",
+        action="store_true",
+        help="Run matrix tests with latest Windows OS",
+    )
+    os_group.addoption(
+        "--latest-centos",
+        action="store_true",
+        help="Run matrix tests with latest CentOS",
+    )
+
     # Workers addoption
     workers_group.addoption(
         "--rhel7-workers",
@@ -169,6 +193,27 @@ def pytest_cmdline_main(config):
     if config.getoption("upgrade") == "cnv":
         if not config.getoption("cnv_version"):
             raise ValueError("Running with --upgrade cnv: Missing --cnv-version")
+
+    # [rhel|fedora|windows|centos]-os-matrix and latest-[rhel|fedora|windows|centos] are mutually exclusive
+    rhel_os_violation = config.getoption("rhel_os_matrix") and config.getoption(
+        "latest_rhel"
+    )
+    windows_os_violation = config.getoption("windows_os_matrix") and config.getoption(
+        "latest_windows"
+    )
+    fedora_os_violation = config.getoption("fedora_os_matrix") and config.getoption(
+        "latest_fedora"
+    )
+    centos_os_violation = config.getoption("centos_os_matrix") and config.getoption(
+        "latest_centos"
+    )
+    if (
+        rhel_os_violation
+        or windows_os_violation
+        or fedora_os_violation
+        or centos_os_violation
+    ):
+        raise ValueError("os matrix and latest os options are mutually exclusive.")
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -340,6 +385,31 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_sessionstart(session):
+    def _update_os_related_config():
+        # Save the default windows_os_matrix before it is updated
+        # with runtime windows_os_matrix value(s).
+        # Some tests extract a single OS from the matrix and may fail if running with
+        # passed values from cli
+        py_config["system_windows_os_matrix"] = py_config["windows_os_matrix"]
+
+        # Update OS matrix list with the latest OS if running with os_group
+        if session.config.getoption("latest_rhel"):
+            py_config["rhel_os_matrix"] = [
+                dict([generate_latest_os_dict(os_list=py_config["rhel_os_matrix"])])
+            ]
+        if session.config.getoption("latest_windows"):
+            py_config["windows_os_matrix"] = [
+                dict([generate_latest_os_dict(os_list=py_config["windows_os_matrix"])])
+            ]
+        if session.config.getoption("latest_centos"):
+            py_config["centos_os_matrix"] = [
+                dict([generate_latest_os_dict(os_list=py_config["centos_os_matrix"])])
+            ]
+        if session.config.getoption("latest_fedora"):
+            py_config["fedora_os_matrix"] = [
+                dict([generate_latest_os_dict(os_list=py_config["fedora_os_matrix"])])
+            ]
+
     if os.path.exists(TEST_LOG_FILE):
         os.remove(TEST_LOG_FILE)
 
@@ -355,11 +425,7 @@ def pytest_sessionstart(session):
     # with runtime storage_class_matrix value(s)
     py_config["system_storage_class_matrix"] = py_config_scs
 
-    # Save the default windows_os_matrix before it is updated
-    # with runtime windows_os_matrix value(s).
-    # Some tests extract a single OS from the matrix and may fail if running with
-    # passed values from cli
-    py_config["system_windows_os_matrix"] = py_config["windows_os_matrix"]
+    _update_os_related_config()
 
     matrix_addoptions = [
         matrix

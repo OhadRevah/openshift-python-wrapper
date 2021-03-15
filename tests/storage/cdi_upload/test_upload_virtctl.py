@@ -400,17 +400,17 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
         pytest.param(
             {
                 "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-                "remote_name": py_config["latest_windows_version"]["image_path"],
-                "image_file": py_config["latest_windows_version"]["image_name"],
+                "remote_name": py_config["latest_windows_os_dict"]["image_path"],
+                "image_file": py_config["latest_windows_os_dict"]["image_name"],
             },
             {
-                "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
-                "template_labels": py_config["latest_windows_version"][
+                "vm_name": f"vm-win-{py_config['latest_windows_os_dict']['os_version']}",
+                "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
                 "cpu_threads": 2,
                 "ssh": True,
-                "os_version": py_config["latest_windows_version"]["os_version"],
+                "os_version": py_config["latest_windows_os_dict"]["os_version"],
                 "username": py_config["windows_username"],
                 "password": py_config["windows_password"],
             },
@@ -468,8 +468,8 @@ def test_disk_image_after_upload_virtctl(
     [
         pytest.param(
             {
-                "image_path": py_config["latest_rhel_version"]["image_path"],
-                "image_file": py_config["latest_rhel_version"]["image_name"],
+                "image_path": py_config["latest_rhel_os_dict"]["image_path"],
+                "image_file": py_config["latest_rhel_os_dict"]["image_name"],
             },
             marks=(pytest.mark.polarion("CNV-4512")),
         ),

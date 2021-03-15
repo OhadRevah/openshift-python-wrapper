@@ -813,8 +813,8 @@ def test_vm_from_dv_on_different_node(
                 "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },
             {
-                "vm_name": f"vm-win-{py_config['latest_windows_version']['os_version']}",
-                "template_labels": py_config["latest_windows_version"][
+                "vm_name": f"vm-win-{py_config['latest_windows_os_dict']['os_version']}",
+                "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
                 "cpu_threads": 2,
@@ -822,7 +822,7 @@ def test_vm_from_dv_on_different_node(
                 "username": py_config["windows_username"],
                 "password": py_config["windows_password"],
             },
-            {"os_version": py_config["latest_windows_version"]["os_version"]},
+            {"os_version": py_config["latest_windows_os_dict"]["os_version"]},
             marks=pytest.mark.polarion("CNV-3637"),
         ),
     ],

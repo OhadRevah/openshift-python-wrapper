@@ -93,14 +93,14 @@ def get_disk_usage(ssh_exec):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_fedora_version"]["template_labels"]["os"],
-                "image": py_config["latest_fedora_version"]["image_path"],
+                "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_fedora_version"]["dv_size"],
+                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
             },
             {
                 "vm_name": "fedora-load-vm",
-                "template_labels": py_config["latest_fedora_version"][
+                "template_labels": py_config["latest_fedora_os_dict"][
                     "template_labels"
                 ],
                 "cpu_threads": 2,

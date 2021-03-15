@@ -38,13 +38,13 @@ def container_disk_vm(namespace, unprivileged_client, cpu_model, admin_client=No
 def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
     with create_dv(
         client=admin_client,
-        dv_name=py_config["latest_fedora_version"]["template_labels"]["os"],
+        dv_name=py_config["latest_fedora_os_dict"]["template_labels"]["os"],
         namespace=py_config["golden_images_namespace"],
-        url=f"{get_images_external_http_server()}{py_config['latest_fedora_version']['image_path']}",
+        url=f"{get_images_external_http_server()}{py_config['latest_fedora_os_dict']['image_path']}",
         storage_class=py_config["default_storage_class"],
         access_modes=py_config["default_access_mode"],
         volume_mode=py_config["default_volume_mode"],
-        size=py_config["latest_fedora_version"]["dv_size"],
+        size=py_config["latest_fedora_os_dict"]["dv_size"],
     ) as dv:
         # wait for dv import to start and complete
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=1800)
@@ -54,7 +54,7 @@ def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
             namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(
-                **py_config["latest_fedora_version"]["template_labels"]
+                **py_config["latest_fedora_os_dict"]["template_labels"]
             ),
             data_volume=dv,
             run_strategy=default_run_strategy,

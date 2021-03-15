@@ -80,9 +80,9 @@ def get_stress_ng_pid(ssh_exec):
         pytest.param(
             {
                 "dv_name": "dv-fedora-mem-load-vm",
-                "image": py_config["latest_fedora_version"]["image_path"],
+                "image": py_config["latest_fedora_os_dict"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_fedora_version"]["dv_size"],
+                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
             },
             marks=pytest.mark.polarion("CNV-4661"),
             id="case: migrate vm with memory load on the guest",

@@ -153,7 +153,7 @@ def dvs_for_upgrade(namespace, worker_node1):
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
-            url=f"{get_images_external_http_server()}{py_config['latest_rhel_version']['image_path']}",
+            url=f"{get_images_external_http_server()}{py_config['latest_rhel_os_dict']['image_path']}",
             size="25Gi",
             hostpath_node=worker_node1.name
             if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
@@ -176,7 +176,7 @@ def vms_for_upgrade(
     networks = {
         upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
     }
-    template_labels = py_config["latest_rhel_version"]["template_labels"]
+    template_labels = py_config["latest_rhel_os_dict"]["template_labels"]
     vms_list = []
     for dv in dvs_for_upgrade:
         vm = VirtualMachineForTestsFromTemplate(

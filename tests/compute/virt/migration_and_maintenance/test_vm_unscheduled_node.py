@@ -38,14 +38,14 @@ def unscheduled_node_vm(
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_version"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_version"]["image_path"],
+                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
+                "image": py_config["latest_rhel_os_dict"]["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_rhel_version"]["dv_size"],
+                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
             },
             {
                 "vm_name": "rhel-node-maintenance",
-                "template_labels": py_config["latest_rhel_version"]["template_labels"],
+                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
                 "start_vm": False,
                 "set_vm_common_cpu": True,
             },
