@@ -21,6 +21,9 @@ from utilities.infra import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 LINUX_WORKLOADS_LIST = [

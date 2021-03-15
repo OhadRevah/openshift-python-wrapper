@@ -15,6 +15,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture()
 def configmap_smbios_vm(unprivileged_client, namespace):
     name = "configmap-smbios-vm"

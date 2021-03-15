@@ -15,6 +15,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 def check_vm_dumpxml(vm, cores, sockets, threads):
     def _parse_xml(vm):
         wait_for_vm_interfaces(vmi=vm.vmi)

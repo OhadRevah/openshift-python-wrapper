@@ -12,6 +12,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture()
 def cpu_flag_vm_positive(nodes_common_cpu_model, namespace, unprivileged_client):
     name = "vm-cpu-flags-positive"

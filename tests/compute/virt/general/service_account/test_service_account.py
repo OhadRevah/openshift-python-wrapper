@@ -15,6 +15,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture(scope="module")
 def service_account(namespace):
     with ServiceAccount(name="sa-test", namespace=namespace.name) as sa:

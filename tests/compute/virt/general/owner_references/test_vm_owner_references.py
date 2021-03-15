@@ -12,6 +12,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 def _wait_for_virt_launcher_pod(vmi):
     samples = TimeoutSampler(
         wait_timeout=30, sleep=1, func=lambda: vmi.virt_launcher_pod

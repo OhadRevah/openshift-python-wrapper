@@ -9,6 +9,9 @@ from ocp_resources.pod import Pod
 from pytest_testconfig import config as py_config
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 

@@ -7,6 +7,9 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.ssp import SSP
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 CONDITIONS_DICT = {
     CustomResourceDefinition.Condition.PROGRESSING: "False",
     CustomResourceDefinition.Condition.AVAILABLE: "True",

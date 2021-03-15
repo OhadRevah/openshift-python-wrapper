@@ -13,6 +13,9 @@ from pytest_testconfig import config as py_config
 from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 # Negative tests require a DV, however its content is not important (VM will not be created).
 FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"

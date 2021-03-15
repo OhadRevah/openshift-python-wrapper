@@ -16,6 +16,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture(
     params=[
         pytest.param(

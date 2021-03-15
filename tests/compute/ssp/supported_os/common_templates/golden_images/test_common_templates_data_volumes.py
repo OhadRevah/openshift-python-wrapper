@@ -21,6 +21,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture()
 def updated_default_storage_class(
     admin_client,

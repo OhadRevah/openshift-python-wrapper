@@ -15,6 +15,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture()
 def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
     name = f"vm-{request.param['vm_name']}-machine-type"

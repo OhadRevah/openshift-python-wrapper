@@ -9,6 +9,9 @@ import logging
 import pytest
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 POD_SCC_WHITELIST = [

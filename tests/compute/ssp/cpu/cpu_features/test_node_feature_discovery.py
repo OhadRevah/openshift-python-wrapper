@@ -12,6 +12,9 @@ from pytest_testconfig import config as py_config
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
+pytestmark = pytest.mark.after_upgrade
+
+
 @pytest.fixture(scope="module")
 def nodes_labels_dict(nodes):
     """

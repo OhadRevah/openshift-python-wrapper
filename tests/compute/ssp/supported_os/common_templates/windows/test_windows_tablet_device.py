@@ -18,10 +18,14 @@ from utilities.infra import run_ssh_commands
 from utilities.virt import get_windows_os_dict
 
 
-pytestmark = pytest.mark.skipif(
-    condition=py_config["distribution"] == "upstream",
-    reason="Running only on downstream.",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        condition=py_config["distribution"] == "upstream",
+        reason="Running only on downstream.",
+    ),
+    pytest.mark.after_upgrade,
+]
+
 
 LOGGER = logging.getLogger(__name__)
 WINDOWS_DESKTOP_VERSION = get_windows_os_dict(windows_version="win-10")
