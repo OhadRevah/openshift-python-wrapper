@@ -5,7 +5,7 @@ from ocp_resources.pod import Pod
 from utilities.storage import ErrorMsg
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 def check_pod_creation_failed(pod_name, client, namespace):

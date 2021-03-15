@@ -9,7 +9,7 @@ from pytest_testconfig import config as py_config
 from utilities.virt import wait_for_vm_interfaces
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 def update_cpu_spec(vm, network_multiqueue=True, cores=1, sockets=1, threads=1):

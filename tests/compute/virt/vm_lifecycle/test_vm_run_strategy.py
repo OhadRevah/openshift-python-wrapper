@@ -18,7 +18,7 @@ from utilities.infra import run_ssh_commands
 from utilities.virt import migrate_and_verify, wait_for_vm_interfaces
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)

@@ -23,7 +23,7 @@ pytestmark = [
         condition=py_config["distribution"] == "upstream",
         reason="Running only on downstream.",
     ),
-    pytest.mark.after_upgrade,
+    pytest.mark.post_upgrade,
 ]
 
 

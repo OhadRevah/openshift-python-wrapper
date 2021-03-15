@@ -18,7 +18,7 @@ from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_and_verify, running_vm, wait_for_console
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)

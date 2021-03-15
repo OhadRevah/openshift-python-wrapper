@@ -8,7 +8,7 @@ Test to check, SELinuxLauncher Type in kubevirt config map
 import pytest
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.mark.polarion("CNV-4296")

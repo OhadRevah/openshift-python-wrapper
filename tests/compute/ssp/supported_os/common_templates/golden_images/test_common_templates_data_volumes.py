@@ -21,7 +21,7 @@ from utilities.virt import (
 )
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.fixture()

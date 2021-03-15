@@ -12,7 +12,7 @@ from utilities.virt import (
 )
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 def _wait_for_virt_launcher_pod(vmi):

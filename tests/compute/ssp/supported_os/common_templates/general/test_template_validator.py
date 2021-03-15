@@ -13,7 +13,7 @@ from pytest_testconfig import config as py_config
 from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)

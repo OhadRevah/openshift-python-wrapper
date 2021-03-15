@@ -7,7 +7,7 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.ssp import SSP
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 CONDITIONS_DICT = {

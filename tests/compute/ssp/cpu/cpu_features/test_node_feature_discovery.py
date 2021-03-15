@@ -12,7 +12,7 @@ from pytest_testconfig import config as py_config
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-pytestmark = pytest.mark.after_upgrade
+pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.fixture(scope="module")
