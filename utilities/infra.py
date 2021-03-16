@@ -78,6 +78,7 @@ class Images:
 
     class Windows:
         WIM10_IMG = "win_10.qcow2"
+        WIM10_WSL2_IMG = "win_10_wsl2.qcow2"
         WIM10_EFI_IMG = "win_10_efi.qcow2"
         WIM10_NVIDIA_IMG = "win_10_nv.qcow2"
         WIN12_IMG = "win_12.qcow2"
@@ -89,6 +90,7 @@ class Images:
         RAW_DIR = f"{DIR}/raw_images"
         DEFAULT_DV_SIZE = "60Gi"
         NVIDIA_DV_SIZE = "70Gi"
+        WSL2_DV_SIZE = "40Gi"
 
     class Fedora:
         FEDORA32_IMG = "Fedora-Cloud-Base-32-1.6.x86_64.qcow2"

@@ -5,6 +5,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
+from utilities.constants import INTEL
 from utilities.infra import Images, generate_latest_os_dict
 
 
@@ -36,6 +37,7 @@ golden_images_namespace = "openshift-virtualization-os-images"
 test_guest_performance = {"bandwidth": 0.8}  # All our servers have 1GiB interfaces.
 linux_bridge_cni = "cnv-bridge"
 bridge_tuning = "cnv-tuning"
+nodes_cpu_architecture = INTEL  # INTEL = "Intel" AMD = "AMD"
 
 provider_matrix = [
     {

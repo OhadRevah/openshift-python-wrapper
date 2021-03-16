@@ -102,3 +102,7 @@ KMP_ENABLED_LABEL = "allocate"
 
 # SSH constants
 CNV_SSH_KEY_PATH = os.path.join(os.getcwd(), "utilities/cnv-qe-jenkins.key")
+
+# CPU ARCH
+INTEL = "Intel"
+AMD = "AMD"
