@@ -18,7 +18,7 @@ from utilities.storage import (
     check_cdi_feature_gate_enabled,
     create_dv,
     downloaded_image,
-    get_images_external_http_server,
+    get_images_server_url,
     virtctl_upload_dv,
 )
 from utilities.virt import VirtualMachineForTests
@@ -74,7 +74,7 @@ def get_dv_template_dict(dv_name):
                 "storageClassName": StorageClass.Types.HOSTPATH,
             },
             "source": {
-                "http": {"url": f"{get_images_external_http_server()}{REMOTE_PATH}"}
+                "http": {"url": f"{get_images_server_url(schema='http')}{REMOTE_PATH}"}
             },
         },
     }

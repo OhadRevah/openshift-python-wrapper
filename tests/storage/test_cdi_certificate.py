@@ -24,7 +24,7 @@ from utilities.infra import Images
 from utilities.storage import (
     create_dummy_first_consumer_pod,
     create_dv,
-    get_images_external_http_server,
+    get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
@@ -187,7 +187,7 @@ def test_dv_delete_from_vm(
             },
             "source": {
                 "http": {
-                    "url": f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
+                    "url": f"{get_images_server_url(schema='http')}{Images.Cirros.DIR} / {Images.Cirros.QCOW2_IMG}"
                 }
             },
         },

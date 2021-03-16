@@ -15,7 +15,7 @@ from pytest_testconfig import config as py_config
 import utilities.storage
 from tests.storage import utils
 from utilities.infra import Images, get_cert
-from utilities.storage import downloaded_image, get_images_https_server
+from utilities.storage import downloaded_image, get_images_server_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         cdiconfig=cdi_config,
         dv_name="cnv-2451",
         storage_class_type=StorageClass.Types.HOSTPATH,
-        images_https_server_name=get_images_https_server(),
+        images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
         access_mode=DataVolume.AccessMode.RWO,
@@ -117,7 +117,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         storage_ns_name=namespace.name,
         volume_mode=DataVolume.VolumeMode.FILE,
         access_mode=DataVolume.AccessMode.RWO,
-        images_https_server_name=get_images_https_server(),
+        images_https_server_name=get_images_server_url(schema="https"),
         run_vm=True,
         client=unprivileged_client,
     )
@@ -150,7 +150,7 @@ def test_cdiconfig_scratch_space_not_default(
         cdiconfig=cdi_config,
         dv_name="cnv-2440",
         storage_class_type=StorageClass.Types.HOSTPATH,
-        images_https_server_name=get_images_https_server(),
+        images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
         run_vm=True,
         volume_mode=DataVolume.VolumeMode.FILE,
@@ -253,7 +253,7 @@ def test_cdiconfig_changing_storage_class_default(
             }
         ):
             url = utils.get_file_url_https_server(
-                images_https_server=get_images_https_server(),
+                images_https_server=get_images_server_url(schema="https"),
                 file_name=Images.Cirros.QCOW2_IMG,
             )
             with ConfigMap(

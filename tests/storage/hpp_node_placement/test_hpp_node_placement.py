@@ -15,7 +15,7 @@ from pytest_testconfig import config as py_config
 from tests.storage.utils import check_disk_count_in_vm
 from utilities.hco import add_labels_to_nodes
 from utilities.infra import Images, get_pod_by_name_prefix
-from utilities.storage import get_images_external_http_server
+from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests
 
 
@@ -118,7 +118,7 @@ def cirros_vm_on_hpp(
         name=dv_name,
         namespace=namespace.name,
         source="http",
-        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         storage_class=StorageClass.Types.HOSTPATH,
         size=Images.Cirros.DEFAULT_DV_SIZE,
     ).to_dict()

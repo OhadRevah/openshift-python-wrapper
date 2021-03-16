@@ -20,7 +20,7 @@ from utilities.network import (
     wait_for_ovs_status,
 )
 from utilities.storage import (
-    get_images_external_http_server,
+    get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
 )
 from utilities.virt import (
@@ -153,7 +153,7 @@ def dvs_for_upgrade(namespace, worker_node1):
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
-            url=f"{get_images_external_http_server()}{py_config['latest_rhel_os_dict']['image_path']}",
+            url=f"{get_images_server_url(schema='http')}{py_config['latest_rhel_os_dict']['image_path']}",
             size="25Gi",
             hostpath_node=worker_node1.name
             if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)

@@ -15,7 +15,7 @@ from tests.conftest import UNPRIVILEGED_USER
 from tests.storage.utils import set_permissions
 from utilities import console
 from utilities.infra import Images
-from utilities.storage import get_images_external_http_server
+from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests
 
 
@@ -35,7 +35,7 @@ def cirros_vm(
         name=f"dv-{request.param['vm_name']}",
         namespace=namespace.name,
         source="http",
-        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         storage_class=StorageClass.Types.CEPH_RBD,
         volume_mode=DataVolume.VolumeMode.BLOCK,
         access_modes=DataVolume.AccessMode.RWX,

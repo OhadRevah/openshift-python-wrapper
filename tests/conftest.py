@@ -332,7 +332,7 @@ def pytest_runtest_setup(item):
     """
     Use incremental
     """
-    BASIC_LOGGER.info(f"{separator(symbol_='-', val=item.name)}")
+    BASIC_LOGGER.info(f"\n{separator(symbol_='-', val=item.name)}")
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='SETUP')}")
     if "incremental" in item.keywords:
         previousfailed = getattr(item.parent, "_previousfailed", None)

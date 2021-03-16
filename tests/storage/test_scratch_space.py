@@ -15,11 +15,7 @@ from openshift.dynamic.exceptions import NotFoundError
 import utilities.storage
 from tests.storage import utils as storage_utils
 from utilities.infra import BUG_STATUS_CLOSED, Images
-from utilities.storage import (
-    downloaded_image,
-    get_images_external_http_server,
-    get_images_https_server,
-)
+from utilities.storage import downloaded_image, get_images_server_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -183,7 +179,7 @@ def test_no_scratch_space_import_https_data_volume(
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_https_server()}{Images.Cirros.DIR}/{file_name}",
+        url=f"{get_images_server_url(schema='https')}{Images.Cirros.DIR}/{file_name}",
         cert_configmap=https_config_map.name,
         content_type=content_type,
         size=size,
@@ -229,7 +225,7 @@ def test_scratch_space_import_https_data_volume(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_https_server()}{Images.Cirros.DIR}/{file_name}",
+        url=f"{get_images_server_url(schema='https')}{Images.Cirros.DIR}/{file_name}",
         cert_configmap=https_config_map.name,
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
@@ -271,7 +267,7 @@ def test_scratch_space_import_http_data_volume(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{file_name}",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{file_name}",
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
@@ -313,7 +309,7 @@ def test_scratch_space_import_http_basic_auth_data_volume(
         source="http",
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         secret=scratch_space_secret,
@@ -366,7 +362,7 @@ def test_no_scratch_space_import_http_basic_auth(
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_external_http_server()}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.MOD_AUTH_BASIC_DIR}/{file_name}",
         secret=scratch_space_secret,
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="5Gi",
@@ -409,7 +405,7 @@ def test_no_scratch_space_import_http(
     create_dv_and_vm_no_scratch_space(
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{get_images_external_http_server()}{Images.Cirros.DIR}/{file_name}",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{file_name}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="5Gi",
         storage_class=storage_class,

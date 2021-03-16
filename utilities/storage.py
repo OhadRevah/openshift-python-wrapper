@@ -230,11 +230,8 @@ def data_volume(
         "consume_wffc": consume_wffc,
         "bind_immediate": bind_immediate,
         "preallocation": params_dict.get("preallocation", None),
+        "url": f"{get_images_server_url(schema=source)}{image}",
     }
-    if source == "http":
-        dv_kwargs["url"] = f"{get_images_external_http_server()}{image}"
-    elif source == "https":
-        dv_kwargs["url"] = f"{get_images_https_server()}{image}"
     if params_dict.get("cert_configmap"):
         dv_kwargs["cert_configmap"] = params_dict.get("cert_configmap")
     # Create dv
@@ -274,7 +271,7 @@ def downloaded_image(remote_name, local_name):
     """
     Download image to local tmpdir path
     """
-    url = f"{get_images_external_http_server()}{remote_name}"
+    url = f"{get_images_server_url(schema='http')}{remote_name}"
     assert requests.head(url).status_code == requests.codes.ok
     LOGGER.info(f"Download {url} to {local_name}")
     urllib.request.urlretrieve(url, local_name)
@@ -283,40 +280,6 @@ def downloaded_image(remote_name, local_name):
     except FileNotFoundError as err:
         LOGGER.error(err)
         raise
-
-
-def get_images_external_http_server():
-    """
-    Fetch http_server url from config and return if available.
-    """
-    server = py_config["servers"]["http_server"]
-    try:
-        LOGGER.info(f"Testing connectivity to {server} HTTP server")
-        assert urllib.request.urlopen(server, timeout=60).getcode() == 200
-    except (urllib.error.URLError, socket.timeout) as e:
-        LOGGER.error(
-            f"URL Error when testing connectivity to {server} HTTP server.\nError: {e}"
-        )
-        raise
-
-    return server
-
-
-def get_images_https_server():
-    """
-    Fetch https_server url from config and return if available.
-    """
-    server = py_config["servers"]["https_server"]
-
-    myssl = ssl.create_default_context()
-    myssl.check_hostname = False
-    myssl.verify_mode = ssl.CERT_NONE
-    try:
-        assert urllib.request.urlopen(server, context=myssl).getcode() == 200
-    except urllib.error.URLError:
-        LOGGER.error("URL Error when testing connectivity to HTTPS server")
-        raise
-    return server
 
 
 def get_storage_class_dict_from_matrix(storage_class):
@@ -568,3 +531,36 @@ def data_volume_template_dict(
         ] = worker_node.name
 
     return data_volume_template_dict
+
+
+def get_images_server_url(schema):
+    """
+    Fetch http/s server url from config and return if available.
+
+    Args:
+        schema (str): http or https.
+
+    Returns:
+        str: Server URL.
+
+    Raises:
+        URLError: If server is not accessible.
+    """
+    server = py_config["servers"][f"{schema}_server"]
+    myssl = None
+    if schema == "https":
+        myssl = ssl.create_default_context()
+        myssl.check_hostname = False
+        myssl.verify_mode = ssl.CERT_NONE
+
+    try:
+        LOGGER.info(f"Testing connectivity to {server} {schema.upper()} server")
+        assert (
+            urllib.request.urlopen(server, context=myssl, timeout=60).getcode() == 200
+        )
+        return server
+    except (urllib.error.URLError, socket.timeout) as e:
+        LOGGER.error(
+            f"URL Error when testing connectivity to {server} {schema.upper()} server.\nError: {e}"
+        )
+        raise

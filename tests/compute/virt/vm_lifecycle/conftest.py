@@ -6,7 +6,7 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
 
-from utilities.storage import create_dv, get_images_external_http_server
+from utilities.storage import create_dv, get_images_server_url
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -40,7 +40,7 @@ def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
         client=admin_client,
         dv_name=py_config["latest_fedora_os_dict"]["template_labels"]["os"],
         namespace=py_config["golden_images_namespace"],
-        url=f"{get_images_external_http_server()}{py_config['latest_fedora_os_dict']['image_path']}",
+        url=f"{get_images_server_url(schema='http')}{py_config['latest_fedora_os_dict']['image_path']}",
         storage_class=py_config["default_storage_class"],
         access_modes=py_config["default_access_mode"],
         volume_mode=py_config["default_volume_mode"],

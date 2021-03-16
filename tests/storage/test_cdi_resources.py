@@ -19,7 +19,7 @@ from tests.storage import utils as storage_utils
 from utilities import storage as utils
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images
-from utilities.storage import get_images_https_server
+from utilities.storage import get_images_server_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
     # verify "cdi.kubevirt.io" label is included in importer pod
     with storage_utils.import_image_to_dv(
         dv_name="cnv-3475",
-        images_https_server_name=get_images_https_server(),
+        images_https_server_name=get_images_server_url(schema="https"),
         volume_mode=py_config["default_volume_mode"],
         access_mode=py_config["default_access_mode"],
         storage_ns_name=namespace.name,

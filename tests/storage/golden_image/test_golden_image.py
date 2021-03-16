@@ -14,7 +14,7 @@ from utilities.storage import (
     ErrorMsg,
     create_dv,
     data_volume_template_dict,
-    get_images_external_http_server,
+    get_images_server_url,
 )
 from utilities.virt import VirtualMachineForTestsFromTemplate, wait_for_console
 
@@ -50,7 +50,7 @@ def test_regular_user_cant_create_dv_in_ns(
             client=unprivileged_client,
             dv_name="cnv-4755",
             namespace=golden_images_namespace.name,
-            url=f"{get_images_external_http_server()}{LATEST_RHEL_IMAGE}",
+            url=f"{get_images_server_url(schema='http')}{LATEST_RHEL_IMAGE}",
             size=RHEL_IMAGE_SIZE,
             storage_class=py_config["default_storage_class"],
             volume_mode=py_config["default_volume_mode"],
@@ -199,7 +199,7 @@ def test_regular_user_can_create_dv_in_ns_given_proper_rolebinding(
         client=unprivileged_client,
         dv_name="cnv-5275",
         namespace=golden_images_namespace.name,
-        url=f"{get_images_external_http_server()}{LATEST_RHEL_IMAGE}",
+        url=f"{get_images_server_url(schema='http')}{LATEST_RHEL_IMAGE}",
         size=RHEL_IMAGE_SIZE,
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
