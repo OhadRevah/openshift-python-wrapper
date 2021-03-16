@@ -9,6 +9,7 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
+from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
@@ -121,9 +122,7 @@ def vm_from_golden_image_multi_storage(
         name="vm-from-golden-image",
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=Template.generate_template_labels(
-            **py_config["latest_fedora_os_dict"]["template_labels"]
-        ),
+        labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
         data_volume=golden_image_data_volume_multi_storage_scope_function,
         delete_data_volume_sc_params=request.param.get("delete_sc_params"),
     ) as vm:
@@ -158,9 +157,7 @@ def vm_from_golden_image(
         name="vm-from-golden-image-mismatching-sc",
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=Template.generate_template_labels(
-            **py_config["latest_fedora_os_dict"]["template_labels"]
-        ),
+        labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
         data_volume=golden_image_data_volume_scope_function,
         updated_storage_class_params=request.param.get("updated_storage_class_params"),
         updated_dv_name=request.param.get("updated_dv_name"),
@@ -176,9 +173,7 @@ def vm_missing_golden_image(unprivileged_client, namespace):
         name="vm-missing-golden-image",
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=Template.generate_template_labels(
-            **py_config["latest_fedora_os_dict"]["template_labels"]
-        ),
+        labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
     ) as vm:
         yield vm
 
@@ -188,9 +183,9 @@ def vm_missing_golden_image(unprivileged_client, namespace):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_fedora_os_dict"]["image_path"],
-                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
+                "dv_name": FEDORA_LATEST_OS,
+                "image": FEDORA_LATEST["image_path"],
+                "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
                 "delete_sc_params": True,
@@ -214,15 +209,13 @@ def test_vm_from_golden_image_cluster_default_storage_class(
         pytest.param(
             {
                 "dv_name": "dv-fedora",
-                "image": py_config["latest_fedora_os_dict"]["image_path"],
+                "image": FEDORA_LATEST["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
+                "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
                 "vm_name": "fedora-vm",
-                "template_labels": py_config["latest_fedora_os_dict"][
-                    "template_labels"
-                ],
+                "template_labels": FEDORA_LATEST_LABELS,
             },
             marks=pytest.mark.polarion("CNV-5530"),
         ),
@@ -238,10 +231,10 @@ def test_vm_with_existing_dv(data_volume_scope_function, vm_with_existing_dv):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_fedora_os_dict"]["image_path"],
+                "dv_name": FEDORA_LATEST_OS,
+                "image": FEDORA_LATEST["image_path"],
                 "storage_class": StorageClass.Types.HOSTPATH,
-                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
+                "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
                 "updated_storage_class_params": {
@@ -271,8 +264,8 @@ def test_vm_dv_with_different_sc(
         pytest.param(
             {
                 "dv_name": "fedora-dv",
-                "image": py_config["latest_fedora_os_dict"]["image_path"],
-                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
+                "image": FEDORA_LATEST["image_path"],
+                "dv_size": FEDORA_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {

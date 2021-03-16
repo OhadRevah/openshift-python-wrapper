@@ -12,9 +12,9 @@ import shlex
 
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
-from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
+from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.infra import Images, run_ssh_commands
 from utilities.virt import migrate_and_verify
 
@@ -42,9 +42,9 @@ def check_vm_system_tablet_device(vm, expected_device):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_os_dict"]["image_path"],
-                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
+                "dv_name": RHEL_LATEST_OS,
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
         ),
     ],
@@ -58,9 +58,7 @@ class TestRHELTabletDevice:
                 {
                     "vm_name": "rhel-virtio-tablet-device-vm",
                     "start_vm": True,
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"bus": "virtio", "name": "tablet", "type": "tablet"}
                     ),
@@ -96,9 +94,7 @@ class TestRHELTabletDevice:
                 {
                     "vm_name": "rhel-usb-tablet-device-vm",
                     "start_vm": True,
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "my_tablet", "type": "tablet", "bus": "usb"}
                     ),
@@ -134,9 +130,7 @@ class TestRHELTabletDevice:
                 {
                     "vm_name": "rhel-default-tablet-device-vm",
                     "start_vm": True,
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "tablet1", "type": "tablet"}
                     ),
@@ -171,9 +165,7 @@ class TestRHELTabletDevice:
             pytest.param(
                 {
                     "vm_name": "rhel-migrate-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "my_tablet", "type": "tablet", "bus": "usb"}
                     ),
@@ -218,9 +210,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-ps2-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "tablet1", "type": "tablet", "bus": "ps2"}
                     ),
@@ -230,9 +220,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-zen-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "tablet1", "type": "tablet", "bus": "zen"}
                     ),
@@ -242,9 +230,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-tranition-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {
                             "name": "tablet1",
@@ -281,9 +267,7 @@ class TestRHELTabletDeviceNegative:
             pytest.param(
                 {
                     "vm_name": "rhel-keyboard-tablet-device-vm",
-                    "template_labels": py_config["latest_rhel_os_dict"][
-                        "template_labels"
-                    ],
+                    "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "tablet1", "type": "keyboard", "bus": "usb"}
                     ),

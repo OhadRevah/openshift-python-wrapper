@@ -4,8 +4,15 @@ Test networkInterfaceMultiqueue feature with cpu core/socket/thread combinations
 
 import pytest
 from ocp_resources.resource import ResourceEditor
-from pytest_testconfig import config as py_config
+from ocp_resources.template import Template
 
+from tests.os_params import (
+    RHEL_LATEST,
+    RHEL_LATEST_OS,
+    WINDOWS_LATEST,
+    WINDOWS_LATEST_LABELS,
+    WINDOWS_LATEST_OS,
+)
 from utilities.virt import wait_for_vm_interfaces
 
 
@@ -67,16 +74,16 @@ def update_validate_cpu_in_vm(
     [
         (
             {
-                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_os_dict"]["image_path"],
-                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
+                "dv_name": RHEL_LATEST_OS,
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
             {
-                "vm_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
+                "vm_name": RHEL_LATEST_OS,
                 "template_labels": {
-                    "os": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
-                    "workload": "desktop",
-                    "flavor": "large",
+                    "os": RHEL_LATEST_OS,
+                    "workload": Template.Workload.SERVER,
+                    "flavor": Template.Flavor.LARGE,
                 },
             },
         )
@@ -152,15 +159,13 @@ class TestLatestRHEL:
     [
         (
             {
-                "dv_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_windows_os_dict"]["image_path"],
-                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
+                "dv_name": WINDOWS_LATEST_OS,
+                "image": WINDOWS_LATEST["image_path"],
+                "dv_size": WINDOWS_LATEST["dv_size"],
             },
             {
-                "vm_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
-                "template_labels": py_config["latest_windows_os_dict"][
-                    "template_labels"
-                ],
+                "vm_name": WINDOWS_LATEST_OS,
+                "template_labels": WINDOWS_LATEST_LABELS,
                 "network_model": "virtio",
                 "network_multiqueue": True,
             },

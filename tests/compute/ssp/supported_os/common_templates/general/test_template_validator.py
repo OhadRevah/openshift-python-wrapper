@@ -8,8 +8,8 @@ import logging
 
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
-from pytest_testconfig import config as py_config
 
+from tests.os_params import RHEL_LATEST_LABELS
 from utilities.infra import BUG_STATUS_CLOSED, Images
 
 
@@ -36,7 +36,7 @@ FAILED_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
             },
             {
                 "vm_name": "rhel-min-memory-validation",
-                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
+                "template_labels": RHEL_LATEST_LABELS,
                 "memory_requests": "0.5G",
             },
             marks=pytest.mark.polarion("CNV-2960"),

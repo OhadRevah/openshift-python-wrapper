@@ -10,6 +10,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
+from tests.os_params import RHEL_LATEST_LABELS, WINDOWS_LATEST_LABELS
 from utilities.infra import Images
 
 
@@ -46,7 +47,7 @@ def diskless_vm(
             },
             {
                 "vm_name": "rhel-diskless-vm",
-                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
+                "template_labels": RHEL_LATEST_LABELS,
                 "diskless_vm": True,
                 "start_vm": False,
             },
@@ -61,9 +62,7 @@ def diskless_vm(
             },
             {
                 "vm_name": "windows-diskless-vm",
-                "template_labels": py_config["latest_windows_os_dict"][
-                    "template_labels"
-                ],
+                "template_labels": WINDOWS_LATEST_LABELS,
                 "diskless_vm": True,
                 "start_vm": False,
             },
