@@ -8,6 +8,12 @@ from pytest_testconfig import py_config
 
 from tests.compute.utils import get_linux_timezone, get_windows_timezone
 from tests.conftest import vm_instance_from_template
+from tests.os_params import (
+    RHEL_LATEST,
+    RHEL_LATEST_LABELS,
+    WINDOWS_LATEST,
+    WINDOWS_LATEST_LABELS,
+)
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
@@ -208,13 +214,13 @@ def verify_changes(vm, os):
         [
             {
                 "dv_name": "persistence-rhel-dv",
-                "image": py_config["latest_rhel_os_dict"]["image_path"],
-                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "persistence-rhel-vm",
-                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
+                "template_labels": RHEL_LATEST_LABELS,
             },
         ]
     ],
@@ -251,18 +257,13 @@ class TestRestartPersistenceLinux:
         [
             {
                 "dv_name": "persistence-windows-dv",
-                "image": py_config["latest_windows_os_dict"]["image_path"],
-                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
+                "image": WINDOWS_LATEST["image_path"],
+                "dv_size": WINDOWS_LATEST["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "persistence-windows-vm",
-                "template_labels": py_config["latest_windows_os_dict"][
-                    "template_labels"
-                ],
-                "ssh": True,
-                "username": py_config["windows_username"],
-                "password": py_config["windows_password"],
+                "template_labels": WINDOWS_LATEST_LABELS,
             },
         ]
     ],

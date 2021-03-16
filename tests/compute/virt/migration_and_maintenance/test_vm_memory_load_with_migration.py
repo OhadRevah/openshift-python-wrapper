@@ -6,6 +6,7 @@ import shlex
 import pytest
 from pytest_testconfig import config as py_config
 
+from tests.os_params import FEDORA_LATEST
 from utilities.constants import TIMEOUT_60MIN
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
@@ -80,9 +81,9 @@ def get_stress_ng_pid(ssh_exec):
         pytest.param(
             {
                 "dv_name": "dv-fedora-mem-load-vm",
-                "image": py_config["latest_fedora_os_dict"]["image_path"],
+                "image": FEDORA_LATEST["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
+                "dv_size": FEDORA_LATEST["dv_size"],
             },
             marks=pytest.mark.polarion("CNV-4661"),
             id="case: migrate vm with memory load on the guest",

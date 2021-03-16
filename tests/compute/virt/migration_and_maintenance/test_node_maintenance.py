@@ -12,10 +12,17 @@ from ocp_resources.node_maintenance import NodeMaintenance
 from ocp_resources.pod import Pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
-from pytest_testconfig import config as py_config
 
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
+from tests.os_params import (
+    RHEL_LATEST,
+    RHEL_LATEST_LABELS,
+    RHEL_LATEST_OS,
+    WINDOWS_LATEST,
+    WINDOWS_LATEST_LABELS,
+    WINDOWS_LATEST_OS,
+)
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
@@ -192,13 +199,13 @@ def test_node_drain_using_console_fedora(
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_os_dict"]["image_path"],
-                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
+                "dv_name": RHEL_LATEST_OS,
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
             {
                 "vm_name": "rhel8-template-node-maintenance",
-                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
+                "template_labels": RHEL_LATEST_LABELS,
                 "set_vm_common_cpu": True,
             },
         )
@@ -294,15 +301,13 @@ class TestNodeMaintenanceRHEL:
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_windows_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_windows_os_dict"]["image_path"],
-                "dv_size": py_config["latest_windows_os_dict"]["dv_size"],
+                "dv_name": WINDOWS_LATEST_OS,
+                "image": WINDOWS_LATEST["image_path"],
+                "dv_size": WINDOWS_LATEST["dv_size"],
             },
             {
                 "vm_name": "wind-template-node-cordon-and-drain",
-                "template_labels": py_config["latest_windows_os_dict"][
-                    "template_labels"
-                ],
+                "template_labels": WINDOWS_LATEST_LABELS,
                 "cpu_threads": 2,
                 "set_vm_common_cpu": True,
             },

@@ -9,6 +9,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
+from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import run_ssh_commands
 from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD, migrate_and_verify, running_vm
 
@@ -93,16 +94,14 @@ def get_disk_usage(ssh_exec):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_fedora_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_fedora_os_dict"]["image_path"],
+                "dv_name": FEDORA_LATEST_OS,
+                "image": FEDORA_LATEST["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_fedora_os_dict"]["dv_size"],
+                "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
                 "vm_name": "fedora-load-vm",
-                "template_labels": py_config["latest_fedora_os_dict"][
-                    "template_labels"
-                ],
+                "template_labels": FEDORA_LATEST_LABELS,
                 "cpu_threads": 2,
             },
             marks=pytest.mark.polarion("CNV-4663"),

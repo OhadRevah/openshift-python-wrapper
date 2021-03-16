@@ -7,6 +7,7 @@ from pytest_testconfig import config as py_config
 
 from tests.compute.virt import utils as virt_utils
 from tests.conftest import vm_instance_from_template
+from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 
 
 @pytest.fixture()
@@ -38,14 +39,14 @@ def unscheduled_node_vm(
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_os_dict"]["image_path"],
+                "dv_name": RHEL_LATEST_OS,
+                "image": RHEL_LATEST["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
             {
                 "vm_name": "rhel-node-maintenance",
-                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
+                "template_labels": RHEL_LATEST_LABELS,
                 "start_vm": False,
                 "set_vm_common_cpu": True,
             },

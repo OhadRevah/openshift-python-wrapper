@@ -18,6 +18,7 @@ from pytest_testconfig import config as py_config
 
 from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
+from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.infra import run_ssh_commands
 from utilities.virt import RHEL_CLOUD_INIT_PASSWORD
 
@@ -103,14 +104,14 @@ def registered_rhsm(rhsm_vm):
     [
         pytest.param(
             {
-                "dv_name": py_config["latest_rhel_os_dict"]["template_labels"]["os"],
-                "image": py_config["latest_rhel_os_dict"]["image_path"],
+                "dv_name": RHEL_LATEST_OS,
+                "image": RHEL_LATEST["image_path"],
                 "storage_class": py_config["default_storage_class"],
-                "dv_size": py_config["latest_rhel_os_dict"]["dv_size"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
             {
                 "vm_name": "rhel-rhsm-vm",
-                "template_labels": py_config["latest_rhel_os_dict"]["template_labels"],
+                "template_labels": RHEL_LATEST_LABELS,
                 "attached_secret": {
                     "volume_name": "rhsm-secret-vol",
                     "serial": DISK_SERIAL,
