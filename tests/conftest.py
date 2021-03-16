@@ -2103,7 +2103,7 @@ def cluster_sanity(nodes, cnv_pods, cluster_storage_classes):
     exists_sc = [scn for scn in config_sc if scn in sc_names]
     assert len(config_sc) == len(
         exists_sc
-    ), f"Cluster is missing storage some storage class. Expected {config_sc}, On cluster {exists_sc}"
+    ), f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}"
 
     for node in nodes:
         node_name = node.name
