@@ -107,7 +107,7 @@ HTPASSWD_PROVIDER_DICT = {
 }
 ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
 
-TESTS_MARKERS = ["destructive", "chaos", "tier3"]
+EXCLUDE_MARKER_FROM_TIER2_MARKER = ["destructive", "chaos", "tier3", "install"]
 
 TEAM_MARKERS = {
     "ansible": ["ansible-module"],
@@ -271,9 +271,9 @@ def pytest_collection_modifyitems(session, config, items):
             if len(add_tier3_marker) == 2:
                 item.add_marker(marker="tier3")
 
-        # Add tier2 marker for tests without any marker.
+        # Add tier2 marker for tests without an exclution marker.
         markers = [mark.name for mark in list(item.iter_markers())]
-        if not [mark for mark in markers if mark in TESTS_MARKERS]:
+        if not [mark for mark in markers if mark in EXCLUDE_MARKER_FROM_TIER2_MARKER]:
             item.add_marker(marker="tier2")
 
         # Mark tests by team.
