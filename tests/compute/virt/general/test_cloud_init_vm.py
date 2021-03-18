@@ -4,6 +4,7 @@ Test VM with cloudInit disk.
 
 import pytest
 
+from utilities.constants import CLOUD_INIT_NO_CLOUD, CLOUND_INIT_CONFIG_DRIVE
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -18,14 +19,14 @@ pytestmark = pytest.mark.post_upgrade
 @pytest.fixture(
     params=[
         pytest.param(
-            {"cloud_init_type": "cloudInitNoCloud"},
+            {"cloud_init_type": CLOUD_INIT_NO_CLOUD},
             marks=(pytest.mark.polarion("CNV-3804")),
-            id="case: cloudInitNoCloud",
+            id=f"case: {CLOUD_INIT_NO_CLOUD}",
         ),
         pytest.param(
-            {"cloud_init_type": "cloudInitConfigDrive"},
+            {"cloud_init_type": CLOUND_INIT_CONFIG_DRIVE},
             marks=(pytest.mark.polarion("CNV-3805")),
-            id="case: cloudInitConfigDrive",
+            id=f"case: {CLOUND_INIT_CONFIG_DRIVE}",
         ),
     ]
 )

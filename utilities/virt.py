@@ -29,7 +29,11 @@ from pytest_testconfig import config as py_config
 
 import utilities.network
 from utilities.console import CONSOLE_IMPL
-from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK, OS_LOGIN_PARAMS
+from utilities.constants import (
+    CLOUD_INIT_NO_CLOUD,
+    IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+    OS_LOGIN_PARAMS,
+)
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     BUG_STATUS_CLOSED,
@@ -496,15 +500,16 @@ class VirtualMachineForTests(VirtualMachine):
 
     def update_vm_cloud_init_data(self, spec):
         cloud_init_volume = {}
+        cloud_init_disk_name = "cloudinitdisk"
         for vol in spec.setdefault("volumes", []):
-            if vol["name"] == "cloudinitdisk":
+            if vol["name"] == cloud_init_disk_name:
                 cloud_init_volume = vol
                 break
 
-        cloud_init_volume_type = self.cloud_init_type or "cloudInitNoCloud"
+        cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
 
         if not cloud_init_volume:
-            spec["volumes"].append({"name": "cloudinitdisk"})
+            spec["volumes"].append({"name": cloud_init_disk_name})
             cloud_init_volume = spec["volumes"][-1]
 
         cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
@@ -516,8 +521,8 @@ class VirtualMachineForTests(VirtualMachine):
             .setdefault("disks", [])
         )
 
-        if not [disk for disk in disks_spec if disk["name"] == "cloudinitdisk"]:
-            disks_spec.append({"disk": {"bus": "virtio"}, "name": "cloudinitdisk"})
+        if not [disk for disk in disks_spec if disk["name"] == cloud_init_disk_name]:
+            disks_spec.append({"disk": {"bus": "virtio"}, "name": cloud_init_disk_name})
 
         return spec
 
@@ -755,8 +760,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         disk_options_vm=None,
         smm_enabled=None,
         efi_params=None,
-        username=None,
-        password=None,
         rhel7_workers=False,
         macs=None,
         interfaces_types=None,
