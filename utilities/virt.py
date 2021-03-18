@@ -915,14 +915,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 resource["kind"] == VirtualMachine.kind
                 and resource["metadata"]["name"] == self.name
             ):
-                spec = resource["spec"]["template"]["spec"]
-                # Template have bridge pod network that wont work for migration.
-                # Replacing the bridge pod network with masquerade.
-                # https://bugzilla.redhat.com/show_bug.cgi?id=1751869
-                interfaces_dict = spec["domain"]["devices"]["interfaces"][0]
-                if "bridge" in interfaces_dict:
-                    interfaces_dict["masquerade"] = interfaces_dict.pop("bridge")
-
                 return resource
 
         raise ValueError(f"Template not found for {self.name}")
