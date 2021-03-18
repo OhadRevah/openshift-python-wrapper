@@ -59,6 +59,7 @@ fcfn_exclude_functions =
     CreateContainerView,
     defaultdict,
     Counter,
+    bcrypt,
 
 enable-extensions =
     PID,

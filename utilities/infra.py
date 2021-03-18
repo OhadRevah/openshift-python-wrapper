@@ -1,3 +1,4 @@
+import base64
 import logging
 import os
 import re
@@ -381,3 +382,7 @@ def generate_latest_os_dict(os_list):
             if os_values.get("latest"):
                 return os_version, os_values
     assert False, f"No OS is marked as 'latest': {os_list}"
+
+
+def base64_encode_str(text):
+    return base64.b64encode(text.encode()).decode()

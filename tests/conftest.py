@@ -3,7 +3,6 @@
 """
 Pytest conftest file for CNV tests
 """
-import base64
 import logging
 import os
 import os.path
@@ -56,6 +55,7 @@ from utilities.hco import apply_np_changes
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
+    base64_encode_str,
     collect_logs_pods,
     collect_logs_resources,
     create_ns,
@@ -590,11 +590,11 @@ def unprivileged_secret(admin_client):
     else:
         password = UNPRIVILEGED_PASSWORD.encode()
         enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
-        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}".encode()
+        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}"
         with Secret(
             name=HTTP_SECRET_NAME,
             namespace=OPENSHIFT_CONFIG_NAMESPACE,
-            htpasswd=base64.b64encode(crypto_credentials).decode(),
+            htpasswd=base64_encode_str(text=crypto_credentials),
         ) as secret:
             yield secret
 
