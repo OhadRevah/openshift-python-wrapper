@@ -125,6 +125,7 @@ def pytest_addoption(parser):
     upgrade_group = parser.getgroup(name="Upgrade")
     workers_group = parser.getgroup(name="Workers")
     storage_group = parser.getgroup(name="Storage")
+    cluster_sanity_group = parser.getgroup(name="ClusterSanity")
 
     # Upgrade addoption
     upgrade_group.addoption(
@@ -182,6 +183,13 @@ def pytest_addoption(parser):
     storage_group.addoption(
         "--default-storage-class",
         help="Overwrite default storage class in storage_class_matrix",
+    )
+
+    # Cluster sanity addoption
+    cluster_sanity_group.addoption(
+        "--cluster-sanity-skip-storage-check",
+        help="Skip storage class check in cluster_sanity fixture",
+        action="store_true",
     )
 
 
@@ -2098,13 +2106,15 @@ def cnv_pods(admin_client):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def cluster_sanity(nodes, cnv_pods, cluster_storage_classes):
-    sc_names = [sc.name for sc in cluster_storage_classes]
-    config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
-    exists_sc = [scn for scn in config_sc if scn in sc_names]
-    assert len(config_sc) == len(
-        exists_sc
-    ), f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}"
+def cluster_sanity(request, nodes, cnv_pods, cluster_storage_classes):
+    # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
+    if not request.session.config.getoption("--cluster-sanity-skip-storage-check"):
+        sc_names = [sc.name for sc in cluster_storage_classes]
+        config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
+        exists_sc = [scn for scn in config_sc if scn in sc_names]
+        assert len(config_sc) == len(
+            exists_sc
+        ), f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}"
 
     for node in nodes:
         node_name = node.name
