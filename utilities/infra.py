@@ -101,7 +101,7 @@ def label_project(name, label, admin_client):
 
 def create_ns(name, client=None, kmp_vm_label=None, admin_client=None):
     """
-    For kubemacpool opt_in, provide kmp_vm_label and admin_client as admin_client
+    For kubemacpool labeling opt-modes, provide kmp_vm_label and admin_client as admin_client
     """
     if not client:
         with Namespace(name=name, label=kmp_vm_label) as ns:

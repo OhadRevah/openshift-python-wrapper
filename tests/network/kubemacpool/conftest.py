@@ -123,33 +123,49 @@ def automatic_mac_tuning_net_nad(
 
 
 @pytest.fixture(scope="class")
-def opted_out_ns_nad(
-    opted_out_ns,
+def disabled_ns_nad(
+    disabled_ns,
     kubemacpool_bridge_device_worker_1,
     kubemacpool_bridge_device_worker_2,
     kubemacpool_bridge_device_name,
 ):
     with network_nad(
         nad_type=LINUX_BRIDGE,
-        nad_name=f"{kubemacpool_bridge_device_name}-{opted_out_ns.name}-nad",
+        nad_name=f"{kubemacpool_bridge_device_name}-{disabled_ns.name}-nad",
         interface_name=kubemacpool_bridge_device_name,
-        namespace=opted_out_ns,
+        namespace=disabled_ns,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def wrong_label_ns_nad(
-    wrong_label_ns,
+def enabled_ns_nad(
+    enabled_ns,
     kubemacpool_bridge_device_worker_1,
     kubemacpool_bridge_device_worker_2,
     kubemacpool_bridge_device_name,
 ):
     with network_nad(
         nad_type=LINUX_BRIDGE,
-        nad_name=f"{kubemacpool_bridge_device_name}-{wrong_label_ns.name}-nad",
+        nad_name=f"{kubemacpool_bridge_device_name}-{enabled_ns.name}-nad",
         interface_name=kubemacpool_bridge_device_name,
-        namespace=wrong_label_ns,
+        namespace=enabled_ns,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def no_label_ns_nad(
+    no_label_ns,
+    kubemacpool_bridge_device_worker_1,
+    kubemacpool_bridge_device_worker_2,
+    kubemacpool_bridge_device_name,
+):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=f"{kubemacpool_bridge_device_name}-{no_label_ns.name}-nad",
+        interface_name=kubemacpool_bridge_device_name,
+        namespace=no_label_ns,
     ) as nad:
         yield nad
 
@@ -236,11 +252,11 @@ def restarted_vmi_b(vm_b):
 
 
 @pytest.fixture(scope="class")
-def opted_out_ns_vm(opted_out_ns, opted_out_ns_nad, mac_pool):
-    networks = {opted_out_ns_nad.name: opted_out_ns_nad.name}
-    name = f"{opted_out_ns.name}-vm"
+def disabled_ns_vm(disabled_ns, disabled_ns_nad, mac_pool):
+    networks = {disabled_ns_nad.name: disabled_ns_nad.name}
+    name = f"{disabled_ns.name}-vm"
     with VirtualMachineForTests(
-        namespace=opted_out_ns.name,
+        namespace=disabled_ns.name,
         name=name,
         networks=networks,
         interfaces=networks.keys(),
@@ -254,11 +270,11 @@ def opted_out_ns_vm(opted_out_ns, opted_out_ns_nad, mac_pool):
 
 
 @pytest.fixture(scope="class")
-def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
-    networks = {wrong_label_ns_nad.name: wrong_label_ns_nad.name}
-    name = f"{wrong_label_ns.name}-vm"
+def enabled_ns_vm(enabled_ns, enabled_ns_nad, mac_pool):
+    networks = {enabled_ns_nad.name: enabled_ns_nad.name}
+    name = f"{enabled_ns.name}-vm"
     with VirtualMachineForTests(
-        namespace=wrong_label_ns.name,
+        namespace=enabled_ns.name,
         name=name,
         networks=networks,
         interfaces=networks.keys(),
@@ -272,14 +288,39 @@ def wrong_label_ns_vm(wrong_label_ns, wrong_label_ns_nad, mac_pool):
 
 
 @pytest.fixture(scope="class")
-def opted_out_ns():
-    yield from create_ns(name="kmp-opted-out")
+def no_label_ns_vm(no_label_ns, no_label_ns_nad, mac_pool):
+    networks = {no_label_ns_nad.name: no_label_ns_nad.name}
+    name = f"{no_label_ns.name}-vm"
+    with VirtualMachineForTests(
+        namespace=no_label_ns.name,
+        name=name,
+        networks=networks,
+        interfaces=networks.keys(),
+        body=fedora_vm_body(name=name),
+    ) as vm:
+        mac_pool.append_macs(vm=vm)
+        vm.start(wait=True)
+        vm.vmi.wait_until_running()
+        yield vm
+        mac_pool.remove_macs(vm=vm)
 
 
 @pytest.fixture(scope="class")
-def wrong_label_ns(kmp_vm_label):
-    kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] += "-wrong-label"
-    yield from create_ns(name="kmp-wrong-label", kmp_vm_label=kmp_vm_label)
+def disabled_ns(kmp_vm_label):
+    kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] = "ignore"
+    yield from create_ns(name="kmp-disabled", kmp_vm_label=kmp_vm_label)
+
+
+@pytest.fixture(scope="class")
+def enabled_ns(kmp_vm_label):
+    # Enabling label "allocate" (or any other non-configured label) - Allocates.
+    kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] = "allocate"
+    yield from create_ns(name="kmp-enabled", kmp_vm_label=kmp_vm_label)
+
+
+@pytest.fixture(scope="class")
+def no_label_ns(kmp_vm_label):
+    yield from create_ns(name="kmp-default")
 
 
 @pytest.fixture()

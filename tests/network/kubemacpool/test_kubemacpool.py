@@ -93,33 +93,48 @@ class TestKMPConnectivity:
         kmp_utils.assert_macs_preseved(vm=running_vm_a)
         kmp_utils.assert_macs_preseved(vm=running_vm_b)
 
-
-class TestNegatives:
-    @pytest.mark.polarion("CNV-4199")
-    def test_opted_out_ns(
+    @pytest.mark.polarion("CNV-5941")
+    def test_enabled_label_ns(
         self,
         mac_pool,
-        opted_out_ns,
-        opted_out_ns_nad,
-        opted_out_ns_vm,
+        enabled_ns,
+        enabled_ns_nad,
+        enabled_ns_vm,
     ):
-        assert not mac_pool.mac_is_within_range(
+        assert mac_pool.mac_is_within_range(
             mac=get_vmi_mac_address_by_iface_name(
-                vmi=opted_out_ns_vm.vmi, iface_name=opted_out_ns_nad.name
+                vmi=enabled_ns_vm.vmi, iface_name=enabled_ns_nad.name
             )
         )
 
     @pytest.mark.polarion("CNV-4217")
-    def test_wrong_label_ns(
+    def test_no_label_ns(
         self,
         mac_pool,
-        wrong_label_ns,
-        wrong_label_ns_nad,
-        wrong_label_ns_vm,
+        no_label_ns,
+        no_label_ns_nad,
+        no_label_ns_vm,
     ):
+        assert mac_pool.mac_is_within_range(
+            mac=get_vmi_mac_address_by_iface_name(
+                vmi=no_label_ns_vm.vmi, iface_name=no_label_ns_nad.name
+            )
+        )
+
+
+class TestNegatives:
+    @pytest.mark.polarion("CNV-4199")
+    def test_disabled_assignment_ns(
+        self,
+        mac_pool,
+        disabled_ns,
+        disabled_ns_nad,
+        disabled_ns_vm,
+    ):
+        # KMP should not allocate.
         assert not mac_pool.mac_is_within_range(
             mac=get_vmi_mac_address_by_iface_name(
-                vmi=wrong_label_ns_vm.vmi, iface_name=wrong_label_ns_nad.name
+                vmi=disabled_ns_vm.vmi, iface_name=disabled_ns_nad.name
             )
         )
 
