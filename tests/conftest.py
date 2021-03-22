@@ -123,19 +123,27 @@ TEAM_MARKERS = {
 def pytest_addoption(parser):
     matrix_group = parser.getgroup(name="Matrix")
     os_group = parser.getgroup(name="OS")
-    upgrade_group = parser.getgroup(name="Upgrade")
+    install_upgrade_group = parser.getgroup(name="Upgrade")
     workers_group = parser.getgroup(name="Workers")
     storage_group = parser.getgroup(name="Storage")
     cluster_sanity_group = parser.getgroup(name="ClusterSanity")
 
     # Upgrade addoption
-    upgrade_group.addoption(
+    install_upgrade_group.addoption(
         "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
     )
-    upgrade_group.addoption("--cnv-version", help="CNV version to upgrade to")
-    upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
-    upgrade_group.addoption("--ocp-channel", help="OCP channel to use for upgrade")
-    upgrade_group.addoption(
+    install_upgrade_group.addoption(
+        "--cnv-version", help="CNV version to install or upgrade to"
+    )
+    install_upgrade_group.addoption("--cnv-image", help="Path to CNV index-image")
+    install_upgrade_group.addoption("--cnv-source", help="CNV source lane")
+
+    # OCP addoption
+    install_upgrade_group.addoption(
+        "--ocp-channel", help="OCP channel to use for upgrade"
+    )
+    install_upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
+    install_upgrade_group.addoption(
         "--upgrade_resilience",
         action="store_true",
         help="If provided, run upgrade with disruptions",
@@ -224,6 +232,13 @@ def pytest_cmdline_main(config):
         or centos_os_violation
     ):
         raise ValueError("os matrix and latest os options are mutually exclusive.")
+
+    if config.getoption("cnv_source") and not config.getoption("cnv_version"):
+        raise ValueError("Running with --cnv-source: Missing --cnv-version")
+
+    if config.getoption("cnv_source") == "osbs":
+        if not config.getoption("cnv_image"):
+            raise ValueError("Running with --cnv-source osbs: Missing --cnv-image")
 
 
 def pytest_collection_modifyitems(session, config, items):
