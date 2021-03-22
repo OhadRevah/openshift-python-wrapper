@@ -55,7 +55,7 @@ def wait_for_hco_conditions(
     current_check = 0
     try:
         for sample in samples:
-            if sample:
+            if sample[0].instance.get("status", {}).get("conditions"):
                 resource_conditions = sample[0].instance.status.conditions
                 actual_hco_conditions = {
                     condition.type: condition.status
