@@ -2,11 +2,9 @@
 VM with CPU features
 """
 import pytest
-from ocp_resources.configmap import ConfigMap
 from ocp_resources.node import Node
 from ocp_resources.utils import TimeoutExpiredError
 from openshift.dynamic.exceptions import UnprocessibleEntityError
-from pytest_testconfig import config as py_config
 
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
@@ -49,7 +47,6 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
 @pytest.mark.polarion("CNV-3473")
 def test_vm_with_cpu_feature_required_not_schedulable(
     nodes_with_no_pciid_label,
-    config_map_with_cpu_discovery,
     cpu_features_vm_require_pcid,
 ):
     """
@@ -146,32 +143,6 @@ def cpu_features_vm_require_pcid(namespace, unprivileged_client):
     ) as vm:
         vm.start()
         yield vm
-
-
-@pytest.fixture()
-def config_map_with_cpu_discovery(admin_client):
-    config_map_namespace = py_config["hco_namespace"]
-    cpu_node_discovery = "CPUNodeDiscovery"
-
-    kubevirt_config_map = ConfigMap(
-        name="kubevirt-config", namespace=config_map_namespace
-    )
-    original_feature_gates = kubevirt_config_map.instance["data"]["feature-gates"]
-    feature_gates = original_feature_gates.split(",")
-
-    if cpu_node_discovery not in feature_gates:
-        try:
-            feature_gates.append(cpu_node_discovery)
-            new_config_map_dict = kubevirt_config_map.instance.to_dict()
-            new_config_map_dict["data"]["feature-gates"] = ",".join(feature_gates)
-            kubevirt_config_map.update(new_config_map_dict)
-            yield
-        finally:
-            to_restore_config_map_dict = kubevirt_config_map.instance.to_dict()
-            to_restore_config_map_dict["data"]["feature-gates"] = original_feature_gates
-            kubevirt_config_map.update(to_restore_config_map_dict)
-    else:
-        yield
 
 
 @pytest.fixture()

@@ -25,6 +25,7 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
 from ocp_resources.network_addons_config import NetworkAddonsConfig
@@ -1588,11 +1589,6 @@ def cnv_current_version(admin_client):
         return csv.instance.spec.version
 
 
-@pytest.fixture(scope="module")
-def kubevirt_config_cm():
-    return ConfigMap(name="kubevirt-config", namespace=py_config["hco_namespace"])
-
-
 @pytest.fixture(scope="session")
 def hco_namespace(admin_client):
     return list(
@@ -1954,6 +1950,46 @@ def hyperconverged_resource_scope_class(admin_client, hco_namespace):
         name="kubevirt-hyperconverged",
     ):
         return hco
+
+
+def kubevirt_hyperconverged_spec(admin_client, hco_namespace):
+    kubevirt_hyperconverged = list(
+        KubeVirt.get(
+            dyn_client=admin_client,
+            namespace=hco_namespace.name,
+            name="kubevirt-kubevirt-hyperconverged",
+        )
+    )
+    return kubevirt_hyperconverged[0].instance.to_dict()["spec"]
+
+
+@pytest.fixture()
+def kubevirt_hyperconverged_spec_scope_function(admin_client, hco_namespace):
+    return kubevirt_hyperconverged_spec(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
+
+
+@pytest.fixture(scope="module")
+def kubevirt_hyperconverged_spec_scope_module(admin_client, hco_namespace):
+    return kubevirt_hyperconverged_spec(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
+
+
+@pytest.fixture()
+def kubevirt_config(kubevirt_hyperconverged_spec_scope_function):
+    return kubevirt_hyperconverged_spec_scope_function["configuration"]
+
+
+@pytest.fixture(scope="module")
+def kubevirt_config_scope_module(kubevirt_hyperconverged_spec_scope_module):
+    return kubevirt_hyperconverged_spec_scope_module["configuration"]
+
+
+@pytest.fixture()
+def kubevirt_feature_gates(kubevirt_config):
+    return kubevirt_config["developerConfiguration"]["featureGates"]
 
 
 @pytest.fixture(scope="session")

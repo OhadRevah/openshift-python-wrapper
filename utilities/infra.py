@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import os
 import re
@@ -14,7 +15,7 @@ from colorlog import ColoredFormatter
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
-from ocp_resources.resource import ResourceEditor
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.service import Service
 from openshift.dynamic import DynamicClient
 from pytest_testconfig import config as py_config
@@ -386,3 +387,22 @@ def generate_latest_os_dict(os_list):
 
 def base64_encode_str(text):
     return base64.b64encode(text.encode()).decode()
+
+
+def hco_kubevirt_cr_jsonpatch_annotations_dict(path, value):
+    # https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/cluster-configuration.md#jsonpatch-annotations
+    return {
+        "metadata": {
+            "annotations": {
+                f"{Resource.ApiGroup.KUBEVIRT_KUBEVIRT_IO}/jsonpatch": json.dumps(
+                    [
+                        {
+                            "op": "add",
+                            "path": f"/spec/configuration/{path}",
+                            "value": value,
+                        }
+                    ]
+                )
+            }
+        }
+    }

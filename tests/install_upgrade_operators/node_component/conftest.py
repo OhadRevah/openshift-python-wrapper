@@ -6,7 +6,6 @@ from kubernetes.client.rest import ApiException
 from ocp_resources.cdi import CDI
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
-from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
@@ -203,18 +202,6 @@ def network_daemonsets_placement_list(admin_client):
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(nw_daemonset.get("nodeSelector"))
     return nodeselector_lists
-
-
-@pytest.fixture()
-def kubevirt_hyperconverged_spec(admin_client, hco_namespace):
-    kubevirt_hyperconverged = list(
-        KubeVirt.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-            name="kubevirt-kubevirt-hyperconverged",
-        )
-    )
-    return kubevirt_hyperconverged[0].instance.to_dict()["spec"]
 
 
 @pytest.fixture()

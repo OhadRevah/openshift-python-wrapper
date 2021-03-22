@@ -214,14 +214,14 @@ class TestCommonTemplatesCentos:
     @pytest.mark.polarion("CNV-5594")
     def test_vm_smbios_default(
         self,
-        smbios_from_kubevirt_config_cm,
+        smbios_from_kubevirt_config,
         namespace,
         golden_image_data_volume_multi_centos_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
     ):
         ssp_utils.check_vm_xml_smbios(
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
-            cm_values=smbios_from_kubevirt_config_cm,
+            cm_values=smbios_from_kubevirt_config,
         )
 
     @pytest.mark.polarion("CNV-5841")

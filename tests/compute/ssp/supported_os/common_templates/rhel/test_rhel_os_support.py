@@ -231,7 +231,7 @@ class TestCommonTemplatesRhel:
         self,
         skip_upstream,
         unprivileged_client,
-        smbios_from_kubevirt_config_cm,
+        smbios_from_kubevirt_config,
         namespace,
         rhel_os_matrix__class__,
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
@@ -239,7 +239,7 @@ class TestCommonTemplatesRhel:
     ):
         ssp_utils.check_vm_xml_smbios(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            cm_values=smbios_from_kubevirt_config_cm,
+            cm_values=smbios_from_kubevirt_config,
         )
 
     @pytest.mark.polarion("CNV-3038")

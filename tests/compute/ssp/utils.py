@@ -15,11 +15,11 @@ def check_vm_xml_smbios(vm, cm_values):
     smbios_vm_dict = {entry["@name"]: entry["#text"] for entry in smbios_vm}
     assert smbios_vm, "VM XML missing SMBIOS values."
     results = {
-        "Manufacturer": smbios_vm_dict["manufacturer"] == cm_values["Manufacturer"],
-        "Product": smbios_vm_dict["product"] == cm_values["Product"],
-        "Family": smbios_vm_dict["family"] == cm_values["Family"],
-        "SKU": smbios_vm_dict["sku"] == cm_values["Sku"],
-        "Version": smbios_vm_dict["version"] == cm_values["Version"],
+        "manufacturer": smbios_vm_dict["manufacturer"] == cm_values["manufacturer"],
+        "product": smbios_vm_dict["product"] == cm_values["product"],
+        "family": smbios_vm_dict["family"] == cm_values["family"],
+        "sKU": smbios_vm_dict["sku"] == cm_values["sku"],
+        "version": smbios_vm_dict["version"] == cm_values["version"],
     }
     LOGGER.info(f"Results: {results}")
     assert all(results.values())

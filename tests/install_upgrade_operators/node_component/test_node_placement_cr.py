@@ -152,7 +152,7 @@ class TestCreateHCOWithNodePlacement:
     @pytest.mark.dependency(depends=["test_hco_cr_with_node_placement"])
     def test_node_placement_propagated_to_kubevirt_cr(
         self,
-        kubevirt_hyperconverged_spec,
+        kubevirt_hyperconverged_spec_scope_function,
         virt_daemonset_nodeselector_comp,
         virt_deployment_nodeselector_comp_list,
     ):
@@ -162,11 +162,15 @@ class TestCreateHCOWithNodePlacement:
         """
         # Verify KubeVirt component spec for Infra and Workloads.
         assert (
-            kubevirt_hyperconverged_spec.get("infra").get("nodePlacement")
+            kubevirt_hyperconverged_spec_scope_function.get("infra").get(
+                "nodePlacement"
+            )
             == NODE_PLACEMENT_INFRA["nodePlacement"]
         )
         assert (
-            kubevirt_hyperconverged_spec.get("workloads").get("nodePlacement")
+            kubevirt_hyperconverged_spec_scope_function.get("workloads").get(
+                "nodePlacement"
+            )
             == NODE_PLACEMENT_WORKLOADS["nodePlacement"]
         )
 

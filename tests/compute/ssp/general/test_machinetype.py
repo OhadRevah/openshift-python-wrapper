@@ -5,6 +5,7 @@ from ocp_resources.resource import ResourceEditor
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from tests.compute.ssp import utils as ssp_utils
+from utilities.infra import hco_kubevirt_cr_jsonpatch_annotations_dict
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -36,15 +37,16 @@ def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
 
 
 @pytest.fixture()
-def updated_configmap_machine_type(request, kubevirt_config_cm):
+def updated_configmap_machine_type(request, hyperconverged_resource, kubevirt_config):
     with ResourceEditor(
         patches={
-            kubevirt_config_cm: {
-                "data": {"machine-type": request.param["machine_type"]}
-            }
-        }
-    ) as edits:
-        yield edits
+            hyperconverged_resource: hco_kubevirt_cr_jsonpatch_annotations_dict(
+                path="machineType",
+                value=request.param["machine_type"],
+            )
+        },
+    ):
+        yield
 
 
 @pytest.mark.parametrize(
@@ -57,9 +59,9 @@ def updated_configmap_machine_type(request, kubevirt_config_cm):
     ],
     indirect=True,
 )
-def test_default_machine_type(machine_type_from_kubevirt_config_cm, vm):
+def test_default_machine_type(machine_type_from_kubevirt_config, vm):
     ssp_utils.validate_machine_type(
-        vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
+        vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
 
@@ -90,13 +92,13 @@ def test_pc_q35_vm_machine_type(vm, expected):
 )
 def test_migrate_vm(
     skip_rhel7_workers,
-    machine_type_from_kubevirt_config_cm,
+    machine_type_from_kubevirt_config,
     vm,
 ):
     migrate_and_verify(vm=vm)
 
     ssp_utils.validate_machine_type(
-        vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
+        vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
 
@@ -112,7 +114,7 @@ def test_migrate_vm(
     indirect=True,
 )
 def test_machine_type_after_cm_update(
-    machine_type_from_kubevirt_config_cm,
+    machine_type_from_kubevirt_config,
     vm,
     updated_configmap_machine_type,
 ):
@@ -120,19 +122,19 @@ def test_machine_type_after_cm_update(
     value after restart or migration"""
 
     ssp_utils.validate_machine_type(
-        vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
+        vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
     vm.restart(wait=True)
     wait_for_vm_interfaces(vmi=vm.vmi)
     ssp_utils.validate_machine_type(
-        vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
+        vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
     migrate_and_verify(vm=vm)
 
     ssp_utils.validate_machine_type(
-        vm=vm, expected_machine_type=machine_type_from_kubevirt_config_cm
+        vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
 
@@ -170,8 +172,8 @@ def test_unsupported_machine_type(namespace, unprivileged_client):
 
 
 @pytest.mark.polarion("CNV-4420")
-def test_major_release_machine_type(machine_type_from_kubevirt_config_cm):
+def test_major_release_machine_type(machine_type_from_kubevirt_config):
     # CNV should always use a major release for machine type, for example: pc-q35-rhel8.3.0
-    assert machine_type_from_kubevirt_config_cm.endswith(
+    assert machine_type_from_kubevirt_config.endswith(
         ".0"
-    ), f"Machine type should be a major release {machine_type_from_kubevirt_config_cm}"
+    ), f"Machine type should be a major release {machine_type_from_kubevirt_config}"
