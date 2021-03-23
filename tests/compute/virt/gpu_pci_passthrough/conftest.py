@@ -54,29 +54,22 @@ def pci_passthrough_vm(
         yield pci_passthrough_vm
 
 
-@pytest.fixture(scope="module")
-def kubevirt_config_cm_with_gpu_hostdevices_feature_gate(kubevirt_config_cm):
-    new_feature_gates = ["GPU", "HostDevices"]
-    feature_gates = kubevirt_config_cm.instance["data"]["feature-gates"].split(",")
-
-    if not all(
-        new_feature_gate in feature_gates for new_feature_gate in new_feature_gates
-    ):
-        for new_feature_gate in new_feature_gates:
-            if new_feature_gate not in feature_gates:
-                feature_gates.append(new_feature_gate)
-        config_map_dict = kubevirt_config_cm.instance.to_dict()
-        config_map_dict["data"]["feature-gates"] = ",".join(feature_gates)
-        with ResourceEditor(patches={kubevirt_config_cm: config_map_dict}):
-            yield
-
-
 @pytest.fixture(scope="class")
-def kubevirt_config_cm_with_permitted_hostdevices(kubevirt_config_cm):
-    config_map_dict = kubevirt_config_cm.instance.to_dict()
-    config_map_dict["data"]["permittedHostDevices"] = (
-        f"pciHostDevices:\n- pciVendorSelector: {GPU_DEVICE_ID.upper()}\n  "
-        f"resourceName: {GPU_DEVICE_NAME}"
-    )
-    with ResourceEditor(patches={kubevirt_config_cm: config_map_dict}):
+def hco_cr_with_permitted_hostdevices(hyperconverged_resource_scope_class):
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_class: {
+                "spec": {
+                    "permittedHostDevices": {
+                        "pciHostDevices": [
+                            {
+                                "pciVendorSelector": GPU_DEVICE_ID.upper(),
+                                "resourceName": GPU_DEVICE_NAME,
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ):
         yield
