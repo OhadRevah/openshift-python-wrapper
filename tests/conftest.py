@@ -2028,14 +2028,13 @@ def network_addons_config(admin_client):
 
 
 @pytest.fixture(scope="session")
-def ocs_storage_class(admin_client):
+def ocs_storage_class(cluster_storage_classes):
     """
     Get the OCS storage class if configured
     """
-    for sc in StorageClass.get(
-        dyn_client=admin_client, name=StorageClass.Types.CEPH_RBD
-    ):
-        return sc
+    for sc in cluster_storage_classes:
+        if sc.name == StorageClass.Types.CEPH_RBD:
+            return sc
 
 
 @pytest.fixture(scope="session")
