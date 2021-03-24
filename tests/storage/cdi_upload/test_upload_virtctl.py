@@ -291,7 +291,7 @@ def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
 
 
 @pytest.mark.bugzilla(
-    1927473, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    1941811, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.polarion("CNV-3727")
 def test_virtctl_image_upload_with_exist_pvc(
@@ -309,6 +309,7 @@ def test_virtctl_image_upload_with_exist_pvc(
         namespace=namespace.name,
         name=empty_pvc.name,
         size="1Gi",
+        pvc=True,
         image_path=LOCAL_PATH,
         storage_class=storage_class,
         insecure=True,
@@ -390,7 +391,7 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
         status, out, _ = res
         LOGGER.info(out)
         assert not status
-        assert f"PVC {empty_pvc.name} not available for upload" in out
+        assert "No DataVolume is associated with the existing PVC" in out
 
 
 @pytest.mark.tier3
