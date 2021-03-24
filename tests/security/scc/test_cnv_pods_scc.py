@@ -8,6 +8,12 @@ import logging
 
 import pytest
 
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_bug_status,
+    get_bugzilla_connection_params,
+)
+
 
 pytestmark = pytest.mark.post_upgrade
 
@@ -46,7 +52,18 @@ def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
     """
     Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined whitelist.
     """
-    bugzilla = {"BZ1834839": "cluster-network-addons-operator"}
+    bugzilla = {
+        "BZ1834839": "cluster-network-addons-operator",
+        "BZ1930439": "hco-operator",
+    }
+    bugzilla = {
+        bug_id: component
+        for bug_id, component in bugzilla.items()
+        if get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_id
+        )
+        not in BUG_STATUS_CLOSED
+    }
     failed_pods = []
     for pod in cnv_pods:
         LOGGER.info(f"Currently Validating {pod.name} Pod.")
