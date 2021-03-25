@@ -37,6 +37,7 @@ pyvmomi="*"
 pytest-dependency="*"
 pytest-progress="*"  # https://github.com/ssrikanta/pytest-progress
 colorlog="*"
+dictdiffer="*"
 
 [requires]
 python_version = "3"

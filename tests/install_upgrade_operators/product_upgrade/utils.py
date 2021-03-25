@@ -1,13 +1,17 @@
 import logging
+import os
 import re
 from multiprocessing import Process
 
-from ocp_resources.cluster_service_version import ClusterServiceVersion
+import dictdiffer
+import yaml
+from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.installplan import InstallPlan
+from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
+from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
@@ -28,6 +32,7 @@ from urllib3.exceptions import (
 )
 
 import utilities.constants
+from tests.install_upgrade_operators import utils
 from utilities.hco import wait_for_hco_conditions
 from utilities.virt import run_command, wait_for_vm_interfaces
 
@@ -49,6 +54,26 @@ def wait_for_dvs_import_completed(dvs_list):
     for sample in samples:
         if sample:
             return
+
+
+def wait_for_pods_removal(pods_list):
+    def _get_remaining_existing_pods():
+        return [(pod.name, pod.status) for pod in pods_list if pod.exists]
+
+    LOGGER.info("Wait for pods to be removed.")
+    samples = TimeoutSampler(
+        wait_timeout=utilities.constants.TIMEOUT_10MIN,
+        sleep=10,
+        func=_get_remaining_existing_pods,
+    )
+    sample = None  # will be set each iteration, setting it here allows referencing it during exception handling
+    try:
+        for sample in samples:
+            if not sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"Some old pods were not deleted: {sample}")
+        raise
 
 
 def wait_for_vms_interfaces(vms_list):
@@ -77,11 +102,10 @@ def assert_node_is_marked_by_bridge(bridge_nad, vm):
         assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
 
 
-# Upgrade-related functions
 def wait_for_operator_replacement(
-    dyn_client, hco_namespace, operator_name, old_operator_pod
+    dyn_client, hco_namespace, operator_name, old_operator_pods
 ):
-
+    old_operator_pod_names = [pod.name for pod in old_operator_pods]
     operator_sampler = TimeoutSampler(
         wait_timeout=utilities.constants.TIMEOUT_10MIN,
         sleep=1,
@@ -92,10 +116,10 @@ def wait_for_operator_replacement(
     )
 
     for operator in operator_sampler:
-        LOGGER.debug(
-            f"Old operator: {old_operator_pod.name} new operator: {operator.name}"
-        )
-        if operator.name != old_operator_pod.name:
+        if operator.name not in old_operator_pod_names:
+            LOGGER.debug(
+                f"Old operator: {old_operator_pod_names} new operator: {operator.name}"
+            )
             return operator
 
 
@@ -115,63 +139,76 @@ def pod_status_and_image(
     oper_name, image_ver = operators_version
     LOGGER.info(f"Verify operator pod {oper_name} replacement.")
 
-    old_operators_pod = [pod for pod in old_operators_pods if oper_name in pod.name]
+    old_operators_pods = [pod for pod in old_operators_pods if oper_name in pod.name]
 
-    if old_operators_pod:
-        new_operator_pod = wait_for_operator_replacement(
-            dyn_client=dyn_client,
-            hco_namespace=hco_namespace,
-            operator_name=oper_name,
-            old_operator_pod=old_operators_pod[0],
-        )
-    # For new operators which did not exist in a previous version
-    else:
+    def _get_new_operator_pod():
+        if old_operators_pods:
+            return wait_for_operator_replacement(
+                dyn_client=dyn_client,
+                hco_namespace=hco_namespace,
+                operator_name=oper_name,
+                old_operator_pods=old_operators_pods,
+            )
+        # For new operators which did not exist in a previous version
+        else:
+            return get_operator_by_name(
+                dyn_client=dyn_client,
+                hco_namespace=hco_namespace,
+                operator_name=oper_name,
+            )
+
+    new_operator_pod = _get_new_operator_pod()
+
+    def _check_operator_pod_image():
+        nonlocal new_operator_pod
+        if not new_operator_pod.exists:
+            new_operator_pod = _get_new_operator_pod()
+        return new_operator_pod.instance.spec.containers[0].image == image_ver
+
+    LOGGER.info(
+        f"Wait for {new_operator_pod.name} to get updated image version {image_ver}"
+    )
+    image_sampler = TimeoutSampler(
+        wait_timeout=utilities.constants.TIMEOUT_30MIN,
+        sleep=1,
+        func=_check_operator_pod_image,
+    )
+
+    for image_sample in image_sampler:
+        if image_sample:
+            break
+
+    if delete_pod:
+        new_operator_pod.delete(wait=True, force=True)
+        # Operator pod is deleted, fetching a new pod
         new_operator_pod = get_operator_by_name(
             dyn_client=dyn_client,
             hco_namespace=hco_namespace,
             operator_name=oper_name,
         )
 
-    LOGGER.info(
-        f"Wait for {new_operator_pod.name} to get updated image version {image_ver}"
+    LOGGER.info(f"Wait for {new_operator_pod.name} to be ready")
+    new_operator_pod.wait_for_condition(
+        condition=Pod.Condition.READY,
+        status=Pod.Condition.Status.TRUE,
+        timeout=utilities.constants.TIMEOUT_30MIN,
     )
-    image_sampler = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
-        sleep=1,
-        func=lambda: new_operator_pod.instance.spec.containers[0].image == image_ver,
-    )
-
-    for image_sample in image_sampler:
-        if image_sample:
-            if delete_pod:
-                new_operator_pod.delete(wait=True, force=True)
-                # Operator pod is deleted, fetching a new pod
-                new_operator_pod = get_operator_by_name(
-                    dyn_client=dyn_client,
-                    hco_namespace=hco_namespace,
-                    operator_name=oper_name,
-                )
-            new_operator_pod.wait_for_condition(
-                condition=Pod.Condition.READY,
-                status=Pod.Condition.Status.TRUE,
-                timeout=utilities.constants.TIMEOUT_10MIN,
-            )
-
-            break
 
 
 def check_pods_status_and_images(
     dyn_client, hco_namespace, old_operators_pods, operators_versions, delete_pods
 ):
     LOGGER.info(
-        "Check that all operators PODs have been replaced and have new images version and have status ready."
-        f"Pods will {'' if delete_pods else 'not'} be deleted."
+        "Check that all operators PODs have been replaced and have new images version and have status ready. "
+        "Testing upgrade resilience is "
+        f"{'enabled (pods will be deleted during upgrade)' if delete_pods else 'disabled'}."
     )
 
     processes = []
 
     for operators_version in operators_versions.items():
-        p = Process(
+        sub_process = Process(
+            name=operators_version[0],
             target=pod_status_and_image,
             kwargs={
                 "dyn_client": dyn_client,
@@ -181,13 +218,18 @@ def check_pods_status_and_images(
                 "delete_pod": delete_pods,
             },
         )
-        processes.append(p)
-        p.start()
+        processes.append(sub_process)
+        sub_process.start()
 
     for process in processes:
         process.join()
 
-    assert set([process.exitcode for process in processes]) == {0}
+    failed_processes = {
+        process.name: process.exitcode for process in processes if process.exitcode != 0
+    }
+    assert (
+        not failed_processes
+    ), f"Failed to replace all operator pods. Failed pods: {failed_processes}"
 
 
 def get_operators_names_and_images(csv):
@@ -195,14 +237,6 @@ def get_operators_names_and_images(csv):
     for deploy in csv.instance.spec.install.spec.deployments:
         operators_versions[deploy.name] = deploy.spec.template.spec.containers[0].image
     return operators_versions
-
-
-def get_new_csv(dyn_client, hco_namespace, hco_target_version):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=dyn_client, namespace=hco_namespace
-    ):
-        if csv.name == hco_target_version:
-            return csv
 
 
 def get_clusterversion(dyn_client):
@@ -228,28 +262,14 @@ def get_clusterversion_state_version_conditions(dyn_client):
     )
 
 
-def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
-    csv_sampler = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
-        sleep=1,
-        func=get_new_csv,
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
-        hco_target_version=hco_target_version,
-    )
-    for csv_sample in csv_sampler:
-        if csv_sample:
-            return csv_sample
-
-
 def upgrade_path(cnv_upgrade_dict):
     current_version = re.search(
         r"([0-9]+)\.([0-9]+)\.([0-9]+)", cnv_upgrade_dict["current_version"]
     )
-    target_version = re.search(
-        r"([0-9]+)\.([0-9]+)\.([0-9]+)", cnv_upgrade_dict["target_version"]
+
+    target_version, target_channel = utils.cnv_target_version_channel(
+        cnv_version=cnv_upgrade_dict["target_version"]
     )
-    target_channel = ".".join(target_version.group(1, 2))
 
     if current_version.group(1) < target_version.group(1):
         return "x-stream", target_channel
@@ -259,50 +279,41 @@ def upgrade_path(cnv_upgrade_dict):
         return "z-stream", target_channel
 
 
-def update_subscription_channel(dyn_client, hco_namespace, target_version):
-    LOGGER.info("Change subscription channel.")
-    for subscription in Subscription.get(
-        dyn_client=dyn_client, namespace=hco_namespace
+def update_image_in_catalog_source(dyn_client, namespace, image):
+    assert image, "no image supplied"
+    #  The cnv_image cli argument can be None in the case of production/staging version.
+    #  Since the user doesn't need to specify a custom IIB image.
+    #  This is just here in case somehow this would run it should fail here.
+    #  Otherwise an empty string would be set for the image.
+    #  This would screw up the cluster and likely be hard to find the source of the issue.
+    LOGGER.info(f"Change hco-catalogsource image: image={image}")
+    for catalog_source in CatalogSource.get(
+        dyn_client=dyn_client, namespace=namespace, name="hco-catalogsource"
     ):
-        if subscription.name == "hco-operatorhub":
-            ResourceEditor(
-                {
-                    subscription: {
-                        "spec": {"channel": target_version, "source": APP_REGISTRY}
+        ResourceEditor(patches={catalog_source: {"spec": {"image": image}}}).update()
+
+
+def update_subscription_channel_and_source(
+    dyn_client, hco_namespace, cnv_subscription_channel, cnv_subscription_source
+):
+    LOGGER.info(
+        f"Change subscription channel and source: channel={cnv_subscription_channel} source={cnv_subscription_source}"
+    )
+    for subscription in Subscription.get(
+        dyn_client=dyn_client,
+        namespace=hco_namespace,
+        name="hco-operatorhub",
+    ):
+        ResourceEditor(
+            {
+                subscription: {
+                    "spec": {
+                        "channel": cnv_subscription_channel,
+                        "source": cnv_subscription_source,
                     }
                 }
-            ).update()
-
-
-def get_install_plan(dyn_client, hco_namespace, hco_target_version):
-    for ip in InstallPlan.get(dyn_client=dyn_client, namespace=hco_namespace):
-        if hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]:
-            return ip
-
-    return
-
-
-def approve_install_plan(install_plan):
-    ip_dict = install_plan.instance.to_dict()
-    ip_dict["spec"]["approved"] = True
-    install_plan.update(resource_dict=ip_dict)
-    install_plan.wait_for_status(
-        status=install_plan.Status.COMPLETE, timeout=utilities.constants.TIMEOUT_10MIN
-    )
-
-
-def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
-    samples = TimeoutSampler(
-        wait_timeout=120,
-        sleep=1,
-        func=get_install_plan,
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
-        hco_target_version=hco_target_version,
-    )
-    for sample in samples:
-        if sample:
-            return sample
+            }
+        ).update()
 
 
 def get_cluster_pods(dyn_client, hco_namespace, pods_type):
@@ -320,7 +331,7 @@ def get_cluster_pods(dyn_client, hco_namespace, pods_type):
         elif pods_type == "tier-2" and "operator" not in pod.name:
             cluster_pods.append(pod)
         # All pods
-        else:
+        elif pods_type == "all":
             cluster_pods.append(pod)
 
     assert cluster_pods
@@ -386,7 +397,41 @@ def get_nodes_status(nodes):
     return nodes_dict
 
 
+def cleanup_node_status(node_status):
+    # converts the node_status objects into a string to be able to load it back into a dictionary
+    return dict(yaml.load(str(node_status)))
+
+
 def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
+    def _delta_add_openstack_topology_zone_nova(delta):
+        verb, path, patch = delta
+        if verb != "add":
+            return False
+        if path[1:] != ["labels"]:
+            return False
+        if patch != [("topology.cinder.csi.openstack.org/zone", "nova")]:
+            return False
+        return True
+
+    acceptable_deltas = [_delta_add_openstack_topology_zone_nova]
+
+    def _verify_status(before, after):
+        # some deltas are acceptable, so those must be allowed.
+        # using dictdiffer.diff to find the delta between before and after dictionaries of nodes
+        # then checking each diff in a list of functions which can take a diff and approve it
+        # if any of those functions approve the diff then this diff is acceptable
+        # if any delta is not approved by at least one acceptable function then the nodes status is not verified
+        for delta in dictdiffer.diff(
+            first=cleanup_node_status(node_status=before),
+            second=cleanup_node_status(node_status=after),
+            dot_notation=False,
+        ):
+            if not any(func(delta) for func in acceptable_deltas):
+                return False
+
+        # if nothing has indicated the nodes status is not verified then they are verified
+        return True
+
     nodes_status_after_upgrade = None
     nodes_sampler = TimeoutSampler(
         wait_timeout=utilities.constants.TIMEOUT_10MIN,
@@ -397,29 +442,183 @@ def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
 
     try:
         for nodes_status_after_upgrade in nodes_sampler:
-            if nodes_status_after_upgrade == nodes_status_before_upgrade:
+            if _verify_status(
+                before=nodes_status_before_upgrade, after=nodes_status_after_upgrade
+            ):
                 return
 
     except TimeoutExpiredError:
+        nodes_delta = stringify_dict_delta_for_logging(
+            first=nodes_status_after_upgrade, second=nodes_status_before_upgrade
+        )
         LOGGER.error(
-            f"Nodes before upgrade: {nodes_status_before_upgrade}, nodes after upgrade: {nodes_status_after_upgrade}"
+            f"Nodes before upgrade: {nodes_status_before_upgrade}."
+            f"\nNodes after upgrade: {nodes_status_after_upgrade}."
+            f"\nNodes delta: {nodes_delta}."
         )
         raise
 
 
+def stringify_dict_delta_for_logging(first, second):
+    # for easier debugging it is easier to see the delta between dicts
+    return "\n".join(
+        map(
+            str,
+            dictdiffer.diff(
+                first=second,
+                second=first,
+                dot_notation=False,
+            ),
+        )
+    )
+
+
 def verify_cnv_pods_are_running(dyn_client, hco_namespace):
-    cnv_pods = get_cluster_pods(
-        dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
+    def _get_pods_that_are_not_running():
+        return [
+            pod
+            for pod in get_cluster_pods(
+                dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
+            )
+            if pod.status != Pod.Status.RUNNING
+        ]
+
+    samples = TimeoutSampler(
+        wait_timeout=utilities.constants.TIMEOUT_10MIN,
+        sleep=10,
+        func=_get_pods_that_are_not_running,
     )
-    failed_pods = [pod.name for pod in cnv_pods if pod.status != Pod.Status.RUNNING]
-    assert not failed_pods, f"Some CNV pods are not running: {failed_pods}"
+    sample = None
+    try:
+        for sample in samples:
+            if not sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"Some pods are not running: {sample}.")
+        raise
 
 
-def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience):
+def delete_icsp(admin_client):
+    """will delete the ICSP if it exists, else it will do nothing"""
+    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client, name="iib"):
+        icsp.delete(wait=True)
+
+
+def generate_icsp_file(tmpdir, cnv_index_image, cnv_image_name, source_map):
+    icsp_file_name = "imageContentSourcePolicy.yaml"
+    LOGGER.info(f"Create catalog mirror file {icsp_file_name} (ICSP)")
+    output_directory = os.path.join(tmpdir, f"{cnv_image_name}-manifests")
+    rc, out, err = run_command(
+        command=[
+            "oc",
+            "adm",
+            "catalog",
+            "mirror",
+            cnv_index_image,
+            source_map,
+            "--manifests-only",
+            "--to-manifests",
+            output_directory,
+        ],
+        verify_stderr=False,
+    )
+    assert rc, f"Command to generate catalog mirror failed. out={out}"
+
+    icsp_file_path = os.path.join(output_directory, icsp_file_name)
+    assert os.path.isfile(
+        icsp_file_path
+    ), f"ICSP file does not exist in path {icsp_file_path}"
+
+    return icsp_file_path
+
+
+def create_icsp_from_file(icsp_file_path):
+    rc, out, err = run_command(
+        command=["oc", "create", "-f", icsp_file_path], verify_stderr=False
+    )
+    assert rc, f"Failed to create ICSP policy {icsp_file_path}"
+
+
+def update_icsp_stage_mirror(icsp_file_path):
+    # TODO: Remove once mirror catalog from stage is fixed
+    rc, out, err = run_command(
+        command=[
+            "sed",
+            "-i",
+            "-e",
+            "s|/container-native-virtualization-\\(.*\\)|/\\1|g",
+            icsp_file_path,
+        ]
+    )
+    assert rc, f"Failed to update stage mirror in ICSP {icsp_file_path}"
+
+
+def get_mcp(dyn_client):
+    return list(MachineConfigPool.get(dyn_client=dyn_client))
+
+
+def wait_for_mcp_update(dyn_client):
+    def _get_mcp_condition(condition_type):
+        return [
+            condition
+            for mcp in mcp_list
+            for condition in mcp.instance.status.conditions
+            if condition["type"] == condition_type
+        ]
+
+    def _wait_for_condition_status(condition_type, timeout):
+        # The list of exceptions is needed because during mcp update;
+        # the nodes are updated and the connection may be interrupted.
+        # TODO: change exceptions to use this PR once it is merged
+        #  https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper/-/merge_requests/147
+        samples = TimeoutSampler(
+            wait_timeout=timeout,
+            sleep=5,
+            func=_get_mcp_condition,
+            condition_type=condition_type,
+            exceptions=(
+                NewConnectionError,
+                ConnectionRefusedError,
+                ProtocolError,
+                ResponseError,
+                MaxRetryError,
+            ),
+        )
+
+        for sample in samples:
+            if all(
+                [
+                    True if condition["status"] == "True" else False
+                    for condition in sample
+                ]
+            ):
+                break
+
+    mcp_list = get_mcp(dyn_client=dyn_client)
+    LOGGER.info("Wait for mcp update to start.")
+    _wait_for_condition_status(
+        condition_type=MachineConfigPool.Status.UPDATING,
+        timeout=utilities.constants.TIMEOUT_15MIN,
+    )
+
+    LOGGER.info("Wait for mcp update to end.")
+    _wait_for_condition_status(
+        condition_type=MachineConfigPool.Status.UPDATED,
+        timeout=utilities.constants.TIMEOUT_75MIN,
+    )
+
+
+def upgrade_cnv(
+    dyn_client,
+    hco_namespace,
+    hco_version,
+    image,
+    cnv_upgrade_path,
+    upgrade_resilience,
+    cnv_subscription_source,
+    cnv_source,
+):
     LOGGER.info(f"CNV upgrade: {cnv_upgrade_path}")
-    hco_target_version = (
-        f"kubevirt-hyperconverged-operator.v{cnv_upgrade_path['target_version']}"
-    )
     LOGGER.info("Get all operators PODs before upgrade")
     old_operators_pods = get_cluster_pods(
         dyn_client=dyn_client,
@@ -430,27 +629,37 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
         dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
     )
 
+    if cnv_source != "production":
+        LOGGER.info("Update catalog source image.")
+        update_image_in_catalog_source(
+            dyn_client=dyn_client,
+            namespace=py_config["marketplace_namespace"],
+            image=image,
+        )
+
     LOGGER.info("Update subscription channel and source.")
-    update_subscription_channel(
+    update_subscription_channel_and_source(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        target_version=cnv_upgrade_path["target_channel"],
+        cnv_subscription_channel="stable",
+        cnv_subscription_source=cnv_subscription_source,
+    )
+
+    LOGGER.info("Get the install plan.")
+    install_plan = utils.wait_for_install_plan(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        hco_target_version=hco_version,
     )
 
     LOGGER.info("Approve the install plan to trigger the upgrade.")
-    approve_install_plan(
-        install_plan=wait_for_install_plan(
-            dyn_client=dyn_client,
-            hco_namespace=hco_namespace.name,
-            hco_target_version=hco_target_version,
-        )
-    )
+    utils.approve_install_plan(install_plan=install_plan)
 
     LOGGER.info("Wait for a new CSV")
-    new_csv = wait_for_csv(
+    new_csv = utils.wait_for_csv(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        hco_target_version=hco_target_version,
+        hco_target_version=hco_version,
     )
 
     LOGGER.info("Check that CSV status is Installing")
@@ -494,7 +703,9 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
     LOGGER.info("Wait for the new HCO to be available.")
     for hco in HyperConverged.get(dyn_client=dyn_client, namespace=hco_namespace.name):
         hco.wait_for_condition(
-            condition=Pod.Condition.AVAILABLE, status=Pod.Condition.Status.TRUE
+            condition=Pod.Condition.AVAILABLE,
+            status=Pod.Condition.Status.TRUE,
+            timeout=utilities.constants.TIMEOUT_20MIN,
         )
 
     LOGGER.info("Check that CSV status is Succeeded")
@@ -504,15 +715,14 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
         stop_status=None,
     )
 
-    LOGGER.info("Verify all previous pods were deleted")
-    undeleted_pods = [pod.name for pod in all_old_pods if pod.exists]
-    assert not undeleted_pods, f"Some old pods were not deleted: {undeleted_pods}"
+    LOGGER.info("Wait for all previous pods to be deleted")
+    wait_for_pods_removal(pods_list=all_old_pods)
 
     LOGGER.info("Verify tier-2 pods images were updated")
     check_tier2_pods_images(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        hco_target_version=hco_target_version,
+        hco_target_version=hco_version,
     )
 
 

@@ -32,6 +32,7 @@ distribution = "downstream"
 hco_cr_name = "kubevirt-hyperconverged"
 hco_namespace = "openshift-cnv"
 sriov_namespace = "openshift-sriov-network-operator"
+marketplace_namespace = "openshift-marketplace"
 machine_api_namespace = "openshift-machine-api"
 golden_images_namespace = "openshift-virtualization-os-images"
 
@@ -82,6 +83,20 @@ servers = {
     "registry_server": "docker://{server}",
     "https_cert": "usa_https.crt",
     "registry_cert": "usa_registry.crt",
+}
+
+cnv_registry_sources = {
+    "osbs": {
+        "cnv_subscription_source": "hco-catalogsource",
+        "source_map": "registry-proxy.engineering.redhat.com/rh-osbs",
+    },
+    "stage": {
+        "cnv_subscription_source": "hco-catalogsource",
+        "source_map": "registry.stage.redhat.io/container-native-virtualization",
+    },
+    "production": {
+        "cnv_subscription_source": "hco-catalogsource",
+    },
 }
 
 nic_models_matrix = [

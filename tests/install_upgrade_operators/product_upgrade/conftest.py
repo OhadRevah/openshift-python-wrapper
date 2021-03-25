@@ -1,11 +1,12 @@
+import logging
+import re
 from copy import deepcopy
 
+import packaging.version
 import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.operator_hub import OperatorHub
-from ocp_resources.operator_source import OperatorSource
 from ocp_resources.resource import ResourceEditor
-from ocp_resources.secret import Secret
 from ocp_resources.template import Template
 from pytest_testconfig import py_config
 
@@ -32,7 +33,7 @@ from utilities.virt import (
 )
 
 
-MARKETPLACE_NAMESPACE = "openshift-marketplace"
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -205,51 +206,35 @@ def vms_for_upgrade(
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade(pytestconfig):
-    """ Returns True if requested upgrade if for CNV else False """
-    return pytestconfig.option.upgrade == "cnv"
+def cnv_image_name(pytestconfig):
+    cnv_image_url = pytestconfig.option.cnv_image
+    if not cnv_image_url:
+        return
 
-
-@pytest.fixture()
-def registry_secret(cnv_upgrade):
-    if cnv_upgrade:
-        token = (
-            "basic cmgtb3Nicy1vcGVyYXRvcnMrY252cWU6MDBVSjc0ME1LRUpEWlVTVDBaMlRMW"
-            "lZRRlE2SFJVUDAxTldWNFpWQTBHVzFORUxWT0FKOVVUWVBUMkgzTlowVg=="
+    # Image name format example staging: registry-proxy-stage.engineering.redhat.com/rh-osbs-stage/iib:v4.5
+    # Image name format example osbs: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131
+    try:
+        return re.search(r"[/.*](\w+):", cnv_image_url).group(1)
+    except IndexError:
+        LOGGER.error(
+            "Can not find CNV image name "
+            "(example: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131 should find 'iib')"
         )
-        with Secret(
-            name=f"quay-registry-{upgrade_utils.APP_REGISTRY}",
-            namespace=MARKETPLACE_NAMESPACE,
-            string_data={"token": token},
-        ) as secret:
-            yield secret
-    else:
-        yield
+        raise
 
 
 @pytest.fixture()
-def operator_source(registry_secret):
-    if registry_secret:
-        with OperatorSource(
-            name=upgrade_utils.APP_REGISTRY,
-            namespace=MARKETPLACE_NAMESPACE,
-            registry_namespace=upgrade_utils.APP_REGISTRY,
-            display_name=upgrade_utils.APP_REGISTRY,
-            publisher="Red Hat",
-            secret=registry_secret.name,
-        ) as os:
-            yield os
-    else:
-        yield
-
-
-@pytest.fixture()
-def operatorhub_no_default_sources(admin_client, cnv_upgrade):
-    if cnv_upgrade:
+def operatorhub_without_default_sources(
+    cnv_upgrade, admin_client, is_deployment_from_production_source
+):
+    if cnv_upgrade and not is_deployment_from_production_source:
         for source in OperatorHub.get(dyn_client=admin_client):
-            ResourceEditor(
+            with ResourceEditor(
                 patches={source: {"spec": {"disableAllDefaultSources": True}}}
-            ).update()
+            ) as edited_source:
+                yield edited_source
+    else:
+        yield
 
 
 @pytest.fixture(scope="session")
@@ -257,8 +242,8 @@ def cnv_upgrade_path(admin_client, cnv_upgrade, pytestconfig, cnv_current_versio
     if cnv_upgrade:
         cnv_target_version = pytestconfig.option.cnv_version
         # Upgrade only if a newer CNV version is requested
-        if int(cnv_target_version.replace(".", "")) <= int(
-            cnv_current_version.replace(".", "")
+        if packaging.version.parse(cnv_target_version) <= packaging.version.parse(
+            cnv_current_version
         ):
             raise ValueError(
                 f"Cannot upgrade to older/identical versions,"
@@ -288,6 +273,48 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
 @pytest.fixture(scope="module")
 def nodes_status_before_upgrade(nodes):
     return upgrade_utils.get_nodes_status(nodes=nodes)
+
+
+@pytest.fixture()
+def update_image_content_source(
+    is_deployment_from_production_source,
+    pytestconfig,
+    cnv_image_name,
+    cnv_registry_source,
+    cnv_source,
+    admin_client,
+    cnv_upgrade,
+    tmpdir,
+):
+    if not cnv_upgrade or is_deployment_from_production_source:
+        # not needed when upgrading OCP
+        # Generate ICSP only in case of deploying from OSBS or Stage source; Production source does not require ICSP.
+        return
+
+    icsp_file_path = upgrade_utils.generate_icsp_file(
+        tmpdir=tmpdir,
+        cnv_index_image=pytestconfig.option.cnv_image,
+        cnv_image_name=cnv_image_name,
+        source_map=cnv_registry_source["source_map"],
+    )
+
+    if cnv_source == "stage":
+        upgrade_utils.update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
+
+    LOGGER.info("Deleting existing ICSP.")
+    # delete the existing ICSP and then create the new one
+    # apply is not good enough due to the amount of annotations we have
+    # the amount of annotations we have is greater than the maximum size of a payload that is supported with apply
+    upgrade_utils.delete_icsp(admin_client=admin_client)
+    # when changes are made to the ICSP (like deleting it), it takes time to take effect on all nodes,
+    # The indicator for this is the MCP conditions (updating, then updated)
+    # Must wait to check that the MCP accepted the change
+    # If the ICSP creation is executed right after deletion without waiting the MCP update process might not progress
+    upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
+
+    LOGGER.info("Creating new ICSP.")
+    upgrade_utils.create_icsp_from_file(icsp_file_path=icsp_file_path)
+    upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
 
 
 @pytest.fixture(scope="class")
