@@ -5,18 +5,26 @@ from copy import deepcopy
 import packaging.version
 import pytest
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.operator_hub import OperatorHub
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
-import utilities.network
-from utilities import console
+from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
+from utilities.constants import (
+    KMP_ENABLED_LABEL,
+    KMP_VM_ASSIGNMENT_LABEL,
+    TIMEOUT_40MIN,
+)
+from utilities.infra import create_ns
 from utilities.network import (
     LINUX_BRIDGE,
     cloud_init_network_data,
     enable_hyperconverged_ovs_annotations,
+    network_device,
     network_nad,
     wait_for_ovs_status,
 )
@@ -28,6 +36,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
+    running_vm,
     wait_for_vm_interfaces,
 )
 
@@ -35,14 +44,26 @@ from utilities.virt import (
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
+def kmp_enabled_namespace(kmp_vm_label, unprivileged_client, admin_client):
+    # Enabling label "allocate" (or any other non-configured label) - Allocates.
+    kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = KMP_ENABLED_LABEL
+    yield from create_ns(
+        name="kmp-enabled-for-upgrade",
+        kmp_vm_label=kmp_vm_label,
+        unprivileged_client=unprivileged_client,
+        admin_client=admin_client,
+    )
+
+
+@pytest.fixture(scope="module")
 def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
     utility_pods,
     hosts_common_available_ports,
     schedulable_nodes,
 ):
-    with utilities.network.network_device(
+    with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         interface_name="br1upgrade",
@@ -55,7 +76,7 @@ def upgrade_bridge_on_all_nodes(
 
 @pytest.fixture(scope="module")
 def bridge_on_one_node(utility_pods, worker_node1):
-    with utilities.network.network_device(
+    with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         interface_name="upg-br-mark",
@@ -66,12 +87,13 @@ def bridge_on_one_node(utility_pods, worker_node1):
 
 
 @pytest.fixture(scope="module")
-def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
+def upgrade_bridge_marker_nad(bridge_on_one_node, kmp_enabled_namespace):
     with network_nad(
         nad_type=LINUX_BRIDGE,
         nad_name=bridge_on_one_node.bridge_name,
         interface_name=bridge_on_one_node.bridge_name,
-        namespace=namespace,
+        namespace=kmp_enabled_namespace,
+        tuning=True,
     ) as nad:
         yield nad
 
@@ -82,11 +104,16 @@ def cloud_init(ip_address):
 
 
 @pytest.fixture(scope="module")
-def vm_upgrade_a(upgrade_bridge_marker_nad, namespace, unprivileged_client):
+def vm_upgrade_a(
+    unprivileged_client,
+    upgrade_bridge_marker_nad,
+    kmp_enabled_namespace,
+    upgrade_br1test_nad,
+):
     name = "vm-upgrade-a"
     with VirtualMachineForTests(
         name=name,
-        namespace=namespace.name,
+        namespace=kmp_enabled_namespace.name,
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
         interfaces=[upgrade_bridge_marker_nad.name],
         client=unprivileged_client,
@@ -98,11 +125,16 @@ def vm_upgrade_a(upgrade_bridge_marker_nad, namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="module")
-def vm_upgrade_b(upgrade_bridge_marker_nad, namespace, unprivileged_client):
+def vm_upgrade_b(
+    unprivileged_client,
+    upgrade_bridge_marker_nad,
+    kmp_enabled_namespace,
+    upgrade_br1test_nad,
+):
     name = "vm-upgrade-b"
     with VirtualMachineForTests(
         name=name,
-        namespace=namespace.name,
+        namespace=kmp_enabled_namespace.name,
         networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
         interfaces=[upgrade_bridge_marker_nad.name],
         client=unprivileged_client,
@@ -129,31 +161,34 @@ def running_vm_upgrade_b(vm_upgrade_b):
     return vm_upgrade_b
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def upgrade_br1test_nad(namespace, upgrade_bridge_on_all_nodes):
     with network_nad(
         nad_type=LINUX_BRIDGE,
         nad_name=upgrade_bridge_on_all_nodes.bridge_name,
         interface_name=upgrade_bridge_on_all_nodes.bridge_name,
         namespace=namespace,
+        tuning=True,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module")
-def dvs_for_upgrade(admin_client, namespace, worker_node1):
+def dvs_for_upgrade(admin_client, worker_node1):
     dvs_list = []
     for sc in py_config["system_storage_class_matrix"]:
         storage_class = [*sc][0]
         dv = DataVolume(
+            client=admin_client,
             name=f"dv-for-product-upgrade-{storage_class}",
-            namespace=namespace.name,
+            namespace=py_config["golden_images_namespace"],
             source="http",
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
-            url=f"{get_images_server_url(schema='http')}{py_config['latest_rhel_os_dict']['image_path']}",
-            size="25Gi",
+            url=f"{get_images_server_url(schema='http')}{RHEL_LATEST['image_path']}",
+            size=RHEL_LATEST["dv_size"],
+            bind_immediate_annotation=True,
             hostpath_node=worker_node1.name
             if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
             else None,
@@ -171,32 +206,36 @@ def dvs_for_upgrade(admin_client, namespace, worker_node1):
 
 @pytest.fixture(scope="module")
 def vms_for_upgrade(
-    unprivileged_client, upgrade_bridge_on_all_nodes, dvs_for_upgrade, rhel7_workers
+    unprivileged_client,
+    namespace,
+    upgrade_bridge_on_all_nodes,
+    dvs_for_upgrade,
+    upgrade_br1test_nad,
+    nodes_common_cpu_model,
+    rhel7_workers,
 ):
     networks = {
         upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
     }
-    template_labels = py_config["latest_rhel_os_dict"]["template_labels"]
     vms_list = []
     for dv in dvs_for_upgrade:
         vm = VirtualMachineForTestsFromTemplate(
-            name=dv.name.replace("dv", "vm"),
-            namespace=dv.namespace,
+            name=dv.name.replace("dv", "vm")[0:26],
+            namespace=namespace.name,
             client=unprivileged_client,
-            labels=Template.generate_template_labels(**template_labels),
+            labels=Template.generate_template_labels(**RHEL_LATEST_LABELS),
             data_volume=dv,
             networks=networks,
+            cpu_model=nodes_common_cpu_model,
             interfaces=sorted(networks.keys()),
-            username=console.RHEL.USERNAME,
-            password=console.RHEL.PASSWORD,
             rhel7_workers=rhel7_workers,
         )
-        vm.create()
+        vm.deploy()
+        vm.start(timeout=TIMEOUT_40MIN, wait=False)
         vms_list.append(vm)
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
-        vm.ssh_enable()
-    upgrade_utils.wait_for_vms_interfaces(vms_list=vms_list)
+
+    for vm in vms_list:
+        running_vm(vm=vm)
 
     yield vms_list
 
@@ -277,10 +316,10 @@ def nodes_status_before_upgrade(nodes):
 @pytest.fixture()
 def update_image_content_source(
     is_deployment_from_production_source,
+    is_deployment_from_stage_source,
     pytestconfig,
     cnv_image_name,
     cnv_registry_source,
-    cnv_source,
     admin_client,
     cnv_upgrade,
     tmpdir,
@@ -297,14 +336,14 @@ def update_image_content_source(
         source_map=cnv_registry_source["source_map"],
     )
 
-    if cnv_source == "stage":
+    if is_deployment_from_stage_source:
         upgrade_utils.update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
 
     LOGGER.info("pausing MCP updates while modifying ICSP")
     with ResourceEditor(
         patches={
             mcp: {"spec": {"paused": True}}
-            for mcp in upgrade_utils.get_mcp(dyn_client=admin_client)
+            for mcp in MachineConfigPool.get(dyn_client=admin_client)
         }
     ):
         # delete the existing ICSP and then create the new one
@@ -318,6 +357,66 @@ def update_image_content_source(
 
     LOGGER.info("Wait for MCP to update now that we modified the ICSP")
     upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
+
+
+@pytest.fixture(scope="module")
+def skip_if_less_than_two_storage_classes(cluster_storage_classes):
+    if len(cluster_storage_classes) < 2:
+        pytest.skip(msg="Need two Storage Classes at least.")
+
+
+@pytest.fixture(scope="module")
+def storage_class_for_updating_cdiconfig_scratch(
+    skip_if_less_than_two_storage_classes, cdi_config, cluster_storage_classes
+):
+    """
+    Choose one StorageClass which is not the current one for scratch space.
+    """
+    current_sc_for_scratch = cdi_config.scratch_space_storage_class_from_status
+    LOGGER.info(
+        f"The current StorageClass for scratch space on CDIConfig is: {current_sc_for_scratch}"
+    )
+    for sc in cluster_storage_classes:
+        if sc.instance.metadata.get("name") != current_sc_for_scratch:
+            LOGGER.info(f"Candidate StorageClass: {sc.instance.metadata.name}")
+            return sc
+
+
+@pytest.fixture(scope="module")
+def override_cdiconfig_scratch_spec(
+    cdi,
+    cdi_config,
+    storage_class_for_updating_cdiconfig_scratch,
+):
+    """
+    Change spec.scratchSpaceStorageClass to the selected StorageClass on CDIConfig.
+    """
+    if storage_class_for_updating_cdiconfig_scratch:
+        new_sc = storage_class_for_updating_cdiconfig_scratch.name
+
+        def _wait_for_sc_update():
+            samples = TimeoutSampler(
+                wait_timeout=30,
+                sleep=1,
+                func=lambda: cdi_config.scratch_space_storage_class_from_status
+                == new_sc,
+            )
+            for sample in samples:
+                if sample:
+                    return
+
+        with ResourceEditor(
+            patches={cdi: {"spec": {"config": {"scratchSpaceStorageClass": new_sc}}}}
+        ) as edited_cdi_config:
+            _wait_for_sc_update()
+
+            yield edited_cdi_config
+
+
+@pytest.fixture(scope="module")
+def skip_if_not_override_cdiconfig_scratch_space(override_cdiconfig_scratch_spec):
+    if not override_cdiconfig_scratch_spec:
+        pytest.skip(msg="Skip test because the scratch space was not changed.")
 
 
 @pytest.fixture(scope="class")

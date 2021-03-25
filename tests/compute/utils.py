@@ -7,8 +7,7 @@ from benedict import benedict
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.conftest import get_hyperconverged_resource
-from utilities.hco import get_kubevirt_hyperconverged_spec
+from utilities.hco import get_hyperconverged_resource, get_kubevirt_hyperconverged_spec
 from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity
 

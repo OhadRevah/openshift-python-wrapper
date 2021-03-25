@@ -38,6 +38,11 @@ def is_deployment_from_production_source(is_cnv_deployment, cnv_source):
     return is_cnv_deployment and cnv_source == "production"
 
 
+@pytest.fixture()
+def is_deployment_from_stage_source(is_cnv_deployment, cnv_source):
+    return is_cnv_deployment and cnv_source == "stage"
+
+
 @pytest.fixture(scope="session")
 def cnv_upgrade(pytestconfig):
     """Returns True if requested upgrade if for CNV else False"""

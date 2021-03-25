@@ -25,6 +25,15 @@ DEFAULT_HCO_PROGRESSING_CONDITIONS = {
 LOGGER = logging.getLogger(__name__)
 
 
+def get_hyperconverged_resource(client, hco_ns_name):
+    for hco in HyperConverged.get(
+        dyn_client=client,
+        namespace=hco_ns_name,
+        name=py_config["hco_cr_name"],
+    ):
+        return hco
+
+
 def wait_for_hco_conditions(
     admin_client,
     conditions=DEFAULT_HCO_CONDITIONS,
@@ -35,6 +44,7 @@ def wait_for_hco_conditions(
     # yet. In these case we'll use a higher value in number_of_consecutive_checks to make sure the ready
     # status is consistence.
     number_of_consecutive_checks=1,
+    wait_timeout=TIMEOUT_10MIN,
 ):
     """
     Checking HCO conditions.
@@ -44,20 +54,18 @@ def wait_for_hco_conditions(
 
     actual_hco_conditions = {}
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=wait_timeout,
         sleep=sleep,
-        func=lambda: list(
-            HyperConverged.get(
-                dyn_client=admin_client, namespace=py_config["hco_namespace"]
-            )
-        ),
+        func=get_hyperconverged_resource,
         exceptions=NotFoundError,
+        client=admin_client,
+        hco_ns_name=py_config["hco_namespace"],
     )
     current_check = 0
     try:
         for sample in samples:
-            if sample[0].instance.get("status", {}).get("conditions"):
-                resource_conditions = sample[0].instance.status.conditions
+            resource_conditions = sample.instance.get("status", {}).get("conditions")
+            if resource_conditions:
                 actual_hco_conditions = {
                     condition.type: condition.status
                     for condition in resource_conditions

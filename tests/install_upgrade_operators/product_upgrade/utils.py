@@ -12,12 +12,12 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
+from ocp_resources.node import Node
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from openshift.dynamic.exceptions import (
     InternalServerError,
     NotFoundError,
@@ -34,10 +34,10 @@ from urllib3.exceptions import (
 import utilities.constants
 from tests.install_upgrade_operators import utils
 from utilities.hco import wait_for_hco_conditions
-from utilities.virt import run_command, wait_for_vm_interfaces
+from utilities.infra import collect_resources_for_test, write_to_extras_file
+from utilities.virt import run_command
 
 
-APP_REGISTRY = "rh-osbs-operators"
 LOGGER = logging.getLogger(__name__)
 
 
@@ -47,13 +47,18 @@ def wait_for_dvs_import_completed(dvs_list):
 
     LOGGER.info("Wait for DVs import to end.")
     samples = TimeoutSampler(
-        wait_timeout=1200,
+        wait_timeout=utilities.constants.TIMEOUT_60MIN,
         sleep=10,
         func=_dvs_import_completed,
     )
-    for sample in samples:
-        if sample:
-            return
+    try:
+        for sample in samples:
+            if sample:
+                return
+    except TimeoutExpiredError:
+        dv_status = {dv.name: dv.status for dv in dvs_list}
+        LOGGER.error(f"dvs were not imported within timeout: status={dv_status}")
+        raise
 
 
 def wait_for_pods_removal(pods_list):
@@ -74,21 +79,6 @@ def wait_for_pods_removal(pods_list):
     except TimeoutExpiredError:
         LOGGER.error(f"Some old pods were not deleted: {sample}")
         raise
-
-
-def wait_for_vms_interfaces(vms_list):
-    for vm in vms_list:
-        wait_for_vm_interfaces(vmi=vm.vmi, timeout=1100)
-
-
-def migrate_vm_and_validate(vm, when):
-    vmi_node_before_migration = vm.vmi.instance.status.nodeName
-    with VirtualMachineInstanceMigration(
-        name=f"{when}-upgrade-migration", namespace=vm.namespace, vmi=vm.vmi
-    ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
-        assert vm.vmi.instance.status.nodeName != vmi_node_before_migration
-        assert vm.vmi.instance.status.migrationState.completed
 
 
 def assert_bridge_and_vms_on_same_node(vm_a, vm_b, bridge):
@@ -136,11 +126,6 @@ def pod_status_and_image(
     resiliency)
     """
 
-    oper_name, image_ver = operators_version
-    LOGGER.info(f"Verify operator pod {oper_name} replacement.")
-
-    old_operators_pods = [pod for pod in old_operators_pods if oper_name in pod.name]
-
     def _get_new_operator_pod():
         if old_operators_pods:
             return wait_for_operator_replacement(
@@ -157,29 +142,27 @@ def pod_status_and_image(
                 operator_name=oper_name,
             )
 
-    new_operator_pod = _get_new_operator_pod()
+    def _check_operator_pod_image(pod):
+        return pod.instance.spec.containers[0].image == image_ver
 
-    def _check_operator_pod_image():
-        nonlocal new_operator_pod
-        if not new_operator_pod.exists:
-            new_operator_pod = _get_new_operator_pod()
-        return new_operator_pod.instance.spec.containers[0].image == image_ver
+    oper_name, image_ver = operators_version
+    old_operators_pods = [pod for pod in old_operators_pods if oper_name in pod.name]
 
-    LOGGER.info(
-        f"Wait for {new_operator_pod.name} to get updated image version {image_ver}"
-    )
-    image_sampler = TimeoutSampler(
+    LOGGER.info(f"Verify operator pod {oper_name} replacement.")
+
+    new_pod_sampler = TimeoutSampler(
         wait_timeout=utilities.constants.TIMEOUT_30MIN,
         sleep=1,
-        func=_check_operator_pod_image,
+        func=_get_new_operator_pod,
     )
 
-    for image_sample in image_sampler:
-        if image_sample:
+    new_operator_pod = None
+    for new_operator_pod in new_pod_sampler:
+        if _check_operator_pod_image(pod=new_operator_pod):
             break
 
     if delete_pod:
-        new_operator_pod.delete(wait=True, force=True)
+        new_operator_pod.delete(wait=True, timeout=utilities.constants.TIMEOUT_10MIN)
         # Operator pod is deleted, fetching a new pod
         new_operator_pod = get_operator_by_name(
             dyn_client=dyn_client,
@@ -375,11 +358,6 @@ def check_tier2_pods_images(dyn_client, hco_namespace, hco_target_version):
     ), f"The following pods images were not replaced: {unreplaced_pods}"
 
 
-def get_hyperconverged_cr(dyn_client, namespace):
-    for cr in HyperConverged.get(dyn_client=dyn_client, namespace=namespace):
-        return cr
-
-
 def get_nodes_status(nodes):
     nodes_dict = {}
     for node in nodes:
@@ -403,17 +381,51 @@ def cleanup_node_status(node_status):
 
 
 def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
-    def _delta_add_openstack_topology_zone_nova(delta):
-        verb, path, patch = delta
-        if verb != "add":
-            return False
-        if path[1:] != ["labels"]:
-            return False
-        if patch != [("topology.cinder.csi.openstack.org/zone", "nova")]:
-            return False
-        return True
+    """
+    Verifies the nodes by checking their status before and after the upgrade.
+    a nodes status is comprised of; labels, taints, conditions, and if they are unschedulable
 
-    acceptable_deltas = [_delta_add_openstack_topology_zone_nova]
+    For taints, conditions, and unschedulable status the nodes are compared directly between before and after
+    For labels there are some considerations as the labels can be modified
+        by node-labeller (kubernetes features) and/or by the underlying infrastructure (PSI)
+
+    Args:
+        nodes (list): Nodes in the cluster
+        nodes_status_before_upgrade (dict): status of the Nodes in the cluster before the upgrade
+    """
+
+    def _delta_add_openstack_topology_zone_nova(verb, path, patch):
+        return (
+            verb == "add"
+            and path[1:] == ["labels"]
+            and patch == [("topology.cinder.csi.openstack.org/zone", "nova")]
+        )
+
+    def _delta_remove_kubernetes_feature_labels(verb, path, patch):
+        return (
+            verb == "remove"
+            and path[1:] == ["labels"]
+            and all(
+                label_name.startswith("feature.node.kubernetes.io/")
+                for label_name, label_value in patch
+            )
+        )
+
+    def _delta_add_kubevirt_feature_labels(verb, path, patch):
+        return (
+            verb == "add"
+            and path[1:] == ["labels"]
+            and all(
+                label_name.startswith(
+                    (
+                        "hyperv.node.kubevirt.io/",
+                        "cpu-model.node.kubevirt.io/",
+                        "cpu-feature.node.kubevirt.io/",
+                    )
+                )
+                for label_name, label_value in patch
+            )
+        )
 
     def _verify_status(before, after):
         # some deltas are acceptable, so those must be allowed.
@@ -426,13 +438,19 @@ def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
             second=cleanup_node_status(node_status=after),
             dot_notation=False,
         ):
-            if not any(func(delta) for func in acceptable_deltas):
+            verb, path, patch = delta
+            if not any(func(verb, path, patch) for func in acceptable_deltas):
                 return False
 
         # if nothing has indicated the nodes status is not verified then they are verified
         return True
 
-    nodes_status_after_upgrade = None
+    acceptable_deltas = [
+        _delta_add_openstack_topology_zone_nova,
+        _delta_remove_kubernetes_feature_labels,
+        _delta_add_kubevirt_feature_labels,
+    ]
+    nodes_status_after_upgrade = {}
     nodes_sampler = TimeoutSampler(
         wait_timeout=utilities.constants.TIMEOUT_10MIN,
         sleep=5,
@@ -448,14 +466,30 @@ def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
                 return
 
     except TimeoutExpiredError:
-        nodes_delta = stringify_dict_delta_for_logging(
-            first=nodes_status_after_upgrade, second=nodes_status_before_upgrade
-        )
-        LOGGER.error(
-            f"Nodes before upgrade: {nodes_status_before_upgrade}."
-            f"\nNodes after upgrade: {nodes_status_after_upgrade}."
-            f"\nNodes delta: {nodes_delta}."
-        )
+        LOGGER.error("Nodes did not match after timeout, attempting to produce delta.")
+        collect_resources_for_test(resources_to_collect=[Node])
+        for name, data in [
+            ("nodes_status_before_upgrade.yaml", nodes_status_before_upgrade),
+            ("nodes_status_after_upgrade.yaml", nodes_status_after_upgrade),
+        ]:
+            write_to_extras_file(
+                extras_file_name=name,
+                content=yaml.dump(cleanup_node_status(node_status=data)),
+            )
+        try:
+            nodes_delta = stringify_dict_delta_for_logging(
+                first=cleanup_node_status(node_status=nodes_status_before_upgrade),
+                second=cleanup_node_status(node_status=nodes_status_after_upgrade),
+            )
+        except TypeError as exc:
+            # sometimes there is a NoneType error when creating the delta of the dictionaries,
+            # it should be ignored so that before/after dictionaries can still be logged.
+            nodes_delta = f"<ErrorObtainingDelta({exc})>"
+        else:
+            write_to_extras_file(
+                extras_file_name="nodes_delta.txt", content=nodes_delta
+            )
+        LOGGER.error(f"Nodes delta:\n{nodes_delta}.")
         raise
 
 
@@ -465,8 +499,8 @@ def stringify_dict_delta_for_logging(first, second):
         map(
             str,
             dictdiffer.diff(
-                first=second,
-                second=first,
+                first=first,
+                second=second,
                 dot_notation=False,
             ),
         )
@@ -499,9 +533,19 @@ def verify_cnv_pods_are_running(dyn_client, hco_namespace):
 
 
 def delete_icsp(admin_client):
-    """will delete the ICSP if it exists, else it will do nothing"""
-    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client, name="iib"):
-        icsp.delete(wait=True)
+    """
+    Deletes the ImageContentSourcePolicy from the cluster
+
+    Ignores NotFoundError
+
+    Args:
+        admin_client (DynamicClient): Open connection to remote cluster
+    """
+    try:
+        for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client, name="iib"):
+            icsp.delete(wait=True)
+    except NotFoundError:
+        pass
 
 
 def generate_icsp_file(tmpdir, cnv_index_image, cnv_image_name, source_map):
@@ -553,29 +597,35 @@ def update_icsp_stage_mirror(icsp_file_path):
     assert rc, f"Failed to update stage mirror in ICSP {icsp_file_path}"
 
 
-def get_mcp(dyn_client):
-    return list(MachineConfigPool.get(dyn_client=dyn_client))
-
-
 def wait_for_mcp_update(dyn_client):
-    def _get_mcp_condition(condition_type):
-        return [
-            condition
-            for mcp in mcp_list
-            for condition in mcp.instance.status.conditions
-            if condition["type"] == condition_type
-        ]
+    def _get_all_mcp_conditions():
+        return {
+            mcp.name: mcp.instance.status.conditions
+            for mcp in MachineConfigPool.get(dyn_client=dyn_client)
+        }
+
+    def _are_all_mcp_matching_condition(mcp_conditions, condition_type):
+        return all(
+            [
+                condition["status"] == "True"
+                for conditions in mcp_conditions.values()
+                for condition in conditions
+                if condition["type"] == condition_type
+            ]
+        )
 
     def _wait_for_condition_status(condition_type, timeout):
         # The list of exceptions is needed because during mcp update;
         # the nodes are updated and the connection may be interrupted.
         # TODO: change exceptions to use this PR once it is merged
         #  https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper/-/merge_requests/147
-        samples = TimeoutSampler(
+        LOGGER.info(
+            f"mcp wait for condition: desired={condition_type} current={_get_all_mcp_conditions()}"
+        )
+        mcp_conditions_sampler = TimeoutSampler(
             wait_timeout=timeout,
             sleep=5,
-            func=_get_mcp_condition,
-            condition_type=condition_type,
+            func=_get_all_mcp_conditions,
             exceptions=(
                 NewConnectionError,
                 ConnectionRefusedError,
@@ -584,22 +634,47 @@ def wait_for_mcp_update(dyn_client):
                 MaxRetryError,
             ),
         )
+        mcp_conditions = {}
+        try:
+            for mcp_conditions in mcp_conditions_sampler:
+                if _are_all_mcp_matching_condition(
+                    mcp_conditions=mcp_conditions,
+                    condition_type=condition_type,
+                ):
+                    break
+        except TimeoutExpiredError:
+            LOGGER.error(
+                f"mcp not at desired condition before timeout: desired={condition_type} current={mcp_conditions}"
+            )
+            write_to_extras_file(
+                extras_file_name="mcp_conditions.yaml",
+                content=yaml.dump(
+                    {
+                        key: list(map(dict, conditions))
+                        for key, conditions in mcp_conditions.items()
+                    }
+                ),
+            )
+            collect_resources_for_test(resources_to_collect=[MachineConfigPool])
+            raise
 
-        for sample in samples:
-            if all(
-                [
-                    True if condition["status"] == "True" else False
-                    for condition in sample
-                ]
-            ):
-                break
-
-    mcp_list = get_mcp(dyn_client=dyn_client)
     LOGGER.info("Wait for mcp update to start.")
-    _wait_for_condition_status(
-        condition_type=MachineConfigPool.Status.UPDATING,
-        timeout=utilities.constants.TIMEOUT_15MIN,
-    )
+    try:
+        _wait_for_condition_status(
+            condition_type=MachineConfigPool.Status.UPDATING,
+            timeout=utilities.constants.TIMEOUT_15MIN,
+        )
+    except TimeoutExpiredError:
+        if _are_all_mcp_matching_condition(
+            mcp_conditions=_get_all_mcp_conditions(),
+            condition_type=MachineConfigPool.Status.UPDATED,
+        ):
+            # This can happen if the MCP transitions quickly and the UPDATING status is missed
+            LOGGER.info(
+                f"ignoring timeout since mcp is already in final desired condition: {MachineConfigPool.Status.UPDATED}"
+            )
+        else:
+            raise
 
     LOGGER.info("Wait for mcp update to end.")
     _wait_for_condition_status(
@@ -682,7 +757,9 @@ def upgrade_cnv(
     )
 
     LOGGER.info("Wait for HCO conditions after upgrade")
-    wait_for_hco_conditions(admin_client=dyn_client)
+    wait_for_hco_conditions(
+        admin_client=dyn_client, wait_timeout=utilities.constants.TIMEOUT_20MIN
+    )
 
     LOGGER.info("Wait for HCO operator to be ready")
     hco_operator_pod = get_operator_by_name(

@@ -12,7 +12,7 @@ from utilities.network import (
     get_vmi_mac_address_by_iface_name,
     verify_ovs_installed_with_annotations,
 )
-from utilities.virt import vm_console_run_commands
+from utilities.virt import migrate_vm_and_verify, vm_console_run_commands
 
 
 LOGGER = logging.getLogger(__name__)
@@ -37,7 +37,9 @@ class TestUpgrade:
             if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
-            upgrade_utils.migrate_vm_and_validate(vm=vm, when="before")
+            migrate_vm_and_verify(
+                vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False
+            )
 
     @pytest.mark.polarion("CNV-2988")
     @pytest.mark.run(after="test_migration_before_upgrade")
@@ -87,7 +89,13 @@ class TestUpgrade:
     @pytest.mark.polarion("CNV-2745")
     @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
     def test_linux_bridge_before_upgrade(
-        self, vm_upgrade_a, vm_upgrade_b, running_vm_upgrade_a, running_vm_upgrade_b
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_upgrade_a,
+        running_vm_upgrade_b,
+        upgrade_bridge_marker_nad,
+        bridge_on_one_node,
     ):
         dst_ip_address = ip_interface(
             address=running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
@@ -99,7 +107,6 @@ class TestUpgrade:
     def test_kubemacpool_enabled_ns_before_upgrade(
         self,
         kmp_vm_label,
-        kmp_enabled_ns,
     ):
         # KubeMacPool is enabled in namespace.
         assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
@@ -121,6 +128,25 @@ class TestUpgrade:
                     vmi=vm.vmi, iface_name=upgrade_bridge_marker_nad.name
                 )
             )
+
+    @pytest.mark.run(before="test_upgrade")
+    @pytest.mark.polarion("CNV-4880")
+    def test_cdiconfig_scratch_overriden_before_upgrade(
+        self,
+        cdi_config,
+        storage_class_for_updating_cdiconfig_scratch,
+        override_cdiconfig_scratch_spec,
+    ):
+        """
+        Check that the scratch StorageClass configuration should be changed before CNV upgrade
+        """
+        expected_sc = (
+            storage_class_for_updating_cdiconfig_scratch.instance.metadata.name
+        )
+        actual_sc = cdi_config.scratch_space_storage_class_from_status
+        assert (
+            actual_sc == expected_sc
+        ), "The scratchSpaceStorageClass on CDIConfig config should be changed before upgrade"
 
     @pytest.mark.polarion("CNV-5659")
     @pytest.mark.run(before="test_upgrade")
@@ -221,7 +247,7 @@ class TestUpgrade:
             if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
-            upgrade_utils.migrate_vm_and_validate(vm=vm, when="after")
+            migrate_vm_and_verify(vm=vm)
             assert len(vm.vmi.interfaces) == 2
             vm_console_run_commands(
                 console_impl=console.RHEL, vm=vm, commands=["ls"], timeout=1100
@@ -255,7 +281,13 @@ class TestUpgrade:
     @pytest.mark.polarion("CNV-2748")
     @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
     def test_linux_bridge_after_upgrade(
-        self, vm_upgrade_a, vm_upgrade_b, running_vm_upgrade_a, running_vm_upgrade_b
+        self,
+        vm_upgrade_a,
+        vm_upgrade_b,
+        running_vm_upgrade_a,
+        running_vm_upgrade_b,
+        upgrade_bridge_marker_nad,
+        bridge_on_one_node,
     ):
         dst_ip_address = ip_interface(
             address=running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
@@ -307,6 +339,25 @@ class TestUpgrade:
     def test_dv_api_version_after_upgrade(self, dvs_for_upgrade):
         for dv in dvs_for_upgrade:
             assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
+
+    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.polarion("CNV-2952")
+    def test_cdiconfig_scratch_preserved_after_upgrade(
+        self,
+        skip_if_not_override_cdiconfig_scratch_space,
+        cdi_config,
+        storage_class_for_updating_cdiconfig_scratch,
+    ):
+        """
+        Check that the scratch StorageClass configuration should be preserved by the upgrade
+        """
+        expected_sc = (
+            storage_class_for_updating_cdiconfig_scratch.instance.metadata.name
+        )
+        actual_sc = cdi_config.scratch_space_storage_class_from_status
+        assert (
+            actual_sc == expected_sc
+        ), "The scratchSpaceStorageClass on CDIConfig config should not change after upgrade"
 
     @pytest.mark.polarion("CNV-5532")
     @pytest.mark.run(after="test_upgrade")

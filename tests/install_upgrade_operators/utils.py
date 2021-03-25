@@ -1,3 +1,4 @@
+import logging
 import re
 
 from ocp_resources.cdi import CDI
@@ -5,10 +6,15 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
+from utilities.infra import collect_resources_for_test
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def cnv_target_version_channel(cnv_version):
@@ -17,56 +23,58 @@ def cnv_target_version_channel(cnv_version):
     return target_version, target_channel
 
 
-def get_new_csv(dyn_client, hco_namespace, hco_target_version):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=dyn_client, namespace=hco_namespace
-    ):
-        if csv.name == hco_target_version:
-            return csv
-
-
 def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=1,
-        func=get_new_csv,
+        func=ClusterServiceVersion.get,
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
-    for csv_sample in csv_sampler:
-        if csv_sample:
-            return csv_sample
-
-
-def get_install_plan(dyn_client, hco_namespace, hco_target_version):
-    for ip in InstallPlan.get(dyn_client=dyn_client, namespace=hco_namespace):
-        if hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]:
-            return ip
+    csvs = None
+    try:
+        for csvs in csv_sampler:
+            for csv in csvs:
+                if csv.name == hco_target_version:
+                    return csv
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"timeout waiting for target cluster service version: version={hco_target_version} csvs={csvs}"
+        )
+        collect_resources_for_test(resources_to_collect=[ClusterServiceVersion])
+        raise
 
 
 def approve_install_plan(install_plan):
-    ip_dict = install_plan.instance.to_dict()
-    ip_dict["spec"]["approved"] = True
-    install_plan.update(resource_dict=ip_dict)
+    ResourceEditor(patches={install_plan: {"spec": {"approved": True}}}).update()
     install_plan.wait_for_status(
-        status=install_plan.Status.COMPLETE, timeout=TIMEOUT_10MIN
+        status=install_plan.Status.COMPLETE, timeout=TIMEOUT_20MIN
     )
 
 
 def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_3MIN,
+    install_plan_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_40MIN,
         sleep=1,
-        func=get_install_plan,
+        func=InstallPlan.get,
         exceptions=ConflictError,  # need to ignore ConflictError during install plan reconciliation
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
-    for sample in samples:
-        if sample:
-            return sample
+    install_plan_samples = None
+    try:
+        for install_plan_samples in install_plan_sampler:
+            for ip in install_plan_samples:
+                if hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]:
+                    return ip
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"timeout waiting for target install plan: version={hco_target_version} ips={install_plan_samples}"
+        )
+        collect_resources_for_test(resources_to_collect=[InstallPlan])
+        raise
 
 
 def get_hyperconverged_kubevirt(admin_client, hco_namespace):

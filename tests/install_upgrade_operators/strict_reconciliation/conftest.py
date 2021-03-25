@@ -5,7 +5,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
-from tests.conftest import get_hyperconverged_resource
+from utilities.hco import get_hyperconverged_resource
 
 
 LOGGER = logging.getLogger(__name__)

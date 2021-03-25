@@ -17,6 +17,8 @@ import bcrypt
 import kubernetes
 import pytest
 import rrmngmnt
+from ocp_resources.cdi import CDI
+from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.configmap import ConfigMap
@@ -24,7 +26,6 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
-from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
@@ -55,11 +56,16 @@ from utilities.constants import (
     TEST_LOG_FILE,
     TIMEOUT_4MIN,
 )
-from utilities.hco import apply_np_changes, get_kubevirt_hyperconverged_spec
+from utilities.hco import (
+    apply_np_changes,
+    get_hyperconverged_resource,
+    get_kubevirt_hyperconverged_spec,
+)
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
     base64_encode_str,
+    collect_logs,
     collect_logs_pods,
     collect_logs_resources,
     create_ns,
@@ -228,6 +234,12 @@ def pytest_cmdline_main(config):
     if config.getoption("upgrade") == "cnv":
         if not config.getoption("cnv_version"):
             raise ValueError("Running with --upgrade cnv: Missing --cnv-version")
+        if config.getoption("cnv_source") == "osbs" and not config.getoption(
+            "cnv_image"
+        ):
+            raise ValueError(
+                "Running with --upgrade cnv & --cnv-source osbs: Missing --cnv-image"
+            )
 
     # [rhel|fedora|windows|centos]-os-matrix and latest-[rhel|fedora|windows|centos] are mutually exclusive
     rhel_os_violation = config.getoption("rhel_os_matrix") and config.getoption(
@@ -524,7 +536,7 @@ def pytest_sessionfinish(session, exitstatus):
 def pytest_exception_interact(node, call, report):
     BASIC_LOGGER.error(report.longreprtext)
 
-    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
+    if collect_logs():
         try:
             namespace_name = generate_namespace_name(
                 file_path=node.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
@@ -1990,15 +2002,6 @@ def pyconfig_updated_default_sc(admin_client, cdi_config, default_sc):
                 yield sc
 
 
-def get_hyperconverged_resource(client, hco_ns_name):
-    for hco in HyperConverged.get(
-        dyn_client=client,
-        namespace=hco_ns_name,
-        name=py_config["hco_cr_name"],
-    ):
-        return hco
-
-
 @pytest.fixture()
 def hyperconverged_resource_scope_function(admin_client, hco_namespace):
     return get_hyperconverged_resource(
@@ -2247,6 +2250,20 @@ def kmp_enabled_ns(kmp_vm_label):
     # Enabling label "allocate" (or any other non-configured label) - Allocates.
     kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = KMP_ENABLED_LABEL
     yield from create_ns(name="kmp-enabled", kmp_vm_label=kmp_vm_label)
+
+
+@pytest.fixture(scope="session")
+def cdi(hco_namespace):
+    cdi = CDI(name="cdi-kubevirt-hyperconverged", namespace=hco_namespace.name)
+    assert cdi.instance is not None
+    yield cdi
+
+
+@pytest.fixture(scope="session")
+def cdi_config():
+    cdi_config = CDIConfig(name="config")
+    assert cdi_config.instance is not None
+    return cdi_config
 
 
 @pytest.fixture(scope="class")

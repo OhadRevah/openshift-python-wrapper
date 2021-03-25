@@ -255,7 +255,7 @@ def run_ssh_commands(host, commands):
 
 
 def prepare_test_dir_log(item, prefix):
-    if os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0":
+    if collect_logs():
         test_cls_name = item.cls.__name__ if item.cls else ""
         test_dir_log = os.path.join(
             TEST_COLLECT_INFO_DIR,
@@ -460,3 +460,64 @@ def get_jira_status(jira_connection_params, jira):
         options={"server": jira_connection_params["url"]},
     )
     return jira_connection.issue(id=jira).fields.status.name
+
+
+def collect_logs():
+    return os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0"
+
+
+def collect_resources_for_test(resources_to_collect, namespace_name=None):
+    """
+    This will collect all current resources matching the type(s) specified in the list of resources_to_collect
+
+    A convenient function to explicitly collect certain resources
+    simplified so it can be used from within a test case,
+    probably you will want to use this during exception handling when a test fails
+    ie: in order to collect resources that otherwise are not collected as part of the resource collection.
+
+    will only actually collect resource if CNV_TEST_COLLECT_LOGS is set
+
+    Args:
+        resources_to_collect (list): list of Resource object classes to collect
+        namespace_name (string): (optional) the namespace to use
+    """
+    if collect_logs():
+        try:
+            collect_logs_resources(
+                resources_to_collect=resources_to_collect,
+                namespace_name=namespace_name,
+            )
+        except Exception as exp:
+            LOGGER.debug(
+                f"Failed to collect resource for test: {resources_to_collect} {exp}"
+            )
+
+
+def write_to_extras_file(extras_file_name, content, extra_dir_name="extras"):
+    """
+    This will write to a file that will be available after the test execution,
+
+    A convenient function to explicitly collect certain information from a test
+    simplified so it can be used from within a test case,
+    probably you will want to use this to write information that is not suitable for logging
+     either due to the information being too long for the logs or not human readable or valuable as a log
+
+    this is a way to store information useful for debugging or analysis which will persist after the execution/cluster
+
+    will only actually write to the file if CNV_TEST_COLLECT_LOGS is set
+
+    Args:
+        extras_file_name (string): name of the file to write
+        content (string): the content of the file to write
+        extra_dir_name (string): (optional) the directory name to create inside the test collect dir
+    """
+    if collect_logs():
+        test_dir, _ = collect_logs_prepare_dirs()
+        extras_dir = os.path.join(test_dir, extra_dir_name)
+        os.makedirs(extras_dir, exist_ok=True)
+        extras_file_path = os.path.join(extras_dir, extras_file_name)
+        try:
+            with open(extras_file_path, "w") as fd:
+                fd.write(content)
+        except Exception as exp:
+            LOGGER.debug(f"Failed to write extras to file: {extras_file_path} {exp}")

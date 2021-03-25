@@ -8,8 +8,6 @@ import logging
 import os
 
 import pytest
-from ocp_resources.cdi import CDI
-from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
@@ -142,13 +140,6 @@ def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc):
         pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
-@pytest.fixture(scope="session")
-def cdi_config():
-    cdi_config = CDIConfig(name="config")
-    assert cdi_config.instance is not None
-    return cdi_config
-
-
 @pytest.fixture()
 def uploadproxy_route_deleted(hco_namespace):
     """
@@ -203,13 +194,6 @@ def new_route_created(hco_namespace):
     route.create(wait=True)
     yield
     route.delete(wait=True)
-
-
-@pytest.fixture(scope="session")
-def cdi(hco_namespace):
-    cdi = CDI(name="cdi-kubevirt-hyperconverged", namespace=hco_namespace.name)
-    assert cdi.instance is not None
-    yield cdi
 
 
 @pytest.fixture()
