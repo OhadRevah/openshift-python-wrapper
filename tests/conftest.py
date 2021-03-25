@@ -134,6 +134,7 @@ def pytest_addoption(parser):
     )
     upgrade_group.addoption("--cnv-version", help="CNV version to upgrade to")
     upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
+    upgrade_group.addoption("--ocp-channel", help="OCP channel to use for upgrade")
     upgrade_group.addoption(
         "--upgrade_resilience",
         action="store_true",

@@ -19,8 +19,14 @@ from openshift.dynamic.exceptions import (
     NotFoundError,
     ResourceNotFoundError,
 )
+from urllib3.exceptions import (
+    MaxRetryError,
+    NewConnectionError,
+    ProtocolError,
+    ResponseError,
+)
 
-from utilities.constants import TIMEOUT_10MIN, TIMEOUT_60MIN
+import utilities.constants
 from utilities.hco import wait_for_hco_conditions
 from utilities.virt import run_command, wait_for_vm_interfaces
 
@@ -76,7 +82,7 @@ def wait_for_operator_replacement(
 ):
 
     operator_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=utilities.constants.TIMEOUT_10MIN,
         sleep=1,
         func=get_operator_by_name,
         dyn_client=dyn_client,
@@ -129,7 +135,7 @@ def pod_status_and_image(
         f"Wait for {new_operator_pod.name} to get updated image version {image_ver}"
     )
     image_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=utilities.constants.TIMEOUT_10MIN,
         sleep=1,
         func=lambda: new_operator_pod.instance.spec.containers[0].image == image_ver,
     )
@@ -147,7 +153,7 @@ def pod_status_and_image(
             new_operator_pod.wait_for_condition(
                 condition=Pod.Condition.READY,
                 status=Pod.Condition.Status.TRUE,
-                timeout=TIMEOUT_10MIN,
+                timeout=utilities.constants.TIMEOUT_10MIN,
             )
 
             break
@@ -203,9 +209,27 @@ def get_clusterversion(dyn_client):
         return cvo
 
 
+def update_clusterversion_channel(dyn_client, ocp_channel):
+    cvo = get_clusterversion(dyn_client=dyn_client)
+    LOGGER.info(f"patching cluster to use new OCP channel {ocp_channel}")
+    ResourceEditor(patches={cvo: {"spec": {"channel": ocp_channel}}}).update()
+    cvo.wait_for_condition(
+        condition=cvo.Condition.AVAILABLE, timeout=utilities.constants.TIMEOUT_15MIN
+    )
+
+
+def get_clusterversion_state_version_conditions(dyn_client):
+    cvo = get_clusterversion(dyn_client=dyn_client)
+    return (
+        cvo.instance.status.history[0].state,
+        cvo.instance.status.history[0].version,
+        cvo.instance.status.conditions,
+    )
+
+
 def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=utilities.constants.TIMEOUT_10MIN,
         sleep=1,
         func=get_new_csv,
         dyn_client=dyn_client,
@@ -262,7 +286,7 @@ def approve_install_plan(install_plan):
     ip_dict["spec"]["approved"] = True
     install_plan.update(resource_dict=ip_dict)
     install_plan.wait_for_status(
-        status=install_plan.Status.COMPLETE, timeout=TIMEOUT_10MIN
+        status=install_plan.Status.COMPLETE, timeout=utilities.constants.TIMEOUT_10MIN
     )
 
 
@@ -364,7 +388,7 @@ def get_nodes_status(nodes):
 def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
     nodes_status_after_upgrade = None
     nodes_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=utilities.constants.TIMEOUT_10MIN,
         sleep=5,
         func=get_nodes_status,
         nodes=nodes,
@@ -430,7 +454,9 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
 
     LOGGER.info("Check that CSV status is Installing")
     new_csv.wait_for_status(
-        status=new_csv.Status.INSTALLING, timeout=TIMEOUT_10MIN, stop_status=None
+        status=new_csv.Status.INSTALLING,
+        timeout=utilities.constants.TIMEOUT_10MIN,
+        stop_status=None,
     )
 
     LOGGER.info("Get all operators PODs names and images version from the new CSV")
@@ -457,12 +483,12 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
     hco_operator_pod.wait_for_condition(
         condition=Pod.Condition.READY,
         status=Pod.Condition.Status.TRUE,
-        timeout=TIMEOUT_10MIN,
+        timeout=utilities.constants.TIMEOUT_10MIN,
     )
 
     LOGGER.info("Wait for number of replicas = number of updated replicas")
     for deploy in Deployment.get(dyn_client, namespace=hco_namespace.name):
-        deploy.wait_for_replicas(timeout=TIMEOUT_10MIN)
+        deploy.wait_for_replicas(timeout=utilities.constants.TIMEOUT_10MIN)
 
     LOGGER.info("Wait for the new HCO to be available.")
     for hco in HyperConverged.get(dyn_client=dyn_client, namespace=hco_namespace.name):
@@ -472,7 +498,9 @@ def upgrade_cnv(dyn_client, hco_namespace, cnv_upgrade_path, upgrade_resilience)
 
     LOGGER.info("Check that CSV status is Succeeded")
     new_csv.wait_for_status(
-        status=new_csv.Status.SUCCEEDED, timeout=TIMEOUT_10MIN, stop_status=None
+        status=new_csv.Status.SUCCEEDED,
+        timeout=utilities.constants.TIMEOUT_10MIN,
+        stop_status=None,
     )
 
     LOGGER.info("Verify all previous pods were deleted")
@@ -496,33 +524,55 @@ def extract_ocp_version(ocp_image):
     return "-".join(filter(None, ocp_version.groups()))
 
 
+def extract_clusterversion_version(clusterversion_version):
+    # Extract the OCP version from the clusterversion version.
+    ocp_version = re.search(r"(\d+\.\d+\.\d+)-?(rc\.\d+)?", clusterversion_version)
+    assert (
+        ocp_version
+    ), f"Cannot extract OCP version. clusterversion version: {clusterversion_version} is invalid"
+    return "-".join(filter(None, ocp_version.groups()))
+
+
 def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
-    LOGGER.info("Wait for upgrade to complete")
+    LOGGER.info("Wait for OCP upgrade to complete")
 
     upgrade_conditions = {
         "Available": Resource.Condition.Status.TRUE,
         "Failing": Resource.Condition.Status.FALSE,
-        "Progressing": Resource.Condition.Status.TRUE,
+        "Progressing": Resource.Condition.Status.FALSE,
     }
-    actual_conditions = None
     ocp_version = extract_ocp_version(ocp_image=ocp_image)
 
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_60MIN,
-        sleep=10,
-        func=get_clusterversion,
+        wait_timeout=utilities.constants.TIMEOUT_180MIN,
+        sleep=30,
+        func=get_clusterversion_state_version_conditions,
         exceptions=(
+            # TODO: these exceptions should be handled as part of the ocp_resources package.
+            #   These exceptions are to be ignored on API calls when upgrading OCP/CNV or any machine config changes.
+            #   until it is introduced to ocp_resources package they should be handled here.
             NotFoundError,
             ResourceNotFoundError,
             InternalServerError,
+            NewConnectionError,
+            ConnectionRefusedError,
+            ProtocolError,
+            ResponseError,
+            MaxRetryError,
         ),
         dyn_client=dyn_client,
     )
 
+    sample = None  # will be set each iteration, setting it here allows referencing it during exception handling
+
     try:
         for sample in samples:
             if sample:
-                actual_conditions = sample.instance.status.conditions
+                state, version, actual_conditions = sample
+
+                # TODO: if the ocp_channel is being used and --force is not, fail fast on VersionNotFound?
+                # (condition.type == "RetrievedUpdates" and condition.reason == "VersionNotFound")
+
                 actual_upgrade_conditions = {
                     condition.type: condition.status
                     for condition in actual_conditions
@@ -531,29 +581,42 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
 
                 if (
                     actual_upgrade_conditions == upgrade_conditions
-                    and sample.instance.status.history[0].version == ocp_version
-                    and sample.instance.status.history[0].state == "Completed"
+                    and extract_clusterversion_version(version) == ocp_version
+                    and state == "Completed"
                 ):
                     return
 
     except TimeoutExpiredError:
         LOGGER.error(
-            f"Expected conditions: {upgrade_conditions}. Actual conditions: {actual_conditions}"
+            f"Timeout reached while upgrading OCP. "
+            f"Expected (Completed, {ocp_version}, {upgrade_conditions}). "
+            f"Actual: (state, version, conditions): {sample}"
         )
         raise
 
 
-def upgrade_ocp(ocp_image, dyn_client):
-    assert run_command(
+def upgrade_ocp(ocp_image, dyn_client, ocp_channel):
+    if ocp_channel:
+        # if the user is setting a channel then we modify the channel in the current cluster.
+        # otherwise the channel is whatever is already set in the cluster.
+        # NOTE: the command used below uses "force=true" so the channel is not necessarily required
+        # but this behaviour may change in the future. And is mostly relevant when switching between prod/stage/osbs
+        update_clusterversion_channel(dyn_client=dyn_client, ocp_channel=ocp_channel)
+
+    LOGGER.info(f"Executing OCP upgrade command to image {ocp_image}")
+    rc, out, err = run_command(
         command=[
             "oc",
             "adm",
             "upgrade",
-            "--force=true",
+            "--force=true",  # TODO: if the ocp_channel is being set then --force may not be required
             "--allow-explicit-upgrade",
+            "--allow-upgrade-with-warnings",
             "--to-image",
             ocp_image,
-        ]
-    )[1], "OCP upgrade command failed."
+        ],
+        verify_stderr=False,
+    )
+    assert rc, f"OCP upgrade command failed. out: {out}. err: {err}"
 
     wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)
