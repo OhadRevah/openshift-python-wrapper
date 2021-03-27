@@ -174,7 +174,10 @@ class TestRemoveHCO:
         ) as hco:
             LOGGER.info("Waiting for all HCO conditions to detect that it is deployed")
             assert hco.exists
-            wait_for_hco_conditions(admin_client=admin_client)
+            wait_for_hco_conditions(
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+            )
 
 
 # assert that a certain event was emitted

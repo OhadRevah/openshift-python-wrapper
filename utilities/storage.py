@@ -14,6 +14,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
+from ocp_resources.resource import Resource
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
@@ -33,6 +34,12 @@ from utilities.infra import (
 )
 from utilities.virt import run_virtctl_command
 
+
+DEFAULT_CDI_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
 
 LOGGER = logging.getLogger(__name__)
 

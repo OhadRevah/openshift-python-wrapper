@@ -17,6 +17,7 @@ import rrmngmnt
 import yaml
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.node import Node
+from ocp_resources.resource import Resource
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
@@ -59,6 +60,14 @@ from utilities.infra import (
     get_bugzilla_connection_params,
     run_ssh_commands,
 )
+
+
+DEFAULT_KUBEVIRT_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
 
 
 LOGGER = logging.getLogger(__name__)

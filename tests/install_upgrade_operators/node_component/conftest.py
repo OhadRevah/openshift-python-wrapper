@@ -328,8 +328,9 @@ def update_subscription_config(admin_client, hco_namespace, sub, config):
     LOGGER.info("Waiting for CNV HCO to be Ready.")
     wait_for_hco_conditions(
         admin_client=admin_client,
-        sleep=5,
-        number_of_consecutive_checks=10,
+        hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_5MIN,
+        consecutive_checks_count=10,
     )
     LOGGER.info("Verify that there no terminating operator pods.")
     sample = None

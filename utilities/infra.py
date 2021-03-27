@@ -25,7 +25,7 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import PODS_TO_COLLECT_INFO, TIMEOUT_2MIN
+from utilities.constants import PODS_TO_COLLECT_INFO, TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.exceptions import CommandExecFailed
 
 
@@ -617,6 +617,88 @@ def get_daemonset_by_name(admin_client, daemonset_name, namespace_name):
         name=daemonset_name,
     ):
         return ds
+
+
+def wait_for_consistent_resource_conditions(
+    dynamic_client,
+    hco_namespace,
+    expected_conditions,
+    resource_kind,
+    condition1_key,
+    condition2_key,
+    total_timeout=TIMEOUT_10MIN,
+    polling_interval=5,
+    consecutive_checks_count=10,
+):
+    """This function awaits certain conditions of a given resource_kind (HCO, CSV, etc.).
+
+    Using TimeoutSampler loop and poll the CR (of the resource_kind type) and attempt to match the expected conditions
+    against the actual conditions found in the CR.
+    Since the conditions statuses might change, we use consecutive checks in order to have consistent results (stable),
+    thereby ascertaining that the expected conditions are met over time.
+
+    Args:
+        dynamic_client (DynamicClient): admin client
+        hco_namespace (Resource): hco_namespace
+        expected_conditions (dict): a dict comprises expected conditions to meet, for example:
+            {<condition key's value>: <condition key's value>,
+            Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,}
+        resource_kind (Resource): (e.g. HyperConverged, ClusterServiceVersion)
+        condition1_key (str): the key of the first condition in the actual resource_kind (e.g. type, reason, status)
+        condition2_key (str): the key of the second condition in the actual resource_kind (e.g. type, reason, status)
+        total_timeout (int): total timeout to wait for (seconds)
+        polling_interval (int): the time to sleep after each iteration (seconds)
+        consecutive_checks_count (int): the number of repetitions for the status check to make sure the transition is
+        done.
+            The default value for this argument is not absolute, and there are situations in which it should be higher
+            in order to ascertain the consistency of the Ready status.
+            Possible situations:
+            1. the resource is in a Ready status, because the process (that should cause
+            the change in its state) has not started yet.
+            2. some components are in Ready status, but others have not started the process yet.
+
+    Raises:
+        TimeoutExpiredError: raised when expected conditions are not met within the timeframe
+    """
+    samples = TimeoutSampler(
+        wait_timeout=total_timeout,
+        sleep=polling_interval,
+        func=lambda: list(
+            resource_kind.get(
+                dyn_client=dynamic_client,
+                namespace=hco_namespace.name,
+            )
+        ),
+        exceptions=NotFoundError,
+    )
+    current_check = 0
+    actual_conditions = {}
+    LOGGER.info(
+        f"Waiting for resource to stabilize: resource_kind={resource_kind.__name__} conditions={expected_conditions} "
+        f"sleep={total_timeout} consecutive_checks_count={consecutive_checks_count}"
+    )
+    try:
+        for sample in samples:
+            status_conditions = sample[0].instance.get("status", {}).get("conditions")
+            if status_conditions:
+                actual_conditions = {
+                    condition[condition1_key]: condition[condition2_key]
+                    for condition in status_conditions
+                    if condition[condition1_key] in expected_conditions
+                }
+                if actual_conditions == expected_conditions:
+                    current_check += 1
+                    if current_check >= consecutive_checks_count:
+                        return
+                else:
+                    current_check = 0
+
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Timeout expired meeting conditions for resource: resource={resource_kind.kind} "
+            f"expected_conditions={expected_conditions} status_conditions={actual_conditions}"
+        )
+        raise
 
 
 def raise_multiple_exceptions(exceptions):

@@ -13,7 +13,14 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
-from utilities.infra import collect_logs, collect_resources_for_test
+from utilities.hco import wait_for_hco_conditions
+from utilities.infra import (
+    collect_logs,
+    collect_resources_for_test,
+    wait_for_consistent_resource_conditions,
+)
+from utilities.storage import DEFAULT_CDI_CONDITIONS
+from utilities.virt import DEFAULT_KUBEVIRT_CONDITIONS
 
 
 LOGGER = logging.getLogger(__name__)
@@ -136,6 +143,45 @@ def get_deployment_by_name(admin_client, namespace_name, deployment_name):
         name=deployment_name,
     ):
         return dp
+
+
+def wait_for_stabilize(
+    admin_client,
+    hco_namespace,
+    wait_timeout=TIMEOUT_10MIN,
+    polling_interval=1,
+    consecutive_checks_count=2,
+    condition1_key="type",
+    condition2_key="status",
+):
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        sleep=polling_interval,
+        consecutive_checks_count=consecutive_checks_count,
+    )
+    wait_for_consistent_resource_conditions(
+        dynamic_client=admin_client,
+        hco_namespace=hco_namespace,
+        expected_conditions=DEFAULT_KUBEVIRT_CONDITIONS,
+        resource_kind=KubeVirt,
+        condition1_key=condition1_key,
+        condition2_key=condition2_key,
+        total_timeout=wait_timeout,
+        polling_interval=polling_interval,
+        consecutive_checks_count=consecutive_checks_count,
+    )
+    wait_for_consistent_resource_conditions(
+        dynamic_client=admin_client,
+        hco_namespace=hco_namespace,
+        expected_conditions=DEFAULT_CDI_CONDITIONS,
+        resource_kind=CDI,
+        condition1_key=condition1_key,
+        condition2_key=condition2_key,
+        total_timeout=wait_timeout,
+        polling_interval=polling_interval,
+        consecutive_checks_count=consecutive_checks_count,
+    )
 
 
 def get_network_addon_config(admin_client):

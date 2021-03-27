@@ -7,11 +7,14 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import ConflictError, NotFoundError
+from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN
-from utilities.infra import wait_for_pods_running
+from utilities.infra import (
+    wait_for_consistent_resource_conditions,
+    wait_for_pods_running,
+)
 
 
 DEFAULT_HCO_CONDITIONS = {
@@ -38,55 +41,28 @@ def get_hyperconverged_resource(client, hco_ns_name):
 
 def wait_for_hco_conditions(
     admin_client,
-    conditions=DEFAULT_HCO_CONDITIONS,
-    sleep=5,
-    # number_of_consecutive_checks is the number of time to repeat the status check to make sure the
-    # transition is done. In some case we can get into situation when a ready status is because the
-    # process was not start yet, or part of the component are ready but others didn't start the process
-    # yet. In these case we'll use a higher value in number_of_consecutive_checks to make sure the ready
-    # status is consistence.
-    number_of_consecutive_checks=1,
+    hco_namespace,
+    expected_conditions=DEFAULT_HCO_CONDITIONS,
     wait_timeout=TIMEOUT_10MIN,
+    sleep=5,
+    consecutive_checks_count=1,
+    condition1_key="type",
+    condition2_key="status",
 ):
     """
-    Checking HCO conditions.
-    If conditions are not met in the given time Raise TimeoutExpiredError.
+    Checking HCO conditions
     """
-    expected_hco_conditions = conditions
-
-    actual_hco_conditions = {}
-    samples = TimeoutSampler(
-        wait_timeout=wait_timeout,
-        sleep=sleep,
-        func=get_hyperconverged_resource,
-        exceptions=NotFoundError,
-        client=admin_client,
-        hco_ns_name=py_config["hco_namespace"],
+    wait_for_consistent_resource_conditions(
+        dynamic_client=admin_client,
+        hco_namespace=hco_namespace,
+        expected_conditions=expected_conditions,
+        resource_kind=HyperConverged,
+        condition1_key=condition1_key,
+        condition2_key=condition2_key,
+        total_timeout=wait_timeout,
+        polling_interval=sleep,
+        consecutive_checks_count=consecutive_checks_count,
     )
-    current_check = 0
-    try:
-        for sample in samples:
-            resource_conditions = sample.instance.get("status", {}).get("conditions")
-            if resource_conditions:
-                actual_hco_conditions = {
-                    condition.type: condition.status
-                    for condition in resource_conditions
-                    if condition.type in expected_hco_conditions.keys()
-                }
-
-                if actual_hco_conditions == expected_hco_conditions:
-                    current_check = current_check + 1
-                    if current_check >= number_of_consecutive_checks:
-                        return
-                else:
-                    current_check = 0
-
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Expected conditions: {expected_hco_conditions}. Actual "
-            f"conditions: {actual_hco_conditions}"
-        )
-        raise
 
 
 def wait_for_ds(ds):
@@ -184,17 +160,14 @@ def apply_np_changes(
         LOGGER.info("Waiting for HCO to report progressing condition.")
         wait_for_hco_conditions(
             admin_client=admin_client,
-            conditions=DEFAULT_HCO_PROGRESSING_CONDITIONS,
-            sleep=5,
+            expected_conditions=DEFAULT_HCO_PROGRESSING_CONDITIONS,
         )
         LOGGER.info(
             "Waiting for all HCO conditions to detect that it's back to a stable configuration."
         )
         wait_for_hco_conditions(
             admin_client=admin_client,
-            conditions=DEFAULT_HCO_CONDITIONS,
-            sleep=5,
-            number_of_consecutive_checks=6,
+            consecutive_checks_count=6,
         )
         # unfortunately at this time we are not really done:
         # HCO propagated the change to components operators that propagated it

@@ -883,7 +883,9 @@ def upgrade_cnv(
 
     LOGGER.info("Wait for HCO conditions after upgrade")
     wait_for_hco_conditions(
-        admin_client=dyn_client, wait_timeout=utilities.constants.TIMEOUT_20MIN
+        admin_client=dyn_client,
+        hco_namespace=hco_namespace,
+        wait_timeout=utilities.constants.TIMEOUT_20MIN,
     )
 
     LOGGER.info("Wait for HCO operator to be ready")
