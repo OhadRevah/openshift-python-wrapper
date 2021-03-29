@@ -24,7 +24,11 @@ from tests.os_params import (
     WINDOWS_LATEST_OS,
 )
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_bug_status,
+    get_bugzilla_connection_params,
+)
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -118,11 +122,21 @@ def vm_container_disk_fedora(namespace, unprivileged_client, nodes_common_cpu_mo
 
 
 def assert_pod_status_completed(source_pod):
-    source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=180)
-    assert (
-        source_pod.instance.status.containerStatuses[0].state.terminated.reason
-        == Pod.Status.COMPLETED
-    )
+    # TODO: remove TimeoutExpiredError exception once bug 1943164 is resolved
+    try:
+        source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=180)
+        assert (
+            source_pod.instance.status.containerStatuses[0].state.terminated.reason
+            == Pod.Status.COMPLETED
+        )
+    except TimeoutExpiredError:
+        if get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(),
+            bug=1943164,
+        ):
+            source_pod.wait_for_status(status=Pod.Status.FAILED, timeout=180)
+        else:
+            raise
 
 
 def check_draining_process(dyn_client, source_pod, vm):
