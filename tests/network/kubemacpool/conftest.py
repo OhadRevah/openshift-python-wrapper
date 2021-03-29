@@ -1,11 +1,10 @@
 import pytest
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
-from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
-from openshift.dynamic.exceptions import ResourceNotFoundError
 
+from utilities.constants import KMP_VM_ASSIGNMENT_LABEL
 from utilities.infra import create_ns
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
@@ -140,16 +139,16 @@ def disabled_ns_nad(
 
 @pytest.fixture(scope="class")
 def enabled_ns_nad(
-    enabled_ns,
+    kmp_enabled_ns,
     kubemacpool_bridge_device_worker_1,
     kubemacpool_bridge_device_worker_2,
     kubemacpool_bridge_device_name,
 ):
     with network_nad(
         nad_type=LINUX_BRIDGE,
-        nad_name=f"{kubemacpool_bridge_device_name}-{enabled_ns.name}-nad",
+        nad_name=f"{kubemacpool_bridge_device_name}-{kmp_enabled_ns.name}-nad",
         interface_name=kubemacpool_bridge_device_name,
-        namespace=enabled_ns,
+        namespace=kmp_enabled_ns,
     ) as nad:
         yield nad
 
@@ -270,11 +269,11 @@ def disabled_ns_vm(disabled_ns, disabled_ns_nad, mac_pool):
 
 
 @pytest.fixture(scope="class")
-def enabled_ns_vm(enabled_ns, enabled_ns_nad, mac_pool):
+def enabled_ns_vm(kmp_enabled_ns, enabled_ns_nad, mac_pool):
     networks = {enabled_ns_nad.name: enabled_ns_nad.name}
-    name = f"{enabled_ns.name}-vm"
+    name = f"{kmp_enabled_ns.name}-vm"
     with VirtualMachineForTests(
-        namespace=enabled_ns.name,
+        namespace=kmp_enabled_ns.name,
         name=name,
         networks=networks,
         interfaces=networks.keys(),
@@ -307,15 +306,8 @@ def no_label_ns_vm(no_label_ns, no_label_ns_nad, mac_pool):
 
 @pytest.fixture(scope="class")
 def disabled_ns(kmp_vm_label):
-    kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] = "ignore"
+    kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = "ignore"
     yield from create_ns(name="kmp-disabled", kmp_vm_label=kmp_vm_label)
-
-
-@pytest.fixture(scope="class")
-def enabled_ns(kmp_vm_label):
-    # Enabling label "allocate" (or any other non-configured label) - Allocates.
-    kmp_vm_label["mutatevirtualmachines.kubemacpool.io"] = "allocate"
-    yield from create_ns(name="kmp-enabled", kmp_vm_label=kmp_vm_label)
 
 
 @pytest.fixture(scope="class")
@@ -417,21 +409,3 @@ def deleted_ovnkube_node_pod(admin_client, ovn_ns):
     )
     assert pods, "No ovnkube-node pods were found"
     pods[0].delete(wait=True)
-
-
-@pytest.fixture(scope="session")
-def kmp_vm_label(admin_client):
-    kmp_vm_webhook = "mutatevirtualmachines.kubemacpool.io"
-    kmp_webhook_config = MutatingWebhookConfiguration(
-        client=admin_client, name="kubemacpool-mutator"
-    )
-
-    for webhook in kmp_webhook_config.instance.to_dict()["webhooks"]:
-        if webhook["name"] == kmp_vm_webhook:
-            return {
-                ldict["key"]: ldict["values"][0]
-                for ldict in webhook["namespaceSelector"]["matchExpressions"]
-                if ldict["key"] == kmp_vm_webhook
-            }
-
-    raise ResourceNotFoundError(f"Webhook {kmp_vm_webhook} was not found")

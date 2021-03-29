@@ -6,6 +6,7 @@ from ocp_resources.datavolume import DataVolume
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
+from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL
 from utilities.network import (
     assert_ping_successful,
     get_vmi_mac_address_by_iface_name,
@@ -93,6 +94,16 @@ class TestUpgrade:
             address=running_vm_upgrade_b.vmi.instance.status.interfaces[1].ipAddress
         ).ip
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
+
+    @pytest.mark.polarion("CNV-5944")
+    @pytest.mark.run(before="test_kubemacpool_before_upgrade")
+    def test_kubemacpool_enabled_ns_before_upgrade(
+        self,
+        kmp_vm_label,
+        kmp_enabled_ns,
+    ):
+        # KubeMacPool is enabled in namespace.
+        assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
     @pytest.mark.polarion("CNV-2745")
     @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
@@ -262,6 +273,15 @@ class TestUpgrade:
                     vmi=vm.vmi, iface_name=upgrade_bridge_marker_nad.name
                 )
             )
+
+    @pytest.mark.polarion("CNV-5945")
+    @pytest.mark.run(after="test_kubemacpool_after_upgrade")
+    def test_kubemacpool_enabled_ns_after_upgrade(
+        self,
+        kmp_vm_label,
+    ):
+        # KubeMacPool is still enabled in namespace.
+        assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
     @pytest.mark.polarion("CNV-3682")
     @pytest.mark.run(after="test_upgrade")

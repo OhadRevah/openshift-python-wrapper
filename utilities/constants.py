@@ -91,3 +91,7 @@ GPU_DEVICE_ID = "10de:1eb8"
 # cloud-init constants
 CLOUND_INIT_CONFIG_DRIVE = "cloudInitConfigDrive"
 CLOUD_INIT_NO_CLOUD = "cloudInitNoCloud"
+
+# Kubemacpool constants
+KMP_VM_ASSIGNMENT_LABEL = "mutatevirtualmachines.kubemacpool.io"
+KMP_ENABLED_LABEL = "allocate"

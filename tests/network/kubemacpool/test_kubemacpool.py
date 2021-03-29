@@ -97,7 +97,7 @@ class TestKMPConnectivity:
     def test_enabled_label_ns(
         self,
         mac_pool,
-        enabled_ns,
+        kmp_enabled_ns,
         enabled_ns_nad,
         enabled_ns_vm,
     ):
