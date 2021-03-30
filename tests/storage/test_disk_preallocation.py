@@ -16,6 +16,9 @@ from utilities.infra import (
 )
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 @pytest.fixture(scope="module")
 def cdi_preallocation_enabled(cdi):
     with ResourceEditor(patches={cdi: {"spec": {"config": {"preallocation": True}}}}):

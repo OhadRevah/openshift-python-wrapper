@@ -8,6 +8,9 @@ from utilities.infra import Images
 from utilities.storage import ErrorMsg, downloaded_image, virtctl_upload_dv
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 FEDORA_IMAGE = Images.Fedora.FEDORA33_IMG
 LOCAL_NAME = f"/tmp/{FEDORA_IMAGE}"
 FEDORA_IMAGE_SIZE_GI = 4

@@ -19,6 +19,9 @@ from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"

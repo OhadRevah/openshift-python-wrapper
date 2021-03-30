@@ -24,6 +24,9 @@ from utilities.storage import (
 from utilities.virt import VirtualMachineForTests
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 REMOTE_PATH = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"

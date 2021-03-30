@@ -28,6 +28,9 @@ from utilities.storage import (
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 

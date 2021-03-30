@@ -22,6 +22,9 @@ from utilities.infra import Images
 from utilities.storage import get_images_server_url
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 CDI_LABEL = "cdi.kubevirt.io"
 

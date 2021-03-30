@@ -26,10 +26,13 @@ from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
 from utilities.virt import VirtualMachineForTests
 
 
+pytestmark = [
+    pytest.mark.usefixtures("skip_when_no_unprivileged_client_available"),
+    pytest.mark.post_upgrade,
+]
+
+
 LOGGER = logging.getLogger(__name__)
-
-
-pytestmark = pytest.mark.usefixtures("skip_when_no_unprivileged_client_available")
 
 
 @pytest.fixture(scope="module")

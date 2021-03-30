@@ -32,6 +32,9 @@ from utilities.storage import (
 from utilities.virt import VirtualMachineForTests, wait_for_console
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 RFC3339_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 LOCAL_QCOW2_IMG_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"

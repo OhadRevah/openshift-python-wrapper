@@ -89,15 +89,17 @@ def test_successful_clone_of_large_image(
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [
-        {
-            "dv_name": "dv-source",
-            "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-            "dv_size": "10Gi",
-        },
+        pytest.param(
+            {
+                "dv_name": "dv-source",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "dv_size": "10Gi",
+            },
+            marks=(pytest.mark.polarion("CNV-2148"), pytest.mark.post_upgrade()),
+        ),
     ],
     indirect=True,
 )
-@pytest.mark.polarion("CNV-2148")
 def test_successful_vm_restart_with_cloned_dv(
     skip_upstream,
     namespace,

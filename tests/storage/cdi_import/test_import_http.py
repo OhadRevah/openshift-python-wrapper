@@ -26,6 +26,9 @@ from utilities.storage import ErrorMsg, PodWithPVC, create_dummy_first_consumer_
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 ISO_IMG = "Core-current.iso"

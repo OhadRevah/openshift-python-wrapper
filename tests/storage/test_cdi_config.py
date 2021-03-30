@@ -18,6 +18,9 @@ from utilities.infra import Images, get_cert
 from utilities.storage import downloaded_image, get_images_server_url
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 

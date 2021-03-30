@@ -12,6 +12,9 @@ from utilities.storage import ErrorMsg, create_dv, get_images_server_url
 from utilities.virt import wait_for_ssh_connectivity
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 LATEST_RHEL_IMAGE = RHEL_LATEST["image_path"]
 RHEL_IMAGE_SIZE = RHEL_LATEST["dv_size"]

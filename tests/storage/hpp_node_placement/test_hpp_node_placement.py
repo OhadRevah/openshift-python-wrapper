@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+"""
+HPP Node Placement test suite
+"""
+
 import re
 from contextlib import contextmanager
 
@@ -17,6 +23,9 @@ from utilities.hco import add_labels_to_nodes
 from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests
+
+
+pytestmark = pytest.mark.post_upgrade
 
 
 HPP_KEY = "hpp-key"
