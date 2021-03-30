@@ -275,6 +275,19 @@ class TestCommonTemplatesCentos:
             pre_pause_pid=ping_process_in_centos_os,
         )
 
+    @pytest.mark.polarion("CNV-6008")
+    @pytest.mark.dependency(depends=["migrate_vm"])
+    def test_verify_virtctl_guest_agent_data_after_migrate(
+        self,
+        centos_os_matrix__class__,
+        namespace,
+        golden_image_data_volume_multi_centos_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+    ):
+        assert common_templates_utils.validate_virtctl_guest_agent_data_over_time(
+            vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
+        ), "Guest agent stopped responding"
+
     @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-5351")
     def test_vm_deletion(

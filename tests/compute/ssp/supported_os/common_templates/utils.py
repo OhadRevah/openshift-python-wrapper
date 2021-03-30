@@ -528,8 +528,11 @@ def get_virtctl_os_info(vm):
     }
     """
     cmd = ["guestosinfo", vm.name]
-    virtctl_output = wait_for_virtctl_output(cmd=cmd, namespace=vm.namespace)
-    data = json.loads(virtctl_output)
+    res, output, err = run_virtctl_command(command=cmd, namespace=vm.namespace)
+    if not res:
+        LOGGER.error(f"Failed to get guest-agent info via virtctl. Error: {err}")
+        return
+    data = json.loads(output)
     # virtctl gusetosinfo also returns filesystem and user info (if any active user is logged in)
     # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
     # fsInfo and userList values are checked in other tests
@@ -647,8 +650,11 @@ def get_virtctl_fs_info(vm):
     }
     """
     cmd = ["fslist", vm.name]
-    virtctl_output = wait_for_virtctl_output(cmd=cmd, namespace=vm.namespace)
-    return guest_agent_disk_info_parser(disk_info=json.loads(virtctl_output)["items"])
+    res, output, err = run_virtctl_command(command=cmd, namespace=vm.namespace)
+    if not res:
+        LOGGER.error(f"Failed to get guest-agent info via virtctl. Error: {err}")
+        return
+    return guest_agent_disk_info_parser(disk_info=json.loads(output)["items"])
 
 
 def get_cnv_fs_info(vm):
@@ -710,8 +716,11 @@ def get_windows_fs_info(ssh_exec):
 
 def get_virtctl_user_info(vm):
     cmd = ["userlist", vm.name]
-    virtctl_output = wait_for_virtctl_output(cmd=cmd, namespace=vm.namespace)
-    for user in json.loads(virtctl_output)["items"]:
+    res, output, err = run_virtctl_command(command=cmd, namespace=vm.namespace)
+    if not res:
+        LOGGER.error(f"Failed to get guest-agent info via virtctl. Error: {err}")
+        return
+    for user in json.loads(output)["items"]:
         return {
             "userName": user["userName"],
             "loginTime": int(user["loginTime"]),
@@ -806,25 +815,24 @@ def windows_disk_space_parser(fsinfo_list):
     return f"used {used}, total {total}\n"
 
 
-# TODO: Remove once bug 1886453 is fixed
-def wait_for_virtctl_output(cmd, namespace):
-    for res, output, err in TimeoutSampler(
-        wait_timeout=360,
-        sleep=5,
-        func=run_virtctl_command,
-        command=cmd,
-        namespace=namespace,
-    ):
-        if res:
-            return output
-        else:
-            LOGGER.warning(
-                f"Retrying to get guest-agent info via virtctl. error: {err}"
-            )
-
-
 def get_linux_guest_agent_version(ssh_exec):
     ssh_exec.sudo = True
     return guest_agent_version_parser(
         version_string=ssh_exec.package_manager.info("qemu-guest-agent")
     )
+
+
+def validate_virtctl_guest_agent_data_over_time(vm):
+    """
+    Validates that virtctl guest info is available over time. (BZ 1886453)
+
+    Returns:
+        bool: True - if virtctl guest info is available after timeout else False
+    """
+    samples = TimeoutSampler(wait_timeout=180, sleep=5, func=get_virtctl_os_info, vm=vm)
+    try:
+        for sample in samples:
+            if not sample:
+                return False
+    except TimeoutExpiredError:
+        return True

@@ -319,6 +319,22 @@ class TestCommonTemplatesWindows:
             pre_pause_pid=mspaint_process_in_windows_os,
         )
 
+    @pytest.mark.polarion("CNV-6009")
+    @pytest.mark.dependency(depends=["migrate_vm"])
+    def test_verify_virtctl_guest_agent_data_after_migrate(
+        self,
+        skip_upstream,
+        skip_access_mode_rwo_scope_function,
+        unprivileged_client,
+        namespace,
+        windows_os_matrix__class__,
+        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+    ):
+        assert common_templates_utils.validate_virtctl_guest_agent_data_over_time(
+            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
+        ), "Guest agent stopped responding"
+
     @pytest.mark.ibm_bare_metal
     @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3289")
