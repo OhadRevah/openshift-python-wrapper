@@ -367,8 +367,8 @@ def test_common_templates_golden_images_params(base_templates):
                 {template.name: "Missing golden images parameters"}
             )
         for gi_params in golden_images_params:
-            # SRC_PVC_NAME conatins either:
-            # fedora latest OS (e.g fedora32)
+            # SRC_PVC_NAME contains either:
+            # fedora OS ("fedora")
             # rhel latest major release (e.g rhel7)
             # Windows relevant OS (e.g win2k19)
             if (
