@@ -21,6 +21,17 @@ def approve_tc(tc):
 
 def automate_and_approve_tc():
     added_ids, removed_ids = git_diff_added_removed_lines()
+
+    for _id in removed_ids:
+        if _id in added_ids:
+            continue
+
+        tc = TestCase(project_id=PROJECT, work_item_id=_id)
+        if tc.caseautomation == AUTOMATED:
+            LOGGER.info(f"{_id}: Mark as {AUTOMATED}, Setting '{NOT_AUTOMATED}'")
+            tc.caseautomation = NOT_AUTOMATED
+            approve_tc(tc=tc)
+
     for _id in added_ids:
         try:
             tc = TestCase(project_id=PROJECT, work_item_id=_id)
@@ -35,16 +46,6 @@ def automate_and_approve_tc():
 
         except PyleroLibException as ex:
             LOGGER.warning(f"{_id}: {ex}")
-
-    for _id in removed_ids:
-        if _id in added_ids:
-            continue
-
-        tc = TestCase(project_id=PROJECT, work_item_id=_id)
-        if tc.caseautomation == AUTOMATED:
-            LOGGER.info(f"{_id}: Mark as {AUTOMATED}, Setting '{NOT_AUTOMATED}'")
-            tc.caseautomation = NOT_AUTOMATED
-            approve_tc(tc=tc)
 
 
 if __name__ == "__main__":

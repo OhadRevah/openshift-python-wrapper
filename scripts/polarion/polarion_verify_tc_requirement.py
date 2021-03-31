@@ -16,6 +16,7 @@ def has_verify():
     missing = []
     for _id in added_ids:
         has_req = False
+        LOGGER.info(f"Checking if {_id} verifies any requirement")
         tc = TestCase(project_id=PROJECT, work_item_id=_id)
         for link in tc.linked_work_items:
             try:
