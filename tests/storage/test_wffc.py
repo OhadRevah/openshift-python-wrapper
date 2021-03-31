@@ -13,7 +13,7 @@ from ocp_resources.storage_class import StorageClass
 
 import tests.storage.utils as storage_utils
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import Images
+from utilities.infra import Images, hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
     check_cdi_feature_gate_enabled,
     create_dv,
@@ -39,7 +39,7 @@ DV_PARAMS = {
 
 
 @pytest.fixture(scope="module")
-def enable_wffc_feature_gate(cdi, cdi_config):
+def enable_wffc_feature_gate(hyperconverged_resource_scope_module, cdi_config):
     honor_wffc = "HonorWaitForFirstConsumer"
     if check_cdi_feature_gate_enabled(feature=honor_wffc):
         yield
@@ -47,19 +47,18 @@ def enable_wffc_feature_gate(cdi, cdi_config):
         # Feature gate wasn't enabled
         with ResourceEditor(
             patches={
-                cdi: {
-                    "spec": {
-                        "config": {
-                            "featureGates": [
-                                *cdi_config.instance.to_dict()
-                                .get("spec", {})
-                                .get("featureGates", []),
-                                honor_wffc,
-                            ]
-                        }
-                    }
-                }
-            }
+                hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
+                    component="cdi",
+                    path="featureGates",
+                    value=[
+                        *cdi_config.instance.to_dict()
+                        .get("spec", {})
+                        .get("featureGates", []),
+                        honor_wffc,
+                    ],
+                    op="replace",
+                )
+            },
         ):
             yield
 

@@ -31,6 +31,18 @@ BASE_IMAGES_DIR = "cnv-tests"
 NON_EXIST_URL = "https://noneexist.com"
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
+HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
+    "kubevirt": {
+        "api_group_prefix": "kubevirt",
+        "config": "configuration",
+    },
+    "cdi": {
+        "api_group_prefix": "containerizeddataimporter",
+        "config": "config",
+    },
+}
+
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -390,16 +402,18 @@ def base64_encode_str(text):
     return base64.b64encode(text.encode()).decode()
 
 
-def hco_kubevirt_cr_jsonpatch_annotations_dict(path, value):
+def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
     # https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/cluster-configuration.md#jsonpatch-annotations
+    component_dict = HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT[component]
+
     return {
         "metadata": {
             "annotations": {
-                f"{Resource.ApiGroup.KUBEVIRT_KUBEVIRT_IO}/jsonpatch": json.dumps(
+                f"{component_dict['api_group_prefix']}.{Resource.ApiGroup.KUBEVIRT_IO}/jsonpatch": json.dumps(
                     [
                         {
-                            "op": "add",
-                            "path": f"/spec/configuration/{path}",
+                            "op": op,
+                            "path": f"/spec/{component_dict['config']}/{path}",
                             "value": value,
                         }
                     ]

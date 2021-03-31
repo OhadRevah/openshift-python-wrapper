@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 def cdiconfig_update(
     source,
-    cdi_cr,
+    hco_cr,
     cdiconfig,
     storage_class_type,
     storage_ns_name,
@@ -39,11 +39,7 @@ def cdiconfig_update(
     tmpdir=None,
 ):
     with ResourceEditor(
-        patches={
-            cdi_cr: {
-                "spec": {"config": {"scratchSpaceStorageClass": storage_class_type}}
-            }
-        }
+        patches={hco_cr: {"spec": {"scratchSpaceStorageClass": storage_class_type}}}
     ):
         samples = TimeoutSampler(
             wait_timeout=30,
@@ -89,11 +85,16 @@ def cdiconfig_update(
 
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
-    skip_test_if_no_hpp_sc, tmpdir, cdi, cdi_config, namespace, unprivileged_client
+    skip_test_if_no_hpp_sc,
+    tmpdir,
+    hyperconverged_resource_scope_module,
+    cdi_config,
+    namespace,
+    unprivileged_client,
 ):
     cdiconfig_update(
         source="upload",
-        cdi_cr=cdi,
+        hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2451",
         storage_class_type=StorageClass.Types.HOSTPATH,
@@ -109,11 +110,15 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
 
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
-    skip_test_if_no_hpp_sc, cdi, cdi_config, namespace, unprivileged_client
+    skip_test_if_no_hpp_sc,
+    hyperconverged_resource_scope_module,
+    cdi_config,
+    namespace,
+    unprivileged_client,
 ):
     cdiconfig_update(
         source="http",
-        cdi_cr=cdi,
+        hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2478",
         storage_class_type=StorageClass.Types.HOSTPATH,
@@ -128,11 +133,15 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
 
 @pytest.mark.polarion("CNV-2214")
 def test_cdiconfig_status_scratchspace_update_with_spec(
-    skip_test_if_no_hpp_sc, cdi, cdi_config, namespace, unprivileged_client
+    skip_test_if_no_hpp_sc,
+    hyperconverged_resource_scope_module,
+    cdi_config,
+    namespace,
+    unprivileged_client,
 ):
     cdiconfig_update(
         source="http",
-        cdi_cr=cdi,
+        hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2214",
         storage_class_type=StorageClass.Types.HOSTPATH,
@@ -145,11 +154,15 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
 
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_test_if_no_hpp_sc, cdi, cdi_config, namespace, unprivileged_client
+    skip_test_if_no_hpp_sc,
+    hyperconverged_resource_scope_module,
+    cdi_config,
+    namespace,
+    unprivileged_client,
 ):
     cdiconfig_update(
         source="http",
-        cdi_cr=cdi,
+        hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2440",
         storage_class_type=StorageClass.Types.HOSTPATH,

@@ -5,7 +5,7 @@ from ocp_resources.resource import ResourceEditor
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from tests.compute.ssp import utils as ssp_utils
-from utilities.infra import hco_kubevirt_cr_jsonpatch_annotations_dict
+from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -42,7 +42,7 @@ def updated_configmap_machine_type(
 ):
     with ResourceEditor(
         patches={
-            hyperconverged_resource_scope_function: hco_kubevirt_cr_jsonpatch_annotations_dict(
+            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
                 path="machineType",
                 value=request.param["machine_type"],
             )

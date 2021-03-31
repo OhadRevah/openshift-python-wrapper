@@ -20,7 +20,12 @@ from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
-from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, Images, get_cert
+from utilities.infra import (
+    INTERNAL_HTTP_SERVER_ADDRESS,
+    Images,
+    get_cert,
+    hco_cr_jsonpatch_annotations_dict,
+)
 from utilities.storage import (
     HttpDeployment,
     downloaded_image,
@@ -166,14 +171,20 @@ def uploadproxy_route_deleted():
 
 
 @pytest.fixture()
-def cdi_config_upload_proxy_overridden(cdi, cdi_config, upload_proxy_route):
+def cdi_config_upload_proxy_overridden(
+    hyperconverged_resource_scope_function, cdi_config, upload_proxy_route
+):
     new_upload_proxy_url = (
         f"newuploadroute-cdi-{py_config['hco_namespace']}.apps.working.oc4"
     )
     with ResourceEditor(
         patches={
-            cdi: {"spec": {"config": {"uploadProxyURLOverride": new_upload_proxy_url}}}
-        }
+            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
+                component="cdi",
+                path="uploadProxyURLOverride",
+                value=new_upload_proxy_url,
+            )
+        },
     ):
         cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_upload_proxy_url)
         yield

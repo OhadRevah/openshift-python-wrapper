@@ -13,6 +13,7 @@ from utilities.infra import (
     Images,
     get_bug_status,
     get_bugzilla_connection_params,
+    hco_cr_jsonpatch_annotations_dict,
 )
 
 
@@ -20,15 +21,29 @@ pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.fixture(scope="module")
-def cdi_preallocation_enabled(cdi):
-    with ResourceEditor(patches={cdi: {"spec": {"config": {"preallocation": True}}}}):
+def cdi_preallocation_enabled(hyperconverged_resource_scope_module):
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
+                component="cdi",
+                path="preallocation",
+                value=True,
+            )
+        },
+    ):
         yield
 
 
 @pytest.fixture(scope="module")
-def cdi_filesystemoverhead_set(cdi):
+def cdi_filesystemoverhead_set(hyperconverged_resource_scope_module):
     with ResourceEditor(
-        patches={cdi: {"spec": {"config": {"filesystemOverhead": {"global": "0.055"}}}}}
+        patches={
+            hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
+                component="cdi",
+                path="filesystemOverhead/global",
+                value="0.055",
+            )
+        },
     ):
         yield
 
