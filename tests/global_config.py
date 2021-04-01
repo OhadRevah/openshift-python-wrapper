@@ -29,6 +29,7 @@ def _get_default_storage_class(sc_list):
 
 no_unprivileged_client = False
 distribution = "downstream"
+hco_cr_name = "kubevirt-hyperconverged"
 hco_namespace = "openshift-cnv"
 sriov_namespace = "openshift-sriov-network-operator"
 machine_api_namespace = "openshift-machine-api"

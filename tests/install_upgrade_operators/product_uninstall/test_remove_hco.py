@@ -166,7 +166,7 @@ class TestRemoveHCO:
 
         LOGGER.info("Recreating HCO")
         with HyperConverged(
-            name="kubevirt-hyperconverged",
+            name=py_config["hco_cr_name"],
             namespace=py_config["hco_namespace"],
             client=admin_client,
             teardown=False,

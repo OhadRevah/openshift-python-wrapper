@@ -19,6 +19,7 @@ from openshift.dynamic.exceptions import (
     NotFoundError,
     ResourceNotFoundError,
 )
+from pytest_testconfig import py_config
 from urllib3.exceptions import (
     MaxRetryError,
     NewConnectionError,
@@ -334,7 +335,7 @@ def get_operator_by_name(dyn_client, hco_namespace, operator_name):
 
 def get_images_from_manifest(dyn_client, hco_namespace, target_version):
     for package in PackageManifest.get(dyn_client=dyn_client, namespace=hco_namespace):
-        if package.name == "kubevirt-hyperconverged":
+        if package.name == py_config["hco_cr_name"]:
             return [
                 channel.currentCSVDesc.relatedImages
                 for channel in package.instance.status.channels

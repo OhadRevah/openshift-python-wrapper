@@ -247,7 +247,7 @@ class ChaosScenario:
 
         # make sure the hyperconverged is ready
         hco = HyperConverged(
-            name="kubevirt-hyperconverged",
+            name=py_config["hco_cr_name"],
             namespace=py_config["hco_namespace"],
             client=self.oc_api_client,
         )

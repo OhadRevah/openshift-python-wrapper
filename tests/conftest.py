@@ -1983,7 +1983,7 @@ def _get_hyperconverged_resource(client, hco_ns_name):
     for hco in HyperConverged.get(
         dyn_client=client,
         namespace=hco_ns_name,
-        name="kubevirt-hyperconverged",
+        name=py_config["hco_cr_name"],
     ):
         return hco
 

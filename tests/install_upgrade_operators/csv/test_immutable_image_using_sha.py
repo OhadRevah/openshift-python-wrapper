@@ -1,5 +1,6 @@
 import pytest
 from ocp_resources.package_manifest import PackageManifest
+from pytest_testconfig import py_config
 
 
 @pytest.fixture()
@@ -10,7 +11,7 @@ def hco_package_stable_channel_images(admin_client, hco_namespace):
     for package in PackageManifest.get(
         dyn_client=admin_client,
         namespace=hco_namespace,
-        name="kubevirt-hyperconverged",
+        name=py_config["hco_cr_name"],
     ):
         for channel in package.instance.status.channels:
             if channel.name == "stable":
