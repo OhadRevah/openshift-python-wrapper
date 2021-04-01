@@ -76,7 +76,7 @@ class TestCommonTemplatesWindows:
 
     @pytest.mark.ibm_bare_metal
     @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3512")
@@ -91,9 +91,6 @@ class TestCommonTemplatesWindows:
         )
 
     @pytest.mark.ibm_bare_metal
-    @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4196")
     def test_virtctl_guest_agent_os_info(
@@ -106,10 +103,10 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
-    @pytest.mark.ibm_bare_metal
     @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        1925042, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
+    @pytest.mark.ibm_bare_metal
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4197")
     def test_virtctl_guest_agent_fs_info(
@@ -123,9 +120,6 @@ class TestCommonTemplatesWindows:
         )
 
     @pytest.mark.ibm_bare_metal
-    @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-4552")
     def test_virtctl_guest_agent_user_info(
@@ -157,6 +151,9 @@ class TestCommonTemplatesWindows:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
+    @pytest.mark.bugzilla(
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.ibm_bare_metal
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-2776")

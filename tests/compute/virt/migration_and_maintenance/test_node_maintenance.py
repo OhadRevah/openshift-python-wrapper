@@ -24,11 +24,7 @@ from tests.os_params import (
     WINDOWS_LATEST_OS,
 )
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-)
+from utilities.infra import get_bug_status, get_bugzilla_connection_params
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -336,9 +332,6 @@ class TestNodeMaintenanceRHEL:
 )
 @pytest.mark.ibm_bare_metal
 class TestNodeCordonAndDrain:
-    @pytest.mark.bugzilla(
-        1911118, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.polarion("CNV-2048")
     def test_node_drain_template_windows(
         self,

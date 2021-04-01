@@ -92,12 +92,12 @@ def wait_for_guest_agent(vmi, timeout=720):
         LOGGER.error(f"Guest agent is not installed or not active on {vmi.name}")
         if (
             get_bug_status(
-                bugzilla_connection_params=get_bugzilla_connection_params(), bug=1886453
+                bugzilla_connection_params=get_bugzilla_connection_params(), bug=1945703
             )
             not in BUG_STATUS_CLOSED
         ):
             LOGGER.error(
-                "Due to bug 1886453 guest agent may not report its status and VM interfaces may not be available."
+                "Due to bug 1945703 guest agent may not report its status and VM interfaces may not be available."
             )
         else:
             raise
@@ -117,7 +117,7 @@ def wait_for_vm_interfaces(vmi, timeout=720):
     Raises:
         TimeoutExpiredError: After timeout reached.
     """
-    # TODO: remove the if once bug 1886453 is fixed
+    # TODO: remove the if once bug 1945703 is fixed
     if wait_for_guest_agent(vmi=vmi, timeout=timeout):
         LOGGER.info(f"Wait for {vmi.name} network interfaces")
         sampler = TimeoutSampler(
@@ -1433,7 +1433,7 @@ def import_vm(
         yield vmimport
 
 
-# TODO: Remove once bug 1886453 is fixed
+# TODO: Remove once bug 1945703 is fixed
 def get_guest_os_info(vmi):
     sampler = TimeoutSampler(
         wait_timeout=360,

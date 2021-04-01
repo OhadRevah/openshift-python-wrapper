@@ -194,7 +194,7 @@ class TestCommonTemplatesFedora:
         ), "Failed to login via SSH"
 
     @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.smoke
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
@@ -209,9 +209,6 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3573")
     def test_virtctl_guest_agent_os_info(
@@ -228,7 +225,7 @@ class TestCommonTemplatesFedora:
         )
 
     @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        1925042, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3574")
@@ -241,9 +238,6 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4549")
     def test_virtctl_guest_agent_user_info(
