@@ -170,6 +170,7 @@ def test_base_templates_annotations(
 
 @pytest.mark.parametrize(
     ("os_type", "osinfo_filename", "memory_test"),
+    # TODO: Once RHEL9 template is added, add min and max tests.
     [
         pytest.param(
             "rhel6",

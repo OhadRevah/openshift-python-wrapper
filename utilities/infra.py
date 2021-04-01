@@ -59,6 +59,7 @@ class Images:
         RHEL8_2_EFI_IMG = "rhel-82-efi.qcow2"
         RHEL8_3_IMG = "rhel-83.qcow2"
         RHEL8_4_IMG = "rhel-84.qcow2"
+        RHEL9_0_IMG = "rhel-90.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/rhel-images"
         DEFAULT_DV_SIZE = "20Gi"
 
