@@ -50,7 +50,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
         nodes_labeled,
     ):
         assert nodes_labeled["op2"] == expected_node_by_label["op2"]
-        # Verify all the operators are moved to master-1
+        # Verify all operator components are removed from master-1 and created on master-2.
         verify_components_exist_only_on_selected_node(
             hco_pods_per_nodes=subscription_pods_per_nodes_after_altering_placement,
             component_list=OPERATOR_PODS_COMPONENTS,
@@ -198,7 +198,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
         nodes_labeled,
     ):
         assert nodes_labeled["op3"] == expected_node_by_label["op3"]
-        # Verify all the operators are moved to master-2
+        # Verify all operator components are removed from master-2 and created on master-3.
         verify_components_exist_only_on_selected_node(
             hco_pods_per_nodes=subscription_pods_per_nodes_after_altering_placement,
             component_list=OPERATOR_PODS_COMPONENTS,
