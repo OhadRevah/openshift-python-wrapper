@@ -54,6 +54,7 @@ def rhel_6_vm(
     ],
     indirect=["golden_image_data_volume_scope_class", "rhel_6_vm"],
 )
+@pytest.mark.ibm_bare_metal
 class TestRhel6VirtioTransitional:
     @pytest.mark.polarion("CNV-5852")
     def test_rhel6_template(
