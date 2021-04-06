@@ -247,6 +247,7 @@ def ovs_linux_bridge_attached_running_vmb(ovs_linux_bridge_attached_vmb):
     "skip_rhel7_workers", "skip_when_one_node", "skip_ipv6_if_not_dual_stack_cluster"
 )
 class TestConnectivity:
+    @pytest.mark.post_upgrade
     @pytest.mark.parametrize(
         "bridge",
         [
@@ -293,6 +294,7 @@ class TestConnectivity:
             ),
         )
 
+    @pytest.mark.post_upgrade
     @pytest.mark.polarion("CNV-2072")
     def test_positive_vlan(
         self,

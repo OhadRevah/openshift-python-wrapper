@@ -290,6 +290,7 @@ def sriov1_mtu_9000(sriov_vm1, sriov_vm2, running_sriov_vm1, running_sriov_vm2):
     "skip_insufficient_sriov_workers",
 )
 class TestPingConnectivity:
+    @pytest.mark.post_upgrade
     @pytest.mark.polarion("CNV-3963")
     def test_sriov_basic_connectivity(
         self,
@@ -352,6 +353,7 @@ class TestPingConnectivity:
             ),
         )
 
+    @pytest.mark.post_upgrade
     @pytest.mark.polarion("CNV-4768")
     def test_sriov_interfaces_post_reboot(
         self, sriov_vm4, running_sriov_vm4, vm4_interfaces, rebooted_sriov_vm4

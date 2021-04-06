@@ -88,6 +88,7 @@ def rdp_executor_pod(workers_ssh_executors, utility_pods, rdp_vm):
 @pytest.mark.bugzilla(
     1883875, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
+@pytest.mark.post_upgrade
 def test_rdp_for_exposed_win_vm_as_node_port_svc(
     rdp_vm,
     rdp_executor_pod,

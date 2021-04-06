@@ -292,6 +292,7 @@ def test_ssh_vm_migration(
     assert_ssh_alive(ssh_vm=running_vma)
 
 
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5565")
 def test_connectivity_after_migration_and_restart(
     skip_rhel7_workers,

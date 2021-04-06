@@ -23,6 +23,7 @@ def test_no_ip(worker_node1, utility_pods, nodes_occupied_nics, nodes_available_
         LOGGER.info("NNCP: Test no IP")
 
 
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5720")
 def test_static_ip(
     worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics
@@ -59,6 +60,7 @@ def test_dynamic_ip(
 @pytest.mark.bugzilla(
     1926143, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5724")
 def test_dns(worker_node1, utility_pods, nodes_occupied_nics):
     dns_resolver = {

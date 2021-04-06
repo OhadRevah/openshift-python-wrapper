@@ -156,6 +156,7 @@ def nmstate_linux_bridge_attached_running_vmb(nmstate_linux_bridge_attached_vmb)
 @pytest.mark.bugzilla(
     1936432, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5780")
 def test_nmstate_restart_and_check_connectivity(
     admin_client,

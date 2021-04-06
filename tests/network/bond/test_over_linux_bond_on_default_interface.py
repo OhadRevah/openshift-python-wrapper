@@ -151,6 +151,7 @@ class TestBondConnectivityWithNodesDefaultInterface:
         ):
             assert_ping_successful(src_vm=vm, dst_ip=ip)
 
+    @pytest.mark.post_upgrade
     @pytest.mark.polarion("CNV-3439")
     def test_bond_and_persistence(
         self,
