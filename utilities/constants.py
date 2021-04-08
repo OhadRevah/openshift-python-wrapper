@@ -1,4 +1,5 @@
-#  Network constants
+import os
+
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node_network_configuration_policy import (
@@ -15,6 +16,7 @@ from ocp_resources.virtual_machine import (
 )
 
 
+#  Network constants
 SRIOV = "sriov"
 
 #  Time constants
@@ -97,3 +99,6 @@ CLOUD_INIT_NO_CLOUD = "cloudInitNoCloud"
 # Kubemacpool constants
 KMP_VM_ASSIGNMENT_LABEL = "mutatevirtualmachines.kubemacpool.io"
 KMP_ENABLED_LABEL = "allocate"
+
+# SSH constants
+CNV_SSH_KEY_PATH = os.path.join(os.getcwd(), "utilities/cnv-qe-jenkins.key")

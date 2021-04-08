@@ -10,6 +10,7 @@ from pathlib import Path
 
 import bugzilla
 import kubernetes
+import paramiko
 import requests
 from colorlog import ColoredFormatter
 from ocp_resources.namespace import Namespace
@@ -406,3 +407,7 @@ def hco_kubevirt_cr_jsonpatch_annotations_dict(path, value):
             }
         }
     }
+
+
+def private_to_public_key(key):
+    return paramiko.RSAKey.from_private_key_file(key).get_base64()

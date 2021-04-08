@@ -31,6 +31,7 @@ import utilities.network
 from utilities.constants import (
     CLOUD_INIT_DISK_NAME,
     CLOUD_INIT_NO_CLOUD,
+    CNV_SSH_KEY_PATH,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     OS_LOGIN_PARAMS,
 )
@@ -43,6 +44,7 @@ from utilities.infra import (
     get_bug_status,
     get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
+    private_to_public_key,
     run_ssh_commands,
 )
 
@@ -52,11 +54,22 @@ LOGGER = logging.getLogger(__name__)
 K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"
 CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
+
+FEDORA_LOGIN_PARAMS = OS_LOGIN_PARAMS["fedora"]
 FEDORA_CLOUD_INIT_PASSWORD = {
-    "userData": {"password": "fedora", "chpasswd": "{ expire: False }"}
+    "userData": {
+        "user": FEDORA_LOGIN_PARAMS["username"],
+        "password": FEDORA_LOGIN_PARAMS["password"],
+        "chpasswd": "{ expire: False }",
+    }
 }
+RHEL_LOGIN_PARAMS = OS_LOGIN_PARAMS["rhel"]
 RHEL_CLOUD_INIT_PASSWORD = {
-    "userData": {"password": "redhat", "chpasswd": "{ expire: False }"}
+    "userData": {
+        "user": RHEL_LOGIN_PARAMS["username"],
+        "password": RHEL_LOGIN_PARAMS["password"],
+        "chpasswd": "{ expire: False }",
+    }
 }
 
 
@@ -258,7 +271,7 @@ class VirtualMachineForTests(VirtualMachine):
             cloud_init_data (dict, optional): cloud-init dict
             machine_type (str, optional)
             image (str, optional)
-            ssh (bool, default: False): If True and using with statement, create an SSH service
+            ssh (bool, default: True): If True and using "with" (contextmanager) statement, create an SSH service
             network_model (str, optional)
             network_multiqueue (None/bool, optional, default: None): If not None, set to True/False
             pvc (:obj:`PersistentVolumeClaim`, optional)
@@ -525,9 +538,24 @@ class VirtualMachineForTests(VirtualMachine):
 
     def enable_ssh_in_cloud_init_data(self, spec):
         cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
+        cloud_init_volume.setdefault(CLOUD_INIT_NO_CLOUD, {}).setdefault("userData", "")
 
-        # Enable PasswordAuthentication, enable SSH service and restart SSH service
+        # Add RSA to authorized_keys to enable login using an SSH key
+        authorized_key = (
+            f"ssh-rsa {private_to_public_key(key=CNV_SSH_KEY_PATH)} root@exec1.rdocloud"
+        )
+        cloud_init_volume[CLOUD_INIT_NO_CLOUD][
+            "userData"
+        ] += f"\nssh_authorized_keys:\n [{authorized_key}]"
+
+        # Add ssh-rsa to opensshserver.config PubkeyAcceptedKeyTypes - needed when using SSH via paramiko
+        # Enable PasswordAuthentication in /etc/ssh/sshd_config
+        # Enable SSH service and restart SSH service
         run_cmd_commands = [
+            (
+                r"sudo sed -i '/^PubkeyAcceptedKeyTypes/ s/$/,ssh-rsa/' "
+                "/etc/crypto-policies/back-ends/opensshserver.config"
+            ),
             (
                 r"sudo sed -iE 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' "
                 "/etc/ssh/sshd_config"
@@ -540,7 +568,6 @@ class VirtualMachineForTests(VirtualMachine):
             ),
         ]
 
-        cloud_init_volume.setdefault(CLOUD_INIT_NO_CLOUD, {}).setdefault("userData", "")
         cloud_init_volume[CLOUD_INIT_NO_CLOUD][
             "userData"
         ] += f"\nruncmd: {run_cmd_commands}"
@@ -740,11 +767,13 @@ class VirtualMachineForTests(VirtualMachine):
         self.password = self.password or login_params["password"]
 
         LOGGER.info(
-            f"Username: {self.username}, password: {self.password}, "
+            f"Username: {self.username}, password: {self.password}, SSH key: {CNV_SSH_KEY_PATH} "
             f"ssh {self.username}@{self.ssh_service.service_ip()} -p {self.ssh_service.service_port}"
         )
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip()))
-        host_user = rrmngmnt.user.User(name=self.username, password=self.password)
+        host_user = rrmngmnt.user.UserWithPKey(
+            name=self.username, private_key=CNV_SSH_KEY_PATH
+        )
         host.executor_user = host_user
         host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
             port=self.ssh_service.service_port
