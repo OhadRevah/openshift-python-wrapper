@@ -1363,8 +1363,9 @@ def vm_instance_from_template(
 
     """
     params = request.param if hasattr(request, "param") else request
+    vm_name = params["vm_name"].replace(".", "-").lower()
     with VirtualMachineForTestsFromTemplate(
-        name=params["vm_name"].replace(".", "-").lower(),
+        name=vm_name,
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**params["template_labels"]),
@@ -1391,12 +1392,12 @@ def vm_instance_from_template(
         gpu_name=params.get("gpu_name"),
         rhel7_workers=rhel7_workers,
         cloned_dv_size=params.get("cloned_dv_size"),
+        systemctl_support="rhel-6" not in vm_name,
     ) as vm:
         if params.get("start_vm", True):
             running_vm(
                 vm=vm,
                 wait_for_interfaces=params.get("guest_agent", True),
-                systemctl_support=params.get("systemctl_support", True),
                 enable_ssh=vm.ssh,
             )
         yield vm

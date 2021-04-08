@@ -55,7 +55,9 @@ def create_vm_from_clone_dv_template(
         ),
     ) as vm:
         running_vm(
-            vm=vm, wait_for_interfaces=False, enable_ssh=False, systemctl_support=False
+            vm=vm,
+            wait_for_interfaces=False,
+            enable_ssh=False,
         )
         utils.check_disk_count_in_vm(vm=vm)
 

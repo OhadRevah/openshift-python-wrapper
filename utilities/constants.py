@@ -89,6 +89,7 @@ GPU_DEVICE_NAME = "nvidia.com/TU104GL_Tesla_T4"
 GPU_DEVICE_ID = "10de:1eb8"
 
 # cloud-init constants
+CLOUD_INIT_DISK_NAME = "cloudinitdisk"
 CLOUND_INIT_CONFIG_DRIVE = "cloudInitConfigDrive"
 CLOUD_INIT_NO_CLOUD = "cloudInitNoCloud"
 

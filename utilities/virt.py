@@ -28,8 +28,8 @@ from ocp_resources.virtual_machine_import import VirtualMachineImport
 from pytest_testconfig import config as py_config
 
 import utilities.network
-from utilities.console import CONSOLE_IMPL
 from utilities.constants import (
+    CLOUD_INIT_DISK_NAME,
     CLOUD_INIT_NO_CLOUD,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     OS_LOGIN_PARAMS,
@@ -230,6 +230,7 @@ class VirtualMachineForTests(VirtualMachine):
         os_flavor="fedora",
         host_device_name=None,
         gpu_name=None,
+        systemctl_support=True,
     ):
         """
         Virtual machine creation
@@ -282,6 +283,7 @@ class VirtualMachineForTests(VirtualMachine):
                 (flavor should be exist in constants.py)
             host_device_name (str, optional): PCI Host Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
             gpu_name (str, optional): GPU Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
+            systemctl_support(bool, default=True): whether OS supports systemctl (RHEL 6 does not)
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -333,6 +335,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.os_flavor = os_flavor
         self.host_device_name = host_device_name
         self.gpu_name = gpu_name
+        self.systemctl_support = systemctl_support
 
     def deploy(self):
         super().deploy()
@@ -395,6 +398,10 @@ class VirtualMachineForTests(VirtualMachine):
 
         if self.cloud_init_data:
             spec = self.update_vm_cloud_init_data(spec=spec)
+
+        # VMs do not necessarily have self.cloud_init_data
+        if self.ssh and "win" not in self.os_flavor:
+            spec = self.enable_ssh_in_cloud_init_data(spec=spec)
 
         if self.smm_enabled is not None:
             spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
@@ -499,18 +506,8 @@ class VirtualMachineForTests(VirtualMachine):
         return spec
 
     def update_vm_cloud_init_data(self, spec):
-        cloud_init_volume = {}
-        cloud_init_disk_name = "cloudinitdisk"
-        for vol in spec.setdefault("volumes", []):
-            if vol["name"] == cloud_init_disk_name:
-                cloud_init_volume = vol
-                break
-
+        cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
         cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
-
-        if not cloud_init_volume:
-            spec["volumes"].append({"name": cloud_init_disk_name})
-            cloud_init_volume = spec["volumes"][-1]
 
         cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
             data=self.cloud_init_data
@@ -521,8 +518,32 @@ class VirtualMachineForTests(VirtualMachine):
             .setdefault("disks", [])
         )
 
-        if not [disk for disk in disks_spec if disk["name"] == cloud_init_disk_name]:
-            disks_spec.append({"disk": {"bus": "virtio"}, "name": cloud_init_disk_name})
+        if not [disk for disk in disks_spec if disk["name"] == CLOUD_INIT_DISK_NAME]:
+            disks_spec.append({"disk": {"bus": "virtio"}, "name": CLOUD_INIT_DISK_NAME})
+
+        return spec
+
+    def enable_ssh_in_cloud_init_data(self, spec):
+        cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
+
+        # Enable PasswordAuthentication, enable SSH service and restart SSH service
+        run_cmd_commands = [
+            (
+                r"sudo sed -iE 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' "
+                "/etc/ssh/sshd_config"
+            ),
+            "sudo systemctl enable sshd" if self.systemctl_support else "",
+            (
+                "sudo systemctl restart sshd"
+                if self.systemctl_support
+                else "sudo /etc/init.d/sshd restart"
+            ),
+        ]
+
+        cloud_init_volume.setdefault(CLOUD_INIT_NO_CLOUD, {}).setdefault("userData", "")
+        cloud_init_volume[CLOUD_INIT_NO_CLOUD][
+            "userData"
+        ] += f"\nruncmd: {run_cmd_commands}"
 
         return spec
 
@@ -766,6 +787,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         host_device_name=None,
         gpu_name=None,
         cloned_dv_size=None,
+        systemctl_support=True,
     ):
         """
         VM creation using common templates.
@@ -807,6 +829,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             interfaces_types=interfaces_types,
             host_device_name=host_device_name,
             gpu_name=gpu_name,
+            systemctl_support=systemctl_support,
         )
         self.template_labels = labels
         self.data_volume = data_volume
@@ -1187,79 +1210,6 @@ class Prometheus(object):
         return json.loads(response.content)
 
 
-def enable_ssh_service_in_vm(
-    vm,
-    console_impl,
-    systemctl_support=True,
-    check_ssh_service=True,
-    check_ssh_connectivity=True,
-):
-    LOGGER.info(f"Enable SSH in {vm.name}.")
-
-    enable_ssh_command = [
-        r"sudo sed -iE "
-        r"'s/^#\?PasswordAuthentication no/PasswordAuthentication yes/g'"
-        r" /etc/ssh/sshd_config",
-    ]
-    vm_console_run_commands(
-        console_impl=console_impl,
-        vm=vm,
-        commands=enable_ssh_command,
-    )
-
-    if systemctl_support:
-        ssh_service_restart_cmd = ["sudo systemctl restart sshd"]
-    # For older linux versions which do not support systemctl
-    else:
-        ssh_service_restart_cmd = ["sudo /etc/init.d/sshd restart"]
-
-    vm_console_run_commands(
-        console_impl=console_impl,
-        vm=vm,
-        commands=ssh_service_restart_cmd,
-        verify_commands_output=False,
-    )
-
-    if check_ssh_service:
-        wait_for_ssh_service(
-            vm=vm, console_impl=console_impl, systemctl_support=systemctl_support
-        )
-
-    if check_ssh_connectivity:
-        wait_for_ssh_connectivity(vm=vm)
-
-
-def wait_for_ssh_service(vm, console_impl, systemctl_support=True):
-    LOGGER.info(f"Wait for {vm.name} SSH service to be active.")
-
-    sampler = TimeoutSampler(
-        wait_timeout=30,
-        sleep=5,
-        func=ssh_service_activated,
-        exceptions=(pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF),
-        vm=vm,
-        console_impl=console_impl,
-        systemctl_support=systemctl_support,
-    )
-    for sample in sampler:
-        if sample:
-            return
-
-
-def ssh_service_activated(vm, console_impl, systemctl_support=True):
-    if systemctl_support:
-        ssh_service_status_cmd = "sudo systemctl is-active sshd"
-        expected = "\r\nactive"
-    else:
-        ssh_service_status_cmd = "sudo /etc/init.d/sshd status"
-        expected = "is running"
-
-    with console_impl(vm=vm) as vm_console:
-        vm_console.sendline(ssh_service_status_cmd)
-        vm_console.expect(expected)
-        return True
-
-
 def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
     LOGGER.info(f"Wait for {vm.name} SSH connectivity.")
 
@@ -1489,7 +1439,7 @@ def get_rhel_os_dict(rhel_version):
     raise KeyError(f"Failed to extract {rhel_version} from system_rhel_os_matrix")
 
 
-def running_vm(vm, wait_for_interfaces=True, enable_ssh=True, systemctl_support=True):
+def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
     """
     Wait for the VMI to be in Running state.
 
@@ -1497,7 +1447,6 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True, systemctl_support=
         vm (VirtualMachine): VM object.
         wait_for_interfaces (bool): Is waiting for VM's interfaces mandatory for declaring VM as running.
         enable_ssh (bool): Enable SSh service in the VM.
-        systemctl_support(bool): OS support of systemctl commend
 
     Returns:
         VirtualMachine: VM object.
@@ -1522,14 +1471,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True, systemctl_support=
         wait_for_vm_interfaces(vmi=vm.vmi)
 
     if enable_ssh:
-        if vm.os_flavor.startswith("win"):
-            wait_for_ssh_connectivity(vm=vm)
-        else:
-            enable_ssh_service_in_vm(
-                vm=vm,
-                console_impl=CONSOLE_IMPL[vm.os_flavor],
-                systemctl_support=systemctl_support,
-            )
+        wait_for_ssh_connectivity(vm=vm)
 
     return vm
 
@@ -1571,3 +1513,18 @@ def restart_guest_agent(vm):
         LOGGER.warning(
             f"bug {bug_num} is resolved. please remove all references to it from the automation"
         )
+
+
+def vm_cloud_init_volume(vm_spec):
+    cloud_init_volume = [
+        vol
+        for vol in vm_spec.setdefault("volumes", [])
+        if vol["name"] == CLOUD_INIT_DISK_NAME
+    ]
+
+    if cloud_init_volume:
+        return cloud_init_volume[0]
+
+    # If cloud init volume needs to be added
+    vm_spec["volumes"].append({"name": CLOUD_INIT_DISK_NAME})
+    return vm_spec["volumes"][-1]

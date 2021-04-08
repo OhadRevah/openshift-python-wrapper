@@ -12,7 +12,7 @@ from utilities.network import (
     get_vmi_mac_address_by_iface_name,
     verify_ovs_installed_with_annotations,
 )
-from utilities.virt import enable_ssh_service_in_vm, vm_console_run_commands
+from utilities.virt import vm_console_run_commands
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,7 +55,6 @@ class TestUpgrade:
     @pytest.mark.run(after="test_migration_before_upgrade")
     def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            enable_ssh_service_in_vm(vm=vm, console_impl=console.RHEL)
             assert vm.ssh_exec.executor().is_connective(
                 tcp_timeout=120
             ), "Failed to login via SSH"

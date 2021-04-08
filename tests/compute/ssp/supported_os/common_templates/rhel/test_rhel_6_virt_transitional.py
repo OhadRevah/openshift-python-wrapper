@@ -48,7 +48,6 @@ def rhel_6_vm(
                 "vm_name": "rhel-6-vm",
                 "template_labels": RHEL_VERSION_TEMPLATE_LABELS,
                 "guest_agent": False,
-                "systemctl_support": False,
             },
         ),
     ],

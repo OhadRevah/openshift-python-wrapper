@@ -136,6 +136,7 @@ def vm_object_from_template(
         rhel7_workers=rhel7_workers,
         ssh=param_dict.get("ssh", True),
         cpu_model=cpu_model,
+        systemctl_support=not rhel6,
     )
 
 

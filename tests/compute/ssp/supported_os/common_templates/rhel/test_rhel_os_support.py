@@ -56,14 +56,11 @@ class TestCommonTemplatesRhel:
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """ Test CNV common templates VM initiation """
-        guest_agent_support = systemctl_support = (
-            "rhel-6" not in [*rhel_os_matrix__class__][0]
-        )
+        guest_agent_support = "rhel-6" not in [*rhel_os_matrix__class__][0]
 
         running_vm(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             wait_for_interfaces=guest_agent_support,
-            systemctl_support=systemctl_support,
         )
 
     @pytest.mark.dependency(depends=["start_vm"])
