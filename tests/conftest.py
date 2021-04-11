@@ -1035,26 +1035,30 @@ def leftovers(identity_provider_config):
             continue
 
     #  Remove leftovers from OAuth
-    identity_providers_spec = identity_provider_config.instance.to_dict()["spec"]
-    identity_providers_token = identity_providers_spec.get("tokenConfig")
-    identity_providers = identity_providers_spec.get("identityProviders", [])
+    try:
+        identity_providers_spec = identity_provider_config.instance.to_dict()["spec"]
+        identity_providers_token = identity_providers_spec.get("tokenConfig")
+        identity_providers = identity_providers_spec.get("identityProviders", [])
 
-    if ACCESS_TOKEN == identity_providers_token:
-        identity_providers_spec["tokenConfig"] = None
+        if ACCESS_TOKEN == identity_providers_token:
+            identity_providers_spec["tokenConfig"] = None
 
-    if HTPASSWD_PROVIDER_DICT in identity_providers:
-        identity_providers.pop(identity_providers.index(HTPASSWD_PROVIDER_DICT))
-        identity_providers_spec["identityProviders"] = identity_providers or None
+        if HTPASSWD_PROVIDER_DICT in identity_providers:
+            identity_providers.pop(identity_providers.index(HTPASSWD_PROVIDER_DICT))
+            identity_providers_spec["identityProviders"] = identity_providers or None
 
-    r_editor = ResourceEditor(
-        patches={
-            identity_provider_config: {
-                "metadata": {"name": identity_provider_config.name},
-                "spec": identity_providers_spec,
+        r_editor = ResourceEditor(
+            patches={
+                identity_provider_config: {
+                    "metadata": {"name": identity_provider_config.name},
+                    "spec": identity_providers_spec,
+                }
             }
-        }
-    )
-    r_editor.update()
+        )
+        r_editor.update()
+    except ResourceNotFoundError:
+        # When running CI (k8s) OAuth is not exists on the cluster.
+        LOGGER.warning("OAuth does not exist on the cluster")
 
 
 @pytest.fixture(scope="session")
