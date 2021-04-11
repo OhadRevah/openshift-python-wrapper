@@ -47,7 +47,7 @@ check:
 	tox
 
 pipenv:
-	pipenv --rm
+	-pipenv --rm # '-' for ignore error when pipenv venv is not exists
 	pipenv install --skip-lock
 
 tests: virtctl pipenv
