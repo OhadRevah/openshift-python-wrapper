@@ -643,7 +643,7 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
     def _wait_sampler(reason):
         sampler = TimeoutSampler(
-            wait_timeout=60, sleep=1, func=lambda: dp.instance.status.conditions
+            wait_timeout=140, sleep=1, func=lambda: dp.instance.status.conditions
         )
         for sample in sampler:
             for _spl in sample:
