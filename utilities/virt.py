@@ -775,7 +775,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cloud_init_data=None,
         node_selector=None,
         attached_secret=None,
-        termination_grace_period=False,
+        termination_grace_period=180,
         diskless_vm=False,
         run_strategy=None,
         disk_options_vm=None,
@@ -853,10 +853,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         spec = res["spec"]["template"]["spec"]
 
         # terminationGracePeriodSeconds for Windows is set to 1hr; this may affect VMI deletion
-        # If termination_grace_period == True, do not change the value in the template, else
-        # terminationGracePeriodSeconds will be set to 180
-        if not self.termination_grace_period:
-            spec["terminationGracePeriodSeconds"] = 180
+        # If termination_grace_period is not provided, terminationGracePeriodSeconds will be set to 180
+        spec["terminationGracePeriodSeconds"] = self.termination_grace_period
 
         # Existing DV will be used as the VM's DV; dataVolumeTemplates is not needed
         if self.existing_data_volume:
