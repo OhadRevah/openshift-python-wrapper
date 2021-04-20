@@ -1776,7 +1776,7 @@ def skip_access_mode_rwo_scope_class(storage_class_matrix__class__):
 
 @pytest.fixture(scope="session")
 def nodes_common_cpu_model(schedulable_nodes):
-    cpu_label_prefix = "feature.node.kubernetes.io/cpu-model-"
+    cpu_label_prefix = "cpu-model.node.kubevirt.io/"
     # CPU families; descending
     # TODO: Add AMD models
     cpus_families_list = [
