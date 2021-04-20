@@ -54,6 +54,7 @@ from utilities.constants import (
     SRIOV,
     TEST_COLLECT_INFO_DIR,
     TEST_LOG_FILE,
+    TIMEOUT_4MIN,
 )
 from utilities.hco import apply_np_changes
 from utilities.infra import (
@@ -643,7 +644,9 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
     def _wait_sampler(reason):
         sampler = TimeoutSampler(
-            wait_timeout=140, sleep=1, func=lambda: dp.instance.status.conditions
+            wait_timeout=TIMEOUT_4MIN,
+            sleep=1,
+            func=lambda: dp.instance.status.conditions,
         )
         for sample in sampler:
             for _spl in sample:

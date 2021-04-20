@@ -18,6 +18,7 @@ from ocp_resources.virtual_machine import (
 SRIOV = "sriov"
 
 #  Time constants
+TIMEOUT_4MIN = 4 * 60
 TIMEOUT_10MIN = 10 * 60
 TIMEOUT_15MIN = 15 * 60
 TIMEOUT_20MIN = 20 * 60
