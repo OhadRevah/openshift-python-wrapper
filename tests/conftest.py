@@ -112,7 +112,13 @@ HTPASSWD_PROVIDER_DICT = {
 }
 ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
 
-EXCLUDE_MARKER_FROM_TIER2_MARKER = ["destructive", "chaos", "tier3", "install"]
+EXCLUDE_MARKER_FROM_TIER2_MARKER = [
+    "destructive",
+    "chaos",
+    "tier3",
+    "install",
+    "benchmark",
+]
 
 TEAM_MARKERS = {
     "ansible": ["ansible-module"],

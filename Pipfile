@@ -17,6 +17,7 @@ netaddr = "*"
 bcrypt = "*"
 pytest-marker-bugzilla = "*"
 pytest-testconfig = "*"
+pytest-benchmark = "*"
 python-bugzilla = "==2.3.0"  # pipenv fail to install on python 3.6.8 when version > 2.3.0
 sh = "*"
 pytest-ordering = "*"
