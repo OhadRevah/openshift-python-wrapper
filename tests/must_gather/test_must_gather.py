@@ -23,11 +23,6 @@ from tests.must_gather import utils
 from utilities.infra import BUG_STATUS_CLOSED
 
 
-pytestmark = pytest.mark.bugzilla(
-    1853028, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-
-
 @pytest.mark.parametrize(
     ("resource_type", "resource_path", "checks"),
     [
@@ -198,6 +193,9 @@ def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
     assert len(template_resource) == data.count(f"kind: {template_resource[0].kind}")
 
 
+@pytest.mark.bugzilla(
+    1952033, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-2809")
 def test_node_nftables(skip_no_rhcos, cnv_must_gather, utility_pods):
     for pod in utility_pods:
@@ -225,9 +223,6 @@ def test_node_nftables(skip_no_rhcos, cnv_must_gather, utility_pods):
             )
 
 
-@pytest.mark.bugzilla(
-    1771916, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "cmd, results_file, compare_method",
     [
@@ -235,21 +230,36 @@ def test_node_nftables(skip_no_rhcos, cnv_must_gather, utility_pods):
             ["ip", "-o", "link", "show", "type", "bridge"],
             "bridge",
             "simple_compare",
-            marks=(pytest.mark.polarion("CNV-2730")),
+            marks=(
+                pytest.mark.polarion("CNV-2730"),
+                pytest.mark.bugzilla(
+                    1952036, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
             id="test_nodes_bridge_data",
         ),
         pytest.param(
             ["/bin/bash", "-c", "ls -l /host/var/lib/cni/bin"],
             "var-lib-cni-bin",
             "simple_compare",
-            marks=(pytest.mark.polarion("CNV-2810")),
+            marks=(
+                pytest.mark.polarion("CNV-2810"),
+                pytest.mark.bugzilla(
+                    1952041, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
             id="test_nodes_cni_bin_data",
         ),
         pytest.param(
             ["ip", "a"],
             "ip.txt",
             "ip_compare",
-            marks=(pytest.mark.polarion("CNV-2732")),
+            marks=(
+                pytest.mark.polarion("CNV-2732"),
+                pytest.mark.bugzilla(
+                    1952052, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
             id="test_nodes_ip_data",
         ),
     ],
