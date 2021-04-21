@@ -378,6 +378,14 @@ class VirtualMachineForTests(VirtualMachine):
         )
 
         # runStrategy and running are mutually exclusive
+        #
+        # From RunStrategy() in
+        # https://github.com/kubevirt/kubevirt/blob/master/staging/src/kubevirt.io/client-go/api/v1/types.go
+        # if vm.spec.running is set, that will be mapped to runStrategy:
+        #   false: RunStrategyHalted
+        #   true: RunStrategyAlways
+        #
+        # To create a VM resource, but not begin VM cloning, use VirtualMachine.RunStrategy.MANUAL
         if self.run_strategy:
             res["spec"].pop("running", None)
             res["spec"]["runStrategy"] = self.run_strategy
