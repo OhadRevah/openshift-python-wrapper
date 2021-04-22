@@ -779,9 +779,14 @@ class VirtualMachineForTests(VirtualMachine):
             f"ssh {self.username}@{self.ssh_service.service_ip()} -p {self.ssh_service.service_port}"
         )
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip()))
-        host_user = rrmngmnt.user.UserWithPKey(
-            name=self.username, private_key=CNV_SSH_KEY_PATH
-        )
+        # For SSH using a key, the public key needs to reside on the server.
+        # As the tests use a given key, this cannot be done in Windows.
+        if "win" in self.os_flavor:
+            host_user = rrmngmnt.user.User(name=self.username, password=self.password)
+        else:
+            host_user = rrmngmnt.user.UserWithPKey(
+                name=self.username, private_key=CNV_SSH_KEY_PATH
+            )
         host.executor_user = host_user
         host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
             port=self.ssh_service.service_port
