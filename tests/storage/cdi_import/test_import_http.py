@@ -21,6 +21,7 @@ from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
 from utilities import console
+from utilities.constants import TIMEOUT_4MIN
 from utilities.infra import BUG_STATUS_CLOSED, NON_EXIST_URL, Images, get_bug_status
 from utilities.storage import ErrorMsg, PodWithPVC, create_dummy_first_consumer_pod
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
@@ -699,7 +700,7 @@ def test_vmi_image_size(
         ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=240)
+        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_4MIN)
         with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE, start=False):
             with PodWithPVC(
                 namespace=dv.namespace,

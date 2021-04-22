@@ -34,6 +34,7 @@ from utilities.constants import (
     CNV_SSH_KEY_PATH,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     OS_LOGIN_PARAMS,
+    TIMEOUT_4MIN,
 )
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
@@ -1492,7 +1493,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         VirtualMachine: VM object.
     """
     # For VMs from common templates
-    start_vm_timeout = 240
+    start_vm_timeout = TIMEOUT_4MIN
 
     # For VMs from common templates (Linux and Windows based)
     if vm.is_vm_from_template:

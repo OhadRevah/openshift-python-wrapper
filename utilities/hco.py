@@ -8,7 +8,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN
 
 
 DEFAULT_HCO_CONDITIONS = {
@@ -81,7 +81,7 @@ def wait_for_hco_conditions(
 def wait_for_ds(ds):
     LOGGER.info(f"Waiting for daemonset {ds.name} to be up to date.")
     samples = TimeoutSampler(
-        wait_timeout=240,
+        wait_timeout=TIMEOUT_4MIN,
         sleep=5,
         func=lambda: ds.instance.to_dict(),
     )
@@ -103,7 +103,7 @@ def wait_for_ds(ds):
 def wait_for_dp(dp):
     LOGGER.info(f"Waiting for deployment {dp.name} to be up to date.")
     samples = TimeoutSampler(
-        wait_timeout=240,
+        wait_timeout=TIMEOUT_4MIN,
         sleep=5,
         func=lambda: dp.instance.to_dict(),
     )

@@ -5,6 +5,7 @@ from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
 from openshift.dynamic.exceptions import BadRequestError
 
+from utilities.constants import TIMEOUT_4MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -82,7 +83,9 @@ def test_remove_workloads(
             break
 
     # HCO should redeploy the kubevirt cr; wait for this to finish
-    kubevirt_resource.wait_for_status(status=KubeVirt.Status.DEPLOYED, timeout=240)
+    kubevirt_resource.wait_for_status(
+        status=KubeVirt.Status.DEPLOYED, timeout=TIMEOUT_4MIN
+    )
 
 
 @pytest.mark.run(after="test_remove_workloads")
