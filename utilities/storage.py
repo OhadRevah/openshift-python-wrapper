@@ -19,6 +19,7 @@ from ocp_resources.utils import TimeoutExpiredError
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+from utilities.constants import TIMEOUT_30MIN, TIMEOUT_60MIN
 from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 from utilities.virt import run_virtctl_command
 
@@ -264,7 +265,7 @@ def data_volume(
                         timeout=10,
                     )
                 else:
-                    dv.wait(timeout=3000 if "win" in image else 1600)
+                    dv.wait(timeout=TIMEOUT_60MIN if "win" in image else TIMEOUT_30MIN)
         yield dv
 
 
