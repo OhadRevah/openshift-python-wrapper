@@ -15,6 +15,7 @@ import tests.storage.utils as storage_utils
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import Images, hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
+    cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
     create_dv,
     downloaded_image,
@@ -50,12 +51,7 @@ def enable_wffc_feature_gate(hyperconverged_resource_scope_module, cdi_config):
                 hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
                     component="cdi",
                     path="featureGates",
-                    value=[
-                        *cdi_config.instance.to_dict()
-                        .get("spec", {})
-                        .get("featureGates", []),
-                        honor_wffc,
-                    ],
+                    value=cdi_feature_gate_list_with_added_feature(feature=honor_wffc),
                     op="replace",
                 )
             },

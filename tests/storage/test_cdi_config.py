@@ -9,19 +9,31 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
 from utilities.infra import Images, get_cert
-from utilities.storage import downloaded_image, get_images_server_url
+from utilities.storage import (
+    cdi_feature_gate_list_with_added_feature,
+    check_cdi_feature_gate_enabled,
+    downloaded_image,
+    get_images_server_url,
+)
 
 
 pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)
+
+STORAGE_WORKLOADS_DICT = {
+    "limits": {"cpu": "505m", "memory": "2Gi"},
+    "requests": {"cpu": "252m", "memory": "1Gi"},
+}
+NON_EXISTANT_SCRATCH_SC_DICT = {"scratchSpaceStorageClass": "NonExistantSC"}
+INSECURE_REGISTRIES_LIST = ["added-private-registry:5000"]
 
 
 def cdiconfig_update(
@@ -289,3 +301,99 @@ def test_cdiconfig_changing_storage_class_default(
                     dv.wait()
                     with utils.create_vm_from_dv(dv=dv) as vm_dv:
                         utils.check_disk_count_in_vm(vm=vm_dv)
+
+
+@pytest.mark.polarion("CNV-5999")
+def test_cdi_spec_reconciled_by_hco(cdi, namespace):
+    """
+    Test that added feature gate on the CDI CR does not persist
+    (HCO Should reconcile back changes on the CDI CR)
+    """
+    non_existant_feature = "ExtraNonExistantFeature"
+    with ResourceEditor(
+        patches={
+            cdi: {
+                "spec": {
+                    "config": {
+                        "featureGates": cdi_feature_gate_list_with_added_feature(
+                            feature=non_existant_feature
+                        )
+                    }
+                }
+            }
+        }
+    ):
+        with pytest.raises(TimeoutExpiredError):
+            for sample in TimeoutSampler(
+                wait_timeout=20,
+                sleep=1,
+                func=lambda: check_cdi_feature_gate_enabled(
+                    feature=non_existant_feature
+                ),
+            ):
+                if sample:
+                    LOGGER.error("Changes to CDI Spec should be reconciled by HCO")
+                    break
+
+
+@pytest.mark.parametrize(
+    ("hco_updated_spec_stanza", "expected_in_cdi_config_from_cr"),
+    [
+        pytest.param(
+            {"resourceRequirements": {"storageWorkloads": STORAGE_WORKLOADS_DICT}},
+            {"podResourceRequirements": STORAGE_WORKLOADS_DICT},
+            marks=(pytest.mark.polarion("CNV-6000")),
+            id="test_storage_workloads_in_hco_propagated_to_cdi_cr",
+        ),
+        pytest.param(
+            NON_EXISTANT_SCRATCH_SC_DICT,
+            NON_EXISTANT_SCRATCH_SC_DICT,
+            marks=(pytest.mark.polarion("CNV-6001")),
+            id="test_scratch_sc_in_hco_propagated_to_cdi_cr",
+        ),
+        pytest.param(
+            {"storageImport": {"insecureRegistries": INSECURE_REGISTRIES_LIST}},
+            {"insecureRegistries": INSECURE_REGISTRIES_LIST},
+            marks=(pytest.mark.polarion("CNV-6092")),
+            id="test_insecure_registries_in_hco_propagated_to_cdi_cr",
+        ),
+    ],
+)
+def test_cdi_tunables_in_hco_propagated_to_cr(
+    hyperconverged_resource_scope_module,
+    cdi,
+    namespace,
+    expected_in_cdi_config_from_cr,
+    hco_updated_spec_stanza,
+):
+    """
+    Test that the exposed CDI-related tunables in HCO are propagated to the CDI CR
+    """
+    initial_cdi_config_from_cr = cdi.instance.to_dict()["spec"]["config"]
+
+    def _verify_propagation():
+        current_cdi_config_from_cr = cdi.instance.to_dict()["spec"]["config"]
+        return {
+            **initial_cdi_config_from_cr,
+            **expected_in_cdi_config_from_cr,
+        } == current_cdi_config_from_cr
+
+    samples = TimeoutSampler(
+        wait_timeout=20,
+        sleep=1,
+        func=_verify_propagation,
+    )
+
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_module: {"spec": hco_updated_spec_stanza}
+        }
+    ):
+        for sample in samples:
+            if sample:
+                break
+
+    LOGGER.info("Check values revert back to original")
+    for sample in samples:
+        if not sample:
+            break

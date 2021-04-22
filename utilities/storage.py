@@ -576,3 +576,13 @@ def overhead_size_for_dv(image_size, overhead_value):
     """
     dv_size = image_size / (1 - overhead_value) * 1024
     return f"{math.ceil(dv_size)}Mi"
+
+
+def cdi_feature_gate_list_with_added_feature(feature):
+    return [
+        *CDIConfig(name="config")
+        .instance.to_dict()
+        .get("spec", {})
+        .get("featureGates", []),
+        feature,
+    ]
