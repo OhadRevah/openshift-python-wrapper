@@ -182,6 +182,13 @@ def data_volume(
         dv_name = params_dict.get("dv_name").replace(".", "-").lower()
         dv_size = params_dict.get("dv_size")
 
+    # Don't need URL for DVs that are not http
+    url = (
+        f"{get_images_server_url(schema=source)}{image}"
+        if source in ("http", "https")
+        else None
+    )
+
     is_golden_image = False
     # For golden images; images are created once per module in
     # golden images namepace and cloned when using common templates.
@@ -232,7 +239,7 @@ def data_volume(
         "consume_wffc": consume_wffc,
         "bind_immediate": bind_immediate,
         "preallocation": params_dict.get("preallocation", None),
-        "url": f"{get_images_server_url(schema=source)}{image}",
+        "url": url,
     }
     if params_dict.get("cert_configmap"):
         dv_kwargs["cert_configmap"] = params_dict.get("cert_configmap")
