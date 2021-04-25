@@ -133,7 +133,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
         admin_client,
         hco_namespace,
         vm_placement_vm_work3,
-        hyperconverged_resource,
+        hyperconverged_resource_scope_function,
     ):
         LOGGER.info(
             "Attempting to update HCO with node placement, expecting it to fail"
@@ -142,7 +142,11 @@ class TestDeployCNVOnSubsetOfClusterNodes:
             ForbiddenError, match=r"denied the request:.*while there are running vms"
         ):
             with ResourceEditor(
-                patches={hyperconverged_resource: {"spec": {"workloads": WORK_LABEL_1}}}
+                patches={
+                    hyperconverged_resource_scope_function: {
+                        "spec": {"workloads": WORK_LABEL_1}
+                    }
+                }
             ):
                 pytest.fail("Workloads label changed while VM/Workload is present.")
 

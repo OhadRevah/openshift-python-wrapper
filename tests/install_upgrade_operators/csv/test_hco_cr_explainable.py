@@ -6,7 +6,7 @@ from utilities.virt import run_command
 
 
 @pytest.mark.polarion("CNV-5884")
-def test_hco_cr_explainable(hyperconverged_resource):
+def test_hco_cr_explainable(hyperconverged_resource_scope_function):
     """
     This test case ensure that after executing 'oc explain hyperconvergeds'
     return meaningful information about the HCO CR.

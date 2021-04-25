@@ -69,7 +69,7 @@ class TestRemoveHCO:
         self,
         admin_client,
         delete_events_before_test,
-        hyperconverged_resource,
+        hyperconverged_resource_scope_function,
         remove_hco_vm,
         data_volume_scope_class,
         start_time,
@@ -94,12 +94,12 @@ class TestRemoveHCO:
         """
         LOGGER.info(f"HCO deletion time (UTC): {start_time}")
 
-        hyperconverged_resource.delete()  # (3) delete HCO CR
+        hyperconverged_resource_scope_function.delete()  # (3) delete HCO CR
 
         # (4) Make sure HCO exists, but waiting for deletion
-        metadata = hyperconverged_resource.instance["metadata"]
+        metadata = hyperconverged_resource_scope_function.instance["metadata"]
         assert (
-            hyperconverged_resource.exists
+            hyperconverged_resource_scope_function.exists
             and metadata.get("deletionTimestamp") is not None
             and remove_hco_vm.exists
             and remove_hco_vm.vmi.status == remove_hco_vm.vmi.Status.RUNNING
@@ -117,14 +117,17 @@ class TestRemoveHCO:
     @pytest.mark.run(after="test_block_removal")
     @pytest.mark.polarion("CNV-4044")
     def test_remove_vm(
-        self, remove_hco_vm, hyperconverged_resource, data_volume_scope_class
+        self,
+        remove_hco_vm,
+        hyperconverged_resource_scope_function,
+        data_volume_scope_class,
     ):
         # (6) delete the VM
         remove_hco_vm.delete(wait=True)
 
         # (7) check that HCO still not deleted
         assert (
-            hyperconverged_resource.exists
+            hyperconverged_resource_scope_function.exists
             and not remove_hco_vm.exists
             and data_volume_scope_class.exists
         )
@@ -142,14 +145,19 @@ class TestRemoveHCO:
 
     @pytest.mark.run(after="test_assert_event_dv")
     @pytest.mark.polarion("CNV-4045")
-    def test_remove_dv(self, data_volume_scope_class, hyperconverged_resource):
+    def test_remove_dv(
+        self, data_volume_scope_class, hyperconverged_resource_scope_function
+    ):
         # (8) delete the DV
         data_volume_scope_class.delete(wait=True)
         assert not data_volume_scope_class.exists
 
         # (9) HCO should be deleted now, after the VM and the DV are gone. Just wait for it to happen
-        if hyperconverged_resource is not None and hyperconverged_resource.exists:
-            hyperconverged_resource.wait_deleted()
+        if (
+            hyperconverged_resource_scope_function is not None
+            and hyperconverged_resource_scope_function.exists
+        ):
+            hyperconverged_resource_scope_function.wait_deleted()
 
     # Restore HCO for the next tests
     @pytest.mark.run(after="test_remove_dv")

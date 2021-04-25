@@ -37,10 +37,12 @@ def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
 
 
 @pytest.fixture()
-def updated_configmap_machine_type(request, hyperconverged_resource, kubevirt_config):
+def updated_configmap_machine_type(
+    request, hyperconverged_resource_scope_function, kubevirt_config
+):
     with ResourceEditor(
         patches={
-            hyperconverged_resource: hco_kubevirt_cr_jsonpatch_annotations_dict(
+            hyperconverged_resource_scope_function: hco_kubevirt_cr_jsonpatch_annotations_dict(
                 path="machineType",
                 value=request.param["machine_type"],
             )

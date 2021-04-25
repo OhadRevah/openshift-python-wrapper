@@ -128,7 +128,7 @@ class TestUpgrade:
         self,
         admin_client,
         hco_namespace,
-        hyperconverged_resource,
+        hyperconverged_resource_scope_function,
         network_addons_config,
         hyperconverged_ovs_annotations_enabled_scope_class,
         hyperconverged_ovs_annotations_fetched,

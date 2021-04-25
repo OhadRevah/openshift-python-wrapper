@@ -1979,24 +1979,34 @@ def pyconfig_updated_default_sc(admin_client, default_sc):
                 yield sc
 
 
-@pytest.fixture()
-def hyperconverged_resource(admin_client, hco_namespace):
+def _get_hyperconverged_resource(client, hco_ns_name):
     for hco in HyperConverged.get(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
+        dyn_client=client,
+        namespace=hco_ns_name,
         name="kubevirt-hyperconverged",
     ):
         return hco
+
+
+@pytest.fixture()
+def hyperconverged_resource_scope_function(admin_client, hco_namespace):
+    return _get_hyperconverged_resource(
+        client=admin_client, hco_ns_name=hco_namespace.name
+    )
 
 
 @pytest.fixture(scope="class")
 def hyperconverged_resource_scope_class(admin_client, hco_namespace):
-    for hco in HyperConverged.get(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
-        name="kubevirt-hyperconverged",
-    ):
-        return hco
+    return _get_hyperconverged_resource(
+        client=admin_client, hco_ns_name=hco_namespace.name
+    )
+
+
+@pytest.fixture(scope="module")
+def hyperconverged_resource_scope_module(admin_client, hco_namespace):
+    return _get_hyperconverged_resource(
+        client=admin_client, hco_ns_name=hco_namespace.name
+    )
 
 
 def kubevirt_hyperconverged_spec(admin_client, hco_namespace):
@@ -2060,10 +2070,12 @@ def ovs_daemonset(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def hyperconverged_ovs_annotations_fetched(hyperconverged_resource):
-    return (hyperconverged_resource.instance.to_dict()["metadata"]["annotations"]).get(
-        "deployOVS"
-    )
+def hyperconverged_ovs_annotations_fetched(hyperconverged_resource_scope_function):
+    return (
+        hyperconverged_resource_scope_function.instance.to_dict()["metadata"][
+            "annotations"
+        ]
+    ).get("deployOVS")
 
 
 @pytest.fixture(scope="module")
@@ -2096,13 +2108,13 @@ def skip_test_if_no_ocs_sc(ocs_storage_class):
 def hyperconverged_ovs_annotations_enabled(
     admin_client,
     hco_namespace,
-    hyperconverged_resource,
+    hyperconverged_resource_scope_function,
     network_addons_config,
 ):
     yield from enable_hyperconverged_ovs_annotations(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        hyperconverged_resource=hyperconverged_resource,
+        hyperconverged_resource=hyperconverged_resource_scope_function,
         network_addons_config=network_addons_config,
     )
 

@@ -15,8 +15,8 @@ DELETION_ERROR_MESSAGE = (
 
 
 @pytest.fixture()
-def remove_hyperconverged_resource(hyperconverged_resource):
-    hyperconverged_resource.delete(wait=True, timeout=600)
+def remove_hyperconverged_resource(hyperconverged_resource_scope_function):
+    hyperconverged_resource_scope_function.delete(wait=True, timeout=600)
 
 
 @pytest.mark.install
@@ -24,7 +24,7 @@ class TestRemoveNamespace:
     @pytest.mark.polarion("CNV-5846")
     def test_block_namespace_removal(
         self,
-        hyperconverged_resource,
+        hyperconverged_resource_scope_function,
         hco_namespace,
     ):
         """
@@ -52,7 +52,10 @@ class TestRemoveNamespace:
         assert hco_namespace.exists, "HCO namespace does not exist"
 
         assert (
-            hyperconverged_resource.instance.metadata.get("deletionTimestamp") is None
+            hyperconverged_resource_scope_function.instance.metadata.get(
+                "deletionTimestamp"
+            )
+            is None
         ), "deletionTimestamp is set on HCO namespace"
 
     @pytest.mark.polarion("CNV-5847")

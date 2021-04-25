@@ -311,7 +311,7 @@ def alter_np_configuration(
     request,
     admin_client,
     hco_namespace,
-    hyperconverged_resource,
+    hyperconverged_resource_scope_function,
 ):
     """
     Update HCO CR with infrastructure and workloads spec.
@@ -324,7 +324,7 @@ def alter_np_configuration(
     workloads_placement = request.param.get("workloads")
     yield apply_np_changes(
         admin_client=admin_client,
-        hco=hyperconverged_resource,
+        hco=hyperconverged_resource_scope_function,
         hco_namespace=hco_namespace,
         infra_placement=infra_placement,
         workloads_placement=workloads_placement,
