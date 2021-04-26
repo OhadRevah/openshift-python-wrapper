@@ -190,7 +190,7 @@ def test_dv_delete_from_vm(
             },
             "source": {
                 "http": {
-                    "url": f"{get_images_server_url(schema='http')}{Images.Cirros.DIR} / {Images.Cirros.QCOW2_IMG}"
+                    "url": f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
                 }
             },
         },
