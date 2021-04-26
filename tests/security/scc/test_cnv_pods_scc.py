@@ -53,8 +53,8 @@ def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
     Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined whitelist.
     """
     bugzilla = {
-        "BZ1834839": "cluster-network-addons-operator",
-        "BZ1930439": "hco-operator",
+        "1834839": "cluster-network-addons-operator",
+        "1930439": "hco-operator",
     }
     bugzilla = {
         bug_id: component
