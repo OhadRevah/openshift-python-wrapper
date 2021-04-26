@@ -151,9 +151,6 @@ class TestCommonTemplatesWindows:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.ibm_bare_metal
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-2776")

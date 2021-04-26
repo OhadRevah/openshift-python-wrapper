@@ -88,18 +88,35 @@ def check_telnet_connection(ip, port):
 
 def check_vm_xml_hyperv(vm):
     """ Verify HyperV values in VMI """
+    hyperv_features_list = [
+        "relaxed",
+        "vapic",
+        "spinlocks",
+        "vpindex",
+        "synic",
+    ]
 
     hyperv_features = vm.vmi.xml_dict["domain"]["features"]["hyperv"]
-    assert hyperv_features["relaxed"]["@state"] == "on"
-    assert hyperv_features["vapic"]["@state"] == "on"
-    assert hyperv_features["spinlocks"]["@state"] == "on"
-    assert int(hyperv_features["spinlocks"]["@retries"]) == 8191
-    # The below entries do not appear in Windows hyperV
+    failed_hyeperv_features = [
+        hyperv_features[feature]
+        for feature in hyperv_features_list
+        if hyperv_features[feature]["@state"] != "on"
+    ]
+    spinlocks_retries_value = hyperv_features["spinlocks"]["@retries"]
+    if int(spinlocks_retries_value) != 8191:
+        failed_hyeperv_features.append(spinlocks_retries_value)
+
+    # The below entry does not appear in Windows templates
+    # TODO: Add stimer (and evmcs for fedora and Windows) features once merged
     guest_os_info = get_guest_os_info(vmi=vm.vmi)
-    if "Windows" not in guest_os_info["name"]:
-        assert hyperv_features["stimer"]["@state"] == "on"
-        assert hyperv_features["vpindex"]["@state"] == "on"
-        assert hyperv_features["synic"]["@state"] == "on"
+    stimer_feature = hyperv_features.get("stimer")
+    if "Windows" not in guest_os_info["name"] and stimer_feature["@state"] != "on":
+        failed_hyeperv_features.append(stimer_feature)
+
+    assert not failed_hyeperv_features, (
+        f"The following hyperV flags are not set correctly in VM spec: {failed_hyeperv_features},"
+        f"hyperV features in VM spec: {hyperv_features}"
+    )
 
 
 def check_vm_xml_clock(vm):
@@ -116,6 +133,7 @@ def check_windows_vm_hvinfo(vm):
     """ Verify HyperV values in Windows VMI using hvinfo """
 
     hvinfo_dict = None
+    hyperv_windows_recommendations_list = ["RelaxedTiming", "MSRAPICRegisters"]
 
     sampler = TimeoutSampler(
         wait_timeout=90,
@@ -130,11 +148,24 @@ def check_windows_vm_hvinfo(vm):
             hvinfo_dict = json.loads(output)
             break
 
-    assert hvinfo_dict["HyperVsupport"]
-    recommendations = hvinfo_dict["Recommendations"]
-    assert recommendations["RelaxedTiming"]
-    assert recommendations["MSRAPICRegisters"]
-    assert int(recommendations["SpinlockRetries"]) == 8191
+    vm_recommendations_dict = hvinfo_dict["Recommendations"]
+    failed_windows_hyperv_list = [
+        feature
+        for feature in hyperv_windows_recommendations_list
+        if not vm_recommendations_dict[feature]
+    ]
+
+    if not hvinfo_dict["HyperVsupport"]:
+        failed_windows_hyperv_list.append("HyperVsupport")
+
+    spinlock_retries = vm_recommendations_dict["SpinlockRetries"]
+    if int(spinlock_retries) != 8191:
+        failed_windows_hyperv_list.append("SpinlockRetries")
+
+    assert not failed_windows_hyperv_list, (
+        f"The following hyperV flags are not set correctly in the guest: {failed_windows_hyperv_list},"
+        f"VM hvinfo dict:{hvinfo_dict}"
+    )
 
 
 def set_vm_tablet_device_dict(tablet_params):
