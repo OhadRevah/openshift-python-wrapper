@@ -47,6 +47,12 @@ HYPERV_DICT = {
                             "vpindex": {},
                             "synic": {},
                             "spinlocks": {"spinlocks": 8191},
+                            "frequencies": {},
+                            "ipi": {},
+                            "reenlightenment": {},
+                            "reset": {},
+                            "runtime": {},
+                            "tlbflush": {},
                         },
                     },
                 }

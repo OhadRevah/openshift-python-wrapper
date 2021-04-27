@@ -15,7 +15,7 @@ from tests.compute.utils import (
     validate_libvirt_persistent_domain,
     validate_pause_unpause_windows_vm,
 )
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, ClusterHosts
 from utilities.virt import migrate_and_verify, running_vm
 
 
@@ -160,14 +160,17 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+        workers_type,
     ):
 
         LOGGER.info("Verify VM HyperV values.")
         common_templates_utils.check_vm_xml_hyperv(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
+
         common_templates_utils.check_windows_vm_hvinfo(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
+            bm_workers=workers_type == ClusterHosts.Type.PHYSICAL,
         )
 
     @pytest.mark.dependency(depends=["start_vm"])

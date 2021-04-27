@@ -90,6 +90,7 @@ def check_vm_xml_hyperv(vm):
     """ Verify HyperV values in VMI """
 
     # TODO: Add evmcs for fedora and Windows hyperV features, once merged
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1952551
     hyperv_features_list = [
         "relaxed",
         "vapic",
@@ -97,6 +98,12 @@ def check_vm_xml_hyperv(vm):
         "vpindex",
         "synic",
         "stimer",  # synictimer in VM yaml
+        "frequencies",
+        "ipi",
+        "reenlightenment",
+        "reset",
+        "runtime",
+        "tlbflush",
     ]
 
     hyperv_features = vm.vmi.xml_dict["domain"]["features"]["hyperv"]
@@ -129,11 +136,23 @@ def check_vm_xml_clock(vm):
     ] == "yes"
 
 
-def check_windows_vm_hvinfo(vm):
+def check_windows_vm_hvinfo(vm, bm_workers):
     """ Verify HyperV values in Windows VMI using hvinfo """
 
     hvinfo_dict = None
-    hyperv_windows_recommendations_list = ["RelaxedTiming", "MSRAPICRegisters"]
+    # TODO: Add NestedEVMCS once https://bugzilla.redhat.com/show_bug.cgi?id=1952551 is merged
+    # TODO: once hvinfo is updated, add:
+    # "MSRAccessVPIndex", "MSRAccessSyNICRegs", "frequencies"?, "MSRAccessReenlighenmentCtrls", "runtime"?
+    hyperv_windows_recommendations_list = [
+        "RelaxedTiming",
+        "MSRAPICRegisters",
+        "HypercallRemoteTLBFlush",
+        "SyntheticClusterIPI",
+    ]
+    # HyperV feature which may not necessarily be exposed by a nested environment
+    bm_hyperv_windows_recommendations_list = ["MSRSystemReset"]
+
+    hyperv_windows_features_list = ["TimerFrequenciesQuery"]
 
     sampler = TimeoutSampler(
         wait_timeout=90,
@@ -154,6 +173,24 @@ def check_windows_vm_hvinfo(vm):
         for feature in hyperv_windows_recommendations_list
         if not vm_recommendations_dict[feature]
     ]
+
+    if bm_workers:
+        failed_windows_hyperv_list.append(
+            [
+                feature
+                for feature in bm_hyperv_windows_recommendations_list
+                if not vm_recommendations_dict[feature]
+            ]
+        )
+
+    vm_features_dict = hvinfo_dict["Features"]
+    failed_featues = [
+        feature
+        for feature in hyperv_windows_features_list
+        if not vm_features_dict[feature]
+    ]
+    if failed_featues:
+        failed_windows_hyperv_list.append(failed_featues)
 
     if not hvinfo_dict["HyperVsupport"]:
         failed_windows_hyperv_list.append("HyperVsupport")
