@@ -176,7 +176,6 @@ def generate_cloud_init_data(data):
             str_data += "#cloud-config\n"
 
         for line in generated_data.splitlines():
-            line = line.replace("'", "")
             str_data += f"{line}\n"
         dict_data[section] = str_data
     return dict_data
@@ -549,24 +548,25 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
         cloud_init_volume.setdefault(CLOUD_INIT_NO_CLOUD, {}).setdefault("userData", "")
 
+        # Saving in an intermediate string for readability
+        cloud_init_user_data = cloud_init_volume[CLOUD_INIT_NO_CLOUD]["userData"]
+
         # Add RSA to authorized_keys to enable login using an SSH key
         authorized_key = (
             f"ssh-rsa {private_to_public_key(key=CNV_SSH_KEY_PATH)} root@exec1.rdocloud"
         )
-        cloud_init_volume[CLOUD_INIT_NO_CLOUD][
-            "userData"
-        ] += f"\nssh_authorized_keys:\n [{authorized_key}]"
+        cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key}]"
 
         # Add ssh-rsa to opensshserver.config PubkeyAcceptedKeyTypes - needed when using SSH via paramiko
         # Enable PasswordAuthentication in /etc/ssh/sshd_config
         # Enable SSH service and restart SSH service
         run_cmd_commands = [
             (
-                r"sudo sed -i '/^PubkeyAcceptedKeyTypes/ s/$/,ssh-rsa/' "
+                "sudo sed -i '/^PubkeyAcceptedKeyTypes/ s/$/,ssh-rsa/' "
                 "/etc/crypto-policies/back-ends/opensshserver.config"
             ),
             (
-                r"sudo sed -iE 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' "
+                r"sudo sed -i 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' "
                 "/etc/ssh/sshd_config"
             ),
             "sudo systemctl enable sshd" if self.systemctl_support else "",
@@ -577,9 +577,22 @@ class VirtualMachineForTests(VirtualMachine):
             ),
         ]
 
-        cloud_init_volume[CLOUD_INIT_NO_CLOUD][
-            "userData"
-        ] += f"\nruncmd: {run_cmd_commands}"
+        run_ssh_generated_data = generate_cloud_init_data(
+            data={"runcmd": run_cmd_commands}
+        )
+
+        # If runcmd already exists in userData, add run_cmd_commands before any other command
+        runcmd_prefix = "runcmd:"
+        if runcmd_prefix in cloud_init_user_data:
+            cloud_init_user_data = re.sub(
+                runcmd_prefix,
+                f"{runcmd_prefix}\n{run_ssh_generated_data['runcmd']}",
+                cloud_init_user_data,
+            )
+        else:
+            cloud_init_user_data += f"\nruncmd: {run_cmd_commands}"
+
+        cloud_init_volume[CLOUD_INIT_NO_CLOUD]["userData"] = cloud_init_user_data
 
         return spec
 
