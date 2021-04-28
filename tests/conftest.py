@@ -2208,9 +2208,10 @@ def cluster_sanity(request, nodes, cnv_pods, cluster_storage_classes):
         sc_names = [sc.name for sc in cluster_storage_classes]
         config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
         exists_sc = [scn for scn in config_sc if scn in sc_names]
-        assert len(config_sc) == len(
-            exists_sc
-        ), f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}"
+        assert len(config_sc) == len(exists_sc), (
+            f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
+            "either run with '--storage-class-matrix' or with '--cluster-sanity-skip-storage-check'"
+        )
 
     for node in nodes:
         node_name = node.name
