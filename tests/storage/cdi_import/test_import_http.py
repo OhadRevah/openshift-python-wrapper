@@ -369,18 +369,6 @@ def test_wrong_content_type(
     ("dv_name", "file_name", "error_message"),
     [
         pytest.param(
-            "large-size",
-            "invalid-qcow-large-size.img",
-            ErrorMsg.INVALID_FORMAT_FOR_QCOW,
-            marks=(
-                pytest.mark.polarion("CNV-2553"),
-                pytest.mark.bugzilla(
-                    1827793,
-                    skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                ),
-            ),
-        ),
-        pytest.param(
             "large-json",
             "invalid-qcow-large-json.img",
             ErrorMsg.REQUESTED_RANGE_NOT_SATISFIABLE,
