@@ -179,6 +179,7 @@ def updated_hpp_with_node_placement(
             yield updated_resource
 
 
+@pytest.mark.destructive
 @pytest.mark.parametrize(
     ("updated_hpp_with_node_placement", "hyperconverged_with_node_placement"),
     [
