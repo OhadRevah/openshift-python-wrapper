@@ -145,7 +145,6 @@ def verify_reconciled_rolebinding_or_clusterrolebinding_resource(
 
 
 def verify_reconciled_configmap_resource(resource, resource_dict):
-    original_resource_dict = resource.instance.to_dict()
     updated_and_reconciled_resource = update_resource_and_prepare_sampler(
         resource=resource, resource_dict=resource_dict
     )
@@ -154,19 +153,18 @@ def verify_reconciled_configmap_resource(resource, resource_dict):
         for sample in updated_and_reconciled_resource["samples"]:
             sample_data = sample.get("data")
             entity.append(sample_data)
-            if original_resource_dict["data"]["ca-bundle"] == sample_data["ca-bundle"]:
+            if CM_DATA["ca-bundle"] != sample_data["ca-bundle"]:
                 break
     except TimeoutExpiredError:
         restore_and_log_error(
             resource=resource,
             updated_resource=updated_and_reconciled_resource["updated_resource"],
-            expected_value=original_resource_dict["data"]["ca-bundle"],
+            expected_value="Expecting ca-bundle, after reconcile",
             actual_value=entity[-1]["ca-bundle"],
         )
 
 
 def verify_reconciled_secret_resource(resource, resource_dict):
-    original_resource_dict = resource.instance.to_dict()
     updated_and_reconciled_resource = update_resource_and_prepare_sampler(
         resource=resource, resource_dict=resource_dict
     )
@@ -175,13 +173,13 @@ def verify_reconciled_secret_resource(resource, resource_dict):
         for sample in updated_and_reconciled_resource["samples"]:
             sample_data = sample.get("data")
             entity.append(sample_data)
-            if original_resource_dict["data"]["tls.crt"] == sample_data["tls.crt"]:
+            if SECRET_DATA["tls.crt"] != sample_data["tls.crt"]:
                 break
     except TimeoutExpiredError:
         restore_and_log_error(
             resource=resource,
             updated_resource=updated_and_reconciled_resource["updated_resource"],
-            expected_value=original_resource_dict["data"]["tls.crt"],
+            expected_value="Expecting tls.crt in base64 format, after reconcile",
             actual_value=entity[-1]["tls.crt"],
         )
 
