@@ -154,3 +154,18 @@ def hco_with_non_default_feature_gates(request, hyperconverged_resource_scope_fu
         }
     ):
         yield
+
+
+@pytest.fixture()
+def cr_func_map(
+    hyperconverged_resource_scope_function,
+    kubevirt_hyperconverged_spec_scope_function,
+    cdi_spec,
+    network_addons_config,
+):
+    yield {
+        "hco": hyperconverged_resource_scope_function.instance.to_dict()["spec"],
+        "kubevirt": kubevirt_hyperconverged_spec_scope_function,
+        "cdi": cdi_spec,
+        "cnao": network_addons_config.instance.to_dict(),
+    }

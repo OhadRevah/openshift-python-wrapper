@@ -18,7 +18,6 @@ CERTC_CUSTOM_18H = "18h0m0s"
 
 FG_SRIOVLIVEMIGRATION_DEFAULT = False
 FG_WITHHOSTPASSTHROUGHCPU_DEFAULT = False
-
 LM_BANDWIDTHPERMIGRATION_DEFAULT = "64Mi"
 LM_COMPLETIONTIMEOUTPERGIB_DEFAULT = 800
 LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT = 5
@@ -171,3 +170,21 @@ HCO_CR_FIELDS = ["certConfig", "liveMigrationConfig", "featureGates"]
 KUBEVIRT_FIELDS = ["certificateRotateStrategy", "migrations", "configuration"]
 CDI_FIELDS = ["certConfig"]
 CNAO_FIELDS = ["selfSignConfiguration"]
+
+# hardcoded featuregates
+EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
+    "DataVolumes",
+    "SRIOV",
+    "LiveMigration",
+    "CPUManager",
+    "CPUNodeDiscovery",
+    "Snapshot",
+    "HotplugVolumes",
+    "GPU",
+    "HostDevices",
+    "WithHostModelCPU",
+    "HypervStrictCheck",
+]
+EXPECTED_CDI_HARDCODED_FEATUREGATES = [
+    "HonorWaitForFirstConsumer",
+]

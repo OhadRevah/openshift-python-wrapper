@@ -4,6 +4,7 @@ import logging
 from dictdiffer import diff
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
     get_hyperconverged_kubevirt,
@@ -170,3 +171,27 @@ def wait_for_spec_change(expected, get_spec_func, keys):
             f" spec: '{expected}' diff:'{diff_result}'"
         )
         raise
+
+
+def compare_expected_with_cr(expected, actual):
+    return list(
+        filter(
+            # filtering out the "add" verb - it contains additional keys that do not exist in the expected dict, and are
+            # other fields in the spec that are not tested and irrelevant to this test
+            lambda diff_result_item: diff_result_item[0] != "add",
+            list(diff(expected, actual)),
+        )
+    )
+
+
+def expected_certconfig_stanza():
+    return {
+        "ca": {
+            "duration": constants.CERTC_DEFAULT_48H,
+            "renewBefore": constants.CERTC_DEFAULT_24H,
+        },
+        "server": {
+            "duration": constants.CERTC_DEFAULT_24H,
+            "renewBefore": constants.CERTC_DEFAULT_12H,
+        },
+    }
