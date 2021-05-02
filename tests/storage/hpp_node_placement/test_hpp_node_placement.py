@@ -25,9 +25,6 @@ from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests
 
 
-pytestmark = pytest.mark.post_upgrade
-
-
 HPP_KEY = "hpp-key"
 HPP_VAL = "hpp-val1"
 
@@ -221,6 +218,7 @@ def test_create_dv_on_right_node_with_node_placement(
         assert vm.vmi.node.name == worker_node1.name
 
 
+@pytest.mark.post_upgrade
 @pytest.mark.parametrize(
     ("updated_hpp_with_node_placement"),
     [
@@ -257,6 +255,7 @@ def test_create_vm_on_node_without_hpp_pod_and_after_update(
         )
 
 
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5601")
 def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same_node(
     hostpath_provisioner,
@@ -281,6 +280,7 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
             check_disk_count_in_vm(vm=vm)
 
 
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5616")
 def test_pv_stay_released_after_deleted_when_no_hpp_pod(
     hostpath_provisioner,
