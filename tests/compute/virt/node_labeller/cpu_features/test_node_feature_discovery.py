@@ -116,7 +116,7 @@ def test_min_cpus_in_node_labels(nodes_labels_dict, libvirt_min_cpu_features_lis
 
 
 @pytest.mark.polarion("CNV-3607")
-def test_kvm_info_nfd(nodes_labels_dict):
+def test_hardware_required_node_labels(nodes_labels_dict):
     kvm_info_nfd_labels = [
         "vpindex",
         "runtime",
@@ -137,3 +137,23 @@ def test_kvm_info_nfd(nodes_labels_dict):
         dict_key="kvm-info",
     )
     assert any(test_dict.values()), f"KVM info not found in labels\n{test_dict}"
+
+
+@pytest.mark.polarion("CNV-6088")
+def test_hardware_non_required_node_labels(nodes_labels_dict):
+    hw_supported_hyperv_features = [
+        "vapic",
+        "relaxes",
+        "spinlocks",
+        "vendorid",
+        "evmcs",
+    ]
+
+    test_dict = node_label_checker(
+        node_label_dict=nodes_labels_dict,
+        label_list=hw_supported_hyperv_features,
+        dict_key="kvm-info",
+    )
+    assert not any(
+        test_dict.values()
+    ), f"Some nodes have non required KVM labels: {test_dict}"
