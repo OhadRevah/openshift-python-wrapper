@@ -256,7 +256,7 @@ class TestCommonTemplatesRhel:
     def test_migrate_vm(
         self,
         skip_upstream,
-        skip_access_mode_rwo_scope_function,
+        skip_access_mode_rwo_scope_class,
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
@@ -278,7 +278,7 @@ class TestCommonTemplatesRhel:
     def test_pause_unpause_after_migrate(
         self,
         skip_upstream,
-        skip_access_mode_rwo_scope_function,
+        skip_access_mode_rwo_scope_class,
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,

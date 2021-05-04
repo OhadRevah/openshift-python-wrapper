@@ -292,7 +292,7 @@ class TestCommonTemplatesFedora:
     def test_migrate_vm(
         self,
         skip_upstream,
-        skip_access_mode_rwo_scope_function,
+        skip_access_mode_rwo_scope_class,
         namespace,
         fedora_os_matrix__class__,
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
@@ -313,7 +313,7 @@ class TestCommonTemplatesFedora:
     def test_pause_unpause_after_migrate(
         self,
         skip_upstream,
-        skip_access_mode_rwo_scope_function,
+        skip_access_mode_rwo_scope_class,
         namespace,
         fedora_os_matrix__class__,
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
