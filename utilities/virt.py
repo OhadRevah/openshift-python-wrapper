@@ -1212,19 +1212,23 @@ def vm_console_run_commands(
                 vmc.expect(".*")
 
 
-def run_command(command, verify_stderr=True):
+def run_command(command, verify_stderr=True, shell=False):
     """
     Run command locally.
 
     Args:
-        command (list): Command to run.
-        verify_stderr (bool): Check command stderr.
+        command (list): Command to run
+        verify_stderr (bool, default True): Check command stderr
+        shell (bool, default False): run subprocess with shell toggle
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
     sub_process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=shell,
     )
     out, err = sub_process.communicate()
     out_decoded = out.decode("utf-8")
@@ -1235,7 +1239,7 @@ def run_command(command, verify_stderr=True):
         return False, out_decoded, err_decoded
 
     # From this point and onwards we are guaranteed that sub_process.returncode == 0
-    if err and verify_stderr:
+    if err_decoded and verify_stderr:
         LOGGER.error(f"Failed to run {command}. error: {err_decoded}")
         return False, out_decoded, err_decoded
 
