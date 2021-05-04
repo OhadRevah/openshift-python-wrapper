@@ -4,10 +4,7 @@ Test node feature discovery.
 from xml.etree import ElementTree
 
 import pytest
-import yaml
-from ocp_resources.configmap import ConfigMap
 from ocp_resources.pod import Pod
-from pytest_testconfig import config as py_config
 
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -28,47 +25,26 @@ def nodes_labels_dict(nodes):
         node_labels_dict[node.name] = {}
         labels_dict = dict(node.instance.metadata.labels)
         node_labels_dict[node.name]["cpu_models"] = [
-            label.split("cpu-model-")[1]
+            label.split("/")[1]
             for label in labels_dict
-            if "feature.node.kubernetes.io/cpu-model-" in label
+            if label.startswith("cpu-model.node.kubevirt.io/")
         ]
         node_labels_dict[node.name]["cpu_features"] = [
-            label.split("cpu-feature-")[1]
+            label.split("/")[1]
             for label in labels_dict
-            if "feature.node.kubernetes.io/cpu-feature-" in label
+            if label.startswith("cpu-feature.node.kubevirt.io/")
         ]
         node_labels_dict[node.name]["kvm-info"] = [
-            label.split("kvm-info-cap-hyperv-")[1]
+            label.split("/")[1]
             for label in labels_dict
-            if "feature.node.kubernetes.io/kvm-info-cap-hyperv-" in label
+            if label.startswith("hyperv.node.kubevirt.io/")
         ]
 
     return node_labels_dict
 
 
-@pytest.fixture(scope="module")
-def config_map_cpu_model_dict():
-    """
-    Extract CPU obsolete models and minimal CPU model from config map.
-    Return dict:
-    {'obsoleteCPUs': [<cpu_models>], 'minCPU': '<cpu_model>'}
-    """
-    cpu_plugin_map = ConfigMap(
-        name="kubevirt-cpu-plugin-configmap", namespace=py_config["hco_namespace"]
-    )
-
-    return yaml.safe_load(
-        cpu_plugin_map.instance.data["cpu-plugin-configmap.yaml"],
-    )
-
-
-@pytest.fixture(scope="module")
-def obsolete_cpus_list(config_map_cpu_model_dict):
-    return config_map_cpu_model_dict["obsoleteCPUs"]
-
-
 @pytest.fixture()
-def libvirt_min_cpu_features_list(config_map_cpu_model_dict, cpu_test_vm, admin_client):
+def libvirt_min_cpu_features_list(kubevirt_config, cpu_test_vm, admin_client):
     """
     Extract minimal CPU model features from libvirt/cpu_map xml.
     """
@@ -78,7 +54,7 @@ def libvirt_min_cpu_features_list(config_map_cpu_model_dict, cpu_test_vm, admin_
     stdout = exec_pod.execute(
         command=[
             "cat",
-            f"/usr/share/libvirt/cpu_map/x86_{config_map_cpu_model_dict['minCPU']}.xml",
+            f"/usr/share/libvirt/cpu_map/x86_{kubevirt_config['minCPU']}.xml",
         ]
     )
     tree = ElementTree.fromstring(stdout)
@@ -113,18 +89,19 @@ def node_label_checker(node_label_dict, label_list, dict_key):
 
 
 @pytest.mark.polarion("CNV-2797")
-def test_obsolete_cpus_in_node_labels(nodes_labels_dict, obsolete_cpus_list):
+def test_obsolete_cpus_in_node_labels(nodes_labels_dict, kubevirt_config):
     """
     Test obsolete CPUs. Obsolete CPUs don't appear in node labels.
     """
     test_dict = node_label_checker(
         node_label_dict=nodes_labels_dict,
-        label_list=obsolete_cpus_list,
+        label_list=kubevirt_config["obsoleteCPUModels"],
         dict_key="cpu_models",
     )
     assert not any(test_dict.values()), f"Obsolete CPU found in labels\n{test_dict}"
 
 
+@pytest.mark.jira("CNV-11962", run=False)
 @pytest.mark.polarion("CNV-2798")
 def test_min_cpus_in_node_labels(nodes_labels_dict, libvirt_min_cpu_features_list):
     """

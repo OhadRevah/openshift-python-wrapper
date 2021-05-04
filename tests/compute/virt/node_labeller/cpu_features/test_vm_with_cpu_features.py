@@ -2,8 +2,6 @@
 VM with CPU features
 """
 import pytest
-from ocp_resources.node import Node
-from ocp_resources.utils import TimeoutExpiredError
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from utilities.virt import (
@@ -42,20 +40,6 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
     ) as vm:
         running_vm(vm=vm)
         yield vm
-
-
-@pytest.mark.polarion("CNV-3473")
-def test_vm_with_cpu_feature_required_not_schedulable(
-    nodes_with_no_pciid_label,
-    cpu_features_vm_require_pcid,
-):
-    """
-    Negative test:
-    Test VM with required cpu type, no node available.
-    VM should not be able to get scheduled in this case.
-    """
-    with pytest.raises(TimeoutExpiredError):
-        cpu_features_vm_require_pcid.vmi.wait_until_running(timeout=120)
 
 
 @pytest.fixture(
@@ -128,46 +112,3 @@ def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace, fea
             client=unprivileged_client,
         ):
             pytest.fail("VM was created with an invalid cpu feature policy.")
-
-
-@pytest.fixture()
-def cpu_features_vm_require_pcid(namespace, unprivileged_client):
-    name = "vm-cpu-features-require"
-    with VirtualMachineForTests(
-        name=name,
-        namespace=namespace.name,
-        cpu_flags={"features": [{"name": "pcid", "policy": "require"}]},
-        body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
-        client=unprivileged_client,
-    ) as vm:
-        vm.start()
-        yield vm
-
-
-@pytest.fixture()
-def nodes_with_no_pciid_label(admin_client):
-    nodes_with_cpu_feature = Node.get(
-        dyn_client=admin_client,
-        label_selector="feature.node.kubernetes.io/cpu-feature-pcid=true",
-    )
-
-    nodes_to_restore = []
-    try:
-        for node in nodes_with_cpu_feature:
-            node_dict = node.instance.to_dict()
-            node_dict["metadata"]["labels"][
-                "feature.node.kubernetes.io/cpu-feature-pcid"
-            ] = "false"
-            node.update(node_dict)
-
-            nodes_to_restore.append(node.name)
-        yield
-    finally:
-        for node_name in nodes_to_restore:
-            node = Node(name=node_name)
-            to_restore = node.instance.to_dict()
-            to_restore["metadata"]["labels"][
-                "feature.node.kubernetes.io/cpu-feature-pcid"
-            ] = "true"
-            node.update(to_restore)
