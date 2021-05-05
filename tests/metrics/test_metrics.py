@@ -3,12 +3,7 @@ from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachineInstance
 
 from tests.compute.utils import vm_started
-from utilities.virt import LOGGER, Prometheus, VirtualMachineForTests, fedora_vm_body
-
-
-@pytest.fixture(scope="class")
-def prometheus():
-    return Prometheus()
+from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="class")
