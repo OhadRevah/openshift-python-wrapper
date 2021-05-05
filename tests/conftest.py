@@ -1979,7 +1979,7 @@ def pyconfig_updated_default_sc(admin_client, default_sc):
                 yield sc
 
 
-def _get_hyperconverged_resource(client, hco_ns_name):
+def get_hyperconverged_resource(client, hco_ns_name):
     for hco in HyperConverged.get(
         dyn_client=client,
         namespace=hco_ns_name,
@@ -1990,21 +1990,21 @@ def _get_hyperconverged_resource(client, hco_ns_name):
 
 @pytest.fixture()
 def hyperconverged_resource_scope_function(admin_client, hco_namespace):
-    return _get_hyperconverged_resource(
+    return get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     )
 
 
 @pytest.fixture(scope="class")
 def hyperconverged_resource_scope_class(admin_client, hco_namespace):
-    return _get_hyperconverged_resource(
+    return get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     )
 
 
 @pytest.fixture(scope="module")
 def hyperconverged_resource_scope_module(admin_client, hco_namespace):
-    return _get_hyperconverged_resource(
+    return get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     )
 
