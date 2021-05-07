@@ -63,7 +63,6 @@ from utilities.infra import BUG_STATUS_CLOSED
                 ("spec",),
                 ("metadata", "uid"),
                 ("metadata", "name"),
-                ("metadata", "selfLink"),
             ),
             marks=(pytest.mark.polarion("CNV-3373")),
             id="test_cdi_config_resources",
