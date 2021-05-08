@@ -321,6 +321,30 @@ def check_cdi_feature_gate_enabled(feature):
 
 
 @contextmanager
+def virtctl_volume(
+    action,
+    namespace,
+    vm_name,
+    volume_name,
+    serial=None,
+    persist=None,
+):
+    operation = {"add": "addvolume"}
+    volume_operation = operation[action]
+    command = [
+        f"{volume_operation}",
+        f"{vm_name}",
+        f"--volume-name={volume_name}",
+    ]
+    if serial:
+        command.append(f"--serial={serial}")
+    if persist:
+        command.append("--persist")
+
+    yield run_virtctl_command(command=command, namespace=namespace)
+
+
+@contextmanager
 def virtctl_upload_dv(
     namespace,
     name,
