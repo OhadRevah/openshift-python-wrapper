@@ -7,6 +7,7 @@ from kubernetes.client.rest import ApiException
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import utilities.storage
@@ -32,24 +33,39 @@ REGISTRY_TLS_SELF_SIGNED_SERVER = py_config["servers"]["registry_server"]
 
 
 @pytest.fixture()
-def disable_tls_registry(configmap_with_cert):
+def insecure_registry(
+    request, hyperconverged_resource_scope_function, cdi_config, configmap_with_cert
+):
     """
     To disable TLS security for a registry
     """
-    cdi_insecure_registries = ConfigMap(
-        name="cdi-insecure-registries", namespace=py_config["hco_namespace"]
-    )
-    ResourceEditor(
-        {
-            cdi_insecure_registries: {
-                "data": {
-                    py_config["servers"][
-                        "registry_cert"
-                    ]: f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443",
+    registry_server = request.param["server"].replace("docker://", "")
+
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_function: {
+                "spec": {
+                    "storageImport": {
+                        "insecureRegistries": [
+                            *cdi_config.instance.to_dict()
+                            .get("spec", {})
+                            .get("insecureRegistries", []),
+                            registry_server,
+                        ]
+                    }
                 }
             }
-        }
-    ).update()
+        },
+    ):
+        for sample in TimeoutSampler(
+            wait_timeout=20,
+            sleep=1,
+            func=lambda: registry_server
+            in cdi_config.instance["spec"].get("insecureRegistries", []),
+        ):
+            if sample:
+                break
+        yield
 
 
 @pytest.fixture()
@@ -216,24 +232,23 @@ def test_public_registry_multiple_data_volume(
             rcs.delete(wait=True)
 
 
+@pytest.mark.parametrize(
+    "insecure_registry",
+    [
+        pytest.param(
+            {"server": f"{py_config['servers']['registry_server']}:5000"},
+        ),
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-2183")
 def test_private_registry_insecured_configmap(
     skip_upstream,
+    insecure_registry,
     namespace,
     images_private_registry_server,
     storage_class_matrix__function__,
 ):
-    server = images_private_registry_server.replace("docker://", "")
-    cm = ConfigMap(
-        namespace=py_config["hco_namespace"], name="cdi-insecure-registries", data=None
-    )
-
-    cm.update(
-        resource_dict={
-            "data": {"mykey": f"{server}:5000"},
-            "metadata": {"name": "cdi-insecure-registries"},
-        }
-    )
     with utilities.storage.create_dv(
         source="registry",
         dv_name="import-private-insecured-registry",
@@ -436,11 +451,20 @@ def test_public_registry_data_volume_archive(
             return
 
 
+@pytest.mark.parametrize(
+    "insecure_registry",
+    [
+        pytest.param(
+            {"server": f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443"},
+        ),
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-2347")
 def test_fqdn_name(
     namespace,
     configmap_with_cert,
-    disable_tls_registry,
+    insecure_registry,
     storage_class_matrix__function__,
 ):
     """
