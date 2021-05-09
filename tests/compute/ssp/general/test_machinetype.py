@@ -43,6 +43,7 @@ def updated_configmap_machine_type(
     with ResourceEditor(
         patches={
             hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
+                component="kubevirt",
                 path="machineType",
                 value=request.param["machine_type"],
             )
