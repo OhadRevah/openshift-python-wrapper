@@ -145,6 +145,9 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
+    @pytest.mark.bugzilla(
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5347")
     def test_virtctl_guest_agent_os_info(
@@ -178,6 +181,9 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
+    @pytest.mark.bugzilla(
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5349")
     def test_virtctl_guest_agent_user_info(

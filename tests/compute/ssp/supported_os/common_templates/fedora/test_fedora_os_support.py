@@ -213,6 +213,9 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.bugzilla(
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3573")
     def test_virtctl_guest_agent_os_info(
@@ -242,6 +245,9 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.bugzilla(
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4549")
     def test_virtctl_guest_agent_user_info(
