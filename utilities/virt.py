@@ -33,6 +33,7 @@ from utilities.constants import (
     CLOUD_INIT_NO_CLOUD,
     CNV_SSH_KEY_PATH,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+    OS_FLAVOR_CIRROS,
     OS_FLAVOR_FEDORA,
     OS_FLAVOR_WINDOWS,
     OS_LOGIN_PARAMS,
@@ -74,6 +75,7 @@ RHEL_CLOUD_INIT_PASSWORD = {
         "chpasswd": "{ expire: False }",
     }
 }
+FLAVORS_EXCLUDED_FROM_CLOUD_INIT = (OS_FLAVOR_WINDOWS, OS_FLAVOR_CIRROS)
 
 
 def wait_for_guest_agent(vmi, timeout=720):
@@ -423,7 +425,7 @@ class VirtualMachineForTests(VirtualMachine):
             spec = self.update_vm_cloud_init_data(spec=spec)
 
         # VMs do not necessarily have self.cloud_init_data
-        if self.ssh and OS_FLAVOR_WINDOWS not in self.os_flavor:
+        if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
             spec = self.enable_ssh_in_cloud_init_data(spec=spec)
 
         if self.smm_enabled is not None:
@@ -800,8 +802,8 @@ class VirtualMachineForTests(VirtualMachine):
         )
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip()))
         # For SSH using a key, the public key needs to reside on the server.
-        # As the tests use a given key, this cannot be done in Windows.
-        if OS_FLAVOR_WINDOWS in self.os_flavor:
+        # As the tests use a given set of credentials, this cannot be done in Windows/Cirros.
+        if self.os_flavor in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
             host_user = rrmngmnt.user.User(name=self.username, password=self.password)
         else:
             host_user = rrmngmnt.user.UserWithPKey(

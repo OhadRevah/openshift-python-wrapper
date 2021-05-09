@@ -14,6 +14,7 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from tests.conftest import UNPRIVILEGED_USER
 from tests.storage.utils import set_permissions
 from utilities import console
+from utilities.constants import OS_FLAVOR_CIRROS
 from utilities.infra import Images
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests
@@ -46,6 +47,7 @@ def cirros_vm(
         client=admin_client,
         name=request.param["vm_name"],
         namespace=dv_metadata["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv_metadata, "spec": dv["spec"]},
     ) as vm:

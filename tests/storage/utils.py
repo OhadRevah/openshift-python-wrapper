@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import shlex
 from contextlib import contextmanager
 
 import requests
@@ -19,11 +20,12 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
-from utilities import console
-from utilities.infra import Images, get_cert
+from utilities.constants import OS_FLAVOR_CIRROS
+from utilities.infra import Images, get_cert, run_ssh_commands
 from utilities.storage import create_dv
 from utilities.virt import (
     VirtualMachineForTests,
+    running_vm,
     validate_vmi_ga_info_vs_windows_os_info,
     wait_for_windows_vm,
 )
@@ -91,12 +93,12 @@ def upload_token_request(storage_ns_name, pvc_name, data):
 
 
 def check_disk_count_in_vm(vm):
-    with console.Cirros(vm=vm) as vm_console:
-        LOGGER.info("Check disk count.")
-        vm_console.sendline("lsblk | grep disk | wc -l")
-        vm_console.expect(
-            str(len(vm.instance.spec.template.spec.domain.devices.disks)), timeout=60
-        )
+    LOGGER.info("Check disk count.")
+    cmd = shlex.split("lsblk | grep disk | wc -l")
+    out = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0].strip()
+    assert out == str(
+        len(vm.instance.spec.template.spec.domain.devices.disks)
+    ), "Failed to verify actual disk count against VMI"
 
 
 @contextmanager
@@ -105,6 +107,7 @@ def create_vm_from_dv(
     vm_name="cirros-vm",
     image=None,
     start=True,
+    os_flavor=OS_FLAVOR_CIRROS,
     node_selector=None,
     memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
 ):
@@ -115,10 +118,10 @@ def create_vm_from_dv(
         image=image,
         node_selector=node_selector,
         memory_requests=memory_requests,
+        os_flavor=os_flavor,
     ) as vm:
         if start:
-            vm.start(wait=True)
-            vm.vmi.wait_until_running(timeout=300)
+            running_vm(vm=vm, wait_for_interfaces=False)
         yield vm
 
 

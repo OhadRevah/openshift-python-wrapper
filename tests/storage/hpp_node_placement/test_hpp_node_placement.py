@@ -19,10 +19,11 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import check_disk_count_in_vm
+from utilities.constants import OS_FLAVOR_CIRROS
 from utilities.hco import add_labels_to_nodes
 from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import get_images_server_url
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 HPP_KEY = "hpp-key"
@@ -133,6 +134,7 @@ def cirros_vm_on_hpp(
         client=client,
         name=vm_name,
         namespace=dv_metadata["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv_metadata, "spec": dv["spec"]},
         node_selector=node,
@@ -213,7 +215,7 @@ def test_create_dv_on_right_node_with_node_placement(
         namespace=namespace,
         wait_for_deletion=True,
     ) as vm:
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, wait_for_interfaces=False)
         # The VM should be created on the node that have the node labels
         assert vm.vmi.node.name == worker_node1.name
 
@@ -271,7 +273,7 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
         namespace=namespace,
         node=worker_node2.name,
     ) as vm:
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, wait_for_interfaces=False)
         check_disk_count_in_vm(vm=vm)
         with ResourceEditor(
             patches={hostpath_provisioner: HPP_NODE_PLACEMENT_DICT["node_selector"]}
@@ -298,7 +300,7 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
         namespace=namespace,
         node=worker_node2.name,
     ) as vm:
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, wait_for_interfaces=False)
         pvc_list = list(
             PersistentVolumeClaim.get(
                 dyn_client=admin_client,

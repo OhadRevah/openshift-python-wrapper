@@ -21,7 +21,7 @@ from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
 from utilities import console
-from utilities.constants import TIMEOUT_4MIN
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_4MIN
 from utilities.infra import NON_EXIST_URL, Images
 from utilities.storage import ErrorMsg, PodWithPVC, create_dummy_first_consumer_pod
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
@@ -762,6 +762,7 @@ def test_vm_from_dv_on_different_node(
     with utils.create_vm_from_dv(
         dv=data_volume_multi_storage_scope_function,
         vm_name=Images.Rhel.RHEL8_2_IMG,
+        os_flavor=OS_FLAVOR_RHEL,
         node_selector=nodes[0].name,
     ) as vm_dv:
         assert vm_dv.vmi.node.name != importer_node_name

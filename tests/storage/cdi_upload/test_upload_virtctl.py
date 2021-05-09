@@ -15,6 +15,7 @@ from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
 from utilities import console
+from utilities.constants import OS_FLAVOR_CIRROS
 from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import (
     ErrorMsg,
@@ -324,6 +325,7 @@ def test_virtctl_image_upload_with_exist_pvc(
         with VirtualMachineForTests(
             name="cnv-3727-vm",
             namespace=empty_pvc.namespace,
+            os_flavor=OS_FLAVOR_CIRROS,
             memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             pvc=empty_pvc,
         ) as vm:

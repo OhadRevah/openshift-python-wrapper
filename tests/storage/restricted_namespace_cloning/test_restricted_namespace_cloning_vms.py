@@ -21,6 +21,7 @@ from tests.storage.utils import (
     set_permissions,
     storage_params,
 )
+from utilities.constants import OS_FLAVOR_CIRROS
 from utilities.infra import Images
 from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
 from utilities.virt import VirtualMachineForTests
@@ -132,6 +133,7 @@ def test_create_vm_with_cloned_data_volume_positive(
             with VirtualMachineForTests(
                 name="vm-for-test",
                 namespace=dst_ns.name,
+                os_flavor=OS_FLAVOR_CIRROS,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
                 memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
@@ -190,6 +192,7 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
                 with VirtualMachineForTests(
                     name="vm-for-test",
                     namespace=dst_ns.name,
+                    os_flavor=OS_FLAVOR_CIRROS,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
                     memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
@@ -245,6 +248,7 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
                 with VirtualMachineForTests(
                     name="vm-for-test",
                     namespace=dst_ns.name,
+                    os_flavor=OS_FLAVOR_CIRROS,
                     service_accounts=[restricted_ns_service_account.name],
                     client=unprivileged_client,
                     memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
@@ -297,6 +301,7 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
             with VirtualMachineForTests(
                 name="vm-for-test",
                 namespace=dst_ns.name,
+                os_flavor=OS_FLAVOR_CIRROS,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
                 memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,

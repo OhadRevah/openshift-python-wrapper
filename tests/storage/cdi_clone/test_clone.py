@@ -12,7 +12,7 @@ from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
 
 from tests.storage import utils
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import (
     create_dv,
@@ -44,6 +44,7 @@ def create_vm_from_clone_dv_template(
     with VirtualMachineForTests(
         name=vm_name,
         namespace=namespace_name,
+        os_flavor=OS_FLAVOR_CIRROS,
         client=client,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template=data_volume_template_dict(
@@ -54,11 +55,7 @@ def create_vm_from_clone_dv_template(
             size=size,
         ),
     ) as vm:
-        running_vm(
-            vm=vm,
-            wait_for_interfaces=False,
-            enable_ssh=False,
-        )
+        running_vm(vm=vm, wait_for_interfaces=False)
         utils.check_disk_count_in_vm(vm=vm)
 
 
@@ -165,6 +162,7 @@ def test_successful_vm_restart_with_cloned_dv(
         cdv.wait(timeout=TIMEOUT_10MIN)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
             vm_dv.restart(timeout=300, wait=True)
+            running_vm(vm=vm_dv, wait_for_interfaces=False)
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 

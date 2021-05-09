@@ -12,7 +12,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
 
 import tests.storage.utils as storage_utils
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
 from utilities.infra import Images, hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
@@ -22,7 +22,7 @@ from utilities.storage import (
     get_images_server_url,
     virtctl_upload_dv,
 )
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -117,6 +117,11 @@ def add_dv_to_vm(vm, dv_name=None, template_dv=None):
             template_dv,
         ]
     ResourceEditor(patches={vm: patch}).update()
+
+
+def _valid_vm_and_disk_count(vm):
+    running_vm(vm=vm, wait_for_interfaces=False)
+    storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.parametrize(
@@ -275,19 +280,16 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
     with VirtualMachineForTests(
         name="cnv-4742-vm",
         namespace=namespace.name,
+        os_flavor=OS_FLAVOR_CIRROS,
         data_volume_template=get_dv_template_dict(dv_name="template-dv"),
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running(timeout=120)
-        storage_utils.check_disk_count_in_vm(vm=vm)
+        _valid_vm_and_disk_count(vm=vm)
         # Add DV
         vm.stop(wait=True)
         add_dv_to_vm(vm=vm, dv_name=data_volume_scope_function.name)
         # Check DV was added
-        vm.start(wait=True)
-        vm.vmi.wait_until_running(timeout=120)
-        storage_utils.check_disk_count_in_vm(vm=vm)
+        _valid_vm_and_disk_count(vm=vm)
 
 
 @pytest.mark.polarion("CNV-4743")
@@ -300,10 +302,9 @@ def test_wffc_vm_with_two_data_volume_templates(
     with VirtualMachineForTests(
         name="cnv-4743-vm",
         namespace=namespace.name,
+        os_flavor=OS_FLAVOR_CIRROS,
         data_volume_template=get_dv_template_dict(dv_name="template-dv-1"),
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
     ) as vm:
         add_dv_to_vm(vm=vm, template_dv=get_dv_template_dict(dv_name="template-dv-2"))
-        vm.start(wait=True)
-        vm.vmi.wait_until_running(timeout=120)
-        storage_utils.check_disk_count_in_vm(vm=vm)
+        _valid_vm_and_disk_count(vm=vm)

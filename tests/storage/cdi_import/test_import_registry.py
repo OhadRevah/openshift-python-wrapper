@@ -14,7 +14,7 @@ import utilities.storage
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests
@@ -210,6 +210,7 @@ def test_public_registry_multiple_data_volume(
             rvm = VirtualMachineForTests(
                 name=vm.name,
                 namespace=namespace.name,
+                os_flavor=OS_FLAVOR_CIRROS,
                 data_volume=vm,
                 memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             )
