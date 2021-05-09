@@ -88,12 +88,15 @@ def check_telnet_connection(ip, port):
 
 def check_vm_xml_hyperv(vm):
     """ Verify HyperV values in VMI """
+
+    # TODO: Add evmcs for fedora and Windows hyperV features, once merged
     hyperv_features_list = [
         "relaxed",
         "vapic",
         "spinlocks",
         "vpindex",
         "synic",
+        "stimer",  # synictimer in VM yaml
     ]
 
     hyperv_features = vm.vmi.xml_dict["domain"]["features"]["hyperv"]
@@ -106,12 +109,9 @@ def check_vm_xml_hyperv(vm):
     if int(spinlocks_retries_value) != 8191:
         failed_hyeperv_features.append(spinlocks_retries_value)
 
-    # The below entry does not appear in Windows templates
-    # TODO: Add stimer (and evmcs for fedora and Windows) features once merged
-    guest_os_info = get_guest_os_info(vmi=vm.vmi)
-    stimer_feature = hyperv_features.get("stimer")
-    if "Windows" not in guest_os_info["name"] and stimer_feature["@state"] != "on":
-        failed_hyeperv_features.append(stimer_feature)
+    stimer_direct_feature = hyperv_features["stimer"]["direct"]
+    if stimer_direct_feature["@state"] != "on":
+        failed_hyeperv_features.append(hyperv_features["stimer"])
 
     assert not failed_hyeperv_features, (
         f"The following hyperV flags are not set correctly in VM spec: {failed_hyeperv_features},"

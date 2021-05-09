@@ -43,7 +43,7 @@ HYPERV_DICT = {
                         "hyperv": {
                             "relaxed": {},
                             "vapic": {},
-                            "synictimer": {},
+                            "synictimer": {"direct": {}},
                             "vpindex": {},
                             "synic": {},
                             "spinlocks": {"spinlocks": 8191},
