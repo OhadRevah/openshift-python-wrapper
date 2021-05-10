@@ -5,8 +5,9 @@ VM with sidecar
 import shlex
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 
-from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
+from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
 from utilities.virt import (
     FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
@@ -15,9 +16,21 @@ from utilities.virt import (
 )
 
 
-pytestmark = pytest.mark.bugzilla(
-    1904132, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
+@pytest.fixture()
+def enabled_sidecar_featuregate(
+    hyperconverged_resource_scope_function, kubevirt_feature_gates
+):
+    kubevirt_feature_gates.append("Sidecar")
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
+                component="kubevirt",
+                path="developerConfiguration/featureGates",
+                value=kubevirt_feature_gates,
+            )
+        },
+    ):
+        yield
 
 
 class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
@@ -38,7 +51,8 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
         res["spec"]["template"]["metadata"].setdefault("annotations", {})
         res["spec"]["template"]["metadata"]["annotations"].update(
             {
-                "hooks.kubevirt.io/hookSidecars": '[{"image": "kubevirt/example-hook-sidecar:v0.13.3"}]',
+                "hooks.kubevirt.io/hookSidecars": '[{"args": ["--version", "v1alpha2"], '
+                '"image": "kubevirt/example-hook-sidecar:latest"}]',
                 "smbios.vm.kubevirt.io/baseBoardManufacturer": "Radical Edward",
             }
         )
@@ -61,7 +75,7 @@ def sidecar_vm(namespace, unprivileged_client):
 
 
 @pytest.mark.polarion("CNV-840")
-def test_vm_with_sidecar_hook(sidecar_vm):
+def test_vm_with_sidecar_hook(enabled_sidecar_featuregate, sidecar_vm):
     """
     Test VM with sidecar hook, Install dmidecode with annotation
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
