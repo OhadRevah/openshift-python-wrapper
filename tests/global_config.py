@@ -367,9 +367,21 @@ fedora_os_matrix = [
             "image_name": Images.Fedora.FEDORA33_IMG,
             "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA33_IMG),
             "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            "latest": True,
             "template_labels": {
                 "os": "fedora33",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "fedora-34": {
+            "image_name": Images.Fedora.FEDORA34_IMG,
+            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA34_IMG),
+            "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
+            "latest": True,
+            "template_labels": {
+                "os": "fedora34",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
