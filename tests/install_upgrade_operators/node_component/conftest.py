@@ -4,7 +4,6 @@ from collections import defaultdict
 import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
@@ -19,7 +18,10 @@ from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,
     SELECTORS,
 )
-from tests.install_upgrade_operators.utils import get_deployment_by_name
+from tests.install_upgrade_operators.utils import (
+    get_deployment_by_name,
+    get_network_addon_config,
+)
 from utilities.constants import TIMEOUT_5MIN
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
 from utilities.virt import (
@@ -156,10 +158,9 @@ def vm_import_controller_spec_nodeselector(admin_client, hco_namespace):
 
 @pytest.fixture()
 def network_addon_config_spec_placement(admin_client):
-    network_addon_config = list(
-        NetworkAddonsConfig.get(dyn_client=admin_client, name="cluster")
-    )
-    return network_addon_config[0].instance.to_dict()["spec"]["placementConfiguration"]
+    return get_network_addon_config(admin_client=admin_client).instance.to_dict()[
+        "spec"
+    ]["placementConfiguration"]
 
 
 @pytest.fixture()

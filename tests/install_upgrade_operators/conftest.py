@@ -4,6 +4,7 @@ from pytest_testconfig import py_config
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
     get_hyperconverged_kubevirt,
+    get_network_addon_config,
 )
 
 
@@ -71,3 +72,13 @@ def cdi_resource(admin_client, hco_namespace):
 @pytest.fixture()
 def cdi_spec(cdi_resource):
     return cdi_resource.instance.to_dict()["spec"]
+
+
+@pytest.fixture()
+def cnao_resource(admin_client):
+    return get_network_addon_config(admin_client=admin_client)
+
+
+@pytest.fixture()
+def cnao_spec(cnao_resource):
+    return cnao_resource.instance.to_dict()["spec"]

@@ -5,6 +5,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
+from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
 from utilities.hco import get_hyperconverged_resource
 
 
@@ -75,6 +76,34 @@ def replace_hco_cr(rpatch, admin_client, hco_namespace):
     )
     reseditor.update(backup_resources=True)
     return reseditor.backups
+
+
+@pytest.fixture()
+def hco_spec(admin_client, hco_namespace):
+    return get_hco_spec(admin_client=admin_client, hco_namespace=hco_namespace)
+
+
+@pytest.fixture()
+def update_cdi_cr(request, cdi_resource):
+    patch = request.param["patch"]
+    with ResourceEditor(patches={cdi_resource: patch}):
+        yield
+
+
+@pytest.fixture()
+def update_kubevirt_cr(request, kubevirt_resource):
+    patch = request.param["patch"]
+
+    with ResourceEditor(patches={kubevirt_resource: patch}):
+        yield
+
+
+@pytest.fixture()
+def update_cnao_cr(request, cnao_resource):
+    patch = request.param["patch"]
+
+    with ResourceEditor(patches={cnao_resource: patch}):
+        yield
 
 
 @pytest.fixture()

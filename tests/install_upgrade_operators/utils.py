@@ -6,6 +6,7 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
@@ -121,3 +122,17 @@ def get_deployment_by_name(admin_client, namespace_name, deployment_name):
         name=deployment_name,
     ):
         return dp
+
+
+def get_network_addon_config(admin_client):
+    """
+    Gets NetworkAddonsConfig object
+
+    Args:
+        admin_client (DynamicClient): a DynamicClient object
+
+    Returns:
+        Generator of NetworkAddonsConfig: Generator of NetworkAddonsConfig
+    """
+    for nao in NetworkAddonsConfig.get(dyn_client=admin_client, name="cluster"):
+        return nao
