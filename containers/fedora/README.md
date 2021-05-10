@@ -76,6 +76,6 @@ docker push quay.io/openshift-cnv/qe-cnv-tests-fedora:$FEDORA_VERSION
 ### Push qcow image to HTTP servers
 Push qcow2 image to EMEA and USA HTTP servers
 ```bash
-scp -i cnv-qe-jenkins.key fedora_build/$FEDORA_IMAGE root@cnv-qe-server.scl.lab.tlv.redhat.com:/var/www/files/cnv-tests/fedora-images/
+scp -i cnv-qe-jenkins.key fedora_build/$FEDORA_IMAGE root@cnv-qe-server.lab.eng.tlv2.redhat.com:/var/www/files/cnv-tests/fedora-images/
 scp -i cnv-qe-jenkins.key fedora_build/$FEDORA_IMAGE root@cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com:/var/www/files/cnv-tests/fedora-images/
 ```
