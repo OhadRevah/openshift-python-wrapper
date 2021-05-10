@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from ocp_resources.node import Node
 from ocp_resources.utils import TimeoutSampler
 
+from tests.compute.utils import fetch_processid_from_linux_vm
 from utilities.infra import run_ssh_commands
 from utilities.virt import kubernetes_taint_exists
 
@@ -60,11 +61,7 @@ def assert_process_not_running(vm, process):
 
 def kill_running_process(vm, process):
     process_name = process.split()[0]
-    output = run_ssh_commands(
-        host=vm.ssh_exec,
-        commands=["bash", "-c", f"/usr/bin/pidof '{process_name}' || true"],
-    )[0]
-    pid = output.strip()
+    pid = fetch_processid_from_linux_vm(vm=vm, process_name=process_name).strip()
     if pid:
         run_ssh_commands(
             host=vm.ssh_exec,

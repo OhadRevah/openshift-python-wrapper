@@ -96,7 +96,10 @@ def start_and_fetch_processid_on_linux_vm(vm, process_name, args=""):
 
 
 def fetch_processid_from_linux_vm(vm, process_name):
-    return run_ssh_commands(host=vm.ssh_exec, commands=["pidof", process_name])[0]
+    return run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=["bash", "-c", f"`which pidof` '{process_name}' || true"],
+    )[0]
 
 
 def validate_pause_unpause_linux_vm(vm, pre_pause_pid=None):
