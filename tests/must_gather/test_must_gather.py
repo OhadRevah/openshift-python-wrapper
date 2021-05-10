@@ -493,12 +493,6 @@ def test_data_collected_from_virt_launcher(
             marks=(pytest.mark.polarion("CNV-2718")),
             id="test_config_map_kubemacpool-mac-range-config",
         ),
-        pytest.param(
-            ["kubemacpool-vm-configmap", py_config["hco_namespace"]],
-            False,
-            marks=(pytest.mark.polarion("CNV-2718")),
-            id="test_config_map_kubemacpool-vm-configmap",
-        ),
     ],
     indirect=["config_map_by_name"],
 )
