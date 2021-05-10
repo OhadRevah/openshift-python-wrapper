@@ -546,10 +546,14 @@ class VirtualMachineForTests(VirtualMachine):
 
     def enable_ssh_in_cloud_init_data(self, spec):
         cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
-        cloud_init_volume.setdefault(CLOUD_INIT_NO_CLOUD, {}).setdefault("userData", "")
+        cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
+
+        cloud_init_volume.setdefault(cloud_init_volume_type, {}).setdefault(
+            "userData", ""
+        )
 
         # Saving in an intermediate string for readability
-        cloud_init_user_data = cloud_init_volume[CLOUD_INIT_NO_CLOUD]["userData"]
+        cloud_init_user_data = cloud_init_volume[cloud_init_volume_type]["userData"]
 
         # Add RSA to authorized_keys to enable login using an SSH key
         authorized_key = (
@@ -592,7 +596,7 @@ class VirtualMachineForTests(VirtualMachine):
         else:
             cloud_init_user_data += f"\nruncmd: {run_cmd_commands}"
 
-        cloud_init_volume[CLOUD_INIT_NO_CLOUD]["userData"] = cloud_init_user_data
+        cloud_init_volume[cloud_init_volume_type]["userData"] = cloud_init_user_data
 
         return spec
 
