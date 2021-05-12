@@ -32,6 +32,9 @@ POD_SCC_WHITELIST = [
     "kubevirt-node-labeller",
 ]
 
+# List of pods with anyuid SCC:
+POD_SCC_ANYUID = ["vm-import-controller"]
+
 
 @pytest.mark.polarion("CNV-4438")
 def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
@@ -73,9 +76,12 @@ def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
         if pod_bug_id:
             LOGGER.info(f"Currently bug {pod_bug_id} for {pod.name}")
             continue
-        if (
-            pod.instance.metadata.annotations.get("openshift.io/scc")
-            not in POD_SCC_WHITELIST
-        ):
-            failed_pods.append(pod.name)
+        pod_annotation = pod.instance.metadata.annotations.get("openshift.io/scc")
+        if pod_annotation not in POD_SCC_WHITELIST:
+            if not (
+                list(filter(pod.name.startswith, POD_SCC_ANYUID))
+                and pod_annotation == "anyuid"
+            ):
+                failed_pods.append(pod.name)
+
     assert not failed_pods, f"Failed pods: {' '.join(failed_pods)}"
