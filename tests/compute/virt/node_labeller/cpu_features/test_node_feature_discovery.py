@@ -5,14 +5,16 @@ from xml.etree import ElementTree
 
 import pytest
 from ocp_resources.pod import Pod
+from ocp_resources.resource import ResourceEditor
 
+from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def nodes_labels_dict(nodes):
     """
     Collects all labels from nodes and creates dict of cpu-models/features/kvm-info per node.
@@ -44,7 +46,7 @@ def nodes_labels_dict(nodes):
 
 
 @pytest.fixture()
-def libvirt_min_cpu_features_list(kubevirt_config, cpu_test_vm, admin_client):
+def libvirt_min_cpu_features_list(cpu_test_vm, admin_client):
     """
     Extract minimal CPU model features from libvirt/cpu_map xml.
     """
@@ -54,7 +56,7 @@ def libvirt_min_cpu_features_list(kubevirt_config, cpu_test_vm, admin_client):
     stdout = exec_pod.execute(
         command=[
             "cat",
-            f"/usr/share/libvirt/cpu_map/x86_{kubevirt_config['minCPU']}.xml",
+            "/usr/share/libvirt/cpu_map/x86_Penryn.xml",
         ]
     )
     tree = ElementTree.fromstring(stdout)
@@ -62,6 +64,22 @@ def libvirt_min_cpu_features_list(kubevirt_config, cpu_test_vm, admin_client):
     return [
         feature.get("name") for feature in tree.findall("model")[0].findall("feature")
     ]
+
+
+@pytest.fixture()
+def updated_kubevirt_cpus(
+    request, hyperconverged_resource_scope_function, nodes_common_cpu_model
+):
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
+                component="kubevirt",
+                path=request.param["cpu_config"],
+                value={nodes_common_cpu_model: True},
+            )
+        },
+    ):
+        yield
 
 
 @pytest.fixture()
@@ -95,13 +113,12 @@ def test_obsolete_cpus_in_node_labels(nodes_labels_dict, kubevirt_config):
     """
     test_dict = node_label_checker(
         node_label_dict=nodes_labels_dict,
-        label_list=kubevirt_config["obsoleteCPUModels"],
+        label_list=kubevirt_config["obsoleteCPUModels"].keys(),
         dict_key="cpu_models",
     )
     assert not any(test_dict.values()), f"Obsolete CPU found in labels\n{test_dict}"
 
 
-@pytest.mark.jira("CNV-11962", run=False)
 @pytest.mark.polarion("CNV-2798")
 def test_min_cpus_in_node_labels(nodes_labels_dict, libvirt_min_cpu_features_list):
     """
@@ -157,3 +174,51 @@ def test_hardware_non_required_node_labels(nodes_labels_dict):
     assert not any(
         test_dict.values()
     ), f"Some nodes have non required KVM labels: {test_dict}"
+
+
+@pytest.mark.parametrize(
+    "updated_kubevirt_cpus",
+    [
+        pytest.param(
+            {"cpu_config": "obsoleteCPUModels"},
+            marks=pytest.mark.polarion("CNV-6103"),
+        )
+    ],
+    indirect=True,
+)
+def test_updated_obsolete_cpus_in_node_labels(
+    updated_kubevirt_cpus, nodes_labels_dict, kubevirt_config
+):
+    """
+    Test user-added obsolete CPU does not appear in node labels.
+    """
+    test_dict = node_label_checker(
+        node_label_dict=nodes_labels_dict,
+        label_list=kubevirt_config["obsoleteCPUModels"].keys(),
+        dict_key="cpu_models",
+    )
+    assert not any(test_dict.values()), f"Obsolete CPU found in labels\n{test_dict}"
+
+
+@pytest.mark.parametrize(
+    "updated_kubevirt_cpus",
+    [
+        pytest.param(
+            {"cpu_config": "minCPU"},
+            marks=pytest.mark.polarion("CNV-6104"),
+        )
+    ],
+    indirect=True,
+)
+def test_updated_min_cpu_in_node_labels(
+    updated_kubevirt_cpus, nodes_labels_dict, libvirt_min_cpu_features_list
+):
+    """
+    Test user-updated minCPU does not appear in node labels.
+    """
+    test_dict = node_label_checker(
+        node_label_dict=nodes_labels_dict,
+        label_list=libvirt_min_cpu_features_list,
+        dict_key="cpu_features",
+    )
+    assert not any(test_dict.values()), f"Min CPU feature found in labels\n{test_dict}"
