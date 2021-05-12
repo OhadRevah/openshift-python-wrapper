@@ -32,6 +32,7 @@ import utilities.network
 from utilities.constants import (
     CLOUD_INIT_DISK_NAME,
     CLOUD_INIT_NO_CLOUD,
+    CLOUND_INIT_CONFIG_DRIVE,
     CNV_SSH_KEY_PATH,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     OS_FLAVOR_CIRROS,
@@ -44,12 +45,12 @@ from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
+    authorized_key,
     camelcase_to_mixedcase,
     get_admin_client,
     get_bug_status,
     get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
-    private_to_public_key,
     run_ssh_commands,
 )
 
@@ -207,6 +208,7 @@ class VirtualMachineForTests(VirtualMachine):
         machine_type=None,
         image=None,
         ssh=True,
+        ssh_secret=None,
         network_model=None,
         network_multiqueue=None,
         pvc=None,
@@ -259,13 +261,14 @@ class VirtualMachineForTests(VirtualMachine):
             machine_type (str, optional)
             image (str, optional)
             ssh (bool, default: True): If True and using "with" (contextmanager) statement, create an SSH service
+            ssh_secret (:obj:,`Secret`, optional): Needs cloud_init_type as cloudInitConfigDrive
             network_model (str, optional)
             network_multiqueue (None/bool, optional, default: None): If not None, set to True/False
             pvc (:obj:`PersistentVolumeClaim`, optional)
             data_volume (:obj:`DataVolume`, optional)
             data_volume_template (dict, optional)
             teardown (bool, default: True)
-            cloud_init_type (str, optional): cloud-init type, for example: cloudInitNoCloud
+            cloud_init_type (str, optional): cloud-init type, for example: cloudInitNoCloud, cloudInitConfigDrive
             attached_secret (dict, optional)
             cpu_placement (bool, default: False): If True, set dedicatedCpuPlacement = True
             smm_enabled (None/bool, optional, default: None): If not None, set to True/False
@@ -310,6 +313,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.machine_type = machine_type
         self.image = image
         self.ssh = ssh
+        self.ssh_secret = ssh_secret
         self.ssh_service = None
         self.custom_service = None
         self.network_model = network_model
@@ -410,7 +414,13 @@ class VirtualMachineForTests(VirtualMachine):
         # VMs do not necessarily have self.cloud_init_data
         # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
         if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
-            spec = self.enable_ssh_in_cloud_init_data(spec=spec)
+            if self.ssh_secret is None:
+                spec = self.enable_ssh_in_cloud_init_data(spec=spec)
+            # NOTE: When using ssh_secret we need cloud_init_type as cloudInitConfigDrive
+            # networkData does not work with cloudInitConfigDrive
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1941470
+            if self.cloud_init_type == CLOUND_INIT_CONFIG_DRIVE and self.ssh_secret:
+                spec = self.update_vm_ssh_secret_configuration(spec=spec)
 
         if self.smm_enabled is not None:
             spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
@@ -558,10 +568,7 @@ class VirtualMachineForTests(VirtualMachine):
             )
 
         # Add RSA to authorized_keys to enable login using an SSH key
-        authorized_key = (
-            f"ssh-rsa {private_to_public_key(key=CNV_SSH_KEY_PATH)} root@exec1.rdocloud"
-        )
-        cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key}]"
+        cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key(private_key_path=CNV_SSH_KEY_PATH)}]"
 
         # Add ssh-rsa to opensshserver.config PubkeyAcceptedKeyTypes - needed when using SSH via paramiko
         # Enable PasswordAuthentication in /etc/ssh/sshd_config
@@ -725,6 +732,17 @@ class VirtualMachineForTests(VirtualMachine):
             }
         )
 
+        return spec
+
+    def update_vm_ssh_secret_configuration(self, spec):
+        spec.setdefault("accessCredentials", []).append(
+            {
+                "sshPublicKey": {
+                    "source": {"secret": {"secretName": self.ssh_secret.name}},
+                    "propagationMethod": {"configDrive": {}},
+                }
+            }
+        )
         return spec
 
     def ssh_enable(self):

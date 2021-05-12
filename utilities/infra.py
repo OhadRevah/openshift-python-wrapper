@@ -432,3 +432,7 @@ def private_to_public_key(key):
 
 def name_prefix(name):
     return name.split(".")[0]
+
+
+def authorized_key(private_key_path):
+    return f"ssh-rsa {private_to_public_key(key=private_key_path)} root@exec1.rdocloud"
