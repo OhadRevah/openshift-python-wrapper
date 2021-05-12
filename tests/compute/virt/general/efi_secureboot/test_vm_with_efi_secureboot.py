@@ -71,7 +71,7 @@ def windows_efi_secureboot_vm(
         efi_params={"secureBoot": True},
         cpu_model=nodes_common_cpu_model,
     ) as vm:
-        running_vm(vm=vm)
+        running_vm(vm=vm, wait_for_interfaces=False)
         yield vm
 
 
@@ -234,10 +234,7 @@ class TestEFISecureBootWindows:
     """
 
     @pytest.mark.polarion("CNV-5464")
-    def test_secureboot_efi(
-        self,
-        windows_efi_secureboot_vm,
-    ):
+    def test_secureboot_efi(self, windows_efi_secureboot_vm):
         """
         Test VM boots with efi secureboot and check vm_xml values
         """
@@ -246,12 +243,14 @@ class TestEFISecureBootWindows:
 
     @pytest.mark.polarion("CNV-5465")
     def test_migrate_vm_windows(
-        self,
-        skip_access_mode_rwo_scope_class,
-        windows_efi_secureboot_vm,
+        self, skip_access_mode_rwo_scope_class, windows_efi_secureboot_vm
     ):
         """Test EFI Windows VM is migrated."""
 
-        migrate_and_verify(vm=windows_efi_secureboot_vm, check_ssh_connectivity=True)
+        migrate_and_verify(
+            vm=windows_efi_secureboot_vm,
+            wait_for_interfaces=False,
+            check_ssh_connectivity=True,
+        )
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
