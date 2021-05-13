@@ -1,6 +1,11 @@
 import pytest
 from pytest_testconfig import py_config
 
+from tests.install_upgrade_operators.utils import (
+    get_hyperconverged_cdi,
+    get_hyperconverged_kubevirt,
+)
+
 
 @pytest.fixture(scope="session")
 def cnv_source(pytestconfig):
@@ -37,3 +42,22 @@ def is_deployment_from_production_source(is_cnv_deployment, cnv_source):
 def cnv_upgrade(pytestconfig):
     """ Returns True if requested upgrade if for CNV else False """
     return pytestconfig.option.upgrade == "cnv"
+
+
+@pytest.fixture()
+def kubevirt_resource(admin_client, hco_namespace):
+    return get_hyperconverged_kubevirt(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
+
+
+@pytest.fixture()
+def cdi_resource(admin_client, hco_namespace):
+    return get_hyperconverged_cdi(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
+
+
+@pytest.fixture()
+def cdi_spec(cdi_resource):
+    return cdi_resource.instance.to_dict()["spec"]

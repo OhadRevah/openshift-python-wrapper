@@ -3,7 +3,6 @@ from collections import defaultdict
 
 import pytest
 from kubernetes.client.rest import ApiException
-from ocp_resources.cdi import CDI
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.network_addons_config import NetworkAddonsConfig
@@ -213,18 +212,6 @@ def virt_deployment_nodeselector_comp_list(admin_client):
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(virt_deployment.get("nodeSelector").get("infra-comp"))
     return nodeselector_lists
-
-
-@pytest.fixture()
-def cdi_spec(admin_client, hco_namespace):
-    cdi_kubevirt_hyperconverged = list(
-        CDI.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-            name="cdi-kubevirt-hyperconverged",
-        )
-    )
-    return cdi_kubevirt_hyperconverged[0].instance.to_dict()["spec"]
 
 
 @pytest.fixture()

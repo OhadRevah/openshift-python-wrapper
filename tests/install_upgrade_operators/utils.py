@@ -1,7 +1,9 @@
 import re
 
+from ocp_resources.cdi import CDI
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.installplan import InstallPlan
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
@@ -64,3 +66,21 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
     for sample in samples:
         if sample:
             return sample
+
+
+def get_hyperconverged_kubevirt(admin_client, hco_namespace):
+    for kv in KubeVirt.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+        name="kubevirt-kubevirt-hyperconverged",
+    ):
+        return kv
+
+
+def get_hyperconverged_cdi(admin_client, hco_namespace):
+    for cdi in CDI.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+        name="cdi-kubevirt-hyperconverged",
+    ):
+        return cdi

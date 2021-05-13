@@ -75,3 +75,55 @@ def replace_hco_cr(rpatch, admin_client, hco_namespace):
     )
     reseditor.update(backup_resources=True)
     return reseditor.backups
+
+
+@pytest.fixture()
+def updated_kv_with_feature_gates(request, kubevirt_resource):
+    requested_fgs = request.param
+    kv_dict = kubevirt_resource.instance.to_dict()
+    fgs = kv_dict["spec"]["configuration"]["developerConfiguration"][
+        "featureGates"
+    ].copy()
+    fgs.extend(requested_fgs)
+
+    with ResourceEditor(
+        patches={
+            kubevirt_resource: {
+                "spec": {
+                    "configuration": {"developerConfiguration": {"featureGates": fgs}}
+                }
+            }
+        },
+    ):
+        yield
+
+
+@pytest.fixture()
+def updated_cdi_with_feature_gates(request, cdi_resource):
+    requested_fgs = request.param
+    cdi_dict = cdi_resource.instance.to_dict()
+    fgs = cdi_dict["spec"]["config"]["featureGates"].copy()
+    fgs.extend(requested_fgs)
+
+    with ResourceEditor(
+        patches={cdi_resource: {"spec": {"config": {"featureGates": fgs}}}},
+    ):
+        yield
+
+
+@pytest.fixture()
+def hco_with_non_default_feature_gates(request, hyperconverged_resource_scope_function):
+    new_fgs = request.param
+
+    hco_fgs = hyperconverged_resource_scope_function.instance.to_dict()["spec"][
+        "featureGates"
+    ]
+    for fg in new_fgs:
+        hco_fgs[fg] = True
+
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_function: {"spec": {"featureGates": hco_fgs}}
+        }
+    ):
+        yield
