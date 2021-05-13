@@ -22,7 +22,7 @@ from tests.storage.cdi_import.conftest import wait_for_importer_container_messag
 from tests.storage.utils import get_importer_pod
 from utilities import console
 from utilities.constants import TIMEOUT_4MIN
-from utilities.infra import BUG_STATUS_CLOSED, NON_EXIST_URL, Images, get_bug_status
+from utilities.infra import NON_EXIST_URL, Images
 from utilities.storage import ErrorMsg, PodWithPVC, create_dummy_first_consumer_pod
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
 
@@ -374,18 +374,6 @@ def test_wrong_content_type(
             ErrorMsg.REQUESTED_RANGE_NOT_SATISFIABLE,
             marks=(pytest.mark.polarion("CNV-2554"),),
         ),
-        pytest.param(
-            "large-memory",
-            "invalid-qcow-large-memory.img",
-            ErrorMsg.COULD_NOT_OPEN_SIZE_TOO_BIG,
-            marks=(pytest.mark.polarion("CNV-2555"),),
-        ),
-        pytest.param(
-            "backing-file",
-            "invalid-qcow-backing-file.img",
-            ErrorMsg.COULD_NOT_OPEN_SIZE_TOO_BIG,
-            marks=(pytest.mark.polarion("CNV-2139"),),
-        ),
     ],
 )
 def test_import_invalid_qcow(
@@ -398,18 +386,6 @@ def test_import_invalid_qcow(
     error_message,
     bugzilla_connection_params,
 ):
-    # TODO: remove once bug #1850501 is fixed
-    if [*storage_class_matrix__module__][
-        0
-    ] == "ocs-storagecluster-ceph-rbd" and dv_name in ("backing-file", "large-memory"):
-        if (
-            get_bug_status(
-                bugzilla_connection_params=bugzilla_connection_params, bug=1850501
-            )
-            not in BUG_STATUS_CLOSED
-        ):
-            pytest.skip(msg="Skipping test on OCS due to bug #1850501")
-
     with utilities.storage.create_dv(
         source="http",
         dv_name=dv_name,
