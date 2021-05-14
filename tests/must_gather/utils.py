@@ -137,7 +137,7 @@ def clean_ip_data(raw_str):
     - inet6 info is inconsistent. try again with it when dual-stack is supported
     """
     clean_str = remove_veth_ifaces(raw_str=raw_str)
-    clean_str = clean_str.replace("dynamic", "").replace("noprefixroute", "")
+    clean_str = re.sub("dynamic|noprefixroute", "", clean_str).rstrip(" \n")
     return [
         line
         for line in clean_str.splitlines(keepends=True)

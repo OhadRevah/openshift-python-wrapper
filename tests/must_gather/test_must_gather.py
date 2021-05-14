@@ -414,13 +414,23 @@ def test_sriov_logs_gathering(
             "iptables.txt",
             "Filter table:",
             "^Chain INPUT \\(policy ACCEPT\\)$",
-            marks=(pytest.mark.polarion("CNV-2737")),
+            marks=(
+                pytest.mark.polarion("CNV-2737"),
+                pytest.mark.bugzilla(
+                    1959039, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
         pytest.param(
             "iptables.txt",
             "NAT table:",
             "^Chain PREROUTING \\(policy ACCEPT\\)$",
-            marks=(pytest.mark.polarion("CNV-2741")),
+            marks=(
+                pytest.mark.polarion("CNV-2741"),
+                pytest.mark.bugzilla(
+                    1959039, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
         pytest.param(
             "qemu.log",
