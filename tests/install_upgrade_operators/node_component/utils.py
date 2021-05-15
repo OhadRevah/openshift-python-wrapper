@@ -118,7 +118,6 @@ WORKLOADS_PODS_COMPONENTS = [
     "virt-handler",
     "bridge-marker",
     "kube-cni-linux-bridge-plugin",
-    "kubevirt-node-labeller",
     "nmstate-handler",
 ]
 

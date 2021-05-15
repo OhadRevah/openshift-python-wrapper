@@ -55,29 +55,16 @@ class TestCreateHCOWithNodePlacement:
     def test_node_placement_propagated_to_ssp_cr(
         self,
         ssp_cr_spec,
-        kubevirt_node_labeller_spec_nodeselector,
         virt_template_validator_spec_nodeselector,
     ):
         """
         This test we are going to check the HCO CR node placement
-        propagated to SSP CR and then cascade to
-        daemonset 'kubeVirt-node-labeller' and deployment 'virt-template-validator'.
+        propagated to SSP CR and then cascade to deployment 'virt-template-validator'.
         """
 
         assert (
-            ssp_cr_spec["nodeLabeller"]["placement"]
-            == NODE_PLACEMENT_WORKLOADS["nodePlacement"]
-        )
-        assert (
             ssp_cr_spec["templateValidator"]["placement"]
             == NODE_PLACEMENT_INFRA["nodePlacement"]
-        )
-
-        # Verify that node placement configuration has been correctly
-        # propagated to 'kubevirt-node-labeller' daemonset
-        assert (
-            kubevirt_node_labeller_spec_nodeselector
-            == NODE_PLACEMENT_WORKLOADS["nodePlacement"]["nodeSelector"]
         )
 
         # Verify that node placement configuration has been correctly

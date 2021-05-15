@@ -133,14 +133,6 @@ def ssp_cr_spec(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def kubevirt_node_labeller_spec_nodeselector(admin_client):
-    kubevirt_node_labeller_spec = get_daemonset_by_name(
-        admin_client=admin_client, daemonset_name="kubevirt-node-labeller"
-    ).instance.to_dict()["spec"]["template"]["spec"]
-    return kubevirt_node_labeller_spec.get("nodeSelector")
-
-
-@pytest.fixture()
 def virt_template_validator_spec_nodeselector(admin_client):
     virt_template_validator_spec = get_deployment_by_name(
         admin_client=admin_client, deployment_name="virt-template-validator"
