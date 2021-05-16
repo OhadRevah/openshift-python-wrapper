@@ -30,3 +30,8 @@ repos:
           "git+https://gitlab.cee.redhat.com/cnv-qe/flake8-python-plugins.git",
           "pep8-naming"
         ]
+
+  - repo: https://github.com/jorisroovers/gitlint
+    rev:  "v0.15.1"
+    hooks:
+      - id: gitlint

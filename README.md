@@ -370,13 +370,16 @@ We use checks tools that are defined in .pre-commit-config.yaml file
 To install pre-commit:
 ```bash
 pip install pre-commit --user
+pre-commit install
+pre-commit install -f --hook-type commit-msg
 ```
 pre-commit will try to fix the error.
 If some error where fixed git add & git commit is needed again.
+commit-msg use gitlint (https://jorisroovers.com/gitlint/)
 
 To check for PEP 8 issues locally run:
 ```bash
-make check
+tox
 ```
 
 ### Run functional tests locally
