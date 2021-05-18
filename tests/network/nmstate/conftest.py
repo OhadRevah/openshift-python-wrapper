@@ -6,12 +6,7 @@ import pytest
 
 from tests.network.utils import get_worker_pod, wait_for_address_on_iface
 from utilities.network import LINUX_BRIDGE, network_device
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -40,7 +35,6 @@ def nmstate_vma(schedulable_nodes, worker_node1, namespace, unprivileged_client)
         node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -55,7 +49,6 @@ def nmstate_vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client)
         node_selector=worker_node2.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm

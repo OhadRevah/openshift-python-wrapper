@@ -12,12 +12,7 @@ from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import BondNodeNetworkConfigurationPolicy, assert_ping_successful
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -33,7 +28,6 @@ def lbodi_vma(worker_node1, namespace, unprivileged_client):
         node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -48,7 +42,6 @@ def lbodi_vmb(worker_node2, namespace, unprivileged_client):
         node_selector=worker_node2.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm

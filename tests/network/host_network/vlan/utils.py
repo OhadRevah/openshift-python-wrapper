@@ -4,7 +4,6 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
 from utilities.network import cloud_init_network_data
-from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD
 
 
 LOGGER = logging.getLogger(__name__)
@@ -27,8 +26,7 @@ def dhcp_server_cloud_init_data(dhcp_iface_ip_addr):
     network_data_data = {
         "ethernets": {"eth1": {"addresses": [f"{dhcp_iface_ip_addr}/24"]}}
     }
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     update_cloud_init_extra_user_data(
         cloud_init_data=cloud_init_data["userData"],

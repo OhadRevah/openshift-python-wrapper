@@ -2,11 +2,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.pod import Pod
 
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture()
@@ -20,7 +16,6 @@ def developer_vm(
         name="unprivileged-client-test-vm",
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start()
         vm.vmi.wait_until_running()

@@ -3,13 +3,7 @@ from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachineInstance
 
 from tests.compute.utils import vm_started
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    LOGGER,
-    Prometheus,
-    VirtualMachineForTests,
-    fedora_vm_body,
-)
+from utilities.virt import LOGGER, Prometheus, VirtualMachineForTests, fedora_vm_body
 
 
 @pytest.fixture(scope="class")
@@ -24,7 +18,6 @@ def vm_metric_1(namespace, unprivileged_client):
         name=vm_name,
         namespace=namespace.name,
         body=fedora_vm_body(name=vm_name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm_started(vm=vm, wait_for_interfaces=False)
@@ -38,7 +31,6 @@ def vm_metric_2(namespace, unprivileged_client):
         name=vm_name,
         namespace=namespace.name,
         body=fedora_vm_body(name=vm_name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm_started(vm=vm, wait_for_interfaces=False)

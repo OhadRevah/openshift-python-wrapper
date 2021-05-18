@@ -8,7 +8,6 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -76,7 +75,6 @@ def vm_with_cpu_support(request, namespace, unprivileged_client):
         cpu_sockets=request.param["sockets"],
         cpu_threads=request.param["threads"],
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
@@ -106,7 +104,6 @@ def no_cpu_settings_vm(namespace, unprivileged_client):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
@@ -139,7 +136,6 @@ def test_vm_with_cpu_limitation(namespace, unprivileged_client):
         cpu_limits=2,
         cpu_requests=2,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
@@ -164,7 +160,6 @@ def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
             cpu_limits=2,
             cpu_requests=4,
             body=fedora_vm_body(name=name),
-            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
         ):
             pass

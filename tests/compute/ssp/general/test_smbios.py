@@ -7,12 +7,7 @@ Test SMBIOS values from kubevirt config are:
 import pytest
 
 from tests.compute.ssp import utils as ssp_utils
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -25,7 +20,6 @@ def configmap_smbios_vm(unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         running_vm(vm=vm)
         yield vm

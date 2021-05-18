@@ -14,9 +14,9 @@ from tests.network.utils import (
 from utilities.infra import run_ssh_commands
 from utilities.network import cloud_init_network_data, network_device, network_nad
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
+    prepare_cloud_init_user_data,
     running_vm,
 )
 
@@ -162,9 +162,6 @@ def _cloud_init_data(
     if vm_name == "vm-fedora-2":
         network_data_data["ethernets"]["eth3"] = {"dhcp4": False}
 
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
-
     runcmd = [
         "modprobe mpls_router",  # In order to test mpls we need to load driver
         "sysctl -w net.mpls.platform_labels=1000",  # Activate mpls labeling feature
@@ -178,7 +175,9 @@ def _cloud_init_data(
         "nmcli connection up eth2",
         "ip route add 224.0.0.0/4 dev eth2",
     ]
-    cloud_init_data["userData"]["runcmd"] = runcmd
+
+    cloud_init_data = prepare_cloud_init_user_data(section="runcmd", data=runcmd)
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
     if cloud_init_extra_user_data:
         update_cloud_init_extra_user_data(

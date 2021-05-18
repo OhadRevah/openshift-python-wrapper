@@ -5,11 +5,7 @@ Check VM, VMI, POD owner references
 import pytest
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -31,7 +27,6 @@ def fedora_vm(unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

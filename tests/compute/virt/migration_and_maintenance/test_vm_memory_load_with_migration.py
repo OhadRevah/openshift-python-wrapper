@@ -9,12 +9,7 @@ from pytest_testconfig import config as py_config
 from tests.os_params import FEDORA_LATEST
 from utilities.constants import TIMEOUT_60MIN
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    migrate_and_verify,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, migrate_and_verify, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +25,6 @@ def vm_with_mem_load(
     with VirtualMachineForTests(
         name="vm-with-mem-load",
         namespace=namespace.name,
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         running=True,
         cpu_cores=2,

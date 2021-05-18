@@ -5,12 +5,7 @@ Test VM with cloudInit disk.
 import pytest
 
 from utilities.constants import CLOUD_INIT_NO_CLOUD, CLOUND_INIT_CONFIG_DRIVE
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -38,7 +33,6 @@ def vm_with_cloud_init_type(request, namespace):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         cloud_init_type=cloud_init_type,
     ) as vm:
         running_vm(vm=vm)

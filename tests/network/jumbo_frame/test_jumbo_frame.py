@@ -14,12 +14,7 @@ from utilities.network import (
     network_device,
     network_nad,
 )
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 # BOND
@@ -155,8 +150,7 @@ def bond_bridge_attached_vma(
     networks = OrderedDict()
     networks[br1bond_nad.name] = br1bond_nad.name
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.1.1/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -184,8 +178,7 @@ def bond_bridge_attached_vmb(
     networks = OrderedDict()
     networks[br1bond_nad.name] = br1bond_nad.name
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.1.2/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -283,8 +276,7 @@ def bridge_attached_vma(
     networks = OrderedDict()
     networks[br1test_bridge_nad.name] = br1test_bridge_nad.name
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -308,8 +300,7 @@ def bridge_attached_vmb(
     networks = OrderedDict()
     networks[br1test_bridge_nad.name] = br1test_bridge_nad.name
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     with VirtualMachineForTests(
         namespace=namespace.name,

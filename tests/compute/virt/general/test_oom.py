@@ -11,12 +11,7 @@ import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.tier3
@@ -31,7 +26,6 @@ def oom_vm(namespace, unprivileged_client, rhel7_workers):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         running=True,
         cpu_cores=2,

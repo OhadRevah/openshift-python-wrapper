@@ -11,18 +11,10 @@ from pytest_testconfig import config as py_config
 from tests.conftest import vm_instance_from_template
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import run_ssh_commands
-from utilities.virt import FEDORA_CLOUD_INIT_PASSWORD, migrate_and_verify, running_vm
+from utilities.virt import migrate_and_verify, prepare_cloud_init_user_data, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def vm_cloud_init_data():
-    rhsm_cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    rhsm_cloud_init_data["userData"]["bootcmd"] = ["yum -y install fio iotop"]
-
-    return rhsm_cloud_init_data
 
 
 @pytest.fixture()
@@ -32,8 +24,10 @@ def vm_with_fio(
     nodes_common_cpu_model,
     namespace,
     golden_image_data_volume_scope_function,
-    vm_cloud_init_data,
 ):
+    vm_cloud_init_data = prepare_cloud_init_user_data(
+        section="bootcmd", data=["yum -y install fio iotop"]
+    )
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
@@ -115,7 +109,6 @@ def test_fedora_vm_load_migration(
     unprivileged_client,
     namespace,
     golden_image_data_volume_scope_function,
-    vm_cloud_init_data,
     vm_with_fio,
     run_fio_in_vm,
 ):

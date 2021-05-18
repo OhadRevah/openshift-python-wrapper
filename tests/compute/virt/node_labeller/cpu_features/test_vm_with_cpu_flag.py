@@ -4,12 +4,7 @@ VM with CPU flag
 import pytest
 from ocp_resources.utils import TimeoutExpiredError
 
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -23,7 +18,6 @@ def cpu_flag_vm_positive(nodes_common_cpu_model, namespace, unprivileged_client)
         namespace=namespace.name,
         cpu_flags={"model": nodes_common_cpu_model},
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         running_vm(vm=vm)
@@ -50,7 +44,6 @@ def cpu_flag_vm_negative(request, unprivileged_client, namespace):
         namespace=namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm.start()

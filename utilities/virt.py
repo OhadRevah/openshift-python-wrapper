@@ -6,6 +6,7 @@ import re
 import shlex
 import subprocess
 import time
+from collections import defaultdict
 from contextlib import contextmanager
 
 import jinja2
@@ -58,23 +59,6 @@ LOGGER = logging.getLogger(__name__)
 K8S_TAINT = "node.kubernetes.io/unschedulable"
 NO_SCHEDULE = "NoSchedule"
 CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
-
-FEDORA_LOGIN_PARAMS = OS_LOGIN_PARAMS["fedora"]
-FEDORA_CLOUD_INIT_PASSWORD = {
-    "userData": {
-        "user": FEDORA_LOGIN_PARAMS["username"],
-        "password": FEDORA_LOGIN_PARAMS["password"],
-        "chpasswd": "{ expire: False }",
-    }
-}
-RHEL_LOGIN_PARAMS = OS_LOGIN_PARAMS["rhel"]
-RHEL_CLOUD_INIT_PASSWORD = {
-    "userData": {
-        "user": RHEL_LOGIN_PARAMS["username"],
-        "password": RHEL_LOGIN_PARAMS["password"],
-        "chpasswd": "{ expire: False }",
-    }
-}
 FLAVORS_EXCLUDED_FROM_CLOUD_INIT = (OS_FLAVOR_WINDOWS, OS_FLAVOR_CIRROS)
 
 
@@ -162,7 +146,6 @@ def generate_cloud_init_data(data):
                 }
             }
         }
-        data.update(FEDORA_CLOUD_INIT_PASSWORD)
 
         with VirtualMachineForTests(
             namespace="namespace",
@@ -425,6 +408,7 @@ class VirtualMachineForTests(VirtualMachine):
             spec = self.update_vm_cloud_init_data(spec=spec)
 
         # VMs do not necessarily have self.cloud_init_data
+        # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
         if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
             spec = self.enable_ssh_in_cloud_init_data(spec=spec)
 
@@ -537,14 +521,8 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
             data=self.cloud_init_data
         )
-        disks_spec = (
-            spec.setdefault("domain", {})
-            .setdefault("devices", {})
-            .setdefault("disks", [])
-        )
 
-        if not [disk for disk in disks_spec if disk["name"] == CLOUD_INIT_DISK_NAME]:
-            disks_spec.append({"disk": {"bus": "virtio"}, "name": CLOUD_INIT_DISK_NAME})
+        spec = vm_cloud_init_disk(vm_spec=spec)
 
         return spec
 
@@ -552,12 +530,32 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
         cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
 
+        spec = vm_cloud_init_disk(vm_spec=spec)
+
         cloud_init_volume.setdefault(cloud_init_volume_type, {}).setdefault(
             "userData", ""
         )
 
         # Saving in an intermediate string for readability
         cloud_init_user_data = cloud_init_volume[cloud_init_volume_type]["userData"]
+
+        # Populate userData with OS-related login credentials; not needed for a VM from template
+        if not self.is_vm_from_template:
+            login_params = OS_LOGIN_PARAMS[self.os_flavor]
+            login_generated_data = generate_cloud_init_data(
+                data={
+                    "userData": {
+                        "user": login_params["username"],
+                        "password": login_params["password"],
+                        "chpasswd": "{ expire: False }",
+                    }
+                }
+            )
+            # Newline needed in case userData is not empty
+            cloud_init_user_data_newline = "\n" if cloud_init_user_data else ""
+            cloud_init_user_data += (
+                f"{cloud_init_user_data_newline}{login_generated_data['userData']}"
+            )
 
         # Add RSA to authorized_keys to enable login using an SSH key
         authorized_key = (
@@ -1593,3 +1591,29 @@ def vm_cloud_init_volume(vm_spec):
     # If cloud init volume needs to be added
     vm_spec["volumes"].append({"name": CLOUD_INIT_DISK_NAME})
     return vm_spec["volumes"][-1]
+
+
+def vm_cloud_init_disk(vm_spec):
+    disks_spec = (
+        vm_spec.setdefault("domain", {})
+        .setdefault("devices", {})
+        .setdefault("disks", [])
+    )
+
+    if not [disk for disk in disks_spec if disk["name"] == CLOUD_INIT_DISK_NAME]:
+        disks_spec.append({"disk": {"bus": "virtio"}, "name": CLOUD_INIT_DISK_NAME})
+
+    return vm_spec
+
+
+def prepare_cloud_init_user_data(section, data):
+    """
+    Generates userData dict to be used with cloud init and add data under the required section.
+
+    section (str): key name under userData
+    data: value to be added under "section" key
+    """
+    cloud_init_data = defaultdict(dict)
+    cloud_init_data["userData"][section] = data
+
+    return cloud_init_data

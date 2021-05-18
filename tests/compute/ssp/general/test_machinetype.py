@@ -7,7 +7,6 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests.compute.ssp import utils as ssp_utils
 from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     migrate_and_verify,
@@ -27,7 +26,6 @@ def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         machine_type=request.param.get("machine_type"),
         cpu_model=nodes_common_cpu_model,
@@ -167,7 +165,6 @@ def test_unsupported_machine_type(namespace, unprivileged_client):
             name=vm_name,
             namespace=namespace.name,
             body=fedora_vm_body(name=vm_name),
-            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
             machine_type="pc-i440fx",
         ):

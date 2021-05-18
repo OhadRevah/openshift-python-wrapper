@@ -23,11 +23,7 @@ from pytest_testconfig import config as py_config
 
 from utilities.constants import SRIOV
 from utilities.infra import get_pod_by_name_prefix
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    restart_guest_agent,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -734,9 +730,7 @@ def cloud_init_network_data(data):
                 },
             }
         }
-        cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
         network_data = cloud_init_network_data(data=data)
-        cloud_init_data.update(network_data)
     """
     network_data = {"networkData": {"version": 2}}
     network_data["networkData"].update(data)
@@ -824,7 +818,7 @@ def ip_version_data_from_matrix(request):
 
 
 def compose_cloud_init_data_dict(network_data=None, ipv6_network_data=None):
-    init_data = FEDORA_CLOUD_INIT_PASSWORD
+    init_data = {}
     interfaces_data = {"ethernets": {}}
     for data_input in [network_data, ipv6_network_data]:
         if data_input:

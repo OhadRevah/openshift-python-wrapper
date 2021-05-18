@@ -8,7 +8,6 @@ from pytest_testconfig import py_config
 
 from utilities.storage import create_dv, get_images_server_url
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
@@ -27,7 +26,6 @@ def container_disk_vm(namespace, unprivileged_client, cpu_model, admin_client=No
         namespace=namespace.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         run_strategy=default_run_strategy,
         cpu_model=cpu_model,
     ) as vm:

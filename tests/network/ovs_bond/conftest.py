@@ -4,12 +4,7 @@ import pytest
 
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,7 +19,6 @@ def ovs_bond_vma(schedulable_nodes, namespace, unprivileged_client, node_with_bo
         node_selector=node_with_bond,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -41,7 +35,6 @@ def ovs_bond_vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bo
         ).name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm

@@ -9,7 +9,6 @@ from tests.install_upgrade_operators.node_component.utils import (
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_console,
@@ -24,7 +23,6 @@ def hco_vm(unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         running=True,
     ) as vm:

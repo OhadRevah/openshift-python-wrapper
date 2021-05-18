@@ -15,7 +15,6 @@ from pytest_testconfig import config as py_config
 
 from utilities import console
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
@@ -66,7 +65,6 @@ def ha_vm_container_disk(request, unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         run_strategy=run_strategy,
     ) as vm:

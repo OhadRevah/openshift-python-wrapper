@@ -19,7 +19,7 @@ from tests.compute.utils import remove_eth0_default_gw
 from tests.conftest import vm_instance_from_template
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.infra import base64_encode_str, run_ssh_commands
-from utilities.virt import RHEL_CLOUD_INIT_PASSWORD
+from utilities.virt import prepare_cloud_init_user_data
 
 
 LOGGER = logging.getLogger(__name__)
@@ -48,10 +48,7 @@ def rhsm_cloud_init_data():
         "subscription-manager config --rhsm.auto_enable_yum_plugins=0",
     ]
 
-    rhsm_cloud_init_data = RHEL_CLOUD_INIT_PASSWORD
-    rhsm_cloud_init_data["userData"]["bootcmd"] = bootcmds
-
-    return rhsm_cloud_init_data
+    return prepare_cloud_init_user_data(section="bootcmd", data=bootcmds)
 
 
 @pytest.fixture()

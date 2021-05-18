@@ -25,7 +25,6 @@ from utilities.storage import (
     sc_is_hpp_with_immediate_volume_binding,
 )
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
@@ -79,8 +78,7 @@ def upgrade_bridge_marker_nad(bridge_on_one_node, namespace):
 
 def cloud_init(ip_address):
     network_data_data = {"ethernets": {"eth1": {"addresses": [f"{ip_address}/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    return cloud_init_network_data(data=network_data_data)
 
 
 @pytest.fixture(scope="module")

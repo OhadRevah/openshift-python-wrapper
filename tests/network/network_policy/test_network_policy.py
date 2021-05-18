@@ -8,12 +8,7 @@ from ocp_resources.network_policy import NetworkPolicy
 
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import create_ns, run_ssh_commands
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 PORT_80 = 80
@@ -90,7 +85,6 @@ def network_policy_vma(namespace_1, worker_node1, unprivileged_client):
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.name,
         client=unprivileged_client,
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm
@@ -105,7 +99,6 @@ def network_policy_vmb(namespace_2, worker_node1, unprivileged_client):
         node_selector=worker_node1.name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         yield vm

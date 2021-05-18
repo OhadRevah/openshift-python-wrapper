@@ -23,7 +23,6 @@ from tests.install_upgrade_operators.node_component.utils import (
 )
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     wait_for_vm_interfaces,
@@ -334,7 +333,6 @@ def vm_placement_vm_work3(
         namespace=namespace.name,
         name=name,
         node_selector=nodes_labeled["work3"][0],
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
     ) as vm:

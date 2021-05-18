@@ -7,12 +7,7 @@ import shlex
 import pytest
 
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture()
@@ -22,7 +17,6 @@ def rng_vm(unprivileged_client, namespace):
         name=name,
         namespace=namespace.name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         running_vm(vm=vm)
         yield vm

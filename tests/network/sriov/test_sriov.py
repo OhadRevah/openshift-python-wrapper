@@ -22,7 +22,6 @@ from utilities.network import (
     sriov_network_dict,
 )
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
     VirtualMachineForTests,
     fedora_vm_body,
     restart_guest_agent,
@@ -54,8 +53,7 @@ def sriov_vm(
         }
     }
     networks = sriov_network_dict(namespace=namespace, network=sriov_network)
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+    cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     with VirtualMachineForTests(
         namespace=namespace.name,

@@ -7,12 +7,7 @@ from kubernetes.client.rest import ApiException
 from ocp_resources.service_account import ServiceAccount
 
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -33,7 +28,6 @@ def service_account_vm(namespace, service_account, unprivileged_client):
         service_accounts=[service_account.name],
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         running_vm(vm=vm)
         yield vm
@@ -77,6 +71,5 @@ def test_vm_with_2_service_accounts(namespace):
             namespace=namespace.name,
             service_accounts=["sa-1", "sa-2"],
             body=fedora_vm_body(name=name),
-            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         ):
             return

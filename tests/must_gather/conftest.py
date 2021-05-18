@@ -19,11 +19,7 @@ from pytest_testconfig import config as py_config
 import utilities.network
 from tests.must_gather import utils as mg_utils
 from utilities.infra import MissingResourceException, create_ns
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
@@ -132,7 +128,6 @@ def running_vm(node_gather_unprivileged_namespace, unprivileged_client):
         namespace=node_gather_unprivileged_namespace.name,
         name=name,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         vm.start(wait=True)
         vm.vmi.wait_until_running()

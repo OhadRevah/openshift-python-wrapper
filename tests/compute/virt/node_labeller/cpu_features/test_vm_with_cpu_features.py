@@ -4,12 +4,7 @@ VM with CPU features
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -35,7 +30,6 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
         namespace=namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         running_vm(vm=vm)
@@ -62,7 +56,6 @@ def cpu_features_vm_negative(request, unprivileged_client, namespace):
         namespace=namespace.name,
         cpu_flags=request.param[0],
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         vm.start()
@@ -108,7 +101,6 @@ def test_invalid_cpu_feature_policy_negative(unprivileged_client, namespace, fea
             namespace=namespace.name,
             cpu_flags={"features": features},
             body=fedora_vm_body(name=vm_name),
-            cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
             client=unprivileged_client,
         ):
             pytest.fail("VM was created with an invalid cpu feature policy.")

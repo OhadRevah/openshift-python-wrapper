@@ -10,12 +10,7 @@ import pytest
 import utilities.network
 from utilities.infra import run_ssh_commands
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture(scope="class")
@@ -94,7 +89,6 @@ def bond_modes_vm(
         networks=networks,
         interfaces=networks.keys(),
         node_selector=worker_node1.name,
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
     ) as vm:
         yield vm

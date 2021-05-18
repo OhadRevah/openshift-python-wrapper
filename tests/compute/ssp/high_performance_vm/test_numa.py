@@ -7,11 +7,7 @@ from ocp_resources.sriov_network import SriovNetwork
 
 from utilities.constants import SRIOV
 from utilities.network import sriov_network_dict
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 pytestmark = pytest.mark.usefixtures(
@@ -75,7 +71,6 @@ def vm_numa(namespace, unprivileged_client):
         cpu_cores=8,
         cpu_sockets=2,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         cpu_placement=True,
     ) as vm:
@@ -94,7 +89,6 @@ def vm_numa_sriov(namespace, unprivileged_client, sriov_net):
         cpu_cores=8,
         cpu_sockets=2,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         client=unprivileged_client,
         cpu_placement=True,
         networks=networks,

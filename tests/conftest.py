@@ -87,12 +87,11 @@ from utilities.network import (
 )
 from utilities.storage import data_volume
 from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    RHEL_CLOUD_INIT_PASSWORD,
     VirtualMachineForTestsFromTemplate,
     generate_yaml_from_template,
     kubernetes_taint_exists,
     nmcli_add_con_cmds,
+    prepare_cloud_init_user_data,
     running_vm,
     wait_for_windows_vm,
 )
@@ -1325,14 +1324,7 @@ def cloud_init_data(
             dns_server=rhel7_psi_network_config["dns_server"],
         )
 
-        cloud_init_data = (
-            RHEL_CLOUD_INIT_PASSWORD
-            if "rhel" in request.fspath.strpath
-            else FEDORA_CLOUD_INIT_PASSWORD
-        )
-        cloud_init_data["userData"]["bootcmd"] = bootcmds
-
-        return cloud_init_data
+        return prepare_cloud_init_user_data(section="bootcmd", data=bootcmds)
 
 
 """

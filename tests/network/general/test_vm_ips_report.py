@@ -6,12 +6,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 def assert_ip_mismatch(vm):
@@ -33,7 +28,6 @@ def report_masquerade_ip_vmi(unprivileged_client, namespace):
         name=name,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
     ) as vm:
         running_vm(vm=vm, enable_ssh=False)
         yield vm.vmi

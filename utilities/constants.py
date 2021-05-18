@@ -31,18 +31,19 @@ TIMEOUT_90MIN = 90 * 60
 TIMEOUT_180MIN = 180 * 60
 
 #  OS constants
+OS_LOGIN_PASSWORD = "password"
 OS_LOGIN_PARAMS = {
     "rhel": {
         "username": "cloud-user",
-        "password": "redhat",
+        "password": OS_LOGIN_PASSWORD,
     },
     "fedora": {
         "username": "fedora",
-        "password": "fedora",
+        "password": OS_LOGIN_PASSWORD,
     },
     "centos": {
         "username": "centos",
-        "password": "centos",
+        "password": OS_LOGIN_PASSWORD,
     },
     "cirros": {
         "username": "cirros",

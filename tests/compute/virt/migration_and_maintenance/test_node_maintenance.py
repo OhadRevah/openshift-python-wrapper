@@ -25,12 +25,7 @@ from tests.os_params import (
 )
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import get_bug_status, get_bugzilla_connection_params
-from utilities.virt import (
-    FEDORA_CLOUD_INIT_PASSWORD,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -110,7 +105,6 @@ def vm_container_disk_fedora(namespace, unprivileged_client, nodes_common_cpu_mo
         eviction=True,
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
-        cloud_init_data=FEDORA_CLOUD_INIT_PASSWORD,
         cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
