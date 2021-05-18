@@ -106,6 +106,6 @@ def test_rdp_for_exposed_win_vm_as_node_port_svc(
     LOGGER.info(
         f"Checking RDP connection to exposed {Service.Type.NODE_PORT} service, Authentication only..."
     )
-    auth_result = rdp_pod.execute(command=["bash", "-c", rdp_auth_cmd])
+    auth_result = rdp_pod.execute(command=["bash", "-c", rdp_auth_cmd], timeout=300)
     # The exit status is 0 when authentication succeeds, 1 otherwise.
     assert "exit status 0" in auth_result
