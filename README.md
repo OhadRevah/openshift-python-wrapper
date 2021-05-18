@@ -371,7 +371,7 @@ To install pre-commit:
 ```bash
 pip install pre-commit --user
 pre-commit install
-pre-commit install -f --hook-type commit-msg
+pre-commit install --hook-type commit-msg
 ```
 pre-commit will try to fix the error.
 If some error where fixed git add & git commit is needed again.
