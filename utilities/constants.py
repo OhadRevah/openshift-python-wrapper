@@ -48,10 +48,6 @@ OS_LOGIN_PARAMS = {
         "username": "cirros",
         "password": "gocubsgo",
     },
-    "alpine": {
-        "username": "root",
-        "password": None,
-    },
     "win": {
         "username": "Administrator",
         "password": "Heslo123",

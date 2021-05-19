@@ -129,12 +129,6 @@ class Cirros(Console):
     PASSWORD = params["password"]
 
 
-class Alpine(Console):
-    params = OS_LOGIN_PARAMS["alpine"]
-    USERNAME = params["username"]
-    PASSWORD = params["password"]
-
-
 class RHEL(Console):
     params = OS_LOGIN_PARAMS["rhel"]
     USERNAME = params["username"]
@@ -152,5 +146,4 @@ CONSOLE_IMPL = {
     "fedora": Fedora,
     "centos": Centos,
     "cirros": Cirros,
-    "alpine": Alpine,
 }
