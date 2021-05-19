@@ -24,7 +24,7 @@ def count_veth_devices_on_host(worker1_executor, bridge):
     Return how many veth devices exist on the host running pod
 
     Args:
-        worker_exec (Host): Worker executor.
+        worker1_executor (Host): Worker executor.
         bridge (str): Master bridge name.
 
     Returns:
@@ -49,7 +49,7 @@ def worker1_executor(workers_ssh_executors, worker_node1):
 
 
 @pytest.fixture()
-def remove_vath_br1test_nad(namespace):
+def remove_veth_br1test_nad(namespace):
     with network_nad(
         nad_type=LINUX_BRIDGE,
         nad_name=BR1TEST,
@@ -66,13 +66,13 @@ def remove_vath_br1test_nad(namespace):
 
 
 @pytest.fixture()
-def remove_vath_bridge_device(
-    utility_pods, schedulable_nodes, worker_node1, remove_vath_br1test_nad
+def remove_veth_bridge_device(
+    utility_pods, schedulable_nodes, worker_node1, remove_veth_br1test_nad
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="veth-removed",
-        interface_name=remove_vath_br1test_nad.bridge_name,
+        interface_name=remove_veth_br1test_nad.bridge_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
     ) as dev:
@@ -80,7 +80,7 @@ def remove_vath_bridge_device(
 
 
 @pytest.fixture()
-def remove_vath_bridge_attached_vma(namespace, unprivileged_client, worker_node1):
+def remove_veth_bridge_attached_vma(namespace, unprivileged_client, worker_node1):
     name = "vma"
     networks = {"net1": BR1TEST, "net2": BR2TEST}
     with VirtualMachineForTests(
@@ -92,17 +92,18 @@ def remove_vath_bridge_attached_vma(namespace, unprivileged_client, worker_node1
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.name,
         teardown=False,
+        ssh=False,
     ) as vm:
         running_vm(vm=vm, enable_ssh=False, wait_for_interfaces=False)
         yield vm
 
 
 @pytest.fixture()
-def veth_interfaces_exists(worker1_executor, remove_vath_bridge_device):
+def veth_interfaces_exists(worker1_executor, remove_veth_bridge_device):
     assert (
         count_veth_devices_on_host(
             worker1_executor=worker1_executor,
-            bridge=remove_vath_bridge_device.bridge_name,
+            bridge=remove_veth_bridge_device.bridge_name,
         )
         == 2
     )
@@ -112,21 +113,21 @@ def veth_interfaces_exists(worker1_executor, remove_vath_bridge_device):
 def test_veth_removed_from_host_after_vm_deleted(
     skip_rhel7_workers,
     worker1_executor,
-    remove_vath_br1test_nad,
-    remove_vath_bridge_device,
-    remove_vath_bridge_attached_vma,
+    remove_veth_br1test_nad,
+    remove_veth_bridge_device,
+    remove_veth_bridge_attached_vma,
     veth_interfaces_exists,
 ):
     """
     Check that veth interfaces are removed from host after VM deleted
     """
-    remove_vath_bridge_attached_vma.delete(wait=True)
+    remove_veth_bridge_attached_vma.delete(wait=True)
     sampler = TimeoutSampler(
         wait_timeout=180,
         sleep=1,
         func=count_veth_devices_on_host,
         worker1_executor=worker1_executor,
-        bridge=remove_vath_bridge_device.bridge_name,
+        bridge=remove_veth_bridge_device.bridge_name,
     )
     for sample in sampler:
         if sample == 0:
