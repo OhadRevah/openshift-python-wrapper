@@ -9,7 +9,7 @@ import pytest
 from ocp_resources.resource import ResourceEditor
 
 from tests.conftest import vm_instance_from_template
-from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME
+from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME, OS_FLAVOR_WINDOWS
 from utilities.infra import run_ssh_commands
 
 
@@ -52,7 +52,7 @@ def pci_passthrough_vm(
         data_volume=golden_image_data_volume_scope_class,
         node_selector=random.choice(gpu_nodes).name,
     ) as pci_passthrough_vm:
-        if pci_passthrough_vm.os_flavor.startswith("win"):
+        if pci_passthrough_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
             # Install NVIDIA Drivers placed on the Windows-10 or win2k19 Images.
             run_ssh_commands(
                 host=pci_passthrough_vm.ssh_exec,

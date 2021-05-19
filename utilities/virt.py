@@ -33,6 +33,8 @@ from utilities.constants import (
     CLOUD_INIT_NO_CLOUD,
     CNV_SSH_KEY_PATH,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+    OS_FLAVOR_FEDORA,
+    OS_FLAVOR_WINDOWS,
     OS_LOGIN_PARAMS,
     TIMEOUT_4MIN,
 )
@@ -240,7 +242,7 @@ class VirtualMachineForTests(VirtualMachine):
         password=None,
         macs=None,
         interfaces_types=None,
-        os_flavor="fedora",
+        os_flavor=OS_FLAVOR_FEDORA,
         host_device_name=None,
         gpu_name=None,
         systemctl_support=True,
@@ -421,7 +423,7 @@ class VirtualMachineForTests(VirtualMachine):
             spec = self.update_vm_cloud_init_data(spec=spec)
 
         # VMs do not necessarily have self.cloud_init_data
-        if self.ssh and "win" not in self.os_flavor:
+        if self.ssh and OS_FLAVOR_WINDOWS not in self.os_flavor:
             spec = self.enable_ssh_in_cloud_init_data(spec=spec)
 
         if self.smm_enabled is not None:
@@ -799,7 +801,7 @@ class VirtualMachineForTests(VirtualMachine):
         host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip()))
         # For SSH using a key, the public key needs to reside on the server.
         # As the tests use a given key, this cannot be done in Windows.
-        if "win" in self.os_flavor:
+        if OS_FLAVOR_WINDOWS in self.os_flavor:
             host_user = rrmngmnt.user.User(name=self.username, password=self.password)
         else:
             host_user = rrmngmnt.user.UserWithPKey(
@@ -984,7 +986,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         }
 
         # Set password for non-Windows VMs; for Windows VM, the password is already set in the image
-        if "win" not in self.os_flavor:
+        if OS_FLAVOR_WINDOWS not in self.os_flavor:
             template_kwargs["CLOUD_USER_PASSWORD"] = OS_LOGIN_PARAMS[self.os_flavor][
                 "password"
             ]

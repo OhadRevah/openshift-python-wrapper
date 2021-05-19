@@ -53,6 +53,10 @@ OS_LOGIN_PARAMS = {
         "password": "Heslo123",
     },
 }
+OS_FLAVOR_CIRROS = "cirros"
+OS_FLAVOR_WINDOWS = "win"
+OS_FLAVOR_RHEL = "rhel"
+OS_FLAVOR_FEDORA = "fedora"
 
 # IP stack families constants
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"

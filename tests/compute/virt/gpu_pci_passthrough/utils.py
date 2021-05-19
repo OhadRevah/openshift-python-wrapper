@@ -1,11 +1,12 @@
 import shlex
 
+from utilities.constants import OS_FLAVOR_WINDOWS
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity
 
 
 def verify_gpu_device_exists(vm):
-    if vm.os_flavor.startswith("win"):
+    if vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
         assert "NVIDIA Tesla" in run_ssh_commands(
             host=vm.ssh_exec,
             commands=[shlex.split("wmic path win32_VideoController get name")],

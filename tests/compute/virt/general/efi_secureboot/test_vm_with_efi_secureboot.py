@@ -12,6 +12,7 @@ from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
+from utilities.constants import OS_FLAVOR_RHEL
 from utilities.infra import Images, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
@@ -43,7 +44,7 @@ def rhel_efi_secureboot_vm(
         memory_requests=f"{VM_MEMORY}Gi",
         smm_enabled=True,
         efi_params={"secureBoot": True},
-        os_flavor="rhel",
+        os_flavor=OS_FLAVOR_RHEL,
         cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
