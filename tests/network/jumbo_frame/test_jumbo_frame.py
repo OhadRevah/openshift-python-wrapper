@@ -6,7 +6,6 @@ from collections import OrderedDict
 import pytest
 
 from tests.network.utils import assert_no_ping
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
@@ -23,6 +22,7 @@ from utilities.virt import (
 )
 
 
+# BOND
 @pytest.fixture(scope="class")
 def jumbo_frame_bond_name(index_number):
     yield f"jumbo-frame-bond-{next(index_number)}"
@@ -30,7 +30,6 @@ def jumbo_frame_bond_name(index_number):
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_1(
-    index_number,
     skip_no_bond_support,
     utility_pods,
     worker_node1,
@@ -40,9 +39,8 @@ def jumbo_frame_bond1_worker_1(
     """
     Create BOND if setup support BOND
     """
-    bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name=f"jumbo-frame-bond{bond_idx}nncp",
+        name=f"{jumbo_frame_bond_name}-nncp",
         bond_name=jumbo_frame_bond_name,
         slaves=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
@@ -55,7 +53,6 @@ def jumbo_frame_bond1_worker_1(
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_2(
-    index_number,
     skip_no_bond_support,
     utility_pods,
     worker_node2,
@@ -65,9 +62,8 @@ def jumbo_frame_bond1_worker_2(
     """
     Create BOND if setup support BOND
     """
-    bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name=f"jumbo-frame-bond{bond_idx}nncp",
+        name=f"{jumbo_frame_bond_name}-nncp",
         bond_name=jumbo_frame_bond_name,
         slaves=nodes_available_nics[worker_node2.name][0:2],
         worker_pods=utility_pods,
@@ -79,16 +75,15 @@ def jumbo_frame_bond1_worker_2(
 
 
 @pytest.fixture(scope="class")
-def jumbo_frame_bridge_device_name(index_number):
-    yield f"br{next(index_number)}test"
+def jumbo_frame_bond_device_name(index_number):
+    yield f"brbond{next(index_number)}test"
 
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_on_bond_worker_1(
     bridge_device_matrix__class__,
-    worker_node1,
     jumbo_frame_bond1_worker_1,
-    jumbo_frame_bridge_device_name,
+    jumbo_frame_bond_device_name,
     utility_pods,
 ):
     """
@@ -96,10 +91,10 @@ def jumbo_frame_bridge_on_bond_worker_1(
     """
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name=f"jumbo-frame-bridge-on-bond-{worker_node1.name}",
-        interface_name=jumbo_frame_bridge_device_name,
+        nncp_name="jumbo-frame-bridge-on-bond-1",
+        interface_name=jumbo_frame_bond_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=jumbo_frame_bond1_worker_1.node_selector,
         ports=[jumbo_frame_bond1_worker_1.bond_name],
         mtu=9000,
     ) as br:
@@ -109,9 +104,8 @@ def jumbo_frame_bridge_on_bond_worker_1(
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_on_bond_worker_2(
     bridge_device_matrix__class__,
-    worker_node2,
     jumbo_frame_bond1_worker_2,
-    jumbo_frame_bridge_device_name,
+    jumbo_frame_bond_device_name,
     utility_pods,
 ):
     """
@@ -119,34 +113,14 @@ def jumbo_frame_bridge_on_bond_worker_2(
     """
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name=f"jumbo-frame-bridge-on-bond-{worker_node2.name}",
-        interface_name=jumbo_frame_bridge_device_name,
+        nncp_name="jumbo-frame-bridge-on-bond-2",
+        interface_name=jumbo_frame_bond_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=jumbo_frame_bond1_worker_2.node_selector,
         ports=[jumbo_frame_bond1_worker_2.bond_name],
         mtu=9000,
     ) as br:
         yield br
-
-
-@pytest.fixture(scope="class")
-def nad(
-    bridge_device_matrix__class__,
-    namespace,
-    utility_pods,
-    jumbo_frame_bridge_on_bond_worker_1,
-    jumbo_frame_bridge_on_bond_worker_2,
-    jumbo_frame_bridge_device_name,
-):
-    with network_nad(
-        namespace=namespace,
-        nad_type=bridge_device_matrix__class__,
-        nad_name=f"{jumbo_frame_bridge_device_name}-nad",
-        interface_name=jumbo_frame_bridge_device_name,
-        tuning=True,
-        mtu=9000,
-    ) as nad:
-        yield nad
 
 
 @pytest.fixture(scope="class")
@@ -156,63 +130,17 @@ def br1bond_nad(
     namespace,
     jumbo_frame_bridge_on_bond_worker_1,
     jumbo_frame_bridge_on_bond_worker_2,
-    jumbo_frame_bridge_device_name,
+    jumbo_frame_bond_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name=f"{jumbo_frame_bridge_device_name}-bond-nad",
-        interface_name=f"{jumbo_frame_bridge_device_name}-bond",
+        nad_name=f"{jumbo_frame_bond_device_name}-bond-nad",
+        interface_name=f"{jumbo_frame_bond_device_name}-bond",
         tuning=True,
         mtu=9000,
     ) as nad:
         yield nad
-
-
-@pytest.fixture(scope="class")
-def bridge_attached_vma(worker_node1, namespace, unprivileged_client, nad):
-    name = "vma"
-    networks = OrderedDict()
-    networks[nad.name] = nad.name
-    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
-
-    with VirtualMachineForTests(
-        namespace=namespace.name,
-        name=name,
-        body=fedora_vm_body(name=name),
-        networks=networks,
-        interfaces=networks.keys(),
-        node_selector=worker_node1.name,
-        cloud_init_data=cloud_init_data,
-        client=unprivileged_client,
-    ) as vm:
-        vm.start(wait=True)
-        yield vm
-
-
-@pytest.fixture(scope="class")
-def bridge_attached_vmb(worker_node2, namespace, unprivileged_client, nad):
-    name = "vmb"
-    networks = OrderedDict()
-    networks[nad.name] = nad.name
-    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
-    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
-    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
-
-    with VirtualMachineForTests(
-        namespace=namespace.name,
-        name=name,
-        body=fedora_vm_body(name=name),
-        networks=networks,
-        interfaces=networks.keys(),
-        node_selector=worker_node2.name,
-        cloud_init_data=cloud_init_data,
-        client=unprivileged_client,
-    ) as vm:
-        vm.start(wait=True)
-        yield vm
 
 
 @pytest.fixture(scope="class")
@@ -274,16 +202,6 @@ def bond_bridge_attached_vmb(
 
 
 @pytest.fixture(scope="class")
-def running_bridge_attached_vma(bridge_attached_vma):
-    return running_vm(vm=bridge_attached_vma)
-
-
-@pytest.fixture(scope="class")
-def running_bridge_attached_vmb(bridge_attached_vmb):
-    return running_vm(vm=bridge_attached_vmb)
-
-
-@pytest.fixture(scope="class")
 def running_bond_bridge_attached_vma(bond_bridge_attached_vma):
     return running_vm(vm=bond_bridge_attached_vma)
 
@@ -293,21 +211,140 @@ def running_bond_bridge_attached_vmb(bond_bridge_attached_vmb):
     return running_vm(vm=bond_bridge_attached_vmb)
 
 
-@pytest.mark.bugzilla(
-    1814614, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
+# BRIDGE
+@pytest.fixture(scope="class")
+def jumbo_frame_bridge_device_name(index_number):
+    yield f"br{next(index_number)}test"
+
+
+@pytest.fixture(scope="class")
+def jumbo_frame_bridge_device_worker_1(
+    bridge_device_matrix__class__,
+    worker_node1,
+    nodes_available_nics,
+    utility_pods,
+    jumbo_frame_bridge_device_name,
+):
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name="jumbo-frame-bridge-nncp-1",
+        interface_name=jumbo_frame_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.name,
+        ports=[nodes_available_nics[worker_node1.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def jumbo_frame_bridge_device_worker_2(
+    bridge_device_matrix__class__,
+    worker_node2,
+    nodes_available_nics,
+    utility_pods,
+    jumbo_frame_bridge_device_name,
+):
+    with network_device(
+        interface_type=bridge_device_matrix__class__,
+        nncp_name="jumbo-frame-bridge-nncp-2",
+        interface_name=jumbo_frame_bridge_device_name,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.name,
+        ports=[nodes_available_nics[worker_node2.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def br1test_bridge_nad(
+    bridge_device_matrix__class__,
+    namespace,
+    utility_pods,
+    jumbo_frame_bridge_device_name,
+    jumbo_frame_bridge_device_worker_1,
+    jumbo_frame_bridge_device_worker_2,
+):
+    with network_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix__class__,
+        nad_name=f"{jumbo_frame_bridge_device_name}-nad",
+        interface_name=jumbo_frame_bridge_device_name,
+        tuning=True,
+        mtu=9000,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def bridge_attached_vma(
+    worker_node1, namespace, unprivileged_client, br1test_bridge_nad
+):
+    name = "vma"
+    networks = OrderedDict()
+    networks[br1test_bridge_nad.name] = br1test_bridge_nad.name
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+
+    with VirtualMachineForTests(
+        namespace=namespace.name,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=worker_node1.name,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="class")
+def bridge_attached_vmb(
+    worker_node2, namespace, unprivileged_client, br1test_bridge_nad
+):
+    name = "vmb"
+    networks = OrderedDict()
+    networks[br1test_bridge_nad.name] = br1test_bridge_nad.name
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
+    cloud_init_data = FEDORA_CLOUD_INIT_PASSWORD
+    cloud_init_data.update(cloud_init_network_data(data=network_data_data))
+
+    with VirtualMachineForTests(
+        namespace=namespace.name,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=worker_node2.name,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="class")
+def running_bridge_attached_vma(bridge_attached_vma):
+    return running_vm(vm=bridge_attached_vma)
+
+
+@pytest.fixture(scope="class")
+def running_bridge_attached_vmb(bridge_attached_vmb):
+    return running_vm(vm=bridge_attached_vmb)
+
+
 @pytest.mark.usefixtures("skip_rhel7_workers")
-class TestJumboFrame:
+class TestJumboFrameBridge:
     @pytest.mark.polarion("CNV-2685")
     def test_connectivity_over_linux_bridge_large_mtu(
         self,
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
-        jumbo_frame_bridge_on_bond_worker_1,
-        jumbo_frame_bridge_on_bond_worker_2,
         namespace,
-        nad,
+        br1test_bridge_nad,
         bridge_attached_vma,
         bridge_attached_vmb,
         running_bridge_attached_vma,
@@ -320,8 +357,10 @@ class TestJumboFrame:
         ip_header = 20
         assert_ping_successful(
             src_vm=bridge_attached_vma,
-            dst_ip=get_vmi_ip_v4_by_name(vm=running_bridge_attached_vmb, name=nad.name),
-            packetsize=nad.mtu - ip_header - icmp_header,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vm=running_bridge_attached_vmb, name=br1test_bridge_nad.name
+            ),
+            packetsize=br1test_bridge_nad.mtu - ip_header - icmp_header,
         )
 
     @pytest.mark.polarion("CNV-3788")
@@ -330,10 +369,8 @@ class TestJumboFrame:
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         skip_when_one_node,
-        jumbo_frame_bridge_on_bond_worker_1,
-        jumbo_frame_bridge_on_bond_worker_2,
         namespace,
-        nad,
+        br1test_bridge_nad,
         bridge_attached_vma,
         bridge_attached_vmb,
         running_bridge_attached_vma,
@@ -344,14 +381,13 @@ class TestJumboFrame:
         """
         assert_no_ping(
             src_vm=bridge_attached_vma,
-            dst_ip=get_vmi_ip_v4_by_name(vm=running_bridge_attached_vmb, name=nad.name),
-            packetsize=nad.mtu + 100,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vm=running_bridge_attached_vmb, name=br1test_bridge_nad.name
+            ),
+            packetsize=br1test_bridge_nad.mtu + 100,
         )
 
 
-@pytest.mark.bugzilla(
-    1814614, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.usefixtures("skip_rhel7_workers")
 class TestBondJumboFrame:
     @pytest.mark.polarion("CNV-3367")
