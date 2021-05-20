@@ -174,7 +174,7 @@ def test_unsupported_machine_type(namespace, unprivileged_client):
             pytest.fail("VM created with invalid machine type.")
 
 
-@pytest.mark.polarion("CNV-4420")
+@pytest.mark.polarion("CNV-5658")
 def test_major_release_machine_type(machine_type_from_kubevirt_config):
     # CNV should always use a major release for machine type, for example: pc-q35-rhel8.3.0
     assert machine_type_from_kubevirt_config.endswith(
