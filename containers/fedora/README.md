@@ -18,7 +18,8 @@ To execute the build script the following packages needed:
 
 build.sh get Fedora image as parameter, for example:
 ```bash
-./build.sh Fedora-Cloud-Base-32-1.6.x86_64.qcow2 $FEDORA_VERSION
+export FEDORA_IMAGE=Fedora-Cloud-Base-32-1.6.x86_64.qcow2
+./build.sh $FEDORA_IMAGE $FEDORA_VERSION
 ```
 
 This will install:
@@ -38,6 +39,7 @@ This will install:
     libibverbs
     dpdk
     stress-ng
+    iotop
 
 enable qemu-guest-agent and sshd services in the VM.
 If extra packages needed add them in user-data file.
@@ -63,8 +65,8 @@ docker push quay.io/openshift-cnv/qe-cnv-tests-fedora-staging:$FEDORA_VERSION
 32 tag should changed based on the Fedora version.
 
 ### Verify
-Change tests/manifests/vm-fedora.yaml to use fedora-staging image
-`image: quay.io/openshift-cnv/qe-cnv-tests-fedora-staging`
+Change tests/utilities/manifests/vm-fedora.yaml to use fedora-staging image
+`image: quay.io/openshift-cnv/qe-cnv-tests-fedora-staging:<fedora vesion>`
 Run the tests (cnv-tests).
 
 Once verified push the image to quay.io/openshift-cnv/qe-cnv-tests-fedora
@@ -72,6 +74,9 @@ Once verified push the image to quay.io/openshift-cnv/qe-cnv-tests-fedora
 docker tag fedora:$FEDORA_VERSION quay.io/openshift-cnv/qe-cnv-tests-fedora:$FEDORA_VERSION
 docker push quay.io/openshift-cnv/qe-cnv-tests-fedora:$FEDORA_VERSION
 ```
+
+Update tests/utilities/manifests/vm-fedora.yaml with the latest OS tag
+`image: quay.io/openshift-cnv/qe-cnv-tests-fedora:<fedora vesion>`
 
 ### Push qcow image to HTTP servers
 Push qcow2 image to EMEA and USA HTTP servers
