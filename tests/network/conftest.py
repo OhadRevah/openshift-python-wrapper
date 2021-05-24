@@ -48,14 +48,13 @@ def index_number():
 
 @pytest.fixture(scope="session")
 def vlan_tag_id(index_number):
-    # set vlan id based on tlv lab.
-    # current supported range is between 1000-1019.
-    # with this change it should work with both rdu and tlv labs.
-    vlan_upper_range = 1020
-    vlan_id = 999 + next(index_number)
-    if vlan_id > vlan_upper_range:
-        raise ValueError(f"VLAN ID: {vlan_id} is out of range")
-    return vlan_id
+    """
+    set vlan tags based on tlv lab.
+    with this change it should work with both rdu and tlv labs.
+    fixture returns a dictionary with keys of the current supported vlan tags range (1000-1019).
+    """
+    tag_id = 1000
+    return {f"{tag_id + idx}": tag_id + idx for idx in range(20)}
 
 
 @pytest.fixture(scope="session")
