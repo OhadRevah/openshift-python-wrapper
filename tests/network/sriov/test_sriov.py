@@ -128,7 +128,7 @@ def sriov_network_vlan(sriov_node_policy, namespace, sriov_namespace, vlan_tag_i
         sriov_resource_name=sriov_node_policy.resource_name,
         namespace=sriov_namespace,
         sriov_network_namespace=namespace.name,
-        vlan=vlan_tag_id,
+        vlan=vlan_tag_id["1000"],
     ) as sriov_network:
         yield sriov_network
 

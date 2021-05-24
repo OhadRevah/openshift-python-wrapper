@@ -38,7 +38,7 @@ def vlan_iface_dhcp_client_1(utility_pods, vlan_base_iface, vlan_tag_id, dhcp_cl
         worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id,
+        tag=vlan_tag_id["1000"],
         node_selector=dhcp_client_1.name,
         ipv4_enable=True,
         ipv4_dhcp=True,
@@ -60,7 +60,7 @@ def vlan_iface_dhcp_client_2(utility_pods, vlan_base_iface, vlan_tag_id, dhcp_cl
         worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id,
+        tag=vlan_tag_id["1000"],
         node_selector=dhcp_client_2.name,
         ipv4_enable=True,
         ipv4_dhcp=True,
@@ -87,7 +87,7 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
         worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id + 1,
+        tag=vlan_tag_id["1001"],
         ipv4_enable=True,
         ipv4_dhcp=True,
         ipv6_enable=False,
@@ -107,7 +107,7 @@ def vlan_iface_on_all_nodes(
         worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id,
+        tag=vlan_tag_id["1000"],
     ) as vlan_iface:
         yield vlan_iface
 
@@ -206,7 +206,7 @@ def dhcp_server_vlan_iface(
         worker_pods=utility_pods,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id,
+        tag=vlan_tag_id["1000"],
         node_selector=worker_node1.name,
     ) as vlan_iface:
         yield vlan_iface
@@ -280,7 +280,7 @@ def vlan_iface_bond_dhcp_client_1(
             worker_pods=utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
-            tag=vlan_tag_id,
+            tag=vlan_tag_id["1000"],
             node_selector=dhcp_client_1.name,
             ipv4_enable=True,
             ipv4_dhcp=True,
@@ -311,7 +311,7 @@ def vlan_iface_bond_dhcp_client_2(
             worker_pods=utility_pods,
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
-            tag=vlan_tag_id,
+            tag=vlan_tag_id["1000"],
             node_selector=dhcp_client_2.name,
             ipv4_enable=True,
             ipv4_dhcp=True,
