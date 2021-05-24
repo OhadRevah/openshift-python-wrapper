@@ -5,9 +5,9 @@ from ocp_resources.node_maintenance import NodeMaintenance
 from ocp_resources.virtual_machine import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
-from tests.compute.virt import utils as virt_utils
+from tests.conftest import vm_instance_from_template
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.virt import vm_instance_from_template
+from utilities.virt import wait_for_node_schedulable_status
 
 
 @pytest.fixture()
@@ -75,7 +75,7 @@ def test_node_maintenance_job_rhel(
         node for node in nodes if node.name == unscheduled_node_vm.node_selector
     ][0]
     with NodeMaintenance(name="node-maintenance-job", node=vm_node) as nm:
-        virt_utils.wait_for_node_schedulable_status(node=vm_node, status=False)
+        wait_for_node_schedulable_status(node=vm_node, status=False)
         unscheduled_node_vm.start()
         nm.wait_for_status(status=nm.Status.RUNNING)
         unscheduled_node_vm.vmi.wait_for_status(
@@ -85,7 +85,7 @@ def test_node_maintenance_job_rhel(
     assert (
         unscheduled_node_vm.vmi.status == VirtualMachineInstance.Status.SCHEDULING
     ), f"VMI phase should be 'Scheduling', it status is: '{unscheduled_node_vm.vmi.status}"
-    virt_utils.wait_for_node_schedulable_status(node=vm_node, status=True)
+    wait_for_node_schedulable_status(node=vm_node, status=True)
     unscheduled_node_vm.vmi.wait_for_status(
         status=VirtualMachineInstance.Status.RUNNING
     )

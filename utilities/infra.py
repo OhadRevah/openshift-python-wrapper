@@ -521,3 +521,13 @@ def write_to_extras_file(extras_file_name, content, extra_dir_name="extras"):
                 fd.write(content)
         except Exception as exp:
             LOGGER.debug(f"Failed to write extras to file: {extras_file_path} {exp}")
+
+
+def get_pods(dyn_client, namespace, label=None):
+    return list(
+        Pod.get(
+            dyn_client=dyn_client,
+            namespace=namespace.name,
+            label_selector=label,
+        )
+    )

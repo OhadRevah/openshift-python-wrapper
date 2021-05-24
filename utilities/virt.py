@@ -8,6 +8,7 @@ import subprocess
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from subprocess import run
 
 import jinja2
 import pexpect
@@ -1825,3 +1826,43 @@ def vm_instance_from_template(
                 enable_ssh=vm.ssh,
             )
         yield vm
+
+
+@contextmanager
+def node_mgmt_console(node, node_mgmt):
+    try:
+        LOGGER.info(f"{node_mgmt.capitalize()} the node {node.name}")
+        extra_opts = (
+            "--delete-local-data --ignore-daemonsets=true --force"
+            if node_mgmt == "drain"
+            else ""
+        )
+        run(
+            f"nohup oc adm {node_mgmt} {node.name} {extra_opts} &",
+            shell=True,
+        )
+        yield
+    finally:
+        LOGGER.info(f"Uncordon node {node.name}")
+        run(f"oc adm uncordon {node.name}", shell=True)
+        wait_for_node_schedulable_status(node=node, status=True)
+
+
+def wait_for_node_schedulable_status(node, status, timeout=60):
+    """
+    Wait for node status to be ready (status=True) or unschedulable (status=False)
+    """
+    LOGGER.info(
+        f"Wait for node {node.name} to be {Node.Status.READY if status else Node.Status.SCHEDULING_DISABLED}."
+    )
+
+    sampler = TimeoutSampler(
+        wait_timeout=timeout, sleep=1, func=lambda: node.instance.spec.unschedulable
+    )
+    for sample in sampler:
+        if status:
+            if not sample and not kubernetes_taint_exists(node):
+                return
+        else:
+            if sample and kubernetes_taint_exists(node):
+                return

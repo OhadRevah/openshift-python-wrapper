@@ -5,6 +5,7 @@ from ipaddress import ip_interface
 from ocp_resources.pod import Pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.infra import get_pods
 from utilities.network import cloud_init_network_data, get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     VirtualMachineForTests,
@@ -39,16 +40,6 @@ def vm_network_config(mac_pool, all_nads, end_ip, mac_uid):
             ip_address=f"10.200.4.{end_ip}", mac_address="auto", name=all_nads[3]
         ),
     }
-
-
-def get_pods(dyn_client, namespace, label=None):
-    return list(
-        Pod.get(
-            dyn_client=dyn_client,
-            namespace=namespace.name,
-            label_selector=label,
-        )
-    )
 
 
 def wait_for_kmp_pods_creation(dyn_client, namespace, replicas):

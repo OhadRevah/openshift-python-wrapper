@@ -4,8 +4,6 @@
 
 import logging
 import random
-from contextlib import contextmanager
-from subprocess import run
 
 import pytest
 from ocp_resources.node_maintenance import NodeMaintenance
@@ -25,36 +23,19 @@ from tests.os_params import (
 )
 from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN, TIMEOUT_30MIN
 from utilities.infra import get_bug_status, get_bugzilla_connection_params
-from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    node_mgmt_console,
+    running_vm,
+    wait_for_node_schedulable_status,
+)
 
 
 pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@contextmanager
-def node_mgmt_console(node, node_mgmt):
-    try:
-        LOGGER.info(f"{node_mgmt.capitalize()} the node {node.name}")
-        extra_opts = (
-            "--delete-local-data --ignore-daemonsets=true --force"
-            if node_mgmt == "drain"
-            else ""
-        )
-        run(
-            f"nohup oc adm {node_mgmt} {node.name} {extra_opts} &",
-            shell=True,
-        )
-        yield
-    finally:
-        LOGGER.info(f"Uncordon node {node.name}")
-        run(f"oc adm uncordon {node.name}", shell=True)
-        virt_utils.wait_for_node_schedulable_status(
-            node=node,
-            status=True,
-        )
 
 
 def drain_using_console(dyn_client, source_node, source_pod, vm):
@@ -132,7 +113,7 @@ def assert_pod_status_completed(source_pod):
 def check_draining_process(dyn_client, source_pod, vm):
     source_node = source_pod.node
     LOGGER.info(f"The VMI was running on {source_node.name}")
-    virt_utils.wait_for_node_schedulable_status(node=source_node, status=False)
+    wait_for_node_schedulable_status(node=source_node, status=False)
     for migration_job in VirtualMachineInstanceMigration.get(
         dyn_client=dyn_client, namespace=vm.namespace
     ):
@@ -248,7 +229,7 @@ class TestNodeMaintenanceRHEL:
                     vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
                 )
                 nm.wait_for_status(status=nm.Status.SUCCEEDED, timeout=360)
-            virt_utils.wait_for_node_schedulable_status(node=source_node, status=True)
+            wait_for_node_schedulable_status(node=source_node, status=True)
 
     @pytest.mark.polarion("CNV-2292")
     def test_node_drain_using_console_rhel(

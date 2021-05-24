@@ -5,7 +5,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import KMP_VM_ASSIGNMENT_LABEL
-from utilities.infra import create_ns, name_prefix
+from utilities.infra import create_ns, get_pods, name_prefix
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -371,7 +371,7 @@ def kmp_crash_loop(
         }
     ):
         kmp_utils.wait_for_pods_deletion(
-            pods=kmp_utils.get_pods(
+            pods=get_pods(
                 dyn_client=admin_client,
                 namespace=hco_namespace,
                 label=kmp_utils.KMP_PODS_LABEL,
@@ -404,8 +404,6 @@ def ovnkube_node_daemonset(ovn_ns):
 
 @pytest.fixture()
 def deleted_ovnkube_node_pod(admin_client, ovn_ns):
-    pods = kmp_utils.get_pods(
-        dyn_client=admin_client, namespace=ovn_ns, label="app=ovnkube-node"
-    )
+    pods = get_pods(dyn_client=admin_client, namespace=ovn_ns, label="app=ovnkube-node")
     assert pods, "No ovnkube-node pods were found"
     pods[0].delete(wait=True)
