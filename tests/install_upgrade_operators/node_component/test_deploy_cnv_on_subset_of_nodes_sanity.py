@@ -70,6 +70,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_change_infrastructure_components_on_selected_node_before_workload(
         self,
+        alter_np_configuration,
         hco_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
@@ -98,6 +99,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_change_workload_components_on_selected_node_before_workload(
         self,
+        alter_np_configuration,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
         expected_node_by_label,
@@ -164,6 +166,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_infrastructure_components_selection_change_allowed_with_workloads(
         self,
+        alter_np_configuration,
         vm_placement_vm_work3,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
@@ -225,6 +228,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_infrastructure_components_selection_change_allowed_after_workloads(
         self,
+        alter_np_configuration,
         delete_vm_after_placement,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
@@ -284,6 +288,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_workload_components_selection_change_allowed_after_workloads(
         self,
+        alter_np_configuration,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
         expected_node_by_label,
