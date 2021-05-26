@@ -5,7 +5,7 @@ import pytest
 from ocp_resources.daemonset import DaemonSet
 from pytest_testconfig import config as py_config
 
-from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
+from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
@@ -153,9 +153,22 @@ def nmstate_linux_bridge_attached_running_vmb(nmstate_linux_bridge_attached_vmb)
     return running_vm(vm=nmstate_linux_bridge_attached_vmb)
 
 
-@pytest.mark.bugzilla(
-    1936432, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
+@pytest.fixture()
+def vmb_dst_ip(nmstate_linux_nad, nmstate_linux_bridge_attached_running_vmb):
+    return get_vmi_ip_v4_by_name(
+        vm=nmstate_linux_bridge_attached_running_vmb,
+        name=nmstate_linux_nad.name,
+    )
+
+
+@pytest.fixture()
+def vmb_pinged(vmb_dst_ip, nmstate_linux_bridge_attached_running_vma):
+    assert_ping_successful(
+        src_vm=nmstate_linux_bridge_attached_running_vma,
+        dst_ip=vmb_dst_ip,
+    )
+
+
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5780")
 def test_nmstate_restart_and_check_connectivity(
@@ -166,40 +179,30 @@ def test_nmstate_restart_and_check_connectivity(
     nmstate_linux_bridge_attached_vmb,
     nmstate_linux_bridge_attached_running_vma,
     nmstate_linux_bridge_attached_running_vmb,
+    vmb_dst_ip,
+    vmb_pinged,
 ):
-    dst_ip = get_vmi_ip_v4_by_name(
-        vm=nmstate_linux_bridge_attached_running_vmb,
-        name=nmstate_linux_nad.name,
-    )
-    ping_log = (
-        f"Check connectivity from {nmstate_linux_bridge_attached_running_vma.name} "
-        f"to {nmstate_linux_bridge_attached_running_vmb.name} "
-        f"IP {dst_ip}"
-    )
-
     for idx in range(5):
-        if idx == 0:
-            LOGGER.info(f"{ping_log} Before NMstate redeployed")
-            assert_ping_successful(
-                src_vm=nmstate_linux_bridge_attached_running_vma,
-                dst_ip=dst_ip,
-            )
-        nmstate_pods = get_pod_by_name_prefix(
+        LOGGER.info("Delete NMstate PODs")
+        for pod in get_pod_by_name_prefix(
             dyn_client=admin_client,
             pod_prefix="nmstate-handler",
             namespace=HCO_NAMESPACE,
             get_all=True,
-        )
-        LOGGER.info("Delete NMstate PODs")
-        for pod in nmstate_pods:
+        ):
             pod.delete(wait=True)
 
         nmstate_ds.wait_until_deployed()
-        LOGGER.info(f"{ping_log} after NMstate PODs redeployed")
+        LOGGER.info(
+            (
+                f"Check connectivity from {nmstate_linux_bridge_attached_running_vma.name} "
+                f"to {nmstate_linux_bridge_attached_running_vmb.name} "
+                f"IP {vmb_dst_ip}. Ping number: {idx + 1}"
+            )
+        )
 
-        LOGGER.info(f"Ping number: {idx}")
         assert_ping_successful(
             src_vm=nmstate_linux_bridge_attached_running_vma,
-            dst_ip=dst_ip,
+            dst_ip=vmb_dst_ip,
             count="60",
         )
