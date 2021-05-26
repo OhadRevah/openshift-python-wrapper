@@ -366,45 +366,6 @@ def test_wrong_content_type(
 
 
 @pytest.mark.parametrize(
-    ("dv_name", "file_name", "error_message"),
-    [
-        pytest.param(
-            "large-json",
-            "invalid-qcow-large-json.img",
-            ErrorMsg.REQUESTED_RANGE_NOT_SATISFIABLE,
-            marks=(pytest.mark.polarion("CNV-2554"),),
-        ),
-    ],
-)
-def test_import_invalid_qcow(
-    admin_client,
-    namespace,
-    storage_class_matrix__module__,
-    images_internal_http_server,
-    dv_name,
-    file_name,
-    error_message,
-    bugzilla_connection_params,
-):
-    with utilities.storage.create_dv(
-        source="http",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        url=get_file_url(url=images_internal_http_server["http"], file_name=file_name),
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
-    ) as dv:
-        dv.wait_for_status(
-            status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=60,
-            stop_status=DataVolume.Status.SUCCEEDED,
-        )
-        importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
-        wait_for_importer_container_message(
-            importer_pod=importer_pod, msg=error_message
-        )
-
-
-@pytest.mark.parametrize(
     ("content_type", "file_name"),
     [
         pytest.param(
