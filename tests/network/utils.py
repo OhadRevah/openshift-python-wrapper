@@ -25,9 +25,9 @@ EOF
 """
 
 
-def assert_no_ping(src_vm, dst_ip, packetsize=None, count=None):
+def assert_no_ping(src_vm, dst_ip, packet_size=None, count=None):
     assert (
-        ping(src_vm=src_vm, dst_ip=dst_ip, packetsize=packetsize, count=count)[0]
+        ping(src_vm=src_vm, dst_ip=dst_ip, packet_size=packet_size, count=count)[0]
         == "100"
     )
 

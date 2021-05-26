@@ -738,12 +738,24 @@ def cloud_init_network_data(data):
     return network_data
 
 
-def ping(src_vm, dst_ip, packetsize=None, count=None):
+def ping(src_vm, dst_ip, packet_size=None, count=None):
+    """
+    Ping with quite output.
+
+    Args:
+        src_vm: Source VM to execute the ping from.
+        dst_ip: Destination ip to ping.
+        packet_size: Number of data bytes to send.
+        count: Amount of packets.
+
+    Returns:
+        int: The packet loss amount in a number (Range - 0 to 100).
+    """
     ping_ipv6 = "-6 " if get_ipv6_ip_str(dst_ip=dst_ip) else ""
 
     ping_cmd = f"ping {ping_ipv6}-w {count if count else '3'} {dst_ip}"
-    if packetsize:
-        ping_cmd += f" -s {packetsize} -M do"
+    if packet_size:
+        ping_cmd += f" -s {packet_size} -M do"
 
     rc, out, err = src_vm.ssh_exec.run_command(command=shlex.split(ping_cmd))
     out_to_process = err or out
@@ -754,14 +766,15 @@ def ping(src_vm, dst_ip, packetsize=None, count=None):
             return match.groups()
 
 
-def assert_ping_successful(src_vm, dst_ip, packetsize=None, count=None):
-    if packetsize and packetsize > 1500:
+def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
+    if packet_size and packet_size > 1500:
         icmp_header = 8
         ip_header = 20
-        packetsize = packetsize - ip_header - icmp_header
+        packet_size = packet_size - ip_header - icmp_header
 
     assert (
-        ping(src_vm=src_vm, dst_ip=dst_ip, packetsize=packetsize, count=count)[0] == "0"
+        ping(src_vm=src_vm, dst_ip=dst_ip, packet_size=packet_size, count=count)[0]
+        == "0"
     )
 
 

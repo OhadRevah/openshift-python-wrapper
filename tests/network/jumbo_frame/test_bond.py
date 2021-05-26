@@ -231,7 +231,7 @@ class TestBondJumboFrame:
             dst_ip=get_vmi_ip_v4_by_name(
                 vm=running_bond_bridge_attached_vmb, name=br1bond_nad.name
             ),
-            packetsize=br1bond_nad.mtu - ip_header - icmp_header,
+            packet_size=br1bond_nad.mtu - ip_header - icmp_header,
         )
 
     @pytest.mark.polarion("CNV-3368")
@@ -258,5 +258,5 @@ class TestBondJumboFrame:
             dst_ip=get_vmi_ip_v4_by_name(
                 vm=running_bond_bridge_attached_vmb, name=br1bond_nad.name
             ),
-            packetsize=br1bond_nad.mtu + 100,
+            packet_size=br1bond_nad.mtu + 100,
         )

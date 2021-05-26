@@ -162,7 +162,7 @@ class TestJumboFrameBridge:
             dst_ip=get_vmi_ip_v4_by_name(
                 vm=running_bridge_attached_vmb, name=br1test_bridge_nad.name
             ),
-            packetsize=br1test_bridge_nad.mtu - ip_header - icmp_header,
+            packet_size=br1test_bridge_nad.mtu - ip_header - icmp_header,
         )
 
     @pytest.mark.polarion("CNV-3788")
@@ -186,5 +186,5 @@ class TestJumboFrameBridge:
             dst_ip=get_vmi_ip_v4_by_name(
                 vm=running_bridge_attached_vmb, name=br1test_bridge_nad.name
             ),
-            packetsize=br1test_bridge_nad.mtu + 100,
+            packet_size=br1test_bridge_nad.mtu + 100,
         )

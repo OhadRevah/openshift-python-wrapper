@@ -316,7 +316,7 @@ class TestPingConnectivity:
         assert_ping_successful(
             src_vm=running_sriov_vm1,
             dst_ip=get_vmi_ip_v4_by_name(vm=running_sriov_vm2, name=sriov_network.name),
-            packetsize=9000,
+            packet_size=9000,
         )
 
     @pytest.mark.polarion("CNV-3958")
