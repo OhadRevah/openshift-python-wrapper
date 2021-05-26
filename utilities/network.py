@@ -751,9 +751,9 @@ def ping(src_vm, dst_ip, packet_size=None, count=None):
     Returns:
         int: The packet loss amount in a number (Range - 0 to 100).
     """
-    ping_ipv6 = "-6 " if get_ipv6_ip_str(dst_ip=dst_ip) else ""
+    ping_ipv6 = "-6" if get_ipv6_ip_str(dst_ip=dst_ip) else ""
 
-    ping_cmd = f"ping {ping_ipv6}-w {count if count else '3'} {dst_ip}"
+    ping_cmd = f"ping {ping_ipv6} -c {count if count else '3'} {dst_ip}"
     if packet_size:
         ping_cmd += f" -s {packet_size} -M do"
 
