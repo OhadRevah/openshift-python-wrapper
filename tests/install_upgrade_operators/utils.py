@@ -23,13 +23,21 @@ def cnv_target_version_channel(cnv_version):
     return target_version, target_channel
 
 
+def get_current_csv(dyn_client, hco_namespace, hco_current_version):
+    for csv in ClusterServiceVersion.get(
+        dyn_client=dyn_client, namespace=hco_namespace
+    ):
+        if csv.name == hco_current_version:
+            return csv
+
+
 def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=ClusterServiceVersion.get,
         dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
+        namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
     csvs = None

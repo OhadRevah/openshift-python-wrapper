@@ -113,10 +113,11 @@ def wait_for_operator_replacement(
             return operator
 
 
-def pod_status_and_image(
+def wait_for_new_operator_pod(
     dyn_client,
     hco_namespace,
-    operators_version,
+    operator_name,
+    operator_target_info,
     old_operators_pods,
     delete_pod=False,
 ):
@@ -131,7 +132,7 @@ def pod_status_and_image(
             return wait_for_operator_replacement(
                 dyn_client=dyn_client,
                 hco_namespace=hco_namespace,
-                operator_name=oper_name,
+                operator_name=operator_name,
                 old_operator_pods=old_operators_pods,
             )
         # For new operators which did not exist in a previous version
@@ -139,16 +140,19 @@ def pod_status_and_image(
             return get_operator_by_name(
                 dyn_client=dyn_client,
                 hco_namespace=hco_namespace,
-                operator_name=oper_name,
+                operator_name=operator_name,
             )
 
     def _check_operator_pod_image(pod):
-        return pod.instance.spec.containers[0].image == image_ver
+        return pod.instance.spec.containers[0].image == operator_target_info["image"]
 
-    oper_name, image_ver = operators_version
-    old_operators_pods = [pod for pod in old_operators_pods if oper_name in pod.name]
+    old_operators_pods = [
+        pod for pod in old_operators_pods if operator_name in pod.name
+    ]
 
-    LOGGER.info(f"Verify operator pod {oper_name} replacement.")
+    LOGGER.info(
+        f"Verify new operator pod {operator_name} {'replacement' if old_operators_pods else ''}."
+    )
 
     new_pod_sampler = TimeoutSampler(
         wait_timeout=utilities.constants.TIMEOUT_30MIN,
@@ -158,6 +162,19 @@ def pod_status_and_image(
 
     new_operator_pod = None
     for new_operator_pod in new_pod_sampler:
+        if (
+            operator_target_info["strategy"] != "Recreate"
+            and not is_pod_in_ready_condition(pod=new_operator_pod)
+            and old_operators_pods
+        ):
+            old_pods_in_ready_condition = {
+                pod.name: is_pod_in_ready_condition(pod=pod)
+                for pod in old_operators_pods
+            }
+            assert all(old_pods_in_ready_condition.values()), (
+                f"Old pods removed before new pods are ready, "
+                f"new_pod={new_operator_pod.name} old_pods_ready={old_pods_in_ready_condition}"
+            )
         if _check_operator_pod_image(pod=new_operator_pod):
             break
 
@@ -167,7 +184,7 @@ def pod_status_and_image(
         new_operator_pod = get_operator_by_name(
             dyn_client=dyn_client,
             hco_namespace=hco_namespace,
-            operator_name=oper_name,
+            operator_name=operator_name,
         )
 
     LOGGER.info(f"Wait for {new_operator_pod.name} to be ready")
@@ -178,31 +195,55 @@ def pod_status_and_image(
     )
 
 
-def check_pods_status_and_images(
-    dyn_client, hco_namespace, old_operators_pods, operators_versions, delete_pods
+def is_pod_in_ready_condition(pod):
+    if pod.exists:
+        for condition in pod.instance.status.conditions:
+            if (
+                condition.type == Pod.Condition.READY
+                and condition.status == Pod.Condition.Status.TRUE
+            ):
+                return True
+    return False
+
+
+def wait_for_operator_pod_replacements(
+    dyn_client,
+    hco_namespace,
+    old_operators_pods,
+    operators_current_versions,
+    operators_target_versions,
+    delete_pods,
 ):
     LOGGER.info(
-        "Check that all operators PODs have been replaced and have new images version and have status ready. "
+        "Verify all operators Pods with new images get replaced and have the new images version and status ready. "
         "Testing upgrade resilience is "
         f"{'enabled (pods will be deleted during upgrade)' if delete_pods else 'disabled'}."
     )
 
     processes = []
 
-    for operators_version in operators_versions.items():
-        sub_process = Process(
-            name=operators_version[0],
-            target=pod_status_and_image,
-            kwargs={
-                "dyn_client": dyn_client,
-                "hco_namespace": hco_namespace,
-                "operators_version": operators_version,
-                "old_operators_pods": old_operators_pods,
-                "delete_pod": delete_pods,
-            },
-        )
-        processes.append(sub_process)
-        sub_process.start()
+    for operator_name, operator_target_info in operators_target_versions.items():
+        operator_current_info = operators_current_versions.get(operator_name)
+        if (
+            operator_current_info
+            and operator_target_info["image"] != operator_current_info["image"]
+        ):
+            sub_process = Process(
+                name=operator_name,
+                target=wait_for_new_operator_pod,
+                kwargs={
+                    "dyn_client": dyn_client,
+                    "hco_namespace": hco_namespace,
+                    "operator_name": operator_name,
+                    "operator_target_info": operator_target_info,
+                    "old_operators_pods": old_operators_pods,
+                    "delete_pod": delete_pods,
+                },
+            )
+            processes.append(sub_process)
+            sub_process.start()
+        else:
+            LOGGER.info(f"operator pod {operator_name} does not need replacement.")
 
     for process in processes:
         process.join()
@@ -212,14 +253,30 @@ def check_pods_status_and_images(
     }
     assert (
         not failed_processes
-    ), f"Failed to replace all operator pods. Failed pods: {failed_processes}"
+    ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
 
 
-def get_operators_names_and_images(csv):
-    operators_versions = {}
+def get_related_images_name_and_version(csv):
+    related_images_name_and_versions = {}
+    for item in csv.instance.spec.relatedImages:
+        # example of "name": 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
+        # sample output after parsing: name = 'node-maintenance-operator' and version = 'v2.6.3-1'
+        name, version = item["name"].rpartition("/")[-1].split(":", 1)
+        related_images_name_and_versions[name] = {
+            "image": item["image"],
+            "version": version,
+        }
+    return related_images_name_and_versions
+
+
+def get_operators_names_and_info(csv):
+    operators_info = {}
     for deploy in csv.instance.spec.install.spec.deployments:
-        operators_versions[deploy.name] = deploy.spec.template.spec.containers[0].image
-    return operators_versions
+        operators_info[deploy.name] = {
+            "image": deploy.spec.template.spec.containers[0].image,
+            "strategy": deploy.spec.strategy.get("type", "RollingUpdate"),
+        }
+    return operators_info
 
 
 def get_clusterversion(dyn_client):
@@ -337,7 +394,9 @@ def get_images_from_manifest(dyn_client, hco_namespace, target_version):
             ][0]
 
 
-def check_tier2_pods_images(dyn_client, hco_namespace, hco_target_version):
+def check_tier2_pods_images(
+    dyn_client, hco_namespace, hco_target_version, pods_not_to_be_removed
+):
     updated_images_list = get_images_from_manifest(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
@@ -347,10 +406,13 @@ def check_tier2_pods_images(dyn_client, hco_namespace, hco_target_version):
         dyn_client=dyn_client, hco_namespace=hco_namespace, pods_type="tier-2"
     )
 
+    pods_not_to_be_replaced_names = [pod.name for pod in pods_not_to_be_removed]
+
     unreplaced_pods = [
         pod.name
         for pod in cluster_pods
-        if pod.instance.spec.containers[0].image not in updated_images_list
+        if pod.name not in pods_not_to_be_replaced_names
+        and pod.instance.spec.containers[0].image not in updated_images_list
     ]
 
     assert (
@@ -686,7 +748,8 @@ def wait_for_mcp_update(dyn_client):
 def upgrade_cnv(
     dyn_client,
     hco_namespace,
-    hco_version,
+    hco_target_version,
+    hco_current_version,
     image,
     cnv_upgrade_path,
     upgrade_resilience,
@@ -694,7 +757,7 @@ def upgrade_cnv(
     cnv_source,
 ):
     LOGGER.info(f"CNV upgrade: {cnv_upgrade_path}")
-    LOGGER.info("Get all operators PODs before upgrade")
+    LOGGER.info("Get all operators Pods before upgrade")
     old_operators_pods = get_cluster_pods(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
@@ -702,6 +765,27 @@ def upgrade_cnv(
     )
     all_old_pods = get_cluster_pods(
         dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
+    )
+    # retrieve the old pod images now because after the upgrade the pod will raise an exception:
+    # kubernetes.client.exceptions.ApiException: (404)
+    # Reason: NotFound
+    old_pod_images = {
+        pod.name: pod.instance.spec.containers[0].image for pod in all_old_pods
+    }
+
+    LOGGER.info(f"Get current CSV {hco_current_version}")
+    current_csv = utils.get_current_csv(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        hco_current_version=hco_current_version,
+    )
+
+    LOGGER.info("Get all operators Pods names and images version from the current CSV")
+    operators_current_versions = get_operators_names_and_info(csv=current_csv)
+
+    LOGGER.info("Get all related images names and versions from the current CSV")
+    current_related_images_name_and_versions = get_related_images_name_and_version(
+        csv=current_csv
     )
 
     if cnv_source != "production":
@@ -724,7 +808,7 @@ def upgrade_cnv(
     install_plan = utils.wait_for_install_plan(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        hco_target_version=hco_version,
+        hco_target_version=hco_target_version,
     )
 
     LOGGER.info("Approve the install plan to trigger the upgrade.")
@@ -734,7 +818,7 @@ def upgrade_cnv(
     new_csv = utils.wait_for_csv(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        hco_target_version=hco_version,
+        hco_target_version=hco_target_version,
     )
 
     LOGGER.info("Check that CSV status is Installing")
@@ -744,15 +828,29 @@ def upgrade_cnv(
         stop_status=None,
     )
 
-    LOGGER.info("Get all operators PODs names and images version from the new CSV")
-    operators_versions = get_operators_names_and_images(csv=new_csv)
+    LOGGER.info("Get all operators Pods names and images version from the new CSV")
+    operators_target_versions = get_operators_names_and_info(csv=new_csv)
+
+    LOGGER.info("Get all related images names and versions from the new CSV")
+    target_related_images_name_and_versions = get_related_images_name_and_version(
+        csv=new_csv
+    )
+
+    LOGGER.info("determine which old pods should be gone after upgrade")
+    pods_to_be_removed, pods_not_to_be_removed = determine_pods_to_be_removed(
+        all_old_pods=all_old_pods,
+        old_pod_images=old_pod_images,
+        current_related_images_name_and_versions=current_related_images_name_and_versions,
+        target_related_images_name_and_versions=target_related_images_name_and_versions,
+    )
 
     LOGGER.info("Wait for operators replacement.")
-    check_pods_status_and_images(
+    wait_for_operator_pod_replacements(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         old_operators_pods=old_operators_pods,
-        operators_versions=operators_versions,
+        operators_current_versions=operators_current_versions,
+        operators_target_versions=operators_target_versions,
         delete_pods=upgrade_resilience,
     )
 
@@ -792,15 +890,76 @@ def upgrade_cnv(
         stop_status=None,
     )
 
-    LOGGER.info("Wait for all previous pods to be deleted")
-    wait_for_pods_removal(pods_list=all_old_pods)
+    LOGGER.info("Wait for all old pods to be removed after upgrade")
+    wait_for_pods_removal(pods_list=pods_to_be_removed)
 
     LOGGER.info("Verify tier-2 pods images were updated")
     check_tier2_pods_images(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        hco_target_version=hco_version,
+        hco_target_version=hco_target_version,
+        pods_not_to_be_removed=pods_not_to_be_removed,
     )
+
+
+def determine_pods_to_be_removed(
+    all_old_pods,
+    old_pod_images,
+    current_related_images_name_and_versions,
+    target_related_images_name_and_versions,
+):
+    """
+    Filter the list of pods before the upgrade to determine which ones need to be replaced
+
+    using the related images from the csv before and after the upgrade
+    the image on pre-upgrade pod can be used to find the name of the related image on the pre-upgrade csv
+    this can be matched to the related image on the post-upgrade csv using the name
+    if the images are the same for that pod then it should not be removed by the upgrade
+
+    Args:
+        all_old_pods (list): list of all the pre-upgrade Pods
+        old_pod_images (dict): the pre-upgrade Pod names mapped to their images
+        current_related_images_name_and_versions (dict): related images names and versions from pre-upgrade csv
+        target_related_images_name_and_versions (dict): related images names and versions from post-upgrade csv
+
+    Returns:
+        (list, list): (Pods to be removed, Pods not to be removed)
+
+    Raises:
+        (ValueError): pod images which are not found in related images
+    """
+    pods_to_be_removed = []
+    pods_not_to_be_removed = []
+    missing_pod_images = {}
+    for pod in all_old_pods:
+        pod_image = old_pod_images[pod.name]
+        for image_name in current_related_images_name_and_versions.keys():
+            if (
+                current_related_images_name_and_versions[image_name]["image"]
+                == pod_image
+            ):
+                break
+        else:
+            missing_pod_images[pod.name] = pod_image
+            continue
+        if (
+            image_name not in target_related_images_name_and_versions
+            or current_related_images_name_and_versions[image_name]["image"]
+            != target_related_images_name_and_versions[image_name]["image"]
+        ):
+            pods_to_be_removed.append(pod)
+        else:
+            pods_not_to_be_removed.append(pod)
+    if missing_pod_images:
+        raise ValueError(
+            f"some pod images not found in related images: {missing_pod_images}"
+        )
+    LOGGER.info(
+        f"finished determining which pods should be removed: "
+        f"to_remove={[pod.name for pod in pods_to_be_removed]} "
+        f"not_to_remove={[pod.name for pod in pods_not_to_be_removed]}"
+    )
+    return pods_to_be_removed, pods_not_to_be_removed
 
 
 def extract_ocp_version(ocp_image):

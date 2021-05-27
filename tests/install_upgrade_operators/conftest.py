@@ -18,13 +18,18 @@ def cnv_registry_source(cnv_source):
 
 
 @pytest.fixture(scope="session")
-def cnv_version(pytestconfig):
+def cnv_target_version(pytestconfig):
     return pytestconfig.option.cnv_version
 
 
 @pytest.fixture(scope="session")
-def hco_version(cnv_version):
-    return f"kubevirt-hyperconverged-operator.v{cnv_version}"
+def hco_target_version(cnv_target_version):
+    return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
+
+
+@pytest.fixture(scope="session")
+def hco_current_version(cnv_current_version):
+    return f"kubevirt-hyperconverged-operator.v{cnv_current_version}"
 
 
 @pytest.fixture(scope="module")
