@@ -70,6 +70,7 @@ from utilities.infra import (
     get_bug_status,
     get_bugzilla_connection_params,
     get_schedulable_nodes_ips,
+    name_prefix,
     prepare_test_dir_log,
     run_ssh_commands,
     separator,
@@ -1608,7 +1609,7 @@ def worker_nodes_ipv4_false_secondary_nics(
     for worker_node in schedulable_nodes:
         worker_nics = nodes_available_nics[worker_node.name]
         with EthernetNetworkConfigurationPolicy(
-            name=f"disable-ipv4-{worker_node.name}",
+            name=f"disable-ipv4-{name_prefix(worker_node.name)}",
             node_selector=worker_node.name,
             ipv4_dhcp=False,
             worker_pods=utility_pods,

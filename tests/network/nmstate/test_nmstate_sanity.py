@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, name_prefix
 from utilities.network import EthernetNetworkConfigurationPolicy
 
 
@@ -13,7 +13,7 @@ IP_LIST = [{"ip": "1.1.1.1", "prefix-length": 24}]
 @pytest.mark.polarion("CNV-5721")
 def test_no_ip(worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics):
     with EthernetNetworkConfigurationPolicy(
-        name=f"no-ip-{worker_node1.name}",
+        name=f"no-ip-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
         ipv4_dhcp=False,
         worker_pods=utility_pods,
@@ -29,7 +29,7 @@ def test_static_ip(
     worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics
 ):
     with EthernetNetworkConfigurationPolicy(
-        name=f"static-ip-{worker_node1.name}",
+        name=f"static-ip-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
         ipv4_dhcp=False,
         ipv4_enable=True,
@@ -46,7 +46,7 @@ def test_dynamic_ip(
     worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics
 ):
     with EthernetNetworkConfigurationPolicy(
-        name=f"dynamic-ip-{worker_node1.name}",
+        name=f"dynamic-ip-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
         ipv4_dhcp=True,
         ipv4_enable=True,
@@ -70,7 +70,7 @@ def test_dns(worker_node1, utility_pods, nodes_occupied_nics):
         }
     }
     with EthernetNetworkConfigurationPolicy(
-        name=f"dns-{worker_node1.name}",
+        name=f"dns-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
         dns_resolver=dns_resolver,
     ):
@@ -93,7 +93,7 @@ def test_static_route(
         ]
     }
     with EthernetNetworkConfigurationPolicy(
-        name=f"static-route-{worker_node1.name}",
+        name=f"static-route-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
         ipv4_dhcp=False,
         ipv4_enable=True,

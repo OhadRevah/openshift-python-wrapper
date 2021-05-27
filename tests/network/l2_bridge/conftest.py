@@ -11,7 +11,7 @@ from tests.network.utils import (
     DHCP_SERVICE_RESTART,
     update_cloud_init_extra_user_data,
 )
-from utilities.infra import run_ssh_commands
+from utilities.infra import name_prefix, run_ssh_commands
 from utilities.network import cloud_init_network_data, network_device, network_nad
 from utilities.virt import (
     VirtualMachineForTests,
@@ -51,7 +51,7 @@ def l2_bridge_device_worker_1(
 ):
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name=f"l2-bridge-{worker_node1.name}",
+        nncp_name=f"l2-bridge-{name_prefix(worker_node1.name)}",
         interface_name=l2_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
@@ -70,7 +70,7 @@ def l2_bridge_device_worker_2(
 ):
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name=f"l2-bridge-{worker_node2.name}",
+        nncp_name=f"l2-bridge-{name_prefix(worker_node2.name)}",
         interface_name=l2_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,

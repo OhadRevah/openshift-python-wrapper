@@ -428,3 +428,7 @@ def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
 
 def private_to_public_key(key):
     return paramiko.RSAKey.from_private_key_file(key).get_base64()
+
+
+def name_prefix(name):
+    return name.split(".")[0]

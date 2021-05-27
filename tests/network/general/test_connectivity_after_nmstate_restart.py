@@ -5,7 +5,7 @@ import pytest
 from ocp_resources.daemonset import DaemonSet
 from pytest_testconfig import config as py_config
 
-from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix
+from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
@@ -36,7 +36,7 @@ def nmstate_linux_bridge_device_worker_1(
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name=f"restart-nmstate-{worker_node1.name}",
+        nncp_name=f"restart-nmstate-{name_prefix(worker_node1.name)}",
         interface_name=BRIDGE_NAME,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
@@ -51,7 +51,7 @@ def nmstate_linux_bridge_device_worker_2(
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name=f"restart-nmstate-{worker_node2.name}",
+        nncp_name=f"restart-nmstate-{name_prefix(worker_node2.name)}",
         interface_name=BRIDGE_NAME,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,

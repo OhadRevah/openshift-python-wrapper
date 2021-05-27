@@ -8,7 +8,7 @@ from pytest_testconfig import config as py_config
 
 from tests.network.conftest import IPV6_STR
 from tests.network.utils import assert_no_ping, run_test_guest_performance
-from utilities.infra import BUG_STATUS_CLOSED
+from utilities.infra import BUG_STATUS_CLOSED, name_prefix
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -50,7 +50,7 @@ def ovs_linux_bridge_device_worker_1(
 ):
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name=f"ovs-linux-bridge-{worker_node1.name}",
+        nncp_name=f"ovs-linux-bridge-{name_prefix(worker_node1.name)}",
         interface_name=ovs_linux_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
@@ -69,7 +69,7 @@ def ovs_linux_bridge_device_worker_2(
 ):
     with network_device(
         interface_type=bridge_device_matrix__class__,
-        nncp_name=f"ovs-linux-bridge-{worker_node2.name}",
+        nncp_name=f"ovs-linux-bridge-{name_prefix(worker_node2.name)}",
         interface_name=ovs_linux_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,

@@ -5,6 +5,7 @@ import logging
 import pytest
 
 from tests.network.utils import get_worker_pod, wait_for_address_on_iface
+from utilities.infra import name_prefix
 from utilities.network import LINUX_BRIDGE, network_device
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -81,7 +82,7 @@ def bridges_on_management_ifaces_node1(
     )
     with network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name=f"brext-default-net-{worker_node1.name}",
+        nncp_name=f"brext-default-net-{name_prefix(worker_node1.name)}",
         interface_name="brext1",
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
@@ -110,7 +111,7 @@ def bridges_on_management_ifaces_node2(
     )
     with network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name=f"brext-default-net-{worker_node2.name}",
+        nncp_name=f"brext-default-net-{name_prefix(worker_node2.name)}",
         interface_name="brext2",
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,

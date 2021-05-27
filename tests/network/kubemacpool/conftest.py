@@ -5,7 +5,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import KMP_VM_ASSIGNMENT_LABEL
-from utilities.infra import create_ns
+from utilities.infra import create_ns, name_prefix
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -27,7 +27,7 @@ def kubemacpool_bridge_device_worker_1(
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name=f"kubemacpool-{worker_node1.name}",
+        nncp_name=f"kubemacpool-{name_prefix(worker_node1.name)}",
         interface_name=kubemacpool_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
@@ -46,7 +46,7 @@ def kubemacpool_bridge_device_worker_2(
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
-        nncp_name=f"kubemacpool-{worker_node2.name}",
+        nncp_name=f"kubemacpool-{name_prefix(worker_node2.name)}",
         interface_name=kubemacpool_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,
