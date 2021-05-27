@@ -17,7 +17,7 @@ from tests.storage.utils import get_importer_pod
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
 from utilities.storage import ErrorMsg
-from utilities.virt import VirtualMachineForTests
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -214,7 +214,7 @@ def test_public_registry_multiple_data_volume(
                 data_volume=vm,
                 memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             )
-            rvm.create(wait=True)
+            rvm.deploy()
             vms.append(rvm)
 
         for vm in vms:
@@ -226,7 +226,7 @@ def test_public_registry_multiple_data_volume(
             vmp.join()
 
         for vm in vms:
-            vm.vmi.wait_until_running()
+            running_vm(vm=vm, wait_for_interfaces=False)
             utils.check_disk_count_in_vm(vm=vm)
     finally:
         for rcs in vms + dvs:

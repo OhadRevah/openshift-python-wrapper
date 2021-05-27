@@ -18,8 +18,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities import console
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import (
     create_dummy_first_consumer_pod,
@@ -29,7 +28,7 @@ from utilities.storage import (
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
-from utilities.virt import VirtualMachineForTests, wait_for_console
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -202,6 +201,7 @@ def test_dv_delete_from_vm(
     with VirtualMachineForTests(
         name="cnv-3686-vm",
         namespace=namespace.name,
+        os_flavor=OS_FLAVOR_CIRROS,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template=dv_template,
     ) as vm:
@@ -211,10 +211,9 @@ def test_dv_delete_from_vm(
         dv.delete()
         create_dummy_first_consumer_pod(dv=dv)
         # DV re-creation is triggered by VM
-        vm.start(wait=True)
-        vm.vmi.wait_until_running(timeout=120)
+        running_vm(vm=vm, wait_for_interfaces=False)
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED)
-        wait_for_console(vm=vm, console_impl=console.Cirros)
+        storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.polarion("CNV-3667")
@@ -243,7 +242,7 @@ def test_upload_after_certs_renewal(
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=60)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-            wait_for_console(vm=vm, console_impl=console.Cirros)
+            storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.parametrize(
@@ -281,7 +280,7 @@ def test_import_clone_after_certs_renewal(
     ) as cdv:
         cdv.wait(timeout=180)
         with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:
-            wait_for_console(vm=vm, console_impl=console.Cirros)
+            storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.polarion("CNV-3977")

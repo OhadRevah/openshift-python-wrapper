@@ -134,7 +134,7 @@ def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
 def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node_name):
     dv.wait()
     with storage_utils.create_vm_from_dv(dv=dv) as vm:
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, enable_ssh=False, wait_for_interfaces=False)
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check pod location...")
         assert v_pod.instance["spec"]["nodeName"] == worker_node_name

@@ -260,7 +260,7 @@ def set_permissions(
 
 def create_vm_and_verify_image_permission(dv):
     with create_vm_from_dv(dv=dv) as vm:
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm, enable_ssh=False, wait_for_interfaces=False)
         v_pod = vm.vmi.virt_launcher_pod
         LOGGER.debug("Check image exist, permission and ownership")
         output = v_pod.execute(

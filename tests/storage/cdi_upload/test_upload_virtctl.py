@@ -14,7 +14,6 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities import console
 from utilities.constants import OS_FLAVOR_CIRROS
 from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import (
@@ -26,7 +25,7 @@ from utilities.storage import (
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
-from utilities.virt import VirtualMachineForTests, wait_for_console
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -171,7 +170,7 @@ def test_virtctl_image_upload_dv(
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=60)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-            wait_for_console(vm=vm, console_impl=console.Cirros)
+            storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.parametrize(
@@ -269,7 +268,7 @@ def test_virtctl_image_upload_with_exist_dv(
             LOGGER.info(out)
             assert "Processing completed successfully" in out
             with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-                wait_for_console(vm=vm, console_impl=console.Cirros)
+                storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.fixture()
@@ -329,9 +328,8 @@ def test_virtctl_image_upload_with_exist_pvc(
             memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             pvc=empty_pvc,
         ) as vm:
-            vm.start(wait=True)
-            vm.vmi.wait_until_running(timeout=300)
-            wait_for_console(vm=vm, console_impl=console.Cirros)
+            running_vm(vm=vm, wait_for_interfaces=False)
+            storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.polarion("CNV-3729")
