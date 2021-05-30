@@ -40,7 +40,7 @@ def test_validate_default_uninstall_strategy(kubevirt_resource):
     )
 
 
-@pytest.mark.run(after="test_validate_default_install_strategy")
+@pytest.mark.order(after="test_validate_default_install_strategy")
 @pytest.mark.polarion("CNV-3718")
 @pytest.mark.destructive
 def test_block_removal(kubevirt_resource, remove_kubevirt_vm):
@@ -88,7 +88,7 @@ def test_remove_workloads(
     )
 
 
-@pytest.mark.run(after="test_remove_workloads")
+@pytest.mark.order(after="test_remove_workloads")
 @pytest.mark.polarion("CNV-3739")
 @pytest.mark.destructive
 def test_raise_vm_after_removal(remove_kubevirt_vm):

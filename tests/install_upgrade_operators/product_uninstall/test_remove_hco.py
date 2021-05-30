@@ -115,7 +115,7 @@ class TestRemoveHCO:
         )
         assert ok, msg
 
-    @pytest.mark.run(after="test_block_removal")
+    @pytest.mark.order(after="test_block_removal")
     @pytest.mark.polarion("CNV-4044")
     def test_remove_vm(
         self,
@@ -133,7 +133,7 @@ class TestRemoveHCO:
             and data_volume_scope_class.exists
         )
 
-    @pytest.mark.run(after="test_remove_vm")
+    @pytest.mark.order(after="test_remove_vm")
     @pytest.mark.polarion("CNV-4098")
     def test_assert_event_dv(
         self, admin_client, kubevirt_resource, start_time, data_volume_scope_class
@@ -144,7 +144,7 @@ class TestRemoveHCO:
         )
         assert ok, msg
 
-    @pytest.mark.run(after="test_assert_event_dv")
+    @pytest.mark.order(after="test_assert_event_dv")
     @pytest.mark.polarion("CNV-4045")
     def test_remove_dv(
         self, data_volume_scope_class, hyperconverged_resource_scope_function
@@ -161,7 +161,7 @@ class TestRemoveHCO:
             hyperconverged_resource_scope_function.wait_deleted()
 
     # Restore HCO for the next tests
-    @pytest.mark.run(after="test_remove_dv")
+    @pytest.mark.order(after="test_remove_dv")
     @pytest.mark.polarion("CNV-4093")
     def test_restore_hco(self, admin_client, hco_namespace, data_volume_scope_class):
 

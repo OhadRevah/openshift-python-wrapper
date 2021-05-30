@@ -59,7 +59,7 @@ class TestRemoveNamespace:
         ), "deletionTimestamp is set on HCO namespace"
 
     @pytest.mark.polarion("CNV-5847")
-    @pytest.mark.run(after="test_block_removal")
+    @pytest.mark.order(after="test_block_removal")
     def test_unblock_namespace_removal(
         self,
         remove_hyperconverged_resource,

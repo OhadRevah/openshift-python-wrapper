@@ -96,7 +96,7 @@ class TestLatestRHEL:
     Test networkInterfaceMultiqueue on latest RHEL with different cpu core/socket/thread combinations.
     """
 
-    @pytest.mark.run("first")
+    @pytest.mark.order("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
         self,
@@ -179,7 +179,7 @@ class TestLatestWindows:
     Test networkInterfaceMultiqueue on latest Windows with different cpu core/socket/thread combinations.
     """
 
-    @pytest.mark.run("first")
+    @pytest.mark.order("first")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
         self,

@@ -149,7 +149,7 @@ class TestEFISecureBootRHEL:
     Test EFI secureBoot VM with RHEL Images in DV.
     """
 
-    @pytest.mark.run(before="test_efi_secureboot_is_default")
+    @pytest.mark.order(before="test_efi_secureboot_is_default")
     @pytest.mark.polarion("CNV-1791")
     def test_secureboot_efi(self, data_volume_scope_class, rhel_efi_secureboot_vm):
         """
@@ -158,7 +158,7 @@ class TestEFISecureBootRHEL:
         validate_vm_xml_efi(vm=rhel_efi_secureboot_vm)
         validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
-    @pytest.mark.run(before="test_efi_secureboot_is_default")
+    @pytest.mark.order(before="test_efi_secureboot_is_default")
     @pytest.mark.polarion("CNV-1789")
     def test_efi_secureboot_vm_cpu_and_memory(
         self, data_volume_scope_class, rhel_efi_secureboot_vm
@@ -185,7 +185,7 @@ class TestEFISecureBootRHEL:
             ],
         )
 
-    @pytest.mark.run(after="test_secureboot_efi")
+    @pytest.mark.order(after="test_secureboot_efi")
     @pytest.mark.polarion("CNV-1790")
     def test_efi_secureboot_is_default(
         self, data_volume_scope_class, rhel_efi_secureboot_vm

@@ -19,19 +19,23 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.upgrade
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     "skip_when_one_node", "cnv_upgrade_path", "nodes_status_before_upgrade"
 )
 class TestUpgrade:
     @pytest.mark.polarion("CNV-2974")
-    @pytest.mark.run(before="test_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_is_vm_running_before_upgrade")
     def test_is_vm_running_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert vm.vmi.status == "Running"
 
     @pytest.mark.polarion("CNV-2975")
-    @pytest.mark.run(after="test_is_vm_running_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(
+        name="test_migration_before_upgrade",
+        depends=["test_is_vm_running_before_upgrade"],
+    )
     def test_migration_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
@@ -42,19 +46,31 @@ class TestUpgrade:
             )
 
     @pytest.mark.polarion("CNV-2988")
-    @pytest.mark.run(after="test_migration_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(
+        name="test_vm_have_2_interfaces_before_upgrade",
+        depends=["test_is_vm_running_before_upgrade"],
+    )
     def test_vm_have_2_interfaces_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert len(vm.vmi.interfaces) == 2
 
     @pytest.mark.polarion("CNV-2987")
-    @pytest.mark.run(after="test_migration_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(
+        name="test_vm_console_before_upgrade",
+        depends=["test_is_vm_running_before_upgrade"],
+    )
     def test_vm_console_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=["ls"])
 
     @pytest.mark.polarion("CNV-4208")
-    @pytest.mark.run(after="test_migration_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(
+        name="test_vm_ssh_before_upgrade",
+        depends=["test_is_vm_running_before_upgrade"],
+    )
     def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert vm.ssh_exec.executor().is_connective(
@@ -62,12 +78,14 @@ class TestUpgrade:
             ), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2743")
-    @pytest.mark.run(before="test_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_nmstate_bridge_before_upgrade")
     def test_nmstate_bridge_before_upgrade(self, bridge_on_one_node):
         bridge_on_one_node.validate_create()
 
     @pytest.mark.polarion("CNV-2744")
-    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_bridge_marker_before_upgrade")
     def test_bridge_marker_before_upgrade(
         self,
         vm_upgrade_a,
@@ -87,7 +105,8 @@ class TestUpgrade:
         )
 
     @pytest.mark.polarion("CNV-2745")
-    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_linux_bridge_before_upgrade")
     def test_linux_bridge_before_upgrade(
         self,
         vm_upgrade_a,
@@ -103,7 +122,8 @@ class TestUpgrade:
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-5944")
-    @pytest.mark.run(before="test_kubemacpool_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_kubemacpool_enabled_ns_before_upgrade")
     def test_kubemacpool_enabled_ns_before_upgrade(
         self,
         kmp_vm_label,
@@ -112,7 +132,8 @@ class TestUpgrade:
         assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
     @pytest.mark.polarion("CNV-2745")
-    @pytest.mark.run(after="test_nmstate_bridge_before_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_kubemacpool_before_upgrade")
     def test_kubemacpool_before_upgrade(
         self,
         vm_upgrade_a,
@@ -129,8 +150,9 @@ class TestUpgrade:
                 )
             )
 
-    @pytest.mark.run(before="test_upgrade")
     @pytest.mark.polarion("CNV-4880")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_cdiconfig_scratch_overriden_before_upgrade")
     def test_cdiconfig_scratch_overriden_before_upgrade(
         self,
         cdi_config,
@@ -149,7 +171,8 @@ class TestUpgrade:
         ), "The scratchSpaceStorageClass on CDIConfig config should be changed before upgrade"
 
     @pytest.mark.polarion("CNV-5659")
-    @pytest.mark.run(before="test_upgrade")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_install_ovs_with_annotations_before_upgrade")
     def test_install_ovs_with_annotations_before_upgrade(
         self,
         admin_client,
@@ -166,8 +189,8 @@ class TestUpgrade:
 
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
-    @pytest.mark.run(after="test_linux_bridge_before_upgrade")
-    def test_upgrade(
+    @pytest.mark.dependency(name="test_upgrade_process")
+    def test_upgrade_process(
         self,
         pytestconfig,
         admin_client,
@@ -199,7 +222,8 @@ class TestUpgrade:
             )
 
     @pytest.mark.polarion("CNV-4509")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
     def test_cnv_pods_running_after_upgrade(self, admin_client, hco_namespace):
         LOGGER.info("Verify CNV pods running after upgrade.")
         upgrade_utils.verify_cnv_pods_are_running(
@@ -207,7 +231,8 @@ class TestUpgrade:
         )
 
     @pytest.mark.polarion("CNV-4510")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
     def test_nodes_status_after_upgrade(self, nodes, nodes_status_before_upgrade):
         LOGGER.info("Verify nodes status after upgrade.")
         upgrade_utils.verify_nodes_status_after_upgrade(
@@ -215,25 +240,37 @@ class TestUpgrade:
         )
 
     @pytest.mark.polarion("CNV-2978")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_is_vm_running_before_upgrade"]
+    )
     def test_is_vm_running_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             vm.vmi.wait_until_running()
 
     @pytest.mark.polarion("CNV-2989")
-    @pytest.mark.run(after="test_is_vm_running_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_vm_have_2_interfaces_before_upgrade"]
+    )
     def test_vm_have_2_interfaces_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert len(vm.vmi.interfaces) == 2
 
     @pytest.mark.polarion("CNV-2980")
-    @pytest.mark.run(after="test_is_vm_running_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_vm_console_before_upgrade"]
+    )
     def test_vm_console_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=["ls"])
 
     @pytest.mark.polarion("CNV-4209")
-    @pytest.mark.run(after="test_is_vm_running_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_vm_ssh_before_upgrade"]
+    )
     def test_vm_ssh_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert vm.ssh_exec.executor().is_connective(
@@ -241,7 +278,10 @@ class TestUpgrade:
             ), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2979")
-    @pytest.mark.run(after="test_vm_console_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_migration_before_upgrade"]
+    )
     def test_migration_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
@@ -254,12 +294,18 @@ class TestUpgrade:
             )
 
     @pytest.mark.polarion("CNV-2747")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_nmstate_bridge_before_upgrade"]
+    )
     def test_nmstate_bridge_after_upgrade(self, bridge_on_one_node):
         bridge_on_one_node.validate_create()
 
     @pytest.mark.polarion("CNV-2749")
-    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_bridge_marker_before_upgrade"]
+    )
     def test_bridge_marker_after_upgrade(
         self,
         vm_upgrade_a,
@@ -279,7 +325,10 @@ class TestUpgrade:
         )
 
     @pytest.mark.polarion("CNV-2748")
-    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_linux_bridge_before_upgrade"]
+    )
     def test_linux_bridge_after_upgrade(
         self,
         vm_upgrade_a,
@@ -295,7 +344,10 @@ class TestUpgrade:
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-2746")
-    @pytest.mark.run(after="test_nmstate_bridge_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_kubemacpool_before_upgrade"]
+    )
     def test_kubemacpool_after_upgrade(
         self,
         vm_upgrade_a,
@@ -313,7 +365,10 @@ class TestUpgrade:
             )
 
     @pytest.mark.polarion("CNV-5945")
-    @pytest.mark.run(after="test_kubemacpool_after_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_kubemacpool_enabled_ns_before_upgrade"]
+    )
     def test_kubemacpool_enabled_ns_after_upgrade(
         self,
         kmp_vm_label,
@@ -322,7 +377,8 @@ class TestUpgrade:
         assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
     @pytest.mark.polarion("CNV-3682")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
     def test_machine_type_after_upgrade(
         self, vms_for_upgrade, vms_for_upgrade_dict_before
     ):
@@ -335,13 +391,20 @@ class TestUpgrade:
             )
 
     @pytest.mark.polarion("CNV-4725")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
     def test_dv_api_version_after_upgrade(self, dvs_for_upgrade):
         for dv in dvs_for_upgrade:
             assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
 
-    @pytest.mark.run(after="test_upgrade")
     @pytest.mark.polarion("CNV-2952")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=[
+            "test_upgrade_process",
+            "test_cdiconfig_scratch_overriden_before_upgrade",
+        ]
+    )
     def test_cdiconfig_scratch_preserved_after_upgrade(
         self,
         skip_if_not_override_cdiconfig_scratch_space,
@@ -360,7 +423,13 @@ class TestUpgrade:
         ), "The scratchSpaceStorageClass on CDIConfig config should not change after upgrade"
 
     @pytest.mark.polarion("CNV-5532")
-    @pytest.mark.run(after="test_upgrade")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=[
+            "test_upgrade_process",
+            "test_install_ovs_with_annotations_before_upgrade",
+        ]
+    )
     def test_ovs_installed_with_annotations_after_upgrade(
         self,
         admin_client,
