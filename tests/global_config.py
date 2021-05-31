@@ -74,7 +74,7 @@ region = "USA"
 server_url = ""  # Send --tc=server_url:<url> to override servers region URL
 servers_url = {
     "USA": "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com",
-    "EMEA": " cnv-qe-server.lab.eng.tlv2.redhat.com",
+    "EMEA": "cnv-qe-server.lab.eng.tlv2.redhat.com",
 }
 servers = {
     "http_server": "http://{server}/files/",
