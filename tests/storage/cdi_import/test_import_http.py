@@ -596,11 +596,11 @@ def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_funct
 
 
 @pytest.mark.parametrize(
-    ("size", "unit", "expected_size"),
+    ("size", "unit", "dv_name"),
     [
-        pytest.param("64", "Mi", "64M", marks=(pytest.mark.polarion("CNV-1404"))),
-        pytest.param("1", "Gi", "1.0G", marks=(pytest.mark.polarion("CNV-1404"))),
-        pytest.param("13", "Gi", "13G", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param(64, "M", "cnv-1404", marks=(pytest.mark.polarion("CNV-1404"))),
+        pytest.param(1, "G", "cnv-6532", marks=(pytest.mark.polarion("CNV-6532"))),
+        pytest.param(13, "G", "cnv-6536", marks=(pytest.mark.polarion("CNV-6536"))),
     ],
 )
 def test_vmi_image_size(
@@ -610,14 +610,16 @@ def test_vmi_image_size(
     internal_http_configmap,
     size,
     unit,
-    expected_size,
+    dv_name,
+    default_fs_overhead,
 ):
+    assert size >= 1, "This test support only dv size >= 1"
     storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="http",
-        dv_name="cnv-1404",
+        dv_name=dv_name,
         namespace=namespace.name,
-        size=f"{size}{unit}",
+        size=f"{size}{unit}i",
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         url=get_file_url(
@@ -635,14 +637,25 @@ def test_vmi_image_size(
                     "volume_mode"
                 ],
             ) as pod:
+                # In case of file system volume mode, the FS overhead should be taken into account
+                # the default overhead is 5.5%, so in order to reserve the 5.5% for the overhead
+                # the actual size for the disk will be smaller than the requested size
+                if dv.volume_mode == DataVolume.VolumeMode.FILE:
+                    size *= 1 - default_fs_overhead
+                    # In case that size < 1, convert from Gi to Mi
+                    if size < 1:
+                        size = size * 1024
+                        unit = "M"
                 pod.wait_for_status(status=pod.Status.RUNNING)
-                assert f"{expected_size}" <= pod.execute(
+                actual_size = pod.execute(
                     command=[
                         "bash",
                         "-c",
                         "qemu-img info /pvc/disk.img|grep 'virtual size'|awk '{print $3}'|tr -d '\n'",
                     ]
                 )
+                assert unit == actual_size[-1]
+                assert round(size) == float(actual_size[:-1])
 
 
 @pytest.mark.polarion("CNV-3065")
