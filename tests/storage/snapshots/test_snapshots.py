@@ -112,7 +112,7 @@ class TestRestoreSnapshots:
         [
             pytest.param(
                 {"vm_name": "vm-cnv-4789"},
-                {"number_of_snapshots": 1},
+                {"number_of_snapshots": 1, "online_vm": False},
                 [expected_output_after_restore(1)],
                 [0],
                 marks=pytest.mark.polarion("CNV-4789"),
@@ -120,7 +120,7 @@ class TestRestoreSnapshots:
             ),
             pytest.param(
                 {"vm_name": "vm-cnv-4865"},
-                {"number_of_snapshots": 3},
+                {"number_of_snapshots": 3, "online_vm": False},
                 [expected_output_after_restore(2)],
                 [1],
                 marks=pytest.mark.polarion("CNV-4865"),
@@ -128,7 +128,7 @@ class TestRestoreSnapshots:
             ),
             pytest.param(
                 {"vm_name": "vm-cnv-4843"},
-                {"number_of_snapshots": 3},
+                {"number_of_snapshots": 3, "online_vm": False},
                 [
                     expected_output_after_restore(3),
                     expected_output_after_restore(2),
@@ -136,6 +136,34 @@ class TestRestoreSnapshots:
                 ],
                 [2, 1, 0],
                 marks=pytest.mark.polarion("CNV-4843"),
+                id="test_restore_all_snapshots",
+            ),
+            pytest.param(
+                {"vm_name": "vm-cnv-6526"},
+                {"number_of_snapshots": 1, "online_vm": True},
+                [expected_output_after_restore(1)],
+                [0],
+                marks=pytest.mark.polarion("CNV-6526"),
+                id="test_restore_basic_snapshot",
+            ),
+            pytest.param(
+                {"vm_name": "vm-cnv-6527"},
+                {"number_of_snapshots": 3, "online_vm": True},
+                [expected_output_after_restore(2)],
+                [1],
+                marks=pytest.mark.polarion("CNV-6527"),
+                id="test_restore_middle_snapshot",
+            ),
+            pytest.param(
+                {"vm_name": "vm-cnv-6528"},
+                {"number_of_snapshots": 3, "online_vm": True},
+                [
+                    expected_output_after_restore(3),
+                    expected_output_after_restore(2),
+                    expected_output_after_restore(1),
+                ],
+                [2, 1, 0],
+                marks=pytest.mark.polarion("CNV-6528"),
                 id="test_restore_all_snapshots",
             ),
         ],

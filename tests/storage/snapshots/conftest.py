@@ -54,6 +54,14 @@ def cirros_vm(
         yield vm
 
 
+def check_snapshot_indication(snapshot, is_online):
+    snapshot_indications = snapshot.instance.status.indications
+    if is_online:
+        assert "Online" in snapshot_indications
+    else:
+        assert not snapshot_indications
+
+
 @pytest.fixture()
 def snapshots_with_content(
     request,
@@ -65,12 +73,17 @@ def snapshots_with_content(
     Creates a requested number of snapshots with content
     """
     vm_snapshots = []
+    is_online_test = request.param["online_vm"]
     for idx in range(request.param["number_of_snapshots"]):
+        # write_file check if the vm is running and if not, start the vm
+        # after the file have been written the function stops the vm
         write_file(
             vm=cirros_vm,
             filename=f"before-snap-{idx+1}.txt",
             content=f"before-snap-{idx+1}",
         )
+        if is_online_test:
+            cirros_vm.start(wait=True)
         with VirtualMachineSnapshot(
             name=f"snapshot-{cirros_vm.name}-number-{idx+1}",
             namespace=cirros_vm.namespace,
@@ -85,6 +98,7 @@ def snapshots_with_content(
                 filename=f"after-snap-{idx+1}.txt",
                 content=f"after-snap-{idx+1}",
             )
+    check_snapshot_indication(snapshot=vm_snapshot, is_online=is_online_test)
     yield vm_snapshots
 
     for vm_snapshot in vm_snapshots:
@@ -92,7 +106,8 @@ def snapshots_with_content(
 
 
 def write_file(vm, filename, content):
-    vm.start(wait=True)
+    if not vm.instance.spec.running:
+        vm.start(wait=True)
     with console.Cirros(vm=vm) as vm_console:
         vm_console.sendline(f"echo '{content}' >> {filename}")
     vm.stop(wait=True)
