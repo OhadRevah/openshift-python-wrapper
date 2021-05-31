@@ -136,30 +136,77 @@ def check_vm_xml_clock(vm):
     ] == "yes"
 
 
-def check_windows_vm_hvinfo(vm, bm_workers):
+def check_windows_vm_hvinfo(vm):
     """ Verify HyperV values in Windows VMI using hvinfo """
+    hvinfo_path = "C:\\\\hvinfo\\\\hvinfo.exe"
 
+    def _get_hvinfo_package():
+        run_ssh_commands(
+            host=vm.ssh_exec,
+            commands=shlex.split(
+                f"curl.exe  -o {hvinfo_path} --url "
+                "http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/binaries/hvinfo/hvinfo.exe"
+            ),
+        )
+
+    def _check_hyperv_recommendations():
+        # TODO: Add NestedEVMCS once https://bugzilla.redhat.com/show_bug.cgi?id=1952551 is merged
+        hyperv_windows_recommendations_list = [
+            "RelaxedTiming",
+            "MSRAPICRegisters",
+            "HypercallRemoteTLBFlush",
+            "SyntheticClusterIPI",
+        ]
+        failed_recommendations = []
+        vm_recommendations_dict = hvinfo_dict["Recommendations"]
+        failed_vm_recommendations = [
+            feature
+            for feature in hyperv_windows_recommendations_list
+            if not vm_recommendations_dict[feature]
+        ]
+
+        if failed_vm_recommendations:
+            failed_recommendations.append(failed_vm_recommendations)
+
+        spinlocks = vm_recommendations_dict["SpinlockRetries"]
+        if int(spinlocks) != 8191:
+            failed_recommendations.append(f"SpinlockRetries: {spinlocks}")
+
+        return failed_recommendations
+
+    def _check_hyperv_privileges():
+        hyperv_windows_privileges_list = [
+            "AccessReenlightenmentControls",
+            "AccessVpRunTimeRegs",
+            "AccessSynicRegs",
+            "AccessSyntheticTimerRegs",
+            "AccessVpIndex",
+        ]
+        vm_privileges_dict = hvinfo_dict["Privileges"]
+        return [
+            feature
+            for feature in hyperv_windows_privileges_list
+            if not vm_privileges_dict[feature]
+        ]
+
+    def _check_hyperv_features():
+        hyperv_windows_features_list = ["TimerFrequenciesQuery"]
+        vm_features_dict = hvinfo_dict["Features"]
+        return [
+            feature
+            for feature in hyperv_windows_features_list
+            if not vm_features_dict[feature]
+        ]
+
+    _get_hvinfo_package()
     hvinfo_dict = None
-    # TODO: Add NestedEVMCS once https://bugzilla.redhat.com/show_bug.cgi?id=1952551 is merged
-    # TODO: once hvinfo is updated, add:
-    # "MSRAccessVPIndex", "MSRAccessSyNICRegs", "frequencies"?, "MSRAccessReenlighenmentCtrls", "runtime"?
-    hyperv_windows_recommendations_list = [
-        "RelaxedTiming",
-        "MSRAPICRegisters",
-        "HypercallRemoteTLBFlush",
-        "SyntheticClusterIPI",
-    ]
-    # HyperV feature which may not necessarily be exposed by a nested environment
-    bm_hyperv_windows_recommendations_list = ["MSRSystemReset"]
-
-    hyperv_windows_features_list = ["TimerFrequenciesQuery"]
 
     sampler = TimeoutSampler(
         wait_timeout=90,
         sleep=15,
         func=run_ssh_commands,
         host=vm.ssh_exec,
-        commands=shlex.split("C:\\\\hvinfo\\\\hvinfo.exe"),
+        commands=[hvinfo_path],
     )
     for sample in sampler:
         output = sample[0]
@@ -167,40 +214,15 @@ def check_windows_vm_hvinfo(vm, bm_workers):
             hvinfo_dict = json.loads(output)
             break
 
-    vm_recommendations_dict = hvinfo_dict["Recommendations"]
-    failed_windows_hyperv_list = [
-        feature
-        for feature in hyperv_windows_recommendations_list
-        if not vm_recommendations_dict[feature]
-    ]
-
-    if bm_workers:
-        failed_windows_hyperv_list.append(
-            [
-                feature
-                for feature in bm_hyperv_windows_recommendations_list
-                if not vm_recommendations_dict[feature]
-            ]
-        )
-
-    vm_features_dict = hvinfo_dict["Features"]
-    failed_featues = [
-        feature
-        for feature in hyperv_windows_features_list
-        if not vm_features_dict[feature]
-    ]
-    if failed_featues:
-        failed_windows_hyperv_list.append(failed_featues)
+    failed_windows_hyperv_list = _check_hyperv_recommendations()
+    failed_windows_hyperv_list.extend(_check_hyperv_privileges())
+    failed_windows_hyperv_list.extend(_check_hyperv_features())
 
     if not hvinfo_dict["HyperVsupport"]:
-        failed_windows_hyperv_list.append("HyperVsupport")
-
-    spinlock_retries = vm_recommendations_dict["SpinlockRetries"]
-    if int(spinlock_retries) != 8191:
-        failed_windows_hyperv_list.append("SpinlockRetries")
+        failed_windows_hyperv_list.extend("HyperVsupport")
 
     assert not failed_windows_hyperv_list, (
-        f"The following hyperV flags are not set correctly in the guest: {failed_windows_hyperv_list},"
+        f"The following hyperV flags are not set correctly in the guest: {failed_windows_hyperv_list}\n"
         f"VM hvinfo dict:{hvinfo_dict}"
     )
 
