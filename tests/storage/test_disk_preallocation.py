@@ -34,20 +34,6 @@ def cdi_preallocation_enabled(hyperconverged_resource_scope_module):
         yield
 
 
-@pytest.fixture(scope="module")
-def cdi_filesystemoverhead_set(hyperconverged_resource_scope_module):
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
-                component="cdi",
-                path="filesystemOverhead/global",
-                value="0.055",
-            )
-        },
-    ):
-        yield
-
-
 def assert_preallocation_requested_annotation(pvc, status):
     # TODO: Once bug 1926119 fixed, we will automatically stop sending the typo
     preallocation_requested = (
@@ -94,7 +80,6 @@ def assert_preallocation_annotation(pvc, res):
     indirect=True,
 )
 def test_preallocation_dv(
-    cdi_filesystemoverhead_set,
     data_volume_multi_storage_scope_function,
 ):
     """
@@ -127,7 +112,6 @@ def test_preallocation_dv(
 )
 def test_preallocation_globally_dv_spec_without_preallocation(
     cdi_preallocation_enabled,
-    cdi_filesystemoverhead_set,
     data_volume_multi_storage_scope_module,
 ):
     """
@@ -161,7 +145,6 @@ def test_preallocation_globally_dv_spec_without_preallocation(
 )
 def test_preallocation_globally_dv_spec_with_preallocation_false(
     cdi_preallocation_enabled,
-    cdi_filesystemoverhead_set,
     data_volume_multi_storage_scope_function,
 ):
     """
@@ -190,7 +173,6 @@ def test_preallocation_globally_dv_spec_with_preallocation_false(
     indirect=True,
 )
 def test_preallocation_for_blank_dv(
-    cdi_filesystemoverhead_set,
     data_volume_multi_storage_scope_function,
 ):
     """
