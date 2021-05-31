@@ -357,18 +357,153 @@ class VirtualMachineForTests(VirtualMachine):
 
     def to_dict(self):
         res = super().to_dict()
-        if self.body:
-            if self.body.get("metadata"):
-                # We must set name in Template, since we use a unique name here we override it.
-                res["metadata"] = self.body["metadata"]
-                res["metadata"]["name"] = self.name
+        res = self.set_labels(res=res)
+        res = self.set_rng_device(res=res)
+        res = self.generate_body(res=res)
+        res = self.set_run_strategy(res=res)
 
-            res["spec"] = self.body["spec"]
+        self.is_vm_from_template = self._is_vm_from_template(res=res)
 
-        self.is_vm_from_template = (
-            "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
+        template_spec = res["spec"]["template"]["spec"]
+        template_spec = self.update_vm_network_configuration(
+            template_spec=template_spec
+        )
+        template_spec = self.update_vm_cpu_configuration(template_spec=template_spec)
+        template_spec = self.update_vm_memory_configuration(template_spec=template_spec)
+        template_spec = self.set_service_accounts(template_spec=template_spec)
+        template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
+        template_spec = self.update_vm_secret_configuration(template_spec=template_spec)
+        template_spec = self.set_smm(template_spec=template_spec)
+        template_spec = self.set_efi_params(template_spec=template_spec)
+        template_spec = self.set_machine_type(template_spec=template_spec)
+        template_spec = self.set_diskless_vm(template_spec=template_spec)
+        template_spec = self.set_hostdevice(template_spec=template_spec)
+        template_spec = self.set_gpu(template_spec=template_spec)
+        template_spec = self.set_disk_io_options(template_spec=template_spec)
+        res, template_spec = self.update_vm_storage_configuration(
+            res=res, template_spec=template_spec
         )
 
+        # VMs do not necessarily have self.cloud_init_data
+        # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
+        if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
+            if self.ssh_secret is None:
+                template_spec = self.enable_ssh_in_cloud_init_data(
+                    template_spec=template_spec
+                )
+            # NOTE: When using ssh_secret we need cloud_init_type as cloudInitConfigDrive
+            # networkData does not work with cloudInitConfigDrive
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1941470
+            if self.cloud_init_type == CLOUND_INIT_CONFIG_DRIVE and self.ssh_secret:
+                template_spec = self.update_vm_ssh_secret_configuration(
+                    template_spec=template_spec
+                )
+
+        return res
+
+    def set_disk_io_options(self, template_spec):
+        if self.disk_io_options:
+            disks_spec = (
+                template_spec.setdefault("domain", {})
+                .setdefault("devices", {})
+                .setdefault("disks", [])
+            )
+            # In VM from template, rootdisk is named as the VM name
+            disk_name = self.name if self.is_vm_from_template else "rootdisk"
+            for disk in disks_spec:
+                if disk["name"] == disk_name:
+                    disk["io"] = self.disk_io_options
+                    break
+
+            template_spec["domain"]["devices"]["disks"] = disks_spec
+
+        return template_spec
+
+    def set_gpu(self, template_spec):
+        if self.gpu_name:
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "gpus", []
+            ).append(
+                {
+                    "deviceName": self.gpu_name,
+                    "name": "gpu",
+                }
+            )
+
+        return template_spec
+
+    def set_hostdevice(self, template_spec):
+        if self.host_device_name:
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "hostDevices", []
+            ).append(
+                {
+                    "deviceName": self.host_device_name,
+                    "name": "hostdevice",
+                }
+            )
+
+        return template_spec
+
+    def set_diskless_vm(self, template_spec):
+        if self.diskless_vm:
+            template_spec.get("domain", {}).get("devices", {}).pop("disks", None)
+
+        return template_spec
+
+    def set_machine_type(self, template_spec):
+        if self.machine_type:
+            template_spec.setdefault("domain", {}).setdefault("machine", {})[
+                "type"
+            ] = self.machine_type
+
+        return template_spec
+
+    def set_efi_params(self, template_spec):
+        if self.efi_params is not None:
+            template_spec.setdefault("domain", {}).setdefault(
+                "firmware", {}
+            ).setdefault("bootloader", {})["efi"] = self.efi_params
+
+        return template_spec
+
+    def set_smm(self, template_spec):
+        if self.smm_enabled is not None:
+            template_spec.setdefault("domain", {}).setdefault(
+                "features", {}
+            ).setdefault("smm", {})["enabled"] = self.smm_enabled
+
+        return template_spec
+
+    @staticmethod
+    def set_rng_device(res):
+        # Create rng device so the vm will able to use /dev/rnd without
+        # waiting for entropy collecting.
+        res.setdefault("spec", {}).setdefault("template", {}).setdefault(
+            "spec", {}
+        ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
+
+        return res
+
+    def set_service_accounts(self, template_spec):
+        for sa in self.service_accounts:
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {}, "name": sa})
+            template_spec.setdefault("volumes", []).append(
+                {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
+            )
+
+        return template_spec
+
+    def set_labels(self, res):
+        res["spec"]["template"].setdefault("metadata", {}).setdefault(
+            "labels", {}
+        ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
+
+        return res
+
+    def set_run_strategy(self, res):
         # runStrategy and running are mutually exclusive
         #
         # From RunStrategy() in
@@ -384,123 +519,47 @@ class VirtualMachineForTests(VirtualMachine):
         else:
             res["spec"]["running"] = self.running
 
-        spec = res["spec"]["template"]["spec"]
-        res["spec"]["template"].setdefault("metadata", {}).setdefault(
-            "labels", {}
-        ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
-
-        spec = self.update_vm_network_configuration(spec=spec)
-        spec = self.update_vm_cpu_configuration(spec=spec)
-        spec = self.update_vm_memory_configuration(spec=spec)
-
-        for sa in self.service_accounts:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "disks", []
-            ).append({"disk": {}, "name": sa})
-            spec.setdefault("volumes", []).append(
-                {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
-            )
-
-        # Create rng device so the vm will able to use /dev/rnd without
-        # waiting for entropy collecting.
-        res.setdefault("spec", {}).setdefault("template", {}).setdefault(
-            "spec", {}
-        ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
-
-        res, spec = self.update_vm_storage_configuration(res=res, spec=spec)
-
-        if self.cloud_init_data:
-            spec = self.update_vm_cloud_init_data(spec=spec)
-
-        # VMs do not necessarily have self.cloud_init_data
-        # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
-        if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
-            if self.ssh_secret is None:
-                spec = self.enable_ssh_in_cloud_init_data(spec=spec)
-            # NOTE: When using ssh_secret we need cloud_init_type as cloudInitConfigDrive
-            # networkData does not work with cloudInitConfigDrive
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1941470
-            if self.cloud_init_type == CLOUND_INIT_CONFIG_DRIVE and self.ssh_secret:
-                spec = self.update_vm_ssh_secret_configuration(spec=spec)
-
-        if self.smm_enabled is not None:
-            spec.setdefault("domain", {}).setdefault("features", {}).setdefault(
-                "smm", {}
-            )["enabled"] = self.smm_enabled
-
-        if self.efi_params is not None:
-            spec.setdefault("domain", {}).setdefault("firmware", {}).setdefault(
-                "bootloader", {}
-            )["efi"] = self.efi_params
-
-        if self.machine_type:
-            spec.setdefault("domain", {}).setdefault("machine", {})[
-                "type"
-            ] = self.machine_type
-
-        if self.attached_secret:
-            spec = self.update_vm_secret_configuration(spec=spec)
-
-        if self.diskless_vm:
-            spec.get("domain", {}).get("devices", {}).pop("disks", None)
-
-        if self.host_device_name:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "hostDevices", []
-            ).append(
-                {
-                    "deviceName": self.host_device_name,
-                    "name": "hostdevice",
-                }
-            )
-
-        if self.gpu_name:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                "gpus", []
-            ).append(
-                {
-                    "deviceName": self.gpu_name,
-                    "name": "gpu",
-                }
-            )
-
-        if self.disk_io_options:
-            disks_spec = (
-                spec.setdefault("domain", {})
-                .setdefault("devices", {})
-                .setdefault("disks", [])
-            )
-            # In VM from template, rootdisk is named as the VM name
-            disk_name = self.name if self.is_vm_from_template else "rootdisk"
-            for disk in disks_spec:
-                if disk["name"] == disk_name:
-                    disk["io"] = self.disk_io_options
-                    break
         return res
 
-    def update_vm_memory_configuration(self, spec):
+    def _is_vm_from_template(self, res):
+        return (
+            "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
+        )
+
+    def generate_body(self, res):
+        if self.body:
+            if self.body.get("metadata"):
+                # We must set name in Template, since we use a unique name here we override it.
+                res["metadata"] = self.body["metadata"]
+                res["metadata"]["name"] = self.name
+
+            res["spec"] = self.body["spec"]
+
+        return res
+
+    def update_vm_memory_configuration(self, template_spec):
         # Faster VMI start time
         if self.os_flavor == OS_FLAVOR_WINDOWS and not self.memory_requests:
             self.memory_requests = Images.Windows.DEFAULT_MEMORY_SIZE
 
         if self.memory_requests:
-            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
-                "requests", {}
-            )["memory"] = self.memory_requests
+            template_spec.setdefault("domain", {}).setdefault(
+                "resources", {}
+            ).setdefault("requests", {})["memory"] = self.memory_requests
 
         if self.memory_limits:
-            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
-                "limits", {}
-            )["memory"] = self.memory_limits
+            template_spec.setdefault("domain", {}).setdefault(
+                "resources", {}
+            ).setdefault("limits", {})["memory"] = self.memory_limits
 
         if self.memory_guest:
-            spec.setdefault("domain", {}).setdefault("memory", {})[
+            template_spec.setdefault("domain", {}).setdefault("memory", {})[
                 "guest"
             ] = self.memory_guest
 
-        return spec
+        return template_spec
 
-    def update_vm_network_configuration(self, spec):
+    def update_vm_network_configuration(self, template_spec):
         for iface_name in self.interfaces:
             iface_type = self.interfaces_types.get(iface_name, "bridge")
             network_dict = {"name": iface_name, iface_type: {}}
@@ -508,44 +567,45 @@ class VirtualMachineForTests(VirtualMachine):
             if self.macs:
                 network_dict["macAddress"] = self.macs.get(iface_name)
 
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                 "interfaces", []
             ).append(network_dict)
 
         for iface_name, network in self.networks.items():
-            spec.setdefault("networks", []).append(
+            template_spec.setdefault("networks", []).append(
                 {"name": iface_name, "multus": {"networkName": network}}
             )
 
         if self.network_model:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                 "interfaces", [{}]
             )[0]["model"] = self.network_model
 
         if self.network_multiqueue is not None:
-            spec.setdefault("domain", {}).setdefault("devices", {}).update(
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).update(
                 {"networkInterfaceMultiqueue": self.network_multiqueue}
             )
 
-        return spec
+        return template_spec
 
-    def update_vm_cloud_init_data(self, spec):
-        cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
+    def update_vm_cloud_init_data(self, template_spec):
+        if self.cloud_init_data:
+            cloud_init_volume = vm_cloud_init_volume(vm_spec=template_spec)
+            cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
+
+            cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
+                data=self.cloud_init_data
+            )
+
+            template_spec = vm_cloud_init_disk(vm_spec=template_spec)
+
+        return template_spec
+
+    def enable_ssh_in_cloud_init_data(self, template_spec):
+        cloud_init_volume = vm_cloud_init_volume(vm_spec=template_spec)
         cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
 
-        cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
-            data=self.cloud_init_data
-        )
-
-        spec = vm_cloud_init_disk(vm_spec=spec)
-
-        return spec
-
-    def enable_ssh_in_cloud_init_data(self, spec):
-        cloud_init_volume = vm_cloud_init_volume(vm_spec=spec)
-        cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
-
-        spec = vm_cloud_init_disk(vm_spec=spec)
+        template_spec = vm_cloud_init_disk(vm_spec=template_spec)
 
         cloud_init_volume.setdefault(cloud_init_volume_type, {}).setdefault(
             "userData", ""
@@ -612,33 +672,39 @@ class VirtualMachineForTests(VirtualMachine):
 
         cloud_init_volume[cloud_init_volume_type]["userData"] = cloud_init_user_data
 
-        return spec
+        return template_spec
 
-    def update_vm_cpu_configuration(self, spec):
+    def update_vm_cpu_configuration(self, template_spec):
         if self.node_selector:
-            spec["nodeSelector"] = {"kubernetes.io/hostname": self.node_selector}
+            template_spec["nodeSelector"] = {
+                "kubernetes.io/hostname": self.node_selector
+            }
 
         if self.eviction:
-            spec["evictionStrategy"] = "LiveMigrate"
+            template_spec["evictionStrategy"] = "LiveMigrate"
 
         # cpu settings
         if self.cpu_flags:
-            spec.setdefault("domain", {})["cpu"] = self.cpu_flags
+            template_spec.setdefault("domain", {})["cpu"] = self.cpu_flags
 
         if self.cpu_limits:
-            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
-                "limits", {}
+            template_spec.setdefault("domain", {}).setdefault(
+                "resources", {}
+            ).setdefault("limits", {})
+            template_spec["domain"]["resources"]["limits"].update(
+                {"cpu": self.cpu_limits}
             )
-            spec["domain"]["resources"]["limits"].update({"cpu": self.cpu_limits})
 
         if self.cpu_requests:
-            spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
-                "requests", {}
+            template_spec.setdefault("domain", {}).setdefault(
+                "resources", {}
+            ).setdefault("requests", {})
+            template_spec["domain"]["resources"]["requests"].update(
+                {"cpu": self.cpu_requests}
             )
-            spec["domain"]["resources"]["requests"].update({"cpu": self.cpu_requests})
 
         if self.cpu_cores:
-            spec.setdefault("domain", {}).setdefault("cpu", {})[
+            template_spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "cores"
             ] = self.cpu_cores
 
@@ -647,34 +713,34 @@ class VirtualMachineForTests(VirtualMachine):
             self.cpu_threads = Images.Windows.DEFAULT_CPU_THREADS
 
         if self.cpu_threads:
-            spec.setdefault("domain", {}).setdefault("cpu", {})[
+            template_spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "threads"
             ] = self.cpu_threads
 
         if self.cpu_sockets:
-            spec.setdefault("domain", {}).setdefault("cpu", {})[
+            template_spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "sockets"
             ] = self.cpu_sockets
 
         if self.cpu_placement:
-            spec.setdefault("domain", {}).setdefault("cpu", {})[
+            template_spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "dedicatedCpuPlacement"
             ] = True
 
         if self.cpu_model:
-            spec.setdefault("domain", {}).setdefault("cpu", {})[
+            template_spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "model"
             ] = self.cpu_model
 
-        return spec
+        return template_spec
 
-    def update_vm_storage_configuration(self, res, spec):
+    def update_vm_storage_configuration(self, res, template_spec):
         # image must be set before DV in order to boot from it.
         if self.image:
-            spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
                 "disks", []
             ).append({"disk": {"bus": "virtio"}, "name": "containerdisk"})
-            spec.setdefault("volumes", []).append(
+            template_spec.setdefault("volumes", []).append(
                 {"name": "containerdisk", "containerDisk": {"image": self.image}}
             )
 
@@ -684,16 +750,18 @@ class VirtualMachineForTests(VirtualMachine):
 
             # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
             if DataVolume.AccessMode.RWX not in access_mode:
-                spec.pop("evictionStrategy", None)
+                template_spec.pop("evictionStrategy", None)
 
             # Needed only for VMs which are not created from common templates
             if not self.is_vm_from_template:
                 if self.pvc:
                     pvc_disk_name = f"{self.pvc.name}-pvc-disk"
-                    spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                        "disks", []
-                    ).append({"disk": {"bus": "virtio"}, "name": pvc_disk_name})
-                    spec.setdefault("volumes", []).append(
+                    template_spec.setdefault("domain", {}).setdefault(
+                        "devices", {}
+                    ).setdefault("disks", []).append(
+                        {"disk": {"bus": "virtio"}, "name": pvc_disk_name}
+                    )
+                    template_spec.setdefault("volumes", []).append(
                         {
                             "name": pvc_disk_name,
                             "persistentVolumeClaim": {"claimName": self.pvc.name},
@@ -706,10 +774,12 @@ class VirtualMachineForTests(VirtualMachine):
                         if self.data_volume
                         else self.data_volume_template["metadata"]["name"]
                     )
-                    spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-                        "disks", []
-                    ).append({"disk": {"bus": "virtio"}, "name": "dv-disk"})
-                    spec.setdefault("volumes", []).append(
+                    template_spec.setdefault("domain", {}).setdefault(
+                        "devices", {}
+                    ).setdefault("disks", []).append(
+                        {"disk": {"bus": "virtio"}, "name": "dv-disk"}
+                    )
+                    template_spec.setdefault("volumes", []).append(
                         {
                             "name": "dv-disk",
                             "dataVolume": {"name": data_volume_name},
@@ -721,30 +791,31 @@ class VirtualMachineForTests(VirtualMachine):
                         self.data_volume_template
                     )
 
-        return res, spec
+        return res, template_spec
 
-    def update_vm_secret_configuration(self, spec):
-        volume_name = self.attached_secret["volume_name"]
-        spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
-            "disks", []
-        ).append(
-            {
-                "disk": {},
-                "name": volume_name,
-                "serial": self.attached_secret["serial"],
-            }
-        )
-        spec.setdefault("volumes", []).append(
-            {
-                "name": volume_name,
-                "secret": {"secretName": self.attached_secret["secret_name"]},
-            }
-        )
+    def update_vm_secret_configuration(self, template_spec):
+        if self.attached_secret:
+            volume_name = self.attached_secret["volume_name"]
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append(
+                {
+                    "disk": {},
+                    "name": volume_name,
+                    "serial": self.attached_secret["serial"],
+                }
+            )
+            template_spec.setdefault("volumes", []).append(
+                {
+                    "name": volume_name,
+                    "secret": {"secretName": self.attached_secret["secret_name"]},
+                }
+            )
 
-        return spec
+        return template_spec
 
-    def update_vm_ssh_secret_configuration(self, spec):
-        spec.setdefault("accessCredentials", []).append(
+    def update_vm_ssh_secret_configuration(self, template_spec):
+        template_spec.setdefault("accessCredentials", []).append(
             {
                 "sshPublicKey": {
                     "source": {"secret": {"secretName": self.ssh_secret.name}},
@@ -752,7 +823,7 @@ class VirtualMachineForTests(VirtualMachine):
                 }
             }
         )
-        return spec
+        return template_spec
 
     def ssh_enable(self):
         # To use the service: ssh_service.service_ip() and ssh_service.service_port
