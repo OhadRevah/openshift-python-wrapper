@@ -4,19 +4,46 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 
 
 @pytest.fixture(scope="module")
-def all_crd_resources(admin_client):
+def crd_operator_resources(request, admin_client):
     """
-    Returns List of CustomResourceDefinitions Resources.
+    Returns list of CustomResourceDefinitions Resources.
+
+    Args:
+        request (fixture): Info from request.param
+        admin_client:  DynamicClient
+
+    Returns:
+        list: A list of CRD resources based on the info from request param.
     """
-    return list(CustomResourceDefinition.get(admin_client, group="kubevirt.io"))
+    return list(CustomResourceDefinition.get(admin_client, group=request.param))
 
 
-@pytest.mark.polarion("CNV-4695")
-def test_check_crd_non_structural_schema(all_crd_resources):
-    failed_crds = []
-    for kubevirt_crd_resource in all_crd_resources:
-        for resource_condition in kubevirt_crd_resource.instance.status.conditions:
-            if resource_condition["NonStructuralSchema"]:
-                failed_crds.append(kubevirt_crd_resource.name)
+@pytest.mark.parametrize(
+    "crd_operator_resources",
+    [
+        pytest.param(
+            "kubevirt.io",
+            marks=(pytest.mark.polarion("CNV-4695")),
+        ),
+        pytest.param(
+            "networkaddonsoperator.network.kubevirt.io",
+            marks=(pytest.mark.polarion("CNV-6522")),
+        ),
+        pytest.param(
+            "nmstate.io",
+            marks=(pytest.mark.polarion("CNV-6523")),
+        ),
+    ],
+    indirect=True,
+)
+def test_check_crd_non_structural_schema(crd_operator_resources):
+    failed_crds = [
+        crd_resource.name
+        for crd_resource in crd_operator_resources
+        if any(
+            resource_condition["NonStructuralSchema"]
+            for resource_condition in crd_resource.instance.status.conditions
+        )
+    ]
 
-    assert not failed_crds, f"CRD is having Non Structual Schema {failed_crds}"
+    assert not failed_crds, f"CRDs with Non Structural Schema {failed_crds}"
