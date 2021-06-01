@@ -1,22 +1,19 @@
 import logging
 
 import pytest
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-import tests.install_upgrade_operators.strict_reconciliation.constants as src
+from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
+    get_hco_spec,
+    validate_featuregates_in_kv_cr,
     validate_featuregates_not_in_cdi_cr,
     validate_featuregates_not_in_kv_cr,
+    verify_spec,
+    wait_for_fg_update,
 )
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-KV_SRIOV_LIVE_MIGRATION_FG = "SRIOVLiveMigration"
-KV_WITH_HOST_PASSTHROUGH_CPU_FG = "WithHostPassthroughCPU"
-HCO_SRIOV_LIVE_MIGRATION_FG = "sriovLiveMigration"
-HCO_WITH_HOST_PASSTHROUGH_CPU_FG = "withHostPassthroughCPU"
 
 
 class TestHCOOptionalFeatureGatesSuite:
@@ -24,12 +21,12 @@ class TestHCOOptionalFeatureGatesSuite:
         "feature_gate_under_test",
         [
             pytest.param(
-                KV_SRIOV_LIVE_MIGRATION_FG,
+                constants.KV_SRIOV_LIVE_MIGRATION_FG,
                 marks=(pytest.mark.polarion("CNV-6267")),
                 id="sriov_live_migration_not_exist_in_kubevirt_cr",
             ),
             pytest.param(
-                KV_WITH_HOST_PASSTHROUGH_CPU_FG,
+                constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG,
                 marks=(pytest.mark.polarion("CNV-6268")),
                 id="with_host_passthrough_cpu_not_exist_in_kubevirt_cr",
             ),
@@ -46,20 +43,26 @@ class TestHCOOptionalFeatureGatesSuite:
         ("updated_kv_with_feature_gates", "feature_gates_under_test"),
         [
             pytest.param(
-                [KV_SRIOV_LIVE_MIGRATION_FG, KV_WITH_HOST_PASSTHROUGH_CPU_FG],
-                [KV_SRIOV_LIVE_MIGRATION_FG, KV_WITH_HOST_PASSTHROUGH_CPU_FG],
+                [
+                    constants.KV_SRIOV_LIVE_MIGRATION_FG,
+                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG,
+                ],
+                [
+                    constants.KV_SRIOV_LIVE_MIGRATION_FG,
+                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG,
+                ],
                 marks=(pytest.mark.polarion("CNV-6269")),
                 id="optional_featuregates_removed_from_kubevirt_cr",
             ),
             pytest.param(
-                [KV_WITH_HOST_PASSTHROUGH_CPU_FG],
-                [KV_WITH_HOST_PASSTHROUGH_CPU_FG],
+                [constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG],
+                [constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG],
                 marks=(pytest.mark.polarion("CNV-6270")),
                 id="optional_featuregates_withhostpassthroughcpu_removed_from_kubevirt_cr",
             ),
             pytest.param(
-                [KV_SRIOV_LIVE_MIGRATION_FG],
-                [KV_SRIOV_LIVE_MIGRATION_FG],
+                [constants.KV_SRIOV_LIVE_MIGRATION_FG],
+                [constants.KV_SRIOV_LIVE_MIGRATION_FG],
                 marks=(pytest.mark.polarion("CNV-6271")),
                 id="optional_featuregates_sriovlivemigration_removed_from_kubevirt_cr",
             ),
@@ -86,24 +89,12 @@ class TestHCOOptionalFeatureGatesSuite:
         kubevirt_feature_gates,
         feature_gates_under_test,
     ):
-        samples = TimeoutSampler(
-            wait_timeout=60,
-            sleep=1,
-            func=validate_featuregates_not_in_kv_cr,
+        wait_for_fg_update(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
-            feature_gates_under_test=feature_gates_under_test,
+            expected_fg=feature_gates_under_test,
+            validate_func=validate_featuregates_not_in_kv_cr,
         )
-        try:
-            for sample in samples:
-                if sample:
-                    return
-        except TimeoutExpiredError:
-            LOGGER.error(
-                "Timeout validating the KubeVirt featureGates field."
-                f" Some of the {feature_gates_under_test} are still in KubeVirt featureGates list"
-            )
-            raise
 
     @pytest.mark.parametrize(
         (
@@ -113,8 +104,11 @@ class TestHCOOptionalFeatureGatesSuite:
         ),
         [
             pytest.param(
-                ["fakeGate", "Sidecar"],
-                src.EXPCT_FG_DEFAULTS,
+                {
+                    "fgs": ["fakeGate", "Sidecar"],
+                    "related_resource_name": None,
+                },
+                constants.EXPCT_FG_DEFAULTS,
                 {
                     "fakeGate": False,
                     "Sidecar": False,
@@ -123,8 +117,11 @@ class TestHCOOptionalFeatureGatesSuite:
                 id="optional_featuregates_fake_removed_from_hco_cr",
             ),
             pytest.param(
-                ["LiveMigration"],
-                src.EXPCT_FG_DEFAULTS,
+                {
+                    "fgs": ["LiveMigration"],
+                    "related_resource_name": None,
+                },
+                constants.EXPCT_FG_DEFAULTS,
                 {
                     "LiveMigration": True,
                 },
@@ -132,8 +129,11 @@ class TestHCOOptionalFeatureGatesSuite:
                 id="optional_featuregates_hardcoded_kubevirt_feature_gates_is_removed_from_hco_cr",
             ),
             pytest.param(
-                ["Sidecar"],
-                src.EXPCT_FG_DEFAULTS,
+                {
+                    "fgs": ["Sidecar"],
+                    "related_resource_name": None,
+                },
+                constants.EXPCT_FG_DEFAULTS,
                 {
                     "Sidecar": False,
                 },
@@ -141,47 +141,62 @@ class TestHCOOptionalFeatureGatesSuite:
                 id="optional_featuregates_unsupported_removed_from_hco_cr",
             ),
             pytest.param(
-                ["HonorWaitForFirstConsumer"],
-                src.EXPCT_FG_DEFAULTS,
+                {
+                    "fgs": ["HonorWaitForFirstConsumer"],
+                    "related_resource_name": None,
+                },
+                constants.EXPCT_FG_DEFAULTS,
                 None,
                 marks=(pytest.mark.polarion("CNV-6278")),
                 id="optional_featuregates_hardcoded_cdi_feature_gates_is_removed_from_hco_cr",
             ),
             pytest.param(
-                [HCO_SRIOV_LIVE_MIGRATION_FG, HCO_WITH_HOST_PASSTHROUGH_CPU_FG],
                 {
-                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG: True,
-                    HCO_SRIOV_LIVE_MIGRATION_FG: True,
+                    "fgs": [
+                        constants.HCO_SRIOV_LIVE_MIGRATION_FG,
+                        constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG,
+                    ],
+                    "related_resource_name": constants.KUBEVIRT_HCO_NAME,
                 },
                 {
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG: True,
-                    KV_SRIOV_LIVE_MIGRATION_FG: True,
+                    constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG: True,
+                    constants.HCO_SRIOV_LIVE_MIGRATION_FG: True,
+                },
+                {
+                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG: True,
+                    constants.KV_SRIOV_LIVE_MIGRATION_FG: True,
                 },
                 marks=(pytest.mark.polarion("CNV-6280")),
                 id="modify_hco_cr_feature_gates",
             ),
             pytest.param(
-                [HCO_WITH_HOST_PASSTHROUGH_CPU_FG],
                 {
-                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG: True,
-                    HCO_SRIOV_LIVE_MIGRATION_FG: False,
+                    "fgs": [constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG],
+                    "related_resource_name": constants.KUBEVIRT_HCO_NAME,
                 },
                 {
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG: True,
-                    KV_SRIOV_LIVE_MIGRATION_FG: False,
+                    constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG: True,
+                    constants.HCO_SRIOV_LIVE_MIGRATION_FG: False,
+                },
+                {
+                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG: True,
+                    constants.KV_SRIOV_LIVE_MIGRATION_FG: False,
                 },
                 marks=(pytest.mark.polarion("CNV-6281")),
                 id="modify_hco_cr_feature_gates_with_host_passthrough_cpu",
             ),
             pytest.param(
-                [HCO_SRIOV_LIVE_MIGRATION_FG],
                 {
-                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG: False,
-                    HCO_SRIOV_LIVE_MIGRATION_FG: True,
+                    "fgs": [constants.HCO_SRIOV_LIVE_MIGRATION_FG],
+                    "related_resource_name": constants.KUBEVIRT_HCO_NAME,
                 },
                 {
-                    KV_WITH_HOST_PASSTHROUGH_CPU_FG: False,
-                    KV_SRIOV_LIVE_MIGRATION_FG: True,
+                    constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG: False,
+                    constants.HCO_SRIOV_LIVE_MIGRATION_FG: True,
+                },
+                {
+                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG: False,
+                    constants.KV_SRIOV_LIVE_MIGRATION_FG: True,
                 },
                 marks=(pytest.mark.polarion("CNV-6282")),
                 id="modify_hco_cr_feature_gates_sriov_live_migration",
@@ -191,33 +206,44 @@ class TestHCOOptionalFeatureGatesSuite:
     )
     def test_optional_featuregates_in_hco_cr(
         self,
+        admin_client,
+        hco_namespace,
         hco_with_non_default_feature_gates,
         hyperconverged_resource_scope_function,
         kubevirt_feature_gates,
         expected_hco_feature_gates,
         expected_kv_feature_gates,
     ):
-        assert (
-            hyperconverged_resource_scope_function.instance.to_dict()["spec"][
-                "featureGates"
+        verify_spec(
+            expected_spec=expected_hco_feature_gates,
+            get_spec_func=lambda: get_hco_spec(
+                admin_client=admin_client, hco_namespace=hco_namespace
+            )["featureGates"],
+        )
+        if expected_kv_feature_gates:
+            expected_kv_fgs = [
+                item
+                for item in expected_kv_feature_gates
+                if expected_kv_feature_gates[item]
             ]
-            == expected_hco_feature_gates
-        ), "wrong HyperConverged's featureGates object"
+            deleted_kv_fgs = [
+                item
+                for item in expected_kv_feature_gates
+                if not expected_kv_feature_gates[item]
+            ]
+            wait_for_fg_update(
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+                expected_fg=expected_kv_fgs,
+                validate_func=validate_featuregates_in_kv_cr,
+            )
 
-        if expected_kv_feature_gates is not None:
-            errors = []
-            for fg, expected_in_kv in expected_kv_feature_gates.items():
-                if expected_in_kv:
-                    if fg not in kubevirt_feature_gates:
-                        errors.append(
-                            f"{fg} should be KubeVirt feature gate list, but it's not"
-                        )
-                else:
-                    if fg in kubevirt_feature_gates:
-                        errors.append(
-                            f"{fg} should not be KubeVirt feature gate list, but it is"
-                        )
-            assert not errors, "\n".join(errors)
+            wait_for_fg_update(
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+                expected_fg=deleted_kv_fgs,
+                validate_func=validate_featuregates_not_in_kv_cr,
+            )
 
     @pytest.mark.polarion("CNV-6277")
     @pytest.mark.parametrize(
@@ -231,21 +257,9 @@ class TestHCOOptionalFeatureGatesSuite:
         admin_client,
         hco_namespace,
     ):
-        samples = TimeoutSampler(
-            wait_timeout=60,
-            sleep=1,
-            func=validate_featuregates_not_in_cdi_cr,
+        wait_for_fg_update(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
-            feature_gate_under_test="fakeGate",
+            expected_fg=["fakeGate"],
+            validate_func=validate_featuregates_not_in_cdi_cr,
         )
-        try:
-            for sample in samples:
-                if sample:
-                    return
-        except TimeoutExpiredError:
-            LOGGER.error(
-                "Timeout validating the CDI featureGates field."
-                "fakeGate was not removed from CDI's featureGates"
-            )
-            raise

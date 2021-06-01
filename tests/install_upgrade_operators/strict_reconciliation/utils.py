@@ -108,14 +108,24 @@ def validate_featuregates_not_in_kv_cr(
 
 
 def validate_featuregates_not_in_cdi_cr(
-    admin_client, hco_namespace, feature_gate_under_test
+    admin_client, hco_namespace, feature_gates_under_test
 ):
+    """
+    Validates that all expected featuregates are present in cdi CR
+
+    Args:
+        admin_client(DynamicClient): DynamicClient object
+        hco_namespace (Namespace): Namespace object
+        feature_gates_under_test (list): list of featuregates to compare against current list of featuregates
+    returns:
+        bool: returns True or False
+    """
     cdi = get_hyperconverged_cdi(
         admin_client=admin_client, hco_namespace=hco_namespace
     ).instance.to_dict()
 
     cdi_fgs = cdi["spec"]["config"]["featureGates"]
-    return feature_gate_under_test not in cdi_fgs
+    return all(fg not in cdi_fgs for fg in feature_gates_under_test)
 
 
 def assert_specs_values(expected, get_spec_func, keys):
@@ -216,3 +226,54 @@ def create_rpatch_dict(subset_feature_gates_list_to_remove):
             }
         }
     }
+
+
+def validate_featuregates_in_kv_cr(
+    admin_client, hco_namespace, feature_gates_under_test
+):
+    """
+    Validates that all expected featuregates are present in kubevirt CR
+
+    Args:
+        admin_client(DynamicClient): DynamicClient object
+        hco_namespace (Namespace): Namespace object
+        feature_gates_under_test (list): list of featuregates to compare against current list of featuregates
+    returns:
+        bool: returns True or False
+    """
+    kv = get_hyperconverged_kubevirt(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    ).instance.to_dict()
+
+    kv_fgs = kv["spec"]["configuration"]["developerConfiguration"]["featureGates"]
+    return all(fg in kv_fgs for fg in feature_gates_under_test)
+
+
+def wait_for_fg_update(admin_client, hco_namespace, expected_fg, validate_func):
+    """
+    Waits for featuregate updates to get propagated
+
+    Args:
+        admin_client(DynamicClient): DynamicClient object
+        hco_namespace (Namespace): Namespace object
+        expected_fg (list): list of featuregates to compare against current list of featuregates
+        validate_func (function): validate function to be used for comparision
+    """
+    samples = TimeoutSampler(
+        wait_timeout=30,
+        sleep=1,
+        func=validate_func,
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        feature_gates_under_test=expected_fg,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Timeout validating featureGates field values using "
+            f"{get_function_name(function_name=validate_func)}: comparing with fg: {expected_fg}"
+        )
+        raise

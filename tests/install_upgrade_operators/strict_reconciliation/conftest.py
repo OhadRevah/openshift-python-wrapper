@@ -28,7 +28,7 @@ def deleted_stanza_on_hco_cr(
     # raised by the validating webhook due to lately propagated side effects
     # of the previous change
     backup_data = replace_backup_hco_cr_modification(
-        rpatch=request.param,
+        rpatch=request.param["rpatch"],
         admin_client=admin_client,
         hco_namespace=hco_namespace,
     )
@@ -108,13 +108,20 @@ def update_cnao_cr(request, cnao_resource):
 
 
 @pytest.fixture()
-def updated_kv_with_feature_gates(request, kubevirt_resource):
-    requested_fgs = request.param
+def updated_kv_with_feature_gates(
+    request, admin_client, hco_namespace, kubevirt_resource
+):
     kv_dict = kubevirt_resource.instance.to_dict()
     fgs = kv_dict["spec"]["configuration"]["developerConfiguration"][
         "featureGates"
     ].copy()
-    fgs.extend(requested_fgs)
+    fgs.extend(request.param)
+
+    assert not any(
+        get_hco_spec(admin_client=admin_client, hco_namespace=hco_namespace)[
+            "featureGates"
+        ].values()
+    ), "KubeVirt featuregates values are not as expected before testing"
 
     with ResourceEditor(
         patches={
@@ -130,10 +137,9 @@ def updated_kv_with_feature_gates(request, kubevirt_resource):
 
 @pytest.fixture()
 def updated_cdi_with_feature_gates(request, cdi_resource):
-    requested_fgs = request.param
     cdi_dict = cdi_resource.instance.to_dict()
     fgs = cdi_dict["spec"]["config"]["featureGates"].copy()
-    fgs.extend(requested_fgs)
+    fgs.extend(request.param)
 
     with ResourceEditor(
         patches={cdi_resource: {"spec": {"config": {"featureGates": fgs}}}},
@@ -142,12 +148,17 @@ def updated_cdi_with_feature_gates(request, cdi_resource):
 
 
 @pytest.fixture()
-def hco_with_non_default_feature_gates(request, hyperconverged_resource_scope_function):
-    new_fgs = request.param
-
+def hco_with_non_default_feature_gates(
+    request, admin_client, hco_namespace, hyperconverged_resource_scope_function
+):
+    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
+    new_fgs = request.param["fgs"]
     hco_fgs = hyperconverged_resource_scope_function.instance.to_dict()["spec"][
         "featureGates"
     ]
+    assert not any(
+        hco_fgs.values()
+    ), "HCO featuregates values are not as expected before testing"
     for fg in new_fgs:
         hco_fgs[fg] = True
 
@@ -156,7 +167,9 @@ def hco_with_non_default_feature_gates(request, hyperconverged_resource_scope_fu
             hyperconverged_resource_scope_function: {"spec": {"featureGates": hco_fgs}}
         }
     ):
+        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
         yield
+        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
