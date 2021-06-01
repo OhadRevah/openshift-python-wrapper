@@ -626,6 +626,7 @@ def get_virtctl_os_info(vm):
     # virtctl gusetosinfo also returns filesystem and user info (if any active user is logged in)
     # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
     # fsInfo and userList values are checked in other tests
+    data.pop("supportedCommands", None)
     data.pop("fsInfo", None)
     data.pop("userList", None)
     return data
