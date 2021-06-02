@@ -47,7 +47,7 @@ def reboot_vm(vm):
 
 
 def vm_os_version(vm):
-    """ Verify VM os version using SSH """
+    """Verify VM os version using SSH"""
 
     # vm.name format is <os type>-<os major version>[-<minor version>-]<random>-<random>
     # For example: fedora-32-1601036283-2909632 or rhel-8-2-1601034311-6416788
@@ -87,7 +87,7 @@ def check_telnet_connection(ip, port):
 
 
 def check_vm_xml_hyperv(vm):
-    """ Verify HyperV values in VMI """
+    """Verify HyperV values in VMI"""
 
     # TODO: Add evmcs for fedora and Windows hyperV features, once merged
     # https://bugzilla.redhat.com/show_bug.cgi?id=1952551
@@ -127,7 +127,7 @@ def check_vm_xml_hyperv(vm):
 
 
 def check_vm_xml_clock(vm):
-    """ Verify clock values in VMI """
+    """Verify clock values in VMI"""
 
     clock_timer_list = vm.vmi.xml_dict["domain"]["clock"]["timer"]
     assert [i for i in clock_timer_list if i["@name"] == "hpet"][0]["@present"] == "no"
@@ -137,7 +137,7 @@ def check_vm_xml_clock(vm):
 
 
 def check_windows_vm_hvinfo(vm):
-    """ Verify HyperV values in Windows VMI using hvinfo """
+    """Verify HyperV values in Windows VMI using hvinfo"""
     hvinfo_path = "C:\\\\hvinfo\\\\hvinfo.exe"
 
     def _get_hvinfo_package():
@@ -228,7 +228,7 @@ def check_windows_vm_hvinfo(vm):
 
 
 def set_vm_tablet_device_dict(tablet_params):
-    """  Generates VM tablet device dict """
+    """Generates VM tablet device dict"""
 
     return {
         "spec": {
@@ -295,7 +295,7 @@ def activate_windows_online(vm):
 
 
 def is_windows_activated(vm):
-    """ Returns True if license is active else False """
+    """Returns True if license is active else False"""
 
     cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr")
     return (
@@ -305,7 +305,7 @@ def is_windows_activated(vm):
 
 
 def check_windows_activated_license(vm, reset_action):
-    """ Verify VM activation mode after VM reset (reboot / stop and start) """
+    """Verify VM activation mode after VM reset (reboot / stop and start)"""
 
     if "stop_start" in reset_action:
         stop_start_vm(vm=vm, wait_for_interfaces=False)
@@ -327,7 +327,7 @@ def add_activate_windows_license(vm, license_key):
 
 
 def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):
-    """ Fetch memory min and max values from the osinfo files. """
+    """Fetch memory min and max values from the osinfo files."""
 
     xml_doc = ElementTree.parse(osinfo_file_path)
     root = xml_doc.getroot()
@@ -340,7 +340,7 @@ def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):
 
 
 def validate_memory(memory_test, template_memory_value, osinfo_memory_value):
-    """ Validate the minimum and maximum memory values."""
+    """Validate the minimum and maximum memory values."""
     if memory_test == "minimum":
         return bitmath.parse_string_unsafe(template_memory_value) >= bitmath.Byte(
             osinfo_memory_value
@@ -352,7 +352,7 @@ def validate_memory(memory_test, template_memory_value, osinfo_memory_value):
 
 
 def download_and_extract_tar(tarfile_url):
-    """ Download and Extract the tar file. """
+    """Download and Extract the tar file."""
 
     tar_data = urllib.request.urlopen(tarfile_url)
     thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
@@ -404,7 +404,7 @@ def execute_virsh_qemu_agent_command(vm, command):
 
 
 def check_machine_type(vm):
-    """ VM and VMI should have machine type; machine type cannot be empty """
+    """VM and VMI should have machine type; machine type cannot be empty"""
 
     vm_machine_type = vm.instance.spec.template.spec.domain.machine.type
     vmi_machine_type = vm.vmi.instance.spec.domain.machine.type

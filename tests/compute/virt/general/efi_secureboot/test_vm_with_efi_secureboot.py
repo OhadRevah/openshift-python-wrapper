@@ -34,7 +34,7 @@ WIN_EFI_IMG = os.path.join(Images.Windows.DIR, Images.Windows.WIM10_EFI_IMG)
 def rhel_efi_secureboot_vm(
     namespace, unprivileged_client, data_volume_scope_class, nodes_common_cpu_model
 ):
-    """ Create VM with EFI secureBoot set as True """
+    """Create VM with EFI secureBoot set as True"""
     with VirtualMachineForTests(
         name="rhel-efi-secureboot-default",
         namespace=namespace.name,
@@ -58,7 +58,7 @@ def windows_efi_secureboot_vm(
     golden_image_data_volume_scope_class,
     nodes_common_cpu_model,
 ):
-    """ Create VM with EFI secureBoot set as True """
+    """Create VM with EFI secureBoot set as True"""
     with VirtualMachineForTestsFromTemplate(
         name="windows-efi-secureboot",
         namespace=namespace.name,
@@ -200,7 +200,7 @@ class TestEFISecureBootRHEL:
 
 @pytest.mark.polarion("CNV-4465")
 def test_efi_secureboot_with_smm_disabled(namespace, unprivileged_client):
-    """ Test that EFI secureBoot VM with SMM disabled, does not get created"""
+    """Test that EFI secureBoot VM with SMM disabled, does not get created"""
     with pytest.raises(UnprocessibleEntityError):
         with VirtualMachineForTests(
             name="efi-secureboot-smm-disabled-vm",

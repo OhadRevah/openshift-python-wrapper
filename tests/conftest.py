@@ -1009,7 +1009,7 @@ class UtilityDaemonSet(DaemonSet):
 
 @pytest.fixture(scope="module")
 def namespace(request, unprivileged_client):
-    """ Generate namespace from the test's module name """
+    """Generate namespace from the test's module name"""
     client = True
     if hasattr(request, "param"):
         client = request.param.get("unprivileged_client", True)
@@ -1122,7 +1122,7 @@ def skip_no_rhel7_workers(rhel7_workers):
 
 @pytest.fixture(scope="class")
 def rhel7_psi_network_config():
-    """ RHEL7 network configuration for PSI clusters """
+    """RHEL7 network configuration for PSI clusters"""
 
     return {
         "vm_address": "172.16.0.90",

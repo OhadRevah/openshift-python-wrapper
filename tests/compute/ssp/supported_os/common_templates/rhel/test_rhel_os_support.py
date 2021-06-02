@@ -41,7 +41,7 @@ class TestCommonTemplatesRhel:
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_ssh_service_multi_rhel_os_scope_class,
     ):
-        """ Test CNV VM creation from template """
+        """Test CNV VM creation from template"""
 
         LOGGER.info("Create VM from template.")
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.create(
@@ -59,7 +59,7 @@ class TestCommonTemplatesRhel:
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM initiation """
+        """Test CNV common templates VM initiation"""
         guest_agent_support = "rhel-6" not in [*rhel_os_matrix__class__][0]
 
         running_vm(
@@ -78,7 +78,7 @@ class TestCommonTemplatesRhel:
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM console """
+        """Test CNV common templates VM console"""
 
         LOGGER.info("Verify VM console connection.")
         wait_for_console(
@@ -97,7 +97,7 @@ class TestCommonTemplatesRhel:
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates OS version """
+        """Test CNV common templates OS version"""
 
         common_templates_utils.vm_os_version(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
@@ -114,7 +114,7 @@ class TestCommonTemplatesRhel:
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
-        """ CNV common templates 'domain' label contains vm name """
+        """CNV common templates 'domain' label contains vm name"""
 
         label = golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.instance.spec.template.metadata[  # noqa: E501
             "labels"
@@ -138,7 +138,7 @@ class TestCommonTemplatesRhel:
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
-        """ CNV common templates access VM via SSH """
+        """CNV common templates access VM via SSH"""
 
         # On RHEL7 VM IP is used for SSH
         if "rhel-6" in [*rhel_os_matrix__class__][0] and rhel7_workers:
@@ -270,7 +270,7 @@ class TestCommonTemplatesRhel:
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         ping_process_in_rhel_os,
     ):
-        """ Test SSH connectivity after migration"""
+        """Test SSH connectivity after migration"""
         migrate_and_verify(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
@@ -322,7 +322,7 @@ class TestCommonTemplatesRhel:
         golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM deletion """
+        """Test CNV common templates VM deletion"""
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.delete(
             wait=True
         )

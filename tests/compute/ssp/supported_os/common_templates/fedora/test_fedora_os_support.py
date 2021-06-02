@@ -89,7 +89,7 @@ class TestCommonTemplatesFedora:
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_ssh_service_multi_fedora_os_scope_class,
     ):
-        """ Test CNV VM creation from template """
+        """Test CNV VM creation from template"""
 
         LOGGER.info("Create VM from template.")
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.create(
@@ -108,7 +108,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM initiation """
+        """Test CNV common templates VM initiation"""
 
         running_vm(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
@@ -144,7 +144,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM console """
+        """Test CNV common templates VM console"""
 
         LOGGER.info("Verify VM console connection.")
         wait_for_console(
@@ -162,7 +162,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates OS version """
+        """Test CNV common templates OS version"""
 
         common_templates_utils.vm_os_version(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
@@ -178,7 +178,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ CNV common templates 'domain' label contains vm name """
+        """CNV common templates 'domain' label contains vm name"""
         vm = golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         domain_label = vm.instance.spec.template.metadata["labels"][
             "kubevirt.io/domain"
@@ -197,7 +197,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ CNV common templates access VM via SSH """
+        """CNV common templates access VM via SSH"""
 
         assert golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
@@ -214,7 +214,7 @@ class TestCommonTemplatesFedora:
         fedora_os_matrix__class__,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ Test Guest OS agent info. """
+        """Test Guest OS agent info."""
         common_templates_utils.validate_os_info_vmi_vs_linux_os(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
@@ -311,7 +311,7 @@ class TestCommonTemplatesFedora:
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         ping_process_in_fedora_os,
     ):
-        """ Test SSH connectivity after migration"""
+        """Test SSH connectivity after migration"""
         migrate_and_verify(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
@@ -363,7 +363,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM deletion """
+        """Test CNV common templates VM deletion"""
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.delete(
             wait=True
         )

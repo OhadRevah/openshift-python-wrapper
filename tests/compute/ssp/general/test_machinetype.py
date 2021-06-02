@@ -151,7 +151,7 @@ def test_machine_type_after_cm_update(
     indirect=True,
 )
 def test_machine_type_cm_update(updated_configmap_machine_type, vm):
-    """ Test machine type change in ConfigMap; new VM gets new value """
+    """Test machine type change in ConfigMap; new VM gets new value"""
 
     ssp_utils.validate_machine_type(vm=vm, expected_machine_type="pc-q35-rhel8.1.0")
 

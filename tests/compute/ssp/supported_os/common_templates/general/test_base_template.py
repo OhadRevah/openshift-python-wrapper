@@ -90,7 +90,7 @@ def get_centos_templates_list():
 
 @pytest.fixture(scope="module")
 def base_templates(admin_client):
-    """ Return templates list by label """
+    """Return templates list by label"""
     common_templates_list = list(
         Template.get(
             dyn_client=admin_client,
@@ -339,7 +339,7 @@ def test_validate_windows_min_max_memory(
 def test_common_templates_machine_type(
     machine_type_from_kubevirt_config, base_templates
 ):
-    """ Verify that machine type in templates match the value in kubevirt-config cm """
+    """Verify that machine type in templates match the value in kubevirt-config cm"""
     unmatched_templates = [
         template.name
         for template in base_templates
@@ -396,7 +396,7 @@ def test_common_templates_golden_images_params(base_templates):
 
 @pytest.mark.polarion("CNV-5599")
 def test_provide_support_annotations(base_templates, templates_provider_support_dict):
-    """ Verify provider, provider-support-level and provider-url annotations"""
+    """Verify provider, provider-support-level and provider-url annotations"""
 
     def _get_os_support_dict(os_name):
         # Return support dict based on OS

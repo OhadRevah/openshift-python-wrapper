@@ -161,7 +161,7 @@ def test_only_permitted_hostdevices_allowed(
     unprivileged_client,
     gpu_nodes,
 ):
-    """ Test that VM cannot be created without Permitted Hostdevices"""
+    """Test that VM cannot be created without Permitted Hostdevices"""
     with pytest.raises(
         UnprocessibleEntityError,
         match=f"admission webhook .* denied the request: HostDevice {GPU_DEVICE_NAME} is not permitted .*",

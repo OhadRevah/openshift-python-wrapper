@@ -170,7 +170,7 @@ def generate_cloud_init_data(data):
 
 
 def merge_dicts(source_dict, target_dict):
-    """ Merge nested source_dict into target_dict """
+    """Merge nested source_dict into target_dict"""
 
     for key, value in source_dict.items():
         if isinstance(value, dict):
@@ -1352,7 +1352,7 @@ class MissingTemplateVariables(Exception):
 
 
 def validate_windows_guest_agent_info(vm):
-    """ Compare guest OS info from VMI (reported by guest agent) and from OS itself. """
+    """Compare guest OS info from VMI (reported by guest agent) and from OS itself."""
     windown_os_info = get_windows_os_info(ssh_exec=vm.ssh_exec)
     for key, val in get_guest_os_info_from_vmi(vmi=vm.vmi).items():
         if key != "id":
@@ -1360,7 +1360,7 @@ def validate_windows_guest_agent_info(vm):
 
 
 def validate_vmi_ga_info_vs_windows_os_info(vm):
-    """ Compare OS data from VMI object vs Windows guest OS data. """
+    """Compare OS data from VMI object vs Windows guest OS data."""
     vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
     os_info = get_windows_os_release(ssh_exec=vm.ssh_exec)
 
@@ -1380,7 +1380,7 @@ def get_windows_os_release(ssh_exec):
 
 
 def get_guest_os_info_from_vmi(vmi):
-    """ Gets guest OS info from VMI. """
+    """Gets guest OS info from VMI."""
     guest_os_info_dict = dict(vmi.instance.status.guestOSInfo)
     assert guest_os_info_dict, "Guest agent not installed/active."
     return guest_os_info_dict

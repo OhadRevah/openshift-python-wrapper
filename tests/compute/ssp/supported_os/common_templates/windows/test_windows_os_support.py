@@ -50,7 +50,7 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_ssh_service_multi_windows_os_scope_class,
     ):
-        """ Test CNV VM creation from template """
+        """Test CNV VM creation from template"""
 
         LOGGER.info("Create VM from template.")
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.create(
@@ -66,7 +66,7 @@ class TestCommonTemplatesWindows:
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM initiation """
+        """Test CNV common templates VM initiation"""
 
         running_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
@@ -82,7 +82,7 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        """ Test Guest OS agent info. """
+        """Test Guest OS agent info."""
         common_templates_utils.validate_os_info_vmi_vs_windows_os(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
@@ -143,7 +143,7 @@ class TestCommonTemplatesWindows:
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        """ CNV common templates 'domain' label contains vm name """
+        """CNV common templates 'domain' label contains vm name"""
         vm = golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         domain_label = vm.body["spec"]["template"]["metadata"]["labels"][
             "kubevirt.io/domain"
@@ -249,7 +249,7 @@ class TestCommonTemplatesWindows:
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        """ Test VM pause and unpause """
+        """Test VM pause and unpause"""
         validate_pause_unpause_windows_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
@@ -284,7 +284,7 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         mspaint_process_in_windows_os,
     ):
-        """ Test SSH connectivity after migration"""
+        """Test SSH connectivity after migration"""
         migrate_and_verify(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
@@ -338,7 +338,7 @@ class TestCommonTemplatesWindows:
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
-        """ Test CNV common templates VM deletion """
+        """Test CNV common templates VM deletion"""
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class.delete(
             wait=True
         )

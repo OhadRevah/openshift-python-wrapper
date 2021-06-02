@@ -29,7 +29,7 @@ def hco_version(cnv_version):
 
 @pytest.fixture(scope="module")
 def is_cnv_deployment(pytestconfig):
-    """ Returns True if requested upgrade or install is for CNV else False """
+    """Returns True if requested upgrade or install is for CNV else False"""
     return cnv_upgrade or pytestconfig.getoption("install_cnv")
 
 
@@ -40,7 +40,7 @@ def is_deployment_from_production_source(is_cnv_deployment, cnv_source):
 
 @pytest.fixture(scope="session")
 def cnv_upgrade(pytestconfig):
-    """ Returns True if requested upgrade if for CNV else False """
+    """Returns True if requested upgrade if for CNV else False"""
     return pytestconfig.option.upgrade == "cnv"
 
 

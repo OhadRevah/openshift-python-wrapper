@@ -33,7 +33,7 @@ WINDOWS_DESKTOP_VERSION = get_windows_os_dict(windows_version="win-10")
 
 
 def check_windows_vm_tablet_device(vm, driver_state):
-    """ Verify tablet device values in Windows VMI using driverquery """
+    """Verify tablet device values in Windows VMI using driverquery"""
 
     windows_driver_query = run_ssh_commands(
         host=vm.ssh_exec,

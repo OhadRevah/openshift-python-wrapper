@@ -59,7 +59,7 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
 
 @pytest.fixture()
 def sidecar_vm(namespace, unprivileged_client):
-    """ Test VM with sidecar hook """
+    """Test VM with sidecar hook"""
     name = "vmi-with-sidecar-hook"
     with FedoraVirtualMachineWithSideCar(
         name=name, namespace=namespace.name, client=unprivileged_client
