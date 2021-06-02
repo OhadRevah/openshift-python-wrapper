@@ -73,10 +73,10 @@ HYPERV_DICT = {
     ],
     indirect=True,
 )
-@pytest.mark.ocp_interop
 class TestCommonTemplatesFedora:
     @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
+    @pytest.mark.ocp_interop
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3351")
     def test_create_vm(
@@ -98,6 +98,7 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
+    @pytest.mark.ocp_interop
     @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
     @pytest.mark.polarion("CNV-3345")
     def test_start_vm(
@@ -134,6 +135,7 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
+    @pytest.mark.ocp_interop
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3344")
     def test_vm_console(
@@ -187,6 +189,7 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
+    @pytest.mark.ocp_interop
     @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3349")
     def test_expose_ssh(
@@ -299,6 +302,7 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
+    @pytest.mark.ocp_interop
     @pytest.mark.polarion("CNV-5842")
     @pytest.mark.dependency(name="migrate_vm", depends=["vm_expose_ssh"])
     def test_migrate_vm(
@@ -353,6 +357,7 @@ class TestCommonTemplatesFedora:
 
     @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
+    @pytest.mark.ocp_interop
     @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3346")
     def test_vm_deletion(
