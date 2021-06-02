@@ -821,7 +821,7 @@ def ip_version_data_from_matrix(request):
         request (fixtures.SubRequest): Test's parameterized request.
 
     Returns:
-        str: The IP family (IPv4 or IPv6) is the matrix fixture is used, else None.
+        str: The IP family (IPv4 or IPv6) if the matrix fixture is used, else None.
     """
     ip_stack_matrix_fixture = [
         fix_name
@@ -1033,3 +1033,15 @@ def enable_hyperconverged_ovs_annotations(
         )
         ovs_daemonset.wait_until_deployed()
         yield ovs_daemonset
+
+
+def compose_dual_stack_network_data(dhcp4_enable=True):
+    return {
+        "ethernets": {
+            "eth0": {
+                "dhcp4": dhcp4_enable,
+                "addresses": ["fd10:0:2::2/120"],
+                "gateway6": "fd10:0:2::1",
+            },
+        },
+    }

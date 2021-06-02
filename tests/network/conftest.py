@@ -8,7 +8,11 @@ import pytest
 from ocp_resources.pod import Pod
 
 from utilities.infra import ClusterHosts
-from utilities.network import get_ipv6_address, ip_version_data_from_matrix
+from utilities.network import (
+    compose_dual_stack_network_data,
+    get_ipv6_address,
+    ip_version_data_from_matrix,
+)
 
 
 IPV6_STR = "ipv6"
@@ -89,12 +93,6 @@ def ipv6_network_data(
     # dhcp4 should be enabled if it's a dual-stack flow, i.e. both IPv4 and IPv6 should be enabled
     # on the primary interface. The value returned from ip_version_data_from_matrix indicates that.
     if dual_stack_cluster:
-        return {
-            "ethernets": {
-                "eth0": {
-                    "dhcp4": ip_version_data_from_matrix(request) is not None,
-                    "addresses": ["fd10:0:2::2/120"],
-                    "gateway6": "fd10:0:2::1",
-                },
-            },
-        }
+        return compose_dual_stack_network_data(
+            dhcp4_enable=ip_version_data_from_matrix(request) is not None
+        )
