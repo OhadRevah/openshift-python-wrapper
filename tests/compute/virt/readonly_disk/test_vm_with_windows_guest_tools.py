@@ -60,7 +60,7 @@ def vm_with_guest_tools(
     golden_image_data_volume_scope_class,
     nodes_common_cpu_model,
 ):
-    """ Create Windows with guest-tools cd-rom  """
+    """Create Windows with guest-tools cd-rom"""
     with WindowsVMWithGuestTools(
         name="windows-vm-wth-guest-tools",
         namespace=namespace.name,
