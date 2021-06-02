@@ -165,9 +165,6 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1925042, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5348")
     def test_virtctl_guest_agent_fs_info(
@@ -176,6 +173,7 @@ class TestCommonTemplatesCentos:
         schedulable_node_ips,
         rhel7_workers,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        skip_guest_agent_on_centos,
     ):
         common_templates_utils.validate_fs_info_virtctl_vs_linux_os(
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class

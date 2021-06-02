@@ -15,6 +15,10 @@ from ocp_resources import pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from packaging import version
 
+from tests.compute.ssp.supported_os.utils import (
+    get_linux_guest_agent_version,
+    guest_agent_version_parser,
+)
 from tests.compute.utils import get_windows_timezone, vm_started
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
@@ -465,10 +469,38 @@ def validate_fs_info_virtctl_vs_linux_os(vm):
         linux_info = get_linux_fs_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    fs_info_sampler = TimeoutSampler(
-        wait_timeout=330, sleep=30, func=_get_fs_info, vm=vm
-    )
-    check_guest_agent_sampler_data(sampler=fs_info_sampler)
+    virtctl_info = cnv_info = libvirt_info = linux_info = None
+
+    fs_info_sampler = TimeoutSampler(wait_timeout=90, sleep=1, func=_get_fs_info, vm=vm)
+
+    try:
+        for virtctl_info, cnv_info, libvirt_info, linux_info in fs_info_sampler:
+            if virtctl_info:
+                orig_virtctl_info = virtctl_info.copy()
+                orig_linux_info = linux_info.copy()
+
+                # Disk usage may not be bit exact; allowing up to 5% diff
+                disk_usage_diff_validation = (
+                    1 - virtctl_info.pop("used") / linux_info.pop("used") <= 0.05
+                )
+                # total usage - allowing up to 5% diff for ext4 FS
+                disk_total_diff_validation = (
+                    1 - virtctl_info.pop("total") / linux_info.pop("total") <= 0.05
+                    if virtctl_info["fsType"] == "ext4"
+                    else virtctl_info.pop("total") == linux_info.pop("total")
+                )
+                if (
+                    disk_usage_diff_validation
+                    and disk_total_diff_validation
+                    and virtctl_info == linux_info
+                ):
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
+            f"OS: {orig_linux_info}"
+        )
+        raise
 
 
 def validate_user_info_virtctl_vs_linux_os(vm):
@@ -736,8 +768,8 @@ def get_virtctl_fs_info(vm):
         "name": name,
         "mount": mount,
         "fsType": fsType,
-        "usedGB": usedGB,
-        "totalGB": totalGB,
+        "used": <used bytes>,
+        "total": <total bytes>,
     }
     """
     cmd = ["fslist", vm.name]
@@ -755,8 +787,8 @@ def get_cnv_fs_info(vm):
         "name": name,
         "mount": mount,
         "fsType": fsType,
-        "usedGB": usedGB,
-        "totalGB": totalGB,
+        "used": <used bytes>,
+        "total": <total bytes>,
     }
     """
     return guest_agent_disk_info_parser(disk_info=vm.vmi.guest_fs_info["items"])
@@ -769,8 +801,8 @@ def get_libvirt_fs_info(vm):
         "name": name,
         "mount": mount,
         "fsType": fsType,
-        "usedGB": usedGB,
-        "totalGB": totalGB,
+        "used": <used bytes>,
+        "total": <total bytes>,
     }
     """
     fsinfo = execute_virsh_qemu_agent_command(vm=vm, command="guest-get-fsinfo")
@@ -785,8 +817,8 @@ def get_linux_fs_info(ssh_exec):
         "name": disks[0].split("/dev/")[1],
         "mount": disks[6],
         "fsType": disks[1],
-        "usedGB": convert_disk_size(value=int(disks[3]), si_prefix=False),
-        "totalGB": convert_disk_size(value=int(disks[2]), si_prefix=False),
+        "used": int(disks[3]),
+        "total": int(disks[2]),
     }
 
 
@@ -859,12 +891,8 @@ def guest_agent_disk_info_parser(disk_info):
                 "name": disk.get("name", disk.get("diskName")),
                 "mount": disk.get("mountpoint", disk.get("mountPoint")),
                 "fsType": disk.get("type", disk.get("fileSystemType")),
-                "usedGB": convert_disk_size(
-                    value=disk.get("used-bytes", disk.get("usedBytes"))
-                ),
-                "totalGB": convert_disk_size(
-                    value=disk.get("total-bytes", disk.get("totalBytes"))
-                ),
+                "used": disk.get("used-bytes", disk.get("usedBytes")),
+                "total": disk.get("total-bytes", disk.get("totalBytes")),
             }
 
 
@@ -882,16 +910,6 @@ def check_guest_agent_sampler_data(sampler):
         raise
 
 
-def convert_disk_size(value, si_prefix=True):
-    value = bitmath.Byte(bytes=value)
-    return round(float(value.to_GB() if si_prefix else value.to_GiB()))
-
-
-def guest_agent_version_parser(version_string):
-    # Return qemu-guest-agent version (including build number, e.g: "4.2.0-34" or "100.0.0.0" for Windows)
-    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+[.|-][0-9]+", version_string).group(0)
-
-
 def windows_disk_space_parser(fsinfo_list):
     # fsinfo_list contains strings of total free and total bytes in format:
     # ['Total free bytes        :  81,103,310,848 ( 75.5 GB)',
@@ -904,13 +922,6 @@ def windows_disk_space_parser(fsinfo_list):
     used = round((int(disk_space["total"]) - int(disk_space["free"])) / 1000 ** 3)
     total = round(int(disk_space["total"]) / 1000 ** 3)
     return f"used {used}, total {total}\n"
-
-
-def get_linux_guest_agent_version(ssh_exec):
-    ssh_exec.sudo = True
-    return guest_agent_version_parser(
-        version_string=ssh_exec.package_manager.info("qemu-guest-agent")
-    )
 
 
 def validate_virtctl_guest_agent_data_over_time(vm):

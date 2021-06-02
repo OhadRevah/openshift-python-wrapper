@@ -240,9 +240,6 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1925042, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3574")
     def test_virtctl_guest_agent_fs_info(

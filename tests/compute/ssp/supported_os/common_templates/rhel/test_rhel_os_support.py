@@ -210,6 +210,18 @@ class TestCommonTemplatesRhel:
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
             )
 
+    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.polarion("CNV-6531")
+    def test_virtctl_guest_agent_fs_info(
+        self,
+        rhel_os_matrix__class__,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        skip_guest_agent_on_rhel,
+    ):
+        common_templates_utils.validate_fs_info_virtctl_vs_linux_os(
+            vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+        )
+
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3671")
     def test_vm_machine_type(

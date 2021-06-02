@@ -3,7 +3,9 @@
 import pytest
 from ocp_resources.service import Service
 from ocp_resources.template import Template
+from packaging import version
 
+from tests.compute.ssp.supported_os.utils import get_linux_guest_agent_version
 from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
     start_and_fetch_processid_on_windows_vm,
@@ -403,6 +405,32 @@ def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
     if "win-12" in [*windows_os_matrix__class__][0]:
         pytest.skip("win-12 doesn't support powershell commands")
+
+
+def skip_on_guest_agent_version(vm, ga_version):
+    qemu_guest_agent_version = get_linux_guest_agent_version(ssh_exec=vm.ssh_exec)
+    if version.parse(qemu_guest_agent_version.split()[0]) < version.parse(ga_version):
+        pytest.skip("Skipping on guest agent version {qemu_guest_agent_version}")
+
+
+@pytest.fixture()
+def skip_guest_agent_on_rhel(
+    golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+):
+    skip_on_guest_agent_version(
+        vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+        ga_version="4.2.0",
+    )
+
+
+@pytest.fixture()
+def skip_guest_agent_on_centos(
+    golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+):
+    skip_on_guest_agent_version(
+        vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
+        ga_version="4.2.0",
+    )
 
 
 @pytest.fixture(scope="class")
