@@ -27,13 +27,11 @@ SERIAL = "1234567890"
 @pytest.fixture()
 def skip_if_hpp_sc(storage_class_matrix__function__):
     bug_id = 1955129
-    if (
-        storage_class_matrix__function__ == StorageClass.Types.HOSTPATH
-        and get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_id
-        )
-        not in BUG_STATUS_CLOSED
-    ):
+    if [*storage_class_matrix__function__][
+        0
+    ] == StorageClass.Types.HOSTPATH and get_bug_status(
+        bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_id
+    ) not in BUG_STATUS_CLOSED:
         pytest.skip(f"Skip the test due to bug {bug_id}")
 
 
