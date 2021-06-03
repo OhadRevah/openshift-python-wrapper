@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from ocp_resources.configmap import ConfigMap
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
@@ -208,6 +209,28 @@ def updated_delete_resource(
         cr_func=request.param["resource_func"],
     )
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
+
+
+@pytest.fixture
+def kubevirt_storage_class_defaults_configmap_dict(admin_client, hco_namespace):
+    yield list(
+        ConfigMap.get(
+            dyn_client=admin_client,
+            name="kubevirt-storage-class-defaults",
+            namespace=hco_namespace.name,
+        )
+    )[0].instance.to_dict()
+
+
+@pytest.fixture
+def v2v_vmware_configmap_dict(admin_client, hco_namespace):
+    yield list(
+        ConfigMap.get(
+            dyn_client=admin_client,
+            name="v2v-vmware",
+            namespace=hco_namespace.name,
+        )
+    )[0].instance.to_dict()
 
 
 def replace_cr(rpatch, admin_client, hco_namespace, cr_func, action="replace"):

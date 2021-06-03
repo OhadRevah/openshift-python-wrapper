@@ -171,6 +171,128 @@ KUBEVIRT_FIELDS = ["certificateRotateStrategy", "migrations", "configuration"]
 CDI_FIELDS = ["certConfig"]
 CNAO_FIELDS = ["selfSignConfiguration"]
 
+# Fields without default values
+
+SCRATCH_SPACE_STORAGE_CLASS_KEY = "scratchSpaceStorageClass"
+SCRATCH_SPACE_STORAGE_CLASS_VALUE = "customScratch"
+LOCAL_STORAGE_CLASS_NAME_KEY = "localStorageClassName"
+LOCAL_STORAGE_CLASS_NAME_VALUE = "myLocalStorageClassName"
+VDDK_INIT_IMAGE_KEY_HCO_CR = "vddkInitImage"
+VDDK_INIT_IMAGE_KEY_CONFIGMAP = "vddk-init-image"
+VDDK_INIT_IMAGE_VALUE = "dummy_registry_route_or_server_path/vddk:123"
+STORAGE_IMPORT_KEY_HCO_CR = "storageImport"
+STORAGE_IMPORT_VALUE = {
+    "insecureRegistries": [
+        "private-registry-example-1:5000",
+        "private-registry-example-2:5000",
+    ]
+}
+OBSOLETE_CPUS_KEY = "obsoleteCPUs"
+OBSOLETE_CPUS_VALUE_HCO_CR = {
+    "cpuModels": [
+        "487",
+        "pentium5",
+        "pentiumhome",
+    ],
+    "minCPUModel": "Haswell",
+}
+OBSOLETE_CPUS_VALUE_KUBEVIRT_CR = {
+    "obsoleteCPUModels": {
+        "487": True,
+        "pentium5": True,
+        "pentiumhome": True,
+    },
+    "minCPUModel": "Haswell",
+}
+RESOURCE_REQUIREMENTS_KEY_HCO_CR = "resourceRequirements"
+RESOURCE_REQUIREMENTS = {
+    "storageWorkloads": {
+        "limits": {
+            "cpu": "888k",
+            "memory": "123Mi",
+        },
+        "requests": {
+            "cpu": "555m",
+            "memory": "1Gi",
+        },
+    }
+}
+
+NP_INFRA_KEY = "infra"
+NP_INFRA_VALUE_CDI_CR = {
+    "affinity": {
+        "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [
+                    {
+                        "matchExpressions": [
+                            {
+                                "key": "nodeType",
+                                "operator": "In",
+                                "values": [
+                                    "infra",
+                                ],
+                            },
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "nodeSelector": {"test_case": "np"},
+}
+NP_INFRA_VALUE_HCO_CR = {
+    "nodePlacement": NP_INFRA_VALUE_CDI_CR,
+}
+NP_WORKLOADS_KEY_HCO_CR = "workloads"
+NP_WORKLOADS_KEY_CDI_CR = "workload"
+NP_WORKLOADS_VALUE_HCO_CR = {
+    "nodePlacement": {
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "kubernetes.io/e2e-az-name",
+                                    "operator": "In",
+                                    "values": [
+                                        "e2e-az1",
+                                        "e2e-az2",
+                                    ],
+                                },
+                            ]
+                        }
+                    ]
+                },
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                        "weight": 1,
+                        "preference": {
+                            "matchExpressions": [
+                                {
+                                    "key": "my-cloud.io/num-cpus",
+                                    "operator": "gt",
+                                    "values": ["8"],
+                                }
+                            ]
+                        },
+                    }
+                ],
+            }
+        },
+        "nodeSelector": {"test_case": "np"},
+        "tolerations": [
+            {
+                "key": "npkey2",
+                "operator": "Exists",
+                "effect": "NoSchedule",
+            }
+        ],
+    },
+}
+NP_WORKLOADS_VALUE_CDI_CR = NP_WORKLOADS_VALUE_HCO_CR["nodePlacement"]
 # hardcoded featuregates
 EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "DataVolumes",
