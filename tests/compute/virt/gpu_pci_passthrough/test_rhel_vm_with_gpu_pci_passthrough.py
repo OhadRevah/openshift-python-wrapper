@@ -79,7 +79,6 @@ def resources_device_checks(gpu_node, status_type):
 )
 @pytest.mark.usefixtures(
     "skip_if_no_gpu_node",
-    "hco_cr_with_permitted_hostdevices",
     "golden_image_data_volume_scope_class",
 )
 class TestPCIPassthroughRHELHostDevicesSpec:
@@ -162,9 +161,10 @@ def test_only_permitted_hostdevices_allowed(
     gpu_nodes,
 ):
     """Test that VM cannot be created without Permitted Hostdevices"""
+    gpu_device_name = "nvidia.com/Tesla_A100"
     with pytest.raises(
         UnprocessibleEntityError,
-        match=f"admission webhook .* denied the request: HostDevice {GPU_DEVICE_NAME} is not permitted .*",
+        match=f"admission webhook .* denied the request: HostDevice {gpu_device_name} is not permitted .*",
     ):
         with VirtualMachineForTests(
             name="passthrough-non-permitted-hostdevices-vm",
@@ -172,6 +172,6 @@ def test_only_permitted_hostdevices_allowed(
             client=unprivileged_client,
             image=CIRROS_IMAGE,
             node_selector=random.choice(gpu_nodes).name,
-            host_device_name=GPU_DEVICE_NAME,
+            host_device_name=gpu_device_name,
         ):
             pytest.fail("VM should get created only with allowed Permitted Hostdevices")
