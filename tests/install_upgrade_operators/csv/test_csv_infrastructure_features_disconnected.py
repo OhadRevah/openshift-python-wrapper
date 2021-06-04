@@ -1,14 +1,20 @@
+import ast
+
 import pytest
 
 
 @pytest.mark.polarion("CNV-5840")
 def test_csv_infrastructure_features_disconnected(csv):
     """
-    In the Cluster Service Version check an annotation 'Infrastructure Features' with value 'Disconnected'
+    In the Cluster Service Version aannotations for Infrastructure Feature disconnected looks like:
+    '["disconnected", "proxy-aware"]'.
+    check an annotation 'Infrastructure Features' with value 'disconnected'
     """
-    assert (
-        '["Disconnected"]'
-        in csv.instance.metadata.annotations[
+    csv_annotations = ast.literal_eval(
+        node_or_string=csv.instance.metadata.annotations[
             "operators.openshift.io/infrastructure-features"
         ]
     )
+    assert (
+        "disconnected" in csv_annotations
+    ), f"Disconnected Infrastructure feature is not found {csv_annotations}"
