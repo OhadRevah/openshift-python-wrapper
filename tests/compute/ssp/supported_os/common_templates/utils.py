@@ -564,10 +564,9 @@ def validate_fs_info_virtctl_vs_windows_os(vm):
                     return
 
     except TimeoutExpiredError:
-        LOGGER.error(
+        raise ValueError(
             f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {windows_info}"
         )
-        raise
 
 
 def validate_user_info_virtctl_vs_windows_os(vm):
@@ -894,10 +893,9 @@ def check_guest_agent_sampler_data(sampler):
                 if virtctl_info == linux_info:
                     return
     except TimeoutExpiredError:
-        LOGGER.error(
+        raise ValueError(
             f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {linux_info}"
         )
-        raise
 
 
 def windows_disk_space_parser(fsinfo_list):
