@@ -29,6 +29,7 @@ from utilities.virt import (
 )
 
 
+HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"
 LOGGER = logging.getLogger(__name__)
 
 
@@ -142,16 +143,6 @@ def check_vm_xml_clock(vm):
 
 def check_windows_vm_hvinfo(vm):
     """Verify HyperV values in Windows VMI using hvinfo"""
-    hvinfo_path = "C:\\\\hvinfo\\\\hvinfo.exe"
-
-    def _get_hvinfo_package():
-        run_ssh_commands(
-            host=vm.ssh_exec,
-            commands=shlex.split(
-                f"curl.exe  -o {hvinfo_path} --url "
-                "http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/binaries/hvinfo/hvinfo.exe"
-            ),
-        )
 
     def _check_hyperv_recommendations():
         # TODO: Add NestedEVMCS once https://bugzilla.redhat.com/show_bug.cgi?id=1952551 is merged
@@ -202,7 +193,6 @@ def check_windows_vm_hvinfo(vm):
             if not vm_features_dict[feature]
         ]
 
-    _get_hvinfo_package()
     hvinfo_dict = None
 
     sampler = TimeoutSampler(
@@ -210,7 +200,7 @@ def check_windows_vm_hvinfo(vm):
         sleep=15,
         func=run_ssh_commands,
         host=vm.ssh_exec,
-        commands=[hvinfo_path],
+        commands=[HVINFO_PATH],
     )
     for sample in sampler:
         output = sample[0]
