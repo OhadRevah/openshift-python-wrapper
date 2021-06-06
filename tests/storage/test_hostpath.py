@@ -106,8 +106,11 @@ def dv_kwargs(request, namespace, worker_node1):
     dv_kwargs = {
         "dv_name": request.param.get("name"),
         "namespace": namespace.name,
-        "url": request.param.get("url"),
-        "size": request.param.get("size"),
+        "url": request.param.get(
+            "url",
+            f"{get_images_server_url(schema='http')}{py_config['latest_fedora_os_dict']['image_path']}",
+        ),
+        "size": request.param.get("size", Images.Fedora.DEFAULT_DV_SIZE),
         "storage_class": storage_class,
         "volume_mode": storage_class_dict[storage_class]["volume_mode"],
         "hostpath_node": worker_node1.name,
@@ -205,8 +208,6 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
         pytest.param(
             {
                 "name": "cnv-2817",
-                "url": f"{get_images_server_url(schema='http')}{py_config['latest_fedora_os_dict']['image_path']}",
-                "size": Images.Fedora.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-2327")),
         ),
