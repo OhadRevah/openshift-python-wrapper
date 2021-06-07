@@ -28,7 +28,6 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
             data_volume=data_volume,
             labels=Template.generate_template_labels(**WINDOWS_LATEST_LABELS),
             cpu_model=cpu_model,
-            cpu_threads=2,
         )
 
     def to_dict(self):

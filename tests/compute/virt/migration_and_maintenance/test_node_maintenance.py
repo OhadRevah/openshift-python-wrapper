@@ -312,7 +312,6 @@ class TestNodeMaintenanceRHEL:
             {
                 "vm_name": "wind-template-node-cordon-and-drain",
                 "template_labels": WINDOWS_LATEST_LABELS,
-                "cpu_threads": 2,
                 "set_vm_common_cpu": True,
             },
         ),

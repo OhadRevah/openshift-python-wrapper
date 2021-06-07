@@ -71,7 +71,6 @@ class TestWindowsTabletDevice:
                 {
                     "vm_name": "windows-usb-tablet-device-vm",
                     "template_labels": WINDOWS_LATEST_LABELS,
-                    "cpu_threads": 2,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "tablet1", "type": "tablet", "bus": "usb"}
                     ),
@@ -106,7 +105,6 @@ class TestWindowsTabletDevice:
                 {
                     "vm_name": "windows-virtio-tablet-device-vm",
                     "template_labels": WINDOWS_LATEST_LABELS,
-                    "cpu_threads": 2,
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "win_tablet", "type": "tablet", "bus": "virtio"}
                     ),
@@ -145,7 +143,6 @@ class TestWindowsTabletDevice:
                 {
                     "vm_name": "windows-server-default-tablet-device",
                     "template_labels": WINDOWS_LATEST_LABELS,
-                    "cpu_threads": 2,
                 },
                 marks=pytest.mark.polarion("CNV-4151"),
             ),
@@ -188,7 +185,6 @@ class TestWindowsTabletDevice:
             {
                 "vm_name": "windows-desktop-default-tablet-device",
                 "template_labels": WINDOWS_DESKTOP_VERSION["template_labels"],
-                "cpu_threads": 2,
             },
             marks=pytest.mark.polarion("CNV-4150"),
         ),

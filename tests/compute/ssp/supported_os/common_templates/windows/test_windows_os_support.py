@@ -30,7 +30,6 @@ LOGGER = logging.getLogger(__name__)
     [
         (
             {
-                "cpu_threads": 2,
                 "ssh": False,
             }
         )

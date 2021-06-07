@@ -45,6 +45,7 @@ from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
+    Images,
     authorized_key,
     camelcase_to_mixedcase,
     get_admin_client,
@@ -478,6 +479,10 @@ class VirtualMachineForTests(VirtualMachine):
         return res
 
     def update_vm_memory_configuration(self, spec):
+        # Faster VMI start time
+        if self.os_flavor == "win" and not self.memory_requests:
+            self.memory_requests = Images.Windows.DEFAULT_MEMORY_SIZE
+
         if self.memory_requests:
             spec.setdefault("domain", {}).setdefault("resources", {}).setdefault(
                 "requests", {}
@@ -636,6 +641,10 @@ class VirtualMachineForTests(VirtualMachine):
             spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "cores"
             ] = self.cpu_cores
+
+        # Faster VMI start time
+        if self.os_flavor == "win" and not self.cpu_threads:
+            self.cpu_threads = Images.Windows.DEFAULT_CPU_THREADS
 
         if self.cpu_threads:
             spec.setdefault("domain", {}).setdefault("cpu", {})[

@@ -91,6 +91,8 @@ class Images:
         DEFAULT_DV_SIZE = "60Gi"
         NVIDIA_DV_SIZE = "70Gi"
         WSL2_DV_SIZE = "40Gi"
+        DEFAULT_MEMORY_SIZE = "8Gi"
+        DEFAULT_CPU_THREADS = 2
 
     class Fedora:
         FEDORA32_IMG = "Fedora-Cloud-Base-32-1.6.x86_64.qcow2"

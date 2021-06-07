@@ -412,7 +412,6 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
                 "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
-                "cpu_threads": 2,
                 "ssh": True,
                 "os_version": py_config["latest_windows_os_dict"]["os_version"],
                 "username": py_config["windows_username"],

@@ -747,7 +747,6 @@ def test_vm_from_dv_on_different_node(
                 "template_labels": py_config["latest_windows_os_dict"][
                     "template_labels"
                 ],
-                "cpu_threads": 2,
                 "ssh": True,
                 "username": py_config["windows_username"],
                 "password": py_config["windows_password"],
