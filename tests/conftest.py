@@ -1616,10 +1616,15 @@ def worker_node3(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def sriov_nodes_states(skip_when_no_sriov, admin_client):
+def sriov_namespace():
+    return Namespace(name=py_config["sriov_namespace"])
+
+
+@pytest.fixture(scope="session")
+def sriov_nodes_states(skip_when_no_sriov, admin_client, sriov_namespace):
     return list(
         SriovNetworkNodeState.get(
-            dyn_client=admin_client, namespace=py_config["sriov_namespace"]
+            dyn_client=admin_client, namespace=sriov_namespace.name
         )
     )
 
@@ -1681,11 +1686,11 @@ def wait_for_ready_sriov_nodes(snns):
 
 
 @pytest.fixture(scope="session")
-def sriov_node_policy(sriov_nodes_states, sriov_iface):
+def sriov_node_policy(sriov_nodes_states, sriov_iface, sriov_namespace):
     with network_device(
         interface_type=SRIOV,
         nncp_name="test-sriov-policy",
-        namespace=py_config["sriov_namespace"],
+        namespace=sriov_namespace.name,
         sriov_iface=sriov_iface,
         sriov_resource_name="sriov_net",
         # sriov operator doesnt pass the mtu to the VFs when using vfio-pci device driver (the one we are using)

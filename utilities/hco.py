@@ -6,7 +6,7 @@ from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import ConflictError, NotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN
@@ -213,3 +213,60 @@ def get_kubevirt_hyperconverged_spec(admin_client, hco_namespace):
         namespace=hco_namespace.name,
         name="kubevirt-kubevirt-hyperconverged",
     ).instance.to_dict()["spec"]
+
+
+def replace_hco_cr(rpatch, admin_client, hco_namespace):
+    # fetch hyperconverged_resource each time instead of using a single
+    # fixture to be sure to get it with an up to date resourceVersion
+    # as needed for action=replace
+    hyperconverged_resource = get_hyperconverged_resource(
+        client=admin_client, hco_ns_name=hco_namespace.name
+    )
+
+    # we have to use action="replace" to send a put to delete existing fields
+    # (update, the default, will only update existing fields).
+    reseditor = ResourceEditor(
+        patches={hyperconverged_resource: rpatch}, action="replace"
+    )
+    reseditor.update(backup_resources=True)
+    return reseditor.backups
+
+
+def replace_backup_hco_cr_modification(rpatch, admin_client, hco_namespace):
+    samples = TimeoutSampler(
+        wait_timeout=20,
+        sleep=2,
+        exceptions=ConflictError,
+        func=replace_hco_cr,
+        rpatch=rpatch,
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error("TimeOut: During HCO Modification")
+        raise
+
+
+def restore_hco_cr_modification(admin_client, hco_namespace, backup_data):
+    for backup in backup_data:
+        # Backup the HCO CR changes and revert back once teardown happens for class
+        samples = TimeoutSampler(
+            wait_timeout=20,
+            sleep=2,
+            exceptions=ConflictError,
+            func=replace_hco_cr,
+            rpatch=backup.instance.to_dict()["spec"],
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+        )
+    try:
+        for sample in samples:
+            if sample:
+                break
+    except TimeoutExpiredError:
+        LOGGER.error("Timeout restoring default value in hyperconverged CR.")
+        raise
