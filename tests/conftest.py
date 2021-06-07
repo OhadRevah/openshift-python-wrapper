@@ -122,11 +122,17 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
 
 TEAM_MARKERS = {
     "ansible": ["ansible-module"],
-    "compute": ["compute", "metrics"],
-    "network": ["network"],
-    "storage": ["storage"],
-    "mtv": ["mtv"],
-    "iuo": ["csv", "install_upgrade_operators", "security", "must_gather"],
+    "compute": ["compute", "metrics", "deprecated_api"],
+    "network": ["network", "deprecated_api"],
+    "storage": ["storage", "deprecated_api"],
+    "mtv": ["mtv", "deprecated_api"],
+    "iuo": [
+        "csv",
+        "install_upgrade_operators",
+        "security",
+        "must_gather",
+        "deprecated_api",
+    ],
 }
 
 
