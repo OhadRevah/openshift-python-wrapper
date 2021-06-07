@@ -1,10 +1,14 @@
 import logging
 import re
-from collections import defaultdict
+import shlex
+import urllib
+from collections import Counter, defaultdict
 
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_5MIN
+from utilities.infra import run_ssh_commands
+from utilities.network import assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -12,6 +16,20 @@ LOGGER = logging.getLogger(__name__)
 KUBEVIRT_CR_ALERT_NAME = "KubevirtHyperconvergedClusterOperatorCRModification"
 CURL_QUERY = "curl -k https://localhost:8443/metrics"
 NUM_TEST_VMS = 3
+PING = "ping"
+VIRT_HANDLER_CONTAINER = "virt-handler"
+JOB_NAME = "kubevirt-prometheus-metrics"
+TOPK_VMS = 3
+MIN_NUM_VM = 1
+SWAP_NAME = "myswap"
+SWAP_ENABLE_COMMANDS = [
+    f"sudo dd if=/dev/zero of=/{SWAP_NAME} bs=1M count=1000",
+    f"sudo chmod 600 /{SWAP_NAME}",
+    f"sudo mkswap /{SWAP_NAME}",
+    f"sudo swapon /{SWAP_NAME}",
+    "sudo sysctl vm.swappiness=100",
+]
+VALIDATE_SWAP_ON = "swapon -s"
 
 
 def prometheus_query(prometheus, query):
@@ -309,3 +327,194 @@ def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS):
         ) as vm:
             vms_list.append(vm)
     return vms_list
+
+
+def get_topk_query(metric_names, time_period="5m"):
+    """
+    Creates a topk query string based on metric_name
+
+    Args:
+        metric_names (list): list of strings
+
+        time_period (str): indicates the time period over which top resources would be considered
+
+    Returns:
+        str: query string to be used for the topk query
+    """
+    query_parts = [
+        f" sum by (name, namespace) (round(irate({metric}[{time_period}]), 0.1))"
+        for metric in metric_names
+    ]
+    return f"topk(3, {(' + ').join(query_parts)}) > 0"
+
+
+def assert_topk_vms(prometheus, query, vm_list, timeout=TIMEOUT_5MIN):
+    """
+    Performs a topk query against prometheus api, validates it contains expected vms
+
+    Args:
+        prometheus (Prometheus Object): Prometheus object.
+        query (str): Prometheus query string
+        vm_list (list: list of vm names that are expected to be in prometheus api query result
+        timeout (int): Timeout value in seconds
+
+    Raises:
+        Asserts on mismatch between number of vms founds in topk query results vs expected number of vms
+    """
+    query_results = wait_for_topk(
+        prometheus=prometheus,
+        query=query,
+        timeout=timeout,
+        number_of_results=len(vm_list),
+    )
+    vms_found = [
+        entry["metric"]["name"]
+        for entry in query_results
+        if entry.get("metric", {})
+        and "name" in entry["metric"]
+        and entry["metric"]["name"] in vm_list
+    ]
+
+    assert Counter(vms_found) == Counter(vm_list), (
+        f"Following vms {set(vm_list) - set(vms_found)} did not show up in Topk query "
+        f"{query}, Results: {query_results}"
+    )
+
+
+def wait_for_topk(prometheus, query, number_of_results, timeout=TIMEOUT_5MIN):
+    """
+    Performs a topk query against prometheus api, waits until it has right number of result entries and returns the
+    results
+
+    Args:
+        prometheus (Prometheus Object): Prometheus object.
+        query (str): Prometheus query string
+        number_of_results (Int): Expected number of result entries
+        timeout (int): Timeout value in seconds
+
+    Returns:
+        list: List of results
+    """
+    sampler = TimeoutSampler(
+        wait_timeout=timeout,
+        sleep=5,
+        func=get_metric_by_prometheus_query,
+        prometheus=prometheus,
+        query=urllib.parse.quote_plus(query),
+    )
+    sample = None
+    try:
+        for sample in sampler:
+            if sample and len(sample["data"]["result"]) == number_of_results:
+                return sample["data"]["result"]
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f'Expected number of result entries "{number_of_results}" for prometheus query:'
+            f' "{query}" does not match with actual results: {sample} after {timeout} seconds.'
+        )
+        raise
+
+
+def run_vm_commands(vms, commands):
+    """
+    This helper function, runs commands on vms to generate metrics.
+    Args:
+        vms (list): List of VirtualMachineForTests
+        commands (list): Used to execute commands against nodes (where created vms are scheduled)
+
+    """
+    commands = [shlex.split(command) for command in commands]
+    LOGGER.info(f"Commands: {commands}")
+    for vm in vms:
+        if any(command[0].startswith("ping") for command in commands):
+            assert_ping_successful(
+                src_vm=vm, dst_ip="localhost", packet_size=10000, count=20
+            )
+        else:
+            run_ssh_commands(host=vm.ssh_exec, commands=commands)
+
+
+def run_node_command(vms, command, workers_ssh_executors):
+    """
+    This is a helper function to run a command against a node associated with a given virtual machine, to prepare
+    it for metric generation commands.
+
+    Args:
+        vms: (List): List of VirtualMachineForTests objects
+        workers_ssh_executors (dict): Dictionary of rrmngmnt.Host object associated with all nodes
+        command (str): Command to be run against a given node
+
+    Raise:
+        Asserts on command execution failure
+    """
+    for vm in vms:
+        node_name = vm.vmi.node.name
+        LOGGER.info(f'For vm {vm.name} running command "{command}" on node {node_name}')
+        rc, out, err = workers_ssh_executors[node_name].run_command(
+            command=shlex.split(command)
+        )
+        assert (
+            rc == 0
+        ), f'Command: "{command}" execution failed.: RC: "{rc}", stdout: "{out}", stderr: "{err}"'
+
+
+def assert_prometheus_metric_values(prometheus, query, vm, timeout=TIMEOUT_5MIN):
+    """
+    Compares metric query result with expected values
+
+    Args:
+        prometheus (Prometheus Object): Prometheus object.
+        query (str): Prometheus query string
+        vm (VirtualMachineForTests): Vm that is expected to show up in Prometheus query results
+        timeout (int): Timeout value in seconds
+
+    Raise:
+        Asserts on premetheus results not matching expected result
+    """
+    results = get_query_result(prometheus=prometheus, query=query, timeout=timeout)
+    result_entry = [
+        result["metric"]
+        for result in results
+        if result.get("metric") and result["metric"]["name"] == vm.name
+    ]
+
+    assert result_entry is not None, (
+        f'Prometheus query: "{query}" result: {results} does not include expected vm: '
+        f"{vm.name}"
+    )
+
+    expected_result = {
+        "job": JOB_NAME,
+        "service": JOB_NAME,
+        "container": VIRT_HANDLER_CONTAINER,
+        "kubernetes_vmi_label_kubevirt_io_vm": vm.name,
+        "kubernetes_vmi_label_kubevirt_io_nodeName": vm.vmi.node.name,
+        "namespace": vm.namespace,
+        "pod": vm.vmi.virt_handler_pod,
+    }
+    metric_value_mismatch = [
+        {key: result.get(key, "")}
+        for result in result_entry
+        for key in expected_result
+        if not result.get(key, "") or result[key] != expected_result[key]
+    ]
+    assert metric_value_mismatch, (
+        f"For Prometheus query {query} data validation failed for: "
+        f"{metric_value_mismatch}"
+    )
+
+
+def enable_swap_fedora_vm(vm):
+    """
+    Enable swap on on fedora vms
+
+    Args:
+       vm (VirtualMachineForTests): a VirtualMachineForTests, on which swap is to be enabled
+
+    Raise:
+        Asserts if swap memory is not enabled on a given vm
+    """
+    commands = [shlex.split(command) for command in SWAP_ENABLE_COMMANDS]
+    run_ssh_commands(host=vm.ssh_exec, commands=commands)
+    out = run_ssh_commands(host=vm.ssh_exec, commands=shlex.split(VALIDATE_SWAP_ON))
+    assert SWAP_NAME not in out, f"Unable to enable swap on vm: {vm.name}: {out}"
