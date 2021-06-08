@@ -473,24 +473,13 @@ def validate_fs_info_virtctl_vs_linux_os(vm):
                 disk_usage_diff_validation = (
                     1 - virtctl_info.pop("used") / linux_info.pop("used") <= 0.05
                 )
-                # total usage - allowing up to 5% diff for ext4 FS
-                disk_total_diff_validation = (
-                    1 - virtctl_info.pop("total") / linux_info.pop("total") <= 0.05
-                    if virtctl_info["fsType"] == "ext4"
-                    else virtctl_info.pop("total") == linux_info.pop("total")
-                )
-                if (
-                    disk_usage_diff_validation
-                    and disk_total_diff_validation
-                    and virtctl_info == linux_info
-                ):
+                if disk_usage_diff_validation and virtctl_info == linux_info:
                     return
     except TimeoutExpiredError:
-        LOGGER.error(
+        raise ValueError(
             f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
             f"OS: {orig_linux_info}"
         )
-        raise
 
 
 def validate_user_info_virtctl_vs_linux_os(vm):
@@ -807,7 +796,9 @@ def get_linux_fs_info(ssh_exec):
         "mount": disks[6],
         "fsType": disks[1],
         "used": int(disks[3]),
-        "total": int(disks[2]),
+        # ext3/4 FS reserves around 5% space for use by the root user; using used+available to calculate
+        # total size without this buffer
+        "total": int(disks[3]) + int(disks[4]),
     }
 
 
