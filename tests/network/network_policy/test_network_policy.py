@@ -15,6 +15,8 @@ PORT_80 = 80
 PORT_81 = 81
 CURL_TIMEOUT = 5
 
+pytestmark = pytest.mark.sno
+
 
 class ApplyNetworkPolicy(NetworkPolicy):
     def __init__(self, name, namespace, ports=None, teardown=True):

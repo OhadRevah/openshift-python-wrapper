@@ -15,6 +15,8 @@ BRIDGEMARKER1 = "bridgemarker1"
 BRIDGEMARKER2 = "bridgemarker2"
 BRIDGEMARKER3 = "bridgemarker3"
 
+pytestmark = pytest.mark.sno
+
 
 def _get_name(suffix):
     return f"brm-{suffix}"

@@ -13,6 +13,9 @@ from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.fixture(scope="class")
 def bond_modes_nad(bridge_device_matrix__class__, namespace):
     with network_nad(

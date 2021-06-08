@@ -123,6 +123,7 @@ class TestKMPConnectivity:
         )
 
 
+@pytest.mark.sno
 class TestNegatives:
     @pytest.mark.polarion("CNV-4199")
     def test_disabled_assignment_ns(
@@ -140,6 +141,7 @@ class TestNegatives:
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4405")
 def test_kmp_down(namespace, kmp_down):
     with pytest.raises(ApiException):

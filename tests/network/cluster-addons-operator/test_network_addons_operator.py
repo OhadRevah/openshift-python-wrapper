@@ -4,6 +4,9 @@ import utilities.network
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.fixture(scope="module")
 def net_add_op_bridge_device(utility_pods, worker_node1):
     with utilities.network.network_device(

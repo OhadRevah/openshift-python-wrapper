@@ -9,6 +9,9 @@ from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
+pytestmark = pytest.mark.sno
+
+
 def assert_ip_mismatch(vm):
     sampler = TimeoutSampler(
         wait_timeout=10,

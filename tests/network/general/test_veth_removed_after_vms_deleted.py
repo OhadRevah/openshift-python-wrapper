@@ -18,6 +18,8 @@ LOGGER = logging.getLogger(__name__)
 BR1TEST = "br1test"
 BR2TEST = "br2test"
 
+pytestmark = pytest.mark.sno
+
 
 def count_veth_devices_on_host(worker1_executor, bridge):
     """

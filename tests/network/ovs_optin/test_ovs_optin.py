@@ -58,6 +58,7 @@ def hyperconverged_ovs_annotations_removed(
         yield
 
 
+@pytest.mark.sno
 class TestOVSOptIn:
     @pytest.mark.polarion("CNV-5520")
     def test_ovs_installed(

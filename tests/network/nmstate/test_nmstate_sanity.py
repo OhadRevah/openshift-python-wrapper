@@ -9,6 +9,8 @@ from utilities.network import EthernetNetworkConfigurationPolicy
 LOGGER = logging.getLogger(__name__)
 IP_LIST = [{"ip": "1.1.1.1", "prefix-length": 24}]
 
+pytestmark = pytest.mark.sno
+
 
 @pytest.mark.polarion("CNV-5721")
 def test_no_ip(worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics):
