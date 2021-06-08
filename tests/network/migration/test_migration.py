@@ -260,7 +260,7 @@ def assert_ssh_alive(ssh_vm):
             output = sample[0]
             break
 
-    assert "sshpass -p zzzzzz" in output
+    assert "sshpass -p" in output
 
 
 @pytest.mark.polarion("CNV-2060")
