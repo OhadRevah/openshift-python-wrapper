@@ -1639,13 +1639,41 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
 
 
 def migrate_and_verify(
-    vm, timeout=720, wait_for_interfaces=True, check_ssh_connectivity=False
+    vm,
+    timeout=720,
+    wait_for_interfaces=True,
+    check_ssh_connectivity=False,
+    wait_for_migration_success=True,
 ):
+    """
+    create a migration instance. You may choose to wait for migration
+    success or not.
+
+    Args:
+        vm (VirtualMachine): vm to be migrated
+        wait_for_migration_success (boolean):
+            True = full teardown will be applied.
+            False = no teardown (responsibility on the programmer), and no
+                    wait for migration process to finish.
+
+    Returns:
+        VirtualMachineInstanceMigration: if wait_for_migration_success == false
+
+    Raises:
+        AssertionError: if migration ended with SUCCEEDED status, but node was
+                        not changed for migrated vm OR migrationState was not
+                        completed.
+    """
     node_before = vm.vmi.node
     LOGGER.info(f"VMI is running on {node_before.name} before migration.")
     with VirtualMachineInstanceMigration(
-        name=vm.name, namespace=vm.namespace, vmi=vm.vmi
+        name=vm.name,
+        namespace=vm.namespace,
+        vmi=vm.vmi,
+        teardown=wait_for_migration_success,
     ) as mig:
+        if not wait_for_migration_success:
+            return mig
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
 
     assert vm.vmi.node != node_before
