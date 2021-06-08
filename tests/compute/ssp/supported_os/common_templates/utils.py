@@ -20,6 +20,7 @@ from tests.compute.ssp.supported_os.utils import (
     guest_agent_version_parser,
 )
 from tests.compute.utils import get_windows_timezone, vm_started
+from utilities.constants import OS_FLAVOR_WINDOWS
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     get_guest_os_info,
@@ -31,6 +32,7 @@ from utilities.virt import (
 
 HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"
 LOGGER = logging.getLogger(__name__)
+TIMEOUT_90SEC = 90
 
 
 def stop_start_vm(vm, wait_for_interfaces=True):
@@ -196,7 +198,7 @@ def check_windows_vm_hvinfo(vm):
     hvinfo_dict = None
 
     sampler = TimeoutSampler(
-        wait_timeout=90,
+        wait_timeout=TIMEOUT_90SEC,
         sleep=15,
         func=run_ssh_commands,
         host=vm.ssh_exec,
@@ -461,7 +463,9 @@ def validate_fs_info_virtctl_vs_linux_os(vm):
 
     virtctl_info = cnv_info = libvirt_info = linux_info = None
 
-    fs_info_sampler = TimeoutSampler(wait_timeout=90, sleep=1, func=_get_fs_info, vm=vm)
+    fs_info_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_90SEC, sleep=1, func=_get_fs_info, vm=vm
+    )
 
     try:
         for virtctl_info, cnv_info, libvirt_info, linux_info in fs_info_sampler:
@@ -543,14 +547,13 @@ def validate_fs_info_virtctl_vs_windows_os(vm):
 
     virtctl_info = cnv_info = libvirt_info = windows_info = None
     fs_info_sampler = TimeoutSampler(
-        wait_timeout=330, sleep=30, func=_get_fs_info, vm=vm
+        wait_timeout=TIMEOUT_90SEC, sleep=1, func=_get_fs_info, vm=vm
     )
 
     try:
         for virtctl_info, cnv_info, libvirt_info, windows_info in fs_info_sampler:
-            if virtctl_info:
-                if all([str(val) in windows_info for val in virtctl_info.values()]):
-                    return
+            if virtctl_info and virtctl_info == windows_info:
+                return
 
     except TimeoutExpiredError:
         raise ValueError(
@@ -750,12 +753,29 @@ def get_virtctl_fs_info(vm):
         "total": <total bytes>,
     }
     """
+
+    def _convert_bytes_to_gb(size):
+        value = bitmath.Byte(bytes=size)
+        return round(float(value.to_GB()))
+
     cmd = ["fslist", vm.name]
     res, output, err = run_virtctl_command(command=cmd, namespace=vm.namespace)
     if not res:
         LOGGER.error(f"Failed to get guest-agent info via virtctl. Error: {err}")
         return
-    return guest_agent_disk_info_parser(disk_info=json.loads(output)["items"])
+
+    virtctl_info = guest_agent_disk_info_parser(disk_info=json.loads(output)["items"])
+
+    if vm.os_flavor == OS_FLAVOR_WINDOWS:
+        # For Windows, returned format is \\\\?\\Volume{ede1c0f3-0000-0000-0000-602200000000}\\
+        virtctl_info["name"] = re.search(
+            r".*Volume{(?P<name>.*)}.*", virtctl_info["name"]
+        )["name"]
+        # Windows guest reports size in GB, virtctl in Byte
+        virtctl_info["used"] = _convert_bytes_to_gb(size=virtctl_info["used"])
+        virtctl_info["total"] = _convert_bytes_to_gb(size=virtctl_info["total"])
+
+    return virtctl_info
 
 
 def get_cnv_fs_info(vm):
@@ -814,7 +834,23 @@ def get_windows_fs_info(ssh_exec):
     fs_type_cmd = shlex.split("fsutil fsinfo volumeinfo C:")
     fs_type = run_ssh_commands(host=ssh_exec, commands=fs_type_cmd)[0]
 
-    return f"{disk_name} {windows_disk_space_parser(disk_space)} {fs_type}"
+    windows_info = f"{disk_name} {windows_disk_space_parser(disk_space)} {fs_type}"
+    windows_fs_info = re.search(
+        r".*Volume{(?P<name>.*)}.*(?P<mount>[a-zA-Z]:\\).*used "
+        r"(?P<used>\d+),.*total (?P<total>\d+).*File System Name : "
+        r"(?P<fsType>[a-zA-Z]+).*",
+        windows_info,
+        re.DOTALL,
+    ).groupdict()
+
+    # Cast 'used' and 'total' to int
+    windows_fs_info = {
+        **windows_fs_info,
+        "total": int(windows_fs_info["total"]),
+        "used": int(windows_fs_info["used"]),
+    }
+
+    return windows_fs_info
 
 
 def get_virtctl_user_info(vm):
