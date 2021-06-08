@@ -31,33 +31,35 @@ TIMEOUT_90MIN = 90 * 60
 TIMEOUT_180MIN = 180 * 60
 
 #  OS constants
-OS_LOGIN_PASSWORD = "password"
-OS_LOGIN_PARAMS = {
-    "rhel": {
-        "username": "cloud-user",
-        "password": OS_LOGIN_PASSWORD,
-    },
-    "fedora": {
-        "username": "fedora",
-        "password": OS_LOGIN_PASSWORD,
-    },
-    "centos": {
-        "username": "centos",
-        "password": OS_LOGIN_PASSWORD,
-    },
-    "cirros": {
-        "username": "cirros",
-        "password": "gocubsgo",
-    },
-    "win": {
-        "username": "Administrator",
-        "password": "Heslo123",
-    },
-}
 OS_FLAVOR_CIRROS = "cirros"
 OS_FLAVOR_WINDOWS = "win"
 OS_FLAVOR_RHEL = "rhel"
 OS_FLAVOR_FEDORA = "fedora"
+OS_FLAVOR_CENTOS = "centos"
+
+OS_LOGIN_PASSWORD = "password"
+OS_LOGIN_PARAMS = {
+    OS_FLAVOR_RHEL: {
+        "username": "cloud-user",
+        "password": OS_LOGIN_PASSWORD,
+    },
+    OS_FLAVOR_FEDORA: {
+        "username": "fedora",
+        "password": OS_LOGIN_PASSWORD,
+    },
+    OS_FLAVOR_CENTOS: {
+        "username": "centos",
+        "password": OS_LOGIN_PASSWORD,
+    },
+    OS_FLAVOR_CIRROS: {
+        "username": "cirros",
+        "password": "gocubsgo",
+    },
+    OS_FLAVOR_WINDOWS: {
+        "username": "Administrator",
+        "password": "Heslo123",
+    },
+}
 
 # IP stack families constants
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"

@@ -14,6 +14,7 @@ from tests.os_params import (
     WINDOWS_LATEST,
     WINDOWS_LATEST_LABELS,
 )
+from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
@@ -21,8 +22,8 @@ from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
 
 LOGGER = logging.getLogger(__name__)
 
-RHEL = "rhel"
-WIN = "win"
+RHEL = OS_FLAVOR_RHEL
+WIN = OS_FLAVOR_WINDOWS
 NEW_TIMEZONE = {
     RHEL: "Antarctica/Troll",
     WIN: "New Zealand Standard Time",

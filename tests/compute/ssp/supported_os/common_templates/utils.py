@@ -20,7 +20,7 @@ from tests.compute.ssp.supported_os.utils import (
     guest_agent_version_parser,
 )
 from tests.compute.utils import get_windows_timezone, vm_started
-from utilities.constants import OS_FLAVOR_WINDOWS
+from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     get_guest_os_info,
@@ -56,13 +56,8 @@ def reboot_vm(vm):
 def vm_os_version(vm):
     """Verify VM os version using SSH"""
 
-    # vm.name format is <os type>-<os major version>[-<minor version>-]<random>-<random>
-    # For example: fedora-32-1601036283-2909632 or rhel-8-2-1601034311-6416788
-    # The os version in /etc/redhat-release is formated as <os major version>.[<minor version>]
-    # For example: 7.6 or 32 (for Fedora)
-    os_release_name = vm.name.split("-")[0]
     # Replace rhel with "redhat"
-    os_name = "redhat" if "rhel" in os_release_name else os_release_name
+    os_name = "redhat" if OS_FLAVOR_RHEL in vm.os_flavor else vm.os_flavor
     os = re.search(r"(\w+-)?(\d+(-\d+)?)(-\d+-\d+)$", vm.name).group(2)
     command = shlex.split(f"cat /etc/{os_name}-release | grep {os.replace('-', '.')}")
 

@@ -480,7 +480,7 @@ class VirtualMachineForTests(VirtualMachine):
 
     def update_vm_memory_configuration(self, spec):
         # Faster VMI start time
-        if self.os_flavor == "win" and not self.memory_requests:
+        if self.os_flavor == OS_FLAVOR_WINDOWS and not self.memory_requests:
             self.memory_requests = Images.Windows.DEFAULT_MEMORY_SIZE
 
         if self.memory_requests:
@@ -643,7 +643,7 @@ class VirtualMachineForTests(VirtualMachine):
             ] = self.cpu_cores
 
         # Faster VMI start time
-        if self.os_flavor == "win" and not self.cpu_threads:
+        if self.os_flavor == OS_FLAVOR_WINDOWS and not self.cpu_threads:
             self.cpu_threads = Images.Windows.DEFAULT_CPU_THREADS
 
         if self.cpu_threads:

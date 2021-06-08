@@ -4,7 +4,13 @@ import os
 import pexpect
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import OS_LOGIN_PARAMS
+from utilities.constants import (
+    OS_FLAVOR_CENTOS,
+    OS_FLAVOR_CIRROS,
+    OS_FLAVOR_FEDORA,
+    OS_FLAVOR_RHEL,
+    OS_LOGIN_PARAMS,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -118,32 +124,32 @@ class Console(object):
 
 
 class Fedora(Console):
-    params = OS_LOGIN_PARAMS["fedora"]
+    params = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]
     USERNAME = params["username"]
     PASSWORD = params["password"]
 
 
 class Cirros(Console):
-    params = OS_LOGIN_PARAMS["cirros"]
+    params = OS_LOGIN_PARAMS[OS_FLAVOR_CIRROS]
     USERNAME = params["username"]
     PASSWORD = params["password"]
 
 
 class RHEL(Console):
-    params = OS_LOGIN_PARAMS["rhel"]
+    params = OS_LOGIN_PARAMS[OS_FLAVOR_RHEL]
     USERNAME = params["username"]
     PASSWORD = params["password"]
 
 
 class Centos(Console):
-    params = OS_LOGIN_PARAMS["centos"]
+    params = OS_LOGIN_PARAMS[OS_FLAVOR_CENTOS]
     USERNAME = params["username"]
     PASSWORD = params["password"]
 
 
 CONSOLE_IMPL = {
-    "rhel": RHEL,
-    "fedora": Fedora,
-    "centos": Centos,
-    "cirros": Cirros,
+    OS_FLAVOR_RHEL: RHEL,
+    OS_FLAVOR_FEDORA: Fedora,
+    OS_FLAVOR_CENTOS: Centos,
+    OS_FLAVOR_CIRROS: Cirros,
 }
