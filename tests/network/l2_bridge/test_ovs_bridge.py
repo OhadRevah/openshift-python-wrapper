@@ -122,6 +122,7 @@ def running_vmb_with_ovs_based_l2(vmb_with_ovs_based_l2):
 
 @pytest.mark.polarion("CNV-5636")
 def test_ovs_bridge_sanity(
+    skip_if_ovn_cluster,
     hyperconverged_ovs_annotations_enabled,
     vma_with_ovs_based_l2,
     vmb_with_ovs_based_l2,

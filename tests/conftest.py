@@ -896,6 +896,12 @@ def ovn_kubernetes_cluster(admin_client):
     return cluster_network.instance.status.networkType == "OVNKubernetes"
 
 
+@pytest.fixture(scope="session")
+def skip_if_ovn_cluster(ovn_kubernetes_cluster):
+    if ovn_kubernetes_cluster:
+        pytest.skip("Test cannot run on cluster with OVN network type")
+
+
 # TODO: Remove this fixture and its usage in nodes_active_nics when BZ 1885605 is fixed.
 @pytest.fixture(scope="session")
 def ovs_bridge_bug_closed(bugzilla_connection_params):
