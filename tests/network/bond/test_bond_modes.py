@@ -4,16 +4,89 @@ Start a VM with bridge on Linux BOND.
 """
 import shlex
 from collections import OrderedDict
+from contextlib import contextmanager
 
 import pytest
 
 import utilities.network
-from utilities.infra import run_ssh_commands
+from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.sno
+
+
+def assert_bond_validation(workers_ssh_executors, bond):
+    bonding_path = f"/sys/class/net/{bond.bond_name}/bonding"
+    _exec = workers_ssh_executors[bond.node_selector]
+    mode, slaves = run_ssh_commands(
+        host=_exec,
+        commands=[
+            shlex.split(f"cat {bonding_path}/mode"),
+            shlex.split(f"cat {bonding_path}/slaves"),
+        ],
+    )
+    worker_slaves = slaves.split()
+    worker_slaves.sort()
+    bond.slaves.sort()
+    assert mode.split()[0] == bond.mode
+    assert worker_slaves == bond.slaves
+
+
+@contextmanager
+def create_bond(bond_idx, slaves, worker_pods, mode, node_selector, options=None):
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"bond{bond_idx}nncp",
+        bond_name=f"bond{bond_idx}",
+        slaves=slaves,
+        worker_pods=worker_pods,
+        mode=mode,
+        mtu=1450,
+        node_selector=node_selector,
+        options=options,
+    ) as bond:
+        yield bond
+
+
+@contextmanager
+def create_vm(namespace, nad, node_selector, unprivileged_client):
+    name = "bond-vm"
+    networks = OrderedDict()
+    networks[nad.name] = nad.name
+
+    with VirtualMachineForTests(
+        namespace=namespace,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=node_selector,
+        client=unprivileged_client,
+    ) as vm:
+        yield vm
+
+
+@contextmanager
+def bridge_on_bond(
+    interface_type,
+    utility_pods,
+    node_selector,
+    interface_name,
+    ports,
+):
+    """
+    Create bridge and attach the BOND to it
+    """
+    with utilities.network.network_device(
+        interface_type=interface_type,
+        nncp_name="bridge-on-bond",
+        interface_name=interface_name,
+        network_utility_pods=utility_pods,
+        ports=ports,
+        node_selector=node_selector,
+    ) as br:
+        yield br
 
 
 @pytest.fixture(scope="class")
@@ -28,7 +101,7 @@ def bond_modes_nad(bridge_device_matrix__class__, namespace):
 
 
 @pytest.fixture(scope="class")
-def bond_modes_bond(
+def matrix_bond_modes_bond(
     index_number,
     link_aggregation_mode_no_connectivity_matrix__class__,
     utility_pods,
@@ -38,37 +111,33 @@ def bond_modes_bond(
     """
     Create BOND if setup support BOND
     """
-    bond_idx = next(index_number)
-    with BondNodeNetworkConfigurationPolicy(
-        name=f"bond{bond_idx}nncp",
-        bond_name=f"bond{bond_idx}",
+    with create_bond(
+        bond_idx=next(index_number),
         slaves=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
-        mtu=1450,
         node_selector=worker_node1.name,
     ) as bond:
         yield bond
 
 
 @pytest.fixture(scope="class")
-def bond_modes_bridge(
+def matrix_bond_modes_bridge(
     bridge_device_matrix__class__,
     utility_pods,
     worker_node1,
     bond_modes_nad,
-    bond_modes_bond,
+    matrix_bond_modes_bond,
 ):
     """
     Create bridge and attach the BOND to it
     """
-    with utilities.network.network_device(
+    with bridge_on_bond(
         interface_type=bridge_device_matrix__class__,
-        nncp_name="bridge-on-bond",
-        interface_name=bond_modes_nad.bridge_name,
-        network_utility_pods=utility_pods,
-        ports=[bond_modes_bond.bond_name],
+        utility_pods=utility_pods,
         node_selector=worker_node1.name,
+        interface_name=bond_modes_nad.bridge_name,
+        ports=[matrix_bond_modes_bond.bond_name],
     ) as br:
         yield br
 
@@ -79,20 +148,67 @@ def bond_modes_vm(
     namespace,
     unprivileged_client,
     bond_modes_nad,
-    bond_modes_bridge,
+    matrix_bond_modes_bridge,
 ):
-    name = "bond-vm"
-    networks = OrderedDict()
-    networks[bond_modes_nad.name] = bond_modes_nad.name
-
-    with VirtualMachineForTests(
+    with create_vm(
         namespace=namespace.name,
-        name=name,
-        body=fedora_vm_body(name=name),
-        networks=networks,
-        interfaces=networks.keys(),
+        nad=bond_modes_nad,
         node_selector=worker_node1.name,
-        client=unprivileged_client,
+        unprivileged_client=unprivileged_client,
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture(scope="class")
+def bridge_on_bond_fail_over_mac(
+    bridge_device_matrix__class__,
+    utility_pods,
+    worker_node1,
+    bond_modes_nad,
+    active_backup_bond_with_fail_over_mac,
+):
+    """
+    Create bridge and attach the BOND to it
+    """
+    with bridge_on_bond(
+        interface_type=bridge_device_matrix__class__,
+        utility_pods=utility_pods,
+        node_selector=worker_node1.name,
+        interface_name=bond_modes_nad.bridge_name,
+        ports=[active_backup_bond_with_fail_over_mac.bond_name],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="class")
+def active_backup_bond_with_fail_over_mac(
+    index_number, worker_node1, utility_pods, nodes_available_nics
+):
+    with create_bond(
+        bond_idx=next(index_number),
+        slaves=nodes_available_nics[worker_node1.name][0:2],
+        worker_pods=utility_pods,
+        mode="active-backup",
+        node_selector=worker_node1.name,
+        options={"fail_over_mac": "active"},
+    ) as bond:
+        yield bond
+
+
+@pytest.fixture(scope="class")
+def vm_with_fail_over_mac_bond(
+    worker_node1,
+    namespace,
+    unprivileged_client,
+    bond_modes_nad,
+    active_backup_bond_with_fail_over_mac,
+    bridge_on_bond_fail_over_mac,
+):
+    with create_vm(
+        namespace=namespace.name,
+        nad=bond_modes_nad,
+        node_selector=worker_node1.name,
+        unprivileged_client=unprivileged_client,
     ) as vm:
         yield vm
 
@@ -100,26 +216,48 @@ def bond_modes_vm(
 @pytest.mark.usefixtures("skip_no_bond_support", "skip_if_workers_bms")
 class TestBondModes:
     @pytest.mark.polarion("CNV-4382")
-    def test_bond_created(self, workers_ssh_executors, bond_modes_bond):
-        bonding_path = f"/sys/class/net/{bond_modes_bond.bond_name}/bonding"
-        _exec = workers_ssh_executors[bond_modes_bond.node_selector]
-        mode, slaves = run_ssh_commands(
-            host=_exec,
-            commands=[
-                shlex.split(f"cat {bonding_path}/mode"),
-                shlex.split(f"cat {bonding_path}/slaves"),
-            ],
+    def test_bond_created(self, workers_ssh_executors, matrix_bond_modes_bond):
+        assert_bond_validation(
+            workers_ssh_executors=workers_ssh_executors, bond=matrix_bond_modes_bond
         )
-        worker_slaves = slaves.split()
-        worker_slaves.sort()
-        bond_modes_bond.slaves.sort()
-        assert mode.split()[0] == bond_modes_bond.mode
-        assert worker_slaves == bond_modes_bond.slaves
 
     @pytest.mark.polarion("CNV-4383")
     def test_vm_started(self, bond_modes_vm):
-        # TODO: Remove when issue if fixed.
-        # When BOND mode is 802.3ad, it is takes more time to the VM to run.
-        # We get an error: failed to configure vmi network for migration target: Link not found
-        # Increase timeout till we investigate this issue.
         running_vm(vm=bond_modes_vm, enable_ssh=False)
+
+
+@pytest.mark.usefixtures(
+    "skip_no_bond_support",
+    "skip_if_workers_bms",
+)
+class TestBondWithFailOverMac:
+    @pytest.mark.polarion("CNV-6583")
+    def test_active_backup_bond_with_fail_over_mac(
+        self,
+        index_number,
+        worker_node1,
+        nodes_available_nics,
+        utility_pods,
+        workers_ssh_executors,
+    ):
+        with create_bond(
+            bond_idx=next(index_number),
+            slaves=nodes_available_nics[worker_node1.name][0:2],
+            worker_pods=utility_pods,
+            mode="active-backup",
+            node_selector=worker_node1.name,
+            options={"fail_over_mac": "active"},
+        ) as bond:
+            assert_bond_validation(
+                workers_ssh_executors=workers_ssh_executors, bond=bond
+            )
+
+    @pytest.mark.polarion("CNV-6584")
+    @pytest.mark.bugzilla(
+        1971262, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
+    def test_vm_bond_with_fail_over_mac_started(
+        self,
+        vm_with_fail_over_mac_bond,
+    ):
+        running_vm(vm=vm_with_fail_over_mac_bond, enable_ssh=False)

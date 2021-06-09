@@ -459,6 +459,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ipv4_enable=False,
         ipv4_dhcp=False,
         ipv6_enable=False,
+        options=None,
     ):
         super().__init__(
             name=name,
@@ -475,10 +476,12 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.mode = mode
         self.primary_slave = primary_slave
         self.ports = self.slaves
+        self.options = options
 
     def to_dict(self):
         if not self.iface:
-            options_dic = {"miimon": "120"}
+            options_dic = self.options or {}
+            options_dic.update({"miimon": "120"})
             if self.mode == "active-backup" and self.primary_slave is not None:
                 options_dic.update({"primary": self.primary_slave})
 
