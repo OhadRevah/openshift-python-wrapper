@@ -299,19 +299,23 @@ def update_image_content_source(
     if cnv_source == "stage":
         upgrade_utils.update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
 
-    LOGGER.info("Deleting existing ICSP.")
-    # delete the existing ICSP and then create the new one
-    # apply is not good enough due to the amount of annotations we have
-    # the amount of annotations we have is greater than the maximum size of a payload that is supported with apply
-    upgrade_utils.delete_icsp(admin_client=admin_client)
-    # when changes are made to the ICSP (like deleting it), it takes time to take effect on all nodes,
-    # The indicator for this is the MCP conditions (updating, then updated)
-    # Must wait to check that the MCP accepted the change
-    # If the ICSP creation is executed right after deletion without waiting the MCP update process might not progress
-    upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
+    LOGGER.info("pausing MCP updates while modifying ICSP")
+    with ResourceEditor(
+        patches={
+            mcp: {"spec": {"paused": True}}
+            for mcp in upgrade_utils.get_mcp(dyn_client=admin_client)
+        }
+    ):
+        # delete the existing ICSP and then create the new one
+        # apply is not good enough due to the amount of annotations we have
+        # the amount of annotations we have is greater than the maximum size of a payload that is supported with apply
+        LOGGER.info("Deleting existing ICSP.")
+        upgrade_utils.delete_icsp(admin_client=admin_client)
 
-    LOGGER.info("Creating new ICSP.")
-    upgrade_utils.create_icsp_from_file(icsp_file_path=icsp_file_path)
+        LOGGER.info("Creating new ICSP.")
+        upgrade_utils.create_icsp_from_file(icsp_file_path=icsp_file_path)
+
+    LOGGER.info("Wait for MCP to update now that we modified the ICSP")
     upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
 
 
