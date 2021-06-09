@@ -38,6 +38,7 @@ from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
+HPP_OPERATOR = "hostpath-provisioner-operator"
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +53,7 @@ def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
 @pytest.fixture(scope="module")
 def hpp_operator_deployment(hco_namespace):
     hpp_operator_deployment = Deployment(
-        name="hostpath-provisioner-operator", namespace=hco_namespace.name
+        name=HPP_OPERATOR, namespace=hco_namespace.name
     )
     assert hpp_operator_deployment.exists
     return hpp_operator_deployment
@@ -93,6 +94,15 @@ def hpp_clusterrolebinding():
 def hpp_daemonset(hco_namespace):
     yield DaemonSet(
         name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
+        namespace=hco_namespace.name,
+    )
+
+
+@pytest.fixture(scope="module")
+def hpp_operator_pod(admin_client, hco_namespace):
+    yield get_pod_by_name_prefix(
+        dyn_client=admin_client,
+        pod_prefix=HPP_OPERATOR,
         namespace=hco_namespace.name,
     )
 
@@ -718,13 +728,10 @@ def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
 
 
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_operator_pod(skip_test_if_no_hpp_sc, admin_client, hco_namespace):
-    hpp_operator_pod = get_pod_by_name_prefix(
-        dyn_client=admin_client,
-        pod_prefix="hostpath-provisioner-operator",
-        namespace=hco_namespace.name,
-    )
-    assert hpp_operator_pod.status == Pod.Status.RUNNING
+def test_hpp_operator_pod(skip_test_if_no_hpp_sc, hpp_operator_pod):
+    assert (
+        hpp_operator_pod.status == Pod.Status.RUNNING
+    ), f"HPP operator pod {hpp_operator_pod.name} is not running"
 
 
 @pytest.mark.destructive
@@ -742,3 +749,21 @@ def test_hpp_operator_recreate_after_deletion(
     assert (
         pre_delete_binding_mode == hpp_storage_class.instance["volumeBindingMode"]
     ), "Pre delete binding mode differs from post delete"
+
+
+@pytest.mark.polarion("CNV-6097")
+def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
+    assert hpp_scc.exists, f"scc {hpp_scc.name} is not existed"
+    hpp_scc_capabilities = sorted(hpp_scc.instance.requiredDropCapabilities)
+    hpp_pod_capabilities = sorted(
+        hpp_operator_pod.instance.spec["containers"][0]["securityContext"][
+            "capabilities"
+        ]["drop"]
+    )
+    user_id = hpp_operator_pod.instance.spec["containers"][0]["securityContext"][
+        "runAsUser"
+    ]
+    assert hpp_scc_capabilities == hpp_pod_capabilities
+    assert (
+        type(user_id) == int and len(str(user_id)) == 10
+    ), f"Container image is not runAsUser with user id {user_id}"
