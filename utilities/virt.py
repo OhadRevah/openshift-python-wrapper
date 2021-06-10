@@ -622,7 +622,7 @@ class VirtualMachineForTests(VirtualMachine):
                     "userData": {
                         "user": login_params["username"],
                         "password": login_params["password"],
-                        "chpasswd": "{ expire: False }",
+                        "chpasswd": {"expire": False},
                     }
                 }
             )
