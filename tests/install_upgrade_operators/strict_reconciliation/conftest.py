@@ -2,11 +2,14 @@ import logging
 
 import pytest
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from openshift.dynamic.exceptions import ConflictError
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
+from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.hco import (
     modify_hco_cr,
     replace_backup_hco_cr_modification,
@@ -169,3 +172,81 @@ def cr_func_map(
         "cdi": cdi_spec,
         "cnao": network_addons_config.instance.to_dict(),
     }
+
+
+@pytest.fixture()
+def updated_delete_resource(
+    request,
+    admin_client,
+    hco_namespace,
+):
+    backup_data = replace_backup_cr_modification(
+        rpatch=request.param["rpatch"],
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        cr_func=request.param["resource_func"],
+    )
+    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
+    yield
+    restore_cr_modification(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        backup_data=backup_data,
+        cr_func=request.param["resource_func"],
+    )
+    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
+
+
+def replace_cr(rpatch, admin_client, hco_namespace, cr_func, action="replace"):
+    # fetch the CR according to the cr_func each time instead of using a single
+    # fixture to be sure to get it with an up to date resourceVersion
+    # as needed for action=replace
+    cr = cr_func(admin_client=admin_client, hco_namespace=hco_namespace)
+
+    # we have to use action="replace" to send a put to delete existing fields
+    # (update, the default, will only update existing fields).
+    reseditor = ResourceEditor(patches={cr: rpatch}, action=action)
+    reseditor.update(backup_resources=True)
+    return reseditor.backups
+
+
+def replace_backup_cr_modification(rpatch, admin_client, hco_namespace, cr_func):
+    samples = TimeoutSampler(
+        wait_timeout=20,
+        sleep=2,
+        exceptions=ConflictError,
+        func=replace_cr,
+        rpatch=rpatch,
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        cr_func=cr_func,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error(f"Timeout during CR modification: cr={cr_func}")
+        raise
+
+
+def restore_cr_modification(admin_client, hco_namespace, backup_data, cr_func):
+    for backup in backup_data:
+        # Backup the CR changes and revert back once teardown happens for class
+        samples = TimeoutSampler(
+            wait_timeout=20,
+            sleep=2,
+            exceptions=ConflictError,
+            func=replace_cr,
+            rpatch={"spec": backup.instance.to_dict()["spec"]},
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            cr_func=cr_func,
+        )
+        try:
+            for sample in samples:
+                if sample:
+                    break
+        except TimeoutExpiredError:
+            LOGGER.error(f"Timeout restoring previous data in CR: cr={backup.name}")
+            raise

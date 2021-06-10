@@ -174,10 +174,10 @@ def wait_for_spec_change(expected, get_spec_func, keys):
 
 
 def compare_expected_with_cr(expected, actual):
+    # filtering out the "add" verb - it contains additional keys that do not exist in the expected dict, and are
+    # other fields in the spec that are not tested and irrelevant to this test
     return list(
         filter(
-            # filtering out the "add" verb - it contains additional keys that do not exist in the expected dict, and are
-            # other fields in the spec that are not tested and irrelevant to this test
             lambda diff_result_item: diff_result_item[0] != "add",
             list(diff(expected, actual)),
         )
@@ -194,4 +194,25 @@ def expected_certconfig_stanza():
             "duration": constants.CERTC_DEFAULT_24H,
             "renewBefore": constants.CERTC_DEFAULT_12H,
         },
+    }
+
+
+def remove_items_from_hardcoded_feature_gates(hardcoded_featuregate_to_remove):
+    return list(
+        set(constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES)
+        - set(hardcoded_featuregate_to_remove)
+    )
+
+
+def create_rpatch_dict(subset_feature_gates_list_to_remove):
+    return {
+        "spec": {
+            "configuration": {
+                "developerConfiguration": {
+                    "featureGates": remove_items_from_hardcoded_feature_gates(
+                        hardcoded_featuregate_to_remove=subset_feature_gates_list_to_remove
+                    ),
+                }
+            }
+        }
     }
