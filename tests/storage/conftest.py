@@ -150,14 +150,14 @@ def cdi_config():
 
 
 @pytest.fixture()
-def uploadproxy_route_deleted():
+def uploadproxy_route_deleted(hco_namespace):
     """
     Delete uploadproxy route from kubevirt-hyperconverged namespace.
 
     This scales down cdi-operator replicas to 0 so that the route is not auto-created by the cdi-operator pod.
     Once the cdi-operator is terminated, route is deleted to perform the test.
     """
-    ns = py_config["hco_namespace"]
+    ns = hco_namespace.name
     deployment = Deployment(name="cdi-operator", namespace=ns)
     try:
         deployment.scale_replicas(replica_count=0)
@@ -172,11 +172,12 @@ def uploadproxy_route_deleted():
 
 @pytest.fixture()
 def cdi_config_upload_proxy_overridden(
-    hyperconverged_resource_scope_function, cdi_config, upload_proxy_route
+    hco_namespace,
+    hyperconverged_resource_scope_function,
+    cdi_config,
+    upload_proxy_route,
 ):
-    new_upload_proxy_url = (
-        f"newuploadroute-cdi-{py_config['hco_namespace']}.apps.working.oc4"
-    )
+    new_upload_proxy_url = f"newuploadroute-cdi-{hco_namespace.name}.apps.working.oc4"
     with ResourceEditor(
         patches={
             hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
@@ -191,11 +192,11 @@ def cdi_config_upload_proxy_overridden(
 
 
 @pytest.fixture()
-def new_route_created():
-    existing_route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+def new_route_created(hco_namespace):
+    existing_route = Route(name="cdi-uploadproxy", namespace=hco_namespace.name)
     route = Route(
         name="newuploadroute-cdi",
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
         destination_ca_cert=existing_route.ca_cert,
         service="cdi-uploadproxy",
     )
@@ -205,8 +206,8 @@ def new_route_created():
 
 
 @pytest.fixture(scope="session")
-def cdi():
-    cdi = CDI(name="cdi-kubevirt-hyperconverged", namespace=py_config["hco_namespace"])
+def cdi(hco_namespace):
+    cdi = CDI(name="cdi-kubevirt-hyperconverged", namespace=hco_namespace.name)
     assert cdi.instance is not None
     yield cdi
 

@@ -65,11 +65,12 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
 @pytest.mark.polarion("CNV-2191")
 def test_successful_virtctl_upload_no_route(
     skip_not_openshift,
+    hco_namespace,
     namespace,
     tmpdir,
     uploadproxy_route_deleted,
 ):
-    route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+    route = Route(name="cdi-uploadproxy", namespace=hco_namespace.name)
     with pytest.raises(NotFoundError):
         route.instance
 

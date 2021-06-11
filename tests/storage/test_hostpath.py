@@ -50,9 +50,9 @@ def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
 
 
 @pytest.fixture(scope="module")
-def hpp_operator_deployment():
+def hpp_operator_deployment(hco_namespace):
     hpp_operator_deployment = Deployment(
-        name="hostpath-provisioner-operator", namespace=py_config["hco_namespace"]
+        name="hostpath-provisioner-operator", namespace=hco_namespace.name
     )
     assert hpp_operator_deployment.exists
     return hpp_operator_deployment
@@ -68,9 +68,9 @@ def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
 
 
 @pytest.fixture(scope="module")
-def hpp_serviceaccount():
+def hpp_serviceaccount(hco_namespace):
     yield ServiceAccount(
-        name="hostpath-provisioner-admin", namespace=py_config["hco_namespace"]
+        name="hostpath-provisioner-admin", namespace=hco_namespace.name
     )
 
 
@@ -90,10 +90,10 @@ def hpp_clusterrolebinding():
 
 
 @pytest.fixture(scope="module")
-def hpp_daemonset():
+def hpp_daemonset(hco_namespace):
     yield DaemonSet(
         name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
     )
 
 
@@ -712,11 +712,11 @@ def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
 
 
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_operator_pod(skip_test_if_no_hpp_sc, admin_client):
+def test_hpp_operator_pod(skip_test_if_no_hpp_sc, admin_client, hco_namespace):
     hpp_operator_pod = get_pod_by_name_prefix(
         dyn_client=admin_client,
         pod_prefix="hostpath-provisioner-operator",
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
     )
     assert hpp_operator_pod.status == Pod.Status.RUNNING
 

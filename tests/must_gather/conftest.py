@@ -104,7 +104,7 @@ def nodenetworkstate_with_bridge(
 @pytest.fixture(scope="module")
 def running_hco_containers(admin_client, hco_namespace):
     pods = []
-    for pod in Pod.get(admin_client, namespace=py_config["hco_namespace"]):
+    for pod in Pod.get(admin_client, namespace=hco_namespace.name):
         for container in pod.instance["status"].get("containerStatuses", []):
             if container["ready"]:
                 pods.append((pod, container))

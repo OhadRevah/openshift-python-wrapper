@@ -39,15 +39,15 @@ def remove_hco_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def delete_events_before_test(admin_client):
+def delete_events_before_test(admin_client, hco_namespace):
     Event.delete_events(
         dyn_client=admin_client,
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
         field_selector=f"reason={VIRT_EVENT}",
     )
     Event.delete_events(
         dyn_client=admin_client,
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
         field_selector=f"reason={CDI_EVENT}",
     )
 
@@ -162,12 +162,12 @@ class TestRemoveHCO:
     # Restore HCO for the next tests
     @pytest.mark.run(after="test_remove_dv")
     @pytest.mark.polarion("CNV-4093")
-    def test_restore_hco(self, admin_client, data_volume_scope_class):
+    def test_restore_hco(self, admin_client, hco_namespace, data_volume_scope_class):
 
         LOGGER.info("Recreating HCO")
         with HyperConverged(
             name=py_config["hco_cr_name"],
-            namespace=py_config["hco_namespace"],
+            namespace=hco_namespace.name,
             client=admin_client,
             teardown=False,
         ) as hco:
@@ -177,10 +177,10 @@ class TestRemoveHCO:
 
 
 # assert that a certain event was emitted
-def assert_event(dyn_client, event_reason, start_time):
+def assert_event(dyn_client, hco_namespace, event_reason, start_time):
     for event in Event.get(
         dyn_client,
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
         field_selector=f"involvedObject.kind==ClusterServiceVersion,type==Warning,reason={event_reason}",
         timeout=10,
     ):

@@ -6,7 +6,6 @@ import logging
 
 import pytest
 from ocp_resources.pod import Pod
-from pytest_testconfig import config as py_config
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -16,12 +15,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def virt_pods(request, admin_client):
+def virt_pods(request, admin_client, hco_namespace):
     podprefix = request.param
     pods_list = list(
         Pod.get(
             admin_client,
-            namespace=py_config["hco_namespace"],
+            namespace=hco_namespace.name,
             label_selector=f"kubevirt.io={podprefix}",
         )
     )

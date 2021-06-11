@@ -215,10 +215,10 @@ def test_cdi_config_exists(skip_not_openshift, cdi_config, upload_proxy_route):
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-2209")
 def test_different_route_for_upload_proxy(
-    skip_not_openshift, cdi_config, uploadproxy_route_deleted
+    skip_not_openshift, hco_namespace, cdi_config, uploadproxy_route_deleted
 ):
     with Route(
-        namespace=py_config["hco_namespace"],
+        namespace=hco_namespace.name,
         name="new-route-uploadproxy",
         service="cdi-uploadproxy",
     ) as new_route:

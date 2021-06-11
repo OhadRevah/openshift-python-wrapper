@@ -3,7 +3,6 @@ from collections import OrderedDict
 
 import pytest
 from ocp_resources.daemonset import DaemonSet
-from pytest_testconfig import config as py_config
 
 from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
@@ -18,14 +17,13 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
-HCO_NAMESPACE = py_config["hco_namespace"]
 BRIDGE_NAME = "br1test"
 
 
 @pytest.fixture()
-def nmstate_ds(admin_client):
+def nmstate_ds(admin_client, hco_namespace):
     for ds in DaemonSet.get(
-        dyn_client=admin_client, name="nmstate-handler", namespace=HCO_NAMESPACE
+        dyn_client=admin_client, name="nmstate-handler", namespace=hco_namespace.name
     ):
         return ds
 
@@ -173,6 +171,7 @@ def vmb_pinged(vmb_dst_ip, nmstate_linux_bridge_attached_running_vma):
 @pytest.mark.polarion("CNV-5780")
 def test_nmstate_restart_and_check_connectivity(
     admin_client,
+    hco_namespace,
     nmstate_ds,
     nmstate_linux_nad,
     nmstate_linux_bridge_attached_vma,
@@ -187,7 +186,7 @@ def test_nmstate_restart_and_check_connectivity(
         for pod in get_pod_by_name_prefix(
             dyn_client=admin_client,
             pod_prefix="nmstate-handler",
-            namespace=HCO_NAMESPACE,
+            namespace=hco_namespace.name,
             get_all=True,
         ):
             pod.delete(wait=True)

@@ -1,12 +1,11 @@
 import pytest
 from ocp_resources.cdi import CDI
 from ocp_resources.pod import Pod
-from pytest_testconfig import config as py_config
 
 
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-2512")
-def test_cr_deletion(admin_client, cdi):
+def test_cr_deletion(admin_client, hco_namespace, cdi):
     # Ensure 'Deployed' status
     assert cdi.status == CDI.Status.DEPLOYED
 
@@ -23,7 +22,7 @@ def test_cr_deletion(admin_client, cdi):
     cdi_pods = list(
         Pod.get(
             dyn_client=admin_client,
-            namespace=py_config["hco_namespace"],
+            namespace=hco_namespace.name,
             label_selector="cdi.kubevirt.io",
         )
     )

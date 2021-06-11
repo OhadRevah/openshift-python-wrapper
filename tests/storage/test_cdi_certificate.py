@@ -15,7 +15,6 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
-from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
@@ -69,8 +68,8 @@ def x509_cert_is_valid(cert, seconds):
 
 
 @pytest.fixture(scope="module")
-def secrets(admin_client):
-    return Secret.get(dyn_client=admin_client, namespace=py_config["hco_namespace"])
+def secrets(admin_client, hco_namespace):
+    return Secret.get(dyn_client=admin_client, namespace=hco_namespace.name)
 
 
 @pytest.fixture()

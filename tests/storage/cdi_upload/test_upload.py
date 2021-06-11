@@ -47,8 +47,8 @@ def wait_for_upload_response_code(token, data, response_code, asynchronous=False
 
 
 @pytest.mark.polarion("CNV-2318")
-def test_cdi_uploadproxy_route_owner_references(skip_not_openshift):
-    route = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+def test_cdi_uploadproxy_route_owner_references(skip_not_openshift, hco_namespace):
+    route = Route(name="cdi-uploadproxy", namespace=hco_namespace.name)
     assert route.instance
     assert route.instance["metadata"]["ownerReferences"][0]["name"] == "cdi-deployment"
     assert route.instance["metadata"]["ownerReferences"][0]["kind"] == "Deployment"

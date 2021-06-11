@@ -1634,9 +1634,9 @@ def worker_nodes_ipv4_false_secondary_nics(
 
 
 @pytest.fixture(scope="session")
-def cnv_current_version(admin_client):
+def cnv_current_version(admin_client, hco_namespace):
     for csv in ClusterServiceVersion.get(
-        dyn_client=admin_client, namespace=py_config["hco_namespace"]
+        dyn_client=admin_client, namespace=hco_namespace.name
     ):
         return csv.instance.spec.version
 
@@ -2202,8 +2202,8 @@ def hostpath_provisioner():
 
 
 @pytest.fixture(scope="module")
-def cnv_pods(admin_client):
-    yield list(Pod.get(dyn_client=admin_client, namespace=py_config["hco_namespace"]))
+def cnv_pods(admin_client, hco_namespace):
+    yield list(Pod.get(dyn_client=admin_client, namespace=hco_namespace.name))
 
 
 @pytest.fixture(scope="module", autouse=True)
