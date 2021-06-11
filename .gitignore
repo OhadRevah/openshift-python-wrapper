@@ -127,4 +127,4 @@ docs/source/rst
 Pipfile.lock
 
 # For local run (debug).
-resources
+ocp_resources

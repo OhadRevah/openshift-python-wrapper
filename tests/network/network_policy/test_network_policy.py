@@ -39,7 +39,7 @@ class ApplyNetworkPolicy(NetworkPolicy):
 @pytest.fixture(scope="module")
 def namespace_1(unprivileged_client):
     yield from create_ns(
-        client=unprivileged_client,
+        unprivileged_client=unprivileged_client,
         name="network-policy-test-1",
     )
 
@@ -47,7 +47,7 @@ def namespace_1(unprivileged_client):
 @pytest.fixture(scope="module")
 def namespace_2(unprivileged_client):
     yield from create_ns(
-        client=unprivileged_client,
+        unprivileged_client=unprivileged_client,
         name="network-policy-test-2",
     )
 

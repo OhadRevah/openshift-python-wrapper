@@ -671,8 +671,8 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
 
 @pytest.fixture(scope="session")
-def identity_provider_config():
-    return OAuth(name="cluster")
+def identity_provider_config(admin_client):
+    return OAuth(client=admin_client, name="cluster")
 
 
 @pytest.fixture(scope="session")
@@ -1020,14 +1020,15 @@ class UtilityDaemonSet(DaemonSet):
 
 
 @pytest.fixture(scope="module")
-def namespace(request, unprivileged_client):
+def namespace(request, admin_client, unprivileged_client):
     """Generate namespace from the test's module name"""
     client = True
     if hasattr(request, "param"):
         client = request.param.get("unprivileged_client", True)
 
     yield from create_ns(
-        client=unprivileged_client if client else None,
+        unprivileged_client=unprivileged_client if client else None,
+        admin_client=admin_client,
         name=generate_namespace_name(
             file_path=request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
         ),
@@ -1044,9 +1045,11 @@ def skip_upstream():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def leftovers(identity_provider_config):
-    secret = Secret(name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE)
-    ds = UtilityDaemonSet(name="utility", namespace="kube-system")
+def leftovers(admin_client, identity_provider_config):
+    secret = Secret(
+        client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
+    )
+    ds = UtilityDaemonSet(client=admin_client, name="utility", namespace="kube-system")
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
         try:

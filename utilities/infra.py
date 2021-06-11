@@ -118,17 +118,17 @@ def label_project(name, label, admin_client):
     ResourceEditor({ns: {"metadata": {"labels": label}}}).update()
 
 
-def create_ns(name, client=None, kmp_vm_label=None, admin_client=None):
+def create_ns(name, unprivileged_client=None, kmp_vm_label=None, admin_client=None):
     """
     For kubemacpool labeling opt-modes, provide kmp_vm_label and admin_client as admin_client
     """
-    if not client:
-        with Namespace(name=name, label=kmp_vm_label) as ns:
+    if not unprivileged_client:
+        with Namespace(client=admin_client, name=name, label=kmp_vm_label) as ns:
             ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=120)
             yield ns
     else:
-        with ProjectRequest(name=name, client=client):
-            project = Project(name=name, client=client)
+        with ProjectRequest(name=name, client=unprivileged_client):
+            project = Project(name=name, client=unprivileged_client)
             project.wait_for_status(project.Status.ACTIVE, timeout=120)
             if kmp_vm_label:
                 label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
