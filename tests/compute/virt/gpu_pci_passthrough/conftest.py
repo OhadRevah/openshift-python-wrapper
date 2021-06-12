@@ -61,6 +61,27 @@ def pci_passthrough_vm(
         yield pci_passthrough_vm
 
 
+@pytest.fixture(scope="class")
+def hco_cr_with_permitted_hostdevices(hyperconverged_resource_scope_class):
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_class: {
+                "spec": {
+                    "permittedHostDevices": {
+                        "pciHostDevices": [
+                            {
+                                "pciVendorSelector": GPU_DEVICE_ID,
+                                "resourceName": GPU_DEVICE_NAME,
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ):
+        yield
+
+
 @pytest.fixture()
 def updated_vm_gpus_spec(pci_passthrough_vm):
     vm_dict = pci_passthrough_vm.instance.to_dict()

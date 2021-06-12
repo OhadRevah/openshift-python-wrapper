@@ -79,6 +79,7 @@ def resources_device_checks(gpu_node, status_type):
 )
 @pytest.mark.usefixtures(
     "skip_if_no_gpu_node",
+    "hco_cr_with_permitted_hostdevices",
     "golden_image_data_volume_scope_class",
 )
 class TestPCIPassthroughRHELHostDevicesSpec:
