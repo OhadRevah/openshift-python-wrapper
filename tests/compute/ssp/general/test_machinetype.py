@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from ocp_resources.resource import ResourceEditor
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from tests.compute.ssp import utils as ssp_utils
-from utilities.infra import hco_cr_jsonpatch_annotations_dict
+from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -36,17 +35,24 @@ def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
 
 @pytest.fixture()
 def updated_configmap_machine_type(
-    request, hyperconverged_resource_scope_function, kubevirt_config
+    request,
+    hyperconverged_resource_scope_function,
+    kubevirt_config,
+    admin_client,
+    hco_namespace,
 ):
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
-                component="kubevirt",
-                path="machineType",
-                value=request.param["machine_type"],
-            )
-        },
+    machine_type = request.param["machine_type"]
+    with update_hco_config(
+        resource=hyperconverged_resource_scope_function,
+        path="machineType",
+        value=machine_type,
     ):
+        wait_for_updated_kv_value(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            path=["machineType"],
+            value=machine_type,
+        )
         yield
 
 

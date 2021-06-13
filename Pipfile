@@ -38,6 +38,7 @@ pytest-dependency="*"
 pytest-progress="*"  # https://github.com/ssrikanta/pytest-progress
 colorlog="*"
 dictdiffer="*"
+python-benedict="*"
 
 [requires]
 python_version = "3"

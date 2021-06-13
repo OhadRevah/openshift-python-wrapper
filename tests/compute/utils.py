@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 import logging
 import shlex
+from contextlib import contextmanager
 
-from ocp_resources.resource import TIMEOUT
+from benedict import benedict
+from ocp_resources.resource import TIMEOUT, ResourceEditor
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.infra import run_ssh_commands
+from tests.conftest import get_hyperconverged_resource, kubevirt_hyperconverged_spec
+from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
 
 
@@ -133,3 +137,61 @@ def kill_processes_by_name_linux(vm, process_name):
 def kill_processes_by_name_windows(vm, process_name):
     cmd = shlex.split(f"taskkill /F /IM {process_name}")
     run_ssh_commands(host=vm.ssh_exec, commands=cmd)
+
+
+@contextmanager
+def update_hco_config(resource, path, value):
+    editor = ResourceEditor(
+        patches={
+            resource: hco_cr_jsonpatch_annotations_dict(
+                component="kubevirt",
+                path=path,
+                value=value,
+            )
+        },
+    )
+    editor.update(backup_resources=True)
+    yield
+    editor.restore()
+
+
+def wait_for_updated_kv_value(admin_client, hco_namespace, path, value):
+    """
+    Waits for updated values in KV CR configuration
+
+    Args:
+        admin_client (:obj:`DynamicClient`): DynamicClient object
+        hco_namespace (:obj:`Namespace`): HCO namespace object
+        path (list): list of nested keys to be looked up in KV CR configuration dict
+        value (any): the expected value of the last key in path
+
+    Example:
+        path - ['minCPUModel'], value - 'Haswell-noTSX'
+        {"configuration": {"minCPUModel": "Haswell-noTSX"}} will be matched against KV CR spec.
+
+    Raises:
+        TimeoutExpiredError: After timeout is reached if the expected key value does not match the actual value
+    """
+    base_path = ["configuration"]
+    base_path.extend(path)
+    samples = TimeoutSampler(
+        wait_timeout=15,
+        sleep=1,
+        func=lambda: benedict(
+            kubevirt_hyperconverged_spec(
+                admin_client=admin_client, hco_namespace=hco_namespace
+            )
+        ).get(base_path),
+    )
+    try:
+        for sample in samples:
+            if sample and sample == value:
+                break
+    except TimeoutExpiredError:
+        hco_annotations = get_hyperconverged_resource(
+            client=admin_client, hco_ns_name=hco_namespace.name
+        ).instance.metadata.annotations
+        LOGGER.error(
+            f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
+        )
+        raise

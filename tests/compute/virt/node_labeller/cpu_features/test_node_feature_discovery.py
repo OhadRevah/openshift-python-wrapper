@@ -4,11 +4,13 @@ Test node feature discovery.
 from xml.etree import ElementTree
 
 import pytest
-from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
 
-from utilities.infra import hco_cr_jsonpatch_annotations_dict
+from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+
+
+MIN_CPU = "minCPUModel"
+OBSOLETE_CPU = "obsoleteCPUModels"
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -50,10 +52,7 @@ def libvirt_min_cpu_features_list(cpu_test_vm, admin_client):
     """
     Extract minimal CPU model features from libvirt/cpu_map xml.
     """
-    exec_pod = list(Pod.get(dyn_client=admin_client, namespace=cpu_test_vm.namespace))[
-        0
-    ]
-    stdout = exec_pod.execute(
+    stdout = cpu_test_vm.vmi.virt_launcher_pod.execute(
         command=[
             "cat",
             "/usr/share/libvirt/cpu_map/x86_Penryn.xml",
@@ -68,17 +67,28 @@ def libvirt_min_cpu_features_list(cpu_test_vm, admin_client):
 
 @pytest.fixture()
 def updated_kubevirt_cpus(
-    request, hyperconverged_resource_scope_function, nodes_common_cpu_model
+    request,
+    hyperconverged_resource_scope_function,
+    nodes_common_cpu_model,
+    admin_client,
+    hco_namespace,
 ):
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
-                component="kubevirt",
-                path=request.param["cpu_config"],
-                value={nodes_common_cpu_model: True},
-            )
-        },
+    is_min_cpu = request.param["cpu_config"] == MIN_CPU  # MIN_CPU or OBSOLETE_CPU
+
+    hco_path = MIN_CPU if is_min_cpu else OBSOLETE_CPU
+    hco_value = nodes_common_cpu_model if is_min_cpu else {nodes_common_cpu_model: True}
+    kv_path = [MIN_CPU] if is_min_cpu else [OBSOLETE_CPU, nodes_common_cpu_model]
+    kv_value = nodes_common_cpu_model if is_min_cpu else True
+
+    with update_hco_config(
+        resource=hyperconverged_resource_scope_function, path=hco_path, value=hco_value
     ):
+        wait_for_updated_kv_value(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            path=kv_path,
+            value=kv_value,
+        )
         yield
 
 
@@ -113,7 +123,7 @@ def test_obsolete_cpus_in_node_labels(nodes_labels_dict, kubevirt_config):
     """
     test_dict = node_label_checker(
         node_label_dict=nodes_labels_dict,
-        label_list=kubevirt_config["obsoleteCPUModels"].keys(),
+        label_list=kubevirt_config[OBSOLETE_CPU].keys(),
         dict_key="cpu_models",
     )
     assert not any(test_dict.values()), f"Obsolete CPU found in labels\n{test_dict}"
@@ -180,7 +190,7 @@ def test_hardware_non_required_node_labels(nodes_labels_dict):
     "updated_kubevirt_cpus",
     [
         pytest.param(
-            {"cpu_config": "obsoleteCPUModels"},
+            {"cpu_config": OBSOLETE_CPU},
             marks=pytest.mark.polarion("CNV-6103"),
         )
     ],
@@ -194,7 +204,7 @@ def test_updated_obsolete_cpus_in_node_labels(
     """
     test_dict = node_label_checker(
         node_label_dict=nodes_labels_dict,
-        label_list=kubevirt_config["obsoleteCPUModels"].keys(),
+        label_list=kubevirt_config[OBSOLETE_CPU].keys(),
         dict_key="cpu_models",
     )
     assert not any(test_dict.values()), f"Obsolete CPU found in labels\n{test_dict}"
@@ -204,7 +214,7 @@ def test_updated_obsolete_cpus_in_node_labels(
     "updated_kubevirt_cpus",
     [
         pytest.param(
-            {"cpu_config": "minCPU"},
+            {"cpu_config": MIN_CPU},
             marks=pytest.mark.polarion("CNV-6104"),
         )
     ],
@@ -214,7 +224,7 @@ def test_updated_min_cpu_in_node_labels(
     updated_kubevirt_cpus, nodes_labels_dict, libvirt_min_cpu_features_list
 ):
     """
-    Test user-updated minCPU does not appear in node labels.
+    Test user-updated minCPUModel does not appear in node labels.
     """
     test_dict = node_label_checker(
         node_label_dict=nodes_labels_dict,

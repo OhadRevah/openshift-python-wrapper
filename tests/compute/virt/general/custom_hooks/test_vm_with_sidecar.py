@@ -5,26 +5,34 @@ VM with sidecar
 import shlex
 
 import pytest
-from ocp_resources.resource import ResourceEditor
 
-from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
+from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
+from utilities.infra import run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture()
 def enabled_sidecar_featuregate(
-    hyperconverged_resource_scope_function, kubevirt_feature_gates
+    hyperconverged_resource_scope_function,
+    kubevirt_feature_gates,
+    admin_client,
+    hco_namespace,
 ):
     kubevirt_feature_gates.append("Sidecar")
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
-                component="kubevirt",
-                path="developerConfiguration/featureGates",
-                value=kubevirt_feature_gates,
-            )
-        },
+    with update_hco_config(
+        resource=hyperconverged_resource_scope_function,
+        path="developerConfiguration/featureGates",
+        value=kubevirt_feature_gates,
     ):
+        wait_for_updated_kv_value(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            path=[
+                "developerConfiguration",
+                "featureGates",
+            ],
+            value=kubevirt_feature_gates,
+        )
         yield
 
 
