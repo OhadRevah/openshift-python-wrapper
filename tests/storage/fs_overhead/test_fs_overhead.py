@@ -33,12 +33,13 @@ def test_upload_with_enough_size_for_overhead(
     skip_block_volumemode_scope_module,
     namespace,
     local_fedora_image,
+    default_fs_overhead,
 ):
     with virtctl_upload_dv(
         name="cnv-5019",
         namespace=namespace.name,
         size=overhead_size_for_dv(
-            image_size=FEDORA_IMAGE_SIZE_GI, overhead_value=0.055
+            image_size=FEDORA_IMAGE_SIZE_GI, overhead_value=default_fs_overhead
         ),
         insecure=True,
         image_path=LOCAL_NAME,

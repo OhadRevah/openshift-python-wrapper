@@ -312,3 +312,8 @@ def skip_block_volumemode_scope_function(storage_class_matrix__function__):
 @pytest.fixture(scope="module")
 def skip_block_volumemode_scope_module(storage_class_matrix__module__):
     _skip_block_volumemode(storage_class_matrix=storage_class_matrix__module__)
+
+
+@pytest.fixture()
+def default_fs_overhead(cdi_config):
+    return float(cdi_config.instance.status.filesystemOverhead["global"])

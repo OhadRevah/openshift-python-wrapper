@@ -354,7 +354,10 @@ def test_clone_from_fs_to_block_using_dv_template(
     indirect=True,
 )
 def test_clone_from_block_to_fs_using_dv_template(
-    namespace, unprivileged_client, ceph_rbd_data_volume
+    namespace,
+    unprivileged_client,
+    ceph_rbd_data_volume,
+    default_fs_overhead,
 ):
     create_vm_from_clone_dv_template(
         vm_name="vm-5608",
@@ -365,6 +368,7 @@ def test_clone_from_block_to_fs_using_dv_template(
         volume_mode=DataVolume.VolumeMode.FILE,
         # add fs overhead and round up the result
         size=overhead_size_for_dv(
-            image_size=int(ceph_rbd_data_volume.size[:-2]), overhead_value=0.055
+            image_size=int(ceph_rbd_data_volume.size[:-2]),
+            overhead_value=default_fs_overhead,
         ),
     )
