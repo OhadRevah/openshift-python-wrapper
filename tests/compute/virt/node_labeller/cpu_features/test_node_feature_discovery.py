@@ -48,14 +48,20 @@ def nodes_labels_dict(nodes):
 
 
 @pytest.fixture()
-def libvirt_min_cpu_features_list(cpu_test_vm, admin_client):
+def libvirt_min_cpu_features_list(
+    request, nodes_common_cpu_model, cpu_test_vm, admin_client
+):
     """
     Extract minimal CPU model features from libvirt/cpu_map xml.
+    Use x86_Penryn if request.param["default_min_cpu"] else nodes_common_cpu_model
     """
+    min_cpu_model = (
+        "Penryn" if request.param["default_min_cpu"] else nodes_common_cpu_model
+    )
     stdout = cpu_test_vm.vmi.virt_launcher_pod.execute(
         command=[
             "cat",
-            "/usr/share/libvirt/cpu_map/x86_Penryn.xml",
+            f"/usr/share/libvirt/cpu_map/x86_{min_cpu_model}.xml",
         ]
     )
     tree = ElementTree.fromstring(stdout)
@@ -129,7 +135,16 @@ def test_obsolete_cpus_in_node_labels(nodes_labels_dict, kubevirt_config):
     assert not any(test_dict.values()), f"Obsolete CPU found in labels\n{test_dict}"
 
 
-@pytest.mark.polarion("CNV-2798")
+@pytest.mark.parametrize(
+    "libvirt_min_cpu_features_list",
+    [
+        pytest.param(
+            {"default_min_cpu": True},
+            marks=pytest.mark.polarion("CNV-2798"),
+        )
+    ],
+    indirect=True,
+)
 def test_min_cpus_in_node_labels(nodes_labels_dict, libvirt_min_cpu_features_list):
     """
     Test min CPU. Min CPU features don't appear in node labels.
@@ -211,10 +226,11 @@ def test_updated_obsolete_cpus_in_node_labels(
 
 
 @pytest.mark.parametrize(
-    "updated_kubevirt_cpus",
+    "updated_kubevirt_cpus, libvirt_min_cpu_features_list",
     [
         pytest.param(
             {"cpu_config": MIN_CPU},
+            {"default_min_cpu": False},
             marks=pytest.mark.polarion("CNV-6104"),
         )
     ],
