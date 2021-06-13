@@ -84,7 +84,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
-from utilities.storage import data_volume
+from utilities.storage import data_volume, wait_for_default_sc_in_cdiconfig
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     generate_yaml_from_template,
@@ -1962,7 +1962,7 @@ def default_sc(admin_client):
 
 
 @pytest.fixture(scope="session")
-def pyconfig_updated_default_sc(admin_client, default_sc):
+def pyconfig_updated_default_sc(admin_client, cdi_config, default_sc):
     # Based on py_config["default_storage_class"], update default SC, if needed
     if default_sc:
         yield default_sc
@@ -1985,6 +1985,7 @@ def pyconfig_updated_default_sc(admin_client, default_sc):
                     }
                 }
             ):
+                wait_for_default_sc_in_cdiconfig(cdi_config=cdi_config, sc=sc.name)
                 yield sc
 
 

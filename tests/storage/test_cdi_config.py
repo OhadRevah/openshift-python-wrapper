@@ -20,6 +20,7 @@ from utilities.storage import (
     check_cdi_feature_gate_enabled,
     downloaded_image,
     get_images_server_url,
+    wait_for_default_sc_in_cdiconfig,
 )
 
 
@@ -50,49 +51,41 @@ def cdiconfig_update(
     run_vm=False,
     tmpdir=None,
 ):
+    def _create_vm_check_disk_count(dv):
+        dv.wait()
+        with utils.create_vm_from_dv(dv=dv) as vm_dv:
+            utils.check_disk_count_in_vm(vm=vm_dv)
+
     with ResourceEditor(
         patches={hco_cr: {"spec": {"scratchSpaceStorageClass": storage_class_type}}}
     ):
-        samples = TimeoutSampler(
-            wait_timeout=30,
-            sleep=1,
-            func=lambda: cdiconfig.scratch_space_storage_class_from_status
-            == storage_class_type,
-        )
-        for sample in samples:
-            if sample:
-                if run_vm:
-                    if source == "http":
-                        with utils.import_image_to_dv(
-                            dv_name=dv_name,
-                            images_https_server_name=images_https_server_name,
-                            volume_mode=volume_mode,
-                            access_mode=access_mode,
-                            storage_ns_name=storage_ns_name,
-                        ) as dv:
-                            dv.wait()
-                            with utils.create_vm_from_dv(dv=dv) as vm_dv:
-                                utils.check_disk_count_in_vm(vm=vm_dv)
-                                break
-                    elif source == "upload":
-                        local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-                        remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
-                        downloaded_image(remote_name=remote_name, local_name=local_name)
-                        with utils.upload_image_to_dv(
-                            dv_name=dv_name,
-                            volume_mode=volume_mode,
-                            storage_ns_name=storage_ns_name,
-                            storage_class=storage_class_type,
-                            client=client,
-                        ) as dv:
-                            utils.upload_token_request(
-                                storage_ns_name, pvc_name=dv.pvc.name, data=local_name
-                            )
-                            dv.wait()
-                            with utils.create_vm_from_dv(dv=dv) as vm_dv:
-                                utils.check_disk_count_in_vm(vm_dv)
-                                break
-                break
+        wait_for_default_sc_in_cdiconfig(cdi_config=cdiconfig, sc=storage_class_type)
+
+        if run_vm:
+            if source == "http":
+                with utils.import_image_to_dv(
+                    dv_name=dv_name,
+                    images_https_server_name=images_https_server_name,
+                    volume_mode=volume_mode,
+                    access_mode=access_mode,
+                    storage_ns_name=storage_ns_name,
+                ) as dv:
+                    _create_vm_check_disk_count(dv=dv)
+            elif source == "upload":
+                local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
+                remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
+                downloaded_image(remote_name=remote_name, local_name=local_name)
+                with utils.upload_image_to_dv(
+                    dv_name=dv_name,
+                    volume_mode=volume_mode,
+                    storage_ns_name=storage_ns_name,
+                    storage_class=storage_class_type,
+                    client=client,
+                ) as dv:
+                    utils.upload_token_request(
+                        storage_ns_name, pvc_name=dv.pvc.name, data=local_name
+                    )
+                    _create_vm_check_disk_count(dv=dv)
 
 
 @pytest.mark.polarion("CNV-2451")

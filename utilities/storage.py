@@ -15,7 +15,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.utils import TimeoutExpiredError
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
@@ -622,3 +622,17 @@ def cdi_feature_gate_list_with_added_feature(feature):
         .get("featureGates", []),
         feature,
     ]
+
+
+def wait_for_default_sc_in_cdiconfig(cdi_config, sc):
+    """
+    Wait for the default storage class to propagate to CDIConfig as the storage class for scratch space
+    """
+    samples = TimeoutSampler(
+        wait_timeout=20,
+        sleep=1,
+        func=lambda: cdi_config.scratch_space_storage_class_from_status == sc,
+    )
+    for sample in samples:
+        if sample:
+            return
