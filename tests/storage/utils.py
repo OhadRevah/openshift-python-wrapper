@@ -20,7 +20,7 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
-from utilities.constants import OS_FLAVOR_CIRROS
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_30MIN
 from utilities.infra import Images, get_cert, run_ssh_commands
 from utilities.storage import create_dv
 from utilities.virt import (
@@ -141,7 +141,9 @@ def create_windows_vm_validate_guest_agent_info(
         namespace=namespace,
         unprivileged_client=unprivileged_client,
     ) as vm_dv:
-        wait_for_windows_vm(vm=vm_dv, version=vm_params["os_version"], timeout=1800)
+        wait_for_windows_vm(
+            vm=vm_dv, version=vm_params["os_version"], timeout=TIMEOUT_30MIN
+        )
         validate_vmi_ga_info_vs_windows_os_info(vm=vm_dv)
 
 

@@ -20,7 +20,12 @@ from tests.compute.ssp.supported_os.utils import (
     guest_agent_version_parser,
 )
 from tests.compute.utils import get_windows_timezone, vm_started
-from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS, TIMEOUT_3MIN
+from utilities.constants import (
+    OS_FLAVOR_RHEL,
+    OS_FLAVOR_WINDOWS,
+    TIMEOUT_3MIN,
+    TIMEOUT_30MIN,
+)
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     get_guest_os_info,
@@ -302,7 +307,7 @@ def check_windows_activated_license(vm, reset_action):
         stop_start_vm(vm=vm, wait_for_interfaces=False)
     if "reboot" in reset_action:
         reboot_vm(vm=vm)
-    wait_for_vm_interfaces(vmi=vm.vmi, timeout=1800)
+    wait_for_vm_interfaces(vmi=vm.vmi, timeout=TIMEOUT_30MIN)
     wait_for_ssh_connectivity(vm=vm)
     assert is_windows_activated(vm=vm), "VM license is not activated after restart."
 

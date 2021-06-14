@@ -6,6 +6,7 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
 
+from utilities.constants import TIMEOUT_30MIN
 from utilities.storage import create_dv, get_images_server_url
 from utilities.virt import (
     VirtualMachineForTests,
@@ -47,7 +48,7 @@ def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
         size=py_config["latest_fedora_os_dict"]["dv_size"],
     ) as dv:
         # wait for dv import to start and complete
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=1800)
+        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
 
         with VirtualMachineForTestsFromTemplate(
             name="fedora-vm-lifecycle",

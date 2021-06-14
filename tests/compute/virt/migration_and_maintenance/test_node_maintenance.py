@@ -23,7 +23,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN, TIMEOUT_30MIN
 from utilities.infra import get_bug_status, get_bugzilla_connection_params
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -138,7 +138,7 @@ def check_draining_process(dyn_client, source_pod, vm):
     ):
         if migration_job.instance.spec.vmiName == vm.name:
             migration_job.wait_for_status(
-                status=migration_job.Status.SUCCEEDED, timeout=1800
+                status=migration_job.Status.SUCCEEDED, timeout=TIMEOUT_30MIN
             )
     assert_pod_status_completed(source_pod=source_pod)
     target_pod = vm.vmi.virt_launcher_pod
