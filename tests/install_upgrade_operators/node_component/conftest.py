@@ -4,7 +4,6 @@ from collections import defaultdict
 import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.deployment import Deployment
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
@@ -20,6 +19,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,
     SELECTORS,
 )
+from tests.install_upgrade_operators.utils import get_deployment_by_name
 from utilities.constants import TIMEOUT_5MIN
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
 from utilities.virt import (
@@ -39,15 +39,6 @@ def get_daemonset_by_name(admin_client, daemonset_name):
         name=daemonset_name,
     ):
         return ds
-
-
-def get_deployment_by_name(admin_client, deployment_name):
-    for dp in Deployment.get(
-        dyn_client=admin_client,
-        namespace=py_config["hco_namespace"],
-        name=deployment_name,
-    ):
-        return dp
 
 
 @pytest.fixture(scope="session")
@@ -132,9 +123,11 @@ def ssp_cr_spec(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def virt_template_validator_spec_nodeselector(admin_client):
+def virt_template_validator_spec_nodeselector(admin_client, hco_namespace):
     virt_template_validator_spec = get_deployment_by_name(
-        admin_client=admin_client, deployment_name="virt-template-validator"
+        admin_client=admin_client,
+        deployment_name="virt-template-validator",
+        namespace_name=hco_namespace.name,
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_template_validator_spec.get("nodeSelector")
 
@@ -152,9 +145,11 @@ def vm_import_configs_spec(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def vm_import_controller_spec_nodeselector(admin_client):
+def vm_import_controller_spec_nodeselector(admin_client, hco_namespace):
     vm_import_controller_spec = get_deployment_by_name(
-        admin_client=admin_client, deployment_name="vm-import-controller"
+        admin_client=admin_client,
+        deployment_name="vm-import-controller",
+        namespace_name=hco_namespace.name,
     ).instance.to_dict()["spec"]["template"]["spec"]
     return vm_import_controller_spec.get("nodeSelector")
 
@@ -168,12 +163,14 @@ def network_addon_config_spec_placement(admin_client):
 
 
 @pytest.fixture()
-def network_deployment_placement_list(admin_client):
+def network_deployment_placement_list(admin_client, hco_namespace):
     nodeselector_lists = []
     network_deployments = ["kubemacpool-mac-controller-manager", "nmstate-webhook"]
     for deployment in network_deployments:
         nw_deployment = get_deployment_by_name(
-            admin_client=admin_client, deployment_name=deployment
+            admin_client=admin_client,
+            deployment_name=deployment,
+            namespace_name=hco_namespace.name,
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(nw_deployment.get("nodeSelector"))
     return nodeselector_lists
@@ -198,30 +195,35 @@ def network_daemonsets_placement_list(admin_client):
 @pytest.fixture()
 def virt_daemonset_nodeselector_comp(admin_client):
     virt_daemonset = get_daemonset_by_name(
-        admin_client=admin_client, daemonset_name="virt-handler"
+        admin_client=admin_client,
+        daemonset_name="virt-handler",
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_daemonset.get("nodeSelector").get("work-comp")
 
 
 @pytest.fixture()
-def virt_deployment_nodeselector_comp_list(admin_client):
+def virt_deployment_nodeselector_comp_list(admin_client, hco_namespace):
     nodeselector_lists = []
     virt_deployments = ["virt-api", "virt-controller"]
     for deployment in virt_deployments:
         virt_deployment = get_deployment_by_name(
-            admin_client=admin_client, deployment_name=deployment
+            admin_client=admin_client,
+            deployment_name=deployment,
+            namespace_name=hco_namespace.name,
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(virt_deployment.get("nodeSelector").get("infra-comp"))
     return nodeselector_lists
 
 
 @pytest.fixture()
-def cdi_deployment_nodeselector_list(admin_client):
+def cdi_deployment_nodeselector_list(admin_client, hco_namespace):
     nodeselector_lists = []
     cdi_deployments = ["cdi-apiserver", "cdi-deployment", "cdi-uploadproxy"]
     for deployment in cdi_deployments:
         cdi_deployment = get_deployment_by_name(
-            admin_client=admin_client, deployment_name=deployment
+            admin_client=admin_client,
+            deployment_name=deployment,
+            namespace_name=hco_namespace.name,
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(cdi_deployment.get("nodeSelector"))
     return nodeselector_lists

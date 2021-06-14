@@ -2,6 +2,7 @@ import re
 
 from ocp_resources.cdi import CDI
 from ocp_resources.cluster_service_version import ClusterServiceVersion
+from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.utils import TimeoutSampler
@@ -84,3 +85,23 @@ def get_hyperconverged_cdi(admin_client, hco_namespace):
         name="cdi-kubevirt-hyperconverged",
     ):
         return cdi
+
+
+def get_deployment_by_name(admin_client, namespace_name, deployment_name):
+    """
+    Gets a deployment object by name
+
+    Args:
+        admin_client (DynamicClient): a DynamicClient object
+        namespace_name (str): name of the associated namespace
+        deployment_name (str): Name of the deployment
+
+    Returns:
+        Deployment: Deployment object
+    """
+    for dp in Deployment.get(
+        dyn_client=admin_client,
+        namespace=namespace_name,
+        name=deployment_name,
+    ):
+        return dp
