@@ -13,7 +13,6 @@ from collections import Counter
 from contextlib import contextmanager
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
-import bcrypt
 import kubernetes
 import pytest
 import rrmngmnt
@@ -60,7 +59,6 @@ from utilities.hco import apply_np_changes
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
-    base64_encode_str,
     collect_logs_pods,
     collect_logs_resources,
     create_ns,
@@ -624,24 +622,27 @@ def admin_client():
 
 @pytest.fixture(scope="session")
 def unprivileged_secret(admin_client):
-    if py_config["distribution"] == "upstream" or py_config.get(
-        "no_unprivileged_client"
-    ):
-        yield
-
-    else:
-        password = UNPRIVILEGED_PASSWORD.encode()
-        enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
-        crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}"
-        with Secret(
-            name=HTTP_SECRET_NAME,
-            namespace=OPENSHIFT_CONFIG_NAMESPACE,
-            htpasswd=base64_encode_str(text=crypto_credentials),
-        ) as secret:
-            yield secret
-
-        #  Wait for oauth-openshift deployment to update after removing htpass-secret
-        _wait_for_oauth_openshift_deployment(admin_client=admin_client)
+    # TODO: Remove once tests is fixed.
+    # Not using unprivileged_client, need to resolve tests issue after ocp-python-wrapper changes
+    yield
+    # if py_config["distribution"] == "upstream" or py_config.get(
+    #     "no_unprivileged_client"
+    # ):
+    #     yield
+    #
+    # else:
+    #     password = UNPRIVILEGED_PASSWORD.encode()
+    #     enc_password = bcrypt.hashpw(password, bcrypt.gensalt(5, prefix=b"2a")).decode()
+    #     crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}"
+    #     with Secret(
+    #         name=HTTP_SECRET_NAME,
+    #         namespace=OPENSHIFT_CONFIG_NAMESPACE,
+    #         htpasswd=base64_encode_str(text=crypto_credentials),
+    #     ) as secret:
+    #         yield secret
+    #
+    #     #  Wait for oauth-openshift deployment to update after removing htpass-secret
+    #     _wait_for_oauth_openshift_deployment(admin_client=admin_client)
 
 
 def _wait_for_oauth_openshift_deployment(admin_client):
