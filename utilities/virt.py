@@ -15,7 +15,6 @@ import requests
 import rrmngmnt
 import yaml
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.node import Node
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
@@ -341,6 +340,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.host_device_name = host_device_name
         self.gpu_name = gpu_name
         self.systemctl_support = systemctl_support
+        self.original_client = self.client
 
     def deploy(self):
         super().deploy()
@@ -911,6 +911,15 @@ class VirtualMachineForTests(VirtualMachine):
         )
         return host
 
+    @property
+    def privileged_vm(self):
+        try:
+            self.client = get_admin_client()
+            return self
+
+        finally:
+            self.client = self.original_client
+
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def __init__(
@@ -1279,9 +1288,7 @@ class ServiceForVirtualMachineForTests(Service):
 
             return self.instance.spec.clusterIP
 
-        vm_node = Node(
-            client=get_admin_client(), name=self.vmi.instance.status.nodeName
-        )
+        vm_node = self.vm.privileged_vm.vmi.node
         if self.service_type == Service.Type.NODE_PORT:
             if ip_family:
                 internal_ips = [
@@ -1637,14 +1644,14 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
 def migrate_and_verify(
     vm, timeout=720, wait_for_interfaces=True, check_ssh_connectivity=False
 ):
-    node_before = vm.vmi.node
+    node_before = vm.privileged_vm.vmi.node
     LOGGER.info(f"VMI is running on {node_before.name} before migration.")
     with VirtualMachineInstanceMigration(
         name=vm.name, namespace=vm.namespace, vmi=vm.vmi
     ) as mig:
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
 
-    assert vm.vmi.node != node_before
+    assert vm.privileged_vm.vmi.node != node_before
 
     assert vm.vmi.instance.status.migrationState.completed
     if wait_for_interfaces:
