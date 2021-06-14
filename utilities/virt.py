@@ -292,7 +292,11 @@ class VirtualMachineForTests(VirtualMachine):
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
         super().__init__(
-            name=self.name, namespace=namespace, client=client, teardown=teardown
+            name=self.name,
+            namespace=namespace,
+            client=client,
+            teardown=teardown,
+            privileged_client=get_admin_client(),
         )
         self.body = body
         self.interfaces = interfaces or []
