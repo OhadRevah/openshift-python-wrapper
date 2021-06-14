@@ -14,7 +14,12 @@ from tests.os_params import (
     WINDOWS_LATEST,
     WINDOWS_LATEST_LABELS,
 )
-from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS, TIMEOUT_30MIN
+from utilities.constants import (
+    OS_FLAVOR_RHEL,
+    OS_FLAVOR_WINDOWS,
+    TIMEOUT_5MIN,
+    TIMEOUT_30MIN,
+)
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
@@ -77,7 +82,9 @@ def restarted_persistence_vm(request, persistence_vm):
     # wait for the VM to come back up
     wait_for_vm_interfaces(vmi=persistence_vm.vmi)
     wait_for_ssh_connectivity(
-        vm=persistence_vm, timeout=TIMEOUT_30MIN if os == WIN else 300, tcp_timeout=120
+        vm=persistence_vm,
+        timeout=TIMEOUT_30MIN if os == WIN else TIMEOUT_5MIN,
+        tcp_timeout=120,
     )
 
 

@@ -12,7 +12,7 @@ from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
 
 from tests.storage import utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import (
     create_dv,
@@ -161,7 +161,7 @@ def test_successful_vm_restart_with_cloned_dv(
     ) as cdv:
         cdv.wait(timeout=TIMEOUT_10MIN)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
-            vm_dv.restart(timeout=300, wait=True)
+            vm_dv.restart(timeout=TIMEOUT_5MIN, wait=True)
             running_vm(vm=vm_dv, wait_for_interfaces=False)
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -298,7 +298,7 @@ def test_successful_snapshot_clone(
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
         snapshot = VolumeSnapshot(name=cdv.name, namespace=namespace.name)
         verify_source_pvc_of_volume_snapshot(

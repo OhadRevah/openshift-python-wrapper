@@ -20,6 +20,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,
     SELECTORS,
 )
+from utilities.constants import TIMEOUT_5MIN
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
 from utilities.virt import (
     VirtualMachineForTests,
@@ -249,7 +250,7 @@ def get_pod_per_nodes(admin_client, hco_namespace):
 
     pod_names_per_nodes = {}
     samples = TimeoutSampler(
-        wait_timeout=300,
+        wait_timeout=TIMEOUT_5MIN,
         sleep=30,
         func=_get_pods_per_nodes,
         exceptions=NotFoundError,
@@ -347,7 +348,7 @@ def vm_placement_vm_work3(
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
     ) as vm:
-        vm.start(wait=True, timeout=300)
+        vm.start(wait=True, timeout=TIMEOUT_5MIN)
         vm.vmi.wait_until_running()
         wait_for_vm_interfaces(vmi=vm.vmi)
         yield vm
@@ -383,7 +384,7 @@ def update_subscription_config(admin_client, hco_namespace, sub, config):
     LOGGER.info("Verify that there no terminating operator pods.")
     sample = None
     samples = TimeoutSampler(
-        wait_timeout=300,
+        wait_timeout=TIMEOUT_5MIN,
         sleep=20,
         func=get_terminating_operators_pods,
         admin_client=admin_client,

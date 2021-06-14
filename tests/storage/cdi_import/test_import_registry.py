@@ -14,7 +14,7 @@ import utilities.storage
 from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN
 from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
@@ -166,7 +166,7 @@ def test_disk_image_not_conform_to_registy_disk(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
@@ -279,7 +279,9 @@ def test_private_registry_recover_after_missing_configmap(
         cert_configmap=registry_config_map.name,
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.IMPORT_SCHEDULED, timeout=300)
+        dv.wait_for_status(
+            status=DataVolume.Status.IMPORT_SCHEDULED, timeout=TIMEOUT_5MIN
+        )
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
@@ -324,7 +326,9 @@ def test_private_registry_with_untrusted_certificate(
                 storage_class_matrix=storage_class_matrix__function__
             ),
         ) as dv:
-            dv.wait_for_status(status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=300)
+            dv.wait_for_status(
+                status=DataVolume.Status.IMPORT_IN_PROGRESS, timeout=TIMEOUT_5MIN
+            )
             importer_pod = get_importer_pod(
                 dyn_client=admin_client, namespace=dv.namespace
             )
@@ -410,7 +414,7 @@ def test_public_registry_data_volume_low_capacity(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
@@ -492,18 +496,18 @@ def test_fqdn_name(
         )
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_SCHEDULED,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.RUNNING,
             status=DataVolume.Condition.Status.FALSE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.FALSE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
 
 

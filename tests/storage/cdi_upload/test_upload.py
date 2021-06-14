@@ -21,7 +21,7 @@ from string_utils import shuffle
 
 import tests.storage.utils as storage_utils
 import utilities.storage
-from utilities.constants import TIMEOUT_3MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN
 from utilities.infra import Images
 from utilities.storage import downloaded_image
 
@@ -205,7 +205,7 @@ def test_successful_upload_token_validity(
     dv.wait_for_condition(
         condition=DataVolume.Condition.Type.BOUND,
         status=DataVolume.Condition.Status.TRUE,
-        timeout=300,
+        timeout=TIMEOUT_5MIN,
     )
     dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
     with UploadTokenRequest(
@@ -229,12 +229,12 @@ def test_successful_upload_token_validity(
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.RUNNING,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
 
 
@@ -288,7 +288,7 @@ def _upload_image(
         volume_mode=volume_mode,
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=300)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_5MIN)
         with UploadTokenRequest(
             name=dv_name,
             namespace=namespace.name,

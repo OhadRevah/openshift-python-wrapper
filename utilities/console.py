@@ -10,6 +10,7 @@ from utilities.constants import (
     OS_FLAVOR_FEDORA,
     OS_FLAVOR_RHEL,
     OS_LOGIN_PARAMS,
+    TIMEOUT_5MIN,
 )
 
 
@@ -55,7 +56,7 @@ class Console(object):
 
     def _connect(self):
         self.child.send("\n\n")
-        self.child.expect(self.login_prompt, timeout=300)
+        self.child.expect(self.login_prompt, timeout=TIMEOUT_5MIN)
         LOGGER.info(f"{self.vm.name}: Using username {self.username}")
         self.child.sendline(self.username)
         if self.password:
@@ -91,7 +92,7 @@ class Console(object):
 
     def console_eof_sampler(self, func, command, timeout):
         sampler = TimeoutSampler(
-            wait_timeout=300,
+            wait_timeout=TIMEOUT_5MIN,
             sleep=5,
             func=func,
             exceptions=pexpect.exceptions.EOF,

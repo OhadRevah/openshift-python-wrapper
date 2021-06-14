@@ -21,7 +21,7 @@ from tests.storage import utils
 from tests.storage.cdi_import.conftest import wait_for_importer_container_message
 from tests.storage.utils import get_importer_pod
 from utilities import console
-from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_4MIN
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_4MIN, TIMEOUT_5MIN
 from utilities.infra import NON_EXIST_URL, Images
 from utilities.storage import ErrorMsg, PodWithPVC, create_dummy_first_consumer_pod
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
@@ -112,17 +112,17 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.FALSE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
 
 
@@ -232,7 +232,7 @@ def test_successful_import_secure_archive(
         size="500Mi",
         **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
         assert pvc.bound()
         with PodWithPVC(
@@ -266,7 +266,7 @@ def test_successful_import_secure_image(
         storage_class=storage_class,
         volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
         assert pvc.bound()
         with PodWithPVC(
@@ -591,7 +591,7 @@ def test_successful_concurrent_blank_disk_import(
 @pytest.mark.polarion("CNV-2004")
 def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_function):
     data_volume_multi_storage_scope_function.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED, timeout=300
+        status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_5MIN
     )
 
 

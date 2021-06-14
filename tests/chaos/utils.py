@@ -15,6 +15,8 @@ from ocp_resources.node import Node
 from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from pytest_testconfig import py_config
 
+from utilities.constants import TIMEOUT_5MIN
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -194,7 +196,7 @@ class BackgroundLoop(threading.Thread):
 
     @staticmethod
     def _restart(vm):
-        vm.restart(timeout=300, wait=False)
+        vm.restart(timeout=TIMEOUT_5MIN, wait=False)
 
     def run(self):
         LOGGER.info(f"{self.__class__}: Starting {self.action} loop")

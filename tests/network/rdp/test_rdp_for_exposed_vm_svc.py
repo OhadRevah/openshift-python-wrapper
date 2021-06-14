@@ -9,6 +9,7 @@ from ocp_resources.service import Service
 from pytest_testconfig import config as py_config
 
 from tests.conftest import vm_instance_from_template
+from utilities.constants import TIMEOUT_5MIN
 from utilities.virt import get_windows_os_dict
 
 
@@ -108,6 +109,8 @@ def test_rdp_for_exposed_win_vm_as_node_port_svc(
     LOGGER.info(
         f"Checking RDP connection to exposed {Service.Type.NODE_PORT} service, Authentication only..."
     )
-    auth_result = rdp_pod.execute(command=["bash", "-c", rdp_auth_cmd], timeout=300)
+    auth_result = rdp_pod.execute(
+        command=["bash", "-c", rdp_auth_cmd], timeout=TIMEOUT_5MIN
+    )
     # The exit status is 0 when authentication succeeds, 1 otherwise.
     assert "exit status 0" in auth_result

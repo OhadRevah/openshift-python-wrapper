@@ -22,6 +22,7 @@ from pytest_testconfig import config as py_config
 from utilities.constants import (
     OS_FLAVOR_WINDOWS,
     TIMEOUT_3MIN,
+    TIMEOUT_5MIN,
     TIMEOUT_30MIN,
     TIMEOUT_60MIN,
 )
@@ -255,7 +256,7 @@ def data_volume(
                 dv.wait_for_condition(
                     condition=DataVolume.Condition.Type.BOUND,
                     status=DataVolume.Condition.Status.TRUE,
-                    timeout=300,
+                    timeout=TIMEOUT_5MIN,
                 )
                 dv.wait_for_status(
                     status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN

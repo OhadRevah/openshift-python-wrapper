@@ -6,11 +6,12 @@ from ocp_resources.event import Event
 from ocp_resources.hyperconverged import HyperConverged
 from pytest_testconfig import config as py_config
 
+from utilities.constants import TIMEOUT_5MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
-HCO_DEPLOY_TIMEOUT = 5 * 60
+HCO_DEPLOY_TIMEOUT = TIMEOUT_5MIN
 LOGGER = logging.getLogger(__name__)
 DV_PARAMS = {
     "source": "blank",
@@ -33,7 +34,7 @@ def remove_hco_vm(unprivileged_client, namespace):
         client=unprivileged_client,
         teardown=False,
     ) as vm:
-        vm.start(timeout=300)
+        vm.start(timeout=TIMEOUT_5MIN)
         vm.vmi.wait_until_running()
         yield vm
 

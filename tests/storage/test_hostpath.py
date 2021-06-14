@@ -23,7 +23,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
 from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
@@ -486,18 +486,18 @@ def test_hostpath_registry_import_dv(
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
         )
         importer_pod = storage_utils.get_importer_pod(
             dyn_client=admin_client, namespace=dv.namespace
         )
-        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=300)
+        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_5MIN)
         assert_selected_node_annotation(
             pvc_node_name=dv.scratch_pvc.selected_node,
             pod_node_name=importer_pod.instance.spec.nodeName,
             type_="scratch",
         )
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         verify_image_location_via_dv_virt_launcher_pod(
             dv=dv, worker_node_name=dv.pvc.selected_node
         )
@@ -564,7 +564,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             pod_node_name=upload_target_pod.instance.spec.nodeName,
             type_="target",
         )
-        target_dv.wait(timeout=300)
+        target_dv.wait(timeout=TIMEOUT_5MIN)
         with VirtualMachineForTestsFromTemplate(
             name="fedora-vm",
             namespace=namespace.name,
@@ -601,7 +601,9 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
-        dv.pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=300)
+        dv.pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
+        )
         importer_pod = storage_utils.get_importer_pod(
             dyn_client=admin_client, namespace=dv.namespace
         )
@@ -613,7 +615,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
             pvc_node_name=pvc_node_name, pod_node_name=pod_node_name, type_="target"
         )
         dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=300
+            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
         )
         scratch_pvc_node_name = dv.scratch_pvc.selected_node
         assert_selected_node_annotation(
@@ -621,7 +623,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
             pod_node_name=pod_node_name,
             type_="scratch",
         )
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
 
 
 @pytest.mark.polarion("CNV-2770")
@@ -645,7 +647,9 @@ def test_hostpath_clone_dv_with_annotation(
         volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=worker_node1.name,
     ) as source_dv:
-        source_dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=300)
+        source_dv.wait_for_status(
+            status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_5MIN
+        )
         assert_provision_on_node_annotation(
             pvc=source_dv.pvc, node_name=worker_node1.name, type_="import"
         )
@@ -734,7 +738,7 @@ def test_hpp_operator_recreate_after_deletion(
     """
     pre_delete_binding_mode = hpp_storage_class.instance["volumeBindingMode"]
     hpp_operator_deployment.delete()
-    hpp_operator_deployment.wait_for_replicas(timeout=300)
+    hpp_operator_deployment.wait_for_replicas(timeout=TIMEOUT_5MIN)
     assert (
         pre_delete_binding_mode == hpp_storage_class.instance["volumeBindingMode"]
     ), "Pre delete binding mode differs from post delete"

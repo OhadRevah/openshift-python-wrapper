@@ -13,6 +13,7 @@ from ocp_resources.storage_class import StorageClass
 from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
 
+from utilities.constants import TIMEOUT_5MIN
 from utilities.infra import Images
 from utilities.storage import (
     create_dummy_first_consumer_pod,
@@ -100,7 +101,7 @@ def test_remove_cdi_dv(
 
     # Remove DataVolume, then CDI can be deleted and created again
     data_volume_multi_storage_scope_function.delete()
-    data_volume_multi_storage_scope_function.wait_deleted(timeout=300)
+    data_volume_multi_storage_scope_function.wait_deleted(timeout=TIMEOUT_5MIN)
     cdi.delete()
     cdi.wait_for_status(status=CDI.Status.DEPLOYING)
     cdi.wait_for_status(status=CDI.Status.DEPLOYED)
@@ -149,9 +150,11 @@ def test_remove_cdi_vm(
 
     # Remove VirtualMachine and DataVolume, then CDI can be deleted and created again
     vm_instance_from_template_multi_storage_scope_function.delete()
-    vm_instance_from_template_multi_storage_scope_function.wait_deleted(timeout=300)
+    vm_instance_from_template_multi_storage_scope_function.wait_deleted(
+        timeout=TIMEOUT_5MIN
+    )
     data_volume_multi_storage_scope_function.delete()
-    data_volume_multi_storage_scope_function.wait_deleted(timeout=300)
+    data_volume_multi_storage_scope_function.wait_deleted(timeout=TIMEOUT_5MIN)
     cdi.delete()
     cdi.wait_for_status(status=CDI.Status.DEPLOYING)
     cdi.wait_for_status(status=CDI.Status.DEPLOYED)

@@ -14,7 +14,7 @@ from openshift.dynamic.exceptions import NotFoundError
 
 import utilities.storage
 from tests.storage import utils as storage_utils
-from utilities.constants import TIMEOUT_3MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN
 from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import downloaded_image, get_images_server_url
 
@@ -123,7 +123,7 @@ def test_upload_https_scratch_space_delete_pvc(
             for sample in sampler:
                 if sample == 200:
                     dv.scratch_pvc.delete()
-                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
@@ -409,7 +409,7 @@ def test_scratch_space_upload_data_volume(
             )
             for sample in sampler:
                 if sample == 200:
-                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=300)
+                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
@@ -449,12 +449,12 @@ def test_scratch_space_import_registry_data_volume(
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=300,
+            timeout=TIMEOUT_5MIN,
         )
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
