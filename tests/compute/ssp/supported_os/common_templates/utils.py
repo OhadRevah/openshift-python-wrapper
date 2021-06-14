@@ -20,7 +20,7 @@ from tests.compute.ssp.supported_os.utils import (
     guest_agent_version_parser,
 )
 from tests.compute.utils import get_windows_timezone, vm_started
-from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS
+from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS, TIMEOUT_3MIN
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     get_guest_os_info,
@@ -76,7 +76,7 @@ def check_telnet_connection(ip, port):
 
     LOGGER.info("Check telnet connection to VM.")
     sampler = TimeoutSampler(
-        wait_timeout=180,
+        wait_timeout=TIMEOUT_3MIN,
         sleep=15,
         exceptions=ConnectionRefusedError,
         func=socket.create_connection,
@@ -941,7 +941,9 @@ def validate_virtctl_guest_agent_data_over_time(vm):
     Returns:
         bool: True - if virtctl guest info is available after timeout else False
     """
-    samples = TimeoutSampler(wait_timeout=180, sleep=5, func=get_virtctl_os_info, vm=vm)
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_3MIN, sleep=5, func=get_virtctl_os_info, vm=vm
+    )
     try:
         for sample in samples:
             if not sample:

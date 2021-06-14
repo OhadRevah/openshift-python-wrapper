@@ -23,7 +23,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN
 from utilities.infra import Images, get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
@@ -339,7 +339,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
             pvc_name=pvc.name,
             volume_mode=pvc.volume_mode,
         ) as pod:
-            pod.wait_for_status(status=pod.Status.RUNNING, timeout=180)
+            pod.wait_for_status(status=pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
             pvc.wait_for_status(status=pvc.Status.BOUND, timeout=60)
             assert pod.instance.spec.nodeName == pvc.selected_node
 
@@ -372,7 +372,7 @@ def test_hpp_pvc_specify_node_immediate(
             pvc_name=pvc.name,
             volume_mode=pvc.volume_mode,
         ) as pod:
-            pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
+            pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
             assert pod.instance.spec.nodeName == worker_node1.name
 
 
@@ -441,7 +441,7 @@ def test_hostpath_upload_dv_with_token(
         storage_class=StorageClass.Types.HOSTPATH,
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
         storage_utils.upload_token_request(
             storage_ns_name=dv.namespace, pvc_name=dv.pvc.name, data=local_name
         )
@@ -556,7 +556,9 @@ def test_hostpath_clone_dv_without_annotation_wffc(
                 upload_target_pod = sample[0]
                 break
 
-        upload_target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
+        upload_target_pod.wait_for_status(
+            status=Pod.Status.RUNNING, timeout=TIMEOUT_3MIN
+        )
         assert_selected_node_annotation(
             pvc_node_name=target_dv.pvc.selected_node,
             pod_node_name=upload_target_pod.instance.spec.nodeName,

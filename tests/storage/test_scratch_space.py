@@ -14,6 +14,7 @@ from openshift.dynamic.exceptions import NotFoundError
 
 import utilities.storage
 from tests.storage import utils as storage_utils
+from utilities.constants import TIMEOUT_3MIN
 from utilities.infra import BUG_STATUS_CLOSED, Images
 from utilities.storage import downloaded_image, get_images_server_url
 
@@ -104,7 +105,7 @@ def test_upload_https_scratch_space_delete_pvc(
     ) as dv:
         # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
         scratch_bound_reached.get()
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
         with UploadTokenRequest(
             name="scratch-space-upload-qcow2-https",
             namespace=namespace.name,
@@ -393,7 +394,7 @@ def test_scratch_space_upload_data_volume(
     ) as dv:
         # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
         scratch_bound_reached.get()
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
         with UploadTokenRequest(
             name="cnv-2315", namespace=namespace.name, pvc_name=dv.pvc.name
         ) as utr:

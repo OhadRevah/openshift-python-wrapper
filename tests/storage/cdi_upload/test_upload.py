@@ -21,6 +21,7 @@ from string_utils import shuffle
 
 import tests.storage.utils as storage_utils
 import utilities.storage
+from utilities.constants import TIMEOUT_3MIN
 from utilities.infra import Images
 from utilities.storage import downloaded_image
 
@@ -206,7 +207,7 @@ def test_successful_upload_token_validity(
         status=DataVolume.Condition.Status.TRUE,
         timeout=300,
     )
-    dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+    dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
     with UploadTokenRequest(
         name=dv.name,
         namespace=namespace.name,
@@ -257,7 +258,7 @@ def test_successful_upload_token_expiry(
     skip_upstream, namespace, data_volume_multi_storage_scope_function
 ):
     dv = data_volume_multi_storage_scope_function
-    dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+    dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
     with UploadTokenRequest(
         name=dv.name,
         namespace=namespace.name,

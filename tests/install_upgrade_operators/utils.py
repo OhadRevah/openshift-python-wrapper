@@ -7,7 +7,7 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
-import utilities.constants
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN
 
 
 def cnv_target_version_channel(cnv_version):
@@ -26,7 +26,7 @@ def get_new_csv(dyn_client, hco_namespace, hco_target_version):
 
 def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=get_new_csv,
         dyn_client=dyn_client,
@@ -49,13 +49,13 @@ def approve_install_plan(install_plan):
     ip_dict["spec"]["approved"] = True
     install_plan.update(resource_dict=ip_dict)
     install_plan.wait_for_status(
-        status=install_plan.Status.COMPLETE, timeout=utilities.constants.TIMEOUT_10MIN
+        status=install_plan.Status.COMPLETE, timeout=TIMEOUT_10MIN
     )
 
 
 def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
     samples = TimeoutSampler(
-        wait_timeout=180,
+        wait_timeout=TIMEOUT_3MIN,
         sleep=1,
         func=get_install_plan,
         exceptions=ConflictError,  # need to ignore ConflictError during install plan reconciliation

@@ -9,6 +9,7 @@ import logging
 import pytest
 from ocp_resources.utils import TimeoutSampler
 
+from utilities.constants import TIMEOUT_3MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
@@ -125,7 +126,7 @@ def test_veth_removed_from_host_after_vm_deleted(
     """
     remove_veth_bridge_attached_vma.delete(wait=True)
     sampler = TimeoutSampler(
-        wait_timeout=180,
+        wait_timeout=TIMEOUT_3MIN,
         sleep=1,
         func=count_veth_devices_on_host,
         worker1_executor=worker1_executor,

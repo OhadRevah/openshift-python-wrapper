@@ -19,7 +19,12 @@ from ocp_resources.utils import TimeoutExpiredError
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import OS_FLAVOR_WINDOWS, TIMEOUT_30MIN, TIMEOUT_60MIN
+from utilities.constants import (
+    OS_FLAVOR_WINDOWS,
+    TIMEOUT_3MIN,
+    TIMEOUT_30MIN,
+    TIMEOUT_60MIN,
+)
 from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
 from utilities.virt import run_virtctl_command
 
@@ -252,7 +257,9 @@ def data_volume(
                     status=DataVolume.Condition.Status.TRUE,
                     timeout=300,
                 )
-                dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=180)
+                dv.wait_for_status(
+                    status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN
+                )
             else:
                 if (
                     not consume_wffc

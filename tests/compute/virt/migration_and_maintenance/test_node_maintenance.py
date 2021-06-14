@@ -23,7 +23,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN
 from utilities.infra import get_bug_status, get_bugzilla_connection_params
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -114,7 +114,7 @@ def vm_container_disk_fedora(namespace, unprivileged_client, nodes_common_cpu_mo
 def assert_pod_status_completed(source_pod):
     # TODO: remove TimeoutExpiredError exception once bug 1943164 is resolved
     try:
-        source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=180)
+        source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=TIMEOUT_3MIN)
         assert (
             source_pod.instance.status.containerStatuses[0].state.terminated.reason
             == Pod.Status.COMPLETED
@@ -124,7 +124,7 @@ def assert_pod_status_completed(source_pod):
             bugzilla_connection_params=get_bugzilla_connection_params(),
             bug=1943164,
         ):
-            source_pod.wait_for_status(status=Pod.Status.FAILED, timeout=180)
+            source_pod.wait_for_status(status=Pod.Status.FAILED, timeout=TIMEOUT_3MIN)
         else:
             raise
 
@@ -142,7 +142,7 @@ def check_draining_process(dyn_client, source_pod, vm):
             )
     assert_pod_status_completed(source_pod=source_pod)
     target_pod = vm.vmi.virt_launcher_pod
-    target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=180)
+    target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
     target_node = target_pod.node
     LOGGER.info(f"The VMI is currently running on {target_node.name}")
     assert (

@@ -5,7 +5,7 @@ from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
 from openshift.dynamic.exceptions import BadRequestError
 
-from utilities.constants import TIMEOUT_4MIN
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_4MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -74,7 +74,7 @@ def test_remove_workloads(
     # ensure deletion instruction to KubeVirt resource resulted in deletion of the
     # kubevirt cr AND all vms in the cluster
     for sample in TimeoutSampler(
-        wait_timeout=180,
+        wait_timeout=TIMEOUT_3MIN,
         sleep=5,
         func=lambda: list(VirtualMachine.get(dyn_client=admin_client))
         or kubevirt_resource.instance.uid == old_uid,

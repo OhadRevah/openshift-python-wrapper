@@ -17,7 +17,7 @@ from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_3MIN, TIMEOUT_10MIN
 from utilities.infra import Images
 from utilities.storage import (
     create_dummy_first_consumer_pod,
@@ -277,7 +277,7 @@ def test_import_clone_after_certs_renewal(
         volume_mode=data_volume_multi_storage_scope_module.volume_mode,
         access_modes=data_volume_multi_storage_scope_module.access_modes,
     ) as cdv:
-        cdv.wait(timeout=180)
+        cdv.wait(timeout=TIMEOUT_3MIN)
         with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
 
