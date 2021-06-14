@@ -15,6 +15,7 @@ import requests
 import rrmngmnt
 import yaml
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.node import Node
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
@@ -51,7 +52,6 @@ from utilities.infra import (
     get_admin_client,
     get_bug_status,
     get_bugzilla_connection_params,
-    get_schedulable_nodes_ips,
     run_ssh_commands,
 )
 
@@ -1279,22 +1279,20 @@ class ServiceForVirtualMachineForTests(Service):
 
             return self.instance.spec.clusterIP
 
+        vm_node = Node(
+            client=get_admin_client(), name=self.vmi.instance.status.nodeName
+        )
         if self.service_type == Service.Type.NODE_PORT:
             if ip_family:
                 internal_ips = [
                     internal_ip
-                    for internal_ip in self.vmi.node.instance.status.addresses
+                    for internal_ip in vm_node.instance.status.addresses
                     if str(ipaddress.ip_address(internal_ip).version) in ip_family
                 ]
-                assert (
-                    internal_ips
-                ), f"No {ip_family} addresses in node {self.vmi.node.name}"
+                assert internal_ips, f"No {ip_family} addresses in node {vm_node.name}"
                 return internal_ips[0]
 
-            return (
-                self.target_ip
-                or get_schedulable_nodes_ips(nodes=[self.vmi.node])[self.vmi.node.name]
-            )
+            return self.target_ip or vm_node.internal_ip
 
     @property
     def service_port(self):
