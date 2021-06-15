@@ -461,7 +461,7 @@ def validate_fs_info_virtctl_vs_linux_os(vm):
         linux_info = get_linux_fs_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, linux_info
 
-    virtctl_info = cnv_info = libvirt_info = linux_info = None
+    orig_virtctl_info = cnv_info = libvirt_info = orig_linux_info = None
 
     fs_info_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_90SEC, sleep=1, func=_get_fs_info, vm=vm
@@ -545,19 +545,27 @@ def validate_fs_info_virtctl_vs_windows_os(vm):
         windows_info = get_windows_fs_info(ssh_exec=vm.ssh_exec)
         return virtctl_info, cnv_info, libvirt_info, windows_info
 
-    virtctl_info = cnv_info = libvirt_info = windows_info = None
+    orig_virtctl_info = cnv_info = libvirt_info = orig_windows_info = None
     fs_info_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_90SEC, sleep=1, func=_get_fs_info, vm=vm
     )
 
     try:
         for virtctl_info, cnv_info, libvirt_info, windows_info in fs_info_sampler:
-            if virtctl_info and virtctl_info == windows_info:
-                return
+            if virtctl_info:
+                orig_virtctl_info = virtctl_info.copy()
+                orig_windows_info = windows_info.copy()
 
+                # Disk usage may not be bit exact; allowing up to 10% diff (to allow deviation after conversion to GB)
+                disk_usage_diff_validation = (
+                    1 - virtctl_info.pop("used") / windows_info.pop("used") <= 0.1
+                )
+                if disk_usage_diff_validation and virtctl_info == windows_info:
+                    return
     except TimeoutExpiredError:
         raise ValueError(
-            f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {windows_info}"
+            f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
+            f"OS: {orig_windows_info}"
         )
 
 
