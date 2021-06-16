@@ -375,33 +375,35 @@ class VirtualMachineForTests(VirtualMachine):
         template_spec = self.update_vm_cpu_configuration(template_spec=template_spec)
         template_spec = self.update_vm_memory_configuration(template_spec=template_spec)
         template_spec = self.set_service_accounts(template_spec=template_spec)
-        template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
         template_spec = self.update_vm_secret_configuration(template_spec=template_spec)
         template_spec = self.set_smm(template_spec=template_spec)
         template_spec = self.set_efi_params(template_spec=template_spec)
         template_spec = self.set_machine_type(template_spec=template_spec)
-        template_spec = self.set_diskless_vm(template_spec=template_spec)
         template_spec = self.set_hostdevice(template_spec=template_spec)
         template_spec = self.set_gpu(template_spec=template_spec)
         template_spec = self.set_disk_io_options(template_spec=template_spec)
-        res, template_spec = self.update_vm_storage_configuration(
-            res=res, template_spec=template_spec
-        )
-
-        # VMs do not necessarily have self.cloud_init_data
-        # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
-        if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
-            if self.ssh_secret is None:
-                template_spec = self.enable_ssh_in_cloud_init_data(
-                    template_spec=template_spec
-                )
-            # NOTE: When using ssh_secret we need cloud_init_type as cloudInitConfigDrive
-            # networkData does not work with cloudInitConfigDrive
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1941470
-            if self.cloud_init_type == CLOUND_INIT_CONFIG_DRIVE and self.ssh_secret:
-                template_spec = self.update_vm_ssh_secret_configuration(
-                    template_spec=template_spec
-                )
+        # Either update storage and cloud-init configuration or remove disks from spec
+        if self.diskless_vm:
+            template_spec = self.set_diskless_vm(template_spec=template_spec)
+        else:
+            template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
+            res, template_spec = self.update_vm_storage_configuration(
+                res=res, template_spec=template_spec
+            )
+            # VMs do not necessarily have self.cloud_init_data
+            # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
+            if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
+                if self.ssh_secret is None:
+                    template_spec = self.enable_ssh_in_cloud_init_data(
+                        template_spec=template_spec
+                    )
+                # NOTE: When using ssh_secret we need cloud_init_type as cloudInitConfigDrive
+                # networkData does not work with cloudInitConfigDrive
+                # https://bugzilla.redhat.com/show_bug.cgi?id=1941470
+                if self.cloud_init_type == CLOUND_INIT_CONFIG_DRIVE and self.ssh_secret:
+                    template_spec = self.update_vm_ssh_secret_configuration(
+                        template_spec=template_spec
+                    )
 
         return res
 
@@ -450,8 +452,10 @@ class VirtualMachineForTests(VirtualMachine):
         return template_spec
 
     def set_diskless_vm(self, template_spec):
-        if self.diskless_vm:
-            template_spec.get("domain", {}).get("devices", {}).pop("disks", None)
+        template_spec.get("domain", {}).get("devices", {}).pop("disks", None)
+        # As of https://bugzilla.redhat.com/show_bug.cgi?id=1954667, it is not possible to create a VM
+        # with volume(s) without corresponding disks
+        template_spec.pop("volumes", None)
 
         return template_spec
 
@@ -1022,8 +1026,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         # If termination_grace_period is not provided, terminationGracePeriodSeconds will be set to 180
         spec["terminationGracePeriodSeconds"] = self.termination_grace_period
 
+        # For diskless_vm, volumes are removed so dataVolumeTemplates (referencing volumes) should be removed as well
+        if self.diskless_vm:
+            del res["spec"]["dataVolumeTemplates"]
         # Existing DV will be used as the VM's DV; dataVolumeTemplates is not needed
-        if self.existing_data_volume:
+        elif self.existing_data_volume:
             del res["spec"]["dataVolumeTemplates"]
             spec = self._update_vm_storage_config(
                 spec=spec, name=self.existing_data_volume.name
