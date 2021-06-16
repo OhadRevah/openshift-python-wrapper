@@ -40,7 +40,7 @@ def ovs_linux_bond1_worker_1(
     """
     bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name=f"bond{bond_idx}nncp",
+        name=f"bond{bond_idx}nncp-worker-1",
         bond_name=f"bond{bond_idx}",
         slaves=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
@@ -65,7 +65,7 @@ def ovs_linux_bond1_worker_2(
     """
     bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicy(
-        name=f"bond{bond_idx}nncp",
+        name=f"bond{bond_idx}nncp-worker-2",
         bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
         slaves=nodes_available_nics[worker_node2.name][0:2],
         worker_pods=utility_pods,
