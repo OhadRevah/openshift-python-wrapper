@@ -3,28 +3,16 @@ Test cpu support for sockets and threads
 """
 
 import pytest
-import xmltodict
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
-from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
 
 
 def check_vm_dumpxml(vm, cores, sockets, threads):
-    def _parse_xml(vm):
-        wait_for_vm_interfaces(vmi=vm.vmi)
-        data_xml = vm.vmi.get_xml()
-        xml_dict = xmltodict.parse(data_xml, process_namespaces=True)
-        return xml_dict["domain"]["cpu"]["topology"]
-
-    cpu = _parse_xml(vm=vm)
+    cpu = vm.vmi.xml_dict["domain"]["cpu"]["topology"]
     if sockets:
         assert cpu["@sockets"] == str(
             sockets
@@ -77,8 +65,7 @@ def vm_with_cpu_support(request, namespace, unprivileged_client):
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm)
         yield vm
 
 
@@ -120,9 +107,6 @@ def test_vm_with_no_cpu_settings(no_cpu_settings_vm):
     check_vm_dumpxml(vm=no_cpu_settings_vm, sockets="1", cores="1", threads="1")
 
 
-@pytest.mark.bugzilla(
-    1914616, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-2818")
 def test_vm_with_cpu_limitation(namespace, unprivileged_client):
     """
@@ -143,9 +127,6 @@ def test_vm_with_cpu_limitation(namespace, unprivileged_client):
         check_vm_dumpxml(vm=vm, sockets="1", cores="2", threads="1")
 
 
-@pytest.mark.bugzilla(
-    1914616, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-2819")
 def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
     """
@@ -162,4 +143,4 @@ def test_vm_with_cpu_limitation_negative(namespace, unprivileged_client):
             body=fedora_vm_body(name=name),
             client=unprivileged_client,
         ):
-            pass
+            return
