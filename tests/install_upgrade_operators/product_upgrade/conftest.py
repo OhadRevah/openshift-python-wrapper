@@ -141,7 +141,7 @@ def upgrade_br1test_nad(namespace, upgrade_bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="module")
-def dvs_for_upgrade(namespace, worker_node1):
+def dvs_for_upgrade(admin_client, namespace, worker_node1):
     dvs_list = []
     for sc in py_config["system_storage_class_matrix"]:
         storage_class = [*sc][0]
@@ -157,6 +157,7 @@ def dvs_for_upgrade(namespace, worker_node1):
             hostpath_node=worker_node1.name
             if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
             else None,
+            privileged_client=admin_client,
         )
         dv.create()
         dvs_list.append(dv)

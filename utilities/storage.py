@@ -26,7 +26,11 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_60MIN,
 )
-from utilities.infra import url_excluded_from_validation, validate_file_exists_in_url
+from utilities.infra import (
+    get_admin_client,
+    url_excluded_from_validation,
+    validate_file_exists_in_url,
+)
 from utilities.virt import run_virtctl_command
 
 
@@ -122,6 +126,7 @@ def create_dv(
         multus_annotation=multus_annotation,
         teardown=teardown,
         preallocation=preallocation,
+        privileged_client=get_admin_client(),
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
             create_dummy_first_consumer_pod(dv=dv)

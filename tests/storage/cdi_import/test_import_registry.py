@@ -178,7 +178,7 @@ def test_disk_image_not_conform_to_registy_disk(
 
 @pytest.mark.polarion("CNV-2028")
 def test_public_registry_multiple_data_volume(
-    namespace, storage_class_matrix__function__
+    admin_client, namespace, storage_class_matrix__function__
 ):
     dvs = []
     vms = []
@@ -196,6 +196,7 @@ def test_public_registry_multiple_data_volume(
                 **utils.storage_params(
                     storage_class_matrix=storage_class_matrix__function__
                 ),
+                privileged_client=admin_client,
             )
 
             dv_process = multiprocessing.Process(target=rdv.create)

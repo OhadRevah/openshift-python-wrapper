@@ -285,6 +285,7 @@ def test_cancel_vm_import(
         DataVolume(
             name=f"{import_name(vm_name=vm_name)}-{vm_disk_id}",
             namespace=namespace.name,
+            privileged_client=admin_client,
         ).wait_deleted()
 
     for resource in (Secret, ConfigMap):
