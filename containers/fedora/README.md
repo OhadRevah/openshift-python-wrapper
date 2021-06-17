@@ -41,7 +41,7 @@ This will install:
     stress-ng
     iotop
 
-enable qemu-guest-agent and sshd services in the VM.
+and enable qemu-guest-agent and sshd services in the VM.
 If extra packages needed add them in user-data file.
 
 Once executed you should have a login prompt to the VM.
