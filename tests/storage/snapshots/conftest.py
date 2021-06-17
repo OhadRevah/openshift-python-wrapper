@@ -71,9 +71,11 @@ def snapshots_with_content(
 ):
     """
     Creates a requested number of snapshots with content
+    The default behavior of the fixture is creating an offline
+    snapshot unless {online_vm = True} declared in the test
     """
     vm_snapshots = []
-    is_online_test = request.param["online_vm"]
+    is_online_test = request.param.get("online_vm", False)
     for idx in range(request.param["number_of_snapshots"]):
         # write_file check if the vm is running and if not, start the vm
         # after the file have been written the function stops the vm
