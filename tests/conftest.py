@@ -132,6 +132,7 @@ TEAM_MARKERS = {
         "security",
         "must_gather",
         "deprecated_api",
+        "metrics",
     ],
 }
 
