@@ -25,7 +25,7 @@ from utilities.network import (
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
-    migrate_and_verify,
+    migrate_vm_and_verify,
     running_vm,
 )
 
@@ -238,7 +238,7 @@ def ssh_in_background(running_vma, running_vmb):
 
 @pytest.fixture(scope="module")
 def migrated_vmb(running_vmb, http_service):
-    migrate_and_verify(
+    migrate_vm_and_verify(
         vm=running_vmb,
     )
 

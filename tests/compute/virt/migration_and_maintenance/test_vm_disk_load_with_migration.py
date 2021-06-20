@@ -11,7 +11,7 @@ from pytest_testconfig import config as py_config
 from tests.conftest import vm_instance_from_template
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import run_ssh_commands
-from utilities.virt import migrate_and_verify, running_vm
+from utilities.virt import migrate_vm_and_verify, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -109,5 +109,5 @@ def test_fedora_vm_load_migration(
     run_fio_in_vm,
 ):
     LOGGER.info("Test migrate VM with disk load")
-    migrate_and_verify(vm=vm_with_fio, check_ssh_connectivity=True)
+    migrate_vm_and_verify(vm=vm_with_fio, check_ssh_connectivity=True)
     get_disk_usage(ssh_exec=vm_with_fio.ssh_exec)

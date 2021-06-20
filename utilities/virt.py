@@ -1638,7 +1638,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
     return vm
 
 
-def migrate_and_verify(
+def migrate_vm_and_verify(
     vm,
     timeout=720,
     wait_for_interfaces=True,

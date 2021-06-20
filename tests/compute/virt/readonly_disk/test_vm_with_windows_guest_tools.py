@@ -8,7 +8,7 @@ from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATES
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
-    migrate_and_verify,
+    migrate_vm_and_verify,
     running_vm,
 )
 
@@ -124,5 +124,5 @@ class TestWindowsGuestTools:
         vm_with_guest_tools,
     ):
         LOGGER.info("Test migration of a VM with Windows guest tools")
-        migrate_and_verify(vm=vm_with_guest_tools)
+        migrate_vm_and_verify(vm=vm_with_guest_tools)
         verify_cdrom_in_xml(vm=vm_with_guest_tools)

@@ -18,7 +18,7 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import migrate_and_verify, running_vm, wait_for_console
+from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -242,7 +242,7 @@ class TestCommonTemplatesCentos:
         )
 
     @pytest.mark.polarion("CNV-5841")
-    @pytest.mark.dependency(name="migrate_vm", depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(name="migrate_vm_and_verify", depends=["vm_expose_ssh"])
     def test_migrate_vm(
         self,
         centos_os_matrix__class__,
@@ -254,7 +254,7 @@ class TestCommonTemplatesCentos:
         ping_process_in_centos_os,
     ):
         """Test SSH connectivity after migration"""
-        migrate_and_verify(
+        migrate_vm_and_verify(
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
             check_ssh_connectivity=True,
         )
@@ -263,7 +263,7 @@ class TestCommonTemplatesCentos:
         )
 
     @pytest.mark.polarion("CNV-5904")
-    @pytest.mark.dependency(depends=["migrate_vm"])
+    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
     def test_pause_unpause_after_migrate(
         self,
         centos_os_matrix__class__,
@@ -280,7 +280,7 @@ class TestCommonTemplatesCentos:
         )
 
     @pytest.mark.polarion("CNV-6008")
-    @pytest.mark.dependency(depends=["migrate_vm"])
+    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
     def test_verify_virtctl_guest_agent_data_after_migrate(
         self,
         centos_os_matrix__class__,

@@ -16,7 +16,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.infra import Images, run_ssh_commands
-from utilities.virt import migrate_and_verify
+from utilities.virt import migrate_vm_and_verify
 
 
 LOGGER = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class TestRHELTabletDevice:
         golden_image_data_volume_multi_storage_scope_class,
         golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
     ):
-        migrate_and_verify(
+        migrate_vm_and_verify(
             vm=golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope_function,
             check_ssh_connectivity=True,
         )

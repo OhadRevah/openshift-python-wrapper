@@ -17,7 +17,7 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import migrate_and_verify, running_vm, wait_for_console
+from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -301,7 +301,7 @@ class TestCommonTemplatesFedora:
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.polarion("CNV-5842")
-    @pytest.mark.dependency(name="migrate_vm", depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(name="migrate_vm_and_verify", depends=["vm_expose_ssh"])
     def test_migrate_vm(
         self,
         skip_upstream,
@@ -313,7 +313,7 @@ class TestCommonTemplatesFedora:
         ping_process_in_fedora_os,
     ):
         """Test SSH connectivity after migration"""
-        migrate_and_verify(
+        migrate_vm_and_verify(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
         )
@@ -322,7 +322,7 @@ class TestCommonTemplatesFedora:
         )
 
     @pytest.mark.polarion("CNV-5901")
-    @pytest.mark.dependency(depends=["migrate_vm"])
+    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
     def test_pause_unpause_after_migrate(
         self,
         skip_upstream,
@@ -339,7 +339,7 @@ class TestCommonTemplatesFedora:
         )
 
     @pytest.mark.polarion("CNV-6006")
-    @pytest.mark.dependency(depends=["migrate_vm"])
+    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
     def test_verify_virtctl_guest_agent_data_after_migrate(
         self,
         skip_upstream,

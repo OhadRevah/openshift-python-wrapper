@@ -19,7 +19,7 @@ from utilities.infra import Images, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_windows_os_dict,
-    migrate_and_verify,
+    migrate_vm_and_verify,
     running_vm,
 )
 
@@ -163,7 +163,7 @@ class TestWSL2:
     ):
         wsl_pid_before = get_wsl_pid(vm=windows_10_vm)
         LOGGER.info(f"PID before migration: {wsl_pid_before}")
-        migrate_and_verify(vm=windows_10_vm, check_ssh_connectivity=True)
+        migrate_vm_and_verify(vm=windows_10_vm, check_ssh_connectivity=True)
         assert is_wsl2_guest_running(vm=windows_10_vm, timeout=60)
         wsl_pid_after = get_wsl_pid(vm=windows_10_vm)
         LOGGER.info(f"PID after migration: {wsl_pid_after}")

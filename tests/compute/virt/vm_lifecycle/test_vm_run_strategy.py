@@ -15,7 +15,7 @@ from ocp_resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands
-from utilities.virt import migrate_and_verify, wait_for_vm_interfaces
+from utilities.virt import migrate_vm_and_verify, wait_for_vm_interfaces
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -211,7 +211,7 @@ def pause_unpause_vmi_and_verify_status(vm):
 def migrate_validate_run_strategy_vm(vm, run_strategy):
     LOGGER.info(f"The VM migration with runStrategy {run_strategy}")
     verify_vm_vmi_status(vm=vm, ready=True)
-    migrate_and_verify(vm=vm)
+    migrate_vm_and_verify(vm=vm)
     verify_vm_vmi_status(vm=vm, ready=True)
     verify_vm_run_strategy(vm=vm, run_strategy=run_strategy)
 

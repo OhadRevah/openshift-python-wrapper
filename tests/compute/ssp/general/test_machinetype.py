@@ -8,7 +8,7 @@ from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
-    migrate_and_verify,
+    migrate_vm_and_verify,
     running_vm,
     wait_for_vm_interfaces,
 )
@@ -102,7 +102,7 @@ def test_migrate_vm(
     machine_type_from_kubevirt_config,
     vm,
 ):
-    migrate_and_verify(vm=vm)
+    migrate_vm_and_verify(vm=vm)
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config
@@ -138,7 +138,7 @@ def test_machine_type_after_cm_update(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
-    migrate_and_verify(vm=vm)
+    migrate_vm_and_verify(vm=vm)
 
     ssp_utils.validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config

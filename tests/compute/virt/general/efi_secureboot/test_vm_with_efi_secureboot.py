@@ -17,7 +17,7 @@ from utilities.infra import Images, run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
-    migrate_and_verify,
+    migrate_vm_and_verify,
     running_vm,
     wait_for_ssh_connectivity,
 )
@@ -248,7 +248,7 @@ class TestEFISecureBootWindows:
     ):
         """Test EFI Windows VM is migrated."""
 
-        migrate_and_verify(
+        migrate_vm_and_verify(
             vm=windows_efi_secureboot_vm,
             wait_for_interfaces=False,
             check_ssh_connectivity=True,

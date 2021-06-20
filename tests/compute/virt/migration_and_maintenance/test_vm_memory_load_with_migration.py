@@ -9,7 +9,7 @@ from pytest_testconfig import config as py_config
 from tests.os_params import FEDORA_LATEST
 from utilities.constants import TIMEOUT_60MIN
 from utilities.infra import run_ssh_commands
-from utilities.virt import VirtualMachineForTests, migrate_and_verify, running_vm
+from utilities.virt import VirtualMachineForTests, migrate_vm_and_verify, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ def vm_info_before_migrate(vm_with_mem_load):
 
 @pytest.fixture()
 def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
-    migrate_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_60MIN)
+    migrate_vm_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_60MIN)
 
 
 def get_stress_ng_pid(ssh_exec):

@@ -19,7 +19,7 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
-from utilities.virt import migrate_and_verify, running_vm, wait_for_console
+from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -270,7 +270,7 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.polarion("CNV-3038")
-    @pytest.mark.dependency(name="migrate_vm", depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(name="migrate_vm_and_verify", depends=["vm_expose_ssh"])
     def test_migrate_vm(
         self,
         skip_upstream,
@@ -283,7 +283,7 @@ class TestCommonTemplatesRhel:
         ping_process_in_rhel_os,
     ):
         """Test SSH connectivity after migration"""
-        migrate_and_verify(
+        migrate_vm_and_verify(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
             check_ssh_connectivity=True,
         )
@@ -292,7 +292,7 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.polarion("CNV-5902")
-    @pytest.mark.dependency(depends=["migrate_vm"])
+    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
     def test_pause_unpause_after_migrate(
         self,
         skip_upstream,
@@ -310,7 +310,7 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.polarion("CNV-6007")
-    @pytest.mark.dependency(depends=["migrate_vm"])
+    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
     def test_verify_virtctl_guest_agent_data_after_migrate(
         self,
         skip_upstream,
