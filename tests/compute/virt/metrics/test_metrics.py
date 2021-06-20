@@ -2,8 +2,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachineInstance
 
-from tests.compute.utils import vm_started
-from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body
+from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.fixture(scope="class")
@@ -15,7 +14,7 @@ def vm_metric_1(namespace, unprivileged_client):
         body=fedora_vm_body(name=vm_name),
         client=unprivileged_client,
     ) as vm:
-        vm_started(vm=vm, wait_for_interfaces=False)
+        running_vm(vm=vm, wait_for_interfaces=False, enable_ssh=False)
         yield vm
 
 
@@ -28,13 +27,13 @@ def vm_metric_2(namespace, unprivileged_client):
         body=fedora_vm_body(name=vm_name),
         client=unprivileged_client,
     ) as vm:
-        vm_started(vm=vm, wait_for_interfaces=False)
+        running_vm(vm=vm, wait_for_interfaces=False, enable_ssh=False)
         yield vm
 
 
 @pytest.fixture(scope="class")
 def number_of_vmis_exists(admin_client):
-    return len(list(VirtualMachineInstance.get(admin_client)))
+    return len(list(VirtualMachineInstance.get(dyn_client=admin_client)))
 
 
 def check_vmi_metric(prometheus):

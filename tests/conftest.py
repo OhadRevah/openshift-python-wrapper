@@ -88,6 +88,7 @@ from utilities.network import (
 )
 from utilities.storage import data_volume, wait_for_default_sc_in_cdiconfig
 from utilities.virt import (
+    Prometheus,
     VirtualMachineForTestsFromTemplate,
     generate_yaml_from_template,
     kubernetes_taint_exists,
@@ -122,7 +123,7 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
 
 TEAM_MARKERS = {
     "ansible": ["ansible-module"],
-    "compute": ["compute", "metrics", "deprecated_api"],
+    "compute": ["compute", "deprecated_api"],
     "network": ["network", "deprecated_api"],
     "storage": ["storage", "deprecated_api"],
     "mtv": ["mtv", "deprecated_api"],
@@ -2257,3 +2258,8 @@ def kmp_enabled_ns(kmp_vm_label):
     # Enabling label "allocate" (or any other non-configured label) - Allocates.
     kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = KMP_ENABLED_LABEL
     yield from create_ns(name="kmp-enabled", kmp_vm_label=kmp_vm_label)
+
+
+@pytest.fixture(scope="class")
+def prometheus():
+    return Prometheus()

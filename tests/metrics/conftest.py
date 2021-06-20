@@ -6,15 +6,10 @@ from ocp_resources.resource import ResourceEditor
 
 from tests.metrics.utils import create_vms, get_mutation_component_value_from_prometheus
 from utilities.infra import create_ns
-from utilities.virt import Prometheus, running_vm
+from utilities.virt import running_vm
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="class")
-def prometheus():
-    return Prometheus()
 
 
 @pytest.fixture()
