@@ -4,34 +4,16 @@ import shlex
 from contextlib import contextmanager
 
 from benedict import benedict
-from ocp_resources.resource import TIMEOUT, ResourceEditor
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.conftest import get_hyperconverged_resource, kubevirt_hyperconverged_spec
 from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
-from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
+from utilities.virt import wait_for_ssh_connectivity
 
 
 LOGGER = logging.getLogger(__name__)
 OS_PROC_NAME = {"linux": "ping", "windows": "mspaint.exe"}
-
-
-def vm_started(vm, wait_for_interfaces=True):
-    """Start a VM and wait for its status to be 'Running'
-
-    If wait_for_interfaces - wait for interfaces to be up.
-    """
-
-    timeout = TIMEOUT
-    # For VMs from common templates
-    if vm.is_vm_from_template:
-        # Windows 10 takes longer to start
-        timeout = 2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
-
-    vm.start(wait=True, timeout=timeout)
-    vm.vmi.wait_until_running()
-    if wait_for_interfaces:
-        wait_for_vm_interfaces(vmi=vm.vmi)
 
 
 def remove_eth0_default_gw(vm):

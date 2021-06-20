@@ -19,30 +19,15 @@ from tests.compute.ssp.supported_os.utils import (
     get_linux_guest_agent_version,
     guest_agent_version_parser,
 )
-from tests.compute.utils import get_windows_timezone, vm_started
-from utilities.constants import (
-    OS_FLAVOR_RHEL,
-    OS_FLAVOR_WINDOWS,
-    TIMEOUT_3MIN,
-    TIMEOUT_30MIN,
-)
+from tests.compute.utils import get_windows_timezone
+from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS, TIMEOUT_3MIN
 from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    get_guest_os_info,
-    run_virtctl_command,
-    wait_for_ssh_connectivity,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import get_guest_os_info, run_virtctl_command, running_vm
 
 
 HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"
 LOGGER = logging.getLogger(__name__)
 TIMEOUT_90SEC = 90
-
-
-def stop_start_vm(vm, wait_for_interfaces=True):
-    vm.stop(wait=True)
-    vm_started(vm=vm, wait_for_interfaces=wait_for_interfaces)
 
 
 def reboot_vm(vm):
@@ -55,7 +40,7 @@ def reboot_vm(vm):
     # "connection reset by peer"
     except pod.ExecOnPodError as e:
         if "connection reset by peer" in e.out:
-            pass
+            return
 
 
 def vm_os_version(vm):
@@ -304,11 +289,10 @@ def check_windows_activated_license(vm, reset_action):
     """Verify VM activation mode after VM reset (reboot / stop and start)"""
 
     if "stop_start" in reset_action:
-        stop_start_vm(vm=vm, wait_for_interfaces=False)
+        vm.stop(wait=True)
     if "reboot" in reset_action:
         reboot_vm(vm=vm)
-    wait_for_vm_interfaces(vmi=vm.vmi, timeout=TIMEOUT_30MIN)
-    wait_for_ssh_connectivity(vm=vm)
+    running_vm(vm=vm)
     assert is_windows_activated(vm=vm), "VM license is not activated after restart."
 
 
