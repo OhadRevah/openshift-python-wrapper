@@ -204,9 +204,8 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL7_9_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            # TODO: Modify to 7.9 once it is added to templates
             "template_labels": {
-                "os": "rhel7.8",
+                "os": "rhel7.9",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
@@ -253,7 +252,6 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_3_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_3_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "latest": True,
             "template_labels": {
                 "os": "rhel8.3",
                 "workload": Template.Workload.SERVER,
@@ -266,9 +264,22 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_4_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_4_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            # TODO: Modify to 8.4 once it is added to templates
+            "latest": True,
             "template_labels": {
-                "os": "rhel8.3",
+                "os": "rhel8.4",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "rhel-8-5": {
+            "image_name": Images.Rhel.RHEL8_5_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_5_IMG),
+            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            # TODO: Modify to 8.5 once it is added to templates
+            "template_labels": {
+                "os": "rhel8.4",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
