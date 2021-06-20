@@ -455,7 +455,10 @@ def pytest_sessionstart(session):
     if os.path.exists(TEST_LOG_FILE):
         os.remove(TEST_LOG_FILE)
 
-    setup_logging(log_file=TEST_LOG_FILE)
+    setup_logging(
+        log_file=TEST_LOG_FILE,
+        log_level=session.config.getoption("log_cli_level") or logging.INFO,
+    )
     py_config_scs = py_config.get("storage_class_matrix", {})
 
     # Save the default storage_class_matrix before it is updated

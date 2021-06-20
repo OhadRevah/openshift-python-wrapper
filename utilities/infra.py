@@ -257,7 +257,7 @@ def generate_namespace_name(file_path):
     )[-1]
 
 
-def setup_logging(log_file="/tmp/pytest-tests.log"):
+def setup_logging(log_level, log_file="/tmp/pytest-tests.log"):
     logger_obj = logging.getLogger()
     basic_logger = logging.getLogger("basic")
 
@@ -288,14 +288,14 @@ def setup_logging(log_file="/tmp/pytest-tests.log"):
     basic_console_handler.setFormatter(fmt=root_log_formatter)
     basic_logger.addHandler(hdlr=basic_log_handler)
     basic_logger.addHandler(hdlr=basic_console_handler)
-    basic_logger.setLevel(level=logging.INFO)
+    basic_logger.setLevel(level=log_level)
 
     log_handler.setFormatter(fmt=log_formatter)
     console_handler.setFormatter(fmt=log_formatter)
 
     logger_obj.addHandler(hdlr=console_handler)
     logger_obj.addHandler(hdlr=log_handler)
-    logger_obj.setLevel(level=logging.INFO)
+    logger_obj.setLevel(level=log_level)
 
     logger_obj.propagate = False
     basic_logger.propagate = False

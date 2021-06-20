@@ -271,6 +271,20 @@ Example:
 --storage-class-matrix=rook-ceph-block,nfs
 ```
 
+### Setting log level in command line
+
+In order to run a test with a log level that is different from the default,
+use the --log-cli-level command line switch.
+The full list of possible log level strings can be found here:
+https://docs.python.org/3/library/logging.html#logging-levels
+
+When the switch is not used, we set the default level to INFO.
+
+Example:
+```bash
+--log-cli-level=DEBUG
+````
+
 ### Using matrix fixtures
 
 Using matrix fixtures requires providing a scope.
