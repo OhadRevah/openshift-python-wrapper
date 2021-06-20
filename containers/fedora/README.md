@@ -40,13 +40,14 @@ This will install:
     dpdk
     stress-ng
     iotop
+    fio
 
 and enable qemu-guest-agent and sshd services in the VM.
-If extra packages needed add them in user-data file.
+If any extra packages/commands are needed, they should be added in user-data file (as part of cloudinit).
 
-Once executed you should have a login prompt to the VM.
-If extra steps needed login with username fedora and password fedora, execute whats needed.
-When done shutdown the VM:
+Once the OS is up and all packages are installed, you should have a login prompt to the VM.
+
+Shutdown the VM:
 ```bash
 sudo shutdown -h now
 ```
@@ -62,7 +63,7 @@ docker tag fedora:$FEDORA_VERSION quay.io/openshift-cnv/qe-cnv-tests-fedora-stag
 docker push quay.io/openshift-cnv/qe-cnv-tests-fedora-staging:$FEDORA_VERSION
 ```
 
-32 tag should changed based on the Fedora version.
+32 tag should be changed based on the Fedora version.
 
 ### Verify
 Change tests/utilities/manifests/vm-fedora.yaml to use fedora-staging image

@@ -3,9 +3,9 @@ password: fedora
 chpasswd: { expire: False }
 ssh_pwauth: True
 bootcmd:
-  - dnf install -y tcpdump qemu-guest-agent iperf3 dmidecode nginx lldpad kernel-modules nmap dhcp sshpass podman ethtool libibverbs dpdk stress-ng iotop
+  - dnf install -y tcpdump qemu-guest-agent iperf3 dmidecode nginx lldpad kernel-modules nmap dhcp sshpass podman ethtool libibverbs dpdk stress-ng iotop fio
 runcmd:
-  - sudo systemctl start qemu-guest-agent
+  - sudo systemctl enable qemu-guest-agent --now
   - sudo sed -i 's/listen       80;/listen       80;\n\tlisten       81;/g' /etc/nginx/nginx.conf
   - sudo systemctl enable nginx --now
   - sudo sed -iE 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
