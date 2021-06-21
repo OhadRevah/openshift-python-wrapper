@@ -12,6 +12,8 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
+from tests.compute.ssp.supported_os.common_templates.utils import check_rhel9_ga_support
+from tests.compute.ssp.supported_os.utils import check_qemu_guest_agent_installed
 from tests.compute.utils import (
     remove_eth0_default_gw,
     validate_libvirt_persistent_domain,
@@ -60,7 +62,11 @@ class TestCommonTemplatesRhel:
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """Test CNV common templates VM initiation"""
-        guest_agent_support = "rhel-6" not in [*rhel_os_matrix__class__][0]
+        # RHEL6 does not have qemu guest agent installed, RHEL9 currently does not have it installed (COMPOSER-990)
+        guest_agent_support = not (
+            "rhel-6" in [*rhel_os_matrix__class__][0]
+            or check_rhel9_ga_support(rhel_os_matrix_dict=rhel_os_matrix__class__)
+        )
 
         running_vm(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
@@ -157,15 +163,27 @@ class TestCommonTemplatesRhel:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
-    @pytest.mark.polarion("CNV-3513")
-    def test_vmi_guest_agent_info(
+    @pytest.mark.dependency(name="vmi_guest_agent", depends=["vm_expose_ssh"])
+    @pytest.mark.polarion("CNV-6688")
+    def test_vmi_guest_agent_exists(
         self,
         skip_upstream,
         skip_guest_agent_on_rhel6,
+        skip_guest_agent_on_rhel9,
+        rhel_os_matrix__class__,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+    ):
+        assert check_qemu_guest_agent_installed(
+            ssh_exec=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec
+        ), "qemu guest agent package is not installed"
+
+    @pytest.mark.bugzilla(
+        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    )
+    @pytest.mark.dependency(depends=["vmi_guest_agent"])
+    @pytest.mark.polarion("CNV-3513")
+    def test_vmi_guest_agent_info(
+        self,
         rhel_os_matrix__class__,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
@@ -176,11 +194,10 @@ class TestCommonTemplatesRhel:
     @pytest.mark.bugzilla(
         1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=["vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4195")
     def test_virtctl_guest_agent_os_info(
         self,
-        skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
@@ -195,11 +212,10 @@ class TestCommonTemplatesRhel:
     @pytest.mark.bugzilla(
         1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=["vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4550")
     def test_virtctl_guest_agent_user_info(
         self,
-        skip_guest_agent_on_rhel6,
         rhel_os_matrix__class__,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
@@ -210,13 +226,13 @@ class TestCommonTemplatesRhel:
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
             )
 
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=["vmi_guest_agent"])
     @pytest.mark.polarion("CNV-6531")
     def test_virtctl_guest_agent_fs_info(
         self,
+        skip_guest_agent_on_rhel,
         rhel_os_matrix__class__,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-        skip_guest_agent_on_rhel,
     ):
         common_templates_utils.validate_fs_info_virtctl_vs_linux_os(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
@@ -310,7 +326,7 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.polarion("CNV-6007")
-    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
+    @pytest.mark.dependency(depends=["vmi_guest_agent", "migrate_vm_and_verify"])
     def test_verify_virtctl_guest_agent_data_after_migrate(
         self,
         skip_upstream,

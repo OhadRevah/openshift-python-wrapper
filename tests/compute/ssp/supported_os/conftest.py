@@ -5,6 +5,7 @@ from ocp_resources.service import Service
 from ocp_resources.template import Template
 from packaging import version
 
+from tests.compute.ssp.supported_os.common_templates.utils import check_rhel9_ga_support
 from tests.compute.ssp.supported_os.utils import get_linux_guest_agent_version
 from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
@@ -405,6 +406,14 @@ def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
     if "win-12" in [*windows_os_matrix__class__][0]:
         pytest.skip("win-12 doesn't support powershell commands")
+
+
+@pytest.fixture()
+def skip_guest_agent_on_rhel9(rhel_os_matrix__class__):
+    if check_rhel9_ga_support(rhel_os_matrix_dict=rhel_os_matrix__class__):
+        pytest.skip(
+            "Rhel9 currently does not have qemu-guest-agent packaged installed."
+        )
 
 
 def skip_on_guest_agent_version(vm, ga_version):

@@ -21,7 +21,12 @@ from tests.compute.ssp.supported_os.utils import (
 )
 from tests.compute.utils import get_windows_timezone
 from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS, TIMEOUT_3MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import (
+    JIRA_STATUS_CLOSED,
+    get_jira_connection_params,
+    get_jira_status,
+    run_ssh_commands,
+)
 from utilities.virt import get_guest_os_info, run_virtctl_command, running_vm
 
 
@@ -947,3 +952,14 @@ def validate_virtctl_guest_agent_data_over_time(vm):
                 return False
     except TimeoutExpiredError:
         return True
+
+
+def check_rhel9_ga_support(rhel_os_matrix_dict):
+    return (
+        "rhel-9-0" in rhel_os_matrix_dict
+        and get_jira_status(
+            jira_connection_params=get_jira_connection_params(),
+            jira="COMPOSER-990",
+        )
+        not in JIRA_STATUS_CLOSED
+    )
