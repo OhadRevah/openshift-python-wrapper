@@ -71,7 +71,7 @@ class TestKeyMetrics:
         """
         Tests validating ability to perform various prometheus api queries on various metrics against a given vm.
         This test also validates ability to pull metric information from a given vm's virt-handler pod and validates
-        appropriate value exists for that metrics.
+        appropriate information exists for that metrics.
 
         """
         vm = first_metric_vm
