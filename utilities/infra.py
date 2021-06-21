@@ -13,6 +13,7 @@ import kubernetes
 import paramiko
 import requests
 from colorlog import ColoredFormatter
+from jira import JIRA
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
@@ -27,6 +28,7 @@ from utilities.exceptions import CommandExecFailed
 
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
+JIRA_STATUS_CLOSED = ("closed", "done", "obsolete", "resolved")
 BASE_IMAGES_DIR = "cnv-tests"
 NON_EXIST_URL = "https://noneexist.com"
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
@@ -149,15 +151,6 @@ class ClusterHosts:
         PHYSICAL = "physical"
 
 
-def get_bug_status(bugzilla_connection_params, bug):
-    bzapi = bugzilla.Bugzilla(
-        url=bugzilla_connection_params["bugzilla_url"],
-        user=bugzilla_connection_params["bugzilla_username"],
-        api_key=bugzilla_connection_params["bugzilla_api_key"],
-    )
-    return bzapi.getbug(objid=bug).status
-
-
 class MissingResourceException(Exception):
     def __init__(self, resource):
         self.resource = resource
@@ -210,17 +203,6 @@ def camelcase_to_mixedcase(camelcase_str):
 
 def get_admin_client():
     return DynamicClient(client=kubernetes.config.new_client_from_config())
-
-
-def get_bugzilla_connection_params():
-    bz_cfg = os.path.join(Path(".").resolve(), "bugzilla.cfg")
-    parser = ConfigParser()
-    # Open the file with the correct encoding
-    parser.read(bz_cfg, encoding="utf-8")
-    params_dict = {}
-    for params in parser.items("DEFAULT"):
-        params_dict[params[0]] = params[1]
-    return params_dict
 
 
 def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
@@ -439,3 +421,42 @@ def name_prefix(name):
 
 def authorized_key(private_key_path):
     return f"ssh-rsa {private_to_public_key(key=private_key_path)} root@exec1.rdocloud"
+
+
+def get_connection_params(conf_file_name):
+    conf_file = os.path.join(Path(".").resolve(), conf_file_name)
+    parser = ConfigParser()
+    # Open the file with the correct encoding
+    parser.read(conf_file, encoding="utf-8")
+    params_dict = {}
+    for params in parser.items("DEFAULT"):
+        params_dict[params[0]] = params[1]
+    return params_dict
+
+
+def get_bugzilla_connection_params():
+    return get_connection_params(conf_file_name="bugzilla.cfg")
+
+
+def get_bug_status(bugzilla_connection_params, bug):
+    bzapi = bugzilla.Bugzilla(
+        url=bugzilla_connection_params["bugzilla_url"],
+        user=bugzilla_connection_params["bugzilla_username"],
+        api_key=bugzilla_connection_params["bugzilla_api_key"],
+    )
+    return bzapi.getbug(objid=bug).status
+
+
+def get_jira_connection_params():
+    return get_connection_params(conf_file_name="jira.cfg")
+
+
+def get_jira_status(jira_connection_params, jira):
+    jira_connection = JIRA(
+        basic_auth=(
+            jira_connection_params["username"],
+            jira_connection_params["password"],
+        ),
+        options={"server": jira_connection_params["url"]},
+    )
+    return jira_connection.issue(id=jira).fields.status.name
