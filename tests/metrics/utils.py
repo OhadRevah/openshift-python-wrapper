@@ -302,7 +302,7 @@ def assert_validate_vm_metric(vm, metrics_list):
     )
 
 
-def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS):
+def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None):
     """
      Create n number of fedora vms.
 
@@ -310,6 +310,7 @@ def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS):
          name_prefix (str): prefix to be used to name virtualmachines
          namespace_name (str): Namespace to be used for vm creation
          vm_count (int): Number of vms to be created
+         client (DynamicClient): DynamicClient object
 
     Returns:
         list: List of VirtualMachineForTests
@@ -324,6 +325,7 @@ def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS):
             teardown=False,
             running=True,
             ssh=True,
+            client=client,
         ) as vm:
             vms_list.append(vm)
     return vms_list

@@ -1324,9 +1324,10 @@ class Prometheus(object):
         up = prometheus.query("/api/v1/query?query=up")
     """
 
-    def __init__(self):
+    def __init__(self, client=None):
         self.namespace = "openshift-monitoring"
         self.resource_name = "prometheus-k8s"
+        self.client = client or get_admin_client()
 
         # get route to prometheus HTTP api
         self.api_url = self._get_route()
@@ -1338,7 +1339,7 @@ class Prometheus(object):
         # get route to prometheus HTTP api
         LOGGER.info("Prometheus: Obtaining route")
         route = Route(
-            namespace=self.namespace, name=self.resource_name
+            namespace=self.namespace, name=self.resource_name, client=self.client
         ).instance.spec.host
 
         return f"https://{route}"
@@ -1351,12 +1352,12 @@ class Prometheus(object):
 
         # get SA
         prometheus_sa = ServiceAccount(
-            namespace=self.namespace, name=self.resource_name
+            namespace=self.namespace, name=self.resource_name, client=self.client
         )
 
         # get secret
         secret_name = prometheus_sa.instance.imagePullSecrets[0].name
-        secret = Secret(namespace=self.namespace, name=secret_name)
+        secret = Secret(namespace=self.namespace, name=secret_name, client=self.client)
 
         # get token value
         token = secret.instance.metadata.annotations["openshift.io/token-secret.value"]
@@ -1364,6 +1365,7 @@ class Prometheus(object):
         return {"Authorization": f"Bearer {token}"}
 
     def query(self, query):
+        requests.packages.urllib3.disable_warnings()
         response = requests.get(
             f"{self.api_url}/{query}", headers=self.headers, verify=False
         )
