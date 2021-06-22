@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture()
 def vm_to_restart(unprivileged_client, namespace):
-    name = "vmi-to-restart"
+    name = "vm-to-restart"
     with VirtualMachineForTests(
         client=unprivileged_client,
         name=name,
