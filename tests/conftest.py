@@ -25,7 +25,6 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
@@ -56,7 +55,7 @@ from utilities.constants import (
     TEST_LOG_FILE,
     TIMEOUT_4MIN,
 )
-from utilities.hco import apply_np_changes
+from utilities.hco import apply_np_changes, get_kubevirt_hyperconverged_spec
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -2020,27 +2019,16 @@ def hyperconverged_resource_scope_module(admin_client, hco_namespace):
     )
 
 
-def kubevirt_hyperconverged_spec(admin_client, hco_namespace):
-    kubevirt_hyperconverged = list(
-        KubeVirt.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-            name="kubevirt-kubevirt-hyperconverged",
-        )
-    )
-    return kubevirt_hyperconverged[0].instance.to_dict()["spec"]
-
-
 @pytest.fixture()
 def kubevirt_hyperconverged_spec_scope_function(admin_client, hco_namespace):
-    return kubevirt_hyperconverged_spec(
+    return get_kubevirt_hyperconverged_spec(
         admin_client=admin_client, hco_namespace=hco_namespace
     )
 
 
 @pytest.fixture(scope="module")
 def kubevirt_hyperconverged_spec_scope_module(admin_client, hco_namespace):
-    return kubevirt_hyperconverged_spec(
+    return get_kubevirt_hyperconverged_spec(
         admin_client=admin_client, hco_namespace=hco_namespace
     )
 

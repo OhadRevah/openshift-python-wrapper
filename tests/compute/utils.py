@@ -7,7 +7,8 @@ from benedict import benedict
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.conftest import get_hyperconverged_resource, kubevirt_hyperconverged_spec
+from tests.conftest import get_hyperconverged_resource
+from utilities.hco import get_kubevirt_hyperconverged_spec
 from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity
 
@@ -160,7 +161,7 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value):
         wait_timeout=15,
         sleep=1,
         func=lambda: benedict(
-            kubevirt_hyperconverged_spec(
+            get_kubevirt_hyperconverged_spec(
                 admin_client=admin_client, hco_namespace=hco_namespace
             )
         ).get(base_path),

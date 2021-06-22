@@ -3,6 +3,7 @@ import logging
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
@@ -196,3 +197,11 @@ def add_labels_to_nodes(nodes, node_labels):
         node_resources.append(node_resource)
         labels_on_nodes[node.name] = labels
     return node_resources, labels_on_nodes
+
+
+def get_kubevirt_hyperconverged_spec(admin_client, hco_namespace):
+    return KubeVirt(
+        client=admin_client,
+        namespace=hco_namespace.name,
+        name="kubevirt-kubevirt-hyperconverged",
+    ).instance.spec
