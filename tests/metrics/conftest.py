@@ -35,8 +35,8 @@ def updated_resource_with_invalid_label(request, admin_client, hco_namespace):
             resource: {
                 "metadata": {
                     "labels": {"test_label": "testing_invalid_label"},
+                    "namespace": hco_namespace.name,
                 },
-                "namespace": hco_namespace.name,
             }
         }
     ):

@@ -78,8 +78,8 @@ def get_mutation_component_value_from_prometheus(prometheus, component_name):
 
 def get_changed_mutation_component_value(prometheus, component_name, previous_value):
     samples = TimeoutSampler(
-        wait_timeout=300,
-        sleep=1,
+        wait_timeout=600,
+        sleep=5,
         func=get_mutation_component_value_from_prometheus,
         prometheus=prometheus,
         component_name=component_name,
