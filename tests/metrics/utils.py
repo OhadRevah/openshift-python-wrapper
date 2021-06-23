@@ -79,7 +79,7 @@ def get_mutation_component_value_from_prometheus(prometheus, component_name):
 def get_changed_mutation_component_value(prometheus, component_name, previous_value):
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
-        sleep=5,
+        sleep=10,
         func=get_mutation_component_value_from_prometheus,
         prometheus=prometheus,
         component_name=component_name,
@@ -169,6 +169,46 @@ def get_hco_cr_modification_alert_state(prometheus, component_name):
             return alert_state
 
 
+def get_hco_cr_modification_alert_summary_with_count(prometheus, component_name):
+    """This function will check the 'KubevirtHyperconvergedClusterOperatorCRModification'
+    an alert summary generated after the 'kubevirt_hco_out_of_band_modifications_count' metrics triggered.
+
+    Args:
+        prometheus (:obj:`Prometheus`): Prometheus object.
+
+    Returns:
+        String: Summary of the 'KubevirtHyperconvergedClusterOperatorCRModification' alert contains count.
+
+        example:
+        Alert summary for single change:
+        "1 out-of-band CR modifications were detected in the last 10 minutes."
+    """
+
+    # Find an alert "KubevirtHyperconvergedClusterOperatorCRModification" and return it's summary.
+    def _get_summary():
+        for alert in get_all_prometheus_alerts(prometheus=prometheus)["data"].get(
+            "alerts", []
+        ):
+            if (
+                alert["labels"]["alertname"] == KUBEVIRT_CR_ALERT_NAME
+                and component_name == alert["labels"]["component_name"]
+            ):
+                return alert.get("annotations", {}).get("summary")
+
+    # Alert is not updated immediately. Wait for 300 seconds.
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=60,
+        func=_get_summary,
+    )
+    try:
+        for alert_summary in samples:
+            if alert_summary is not None:
+                return alert_summary
+    except TimeoutError:
+        LOGGER.error(f"Summary is not present for Alert {KUBEVIRT_CR_ALERT_NAME}")
+
+
 def get_all_hco_cr_modification_alert(prometheus):
     """Function returns existing "KubevirtHyperconvergedClusterOperatorCRModification" alerts.
 
@@ -186,6 +226,46 @@ def get_all_hco_cr_modification_alert(prometheus):
         if alert["labels"]["alertname"] == KUBEVIRT_CR_ALERT_NAME:
             present_alerts.append(alert)
     return present_alerts
+
+
+def wait_for_summary_count_to_be_expected(
+    prometheus, component_name, expected_summary_value
+):
+    """This function will wait for the expected summary to match with
+    the summary message from component specific alert.
+
+    Args:
+        prometheus (:obj:`Prometheus`): Prometheus object.
+        component_name (String): Name of the component.
+        expected_summary_value (Integer): Expected value of the component after update.
+
+    Returns:
+        String: It will return the Summary of the component once it matches to the expected_summary.
+
+        example:
+        Alert summary for 3 times change in component:
+        "3 out-of-band CR modifications were detected in the last 10 minutes."
+    """
+    current_summary = []
+    expected_summary = f"{expected_summary_value} out-of-band CR modifications were detected in the last 10 minutes."
+
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=5,
+        func=get_hco_cr_modification_alert_summary_with_count,
+        prometheus=prometheus,
+        component_name=component_name,
+    )
+    try:
+        for sample in samples:
+            if sample == expected_summary:
+                current_summary.append(sample)
+                return sample
+    except TimeoutError:
+        LOGGER.error(
+            f"Summary count did not update for '{component_name}'. Current summary {current_summary}"
+        )
+        raise
 
 
 def get_vm_names_from_metric(prometheus, query, timeout=TIMEOUT_5MIN):
