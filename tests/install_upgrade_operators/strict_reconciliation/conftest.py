@@ -3,7 +3,13 @@ import logging
 import pytest
 from ocp_resources.resource import ResourceEditor
 
-from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    CUSTOM_HCO_CR_SPEC,
+)
+from tests.install_upgrade_operators.strict_reconciliation.utils import (
+    get_hco_spec,
+    modify_hco_cr,
+)
 from utilities.hco import (
     replace_backup_hco_cr_modification,
     restore_hco_cr_modification,
@@ -34,6 +40,47 @@ def deleted_stanza_on_hco_cr(
 @pytest.fixture()
 def hco_spec(admin_client, hco_namespace):
     return get_hco_spec(admin_client=admin_client, hco_namespace=hco_namespace)
+
+
+@pytest.fixture()
+def hco_cr_custom_values(
+    hyperconverged_resource_scope_function,
+):
+    """
+    This fixture updates HCO CR with custom values for spec.CertConfig, spec.liveMigrationConfig and
+    spec.featureGates and cleans those up at the end.
+    Note: This is needed for tests that modifies such fields to default values
+
+    Args:
+        hyperconverged_resource_scope_function (HyperConverged): HCO CR
+
+    """
+    modify_hco_cr(
+        patch=CUSTOM_HCO_CR_SPEC.copy(),
+        hco=hyperconverged_resource_scope_function,
+    )
+    yield
+    modify_hco_cr(
+        patch={
+            "spec": {"liveMigrationConfig": {}, "certConfig": {}, "featureGates": {}}
+        },
+        hco=hyperconverged_resource_scope_function,
+    )
+
+
+@pytest.fixture()
+def update_hco_cr(request, hyperconverged_resource_scope_function):
+    """
+    This fixture updates HCO CR with values specified via request.param
+
+    Args:
+        hyperconverged_resource_scope_function (HyperConverged): HCO CR
+
+    """
+    modify_hco_cr(
+        patch=request.param["patch"], hco=hyperconverged_resource_scope_function
+    )
+    yield
 
 
 @pytest.fixture()

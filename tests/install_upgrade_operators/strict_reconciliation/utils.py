@@ -1,7 +1,10 @@
+import inspect
 import logging
 
 from dictdiffer import diff
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from openshift.dynamic.exceptions import ConflictError
 
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
@@ -27,16 +30,31 @@ def verify_spec(expected_spec, get_spec_func):
         exceptions=AssertionError,
         func=lambda: list(diff(expected_spec, get_spec_func())),
     )
+    diff_result = None
     try:
         for diff_result in samplers:
             if not diff_result:
-                break
-            LOGGER.info(
-                f"Waiting for CR with expected spec. spec:'{expected_spec}' diff:'{diff_result}'"
-            )
+                return True
+
     except TimeoutExpiredError:
-        LOGGER.error(f"Timeout waiting for CR with expected spec {expected_spec}")
+        LOGGER.error(
+            f"{get_function_name(function_name=get_spec_func)}: Timed out waiting for CR with expected spec."
+            f" spec: '{expected_spec}' diff:'{diff_result}'"
+        )
         raise
+
+
+def get_function_name(function_name):
+    """
+    Return the text of the source code for a function
+
+    Args:
+        function_name (function object): function object
+
+    Returns:
+        str: name of the function
+    """
+    return inspect.getsource(function_name).split("(")[0].split(" ")[-1]
 
 
 def verify_specs(
@@ -99,3 +117,90 @@ def validate_featuregates_not_in_cdi_cr(
 
     cdi_fgs = cdi["spec"]["config"]["featureGates"]
     return feature_gate_under_test not in cdi_fgs
+
+
+def modify_hco_cr(patch, hco):
+    """
+    Updates hco cr with given dictionary
+
+    Args:
+        patch (dict): dictionary of values that would be used to update hco cr
+        hco (HyperConverged): HCO generator
+
+    Returns:
+        str: name of the function
+    """
+
+    def _modify_cr():
+        res_editor = ResourceEditor(patches={hco: patch}, action="update")
+        res_editor.update(backup_resources=True)
+        return res_editor.backups
+
+    samples = TimeoutSampler(
+        wait_timeout=20,
+        sleep=2,
+        exceptions=ConflictError,
+        func=_modify_cr,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error(f"TimedOut updating HCO CRModification with value: {patch}")
+        raise
+
+
+def assert_specs_values(expected, get_spec_func, keys):
+    """
+    Asserts that expected values of spec fields
+
+    Args:
+        expected (dict): dictionary of values that would be used to update hco cr
+        get_spec_func (function): function to fetch current spec dictionary
+        keys (list): list of associated keys for a given kind.
+    """
+    spec_dict = get_spec_func()
+    spec = {key: spec_dict[key] for key in keys if key in spec_dict}
+    diff_spec = list(
+        filter(
+            lambda diff_result_item: diff_result_item[0] == "change",
+            list(diff(spec, expected)),
+        )
+    )
+    assert not diff_spec, (
+        f"For {get_function_name(function_name=get_spec_func)}, expected value: {expected} "
+        f"does not match with actual value: {spec}"
+    )
+
+
+def wait_for_spec_change(expected, get_spec_func, keys):
+    """
+    Waits for spec values to get propagated
+
+    Args:
+        expected (dict): dictionary of values that would be used to update hco cr
+        get_spec_func (function): function to fetch current spec dictionary
+        keys (list): list of associated keys for a given kind.
+    """
+    samplers = TimeoutSampler(
+        wait_timeout=60,
+        sleep=5,
+        exceptions=AssertionError,
+        func=assert_specs_values,
+        expected=expected,
+        get_spec_func=get_spec_func,
+        keys=keys,
+    )
+    diff_result = None
+    try:
+        for diff_result in samplers:
+            if not diff_result:
+                return True
+
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"{get_function_name(function_name=get_spec_func)}: Timed out waiting for CR with expected spec."
+            f" spec: '{expected}' diff:'{diff_result}'"
+        )
+        raise

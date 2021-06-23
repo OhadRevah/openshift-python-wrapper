@@ -29,7 +29,9 @@ LM_COMPLETIONTIMEOUTPERGIB_CUSTOM = 1200
 LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM = 8
 LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM = 3
 LM_PROGRESSTIMEOUT_CUSTOM = 225
-
+LM_PO_DEFAULT = {
+    "parallelOutboundMigrationsPerNode": LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_DEFAULT,
+}
 
 EXPCT_CERTC_DEFAULTS = {
     "ca": {
@@ -66,6 +68,27 @@ EXPCT_LM_DEFAULTS = {
     "completionTimeoutPerGiB": LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
     "progressTimeout": LM_PROGRESSTIMEOUT_DEFAULT,
 }
+EXPCT_LM_CUSTOM = {
+    "parallelMigrationsPerCluster": LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM,
+    "parallelOutboundMigrationsPerNode": LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM,
+    "bandwidthPerMigration": LM_BANDWIDTHPERMIGRATION_CUSTOM,
+    "completionTimeoutPerGiB": LM_COMPLETIONTIMEOUTPERGIB_CUSTOM,
+    "progressTimeout": LM_PROGRESSTIMEOUT_CUSTOM,
+}
+LM_CUST_DEFAULT_PM = copy.deepcopy(EXPCT_LM_CUSTOM)
+LM_CUST_DEFAULT_PO = copy.deepcopy(EXPCT_LM_CUSTOM)
+LM_CUST_DEFAULT_B = copy.deepcopy(EXPCT_LM_CUSTOM)
+LM_CUST_DEFAULT_C = copy.deepcopy(EXPCT_LM_CUSTOM)
+LM_CUST_DEFAULT_PT = copy.deepcopy(EXPCT_LM_CUSTOM)
+LM_CUST_DEFAULT_PM[
+    "parallelMigrationsPerCluster"
+] = LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT
+LM_CUST_DEFAULT_PO[
+    "parallelOutboundMigrationsPerNode"
+] = LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_DEFAULT
+LM_CUST_DEFAULT_B["bandwidthPerMigration"] = LM_BANDWIDTHPERMIGRATION_DEFAULT
+LM_CUST_DEFAULT_C["completionTimeoutPerGiB"] = LM_COMPLETIONTIMEOUTPERGIB_DEFAULT
+LM_CUST_DEFAULT_PT["progressTimeout"] = LM_PROGRESSTIMEOUT_DEFAULT
 EXPCT_LM_CUSTOM_PM = copy.deepcopy(EXPCT_LM_DEFAULTS)
 EXPCT_LM_CUSTOM_PO = copy.deepcopy(EXPCT_LM_DEFAULTS)
 EXPCT_LM_CUSTOM_B = copy.deepcopy(EXPCT_LM_DEFAULTS)
@@ -81,3 +104,70 @@ EXPCT_LM_CUSTOM_PO[
 EXPCT_LM_CUSTOM_B["bandwidthPerMigration"] = LM_BANDWIDTHPERMIGRATION_CUSTOM
 EXPCT_LM_CUSTOM_C["completionTimeoutPerGiB"] = LM_COMPLETIONTIMEOUTPERGIB_CUSTOM
 EXPCT_LM_CUSTOM_PT["progressTimeout"] = LM_PROGRESSTIMEOUT_CUSTOM
+EXPCT_CERTC_CUSTOM = {
+    "ca": {
+        "duration": CERTC_CUSTOM_96H,
+        "renewBefore": CERTC_CUSTOM_36H,
+    },
+    "server": {
+        "duration": CERTC_CUSTOM_36H,
+        "renewBefore": CERTC_CUSTOM_18H,
+    },
+}
+
+CUSTOM_HCO_CR_SPEC = {
+    "spec": {
+        "liveMigrationConfig": EXPCT_LM_CUSTOM,
+        "certConfig": EXPCT_CERTC_CUSTOM,
+        "featureGates": {
+            "sriovLiveMigration": True,
+            "withHostPassthroughCPU": True,
+        },
+    }
+}
+KUBEVIRT_DEFAULT = {"selfSigned": EXPCT_CERTC_DEFAULTS}
+KUBEVIRT_CUSTOM = {
+    "selfSigned": EXPCT_CERTC_CUSTOM,
+}
+KV_MOD_DEFAUTL_CA_DUR = copy.deepcopy(KUBEVIRT_CUSTOM)
+KV_MOD_DEFAUTL_CA_RB = copy.deepcopy(KUBEVIRT_CUSTOM)
+KV_MOD_DEFAUTL_SER_DUR = copy.deepcopy(KUBEVIRT_CUSTOM)
+KV_MOD_DEFAUTL_SER_RB = copy.deepcopy(KUBEVIRT_CUSTOM)
+KV_MOD_DEFAUTL_CA_DUR["selfSigned"]["ca"]["duration"] = CERTC_DEFAULT_48H
+KV_MOD_DEFAUTL_CA_RB["selfSigned"]["ca"]["renewBefore"] = CERTC_DEFAULT_24H
+KV_MOD_DEFAUTL_SER_DUR["selfSigned"]["server"]["duration"] = CERTC_DEFAULT_24H
+KV_MOD_DEFAUTL_SER_RB["selfSigned"]["server"]["renewBefore"] = CERTC_DEFAULT_12H
+CNAO_DEFAULT = {
+    "caOverlapInterval": CERTC_DEFAULT_24H,
+    "caRotateInterval": CERTC_DEFAULT_48H,
+    "certOverlapInterval": CERTC_DEFAULT_12H,
+    "certRotateInterval": CERTC_DEFAULT_24H,
+}
+CNAO_CUSTOM = {
+    "caOverlapInterval": CERTC_CUSTOM_36H,
+    "caRotateInterval": CERTC_CUSTOM_96H,
+    "certOverlapInterval": CERTC_CUSTOM_18H,
+    "certRotateInterval": CERTC_CUSTOM_36H,
+}
+CNAO_MOD_DEFAULT_CA_DUR = copy.deepcopy(CNAO_CUSTOM)
+CNAO_MOD_DEFAULT_CA_RB = copy.deepcopy(CNAO_CUSTOM)
+CNAO_MOD_DEFAULT_SER_DUR = copy.deepcopy(CNAO_CUSTOM)
+CNAO_MOD_DEFAULT_SER_RB = copy.deepcopy(CNAO_CUSTOM)
+CNAO_MOD_DEFAULT_CA_RB["caOverlapInterval"] = CERTC_DEFAULT_48H
+CNAO_MOD_DEFAULT_CA_DUR["caRotateInterval"] = CERTC_DEFAULT_24H
+CNAO_MOD_DEFAULT_SER_RB["certOverlapInterval"] = CERTC_DEFAULT_24H
+CNAO_MOD_DEFAULT_SER_DUR["certRotateInterval"] = CERTC_DEFAULT_12H
+
+HCO_MOD_DEFAUTL_CA_DUR = copy.deepcopy(EXPCT_CERTC_CUSTOM)
+HCO_MOD_DEFAUTL_CA_RB = copy.deepcopy(EXPCT_CERTC_CUSTOM)
+HCO_MOD_DEFAUTL_SER_DUR = copy.deepcopy(EXPCT_CERTC_CUSTOM)
+HCO_MOD_DEFAUTL_SER_RB = copy.deepcopy(EXPCT_CERTC_CUSTOM)
+HCO_MOD_DEFAUTL_CA_DUR["ca"]["duration"] = CERTC_DEFAULT_48H
+HCO_MOD_DEFAUTL_CA_RB["ca"]["renewBefore"] = CERTC_DEFAULT_24H
+HCO_MOD_DEFAUTL_SER_DUR["server"]["duration"] = CERTC_DEFAULT_24H
+HCO_MOD_DEFAUTL_SER_RB["server"]["renewBefore"] = CERTC_DEFAULT_12H
+
+HCO_CR_FIELDS = ["certConfig", "liveMigrationConfig", "featureGates"]
+KUBEVIRT_FIELDS = ["certificateRotateStrategy", "migrations", "configuration"]
+CDI_FIELDS = ["certConfig"]
+CNAO_FIELDS = ["selfSignConfiguration"]
