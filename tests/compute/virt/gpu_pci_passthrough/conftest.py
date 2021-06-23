@@ -70,7 +70,7 @@ def hco_cr_with_permitted_hostdevices(hyperconverged_resource_scope_class):
                     "permittedHostDevices": {
                         "pciHostDevices": [
                             {
-                                "pciVendorSelector": GPU_DEVICE_ID,
+                                "pciDeviceSelector": GPU_DEVICE_ID,
                                 "resourceName": GPU_DEVICE_NAME,
                             }
                         ]
