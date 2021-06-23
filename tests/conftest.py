@@ -883,12 +883,16 @@ def workers_ssh_executors(rhel7_workers, utility_pods):
 @pytest.fixture(scope="session")
 def node_physical_nics(admin_client, utility_pods, workers_ssh_executors):
     if is_openshift(admin_client):
-        return {
+        nics = {
             node: workers_ssh_executors[node].network.all_interfaces()
             for node in workers_ssh_executors.keys()
         }
+
     else:
-        return network_interfaces_k8s(utility_pods=utility_pods)
+        nics = network_interfaces_k8s(utility_pods=utility_pods)
+
+    LOGGER.info(f"Nodes physical NICs: {nics}")
+    return nics
 
 
 def network_interfaces_k8s(utility_pods):
@@ -989,7 +993,7 @@ def nodes_active_nics(
                 else:
                     nodes_nics[node.name]["available"].append(node_iface.name)
 
-    LOGGER.info(f"Nodes NICs: {nodes_nics}")
+    LOGGER.info(f"Nodes active NICs: {nodes_nics}")
     return nodes_nics
 
 
