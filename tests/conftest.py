@@ -977,6 +977,7 @@ def nodes_active_nics(
                 else:
                     nodes_nics[node.name]["available"].append(node_iface.name)
 
+    LOGGER.info(f"Nodes NICs: {nodes_nics}")
     return nodes_nics
 
 
