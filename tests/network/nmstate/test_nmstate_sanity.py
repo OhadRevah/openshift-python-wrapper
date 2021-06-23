@@ -13,7 +13,13 @@ pytestmark = pytest.mark.sno
 
 
 @pytest.mark.polarion("CNV-5721")
-def test_no_ip(worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics):
+def test_no_ip(
+    skip_if_no_multinic_nodes,
+    worker_node1,
+    utility_pods,
+    nodes_occupied_nics,
+    nodes_available_nics,
+):
     with EthernetNetworkConfigurationPolicy(
         name=f"no-ip-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
@@ -28,7 +34,11 @@ def test_no_ip(worker_node1, utility_pods, nodes_occupied_nics, nodes_available_
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5720")
 def test_static_ip(
-    worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics
+    skip_if_no_multinic_nodes,
+    worker_node1,
+    utility_pods,
+    nodes_occupied_nics,
+    nodes_available_nics,
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"static-ip-{name_prefix(worker_node1.name)}",
@@ -45,7 +55,11 @@ def test_static_ip(
 
 @pytest.mark.polarion("CNV-5722")
 def test_dynamic_ip(
-    worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics
+    skip_if_no_multinic_nodes,
+    worker_node1,
+    utility_pods,
+    nodes_occupied_nics,
+    nodes_available_nics,
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"dynamic-ip-{name_prefix(worker_node1.name)}",
@@ -81,7 +95,11 @@ def test_dns(worker_node1, utility_pods, nodes_occupied_nics):
 
 @pytest.mark.polarion("CNV-5725")
 def test_static_route(
-    worker_node1, utility_pods, nodes_occupied_nics, nodes_available_nics
+    skip_if_no_multinic_nodes,
+    worker_node1,
+    utility_pods,
+    nodes_occupied_nics,
+    nodes_available_nics,
 ):
     iface_name = nodes_available_nics[worker_node1.name][0]
     routes = {

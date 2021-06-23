@@ -30,7 +30,7 @@ def nmstate_ds(admin_client, hco_namespace):
 
 @pytest.fixture()
 def nmstate_linux_bridge_device_worker_1(
-    nodes_available_nics, utility_pods, worker_node1
+    skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node1
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
@@ -45,7 +45,7 @@ def nmstate_linux_bridge_device_worker_1(
 
 @pytest.fixture()
 def nmstate_linux_bridge_device_worker_2(
-    nodes_available_nics, utility_pods, worker_node2
+    skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node2
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
