@@ -212,4 +212,4 @@ def get_kubevirt_hyperconverged_spec(admin_client, hco_namespace):
         client=admin_client,
         namespace=hco_namespace.name,
         name="kubevirt-kubevirt-hyperconverged",
-    ).instance.spec
+    ).instance.to_dict()["spec"]
