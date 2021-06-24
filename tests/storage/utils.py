@@ -16,11 +16,10 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot import VolumeSnapshotClass
-from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_30MIN, Images
-from utilities.infra import get_cert, run_ssh_commands
+from utilities.infra import get_cert, get_pod_by_name_prefix, run_ssh_commands
 from utilities.storage import create_dv
 from utilities.virt import (
     VirtualMachineForTests,
@@ -286,11 +285,20 @@ def get_importer_pod(
     dyn_client,
     namespace,
 ):
-    pods = list(Pod.get(dyn_client=dyn_client, namespace=namespace))
-    for pod in pods:
-        if pod.name.startswith("importer"):
-            return pod
-    raise ResourceNotFoundError
+    try:
+        for pod in TimeoutSampler(
+            wait_timeout=30,
+            sleep=1,
+            func=get_pod_by_name_prefix,
+            dyn_client=dyn_client,
+            pod_prefix="importer",
+            namespace=namespace,
+        ):
+            if pod:
+                return pod
+    except TimeoutExpiredError:
+        LOGGER.error("Importer pod not found")
+        raise
 
 
 def smart_clone_supported_by_sc(sc, client):
