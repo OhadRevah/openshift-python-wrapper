@@ -386,7 +386,6 @@ class VirtualMachineForTests(VirtualMachine):
         if self.diskless_vm:
             template_spec = self.set_diskless_vm(template_spec=template_spec)
         else:
-            template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
             res, template_spec = self.update_vm_storage_configuration(
                 res=res, template_spec=template_spec
             )
@@ -404,6 +403,8 @@ class VirtualMachineForTests(VirtualMachine):
                     template_spec = self.update_vm_ssh_secret_configuration(
                         template_spec=template_spec
                     )
+            # cloud-init disks must be set after DV disks in order to boot from DV.
+            template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
 
         return res
 
