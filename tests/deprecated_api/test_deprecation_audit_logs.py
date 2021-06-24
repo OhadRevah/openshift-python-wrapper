@@ -92,7 +92,11 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
     deprecated_calls = get_deprecated_apis(audit_logs_dict=audit_logs)
 
     # Remove components with open bugs
-    components_bugs = {"virt-api": 1972762, "node-maintenance-operator": 1972784}
+    components_bugs = {
+        "virt-api": 1972762,
+        "node-maintenance-operator": 1972784,
+        "rook": 1975581,
+    }
     for component in deprecated_calls.copy():
         if [
             True
