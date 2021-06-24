@@ -106,6 +106,7 @@ def windows_10_vm(
         cpu_flags={"features": [{"name": cpu_features, "policy": "require"}]},
         memory_requests="12Gi",
         cpu_cores=16,
+        cpu_threads=1,  # TODO: Remove once WSL2 image is fixed to work with multi-threads
     ) as vm:
         running_vm(vm=vm)
         assert is_wsl2_guest_running(vm=vm, timeout=60)
