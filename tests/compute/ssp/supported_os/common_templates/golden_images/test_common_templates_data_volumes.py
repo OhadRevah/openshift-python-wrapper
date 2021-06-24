@@ -8,7 +8,6 @@ from ocp_resources.virtual_machine import VirtualMachine
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
-from tests.conftest import vm_instance_from_template
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import (
     BUG_STATUS_CLOSED,
@@ -18,6 +17,7 @@ from utilities.infra import (
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
+    vm_instance_from_template,
     wait_for_vm_interfaces,
 )
 

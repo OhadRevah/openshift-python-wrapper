@@ -3,7 +3,6 @@ import logging
 import pytest
 from ocp_resources.storage_class import StorageClass
 
-from tests.conftest import vm_instance_from_template
 from tests.os_params import (
     FEDORA_LATEST,
     FEDORA_LATEST_LABELS,
@@ -13,6 +12,7 @@ from tests.os_params import (
     WINDOWS_LATEST_OS,
 )
 from utilities.infra import BUG_STATUS_CLOSED
+from utilities.virt import vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)

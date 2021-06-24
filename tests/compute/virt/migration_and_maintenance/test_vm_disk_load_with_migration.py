@@ -8,10 +8,9 @@ import pytest
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
 
-from tests.conftest import vm_instance_from_template
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import run_ssh_commands
-from utilities.virt import migrate_vm_and_verify, running_vm
+from utilities.virt import migrate_vm_and_verify, running_vm, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)

@@ -3,8 +3,7 @@ import logging
 import pytest
 from ocp_resources.storage_class import StorageClass
 
-from tests.conftest import vm_instance_from_template
-from utilities.virt import get_rhel_os_dict
+from utilities.virt import get_rhel_os_dict, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)

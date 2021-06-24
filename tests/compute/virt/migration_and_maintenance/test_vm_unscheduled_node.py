@@ -6,8 +6,8 @@ from ocp_resources.virtual_machine import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
 from tests.compute.virt import utils as virt_utils
-from tests.conftest import vm_instance_from_template
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
+from utilities.virt import vm_instance_from_template
 
 
 @pytest.fixture()

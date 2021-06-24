@@ -19,7 +19,6 @@ from ocp_resources.volume_snapshot import VolumeSnapshotClass
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from tests.conftest import vm_instance_from_template
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_30MIN
 from utilities.infra import Images, get_cert, run_ssh_commands
 from utilities.storage import create_dv
@@ -27,6 +26,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     running_vm,
     validate_vmi_ga_info_vs_windows_os_info,
+    vm_instance_from_template,
     wait_for_windows_vm,
 )
 

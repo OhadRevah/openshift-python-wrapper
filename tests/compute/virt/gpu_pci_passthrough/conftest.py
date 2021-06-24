@@ -8,9 +8,9 @@ import shlex
 import pytest
 from ocp_resources.resource import ResourceEditor
 
-from tests.conftest import vm_instance_from_template
 from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME, OS_FLAVOR_WINDOWS
 from utilities.infra import run_ssh_commands
+from utilities.virt import vm_instance_from_template
 
 
 @pytest.fixture(scope="session")

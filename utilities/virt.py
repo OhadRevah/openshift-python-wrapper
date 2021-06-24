@@ -1752,3 +1752,75 @@ def prepare_cloud_init_user_data(section, data):
     cloud_init_data["userData"][section] = data
 
     return cloud_init_data
+
+
+@contextmanager
+def vm_instance_from_template(
+    request,
+    unprivileged_client,
+    namespace,
+    rhel7_workers=False,
+    data_volume=None,
+    data_volume_template=None,
+    existing_data_volume=None,
+    network_configuration=None,
+    cloud_init_data=None,
+    node_selector=None,
+    vm_cpu_model=None,
+):
+    """Create a VM from template and start it (start step could be skipped by setting
+    request.param['start_vm'] to False.
+
+    The call to this function is triggered by calling either
+    vm_instance_from_template_multi_storage_scope_function or vm_instance_from_template_multi_storage_scope_class.
+
+    Prerequisite - a DV must be created prior to VM creation.
+
+    Args:
+        data_volume (obj `DataVolume`: DV resource): existing DV that will be cloned (for example: golden image)
+        data_volume_template (dict): dataVolumeTemplates dict; will replace dataVolumeTemplates in VM yaml
+        existing_data_volume (obj `DataVolume`: DV resource): existing DV to be consumed directly (not cloned)
+
+    Yields:
+        obj `VirtualMachine`: VM resource
+
+    """
+    params = request.param if hasattr(request, "param") else request
+    vm_name = params["vm_name"].replace(".", "-").lower()
+    with VirtualMachineForTestsFromTemplate(
+        name=vm_name,
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(**params["template_labels"]),
+        data_volume=data_volume,
+        data_volume_template=data_volume_template,
+        existing_data_volume=existing_data_volume,
+        vm_dict=params.get("vm_dict"),
+        cpu_threads=params.get("cpu_threads"),
+        memory_requests=params.get("memory_requests"),
+        network_model=params.get("network_model"),
+        network_multiqueue=params.get("network_multiqueue"),
+        networks=network_configuration,
+        interfaces=sorted(network_configuration.keys())
+        if network_configuration
+        else None,
+        cloud_init_data=cloud_init_data,
+        attached_secret=params.get("attached_secret"),
+        node_selector=node_selector,
+        diskless_vm=params.get("diskless_vm"),
+        cpu_model=params.get("cpu_model") or vm_cpu_model,
+        ssh=params.get("ssh", True),
+        disk_options_vm=params.get("disk_io_option"),
+        host_device_name=params.get("host_device_name"),
+        gpu_name=params.get("gpu_name"),
+        rhel7_workers=rhel7_workers,
+        cloned_dv_size=params.get("cloned_dv_size"),
+        systemctl_support="rhel-6" not in vm_name,
+    ) as vm:
+        if params.get("start_vm", True):
+            running_vm(
+                vm=vm,
+                wait_for_interfaces=params.get("guest_agent", True),
+                enable_ssh=vm.ssh,
+            )
+        yield vm

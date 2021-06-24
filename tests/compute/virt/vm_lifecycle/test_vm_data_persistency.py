@@ -7,7 +7,6 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
 from tests.compute.utils import get_linux_timezone, get_windows_timezone
-from tests.conftest import vm_instance_from_template
 from tests.os_params import (
     RHEL_LATEST,
     RHEL_LATEST_LABELS,
@@ -22,7 +21,11 @@ from utilities.constants import (
 )
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
-from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
+from utilities.virt import (
+    vm_instance_from_template,
+    wait_for_ssh_connectivity,
+    wait_for_vm_interfaces,
+)
 
 
 LOGGER = logging.getLogger(__name__)

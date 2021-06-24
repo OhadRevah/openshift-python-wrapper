@@ -4,7 +4,6 @@ import pytest
 from ocp_resources.storage_class import StorageClass
 
 from tests.compute.utils import remove_eth0_default_gw
-from tests.conftest import vm_instance_from_template
 from tests.os_params import (
     RHEL_LATEST,
     RHEL_LATEST_LABELS,
@@ -13,7 +12,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.virt import get_guest_os_info
+from utilities.virt import get_guest_os_info, vm_instance_from_template
 
 
 pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")

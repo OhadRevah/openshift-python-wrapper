@@ -16,10 +16,9 @@ from ocp_resources.secret import Secret
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import remove_eth0_default_gw
-from tests.conftest import vm_instance_from_template
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.infra import base64_encode_str, run_ssh_commands
-from utilities.virt import prepare_cloud_init_user_data
+from utilities.virt import prepare_cloud_init_user_data, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)

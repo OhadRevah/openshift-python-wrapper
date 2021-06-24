@@ -8,9 +8,8 @@ import pytest
 from ocp_resources.service import Service
 from pytest_testconfig import config as py_config
 
-from tests.conftest import vm_instance_from_template
 from utilities.constants import TIMEOUT_5MIN
-from utilities.virt import get_windows_os_dict
+from utilities.virt import get_windows_os_dict, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
