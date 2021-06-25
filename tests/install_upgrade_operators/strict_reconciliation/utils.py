@@ -3,12 +3,12 @@ import logging
 from dictdiffer import diff
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.conftest import get_hyperconverged_resource
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
     get_hyperconverged_kubevirt,
     get_network_addon_config,
 )
+from utilities.hco import get_hyperconverged_resource
 
 
 LOGGER = logging.getLogger(__name__)
