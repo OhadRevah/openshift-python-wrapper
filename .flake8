@@ -66,3 +66,4 @@ enable-extensions =
     PID,
     FCFN,
     UFN,
+    NIFC,
