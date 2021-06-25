@@ -2,7 +2,7 @@ import os
 
 import pytest_testconfig
 
-from utilities.infra import Images
+from utilities.constants import Images
 
 
 global config

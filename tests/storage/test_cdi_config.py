@@ -14,7 +14,8 @@ from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
-from utilities.infra import Images, get_cert
+from utilities.constants import Images
+from utilities.infra import get_cert
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,

@@ -2,7 +2,7 @@ import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.storage_class import StorageClass
 
-from utilities.infra import Images
+from utilities.constants import Images
 from utilities.storage import (
     ErrorMsg,
     downloaded_image,

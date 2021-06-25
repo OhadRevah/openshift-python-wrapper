@@ -8,9 +8,9 @@ import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import NamespacedResource, ResourceEditor
 
+from utilities.constants import Images
 from utilities.infra import (
     BUG_STATUS_CLOSED,
-    Images,
     get_bug_status,
     get_bugzilla_connection_params,
     hco_cr_jsonpatch_annotations_dict,

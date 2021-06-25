@@ -3,7 +3,7 @@ import os
 import pytest_testconfig
 from ocp_resources.template import Template
 
-from utilities.infra import Images
+from utilities.constants import Images
 
 
 global config

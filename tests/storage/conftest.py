@@ -18,9 +18,9 @@ from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
+from utilities.constants import Images
 from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
-    Images,
     get_cert,
     hco_cr_jsonpatch_annotations_dict,
 )

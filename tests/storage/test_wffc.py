@@ -12,8 +12,8 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN
-from utilities.infra import Images, hco_cr_jsonpatch_annotations_dict
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN, Images
+from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,

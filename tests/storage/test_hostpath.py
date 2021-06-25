@@ -23,8 +23,8 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
-from utilities.infra import Images, get_pod_by_name_prefix
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
+from utilities.infra import get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
     create_dv,

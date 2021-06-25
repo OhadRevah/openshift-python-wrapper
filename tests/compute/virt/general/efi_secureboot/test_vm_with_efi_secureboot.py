@@ -12,8 +12,8 @@ from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import OS_FLAVOR_RHEL
-from utilities.infra import Images, run_ssh_commands
+from utilities.constants import OS_FLAVOR_RHEL, Images
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,

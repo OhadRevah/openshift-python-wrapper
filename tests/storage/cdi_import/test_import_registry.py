@@ -12,10 +12,9 @@ from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
-from tests.storage.cdi_import.conftest import wait_for_importer_container_message
-from tests.storage.utils import get_importer_pod
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN
-from utilities.infra import BUG_STATUS_CLOSED, Images, get_cert
+from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
+from utilities.infra import BUG_STATUS_CLOSED, get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
 

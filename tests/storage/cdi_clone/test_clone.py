@@ -12,8 +12,7 @@ from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
 
 from tests.storage import utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN
-from utilities.infra import Images
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
 from utilities.storage import (
     create_dv,
     data_volume_template_dict,

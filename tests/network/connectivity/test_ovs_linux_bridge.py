@@ -6,7 +6,7 @@ from collections import OrderedDict
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.network.conftest import IPV6_STR
+from tests.network.constants import IPV6_STR
 from tests.network.utils import assert_no_ping, run_test_guest_performance
 from utilities.infra import BUG_STATUS_CLOSED, name_prefix
 from utilities.network import (

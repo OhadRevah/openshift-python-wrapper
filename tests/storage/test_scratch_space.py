@@ -14,8 +14,8 @@ from openshift.dynamic.exceptions import NotFoundError
 
 import utilities.storage
 from tests.storage import utils as storage_utils
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, Images
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import downloaded_image, get_images_server_url
 
 

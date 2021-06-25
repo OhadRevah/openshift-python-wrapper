@@ -8,10 +8,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 
 from tests.storage import utils
-from tests.storage.restricted_namespace_cloning.conftest import (
-    DV_PARAMS,
-    NAMESPACE_PARAMS,
-)
+from tests.storage.constants import DV_PARAMS, NAMESPACE_PARAMS
 from tests.storage.utils import set_permissions
 from utilities.storage import ErrorMsg, create_dv
 

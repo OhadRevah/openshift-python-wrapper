@@ -53,6 +53,8 @@ from utilities.constants import (
     TEST_COLLECT_INFO_DIR,
     TEST_LOG_FILE,
     TIMEOUT_4MIN,
+    UNPRIVILEGED_PASSWORD,
+    UNPRIVILEGED_USER,
 )
 from utilities.hco import (
     apply_np_changes,
@@ -99,8 +101,6 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 BASIC_LOGGER = logging.getLogger("basic")
-UNPRIVILEGED_USER = "unprivileged-user"
-UNPRIVILEGED_PASSWORD = "unprivileged-password"
 HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
 OPENSHIFT_CONFIG_NAMESPACE = "openshift-config"
 HTPASSWD_PROVIDER_DICT = {

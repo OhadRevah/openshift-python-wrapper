@@ -5,8 +5,8 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
-from utilities.constants import INTEL
-from utilities.infra import Images, generate_latest_os_dict
+from utilities.constants import INTEL, Images
+from utilities.infra import generate_latest_os_dict
 
 
 global config

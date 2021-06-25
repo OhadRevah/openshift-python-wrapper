@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from utilities.infra import Images
+from utilities.constants import Images
 from utilities.storage import downloaded_image
 
 

@@ -4,7 +4,7 @@ import pytest
 from netaddr import IPNetwork
 from ocp_resources.utils import TimeoutSampler
 
-from tests.network.l2_bridge.conftest import DHCP_IP_RANGE_START
+from tests.network.constants import DHCP_IP_RANGE_START
 from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 

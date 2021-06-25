@@ -17,8 +17,7 @@ from pytest_testconfig import config as py_config
 
 from tests.storage import utils as storage_utils
 from utilities import storage as utils
-from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import Images
+from utilities.constants import TIMEOUT_10MIN, Images
 from utilities.storage import get_images_server_url
 
 

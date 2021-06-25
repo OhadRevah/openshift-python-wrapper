@@ -14,13 +14,13 @@ from ocp_resources.route import Route
 from ocp_resources.service import Service
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.upload_token_request import UploadTokenRequest
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot import VolumeSnapshotClass
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_30MIN
-from utilities.infra import Images, get_cert, run_ssh_commands
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_30MIN, Images
+from utilities.infra import get_cert, run_ssh_commands
 from utilities.storage import create_dv
 from utilities.virt import (
     VirtualMachineForTests,
@@ -295,3 +295,37 @@ def smart_clone_supported_by_sc(sc, client):
         if vsc.instance.get("driver") == sc_instance.get("provisioner"):
             return True
     return False
+
+
+def wait_for_importer_container_message(importer_pod, msg):
+    LOGGER.info(f"Wait for {importer_pod.name} container to show message: {msg}")
+    try:
+        sampled_msg = TimeoutSampler(
+            wait_timeout=120,
+            sleep=5,
+            func=lambda: importer_container_status_reason(importer_pod)
+            == Pod.Status.CRASH_LOOPBACK_OFF
+            and msg
+            in importer_pod.instance.status.containerStatuses[0]
+            .get("lastState", {})
+            .get("terminated", {})
+            .get("message", ""),
+        )
+        for sample in sampled_msg:
+            if sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"{importer_pod.name} did not get message: {msg}")
+        raise
+
+
+def importer_container_status_reason(pod):
+    """
+    Get status for why importer pod container is waiting or terminated
+    (for container status running there is no 'reason' key)
+    """
+    container_state = pod.instance.status.containerStatuses[0].state
+    if container_state.waiting:
+        return container_state.waiting.reason
+    if container_state.terminated:
+        return container_state.terminated.reason

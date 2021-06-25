@@ -18,11 +18,10 @@ from pytest_testconfig import config as py_config
 
 from tests.os_params import FEDORA_LATEST
 from tests.storage import utils
-from tests.storage.cdi_import.conftest import wait_for_importer_container_message
-from tests.storage.utils import get_importer_pod
+from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
 from utilities import console
-from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_4MIN, TIMEOUT_5MIN
-from utilities.infra import NON_EXIST_URL, Images
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_4MIN, TIMEOUT_5MIN, Images
+from utilities.infra import NON_EXIST_URL
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,

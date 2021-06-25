@@ -13,8 +13,8 @@ from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.constants import INTEL
-from utilities.infra import Images, run_ssh_commands
+from utilities.constants import INTEL, Images
+from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_windows_os_dict,

@@ -13,8 +13,7 @@ from ocp_resources.storage_class import StorageClass
 from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import Images
+from utilities.constants import TIMEOUT_5MIN, Images
 from utilities.storage import (
     create_dummy_first_consumer_pod,
     sc_is_hpp_with_immediate_volume_binding,

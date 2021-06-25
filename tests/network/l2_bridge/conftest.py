@@ -6,6 +6,7 @@ import pytest
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.resource import ResourceEditor
 
+from tests.network.constants import DHCP_IP_RANGE_END, DHCP_IP_RANGE_START
 from tests.network.utils import (
     DHCP_SERVER_CONF_FILE,
     DHCP_SERVICE_RESTART,
@@ -32,8 +33,6 @@ VMA_MPLS_LOOPBACK_IP = "10.200.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
 VMB_MPLS_LOOPBACK_IP = "10.200.200.1/32"
 VMB_MPLS_ROUTE_TAG = 200
-DHCP_IP_RANGE_START = "10.200.3.3"
-DHCP_IP_RANGE_END = "10.200.3.10"
 
 
 @pytest.fixture(scope="class")

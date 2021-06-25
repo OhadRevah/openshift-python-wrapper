@@ -19,9 +19,9 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import check_disk_count_in_vm
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, Images
 from utilities.hco import add_labels_to_nodes
-from utilities.infra import Images, get_pod_by_name_prefix
+from utilities.infra import get_pod_by_name_prefix
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests, running_vm
 

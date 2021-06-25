@@ -11,11 +11,9 @@ from ocp_resources.role_binding import RoleBinding
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
-from tests.conftest import UNPRIVILEGED_USER
 from tests.storage.utils import set_permissions
 from utilities import console
-from utilities.constants import OS_FLAVOR_CIRROS
-from utilities.infra import Images
+from utilities.constants import OS_FLAVOR_CIRROS, UNPRIVILEGED_USER, Images
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests
 

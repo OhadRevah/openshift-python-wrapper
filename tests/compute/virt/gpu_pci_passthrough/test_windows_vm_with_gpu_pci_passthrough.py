@@ -10,8 +10,7 @@ from pytest_testconfig import config as py_config
 
 from tests.compute import utils as compute_utils
 from tests.compute.virt.gpu_pci_passthrough import utils as passthrough_utils
-from utilities.constants import GPU_DEVICE_NAME
-from utilities.infra import Images
+from utilities.constants import GPU_DEVICE_NAME, Images
 from utilities.virt import get_windows_os_dict
 
 

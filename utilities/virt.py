@@ -41,12 +41,12 @@ from utilities.constants import (
     OS_FLAVOR_WINDOWS,
     OS_LOGIN_PARAMS,
     TIMEOUT_4MIN,
+    Images,
 )
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
-    Images,
     authorized_key,
     camelcase_to_mixedcase,
     get_admin_client,

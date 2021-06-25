@@ -10,7 +10,8 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from tests.os_params import RHEL_LATEST_LABELS
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.constants import Images
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = pytest.mark.post_upgrade

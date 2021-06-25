@@ -10,7 +10,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST_LABELS, WINDOWS_LATEST_LABELS
-from utilities.infra import Images
+from utilities.constants import Images
 from utilities.virt import vm_instance_from_template
 
 

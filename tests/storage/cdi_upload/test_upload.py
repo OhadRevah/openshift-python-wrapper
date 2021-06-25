@@ -21,8 +21,7 @@ from string_utils import shuffle
 
 import tests.storage.utils as storage_utils
 import utilities.storage
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN
-from utilities.infra import Images
+from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, Images
 from utilities.storage import downloaded_image
 
 

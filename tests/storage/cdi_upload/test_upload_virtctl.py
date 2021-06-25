@@ -14,8 +14,8 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS
-from utilities.infra import BUG_STATUS_CLOSED, Images
+from utilities.constants import OS_FLAVOR_CIRROS, Images
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import (
     ErrorMsg,
     create_dummy_first_consumer_pod,

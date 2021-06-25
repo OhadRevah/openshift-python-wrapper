@@ -7,15 +7,13 @@ Pytest conftest file for CNV network tests
 import pytest
 from ocp_resources.pod import Pod
 
+from tests.network.constants import IPV6_STR
 from utilities.infra import ClusterHosts
 from utilities.network import (
     compose_dual_stack_network_data,
     get_ipv6_address,
     ip_version_data_from_matrix,
 )
-
-
-IPV6_STR = "ipv6"
 
 
 @pytest.fixture(scope="session")

@@ -6,7 +6,7 @@ from ipaddress import ip_interface
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.network.conftest import IPV6_STR
+from tests.network.constants import IPV6_STR
 from tests.network.utils import run_test_guest_performance
 from utilities.network import (
     assert_ping_successful,

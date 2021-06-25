@@ -9,10 +9,7 @@ from kubernetes.client.rest import ApiException
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.service_account import ServiceAccount
 
-from tests.storage.restricted_namespace_cloning.conftest import (
-    DV_PARAMS,
-    NAMESPACE_PARAMS,
-)
+from tests.storage.constants import DV_PARAMS, NAMESPACE_PARAMS
 from tests.storage.utils import (
     create_cluster_role,
     create_dv,
@@ -21,8 +18,7 @@ from tests.storage.utils import (
     set_permissions,
     storage_params,
 )
-from utilities.constants import OS_FLAVOR_CIRROS
-from utilities.infra import Images
+from utilities.constants import OS_FLAVOR_CIRROS, Images
 from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
 from utilities.virt import VirtualMachineForTests
 
