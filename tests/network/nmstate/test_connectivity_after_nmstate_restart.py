@@ -2,7 +2,6 @@ import logging
 from collections import OrderedDict
 
 import pytest
-from ocp_resources.daemonset import DaemonSet
 
 from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
@@ -18,14 +17,6 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 LOGGER = logging.getLogger(__name__)
 BRIDGE_NAME = "br1test"
-
-
-@pytest.fixture()
-def nmstate_ds(admin_client, hco_namespace):
-    for ds in DaemonSet.get(
-        dyn_client=admin_client, name="nmstate-handler", namespace=hco_namespace.name
-    ):
-        return ds
 
 
 @pytest.fixture()

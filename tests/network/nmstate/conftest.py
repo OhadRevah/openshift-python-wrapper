@@ -5,7 +5,7 @@ import logging
 import pytest
 
 from tests.network.utils import get_worker_pod, wait_for_address_on_iface
-from utilities.infra import name_prefix
+from utilities.infra import get_daemonset_by_name, name_prefix
 from utilities.network import LINUX_BRIDGE, network_device
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -126,3 +126,12 @@ def bridges_on_management_ifaces_node2(
 
     # Verify Ip is back to the port
     wait_for_address_on_iface(worker_pod=worker_pod, iface_name=management_iface)
+
+
+@pytest.fixture()
+def nmstate_ds(admin_client, hco_namespace):
+    return get_daemonset_by_name(
+        admin_client=admin_client,
+        daemonset_name="nmstate-handler",
+        namespace_name=hco_namespace.name,
+    )
