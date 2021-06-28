@@ -7,6 +7,7 @@ from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_30MIN
+from utilities.infra import get_admin_client
 from utilities.storage import create_dv, get_images_server_url
 from utilities.virt import (
     VirtualMachineForTests,
@@ -20,7 +21,7 @@ default_run_strategy = VirtualMachine.RunStrategy.MANUAL
 
 
 @contextmanager
-def container_disk_vm(namespace, unprivileged_client, cpu_model, admin_client=None):
+def container_disk_vm(namespace, unprivileged_client, cpu_model):
     name = "fedora-vm-lifecycle"
     with VirtualMachineForTests(
         name=name,
@@ -36,9 +37,9 @@ def container_disk_vm(namespace, unprivileged_client, cpu_model, admin_client=No
 
 
 @contextmanager
-def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
+def data_volume_vm(unprivileged_client, namespace, cpu_model):
     with create_dv(
-        client=admin_client,
+        client=get_admin_client(),
         dv_name=py_config["latest_fedora_os_dict"]["template_labels"]["os"],
         namespace=py_config["golden_images_namespace"],
         url=f"{get_images_server_url(schema='http')}{py_config['latest_fedora_os_dict']['image_path']}",
@@ -60,6 +61,7 @@ def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
             data_volume=dv,
             run_strategy=default_run_strategy,
             cpu_model=cpu_model,
+            termination_grace_period=0,
         ) as vm:
             # Run the VM to enable SSH
             running_vm(vm=vm)
@@ -68,7 +70,6 @@ def data_volume_vm(admin_client, unprivileged_client, namespace, cpu_model):
 
 @pytest.fixture(scope="module")
 def lifecycle_vm(
-    admin_client,
     unprivileged_client,
     namespace,
     vm_volumes_matrix__module__,
@@ -78,12 +79,8 @@ def lifecycle_vm(
     vm_volumes_matrix returns a string.
     globals() is used to call the actual contextmanager with that name
     request should be True to start vm and wait for interfaces, else False
-
-    Note: admin_client is needed only for data_volume_vm, but as a matrix is used, it is passed to either
-    one of the context managers.
     """
     with globals()[vm_volumes_matrix__module__](
-        admin_client=admin_client,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         cpu_model=nodes_common_cpu_model,

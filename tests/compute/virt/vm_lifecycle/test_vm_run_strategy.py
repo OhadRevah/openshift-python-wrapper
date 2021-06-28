@@ -15,7 +15,11 @@ from ocp_resources.virtual_machine import VirtualMachine, VirtualMachineInstance
 
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands
-from utilities.virt import migrate_vm_and_verify, wait_for_vm_interfaces
+from utilities.virt import (
+    migrate_vm_and_verify,
+    wait_for_ssh_connectivity,
+    wait_for_vm_interfaces,
+)
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -140,6 +144,7 @@ def start_vm_if_not_running(lifecycle_vm):
 
     lifecycle_vm.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=lifecycle_vm.vmi)
+    wait_for_ssh_connectivity(vm=lifecycle_vm)
 
 
 @pytest.fixture(scope="module")
@@ -226,7 +231,7 @@ class TestRunStrategy:
             pytest.param("stop", marks=pytest.mark.polarion("CNV-4687")),
         ],
     )
-    @pytest.mark.first
+    @pytest.mark.order("first")
     def test_run_strategy_policy(
         self,
         lifecycle_vm,
@@ -255,7 +260,7 @@ class TestRunStrategy:
         run_strategy = matrix_updated_vm_run_strategy
         status = RUN_STRATEGY_SHUTDOWN_STATUS[run_strategy]
 
-        # send poweroff
+        # Send poweroff
         run_ssh_commands(
             host=lifecycle_vm.ssh_exec, commands=shlex.split("sudo poweroff")
         )
