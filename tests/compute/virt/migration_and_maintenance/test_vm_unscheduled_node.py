@@ -16,8 +16,6 @@ def unscheduled_node_vm(
     unprivileged_client,
     namespace,
     data_volume_scope_function,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     with vm_instance_from_template(
@@ -25,8 +23,6 @@ def unscheduled_node_vm(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         existing_data_volume=data_volume_scope_function,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         node_selector=worker_node1.name,
         vm_cpu_model=nodes_common_cpu_model,
     ) as vm:

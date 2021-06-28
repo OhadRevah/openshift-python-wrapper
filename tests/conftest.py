@@ -80,12 +80,10 @@ from utilities.infra import (
     setup_logging,
 )
 from utilities.network import (
-    OVS,
     EthernetNetworkConfigurationPolicy,
     MacPool,
     enable_hyperconverged_ovs_annotations,
     network_device,
-    network_nad,
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
@@ -94,8 +92,6 @@ from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
     kubernetes_taint_exists,
-    nmcli_add_con_cmds,
-    prepare_cloud_init_user_data,
     vm_instance_from_template,
     wait_for_windows_vm,
 )
@@ -144,7 +140,6 @@ def pytest_addoption(parser):
     matrix_group = parser.getgroup(name="Matrix")
     os_group = parser.getgroup(name="OS")
     install_upgrade_group = parser.getgroup(name="Upgrade")
-    workers_group = parser.getgroup(name="Workers")
     storage_group = parser.getgroup(name="Storage")
     cluster_sanity_group = parser.getgroup(name="ClusterSanity")
 
@@ -200,13 +195,6 @@ def pytest_addoption(parser):
         "--latest-centos",
         action="store_true",
         help="Run matrix tests with latest CentOS",
-    )
-
-    # Workers addoption
-    workers_group.addoption(
-        "--rhel7-workers",
-        help="If running on cluster with RHEL7 workers",
-        action="store_true",
     )
 
     # Storage addoption
@@ -467,11 +455,6 @@ def pytest_sessionstart(session):
 
     setup_logging(log_file=TEST_LOG_FILE)
     py_config_scs = py_config.get("storage_class_matrix", {})
-    # Only HPP storage is supported when running with RHEL7 workers.
-    if session.config.getoption("rhel7_workers"):
-        py_config_scs = [
-            sc for sc in py_config_scs if [*sc][0] == "hostpath-provisioner"
-        ]
 
     # Save the default storage_class_matrix before it is updated
     # with runtime storage_class_matrix value(s)
@@ -1118,72 +1101,6 @@ def skip_if_workers_vms(workers_type):
         pytest.skip(msg="Test should run only BM cluster")
 
 
-# RHEL 7 specific fixtures
-@pytest.fixture(scope="session")
-def rhel7_workers(pytestconfig):
-    return pytestconfig.getoption("rhel7_workers")
-
-
-@pytest.fixture(scope="session")
-def skip_rhel7_workers(rhel7_workers):
-    if rhel7_workers:
-        pytest.skip(msg="Test should skip on RHEL7 workers")
-
-
-@pytest.fixture(scope="session")
-def rhel7_ovs_bridge(rhel7_workers, utility_pods):
-    if rhel7_workers:
-        # All RHEL workers should be with the same configuration, gating info from the first worker.
-        connections = utility_pods[0].execute(
-            command=["nmcli", "-t", "connection", "show"]
-        )
-        for connection in connections.splitlines():
-            if "ovs-bridge" in connection:
-                return connection.split(":")[-1]
-
-
-@pytest.fixture(scope="session")
-def skip_no_rhel7_workers(rhel7_workers):
-    if not rhel7_workers:
-        pytest.skip(msg="Test should run only with cluster with RTHEL7 workers")
-
-
-@pytest.fixture(scope="class")
-def rhel7_psi_network_config():
-    """RHEL7 network configuration for PSI clusters"""
-
-    return {
-        "vm_address": "172.16.0.90",
-        "helper_vm_address": "172.16.0.91",
-        "subnet": "172.16.0.0",
-        "default_gw": "172.16.0.1",
-        "dns_server": "172.16.0.16",
-    }
-
-
-@pytest.fixture(scope="class")
-def network_attachment_definition(rhel7_ovs_bridge, namespace, rhel7_workers):
-    if rhel7_workers:
-        with network_nad(
-            nad_type=OVS,
-            nad_name="rhel7-nad",
-            interface_name=rhel7_ovs_bridge,
-            namespace=namespace,
-        ) as network_attachment_definition:
-            yield network_attachment_definition
-    else:
-        yield
-
-
-@pytest.fixture(scope="class")
-def network_configuration(
-    rhel7_workers,
-    network_attachment_definition,
-):
-    if rhel7_workers:
-        return {network_attachment_definition.name: network_attachment_definition.name}
-
-
 @pytest.fixture()
 def data_volume_multi_storage_scope_function(
     request,
@@ -1337,25 +1254,6 @@ def golden_image_data_volume_scope_function(
     )
 
 
-@pytest.fixture(scope="class")
-def cloud_init_data(
-    request,
-    workers_type,
-    rhel7_workers,
-    rhel7_psi_network_config,
-):
-    if rhel7_workers:
-        bootcmds = nmcli_add_con_cmds(
-            workers_type=workers_type,
-            iface="eth1",
-            ip=rhel7_psi_network_config["vm_address"],
-            default_gw=rhel7_psi_network_config["default_gw"],
-            dns_server=rhel7_psi_network_config["dns_server"],
-        )
-
-        return prepare_cloud_init_user_data(section="bootcmd", data=bootcmds)
-
-
 """
 VM creation from template
 """
@@ -1364,12 +1262,9 @@ VM creation from template
 @pytest.fixture()
 def vm_instance_from_template_multi_storage_scope_function(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_function,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1379,12 +1274,9 @@ def vm_instance_from_template_multi_storage_scope_function(
 
     with vm_instance_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_multi_storage_scope_function,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1398,8 +1290,6 @@ def golden_image_vm_instance_from_template_multi_storage_scope_function(
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_function,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1412,8 +1302,6 @@ def golden_image_vm_instance_from_template_multi_storage_scope_function(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_multi_storage_scope_function,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1427,8 +1315,6 @@ def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1443,8 +1329,6 @@ def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1455,12 +1339,9 @@ def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope
 @pytest.fixture(scope="class")
 def vm_instance_from_template_multi_storage_scope_class(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     data_volume_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1470,12 +1351,9 @@ def vm_instance_from_template_multi_storage_scope_class(
 
     with vm_instance_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=data_volume_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1489,8 +1367,6 @@ def golden_image_vm_instance_from_template_multi_storage_scope_class(
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1503,8 +1379,6 @@ def golden_image_vm_instance_from_template_multi_storage_scope_class(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,

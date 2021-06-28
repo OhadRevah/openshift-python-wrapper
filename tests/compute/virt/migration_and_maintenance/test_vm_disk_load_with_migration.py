@@ -101,7 +101,6 @@ def get_disk_usage(ssh_exec):
 def test_fedora_vm_load_migration(
     skip_upstream,
     skip_access_mode_rwo_scope_function,
-    skip_rhel7_workers,
     unprivileged_client,
     namespace,
     golden_image_data_volume_scope_function,

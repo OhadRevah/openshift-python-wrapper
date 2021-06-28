@@ -3,7 +3,6 @@ import logging
 import pytest
 from ocp_resources.storage_class import StorageClass
 
-from tests.compute.utils import remove_eth0_default_gw
 from tests.os_params import (
     RHEL_LATEST,
     RHEL_LATEST_LABELS,
@@ -57,20 +56,15 @@ def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
 def disk_options_vm(
     request,
     unprivileged_client,
-    rhel7_workers,
     namespace,
     golden_image_data_volume_scope_class,
-    network_configuration,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_class,
-        network_configuration=network_configuration,
     ) as vm:
-        if rhel7_workers:
-            remove_eth0_default_gw(vm=vm)
         yield vm
 
 

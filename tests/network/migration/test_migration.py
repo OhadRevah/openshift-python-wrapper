@@ -265,7 +265,6 @@ def assert_ssh_alive(ssh_vm):
 
 @pytest.mark.polarion("CNV-2060")
 def test_ping_vm_migration(
-    skip_rhel7_workers,
     skip_when_one_node,
     vma,
     vmb,
@@ -279,7 +278,6 @@ def test_ping_vm_migration(
 
 @pytest.mark.polarion("CNV-2063")
 def test_ssh_vm_migration(
-    skip_rhel7_workers,
     skip_when_one_node,
     namespace,
     vma,
@@ -295,7 +293,6 @@ def test_ssh_vm_migration(
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5565")
 def test_connectivity_after_migration_and_restart(
-    skip_rhel7_workers,
     skip_when_one_node,
     namespace,
     vma,
@@ -314,7 +311,6 @@ def test_connectivity_after_migration_and_restart(
 def test_migration_with_masquerade(
     ip_stack_version_matrix__module__,
     admin_client,
-    skip_rhel7_workers,
     skip_when_one_node,
     skip_ipv6_if_not_dual_stack_cluster,
     utility_pods,

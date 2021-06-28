@@ -118,7 +118,6 @@ def running_network_policy_vmb(network_policy_vmb):
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_deny_all_http(
-    skip_rhel7_workers,
     deny_all_http_ports,
     network_policy_vma,
     network_policy_vmb,
@@ -140,7 +139,6 @@ def test_network_policy_deny_all_http(
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_allow_all_http(
-    skip_rhel7_workers,
     allow_all_http_ports,
     network_policy_vma,
     network_policy_vmb,
@@ -159,7 +157,6 @@ def test_network_policy_allow_all_http(
 
 @pytest.mark.polarion("CNV-369")
 def test_network_policy_allow_http80(
-    skip_rhel7_workers,
     allow_http80_port,
     network_policy_vma,
     network_policy_vmb,

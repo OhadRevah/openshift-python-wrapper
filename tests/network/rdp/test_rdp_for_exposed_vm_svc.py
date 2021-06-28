@@ -25,16 +25,12 @@ def rdp_vm(
     request,
     namespace,
     golden_image_data_volume_scope_function,
-    network_configuration,
-    cloud_init_data,
     unprivileged_client,
 ):
     with vm_instance_from_template(
         request=request,
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_function,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         unprivileged_client=unprivileged_client,
     ) as rdp_vm:
         rdp_vm.custom_service_enable(

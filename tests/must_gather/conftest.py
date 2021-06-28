@@ -72,33 +72,26 @@ def kubevirt_crd_resources(admin_client, custom_resource_definitions):
 
 
 @pytest.fixture(scope="module")
-def must_gather_nad(rhel7_workers, rhel7_ovs_bridge, hco_namespace):
+def must_gather_nad(hco_namespace):
     with utilities.network.network_nad(
-        nad_type=utilities.network.OVS
-        if rhel7_workers
-        else utilities.network.LINUX_BRIDGE,
+        nad_type=utilities.network.LINUX_BRIDGE,
         nad_name="mgnad",
-        interface_name=rhel7_ovs_bridge if rhel7_workers else "mgbr",
+        interface_name="mgbr",
         namespace=hco_namespace,
     ) as must_gather_nad:
         yield must_gather_nad
 
 
 @pytest.fixture(scope="module")
-def nodenetworkstate_with_bridge(
-    rhel7_workers, rhel7_ovs_bridge, utility_pods, schedulable_nodes
-):
-    if rhel7_workers:
-        yield rhel7_ovs_bridge
-    else:
-        with utilities.network.network_device(
-            interface_type=utilities.network.LINUX_BRIDGE,
-            nncp_name="must-gather-br",
-            interface_name="mgbr",
-            network_utility_pods=utility_pods,
-            nodes=schedulable_nodes,
-        ) as br:
-            yield br
+def nodenetworkstate_with_bridge(utility_pods, schedulable_nodes):
+    with utilities.network.network_device(
+        interface_type=utilities.network.LINUX_BRIDGE,
+        nncp_name="must-gather-br",
+        interface_name="mgbr",
+        network_utility_pods=utility_pods,
+        nodes=schedulable_nodes,
+    ) as br:
+        yield br
 
 
 @pytest.fixture(scope="module")

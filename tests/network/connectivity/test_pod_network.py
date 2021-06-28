@@ -81,7 +81,6 @@ def cloud_init_ipv6_network_data(ipv6_network_data):
 def test_connectivity_over_pod_network(
     ip_stack_version_matrix__module__,
     skip_when_one_node,
-    skip_rhel7_workers,
     pod_net_vma,
     pod_net_vmb,
     pod_net_running_vma,
@@ -112,7 +111,6 @@ def test_connectivity_over_pod_network(
 def test_guest_performance_over_pod_network(
     skip_if_workers_vms,
     skip_when_one_node,
-    skip_rhel7_workers,
     pod_net_vma,
     pod_net_vmb,
     pod_net_running_vma,

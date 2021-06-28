@@ -211,7 +211,6 @@ class TestBondConnectivity:
     @pytest.mark.polarion("CNV-3366")
     def test_bond(
         self,
-        skip_rhel7_workers,
         skip_no_bond_support,
         namespace,
         ovs_linux_br1bond_nad,

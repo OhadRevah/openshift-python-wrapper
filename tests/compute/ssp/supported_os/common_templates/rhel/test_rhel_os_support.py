@@ -15,7 +15,6 @@ from tests.compute.ssp.supported_os.common_templates import (
 from tests.compute.ssp.supported_os.common_templates.utils import is_rhel9_ga_bug_open
 from tests.compute.ssp.supported_os.utils import check_qemu_guest_agent_installed
 from tests.compute.utils import (
-    remove_eth0_default_gw,
     validate_libvirt_persistent_domain,
     validate_pause_unpause_linux_vm,
 )
@@ -136,7 +135,6 @@ class TestCommonTemplatesRhel:
     @pytest.mark.polarion("CNV-3320")
     def test_expose_ssh(
         self,
-        rhel7_workers,
         skip_upstream,
         unprivileged_client,
         namespace,
@@ -145,20 +143,6 @@ class TestCommonTemplatesRhel:
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """CNV common templates access VM via SSH"""
-
-        # On RHEL7 VM IP is used for SSH
-        if "rhel-6" in [*rhel_os_matrix__class__][0] and rhel7_workers:
-            pytest.skip(
-                "RHEL6 does not have guest agent, IP cannot be obtained on RHEL 7."
-            )
-
-        # On RHEL7, default GW is via eth1. For RHEL8.2, needs to explicitly
-        # remove default GW from eth0 after VM is running
-        if "rhel-8-2" in [*rhel_os_matrix__class__][0] and rhel7_workers:
-            remove_eth0_default_gw(
-                vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-            )
-
         assert golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
             tcp_timeout=120
         ), "Failed to login via SSH"

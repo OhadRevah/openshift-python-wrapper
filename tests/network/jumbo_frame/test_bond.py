@@ -203,7 +203,6 @@ def running_bond_bridge_attached_vmb(bond_bridge_attached_vmb):
     return running_vm(vm=bond_bridge_attached_vmb)
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestBondJumboFrame:
     @pytest.mark.polarion("CNV-3367")
     def test_connectivity_over_linux_bond_large_mtu(

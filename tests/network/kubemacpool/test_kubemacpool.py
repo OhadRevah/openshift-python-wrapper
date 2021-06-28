@@ -7,7 +7,6 @@ from utilities.virt import VirtualMachineForTests
 from . import utils as kmp_utils
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestKMPConnectivity:
     #: KMPTestConnectivity setup
     # .........                                                                    ..........

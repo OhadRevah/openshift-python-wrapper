@@ -212,7 +212,6 @@ def vms_for_upgrade(
     dvs_for_upgrade,
     upgrade_br1test_nad,
     nodes_common_cpu_model,
-    rhel7_workers,
 ):
     networks = {
         upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
@@ -228,7 +227,6 @@ def vms_for_upgrade(
             networks=networks,
             cpu_model=nodes_common_cpu_model,
             interfaces=sorted(networks.keys()),
-            rhel7_workers=rhel7_workers,
         )
         vm.deploy()
         vm.start(timeout=TIMEOUT_40MIN, wait=False)

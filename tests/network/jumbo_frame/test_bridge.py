@@ -137,7 +137,6 @@ def running_bridge_attached_vmb(bridge_attached_vmb):
     return running_vm(vm=bridge_attached_vmb)
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestJumboFrameBridge:
     @pytest.mark.polarion("CNV-2685")
     def test_connectivity_over_linux_bridge_large_mtu(

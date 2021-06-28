@@ -261,9 +261,7 @@ def ovs_linux_bridge_attached_running_vmb(ovs_linux_bridge_attached_vmb):
     return running_vm(vm=ovs_linux_bridge_attached_vmb)
 
 
-@pytest.mark.usefixtures(
-    "skip_rhel7_workers", "skip_when_one_node", "skip_ipv6_if_not_dual_stack_cluster"
-)
+@pytest.mark.usefixtures("skip_when_one_node", "skip_ipv6_if_not_dual_stack_cluster")
 class TestConnectivity:
     @pytest.mark.post_upgrade
     @pytest.mark.parametrize(
@@ -287,7 +285,6 @@ class TestConnectivity:
         skip_if_no_multinic_nodes,
         bridge,
         ip_stack_version_matrix__module__,
-        rhel7_workers,
         ovs_linux_nad,
         namespace,
         ovs_linux_bridge_attached_vma,
@@ -296,11 +293,6 @@ class TestConnectivity:
         ovs_linux_bridge_attached_running_vmb,
     ):
         bridge = "default" if bridge == "default" else ovs_linux_nad.name
-
-        if bridge == "default" and rhel7_workers:
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1787576
-            pytest.skip(msg="Masquerade not working on RHEL7 workers.")
-
         ipv6_testing = ip_stack_version_matrix__module__ == IPV6_STR
         if ipv6_testing and bridge != "default":
             pytest.skip(
@@ -320,7 +312,6 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2072")
     def test_positive_vlan(
         self,
-        skip_rhel7_workers,
         skip_if_no_multinic_nodes,
         skip_if_workers_vms,
         namespace,
@@ -344,7 +335,6 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2075")
     def test_negative_vlan(
         self,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         namespace,
@@ -365,7 +355,6 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2335")
     def test_guest_performance(
         self,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         skip_if_no_multinic_nodes,
         ovs_linux_nad,

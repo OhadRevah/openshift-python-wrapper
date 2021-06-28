@@ -91,9 +91,6 @@ def vm_object_from_template(
     unprivileged_client,
     namespace,
     data_volume_object,
-    network_configuration,
-    cloud_init_data,
-    rhel7_workers=False,
     request=None,
     os_matrix=None,
     cpu_model=None,
@@ -135,12 +132,6 @@ def vm_object_from_template(
         memory_requests=param_dict.get("memory_requests"),
         network_model=network_model,
         network_multiqueue=network_multiqueue,
-        networks=network_configuration if network_configuration else None,
-        interfaces=sorted(network_configuration.keys())
-        if network_configuration
-        else None,
-        cloud_init_data=cloud_init_data if cloud_init_data else None,
-        rhel7_workers=rhel7_workers,
         ssh=param_dict.get("ssh", True),
         cpu_model=cpu_model,
         systemctl_support=not rhel6,
@@ -150,33 +141,24 @@ def vm_object_from_template(
 @pytest.fixture()
 def golden_image_vm_object_from_template_multi_storage_scope_function(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_function,
-    network_configuration,
-    cloud_init_data,
 ):
     return vm_object_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume_object=golden_image_data_volume_multi_storage_scope_function,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture()
 def golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_function(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     """VM is created with function scope whereas golden image DV is created with class scope. to be used when a number
@@ -184,55 +166,40 @@ def golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_f
     """
     return vm_object_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume_object=golden_image_data_volume_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_storage_scope_class(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
 ):
     return vm_object_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume_object=golden_image_data_volume_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
     )
 
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class(
-    rhel7_workers,
     unprivileged_client,
     namespace,
     rhel_os_matrix__class__,
     golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     return vm_object_from_template(
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=rhel_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         cpu_model=nodes_common_cpu_model,
     )
 
@@ -240,24 +207,18 @@ def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     windows_os_matrix__class__,
     golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=windows_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         cpu_model=nodes_common_cpu_model,
     )
 
@@ -265,47 +226,35 @@ def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_cl
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
     request,
-    rhel7_workers,
     unprivileged_client,
     namespace,
     fedora_os_matrix__class__,
     golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         request=request,
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=fedora_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         cpu_model=nodes_common_cpu_model,
     )
 
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
-    rhel7_workers,
     unprivileged_client,
     namespace,
     centos_os_matrix__class__,
     golden_image_data_volume_multi_centos_multi_storage_scope_class,
-    network_configuration,
-    cloud_init_data,
     nodes_common_cpu_model,
 ):
     return vm_object_from_template(
-        rhel7_workers=rhel7_workers,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=centos_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_centos_multi_storage_scope_class,
-        network_configuration=network_configuration,
-        cloud_init_data=cloud_init_data,
         cpu_model=nodes_common_cpu_model,
     )
 

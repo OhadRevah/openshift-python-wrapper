@@ -16,13 +16,6 @@ LOGGER = logging.getLogger(__name__)
 OS_PROC_NAME = {"linux": "ping", "windows": "mspaint.exe"}
 
 
-def remove_eth0_default_gw(vm):
-    run_ssh_commands(
-        host=vm.ssh_exec,
-        commands=shlex.split("sudo route del default gw 0.0.0.0 eth0"),
-    )
-
-
 def get_linux_timezone(ssh_exec):
     return run_ssh_commands(
         host=ssh_exec, commands=shlex.split("timedatectl show | grep -i timezone")

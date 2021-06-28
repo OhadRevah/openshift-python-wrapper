@@ -126,18 +126,14 @@ def create_vm_from_dv(
 
 
 def create_windows_vm_validate_guest_agent_info(
-    cloud_init_data,
     dv,
     namespace,
-    network_configuration,
     unprivileged_client,
     vm_params,
 ):
     with vm_instance_from_template(
         request=vm_params,
-        cloud_init_data=cloud_init_data,
         data_volume=dv,
-        network_configuration=network_configuration,
         namespace=namespace,
         unprivileged_client=unprivileged_client,
     ) as vm_dv:

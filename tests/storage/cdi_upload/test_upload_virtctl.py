@@ -427,16 +427,12 @@ def test_successful_vm_from_uploaded_dv_windows(
     skip_upstream,
     uploaded_dv,
     unprivileged_client,
-    network_configuration,
-    cloud_init_data,
     vm_params,
     namespace,
 ):
     storage_utils.create_windows_vm_validate_guest_agent_info(
-        cloud_init_data=cloud_init_data,
         dv=uploaded_dv,
         namespace=namespace,
-        network_configuration=network_configuration,
         unprivileged_client=unprivileged_client,
         vm_params=vm_params,
     )

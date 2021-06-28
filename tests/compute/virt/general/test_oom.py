@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def oom_vm(namespace, unprivileged_client, rhel7_workers):
+def oom_vm(namespace, unprivileged_client):
     name = "oom-vm"
     with VirtualMachineForTests(
         name=name,
@@ -31,7 +31,6 @@ def oom_vm(namespace, unprivileged_client, rhel7_workers):
         cpu_cores=2,
         cpu_requests="2",
         cpu_limits="2",
-        rhel7_workers=rhel7_workers,
     ) as vm:
         running_vm(vm=vm)
         yield vm

@@ -116,7 +116,6 @@ class TestCommonTemplatesCentos:
     def test_expose_ssh(
         self,
         skip_upstream,
-        rhel7_workers,
         namespace,
         centos_os_matrix__class__,
         golden_image_data_volume_multi_centos_multi_storage_scope_class,
@@ -137,7 +136,6 @@ class TestCommonTemplatesCentos:
         self,
         centos_os_matrix__class__,
         schedulable_node_ips,
-        rhel7_workers,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
     ):
         """Test Guest OS agent info."""
@@ -154,7 +152,6 @@ class TestCommonTemplatesCentos:
         self,
         centos_os_matrix__class__,
         schedulable_node_ips,
-        rhel7_workers,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
     ):
         # TODO: remove restart_qemu_guest_agent_service when cnv moved to newer qemu versions
@@ -171,7 +168,6 @@ class TestCommonTemplatesCentos:
         self,
         centos_os_matrix__class__,
         schedulable_node_ips,
-        rhel7_workers,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
         skip_guest_agent_on_centos,
     ):
@@ -188,7 +184,6 @@ class TestCommonTemplatesCentos:
         self,
         centos_os_matrix__class__,
         schedulable_node_ips,
-        rhel7_workers,
         golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
     ):
         with console.Centos(

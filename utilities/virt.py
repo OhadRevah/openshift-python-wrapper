@@ -30,7 +30,6 @@ from ocp_resources.virtual_machine import (
 from ocp_resources.virtual_machine_import import VirtualMachineImport
 from pytest_testconfig import config as py_config
 
-import utilities.network
 from utilities.constants import (
     CLOUD_INIT_DISK_NAME,
     CLOUD_INIT_NO_CLOUD,
@@ -226,7 +225,6 @@ class VirtualMachineForTests(VirtualMachine):
         running=False,
         run_strategy=None,
         disk_io_options=None,
-        rhel7_workers=False,
         username=None,
         password=None,
         macs=None,
@@ -279,7 +277,6 @@ class VirtualMachineForTests(VirtualMachine):
             running (bool, default: False): If True, running = True
             run_strategy (str, optional): Set runStrategy (run_strategy and running are mutually exclusive)
             disk_io_options (str, optional): Set root disk IO
-            rhel7_workers (bool, default: False)
             username (str, optional): SSH username
             password (str, optional): SSH password
             macs (dict, optional): Dict of {interface_name: mac address}
@@ -339,7 +336,6 @@ class VirtualMachineForTests(VirtualMachine):
         self.disk_io_options = disk_io_options
         self.username = username
         self.password = password
-        self.rhel7_workers = rhel7_workers
         self.macs = macs
         self.interfaces_types = interfaces_types or {}
         self.os_flavor = os_flavor
@@ -847,7 +843,6 @@ class VirtualMachineForTests(VirtualMachine):
             vm=self,
             port=22,
             service_type=Service.Type.NODE_PORT,
-            rhel7_workers=self.rhel7_workers,
         )
         self.ssh_service.create(wait=True)
 
@@ -955,7 +950,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         disk_options_vm=None,
         smm_enabled=None,
         efi_params=None,
-        rhel7_workers=False,
         macs=None,
         interfaces_types=None,
         host_device_name=None,
@@ -999,7 +993,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             disk_io_options=disk_options_vm,
             smm_enabled=smm_enabled,
             efi_params=efi_params,
-            rhel7_workers=rhel7_workers,
             macs=macs,
             interfaces_types=interfaces_types,
             host_device_name=host_device_name,
@@ -1248,7 +1241,6 @@ class ServiceForVirtualMachineForTests(Service):
         ip_family_policy=IP_FAMILY_POLICY_PREFER_DUAL_STACK,
         ip_families=None,
         teardown=True,
-        rhel7_workers=False,
     ):
         super().__init__(name=name, namespace=namespace, teardown=teardown)
         self.vm = vm
@@ -1256,7 +1248,6 @@ class ServiceForVirtualMachineForTests(Service):
         self.port = port
         self.service_type = service_type
         self.target_ip = target_ip
-        self.rhel7_workers = rhel7_workers
         self.ip_family_policy = ip_family_policy
         self.ip_families = ip_families
 
@@ -1276,11 +1267,6 @@ class ServiceForVirtualMachineForTests(Service):
         return res
 
     def service_ip(self, ip_family=None):
-        if self.rhel7_workers:
-            return utilities.network.get_vmi_ip_v4_by_name(
-                vm=self.vm, name=[*self.vm.networks][0]
-            )
-
         if self.service_type == Service.Type.CLUSTER_IP:
             if ip_family:
                 cluster_ips = [
@@ -1312,9 +1298,6 @@ class ServiceForVirtualMachineForTests(Service):
 
     @property
     def service_port(self):
-        if self.rhel7_workers:
-            return self.port
-
         if self.service_type == Service.Type.CLUSTER_IP:
             return self.instance.attributes.spec.ports[0]["port"]
 
@@ -1764,11 +1747,9 @@ def vm_instance_from_template(
     request,
     unprivileged_client,
     namespace,
-    rhel7_workers=False,
     data_volume=None,
     data_volume_template=None,
     existing_data_volume=None,
-    network_configuration=None,
     cloud_init_data=None,
     node_selector=None,
     vm_cpu_model=None,
@@ -1805,10 +1786,6 @@ def vm_instance_from_template(
         memory_requests=params.get("memory_requests"),
         network_model=params.get("network_model"),
         network_multiqueue=params.get("network_multiqueue"),
-        networks=network_configuration,
-        interfaces=sorted(network_configuration.keys())
-        if network_configuration
-        else None,
         cloud_init_data=cloud_init_data,
         attached_secret=params.get("attached_secret"),
         node_selector=node_selector,
@@ -1818,7 +1795,6 @@ def vm_instance_from_template(
         disk_options_vm=params.get("disk_io_option"),
         host_device_name=params.get("host_device_name"),
         gpu_name=params.get("gpu_name"),
-        rhel7_workers=rhel7_workers,
         cloned_dv_size=params.get("cloned_dv_size"),
         systemctl_support="rhel-6" not in vm_name,
     ) as vm:

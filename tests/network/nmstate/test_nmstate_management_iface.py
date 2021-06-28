@@ -12,7 +12,6 @@ REMOTE_IP = "8.8.8.8"
 
 @pytest.mark.destructive
 @pytest.mark.order(before="TestAfterBridgeTeardown")
-@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestWithDhcpOverBridge:
     @pytest.mark.polarion("CNV-3002")
     def test_ping_between_vms_through_brext(
@@ -52,7 +51,6 @@ class TestWithDhcpOverBridge:
 # bridge was created, got dhcp of management and release it back to the port
 # The first test marked with @pytest.mark.order(before="TestAfterBridgeTeardown") to ensure it.
 @pytest.mark.destructive
-@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestAfterBridgeTeardown:
     @pytest.mark.polarion("CNV-3028")
     def test_ping_between_vms_through_main_interface(

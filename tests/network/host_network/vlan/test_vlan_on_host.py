@@ -19,7 +19,6 @@ class TestVlanInterface:
     @pytest.mark.polarion("CNV-4161")
     def test_vlan_interface_on_all_hosts(
         self,
-        skip_rhel7_workers,
         workers_ssh_executors,
         namespace,
         vlan_iface_on_all_nodes,
@@ -34,7 +33,6 @@ class TestVlanInterface:
     def test_vlan_connectivity_on_several_hosts(
         self,
         skip_when_one_node,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         workers_ssh_executors,
         namespace,
@@ -57,7 +55,6 @@ class TestVlanInterface:
     def test_vlan_connectivity_on_one_host(
         self,
         skip_when_one_node,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         workers_ssh_executors,
         namespace,
@@ -79,7 +76,6 @@ class TestVlanInterface:
     def test_no_connectivity_between_different_vlan_tags(
         self,
         skip_when_one_node,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         workers_ssh_executors,
         namespace,
@@ -101,7 +97,6 @@ class TestVlanInterface:
     def test_vlan_deletion(
         self,
         skip_when_one_node,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         skip_insufficient_nodes,
         utility_pods,
@@ -135,7 +130,6 @@ class TestVlanBond:
     def test_vlan_connectivity_over_bond_on_all_hosts(
         self,
         skip_when_one_node,
-        skip_rhel7_workers,
         skip_if_workers_vms,
         skip_no_bond_support,
         workers_ssh_executors,

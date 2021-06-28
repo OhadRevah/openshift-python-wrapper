@@ -195,8 +195,6 @@ def test_successful_vm_restart_with_cloned_dv(
 def test_successful_vm_from_cloned_dv_windows(
     skip_upstream,
     unprivileged_client,
-    network_configuration,
-    cloud_init_data,
     data_volume_multi_storage_scope_function,
     vm_params,
     namespace,
@@ -214,10 +212,8 @@ def test_successful_vm_from_cloned_dv_windows(
         cdv.wait(timeout=WINDOWS_CLONE_TIMEOUT)
         assert cdv.pvc.bound()
         utils.create_windows_vm_validate_guest_agent_info(
-            cloud_init_data=cloud_init_data,
             dv=cdv,
             namespace=namespace,
-            network_configuration=network_configuration,
             unprivileged_client=unprivileged_client,
             vm_params=vm_params,
         )

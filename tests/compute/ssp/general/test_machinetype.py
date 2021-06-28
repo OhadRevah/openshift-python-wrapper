@@ -98,7 +98,6 @@ def test_pc_q35_vm_machine_type(vm, expected):
     indirect=True,
 )
 def test_migrate_vm(
-    skip_rhel7_workers,
     machine_type_from_kubevirt_config,
     vm,
 ):

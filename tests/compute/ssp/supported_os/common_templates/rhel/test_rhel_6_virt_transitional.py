@@ -20,14 +20,12 @@ def rhel_6_vm(
     unprivileged_client,
     namespace,
     golden_image_data_volume_scope_class,
-    network_configuration,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_class,
-        network_configuration=network_configuration,
     ) as vm:
         yield vm
 

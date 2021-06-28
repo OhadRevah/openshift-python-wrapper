@@ -15,7 +15,6 @@ import pytest
 from ocp_resources.secret import Secret
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import remove_eth0_default_gw
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.infra import base64_encode_str, run_ssh_commands
 from utilities.virt import prepare_cloud_init_user_data, vm_instance_from_template
@@ -54,10 +53,8 @@ def rhsm_cloud_init_data():
 def rhsm_vm(
     request,
     unprivileged_client,
-    rhel7_workers,
     namespace,
     golden_image_data_volume_scope_function,
-    network_configuration,
     rhsm_cloud_init_data,
 ):
     with vm_instance_from_template(
@@ -65,11 +62,8 @@ def rhsm_vm(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_function,
-        network_configuration=network_configuration,
         cloud_init_data=rhsm_cloud_init_data,
     ) as rhsm_vm:
-        if rhel7_workers:
-            remove_eth0_default_gw(vm=rhsm_vm)
         yield rhsm_vm
 
 

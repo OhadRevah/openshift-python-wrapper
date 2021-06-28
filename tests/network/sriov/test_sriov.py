@@ -18,7 +18,6 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.usefixtures(
     "skip_when_no_sriov",
-    "skip_rhel7_workers",
     "skip_insufficient_sriov_workers",
     "labeled_sriov_nodes",
 )

@@ -12,7 +12,6 @@ from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
 
 
-@pytest.mark.usefixtures("skip_rhel7_workers")
 class TestL2LinuxBridge:
     """
     Test L2 connectivity via linux bridge CNI plugin.
