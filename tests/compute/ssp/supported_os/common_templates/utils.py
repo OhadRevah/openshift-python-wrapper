@@ -954,7 +954,17 @@ def validate_virtctl_guest_agent_data_over_time(vm):
         return True
 
 
-def check_rhel9_ga_support(rhel_os_matrix_dict):
+def is_rhel9_ga_bug_open(rhel_os_matrix_dict):
+    """
+    Due to RHEL9 COMPOSER-990 bug (managed in jira) qemu-guest-agent is not installed in the guest.
+
+    Args:
+        rhel_os_matrix_dict (dict): RHEL OS matrix dict
+
+    Returns:
+        Bool: whether bug COMPOSER-990 is open or not
+
+    """
     return (
         "rhel-9-0" in rhel_os_matrix_dict
         and get_jira_status(

@@ -12,7 +12,7 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
-from tests.compute.ssp.supported_os.common_templates.utils import check_rhel9_ga_support
+from tests.compute.ssp.supported_os.common_templates.utils import is_rhel9_ga_bug_open
 from tests.compute.ssp.supported_os.utils import check_qemu_guest_agent_installed
 from tests.compute.utils import (
     remove_eth0_default_gw,
@@ -65,7 +65,7 @@ class TestCommonTemplatesRhel:
         # RHEL6 does not have qemu guest agent installed, RHEL9 currently does not have it installed (COMPOSER-990)
         guest_agent_support = not (
             "rhel-6" in [*rhel_os_matrix__class__][0]
-            or check_rhel9_ga_support(rhel_os_matrix_dict=rhel_os_matrix__class__)
+            or is_rhel9_ga_bug_open(rhel_os_matrix_dict=rhel_os_matrix__class__)
         )
 
         running_vm(
