@@ -619,3 +619,53 @@ def enable_swap_fedora_vm(vm):
     run_ssh_commands(host=vm.ssh_exec, commands=commands)
     out = run_ssh_commands(host=vm.ssh_exec, commands=shlex.split(VALIDATE_SWAP_ON))
     assert SWAP_NAME not in out, f"Unable to enable swap on vm: {vm.name}: {out}"
+
+
+def get_vmi_phase_count(prometheus, os_name, flavor, workload):
+    """
+    Get the metric from the defined Prometheus query
+
+    Args:
+        prometheus (Prometheus object): Prometheus object to interact with the query
+        os_name (str): the OS name as it appears on Prometheus, e.g. windows19
+        flavor (str): the flavor as it appears on Prometheus, e.g. tiny
+        workload (str): the type of the workload on the VM, e.g. server
+
+    Returns:
+        the metric value
+    """
+    query = f'sum (kubevirt_vmi_phase_count{{os="{os_name}", flavor="{flavor}", workload="{workload}"}})'
+    LOGGER.debug(f"query for prometheus: query={query}")
+    response = get_metric_by_prometheus_query(prometheus=prometheus, query=query)
+
+    if not response["data"]["result"]:
+        return 0
+
+    return int(response["data"]["result"][0]["value"][1])
+
+
+def wait_until_kubevirt_vmi_phase_count_is_expected(
+    prometheus, os_name, flavor, workload, expected
+):
+    LOGGER.info(
+        f"Waiting for kubevirt_vmi_phase_count: expected={expected} os={os_name} flavor={flavor} workload={workload}"
+    )
+    query_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_2MIN,
+        sleep=3,
+        func=get_vmi_phase_count,
+        prometheus=prometheus,
+        os_name=os_name,
+        flavor=flavor,
+        workload=workload,
+    )
+    sample = None
+    try:
+        for sample in query_sampler:
+            if sample == expected:
+                return True
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Timeout exception while waiting for a specific value from query: current={sample} expected={expected}"
+        )
+        raise

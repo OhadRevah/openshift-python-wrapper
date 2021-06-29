@@ -10,12 +10,13 @@ from tests.metrics.utils import (
     create_vms,
     enable_swap_fedora_vm,
     get_mutation_component_value_from_prometheus,
+    get_vmi_phase_count,
     run_node_command,
     run_vm_commands,
 )
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import create_ns
-from utilities.virt import running_vm
+from utilities.virt import running_vm, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
@@ -237,3 +238,42 @@ def vm_metrics_setup(request, vm_list):
     if vm_commands:
         run_vm_commands(vms=vms, commands=vm_commands)
     yield vms
+
+
+@pytest.fixture
+def vm_from_template(
+    request,
+    unprivileged_client,
+    namespace,
+    golden_image_data_volume_scope_function,
+):
+    """
+    The fixture is using the context manager to create a VM instance from template, as described in
+    the context manager's docstring.
+    After the VM instance is created (& possibly started) according to the provided params (passed to the request arg),
+    it yields the VM object.
+
+    Yields:
+        VM object after it was created
+    """
+    with vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_volume=golden_image_data_volume_scope_function,
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture
+def vmi_phase_count_before(request, prometheus):
+    """
+    This fixture queries Prometheus with the query in the get_vmi_phase_count before a VM is created
+    and keeps the value for verification
+    """
+    return get_vmi_phase_count(
+        prometheus=prometheus,
+        os_name=request.param["os"],
+        flavor=request.param["flavor"],
+        workload=request.param["workload"],
+    )
