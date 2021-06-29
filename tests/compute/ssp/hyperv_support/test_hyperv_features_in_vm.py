@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from ocp_resources.storage_class import StorageClass
+from pytest_testconfig import py_config
 
 from tests.os_params import (
     FEDORA_LATEST,
@@ -18,7 +18,7 @@ from utilities.virt import vm_instance_from_template
 LOGGER = logging.getLogger(__name__)
 
 
-pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc", "skip_upstream")
+pytestmark = pytest.mark.usefixtures("skip_upstream")
 
 
 @pytest.fixture()
@@ -81,7 +81,7 @@ def verify_evmcs_related_attributes(vmi_xml_dict):
                 "dv_name": WINDOWS_LATEST_OS,
                 "image": WINDOWS_LATEST["image_path"],
                 "dv_size": WINDOWS_LATEST["dv_size"],
-                "storage_class": StorageClass.Types.CEPH_RBD,
+                "storage_class": py_config["default_storage_class"],
             },
         ),
     ],
@@ -189,7 +189,7 @@ class TestWindowsHyperVFlags:
                 "dv_name": FEDORA_LATEST_OS,
                 "image": FEDORA_LATEST["image_path"],
                 "dv_size": FEDORA_LATEST["dv_size"],
-                "storage_class": StorageClass.Types.CEPH_RBD,
+                "storage_class": py_config["default_storage_class"],
             },
         ),
     ],

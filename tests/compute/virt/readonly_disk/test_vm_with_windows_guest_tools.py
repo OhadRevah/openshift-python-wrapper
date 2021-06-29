@@ -1,8 +1,8 @@
 import logging
 
 import pytest
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
+from pytest_testconfig import py_config
 
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
 from utilities.infra import BUG_STATUS_CLOSED
@@ -13,7 +13,7 @@ from utilities.virt import (
 )
 
 
-pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc", "skip_upstream")
+pytestmark = pytest.mark.usefixtures("skip_upstream")
 
 
 LOGGER = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ def verify_cdrom_in_xml(vm):
                 "dv_name": WINDOWS_LATEST_OS,
                 "image": WINDOWS_LATEST["image_path"],
                 "dv_size": WINDOWS_LATEST["dv_size"],
-                "storage_class": StorageClass.Types.CEPH_RBD,
+                "storage_class": py_config["default_storage_class"],
             },
         ),
     ],
@@ -121,6 +121,7 @@ class TestWindowsGuestTools:
     @pytest.mark.dependency(depends=["vm_with_guest_tools"])
     def test_migrate_vm_with_windows_guest_tools(
         self,
+        skip_access_mode_rwo_scope_function,
         vm_with_guest_tools,
     ):
         LOGGER.info("Test migration of a VM with Windows guest tools")

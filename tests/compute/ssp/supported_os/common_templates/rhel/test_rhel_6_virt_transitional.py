@@ -1,13 +1,12 @@
 import logging
 
 import pytest
-from ocp_resources.storage_class import StorageClass
+from pytest_testconfig import py_config
 
 from utilities.virt import get_rhel_os_dict, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
-pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
 
 RHEL_6 = get_rhel_os_dict(rhel_version="rhel-6-10")
 RHEL_VERSION_TEMPLATE_LABELS = RHEL_6["template_labels"]
@@ -41,7 +40,7 @@ def rhel_6_vm(
                 "dv_name": RHEL_VERSION_TEMPLATE_LABELS["os"],
                 "image": RHEL_6["image_path"],
                 "dv_size": RHEL_6["dv_size"],
-                "storage_class": StorageClass.Types.CEPH_RBD,
+                "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "rhel-6-vm",

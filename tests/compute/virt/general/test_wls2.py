@@ -9,7 +9,6 @@ import re
 import shlex
 
 import pytest
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
@@ -26,7 +25,6 @@ from utilities.virt import (
 
 pytestmark = [
     pytest.mark.usefixtures("skip_if_workers_vms"),
-    pytest.mark.usefixtures("skip_test_if_no_ocs_sc"),
 ]
 
 LOGGER = logging.getLogger(__name__)
@@ -124,7 +122,7 @@ def windows_10_vm(
                 "image": os.path.join(
                     Images.Windows.DIR, Images.Windows.WIM10_WSL2_IMG
                 ),
-                "storage_class": StorageClass.Types.CEPH_RBD,
+                "storage_class": py_config["default_storage_class"],
                 "dv_size": Images.Windows.WSL2_DV_SIZE,
             },
         ),
@@ -157,6 +155,7 @@ class TestWSL2:
     def test_migration_with_wsl2_guest(
         self,
         skip_upstream,
+        skip_access_mode_rwo_scope_function,
         unprivileged_client,
         namespace,
         golden_image_data_volume_scope_class,

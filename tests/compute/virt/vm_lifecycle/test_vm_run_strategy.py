@@ -312,7 +312,10 @@ def test_run_strategy_pause_unpause_vmi(
     indirect=True,
 )
 def test_always_run_migrate_vm(
-    skip_upstream, lifecycle_vm, request_updated_vm_run_strategy
+    skip_upstream,
+    skip_access_mode_rwo_scope_function,
+    lifecycle_vm,
+    request_updated_vm_run_strategy,
 ):
     migrate_validate_run_strategy_vm(vm=lifecycle_vm, run_strategy=ALWAYS)
 
@@ -330,6 +333,7 @@ def test_always_run_migrate_vm(
 )
 def test_manual_run_migrate_vm(
     skip_upstream,
+    skip_access_mode_rwo_scope_function,
     lifecycle_vm,
     request_updated_vm_run_strategy,
     start_vm_if_not_running,

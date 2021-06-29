@@ -5,8 +5,8 @@ import re
 import shlex
 
 import pytest
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
+from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.infra import run_ssh_commands
@@ -14,9 +14,6 @@ from utilities.virt import migrate_vm_and_verify, running_vm, vm_instance_from_t
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
 
 
 @pytest.fixture()
@@ -88,7 +85,7 @@ def get_disk_usage(ssh_exec):
             {
                 "dv_name": FEDORA_LATEST_OS,
                 "image": FEDORA_LATEST["image_path"],
-                "storage_class": StorageClass.Types.CEPH_RBD,
+                "storage_class": py_config["default_storage_class"],
                 "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
@@ -103,6 +100,7 @@ def get_disk_usage(ssh_exec):
 )
 def test_fedora_vm_load_migration(
     skip_upstream,
+    skip_access_mode_rwo_scope_function,
     skip_rhel7_workers,
     unprivileged_client,
     namespace,

@@ -5,9 +5,8 @@ from ocp_resources.node_maintenance import NodeMaintenance
 from ocp_resources.virtual_machine import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
-from tests.conftest import vm_instance_from_template
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.virt import wait_for_node_schedulable_status
+from utilities.virt import vm_instance_from_template, wait_for_node_schedulable_status
 
 
 @pytest.fixture()
@@ -57,6 +56,7 @@ def unscheduled_node_vm(
 @pytest.mark.polarion("CNV-4157")
 def test_node_maintenance_job_rhel(
     skip_when_one_node,
+    skip_access_mode_rwo_scope_function,
     nodes,
     data_volume_scope_function,
     unscheduled_node_vm,

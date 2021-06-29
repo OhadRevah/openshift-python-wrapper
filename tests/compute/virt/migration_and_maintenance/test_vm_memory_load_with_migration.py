@@ -86,6 +86,7 @@ def get_stress_ng_pid(ssh_exec):
     indirect=True,
 )
 def test_vm_migarte_with_memory_load(
+    skip_access_mode_rwo_scope_function,
     data_volume_scope_function,
     vm_with_mem_load,
     start_vm_stress,
