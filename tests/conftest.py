@@ -859,17 +859,15 @@ def utility_pods(schedulable_nodes, utility_daemonset, admin_client):
 
 
 @pytest.fixture(scope="session")
-def workers_ssh_executors(rhel7_workers, utility_pods):
+def workers_ssh_executors(utility_pods):
     executors = {}
     ssh_key = os.getenv("HOST_SSH_KEY")
     for pod in utility_pods:
         host = rrmngmnt.Host(ip=pod.instance.status.podIP)
         if ssh_key:
-            host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(use_pkey=True)
-
-        host_user = rrmngmnt.user.User(
-            name="root" if rhel7_workers else "core", password=None
-        )
+            host_user = rrmngmnt.user.UserWithPKey(name="core", private_key=ssh_key)
+        else:
+            host_user = rrmngmnt.user.User(name="core", password=None)
         host.executor_user = host_user
         host.add_user(user=host_user)
         executors[pod.node.name] = host
