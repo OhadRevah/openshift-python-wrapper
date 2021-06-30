@@ -263,10 +263,10 @@ def restore_hco_cr_modification(admin_client, hco_namespace, backup_data):
             admin_client=admin_client,
             hco_namespace=hco_namespace,
         )
-    try:
-        for sample in samples:
-            if sample:
-                break
-    except TimeoutExpiredError:
-        LOGGER.error("Timeout restoring default value in hyperconverged CR.")
-        raise
+        try:
+            for sample in samples:
+                if sample:
+                    break
+        except TimeoutExpiredError:
+            LOGGER.error("Timeout restoring default value in hyperconverged CR.")
+            raise
