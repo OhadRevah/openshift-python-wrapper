@@ -376,7 +376,6 @@ class VirtualMachineForTests(VirtualMachine):
         template_spec = self.update_vm_cpu_configuration(template_spec=template_spec)
         template_spec = self.update_vm_memory_configuration(template_spec=template_spec)
         template_spec = self.set_service_accounts(template_spec=template_spec)
-        template_spec = self.update_vm_secret_configuration(template_spec=template_spec)
         template_spec = self.set_smm(template_spec=template_spec)
         template_spec = self.set_efi_params(template_spec=template_spec)
         template_spec = self.set_machine_type(template_spec=template_spec)
@@ -390,6 +389,13 @@ class VirtualMachineForTests(VirtualMachine):
             res, template_spec = self.update_vm_storage_configuration(
                 res=res, template_spec=template_spec
             )
+            # cloud-init disks must be set after DV disks in order to boot from DV.
+            template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
+
+            template_spec = self.update_vm_secret_configuration(
+                template_spec=template_spec
+            )
+
             # VMs do not necessarily have self.cloud_init_data
             # cloud-init will not be set for OS in FLAVORS_EXCLUDED_FROM_CLOUD_INIT
             if self.ssh and self.os_flavor not in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
@@ -404,8 +410,6 @@ class VirtualMachineForTests(VirtualMachine):
                     template_spec = self.update_vm_ssh_secret_configuration(
                         template_spec=template_spec
                     )
-            # cloud-init disks must be set after DV disks in order to boot from DV.
-            template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
 
         return res
 
@@ -602,7 +606,6 @@ class VirtualMachineForTests(VirtualMachine):
         if self.cloud_init_data:
             cloud_init_volume = vm_cloud_init_volume(vm_spec=template_spec)
             cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
-
             cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
                 data=self.cloud_init_data
             )
