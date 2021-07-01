@@ -208,19 +208,23 @@ def get_admin_client():
 def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
     """
     Args:
-        pod_prefix: str or regex pattern
-        get_all (bool): Return all pods if True else only the first one
+        dyn_client (DynamicClient): OCP Client to use.
+        pod_prefix (str): str or regex pattern.
+        namespace (str): Namespace name.
+        get_all (bool): Return all pods if True else only the first one.
 
     Returns:
-        A list of all matching pods if get_all else only the first pod
+        list: A list of all matching pods if get_all (empty list if no pods found) else only the first pod.
     """
     pods = [
         pod
         for pod in Pod.get(dyn_client=dyn_client, namespace=namespace)
         if re.match(pod_prefix, pod.name)
     ]
-    if pods:
-        return pods if get_all else pods[0]
+    if get_all:
+        return pods  # Some negative cases check if no pods exists.
+    elif pods:
+        return pods[0]
     raise NotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
 
 
