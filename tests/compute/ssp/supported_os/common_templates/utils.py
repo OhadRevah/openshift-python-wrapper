@@ -27,12 +27,7 @@ from utilities.constants import (
     TIMEOUT_90SEC,
 )
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import (
-    JIRA_STATUS_CLOSED,
-    get_jira_connection_params,
-    get_jira_status,
-    run_ssh_commands,
-)
+from utilities.infra import run_ssh_commands
 from utilities.virt import get_guest_os_info, run_virtctl_command, running_vm
 
 
@@ -972,24 +967,3 @@ def validate_virtctl_guest_agent_data_over_time(vm):
                 return False
     except TimeoutExpiredError:
         return True
-
-
-def is_rhel9_ga_bug_open(rhel_os_matrix_dict):
-    """
-    Due to RHEL9 COMPOSER-990 bug (managed in jira) qemu-guest-agent is not installed in the guest.
-
-    Args:
-        rhel_os_matrix_dict (dict): RHEL OS matrix dict
-
-    Returns:
-        Bool: whether bug COMPOSER-990 is open or not
-
-    """
-    return (
-        "rhel-9-0" in rhel_os_matrix_dict
-        and get_jira_status(
-            jira_connection_params=get_jira_connection_params(),
-            jira="COMPOSER-990",
-        )
-        not in JIRA_STATUS_CLOSED
-    )

@@ -12,7 +12,6 @@ import tests.compute.ssp.utils as ssp_utils
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
-from tests.compute.ssp.supported_os.common_templates.utils import is_rhel9_ga_bug_open
 from tests.compute.ssp.supported_os.utils import check_qemu_guest_agent_installed
 from tests.compute.utils import (
     validate_libvirt_persistent_domain,
@@ -61,11 +60,8 @@ class TestCommonTemplatesRhel:
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):
         """Test CNV common templates VM initiation"""
-        # RHEL6 does not have qemu guest agent installed, RHEL9 currently does not have it installed (COMPOSER-990)
-        guest_agent_support = not (
-            "rhel-6" in [*rhel_os_matrix__class__][0]
-            or is_rhel9_ga_bug_open(rhel_os_matrix_dict=rhel_os_matrix__class__)
-        )
+        # RHEL6 does not have qemu guest agent installed
+        guest_agent_support = "rhel-6" not in [*rhel_os_matrix__class__][0]
 
         running_vm(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
@@ -153,7 +149,6 @@ class TestCommonTemplatesRhel:
         self,
         skip_upstream,
         skip_guest_agent_on_rhel6,
-        skip_guest_agent_on_rhel9,
         rhel_os_matrix__class__,
         golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
     ):

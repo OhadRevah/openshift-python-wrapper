@@ -658,7 +658,8 @@ class VirtualMachineForTests(VirtualMachine):
         # Enable SSH service and restart SSH service
         run_cmd_commands = [
             (
-                "sudo sed -i '/^PubkeyAcceptedKeyTypes/ s/$/,ssh-rsa/' "
+                # Rhel9 - PubkeyAcceptedAlgorithms, all other OSes - PubkeyAcceptedKeyTypes
+                "sudo sed -i '/^PubkeyAccepted/ s/$/,ssh-rsa/' "
                 "/etc/crypto-policies/back-ends/opensshserver.config"
             ),
             (
