@@ -224,6 +224,7 @@ class VirtualMachineForTests(VirtualMachine):
         cloud_init_type=None,
         attached_secret=None,
         cpu_placement=False,
+        isolate_emulator_thread=False,
         smm_enabled=None,
         efi_params=None,
         diskless_vm=False,
@@ -276,6 +277,8 @@ class VirtualMachineForTests(VirtualMachine):
             cloud_init_type (str, optional): cloud-init type, for example: cloudInitNoCloud, cloudInitConfigDrive
             attached_secret (dict, optional)
             cpu_placement (bool, default: False): If True, set dedicatedCpuPlacement = True
+            isolate_emulator_thread (bool, default: False): If True, set isolateEmulatorThread = True.
+                Need to explicitly also set cpu_placement = True, as dedicatedCpuPlacement should also be True.
             smm_enabled (None/bool, optional, default: None): If not None, set to True/False
             efi_params (dict, optional)
             diskless_vm (bool, default: False): If True, remove VM disks
@@ -331,6 +334,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.pvc = pvc
         self.attached_secret = attached_secret
         self.cpu_placement = cpu_placement
+        self.isolate_emulator_thread = isolate_emulator_thread
         self.data_volume = data_volume
         self.smm_enabled = smm_enabled
         self.efi_params = efi_params
@@ -741,6 +745,13 @@ class VirtualMachineForTests(VirtualMachine):
                 "dedicatedCpuPlacement"
             ] = True
 
+        if self.isolate_emulator_thread:
+            # This setting has to be specified in a combination with
+            # cpu_placement = True. Only valid if dedicatedCpuPlacement is True.
+            template_spec.setdefault("domain", {}).setdefault("cpu", {})[
+                "isolateEmulatorThread"
+            ] = True
+
         if self.cpu_model:
             template_spec.setdefault("domain", {}).setdefault("cpu", {})[
                 "model"
@@ -943,6 +954,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cpu_threads=None,
         cpu_model=None,
         cpu_flags=None,
+        cpu_placement=False,
+        isolate_emulator_thread=False,
         memory_requests=None,
         network_model=None,
         network_multiqueue=None,
@@ -987,6 +1000,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             cpu_threads=cpu_threads,
             cpu_model=cpu_model,
             cpu_flags=cpu_flags,
+            cpu_placement=cpu_placement,
+            isolate_emulator_thread=isolate_emulator_thread,
             memory_requests=memory_requests,
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
@@ -1798,6 +1813,8 @@ def vm_instance_from_template(
         node_selector=node_selector,
         diskless_vm=params.get("diskless_vm"),
         cpu_model=params.get("cpu_model") or vm_cpu_model,
+        cpu_placement=params.get("cpu_placement"),
+        isolate_emulator_thread=params.get("isolate_emulator_thread"),
         ssh=params.get("ssh", True),
         disk_options_vm=params.get("disk_io_option"),
         host_device_name=params.get("host_device_name"),
