@@ -78,7 +78,9 @@ from utilities.infra import (
     run_ssh_commands,
     separator,
     setup_logging,
+    validate_nodes_ready,
     wait_for_pods_deletion,
+    wait_for_pods_running,
 )
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
@@ -2059,7 +2061,13 @@ def cnv_pods(admin_client, hco_namespace):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def cluster_sanity(request, nodes, cnv_pods, cluster_storage_classes):
+def cluster_sanity(
+    request, nodes, cluster_storage_classes, admin_client, hco_namespace
+):
+    """
+    Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
+    check to ensure all are in 'Running' state, to determine current state of cluster
+    """
     # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
     if not request.session.config.getoption("--cluster-sanity-skip-storage-check"):
         sc_names = [sc.name for sc in cluster_storage_classes]
@@ -2069,17 +2077,11 @@ def cluster_sanity(request, nodes, cnv_pods, cluster_storage_classes):
             f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
             "either run with '--storage-class-matrix' or with '--cluster-sanity-skip-storage-check'"
         )
+    # validate that all the nodes are ready and schedulable
+    validate_nodes_ready(nodes=nodes)
 
-    for node in nodes:
-        node_name = node.name
-        assert node.kubelet_ready, f"{node_name}is not in {node.Status.READY} state"
-        assert (
-            node.instance.spec.unschedulable is None
-        ), f"{node_name} is un-schedulable"
-
-    for pod in cnv_pods:
-        pod_status = pod.instance.status.phase
-        assert pod_status == pod.Status.RUNNING, f"{pod.name} status is: {pod_status}"
+    # Wait for all cnv pods to reach Running state
+    wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
 
 
 @pytest.fixture(scope="session")

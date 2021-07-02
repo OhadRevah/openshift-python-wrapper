@@ -19,8 +19,9 @@ from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.service import Service
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic import DynamicClient
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import PODS_TO_COLLECT_INFO, TIMEOUT_2MIN
@@ -470,3 +471,75 @@ def get_pods(dyn_client, namespace, label=None):
 def wait_for_pods_deletion(pods):
     for pod in pods:
         pod.wait_deleted()
+
+
+def validate_nodes_ready(nodes):
+    """
+    Validates all nodes are in ready and schedulable state
+
+    Args:
+         nodes(list): List of Node objects
+
+    Raises:
+        AssertionError: when nodes are not ready or not schedulable
+    """
+    unschedulable_nodes = [
+        node.name for node in nodes if node.instance.spec.unschedulable
+    ]
+    not_ready_nodes = [node.name for node in nodes if not node.kubelet_ready]
+    assert (
+        not not_ready_nodes
+    ), f"Following nodes are not in ready state: {not_ready_nodes}"
+    assert (
+        not unschedulable_nodes
+    ), f"Following nodes are in not unschedulable state: {unschedulable_nodes}"
+
+
+def wait_for_pods_running(admin_client, namespace):
+    """
+    Waits for all pods in a given namespace to reach Running state
+
+    Args:
+         admin_client(DynamicClient): Dynamic client
+         namespace(Namespace): A namespace object
+
+    Raises:
+        TimeoutExpiredError: Raises TimeoutExpiredError if any of the pods in the given namespace are not in Running
+         state
+    """
+
+    def _get_not_running_pods():
+        pods = list(Pod.get(dyn_client=admin_client, namespace=namespace.name))
+        pods_not_running = []
+        for pod in pods:
+            try:
+                # We should not count any pod that is currently marked for deletion, irrespective of it's
+                # current status or a pod that is already in a not running state
+                if (
+                    pod.instance.metadata.get("deletionTimestamp")
+                    or pod.instance.status.phase != pod.Status.RUNNING
+                ):
+                    pods_not_running.append({pod.name: pod.status})
+            except (ResourceNotFoundError, NotFoundError):
+                LOGGER.warning(
+                    f"Ignoring pod {pod.name} that disappeared during cluster sanity check"
+                )
+                pods_not_running.append({pod.name: "Deleted"})
+        return pods_not_running
+
+    samples = TimeoutSampler(
+        wait_timeout=120,
+        sleep=1,
+        func=_get_not_running_pods,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            if not sample:
+                return True
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"timeout waiting for all pods in namespace{namespace.name}to reach running state, following pods are "
+            f"in not running state: {sample}"
+        )
+        raise
