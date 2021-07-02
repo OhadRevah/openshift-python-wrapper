@@ -26,7 +26,12 @@ class TestCreateHCOWithNodePlacement:
     @pytest.mark.polarion("CNV-5368")
     @pytest.mark.dependency(name="test_hco_cr_with_node_placement")
     def test_hco_cr_with_node_placement(
-        self, hco_pods_per_nodes, nodes_labeled, expected_node_by_label
+        self,
+        hco_pods_per_nodes,
+        nodes_labeled,
+        expected_node_by_label,
+        admin_client,
+        hco_namespace,
     ):
         """
         "test_hco_cr_with_node_placement" test case check HyperConverged CR created with infra
@@ -40,6 +45,8 @@ class TestCreateHCOWithNodePlacement:
             hco_pods_per_nodes=hco_pods_per_nodes,
             component_list=INFRA_PODS_COMPONENTS,
             selected_node=nodes_labeled["infra1"][0],
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
         )
 
         assert nodes_labeled["work2"] == expected_node_by_label["work2"]
@@ -48,6 +55,8 @@ class TestCreateHCOWithNodePlacement:
             hco_pods_per_nodes=hco_pods_per_nodes,
             component_list=WORKLOADS_PODS_COMPONENTS,
             selected_node=nodes_labeled["work2"][0],
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
         )
 
     @pytest.mark.polarion("CNV-5369")

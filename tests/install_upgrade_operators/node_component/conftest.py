@@ -1,8 +1,6 @@
 import logging
-from collections import defaultdict
 
 import pytest
-from kubernetes.client.rest import ApiException
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
@@ -11,12 +9,12 @@ from ocp_resources.ssp import SSP
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_import_configs import VMImportConfig
-from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,
     SELECTORS,
+    get_pod_per_nodes,
 )
 from tests.install_upgrade_operators.utils import (
     get_deployment_by_name,
@@ -228,51 +226,6 @@ def cdi_deployment_nodeselector_list(admin_client, hco_namespace):
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(cdi_deployment.get("nodeSelector"))
     return nodeselector_lists
-
-
-def get_pod_per_nodes(admin_client, hco_namespace):
-    LOGGER.info("Getting list of pods per nodes.")
-
-    def _get_pods_per_nodes():
-        pods_per_nodes = defaultdict(list)
-        for pod in Pod.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-        ):
-            try:
-                # field_selector="status.phase==Running" is not always reliable
-                # to filter out terminating pods, see: https://github.com/kubernetes/kubectl/issues/450
-                if pod.instance.metadata.get("deletionTimestamp") is None:
-                    pods_per_nodes[pod.node.name].append(pod)
-            except ApiException as ex:
-                if ex.reason == ResourceNotFoundError:
-                    LOGGER.debug(
-                        f"Ignoring pods that disappeared during the query. node={pod.node.name} pod={pod.name}"
-                    )
-        return pods_per_nodes
-
-    pod_names_per_nodes = {}
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
-        sleep=30,
-        func=_get_pods_per_nodes,
-        exceptions=NotFoundError,
-    )
-    try:
-        for sample in samples:
-            if all(
-                pod.exists and pod.status == Pod.Status.RUNNING
-                for pods in sample.values()
-                for pod in pods
-            ):
-                pod_names_per_nodes = {
-                    node: [pod.name for pod in pods] for node, pods in sample.items()
-                }
-                LOGGER.info(f"Current placement: {pod_names_per_nodes}")
-                return pod_names_per_nodes
-    except TimeoutExpiredError:
-        LOGGER.error(f"Timeout waiting for pods to be ready {pod_names_per_nodes}.")
-        raise
 
 
 @pytest.fixture()
