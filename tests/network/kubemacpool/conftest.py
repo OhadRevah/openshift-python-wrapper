@@ -4,6 +4,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
+from tests.network.utils import wait_for_pods_deletion
 from utilities.constants import KMP_VM_ASSIGNMENT_LABEL
 from utilities.infra import create_ns, get_pods, name_prefix
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
@@ -370,7 +371,7 @@ def kmp_crash_loop(
             }
         }
     ):
-        kmp_utils.wait_for_pods_deletion(
+        wait_for_pods_deletion(
             pods=get_pods(
                 dyn_client=admin_client,
                 namespace=hco_namespace,

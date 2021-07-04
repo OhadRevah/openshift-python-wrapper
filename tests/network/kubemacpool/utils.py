@@ -56,11 +56,6 @@ def wait_for_kmp_pods_creation(dyn_client, namespace, replicas):
             return
 
 
-def wait_for_pods_deletion(pods):
-    for pod in pods:
-        pod.wait_deleted()
-
-
 def wait_for_kmp_pods_to_be_in_crashloop(dyn_client, namespace):
     for pod in get_pods(
         dyn_client=dyn_client, namespace=namespace, label=KMP_PODS_LABEL
