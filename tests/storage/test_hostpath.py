@@ -603,54 +603,6 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             vm.ssh_exec.executor().is_connective()
 
 
-@pytest.mark.polarion("CNV-3328")
-def test_hostpath_import_scratch_dv_without_specify_node_wffc(
-    admin_client,
-    skip_when_hpp_no_waitforfirstconsumer,
-    skip_when_cdiconfig_scratch_no_hpp,
-    namespace,
-):
-    """
-    Check that in case of WaitForFirstConsumer binding mode, without annotating DV to a node,
-    CDI import function needs scratch space works well.
-    The PVC will have an annotation 'volume.kubernetes.io/selected-node' containing the node name
-    where the pod is scheduled on.
-    """
-    with create_dv(
-        source="http",
-        dv_name="cnv-3328-dv",
-        namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG_XZ}",
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
-    ) as dv:
-        dv.pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
-        )
-        importer_pod = storage_utils.get_importer_pod(
-            dyn_client=admin_client, namespace=dv.namespace
-        )
-        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_30SEC)
-
-        pod_node_name = importer_pod.instance.spec.nodeName
-        pvc_node_name = dv.pvc.selected_node
-        assert_selected_node_annotation(
-            pvc_node_name=pvc_node_name, pod_node_name=pod_node_name, type_="target"
-        )
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
-        )
-        scratch_pvc_node_name = dv.scratch_pvc.selected_node
-        assert_selected_node_annotation(
-            pvc_node_name=scratch_pvc_node_name,
-            pod_node_name=pod_node_name,
-            type_="scratch",
-        )
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
-
-
 @pytest.mark.polarion("CNV-2770")
 def test_hostpath_clone_dv_with_annotation(
     skip_test_if_no_hpp_sc, skip_when_hpp_no_immediate, namespace, worker_node1
