@@ -3,19 +3,19 @@
 This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
-The infra for the tests can be found in https://github.com/RedHatQE/ocp-python-wrapper
+The infra for the tests can be found in https://github.com/RedHatQE/openshift-python-wrapper
 flake8 plugins defined in .flake8 can be found in https://github.com/RedHatQE/flake8-plugins
 
-## Contribute to ocp-python-wrapper
-Fork ocp-python-wrapper repo from https://github.com/RedHatQE/ocp-python-wrapper
+## Contribute to openshift-python-wrapper
+Fork openshift-python-wrapper repo from https://github.com/RedHatQE/openshift-python-wrapper
 Git clone the forked repo and locally add remote repository:
 ```bash
-git remote add upstream git@github.com:RedHatQE/ocp-python-wrapper.git
+git remote add upstream git@github.com:RedHatQE/openshift-python-wrapper.git
 ```
 
 Make a pull request:
 ```bash
-cd ocp-python-wrapper
+cd openshift-python-wrapper
 git checkout -b <name-your-local-branch>
 <make your changes>
 git add <changed files>
@@ -25,7 +25,7 @@ git push origin <name-your-local-branch>
 Go to the forked repo and create a pull request.
 
 ## Use unmerged merged-request
-To run the tests with unmerged merged-request from ocp-python-wrapper use the script "install-resources-mr.py"
+To run the tests with unmerged merged-request from openshift-python-wrapper use the script "install-resources-mr.py"
 ```bash
 # Should be executed from cnv-tests folder.
 python install-resources-mr.py -b <unmerged branch name to fetch>

@@ -11,7 +11,7 @@ def install_mr(branch):
     Install ocp-python-wrapper (resources) merge-requests from github into pipenv cnv-tests.
     """
     tmp_dir = "/tmp"
-    ocp_python_wrapper_name = "ocp-python-wrapper"
+    ocp_python_wrapper_name = "openshift-python-wrapper"
     mr_branch = f"cnv-qe/{ocp_python_wrapper_name}-{branch}"
     ocp_cloned_path = os.path.join(tmp_dir, ocp_python_wrapper_name)
     ocp_python_wrapper_git = (
