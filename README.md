@@ -3,19 +3,17 @@
 This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
-The infra for the tests can be found in https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper
-flake8 plugins defined in .flake8 can be found in https://gitlab.cee.redhat.com/cnv-qe/flake8-python-plugins
+The infra for the tests can be found in https://github.com/RedHatQE/ocp-python-wrapper
+flake8 plugins defined in .flake8 can be found in https://github.com/RedHatQE/flake8-plugins
 
 ## Contribute to ocp-python-wrapper
-Go to: https://gitlab.cee.redhat.com/cnv-qe and request to join the group.
-clone ocp-python-wrapper repo.
+Fork ocp-python-wrapper repo from https://github.com/RedHatQE/ocp-python-wrapper
+Git clone the forked repo and locally add remote repository:
 ```bash
-git clone git@gitlab.cee.redhat.com:cnv-qe/ocp-python-wrapper.git
+git remote add upstream git@github.com:RedHatQE/ocp-python-wrapper.git
 ```
-We don't use fork since we use gitlab-runner to run our CI,
-and once you fork the project CI will try to run on the fork where is no runner.
 
-Make a merge request:
+Make a pull request:
 ```bash
 cd ocp-python-wrapper
 git checkout -b <name-your-local-branch>
@@ -24,7 +22,7 @@ git add <changed files>
 git commit
 git push origin <name-your-local-branch>
 ```
-Go to: https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper and create a merge request.
+Go to the forked repo and create a pull request.
 
 ## Use unmerged merged-request
 To run the tests with unmerged merged-request from ocp-python-wrapper use the script "install-resources-mr.py"
