@@ -301,3 +301,10 @@ def skip_block_volumemode_scope_module(storage_class_matrix__module__):
 @pytest.fixture()
 def default_fs_overhead(cdi_config):
     return float(cdi_config.instance.status.filesystemOverhead["global"])
+
+
+@pytest.fixture(scope="module")
+def skip_if_hpp_not_in_sc_options(request):
+    storage_class_matrix = request.session.config.getoption(name="storage_class_matrix")
+    if storage_class_matrix and StorageClass.Types.HOSTPATH not in storage_class_matrix:
+        pytest.skip("This test run only on hostpath-provisioner storage class")

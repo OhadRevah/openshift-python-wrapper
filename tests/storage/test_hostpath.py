@@ -49,6 +49,8 @@ from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 LOGGER = logging.getLogger(__name__)
 HPP_OPERATOR = "hostpath-provisioner-operator"
 
+pytestmark = pytest.mark.usefixtures("skip_if_hpp_not_in_sc_options")
+
 
 @pytest.fixture(scope="module")
 def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
