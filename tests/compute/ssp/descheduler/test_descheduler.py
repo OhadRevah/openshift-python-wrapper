@@ -25,7 +25,7 @@ from utilities.virt import (
 )
 
 
-pytestmark = pytest.mark.tier3
+pytestmark = [pytest.mark.tier3, pytest.mark.jira("CNV-3805", run=False)]
 
 LOGGER = logging.getLogger(__name__)
 DESCHEDULER_POD_LABEL = "app=descheduler"
