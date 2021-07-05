@@ -4,6 +4,7 @@ This repository contains tests. These tests are to verify functionality of
 OpenShift + CNV installation.
 
 The infra for the tests can be found in https://github.com/RedHatQE/openshift-python-wrapper
+and also as a pypi project under https://pypi.org/project/openshift-python-wrapper/
 flake8 plugins defined in .flake8 can be found in https://github.com/RedHatQE/flake8-plugins
 
 ## Contribute to openshift-python-wrapper
