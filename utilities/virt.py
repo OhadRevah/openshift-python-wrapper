@@ -225,6 +225,8 @@ class VirtualMachineForTests(VirtualMachine):
         attached_secret=None,
         cpu_placement=False,
         isolate_emulator_thread=False,
+        iothreads_policy=None,
+        dedicated_iothread=False,
         smm_enabled=None,
         efi_params=None,
         diskless_vm=False,
@@ -279,6 +281,8 @@ class VirtualMachineForTests(VirtualMachine):
             cpu_placement (bool, default: False): If True, set dedicatedCpuPlacement = True
             isolate_emulator_thread (bool, default: False): If True, set isolateEmulatorThread = True.
                 Need to explicitly also set cpu_placement = True, as dedicatedCpuPlacement should also be True.
+            iothreads_policy (str, optional, default: None): If not None, set to auto/shared
+            dedicated_iothread (bool, optional, default: False): If True, set dedicatedIOThread to True
             smm_enabled (None/bool, optional, default: None): If not None, set to True/False
             efi_params (dict, optional)
             diskless_vm (bool, default: False): If True, remove VM disks
@@ -335,6 +339,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.attached_secret = attached_secret
         self.cpu_placement = cpu_placement
         self.isolate_emulator_thread = isolate_emulator_thread
+        self.iothreads_policy = iothreads_policy
+        self.dedicated_iothread = dedicated_iothread
         self.data_volume = data_volume
         self.smm_enabled = smm_enabled
         self.efi_params = efi_params
@@ -384,9 +390,10 @@ class VirtualMachineForTests(VirtualMachine):
         template_spec = self.set_smm(template_spec=template_spec)
         template_spec = self.set_efi_params(template_spec=template_spec)
         template_spec = self.set_machine_type(template_spec=template_spec)
+        template_spec = self.set_iothreads_policy(template_spec=template_spec)
         template_spec = self.set_hostdevice(template_spec=template_spec)
         template_spec = self.set_gpu(template_spec=template_spec)
-        template_spec = self.set_disk_io_options(template_spec=template_spec)
+        template_spec = self.set_disk_io_configuration(template_spec=template_spec)
         # Either update storage and cloud-init configuration or remove disks from spec
         if self.diskless_vm:
             template_spec = self.set_diskless_vm(template_spec=template_spec)
@@ -418,8 +425,8 @@ class VirtualMachineForTests(VirtualMachine):
 
         return res
 
-    def set_disk_io_options(self, template_spec):
-        if self.disk_io_options:
+    def set_disk_io_configuration(self, template_spec):
+        if self.disk_io_options or self.dedicated_iothread:
             disks_spec = (
                 template_spec.setdefault("domain", {})
                 .setdefault("devices", {})
@@ -429,7 +436,10 @@ class VirtualMachineForTests(VirtualMachine):
             disk_name = self.name if self.is_vm_from_template else "rootdisk"
             for disk in disks_spec:
                 if disk["name"] == disk_name:
-                    disk["io"] = self.disk_io_options
+                    if self.disk_io_options:
+                        disk["io"] = self.disk_io_options
+                    if self.dedicated_iothread:
+                        disk["dedicatedIOThread"] = self.dedicated_iothread
                     break
 
             template_spec["domain"]["devices"]["disks"] = disks_spec
@@ -475,6 +485,14 @@ class VirtualMachineForTests(VirtualMachine):
             template_spec.setdefault("domain", {}).setdefault("machine", {})[
                 "type"
             ] = self.machine_type
+
+        return template_spec
+
+    def set_iothreads_policy(self, template_spec):
+        if self.iothreads_policy:
+            template_spec.setdefault("domain", {})[
+                "ioThreadsPolicy"
+            ] = self.iothreads_policy
 
         return template_spec
 
@@ -973,6 +991,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         interfaces_types=None,
         host_device_name=None,
         gpu_name=None,
+        iothreads_policy=None,
+        dedicated_iothread=False,
         cloned_dv_size=None,
         systemctl_support=True,
     ):
@@ -1018,6 +1038,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             interfaces_types=interfaces_types,
             host_device_name=host_device_name,
             gpu_name=gpu_name,
+            iothreads_policy=iothreads_policy,
+            dedicated_iothread=dedicated_iothread,
             systemctl_support=systemctl_support,
         )
         self.template_labels = labels
@@ -1816,6 +1838,8 @@ def vm_instance_from_template(
         cpu_model=params.get("cpu_model") or vm_cpu_model,
         cpu_placement=params.get("cpu_placement"),
         isolate_emulator_thread=params.get("isolate_emulator_thread"),
+        iothreads_policy=params.get("iothreads_policy"),
+        dedicated_iothread=params.get("dedicated_iothread"),
         ssh=params.get("ssh", True),
         disk_options_vm=params.get("disk_io_option"),
         host_device_name=params.get("host_device_name"),
