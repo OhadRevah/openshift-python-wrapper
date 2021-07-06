@@ -21,7 +21,13 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_10MIN, TIMEOUT_30MIN
+from utilities.constants import (
+    TIMEOUT_3MIN,
+    TIMEOUT_6MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_30MIN,
+    TIMEOUT_30SEC,
+)
 from utilities.infra import get_bug_status, get_bugzilla_connection_params
 from utilities.virt import (
     VirtualMachineForTests,
@@ -152,7 +158,7 @@ def no_migration_job(
 
 def migration_job_sampler(dyn_client, namespace):
     samples = TimeoutSampler(
-        wait_timeout=30,
+        wait_timeout=TIMEOUT_30SEC,
         sleep=2,
         func=get_migration_job,
         dyn_client=dyn_client,
@@ -228,7 +234,7 @@ class TestNodeMaintenanceRHEL:
                     source_pod=source_pod,
                     vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
                 )
-                nm.wait_for_status(status=nm.Status.SUCCEEDED, timeout=360)
+                nm.wait_for_status(status=nm.Status.SUCCEEDED, timeout=TIMEOUT_6MIN)
             wait_for_node_schedulable_status(node=source_node, status=True)
 
     @pytest.mark.polarion("CNV-2292")

@@ -11,7 +11,7 @@ import pytest
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK
+from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK, TIMEOUT_2MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import (
     LINUX_BRIDGE,
@@ -40,7 +40,7 @@ def http_port_accessible(vm, server_ip, server_port):
         server_ip = f"'[{server_ip}]'"
 
     sampler = TimeoutSampler(
-        wait_timeout=120,
+        wait_timeout=TIMEOUT_2MIN,
         sleep=5,
         func=run_ssh_commands,
         host=vm.ssh_exec,

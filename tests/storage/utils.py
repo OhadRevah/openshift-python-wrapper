@@ -19,7 +19,7 @@ from ocp_resources.volume_snapshot import VolumeSnapshotClass
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_30MIN, Images
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_30MIN, Images
 from utilities.infra import get_cert, run_ssh_commands
 from utilities.storage import create_dv
 from utilities.virt import (
@@ -73,7 +73,7 @@ def upload_image_to_dv(
         client=client,
         consume_wffc=consume_wffc,
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
+        dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_2MIN)
         yield dv
 
 
@@ -85,7 +85,11 @@ def upload_token_request(storage_ns_name, pvc_name, data):
         token = utr.create().status.token
         LOGGER.info("Ensure upload was successful")
         sampler = TimeoutSampler(
-            wait_timeout=120, sleep=5, func=upload_image, token=token, data=data
+            wait_timeout=TIMEOUT_2MIN,
+            sleep=5,
+            func=upload_image,
+            token=token,
+            data=data,
         )
         for sample in sampler:
             if sample == 200:

@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_5MIN
+from utilities.constants import TIMEOUT_5MIN, TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -78,7 +78,7 @@ def get_mutation_component_value_from_prometheus(prometheus, component_name):
 
 def get_changed_mutation_component_value(prometheus, component_name, previous_value):
     samples = TimeoutSampler(
-        wait_timeout=600,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=5,
         func=get_mutation_component_value_from_prometheus,
         prometheus=prometheus,

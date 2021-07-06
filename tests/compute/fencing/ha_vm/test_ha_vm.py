@@ -14,6 +14,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from utilities import console
+from utilities.constants import TIMEOUT_20MIN
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -139,7 +140,7 @@ def wait_and_verify_vmi_failover(vm):
 
 def wait_node_restored(node):
     LOGGER.info(f"Waiting node {node.name} to be added to cluster and Ready")
-    node.wait(timeout=1200)
+    node.wait(timeout=TIMEOUT_20MIN)
     wait_node_status(node=node)
 
 

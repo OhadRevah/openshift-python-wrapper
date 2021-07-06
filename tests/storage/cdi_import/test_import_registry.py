@@ -13,7 +13,14 @@ from pytest_testconfig import config as py_config
 import utilities.storage
 from tests.storage import utils
 from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
+from utilities.constants import (
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_1MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_20SEC,
+    Images,
+)
 from utilities.infra import BUG_STATUS_CLOSED, get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
@@ -57,7 +64,7 @@ def insecure_registry(
         },
     ):
         for sample in TimeoutSampler(
-            wait_timeout=20,
+            wait_timeout=TIMEOUT_20SEC,
             sleep=1,
             func=lambda: registry_server
             in cdi_config.instance["spec"].get("insecureRegistries", []),
@@ -492,7 +499,7 @@ def test_fqdn_name(
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
         )
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_SCHEDULED,

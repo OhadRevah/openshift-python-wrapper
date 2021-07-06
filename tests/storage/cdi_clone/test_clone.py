@@ -12,7 +12,13 @@ from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
 
 from tests.storage import utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
+from utilities.constants import (
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_5MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_40MIN,
+    Images,
+)
 from utilities.storage import (
     create_dv,
     data_volume_template_dict,
@@ -22,7 +28,7 @@ from utilities.storage import (
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
-WINDOWS_CLONE_TIMEOUT = 40 * 60
+WINDOWS_CLONE_TIMEOUT = TIMEOUT_40MIN
 
 
 def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):

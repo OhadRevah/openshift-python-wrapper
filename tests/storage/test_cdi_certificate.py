@@ -17,7 +17,15 @@ from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_3MIN, TIMEOUT_10MIN, Images
+from utilities.constants import (
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_1MIN,
+    TIMEOUT_2MIN,
+    TIMEOUT_3MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_20SEC,
+    Images,
+)
 from utilities.storage import (
     create_dummy_first_consumer_pod,
     create_dv,
@@ -151,7 +159,7 @@ def refresh_cdi_certificates(secrets):
                 LOGGER.info(f"Wait for Secret {secret.name} to be updated")
                 res.update()
                 for sample in TimeoutSampler(
-                    wait_timeout=20,
+                    wait_timeout=TIMEOUT_20SEC,
                     sleep=10,
                     func=lambda: secret.certificate_not_before
                     != secret.certificate_not_after,
@@ -205,7 +213,7 @@ def test_dv_delete_from_vm(
     ) as vm:
         if sc_volume_binding_mode_is_wffc(sc=storage_class):
             create_dummy_first_consumer_pod(dv=dv)
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=120)
+        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_2MIN)
         dv.delete()
         create_dummy_first_consumer_pod(dv=dv)
         # DV re-creation is triggered by VM
@@ -238,7 +246,7 @@ def test_upload_after_certs_renewal(
         assert status
         assert "Processing completed successfully" in out
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=60)
+        dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
 
@@ -305,6 +313,6 @@ def test_upload_after_validate_aggregated_api_cert(
         assert status
         assert "Processing completed successfully" in out
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=60)
+        dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)

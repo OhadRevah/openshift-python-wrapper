@@ -10,6 +10,7 @@ from multiprocessing import Process
 import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.constants import TIMEOUT_15MIN
 from utilities.infra import run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -70,7 +71,7 @@ def wait_vm_oom(vm):
     LOGGER.info(f"Monitoring VM {vm.name} under stress for 15 min")
     virt_launcher_pod = vm.vmi.virt_launcher_pod
     samples = TimeoutSampler(
-        wait_timeout=900, sleep=1, func=lambda: virt_launcher_pod.status
+        wait_timeout=TIMEOUT_15MIN, sleep=1, func=lambda: virt_launcher_pod.status
     )
     try:
         for sample in samples:

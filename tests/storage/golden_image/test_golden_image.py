@@ -8,6 +8,7 @@ from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
 from tests.storage import utils
+from utilities.constants import TIMEOUT_20MIN
 from utilities.storage import ErrorMsg, create_dv, get_images_server_url
 from utilities.virt import wait_for_ssh_connectivity
 
@@ -183,4 +184,4 @@ def test_regular_user_can_create_dv_in_ns_given_proper_rolebinding(
         size=RHEL_IMAGE_SIZE,
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=1200)
+        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_20MIN)

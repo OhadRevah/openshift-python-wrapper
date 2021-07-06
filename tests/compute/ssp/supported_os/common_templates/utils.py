@@ -20,7 +20,12 @@ from tests.compute.ssp.supported_os.utils import (
     guest_agent_version_parser,
 )
 from tests.compute.utils import get_windows_timezone
-from utilities.constants import OS_FLAVOR_RHEL, OS_FLAVOR_WINDOWS, TIMEOUT_3MIN
+from utilities.constants import (
+    OS_FLAVOR_RHEL,
+    OS_FLAVOR_WINDOWS,
+    TIMEOUT_3MIN,
+    TIMEOUT_90SEC,
+)
 from utilities.infra import (
     JIRA_STATUS_CLOSED,
     get_jira_connection_params,
@@ -32,7 +37,6 @@ from utilities.virt import get_guest_os_info, run_virtctl_command, running_vm
 
 HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"
 LOGGER = logging.getLogger(__name__)
-TIMEOUT_90SEC = 90
 
 
 def reboot_vm(vm):

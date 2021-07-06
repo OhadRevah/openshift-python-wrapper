@@ -6,6 +6,7 @@ import bitmath
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.constants import TIMEOUT_2MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import ping
 
@@ -48,7 +49,7 @@ def wait_for_address_on_iface(worker_pod, iface_name):
     sample = None
     log = "Worker ip address for {iface_name} : {sample}"
     samples = TimeoutSampler(
-        wait_timeout=120,
+        wait_timeout=TIMEOUT_2MIN,
         sleep=1,
         func=NodeNetworkState(worker_pod.node.name).ipv4,
         iface=iface_name,

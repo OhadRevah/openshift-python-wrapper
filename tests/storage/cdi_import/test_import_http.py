@@ -20,7 +20,15 @@ from tests.os_params import FEDORA_LATEST
 from tests.storage import utils
 from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
 from utilities import console
-from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_4MIN, TIMEOUT_5MIN, Images
+from utilities.constants import (
+    OS_FLAVOR_RHEL,
+    TIMEOUT_1MIN,
+    TIMEOUT_4MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_12MIN,
+    TIMEOUT_30SEC,
+    Images,
+)
 from utilities.infra import NON_EXIST_URL
 from utilities.storage import (
     ErrorMsg,
@@ -58,7 +66,7 @@ def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
@@ -361,7 +369,7 @@ def test_wrong_content_type(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
@@ -409,7 +417,7 @@ def test_unpack_compressed(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
@@ -487,7 +495,7 @@ def test_certconfigmap_incorrect_cert(
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
@@ -518,7 +526,7 @@ def test_certconfigmap_incorrect_cert(
 def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_function):
     with pytest.raises(TimeoutExpiredError):
         samples = TimeoutSampler(
-            wait_timeout=60,
+            wait_timeout=TIMEOUT_1MIN,
             sleep=10,
             func=lambda: data_volume_multi_storage_scope_function.status
             != DataVolume.Status.IMPORT_SCHEDULED,
@@ -543,12 +551,12 @@ def blank_disk_import(namespace, storage_params, dv_name):
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
         )
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.READY,
             status=DataVolume.Condition.Status.TRUE,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
         )
         with utils.create_vm_from_dv(
             dv=dv, image=CIRROS_IMAGE, vm_name=f"vm-{dv_name}"
@@ -689,7 +697,7 @@ def test_disk_falloc(
                 LOGGER.info("Fill disk space.")
                 vm_console.sendline("dd if=/dev/zero of=file bs=1M")
                 vm_console.expect(
-                    "dd: writing 'file': No space left on device", timeout=60
+                    "dd: writing 'file': No space left on device", timeout=TIMEOUT_1MIN
                 )
 
 
@@ -724,19 +732,19 @@ def test_vm_from_dv_on_different_node(
     It applies to shared storage like Ceph or NFS. It cannot be tested on local storage like HPP.
     """
     data_volume_multi_storage_scope_function.pvc.wait_for_status(
-        status=PersistentVolumeClaim.Status.BOUND, timeout=30
+        status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_30SEC
     )
     importer_pod = get_importer_pod(
         dyn_client=admin_client,
         namespace=data_volume_multi_storage_scope_function.namespace,
     )
     importer_node_name = importer_pod.node.name
-    importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=30)
+    importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_30SEC)
     nodes = list(
         filter(lambda node: importer_pod.node.name != node.name, schedulable_nodes)
     )
     data_volume_multi_storage_scope_function.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED, timeout=720
+        status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_12MIN
     )
     with utils.create_vm_from_dv(
         dv=data_volume_multi_storage_scope_function,

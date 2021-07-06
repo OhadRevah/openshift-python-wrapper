@@ -8,7 +8,7 @@ import pytest
 from ocp_resources.service import Service
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_5MIN
+from utilities.constants import TIMEOUT_5MIN, TIMEOUT_35MIN
 from utilities.virt import get_windows_os_dict, vm_instance_from_template
 
 
@@ -74,7 +74,7 @@ def rdp_pod(utility_pods, rdp_vm):
                 "os_version": WIN_OS_VERSION_16,
                 "template_labels": WIN_VERSION_16_CONFIG["template_labels"],
                 "network_model": "virtio",
-                "wait_for_interfaces_timeout": 2100,
+                "wait_for_interfaces_timeout": TIMEOUT_35MIN,
             },
             marks=(pytest.mark.polarion("CNV-235")),
             id="test_rdp_for_exposed_win_vm_svc",

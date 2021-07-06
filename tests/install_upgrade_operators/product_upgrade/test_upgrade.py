@@ -6,7 +6,7 @@ from ocp_resources.datavolume import DataVolume
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
-from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL
+from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL, TIMEOUT_2MIN
 from utilities.network import (
     assert_ping_successful,
     get_vmi_mac_address_by_iface_name,
@@ -74,7 +74,7 @@ class TestUpgrade:
     def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert vm.ssh_exec.executor().is_connective(
-                tcp_timeout=120
+                tcp_timeout=TIMEOUT_2MIN
             ), "Failed to login via SSH"
 
     @pytest.mark.polarion("CNV-2743")

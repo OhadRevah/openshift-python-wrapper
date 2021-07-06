@@ -14,7 +14,7 @@ from openshift.dynamic.exceptions import NotFoundError
 
 import utilities.storage
 from tests.storage import utils as storage_utils
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, Images
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN, TIMEOUT_5MIN, Images
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import downloaded_image, get_images_server_url
 
@@ -114,7 +114,7 @@ def test_upload_https_scratch_space_delete_pvc(
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
-                wait_timeout=120,
+                wait_timeout=TIMEOUT_2MIN,
                 sleep=5,
                 func=storage_utils.upload_image,
                 token=token,
@@ -401,7 +401,7 @@ def test_scratch_space_upload_data_volume(
             token = utr.create().status.token
             LOGGER.info("Ensure upload was successful")
             sampler = TimeoutSampler(
-                wait_timeout=120,
+                wait_timeout=TIMEOUT_2MIN,
                 sleep=5,
                 func=storage_utils.upload_image,
                 token=token,

@@ -16,6 +16,7 @@ from tests.os_params import (
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     OS_FLAVOR_WINDOWS,
+    TIMEOUT_2MIN,
     TIMEOUT_5MIN,
     TIMEOUT_30MIN,
 )
@@ -87,7 +88,7 @@ def restarted_persistence_vm(request, persistence_vm):
     wait_for_ssh_connectivity(
         vm=persistence_vm,
         timeout=TIMEOUT_30MIN if os == WIN else TIMEOUT_5MIN,
-        tcp_timeout=120,
+        tcp_timeout=TIMEOUT_2MIN,
     )
 
 
@@ -204,7 +205,7 @@ def guest_reboot(vm, os):
 
     LOGGER.info("Stopping user agent")
     run_os_command(vm=vm, command=commands["stop-user-agent"][os])
-    wait_for_user_agent_down(vm=vm, timeout=120)
+    wait_for_user_agent_down(vm=vm, timeout=TIMEOUT_2MIN)
 
     LOGGER.info(f"Rebooting {vm.name} from guest")
     run_os_command(vm=vm, command=commands["reboot"][os])

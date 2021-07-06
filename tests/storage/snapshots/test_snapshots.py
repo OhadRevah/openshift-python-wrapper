@@ -12,6 +12,7 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from utilities import console
+from utilities.constants import TIMEOUT_20SEC
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ ERROR_MSG_USER_CANNOT_LIST_VM_RESTORE = (
 def run_command_on_cirros_vm_and_check_output(vm, command, expected_result):
     with console.Cirros(vm=vm) as vm_console:
         vm_console.sendline(command)
-        vm_console.expect(expected_result, timeout=20)
+        vm_console.expect(expected_result, timeout=TIMEOUT_20SEC)
 
 
 def expected_output_after_restore(snapshot_number):

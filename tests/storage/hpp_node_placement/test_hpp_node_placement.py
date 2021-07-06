@@ -19,7 +19,13 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import check_disk_count_in_vm
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_5MIN, Images
+from utilities.constants import (
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_1MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_10MIN,
+    Images,
+)
 from utilities.hco import add_labels_to_nodes
 from utilities.infra import get_pod_by_name_prefix
 from utilities.storage import get_images_server_url
@@ -88,7 +94,7 @@ HPP_NODE_PLACEMENT_DICT = {
 
 def wait_hpp_pods_deleted(client):
     for sample in TimeoutSampler(
-        wait_timeout=600,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=3,
         func=get_pod_by_name_prefix,
         dyn_client=client,
@@ -247,7 +253,7 @@ def test_create_vm_on_node_without_hpp_pod_and_after_update(
     ) as vm:
         vm.vmi.wait_for_status(
             status=VirtualMachineInstance.Status.PENDING,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
             stop_status=VirtualMachineInstance.Status.RUNNING,
         )
         updated_hpp_with_node_placement.restore()

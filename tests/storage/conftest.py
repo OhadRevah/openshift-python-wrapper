@@ -18,7 +18,7 @@ from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
-from utilities.constants import Images
+from utilities.constants import TIMEOUT_1MIN, Images
 from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
     get_cert,
@@ -247,7 +247,7 @@ def uploaded_dv(
         LOGGER.info(out)
         assert status
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=60)
+        dv.wait(timeout=TIMEOUT_1MIN)
         assert dv.pvc.bound()
         yield dv
         dv.delete(wait=True)

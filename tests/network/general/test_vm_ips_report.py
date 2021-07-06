@@ -6,6 +6,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 
+from utilities.constants import TIMEOUT_12MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -49,7 +50,7 @@ def test_report_masquerade_ip_after_migration(report_masquerade_ip_vmi):
         namespace=report_masquerade_ip_vmi.namespace,
         vmi=report_masquerade_ip_vmi,
     ) as mig:
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=720)
+        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=TIMEOUT_12MIN)
         assert report_masquerade_ip_vmi.instance.status.nodeName != src_node
 
     assert_ip_mismatch(vm=report_masquerade_ip_vmi)

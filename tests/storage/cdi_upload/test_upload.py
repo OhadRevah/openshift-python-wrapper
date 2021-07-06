@@ -21,7 +21,7 @@ from string_utils import shuffle
 
 import tests.storage.utils as storage_utils
 import utilities.storage
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, Images
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_3MIN, TIMEOUT_5MIN, Images
 from utilities.storage import downloaded_image
 
 
@@ -32,7 +32,7 @@ HTTP_OK = 200
 
 def wait_for_upload_response_code(token, data, response_code, asynchronous=False):
     kwargs = {
-        "wait_timeout": 60,
+        "wait_timeout": TIMEOUT_1MIN,
         "sleep": 5,
         "func": storage_utils.upload_image,
         "token": token,

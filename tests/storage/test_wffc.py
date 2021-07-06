@@ -12,7 +12,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_10MIN, Images
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN, TIMEOUT_10MIN, Images
 from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
@@ -223,7 +223,7 @@ def test_wffc_upload_dv_via_virtctl(
         consume_wffc=True,
     ):
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=60)
+        dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, vm_name=dv_name) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 

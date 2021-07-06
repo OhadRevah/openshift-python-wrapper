@@ -21,7 +21,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import SRIOV
+from utilities.constants import SRIOV, TIMEOUT_2MIN
 from utilities.infra import get_pod_by_name_prefix
 from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
 
@@ -548,7 +548,9 @@ def get_vmi_ip_v4_by_name(vm, name):
         wait_for_vm_interfaces(vmi=vmi)
         return _extract_interface_ips()
 
-    sampler = TimeoutSampler(wait_timeout=120, sleep=1, func=_get_interface_ips)
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_2MIN, sleep=1, func=_get_interface_ips
+    )
     try:
         for ip_addresses in sampler:
             for ip_address in ip_addresses:

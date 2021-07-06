@@ -8,6 +8,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
 
 from tests.storage.utils import storage_params
+from utilities.constants import TIMEOUT_2MIN
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
@@ -76,7 +77,9 @@ def hotplug_volume(request, namespace, fedora_vm_for_hotplug):
 @pytest.fixture()
 def vm_volume_ready(fedora_vm_for_hotplug):
     sampler = TimeoutSampler(
-        wait_timeout=120, sleep=1, func=lambda: fedora_vm_for_hotplug.vmi.instance
+        wait_timeout=TIMEOUT_2MIN,
+        sleep=1,
+        func=lambda: fedora_vm_for_hotplug.vmi.instance,
     )
     for sample in sampler:
         if sample.status.volumeStatus[0]["reason"] == "VolumeReady":

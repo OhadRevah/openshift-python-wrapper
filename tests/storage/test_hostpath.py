@@ -23,7 +23,16 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
+from utilities.constants import (
+    TIMEOUT_1MIN,
+    TIMEOUT_2MIN,
+    TIMEOUT_3MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_20SEC,
+    TIMEOUT_30SEC,
+    Images,
+)
 from utilities.infra import get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
@@ -192,7 +201,7 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
     """
     LOGGER.info("Waiting for cdi-upload worker pod and scratch pvc")
     sampler = TimeoutSampler(
-        wait_timeout=30,
+        wait_timeout=TIMEOUT_30SEC,
         sleep=5,
         func=_get_pod_and_scratch_pvc,
         dyn_client=dyn_client,
@@ -255,7 +264,9 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
         volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(
-            status=dv.Status.PENDING, timeout=120, stop_status=dv.Status.SUCCEEDED
+            status=dv.Status.PENDING,
+            timeout=TIMEOUT_2MIN,
+            stop_status=dv.Status.SUCCEEDED,
         )
 
 
@@ -341,7 +352,9 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
         storage_class=StorageClass.Types.HOSTPATH,
     ) as pvc:
         pvc.wait_for_status(
-            status=pvc.Status.PENDING, timeout=60, stop_status=pvc.Status.BOUND
+            status=pvc.Status.PENDING,
+            timeout=TIMEOUT_1MIN,
+            stop_status=pvc.Status.BOUND,
         )
         with PodWithPVC(
             namespace=pvc.namespace,
@@ -350,7 +363,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
             volume_mode=pvc.volume_mode,
         ) as pod:
             pod.wait_for_status(status=pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
-            pvc.wait_for_status(status=pvc.Status.BOUND, timeout=60)
+            pvc.wait_for_status(status=pvc.Status.BOUND, timeout=TIMEOUT_1MIN)
             assert pod.instance.spec.nodeName == pvc.selected_node
 
 
@@ -372,7 +385,9 @@ def test_hpp_pvc_specify_node_immediate(
         storage_class=StorageClass.Types.HOSTPATH,
         hostpath_node=worker_node1.name,
     ) as pvc:
-        pvc.wait_for_status(status=PersistentVolumeClaim.Status.BOUND, timeout=60)
+        pvc.wait_for_status(
+            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_1MIN
+        )
         assert_provision_on_node_annotation(
             pvc=pvc, node_name=worker_node1.name, type_="regular"
         )
@@ -552,7 +567,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     ) as target_dv:
         upload_target_pod = None
         for sample in TimeoutSampler(
-            wait_timeout=20,
+            wait_timeout=TIMEOUT_20SEC,
             sleep=1,
             func=lambda: list(
                 Pod.get(
@@ -617,7 +632,7 @@ def test_hostpath_import_scratch_dv_without_specify_node_wffc(
         importer_pod = storage_utils.get_importer_pod(
             dyn_client=admin_client, namespace=dv.namespace
         )
-        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=30)
+        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_30SEC)
 
         pod_node_name = importer_pod.instance.spec.nodeName
         pvc_node_name = dv.pvc.selected_node

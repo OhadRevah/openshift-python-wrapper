@@ -15,7 +15,7 @@ from ocp_resources.node import Node
 from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
 from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_5MIN
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN, TIMEOUT_25MIN
 
 
 LOGGER = logging.getLogger(__name__)
@@ -192,7 +192,7 @@ class BackgroundLoop(threading.Thread):
             namespace=vm.namespace,
             vmi=vm.vmi,
         ) as mig:
-            mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=1500)
+            mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=TIMEOUT_25MIN)
 
     @staticmethod
     def _restart(vm):
@@ -244,7 +244,7 @@ class ChaosScenario:
             node.wait_for_condition(
                 condition=Node.Condition.READY,
                 status=Node.Condition.Status.TRUE,
-                timeout=60,
+                timeout=TIMEOUT_1MIN,
             )
 
         # make sure the hyperconverged is ready
@@ -257,7 +257,7 @@ class ChaosScenario:
         hco.wait_for_condition(
             condition=HyperConverged.Condition.AVAILABLE,
             status=HyperConverged.Condition.Status.TRUE,
-            timeout=60,
+            timeout=TIMEOUT_1MIN,
         )
 
     def __enter__(self):

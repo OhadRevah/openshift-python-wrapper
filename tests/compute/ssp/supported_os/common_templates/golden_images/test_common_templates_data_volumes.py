@@ -9,6 +9,7 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_8MIN
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
@@ -287,7 +288,7 @@ def test_missing_golden_image(
 
     # Verify VM error on missing source PVC
     for sample in TimeoutSampler(
-        wait_timeout=120,
+        wait_timeout=TIMEOUT_2MIN,
         sleep=5,
         func=lambda: list(
             VirtualMachine.get(
@@ -318,5 +319,5 @@ def test_missing_golden_image(
         }
     ).update()
 
-    vm_from_golden_image.wait_for_status(status=True, timeout=480)
+    vm_from_golden_image.wait_for_status(status=True, timeout=TIMEOUT_8MIN)
     wait_for_vm_interfaces(vmi=vm_from_golden_image.vmi)

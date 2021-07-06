@@ -4,6 +4,7 @@ VM with CPU flag
 import pytest
 from ocp_resources.utils import TimeoutExpiredError
 
+from utilities.constants import TIMEOUT_1MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -57,7 +58,7 @@ def test_vm_with_cpu_flag_negative(cpu_flag_vm_negative):
     VM should not run in this case since cpu model not exist on any of the nodes
     """
     with pytest.raises(TimeoutExpiredError):
-        cpu_flag_vm_negative.vmi.wait_until_running(timeout=60)
+        cpu_flag_vm_negative.vmi.wait_until_running(timeout=TIMEOUT_1MIN)
 
 
 @pytest.mark.polarion("CNV-1269")

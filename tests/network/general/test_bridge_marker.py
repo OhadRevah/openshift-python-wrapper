@@ -3,14 +3,15 @@
 import pytest
 from ocp_resources.utils import TimeoutExpiredError
 
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_30SEC
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 # todo: revisit the hardcoded value and consolidate it with default timeout
 # (perhaps by exposing it via test configuration parameter)
-_VM_RUNNING_TIMEOUT = 120  # seems to be enough
-_VM_NOT_RUNNING_TIMEOUT = 30
+_VM_RUNNING_TIMEOUT = TIMEOUT_2MIN  # seems to be enough
+_VM_NOT_RUNNING_TIMEOUT = TIMEOUT_30SEC
 BRIDGEMARKER1 = "bridgemarker1"
 BRIDGEMARKER2 = "bridgemarker2"
 BRIDGEMARKER3 = "bridgemarker3"

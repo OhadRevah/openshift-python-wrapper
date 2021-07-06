@@ -6,6 +6,7 @@ from ocp_resources.virtual_machine import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
+from utilities.constants import TIMEOUT_20SEC
 from utilities.virt import vm_instance_from_template, wait_for_node_schedulable_status
 
 
@@ -75,7 +76,7 @@ def test_node_maintenance_job_rhel(
         unscheduled_node_vm.start()
         nm.wait_for_status(status=nm.Status.RUNNING)
         unscheduled_node_vm.vmi.wait_for_status(
-            status=VirtualMachineInstance.Status.SCHEDULING, timeout=20
+            status=VirtualMachineInstance.Status.SCHEDULING, timeout=TIMEOUT_20SEC
         )
         nm.wait_for_status(status=nm.Status.SUCCEEDED)
     assert (

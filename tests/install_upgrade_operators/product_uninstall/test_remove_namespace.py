@@ -4,6 +4,8 @@ from http import HTTPStatus
 import pytest
 from kubernetes.client.rest import ApiException
 
+from utilities.constants import TIMEOUT_10MIN
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ DELETION_ERROR_MESSAGE = (
 
 @pytest.fixture()
 def remove_hyperconverged_resource(hyperconverged_resource_scope_function):
-    hyperconverged_resource_scope_function.delete(wait=True, timeout=600)
+    hyperconverged_resource_scope_function.delete(wait=True, timeout=TIMEOUT_10MIN)
 
 
 @pytest.mark.install

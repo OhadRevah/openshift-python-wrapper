@@ -40,7 +40,12 @@ from utilities.constants import (
     OS_FLAVOR_FEDORA,
     OS_FLAVOR_WINDOWS,
     OS_LOGIN_PARAMS,
+    TIMEOUT_1MIN,
+    TIMEOUT_2MIN,
     TIMEOUT_4MIN,
+    TIMEOUT_6MIN,
+    TIMEOUT_12MIN,
+    TIMEOUT_25MIN,
     Images,
 )
 from utilities.exceptions import CommandExecFailed
@@ -64,7 +69,7 @@ CIRROS_IMAGE = "kubevirt/cirros-container-disk-demo:latest"
 FLAVORS_EXCLUDED_FROM_CLOUD_INIT = (OS_FLAVOR_WINDOWS, OS_FLAVOR_CIRROS)
 
 
-def wait_for_guest_agent(vmi, timeout=720):
+def wait_for_guest_agent(vmi, timeout=TIMEOUT_12MIN):
     LOGGER.info(f"Wait until guest agent is active on {vmi.name}")
 
     sampler = TimeoutSampler(wait_timeout=timeout, sleep=1, func=lambda: vmi.instance)
@@ -94,7 +99,7 @@ def wait_for_guest_agent(vmi, timeout=720):
             raise
 
 
-def wait_for_vm_interfaces(vmi, timeout=720):
+def wait_for_vm_interfaces(vmi, timeout=TIMEOUT_12MIN):
     """
     Wait until guest agent report VMI network interfaces.
 
@@ -1131,7 +1136,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
 
 def vm_console_run_commands(
-    console_impl, vm, commands, timeout=60, verify_commands_output=True
+    console_impl, vm, commands, timeout=TIMEOUT_1MIN, verify_commands_output=True
 ):
     """
     Run a list of commands inside VM and (if verify_commands_output) check all commands return 0.
@@ -1367,7 +1372,7 @@ class Prometheus(object):
         return json.loads(response.content)
 
 
-def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
+def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN):
     LOGGER.info(f"Wait for {vm.name} SSH connectivity.")
 
     sampler = TimeoutSampler(
@@ -1382,7 +1387,7 @@ def wait_for_ssh_connectivity(vm, timeout=120, tcp_timeout=60):
 
 
 def wait_for_console(vm, console_impl):
-    with console_impl(vm=vm, timeout=1500):
+    with console_impl(vm=vm, timeout=TIMEOUT_25MIN):
         LOGGER.info(f"Successfully connected to {vm.name} console")
 
 
@@ -1472,7 +1477,7 @@ def get_windows_os_info(ssh_exec):
     return ssh_exec.run_command(command=cmd)[1]
 
 
-def wait_for_windows_vm(vm, version, timeout=1500):
+def wait_for_windows_vm(vm, version, timeout=TIMEOUT_25MIN):
     """
     Samples Windows VM; wait for it to complete the boot process.
     """
@@ -1558,7 +1563,7 @@ def import_vm(
 # TODO: Remove once bug 1945703 is fixed
 def get_guest_os_info(vmi):
     sampler = TimeoutSampler(
-        wait_timeout=360,
+        wait_timeout=TIMEOUT_6MIN,
         sleep=5,
         func=lambda: vmi.instance.status.guestOSInfo,
     )
@@ -1635,7 +1640,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
 
 def migrate_vm_and_verify(
     vm,
-    timeout=720,
+    timeout=TIMEOUT_12MIN,
     wait_for_interfaces=True,
     check_ssh_connectivity=False,
     wait_for_migration_success=True,

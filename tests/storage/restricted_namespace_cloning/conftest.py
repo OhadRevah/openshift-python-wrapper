@@ -6,6 +6,8 @@ Pytest conftest file for CNV Storage restricted namespace cloning tests
 import pytest
 from ocp_resources.namespace import Namespace
 
+from utilities.constants import TIMEOUT_2MIN
+
 
 @pytest.fixture(scope="module")
 def api_group():
@@ -20,7 +22,7 @@ def unprivileged_user_username():
 @pytest.fixture(scope="module")
 def dst_ns():
     with Namespace(name="restricted-namespace-destination-namespace") as ns:
-        ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=120)
+        ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
         yield ns
 
 

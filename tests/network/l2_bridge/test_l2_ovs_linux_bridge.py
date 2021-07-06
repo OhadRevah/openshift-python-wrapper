@@ -5,6 +5,7 @@ from netaddr import IPNetwork
 from ocp_resources.utils import TimeoutSampler
 
 from tests.network.constants import DHCP_IP_RANGE_START
+from utilities.constants import TIMEOUT_2MIN
 from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 
@@ -47,7 +48,7 @@ class TestL2LinuxBridge:
         Test broadcast traffic via L2 linux bridge. VM_A has dhcp server installed. VM_B dhcp client.
         """
         current_ip = TimeoutSampler(
-            wait_timeout=120,
+            wait_timeout=TIMEOUT_2MIN,
             sleep=2,
             func=get_vmi_ip_v4_by_name,
             vm=l2_bridge_running_vm_b,

@@ -23,7 +23,11 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import PODS_TO_COLLECT_INFO, TEST_COLLECT_INFO_DIR
+from utilities.constants import (
+    PODS_TO_COLLECT_INFO,
+    TEST_COLLECT_INFO_DIR,
+    TIMEOUT_2MIN,
+)
 from utilities.exceptions import CommandExecFailed
 
 
@@ -58,12 +62,12 @@ def create_ns(name, unprivileged_client=None, kmp_vm_label=None, admin_client=No
     """
     if not unprivileged_client:
         with Namespace(client=admin_client, name=name, label=kmp_vm_label) as ns:
-            ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=120)
+            ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
             yield ns
     else:
         with ProjectRequest(name=name, client=unprivileged_client):
             project = Project(name=name, client=unprivileged_client)
-            project.wait_for_status(project.Status.ACTIVE, timeout=120)
+            project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
             if kmp_vm_label:
                 label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
             yield project

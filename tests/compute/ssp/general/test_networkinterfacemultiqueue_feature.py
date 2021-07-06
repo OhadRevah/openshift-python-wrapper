@@ -13,6 +13,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
+from utilities.constants import TIMEOUT_2MIN
 from utilities.virt import wait_for_vm_interfaces
 
 
@@ -64,7 +65,7 @@ def update_validate_cpu_in_vm(
     )
     vm.restart(wait=True)
     wait_for_vm_interfaces(vmi=vm.vmi)
-    vm.ssh_exec.executor().is_connective(tcp_timeout=120)
+    vm.ssh_exec.executor().is_connective(tcp_timeout=TIMEOUT_2MIN)
     validate_vm_cpu_spec(vm=vm, cores=cores, sockets=sockets, threads=threads)
 
 
@@ -103,7 +104,7 @@ class TestLatestRHEL:
         golden_image_vm_instance_from_template_multi_storage_scope_class,
     ):
         golden_image_vm_instance_from_template_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
-            tcp_timeout=120
+            tcp_timeout=TIMEOUT_2MIN
         )
 
     @pytest.mark.polarion("CNV-3221")
@@ -186,7 +187,7 @@ class TestLatestWindows:
         golden_image_vm_instance_from_template_multi_storage_scope_class,
     ):
         golden_image_vm_instance_from_template_multi_storage_scope_class.ssh_exec.executor().is_connective(  # noqa: E501
-            tcp_timeout=120
+            tcp_timeout=TIMEOUT_2MIN
         )
 
     @pytest.mark.polarion("CNV-3221")

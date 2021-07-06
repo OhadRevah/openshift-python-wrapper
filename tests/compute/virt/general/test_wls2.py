@@ -13,7 +13,7 @@ from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.constants import INTEL, Images
+from utilities.constants import INTEL, TIMEOUT_1MIN, Images
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
@@ -107,7 +107,7 @@ def windows_10_vm(
         cpu_threads=1,  # TODO: Remove once WSL2 image is fixed to work with multi-threads
     ) as vm:
         running_vm(vm=vm)
-        assert is_wsl2_guest_running(vm=vm, timeout=60)
+        assert is_wsl2_guest_running(vm=vm, timeout=TIMEOUT_1MIN)
         yield vm
 
 
@@ -164,7 +164,7 @@ class TestWSL2:
         wsl_pid_before = get_wsl_pid(vm=windows_10_vm)
         LOGGER.info(f"PID before migration: {wsl_pid_before}")
         migrate_vm_and_verify(vm=windows_10_vm, check_ssh_connectivity=True)
-        assert is_wsl2_guest_running(vm=windows_10_vm, timeout=60)
+        assert is_wsl2_guest_running(vm=windows_10_vm, timeout=TIMEOUT_1MIN)
         wsl_pid_after = get_wsl_pid(vm=windows_10_vm)
         LOGGER.info(f"PID after migration: {wsl_pid_after}")
         assert (
