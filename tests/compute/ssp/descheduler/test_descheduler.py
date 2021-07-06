@@ -1,5 +1,6 @@
 import logging
 import re
+from bisect import bisect
 from collections import Counter
 
 import bitmath
@@ -25,7 +26,7 @@ from utilities.virt import (
 )
 
 
-pytestmark = [pytest.mark.tier3, pytest.mark.jira("CNV-3805", run=False)]
+pytestmark = [pytest.mark.tier3]
 
 LOGGER = logging.getLogger(__name__)
 DESCHEDULER_POD_LABEL = "app=descheduler"
@@ -33,7 +34,7 @@ DESCHEDULER_SUB_NAME = "cluster-kube-descheduler-operator"
 
 
 class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
-    def __init__(self, name, namespace, memory_requests="1Gi", client=None):
+    def __init__(self, name, namespace, memory_requests, client):
         super().__init__(
             name=name,
             namespace=namespace,
@@ -52,24 +53,36 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
         return res
 
 
-def calculate_vm_amount(schedulable_nodes, ssh_executors):
+def calculate_vm_deployment(workers_free_memory):
     """
-    Calculate how many VMs should be deployed for test.
+    Calculate how many VMs with how much RAM should be deployed for test.
     The idea is to have all nodes loaded enough (RAM wise) so that after draining one node
     the remaining will be at ~90% load.
+
+    Args:
+        workers_free_memory (dict): dict of total available free memory values on worker nodes
+                                    {"<nodename>": <class 'bitmath.GiB'>}
+
+    Returns:
+        tuple: (amount of vms to deploy, vm memory requests value)
     """
-    node_amount = len(schedulable_nodes)
-    total_free = 0
-    cmd = ["free", "-b", "|", "grep", "Mem", "|", "awk", "'{print", "$4,$6}'"]
-    for node in schedulable_nodes:
-        free_mem = sum(
-            [
-                int(mem)
-                for mem in ssh_executors[node.name].run_command(command=cmd)[1].split()
-            ]
-        )
-        total_free += bitmath.Byte(free_mem).to_GB()
-    return round(total_free / node_amount * (node_amount - 1))
+
+    def _get_vm_memory_value(vm_amount):
+        breakpoints = [20, 50, 400, 8000]
+        memory_values = ["1Gi", "2Gi", "10Gi", "80Gi"]
+        return memory_values[bisect(breakpoints, vm_amount)]
+
+    # Total free memory value of OS is higher than resources available to OCP node
+    # ocp_node_memory_ratio is used to adjust output of "free" command
+    ocp_node_memory_ratio = 0.8
+    node_amount = len(workers_free_memory)
+    assert node_amount >= 2, "Test should run on cluster with 2+ worker nodes"
+    total_free = sum(workers_free_memory.values()) * ocp_node_memory_ratio
+    vm_amount = round(total_free / node_amount * (node_amount - 1))
+    vm_memory = _get_vm_memory_value(vm_amount=vm_amount)
+    vm_adjusted_amount = round(vm_amount / int(vm_memory[:-2]))
+
+    return vm_adjusted_amount, vm_memory
 
 
 def wait_vmi_failover(vm, orig_node):
@@ -106,7 +119,7 @@ def get_descheduler_evicted_vms(descheduler_pod):
     LOGGER.info("Checking descheduler log to get migrated VM names")
     try:
         for sample in samples:
-            if "Evicted pods from node" in sample:
+            if "Total number of pods evicted" in sample:
                 LOGGER.info("Descheduler evicted VMs")
                 return re.findall(r"-(vm-\d*-\d*-\d*)-", sample)
     except TimeoutExpiredError:
@@ -136,6 +149,18 @@ def wait_pod_deploy(client, namespace, label):
     except TimeoutExpiredError:
         LOGGER.error("Descheduler operator deployment failed")
         raise
+
+
+@pytest.fixture(scope="module")
+def skip_if_1tb_memory_or_more_node(workers_free_memory):
+    """
+    One of QE BM setups has worker with 5 TiB RAM memory while rest workers
+    has 120 GiB RAM. Test should be skipped on this cluster, since all VMs will
+    always land on 5 TiB RAM and descheduler will not do anything
+    """
+    for memory in workers_free_memory.values():
+        if memory > 1024:
+            pytest.skip("Cluster has node with more than 1 TiB RAM")
 
 
 @pytest.fixture(scope="module")
@@ -208,8 +233,8 @@ def updated_descheduler_policy(installed_descheduler, updated_descheduler_deploy
         re.DOTALL,
     ).group(1)
     new_thresholds = (
-        "70\n          memory: 70\n          pods: 70\n        thresholds:"
-        "\n          cpu: 20\n          memory: 50\n          pods: 20"
+        "60\n          memory: 60\n          pods: 60\n        thresholds:"
+        "\n          cpu: 30\n          memory: 50\n          pods: 30"
     )
     ResourceEditor(
         patches={
@@ -235,17 +260,31 @@ def updated_descheduler(admin_client, descheduler_ns, updated_descheduler_policy
     ].clean_up()  # apply cm update
 
 
+@pytest.fixture(scope="module")
+def workers_free_memory(workers_ssh_executors):
+    nodes_memory = {}
+    cmd = ["free", "-b", "|", "grep", "Mem", "|", "awk", "'{print", "$4,$6}'"]
+    for node, ssh_exec in workers_ssh_executors.items():
+        nodes_memory[node] = bitmath.Byte(
+            sum([int(mem) for mem in ssh_exec.run_command(command=cmd)[1].split()])
+        ).to_GiB()
+        LOGGER.info(f"Node {node} has {nodes_memory[node]} GiB of free memory")
+    return dict(sorted(nodes_memory.items(), key=lambda item: item[1]))
+
+
 @pytest.fixture()
-def deployed_vms(
-    schedulable_nodes, namespace, unprivileged_client, workers_ssh_executors
-):
+def deployed_vms(namespace, unprivileged_client, workers_free_memory):
     vms = {}
-    vm_amount = calculate_vm_amount(
-        schedulable_nodes=schedulable_nodes, ssh_executors=workers_ssh_executors
+    vm_amount, vm_memory = calculate_vm_deployment(
+        workers_free_memory=workers_free_memory
     )
+    LOGGER.info(f"Deploying {vm_amount} VMs, each with {vm_memory} RAM")
     for index in range(1, vm_amount + 1):
         deployed_vm = VirtualMachineForDeschedulerTest(
-            name=f"vm-{index}", namespace=namespace.name, client=unprivileged_client
+            name=f"vm-{index}",
+            namespace=namespace.name,
+            client=unprivileged_client,
+            memory_requests=vm_memory,
         )
         deployed_vm.deploy()
         deployed_vm.start()
@@ -276,14 +315,22 @@ def descheduler_pod(admin_client, descheduler_ns):
 
 
 @pytest.fixture()
-def node_to_drain(schedulable_nodes, vms_orig_nodes, descheduler_pod):
-    counters = Counter([node.name for node in vms_orig_nodes.values()])
+def node_to_drain(
+    schedulable_nodes, vms_orig_nodes, descheduler_pod, workers_free_memory
+):
+    """
+    Find most suitable node to drain. Search criteria:
+      - should be smallest node (RAM wise)
+      - should not host descheduler operator pod
+      - should host at least 1 VM
+    """
 
-    for node in schedulable_nodes:
-        if node.name != descheduler_pod.node.name and counters[node.name] > len(
-            schedulable_nodes
-        ):
-            return node
+    schedulable_nodes_dict = {node.name: node for node in schedulable_nodes}
+    vm_per_node_counters = Counter([node.name for node in vms_orig_nodes.values()])
+
+    for node in workers_free_memory.keys():
+        if node != descheduler_pod.node.name and vm_per_node_counters[node] >= 1:
+            return schedulable_nodes_dict[node]
 
     raise ValueError("No suitable node to drain")
 
@@ -299,6 +346,7 @@ def drain_node(deployed_vms, vms_orig_nodes, node_to_drain):
 
 @pytest.mark.polarion("CNV-5922")
 def test_descheduler(
+    skip_if_1tb_memory_or_more_node,
     skip_when_one_node,
     updated_descheduler,
     deployed_vms,
