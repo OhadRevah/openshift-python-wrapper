@@ -466,3 +466,8 @@ def get_pods(dyn_client, namespace, label=None):
             label_selector=label,
         )
     )
+
+
+def wait_for_pods_deletion(pods):
+    for pod in pods:
+        pod.wait_deleted()

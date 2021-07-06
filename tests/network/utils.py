@@ -98,8 +98,3 @@ def run_test_guest_performance(server_vm, client_vm, listen_ip=None, target_ip=N
     sum_sent = iperf_json.get("end").get("sum_sent")
     bits_per_second = int(sum_sent.get("bits_per_second"))
     return float(bitmath.Byte(bits_per_second).GiB)
-
-
-def wait_for_pods_deletion(pods):
-    for pod in pods:
-        pod.wait_deleted()
