@@ -178,9 +178,12 @@ def _cloud_init_data(
     cloud_init_data = prepare_cloud_init_user_data(section="runcmd", data=runcmd)
     cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
+    cloud_init_data[
+        "userData"
+    ] = {}  # update_cloud_init_extra_user_data needs to update userData.
     if cloud_init_extra_user_data:
         update_cloud_init_extra_user_data(
-            cloud_init_data=cloud_init_data.get("userData", {}),
+            cloud_init_data=cloud_init_data["userData"],
             cloud_init_extra_user_data=cloud_init_extra_user_data,
         )
 
