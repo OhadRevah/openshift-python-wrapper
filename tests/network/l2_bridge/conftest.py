@@ -180,7 +180,7 @@ def _cloud_init_data(
 
     if cloud_init_extra_user_data:
         update_cloud_init_extra_user_data(
-            cloud_init_data=cloud_init_data["userData"],
+            cloud_init_data=cloud_init_data.get("userData", {}),
             cloud_init_extra_user_data=cloud_init_extra_user_data,
         )
 

@@ -33,11 +33,11 @@ def assert_no_ping(src_vm, dst_ip, packet_size=None, count=None):
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):
-    for k, v in cloud_init_extra_user_data.items():
-        if k not in cloud_init_data:
+    for key, val in cloud_init_extra_user_data.items():
+        if key not in cloud_init_data:
             cloud_init_data.update(cloud_init_extra_user_data)
         else:
-            cloud_init_data[k] = cloud_init_data[k] + v
+            cloud_init_data[key] = cloud_init_data[key] + val
 
 
 def wait_for_address_on_iface(worker_pod, iface_name):

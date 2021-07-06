@@ -29,7 +29,7 @@ def dhcp_server_cloud_init_data(dhcp_iface_ip_addr):
     cloud_init_data = cloud_init_network_data(data=network_data_data)
 
     update_cloud_init_extra_user_data(
-        cloud_init_data=cloud_init_data["userData"],
+        cloud_init_data=cloud_init_data.get("userData", {}),
         cloud_init_extra_user_data=cloud_init_extra_user_data,
     )
     return cloud_init_data
