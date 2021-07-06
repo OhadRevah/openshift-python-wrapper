@@ -74,12 +74,14 @@ from utilities.infra import (
     get_admin_client,
     get_bug_status,
     get_bugzilla_connection_params,
+    get_pods,
     get_schedulable_nodes_ips,
     name_prefix,
     prepare_test_dir_log,
     run_ssh_commands,
     separator,
     setup_logging,
+    wait_for_pods_deletion,
 )
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
@@ -1927,7 +1929,15 @@ def hyperconverged_ovs_annotations_enabled(
         network_addons_config=network_addons_config,
     )
 
+    # Make sure all ovs pods are deleted:
     wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+    wait_for_pods_deletion(
+        pods=get_pods(
+            dyn_client=admin_client,
+            namespace=hco_namespace,
+            label="app=ovs-cni",
+        )
+    )
 
 
 @pytest.fixture(scope="session")
