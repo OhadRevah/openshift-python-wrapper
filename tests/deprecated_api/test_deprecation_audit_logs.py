@@ -24,6 +24,14 @@ IGNORED_COMPONENTS_LIST = [
 ]
 
 
+class DeprecatedAPIException(Exception):
+    """
+    Raises when calling a deprecated API
+    """
+
+    pass
+
+
 @pytest.fixture()
 def audit_logs():
     """Get audit logs names"""
@@ -88,6 +96,15 @@ def get_deprecated_apis(audit_logs_dict):
 
 @pytest.mark.polarion("CNV-6679")
 def test_deprecated_apis_in_audit_logs(audit_logs):
+    def _format_printed_dict():
+        formatted_output = ""
+        for comp, errors in deprecated_calls.items():
+            formatted_output += f"Component: {comp}\n\nCalls:\n"
+            for error in errors:
+                formatted_output += f"\t{error}\n"
+            formatted_output += "\n\n\n"
+        return formatted_output
+
     LOGGER.info(f"Test deprecated API calls, version {DEPRECATED_API_VERSION}")
     deprecated_calls = get_deprecated_apis(audit_logs_dict=audit_logs)
 
@@ -109,6 +126,6 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
         ]:
             deprecated_calls.pop(component)
 
-    assert (
-        not deprecated_calls
-    ), f"The following APIs calls are deprecated: {deprecated_calls}"
+    if deprecated_calls:
+        LOGGER.error(_format_printed_dict())
+        raise DeprecatedAPIException
