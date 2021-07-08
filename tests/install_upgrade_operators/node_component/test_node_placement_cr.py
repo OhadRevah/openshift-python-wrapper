@@ -3,10 +3,10 @@ import logging
 import pytest
 
 from tests.install_upgrade_operators.node_component.utils import (
-    INFRA_PODS_COMPONENTS,
+    CNV_INFRA_PODS_COMPONENTS,
+    CNV_WORKLOADS_PODS_COMPONENTS,
     NODE_PLACEMENT_INFRA,
     NODE_PLACEMENT_WORKLOADS,
-    WORKLOADS_PODS_COMPONENTS,
     verify_components_exist_only_on_selected_node,
 )
 
@@ -43,7 +43,7 @@ class TestCreateHCOWithNodePlacement:
         # Verify all Infra Pods are created on Node which has infra1 label on it.
         verify_components_exist_only_on_selected_node(
             hco_pods_per_nodes=hco_pods_per_nodes,
-            component_list=INFRA_PODS_COMPONENTS,
+            component_list=CNV_INFRA_PODS_COMPONENTS,
             selected_node=nodes_labeled["infra1"][0],
             admin_client=admin_client,
             hco_namespace=hco_namespace,
@@ -53,7 +53,7 @@ class TestCreateHCOWithNodePlacement:
         # Verify all Workloads Pods are created on Node which has work2 label on it.
         verify_components_exist_only_on_selected_node(
             hco_pods_per_nodes=hco_pods_per_nodes,
-            component_list=WORKLOADS_PODS_COMPONENTS,
+            component_list=CNV_WORKLOADS_PODS_COMPONENTS,
             selected_node=nodes_labeled["work2"][0],
             admin_client=admin_client,
             hco_namespace=hco_namespace,

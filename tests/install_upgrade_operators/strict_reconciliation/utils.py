@@ -2,9 +2,7 @@ import inspect
 import logging
 
 from dictdiffer import diff
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import ConflictError
 
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
@@ -117,38 +115,6 @@ def validate_featuregates_not_in_cdi_cr(
 
     cdi_fgs = cdi["spec"]["config"]["featureGates"]
     return feature_gate_under_test not in cdi_fgs
-
-
-def modify_hco_cr(patch, hco):
-    """
-    Updates hco cr with given dictionary
-
-    Args:
-        patch (dict): dictionary of values that would be used to update hco cr
-        hco (HyperConverged): HCO generator
-
-    Returns:
-        str: name of the function
-    """
-
-    def _modify_cr():
-        res_editor = ResourceEditor(patches={hco: patch}, action="update")
-        res_editor.update(backup_resources=True)
-        return res_editor.backups
-
-    samples = TimeoutSampler(
-        wait_timeout=20,
-        sleep=2,
-        exceptions=ConflictError,
-        func=_modify_cr,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                return sample
-    except TimeoutExpiredError:
-        LOGGER.error(f"TimedOut updating HCO CRModification with value: {patch}")
-        raise
 
 
 def assert_specs_values(expected, get_spec_func, keys):

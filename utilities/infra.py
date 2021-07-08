@@ -543,14 +543,15 @@ def validate_nodes_ready(nodes):
     ), f"Following nodes are in not unschedulable state: {unschedulable_nodes}"
 
 
-def wait_for_pods_running(admin_client, namespace):
+def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=1):
     """
-    Waits for all pods in a given namespace to reach Running state
+    Waits for all pods in a given namespace to reach Running state. To avoid catching all pods in running state too
+    soon, use number_of_consecutive_checks with appropriate values.
 
     Args:
          admin_client(DynamicClient): Dynamic client
          namespace(Namespace): A namespace object
-
+         number_of_consecutive_checks(int): Number of times to check for all pods in running state
     Raises:
         TimeoutExpiredError: Raises TimeoutExpiredError if any of the pods in the given namespace are not in Running
          state
@@ -582,9 +583,14 @@ def wait_for_pods_running(admin_client, namespace):
     )
     sample = None
     try:
+        current_check = 0
         for sample in samples:
             if not sample:
-                return True
+                current_check += 1
+                if current_check >= number_of_consecutive_checks:
+                    return True
+            else:
+                current_check = 0
     except TimeoutExpiredError:
         LOGGER.error(
             f"timeout waiting for all pods in namespace {namespace.name} to reach running state, following pods are "

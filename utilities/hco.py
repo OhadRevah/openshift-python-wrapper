@@ -5,11 +5,13 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError, NotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN
+from utilities.infra import wait_for_pods_running
 
 
 DEFAULT_HCO_CONDITIONS = {
@@ -129,6 +131,38 @@ def wait_for_dp(dp):
         raise
 
 
+def modify_hco_cr(patch, hco):
+    """
+    Updates hco cr with given dictionary
+
+    Args:
+        patch (dict): dictionary of values that would be used to update hco cr
+        hco (HyperConverged): HCO dictionary
+
+    Returns:
+        dict: {<Resource object>: <backup_as_dict>}
+    """
+
+    def _modify_cr():
+        res_editor = ResourceEditor(patches={hco: patch}, action="update")
+        res_editor.update(backup_resources=True)
+        return res_editor.backups
+
+    samples = TimeoutSampler(
+        wait_timeout=20,
+        sleep=2,
+        exceptions=ConflictError,
+        func=_modify_cr,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error(f"TimedOut updating HCO CR with value: {patch}")
+        raise
+
+
 def apply_np_changes(
     admin_client, hco, hco_namespace, infra_placement=None, workloads_placement=None
 ):
@@ -139,18 +173,14 @@ def apply_np_changes(
         workloads_placement if workloads_placement is not None else current_workloads
     )
     if target_workloads != current_workloads or target_infra != current_infra:
-        reseditor = ResourceEditor(
-            patches={
-                hco: {
-                    "spec": {
-                        "infra": target_infra or None,
-                        "workloads": target_workloads or None,
-                    }
-                }
-            }
-        )
         LOGGER.info("Updating HCO with node placement.")
-        reseditor.update()
+        patch = {
+            "spec": {
+                "infra": target_infra or None,
+                "workloads": target_workloads or None,
+            }
+        }
+        modify_hco_cr(patch=patch, hco=hco)
         LOGGER.info("Waiting for HCO to report progressing condition.")
         wait_for_hco_conditions(
             admin_client=admin_client,
@@ -181,12 +211,19 @@ def apply_np_changes(
             dyn_client=admin_client,
             namespace=hco_namespace.name,
         ):
-            wait_for_ds(ds=ds)
+            # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
+            if not ds.name.startswith(StorageClass.Types.HOSTPATH):
+                wait_for_ds(ds=ds)
         for dp in Deployment.get(
             dyn_client=admin_client,
             namespace=hco_namespace.name,
         ):
             wait_for_dp(dp=dp)
+        wait_for_pods_running(
+            admin_client=admin_client,
+            namespace=hco_namespace,
+            number_of_consecutive_checks=3,
+        )
     else:
         LOGGER.info("No actual changes to node placement configuration, skipping")
 

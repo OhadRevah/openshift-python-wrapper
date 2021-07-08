@@ -117,7 +117,7 @@ NODE_PLACEMENT_WORKLOADS = {
 }
 
 # Below list consists of Infrastructure and Workloads pods based on Daemonset and Deployments.
-INFRA_PODS_COMPONENTS = [
+CNV_INFRA_PODS_COMPONENTS = [
     "virt-controller",
     "virt-template-validator",
     "vm-import-controller",
@@ -127,19 +127,18 @@ INFRA_PODS_COMPONENTS = [
     "cdi-deployment",
     "cdi-uploadproxy",
 ]
-WORKLOADS_PODS_COMPONENTS = [
+CNV_WORKLOADS_PODS_COMPONENTS = [
     "virt-handler",
     "bridge-marker",
     "kube-cni-linux-bridge-plugin",
     "nmstate-handler",
 ]
 
-OPERATOR_PODS_COMPONENTS = [
+CNV_OPERATOR_PODS_COMPONENTS = [
     "cdi-operator",
     "cluster-network-addons-operator",
     "hco-operator",
     "hco-webhook",
-    "hostpath-provisioner-operator",
     "ssp-operator",
     "node-maintenance-operator",
     "virt-operator",

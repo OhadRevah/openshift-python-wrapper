@@ -10,7 +10,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_import_configs import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
-    OPERATOR_PODS_COMPONENTS,
+    CNV_OPERATOR_PODS_COMPONENTS,
     SELECTORS,
     get_pod_per_nodes,
 )
@@ -274,13 +274,14 @@ def alter_np_configuration(
     """
     infra_placement = request.param.get("infra")
     workloads_placement = request.param.get("workloads")
-    yield apply_np_changes(
+    apply_np_changes(
         admin_client=admin_client,
         hco=hyperconverged_resource_scope_function,
         hco_namespace=hco_namespace,
         infra_placement=infra_placement,
         workloads_placement=workloads_placement,
     )
+    yield
 
 
 @pytest.fixture(scope="class")
@@ -484,6 +485,6 @@ def get_terminating_operators_pods(admin_client, hco_namespace):
     return [
         pod
         for pod in Pod.get(dyn_client=admin_client, namespace=hco_namespace.name)
-        if pod.name.startswith(tuple(OPERATOR_PODS_COMPONENTS))
+        if pod.name.startswith(tuple(CNV_OPERATOR_PODS_COMPONENTS))
         and pod.instance.metadata.get("deletionTimestamp") is not None
     ]

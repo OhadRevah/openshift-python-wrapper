@@ -6,11 +6,9 @@ from ocp_resources.resource import ResourceEditor
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
 )
-from tests.install_upgrade_operators.strict_reconciliation.utils import (
-    get_hco_spec,
-    modify_hco_cr,
-)
+from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
 from utilities.hco import (
+    modify_hco_cr,
     replace_backup_hco_cr_modification,
     restore_hco_cr_modification,
 )
