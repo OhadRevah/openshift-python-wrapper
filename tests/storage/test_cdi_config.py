@@ -34,7 +34,7 @@ STORAGE_WORKLOADS_DICT = {
     "limits": {"cpu": "505m", "memory": "2Gi"},
     "requests": {"cpu": "252m", "memory": "1Gi"},
 }
-NON_EXISTANT_SCRATCH_SC_DICT = {"scratchSpaceStorageClass": "NonExistantSC"}
+NON_EXISTENT_SCRATCH_SC_DICT = {"scratchSpaceStorageClass": "NonExistentSC"}
 INSECURE_REGISTRIES_LIST = ["added-private-registry:5000"]
 
 
@@ -298,19 +298,20 @@ def test_cdiconfig_changing_storage_class_default(
 
 
 @pytest.mark.polarion("CNV-5999")
-def test_cdi_spec_reconciled_by_hco(cdi, namespace):
+def test_cdi_spec_reconciled_by_hco(cdi, cdi_config, namespace):
     """
     Test that added feature gate on the CDI CR does not persist
     (HCO Should reconcile back changes on the CDI CR)
     """
-    non_existant_feature = "ExtraNonExistantFeature"
+    non_existent_feature = "ExtraNonExistentFeature"
+    initial_generation_val = cdi_config.instance.metadata.generation
     with ResourceEditor(
         patches={
             cdi: {
                 "spec": {
                     "config": {
                         "featureGates": cdi_feature_gate_list_with_added_feature(
-                            feature=non_existant_feature
+                            feature=non_existent_feature
                         )
                     }
                 }
@@ -321,11 +322,16 @@ def test_cdi_spec_reconciled_by_hco(cdi, namespace):
             for sample in TimeoutSampler(
                 wait_timeout=20,
                 sleep=1,
-                func=lambda: check_cdi_feature_gate_enabled(
-                    feature=non_existant_feature
-                ),
+                func=check_cdi_feature_gate_enabled,
+                feature=non_existent_feature,
             ):
-                if sample:
+                if (
+                    cdi_config.instance.metadata.generation
+                    == initial_generation_val + 2
+                    and sample
+                ):
+                    # Generation will increment twice;
+                    # once when applying our change and once when getting reconciled back to original
                     LOGGER.error("Changes to CDI Spec should be reconciled by HCO")
                     break
 
@@ -340,8 +346,8 @@ def test_cdi_spec_reconciled_by_hco(cdi, namespace):
             id="test_storage_workloads_in_hco_propagated_to_cdi_cr",
         ),
         pytest.param(
-            NON_EXISTANT_SCRATCH_SC_DICT,
-            NON_EXISTANT_SCRATCH_SC_DICT,
+            NON_EXISTENT_SCRATCH_SC_DICT,
+            NON_EXISTENT_SCRATCH_SC_DICT,
             marks=(pytest.mark.polarion("CNV-6001")),
             id="test_scratch_sc_in_hco_propagated_to_cdi_cr",
         ),
