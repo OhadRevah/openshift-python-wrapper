@@ -312,7 +312,7 @@ windows_os_matrix = [
                 "workload": Template.Workload.DESKTOP,
                 "flavor": Template.Flavor.MEDIUM,
             },
-            "license": "TFNPT-4HYRB-JMJW3-6JDYQ-JTYP6",
+            "license": "BRNVR-4HQGD-GH2WT-Y2CXR-W8F8R",
         }
     },
     {
@@ -326,7 +326,7 @@ windows_os_matrix = [
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.MEDIUM,
             },
-            "license": "CKWJN-48TW8-V7CVV-RQCFY-R6XCB",
+            "license": "CKN69-V8PF9-KT726-Y23JM-XBRRY",
         }
     },
     {
@@ -340,7 +340,7 @@ windows_os_matrix = [
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.MEDIUM,
             },
-            "license": "MBHVF-NK7XF-C4YG9-8VBVP-Q3XQF",
+            "license": "8KHNW-H9K6W-4XXX8-8WKW9-3RT3F",
         }
     },
     {
@@ -355,7 +355,7 @@ windows_os_matrix = [
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.MEDIUM,
             },
-            "license": "N8BP4-3RHM3-YQWTF-MBJC3-YBKQ3",
+            "license": "NQJPH-YJBCM-K9F34-YMKPW-Q7CHQ",
         }
     },
 ]

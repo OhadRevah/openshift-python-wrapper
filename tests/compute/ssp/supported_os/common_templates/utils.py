@@ -26,6 +26,7 @@ from utilities.constants import (
     TIMEOUT_3MIN,
     TIMEOUT_90SEC,
 )
+from utilities.exceptions import CommandExecFailed
 from utilities.infra import (
     JIRA_STATUS_CLOSED,
     get_jira_connection_params,
@@ -273,15 +274,30 @@ def add_windows_license(vm, windows_license):
 
 
 def activate_windows_online(vm):
+    def _activate_windows(vm):
+        cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato")
+        online_activation_status = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
+        return re.match(
+            r"Activating Windows\(R\), (ServerStandard|Professional|Enterprise) edition "
+            r"\(.*\) \.+.*Product activated successfully",
+            online_activation_status,
+            re.DOTALL,
+        )
+
     LOGGER.info("Activate Windows license online.")
-    cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato")
-    online_activation_status = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
-    assert re.match(
-        r"Activating Windows\(R\), (ServerStandard|Professional) edition "
-        r"\(.*\) \.+.*Product activated successfully",
-        online_activation_status,
-        re.DOTALL,
-    ), "Failed to activate Windows online."
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_3MIN,
+        sleep=30,
+        func=_activate_windows,
+        vm=vm,
+        exceptions=CommandExecFailed,
+    ):
+        try:
+            if sample:
+                return
+        except TimeoutExpiredError:
+            LOGGER.error("Failed to activate Windows online.")
+            raise
 
 
 def is_windows_activated(vm):
