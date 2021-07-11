@@ -183,8 +183,10 @@ To see verbose logging of a test run, add the following parameter:
 make tests PYTEST_ARGS="-o log_cli=true"
 ```
 To enable log-collector set CNV_TEST_COLLECT_LOGS
+To change the destination folder of collected logs set CNV_TEST_COLLECT_LOGS_DIR
 ```bash
 export CNV_TEST_COLLECT_LOGS=1
+export CNV_TEST_COLLECT_LOGS_DIR=/my/logs/dir
 ```
 Logs will be available under tests-collected-info/ folder.
 
