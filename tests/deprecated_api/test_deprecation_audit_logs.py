@@ -29,7 +29,9 @@ class DeprecatedAPIException(Exception):
     Raises when calling a deprecated API
     """
 
-    pass
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 
 @pytest.fixture()
@@ -127,5 +129,4 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
             deprecated_calls.pop(component)
 
     if deprecated_calls:
-        LOGGER.error(_format_printed_dict())
-        raise DeprecatedAPIException
+        raise DeprecatedAPIException(message=_format_printed_dict())
