@@ -205,17 +205,61 @@ def prepare_test_dir_log(item, prefix, logs_path):
     os.makedirs(test_dir_log, exist_ok=True)
 
 
-def collect_logs_prepare_dirs():
+def prepare_test_dir_log_utilities():
+    """
+    prepares a utilities directory under the base log collection dir
+
+    This is used in the case that log collection is requested outside the scope of a test
+    (for example, during debugging)
+
+    Returns:
+        str: TEST_DIR_LOG (the base directory for log collection)
+    """
+    test_dir_log = os.path.join(
+        os.environ.get("CNV_TEST_COLLECT_BASE_DIR"),
+        "utilities",
+    )
+    os.environ["TEST_DIR_LOG"] = test_dir_log
+    os.makedirs(test_dir_log, exist_ok=True)
+    return test_dir_log
+
+
+def collect_logs_prepare_test_dir():
+    """
+    Provides and ensures the creation of a directory to collect logs
+
+    If this runs in the scope of a test the directory path structure will include the test node path
+    If this is run outside the scope of a test the directory path will be for utilities
+
+    Returns:
+        str: test_dir (the directory prefixed for collecting logs)
+    """
     test_dir = os.environ.get("TEST_DIR_LOG")
-    pods_dir = os.path.join(test_dir, "Pods")
+    if not test_dir:
+        # log collection was requested outside the scope of a test
+        test_dir = prepare_test_dir_log_utilities()
     os.makedirs(test_dir, exist_ok=True)
+    return test_dir
+
+
+def collect_logs_prepare_pods_dir():
+    """
+    Provides and ensures the creation of a directory to collect pod logs
+
+    This will prepare the directory under the directory created by collect_logs_prepare_test_dir
+
+    Returns:
+        str: pods_dir (directory to save pod logs)
+    """
+    test_dir = collect_logs_prepare_test_dir()
+    pods_dir = os.path.join(test_dir, "Pods")
     os.makedirs(pods_dir, exist_ok=True)
-    return test_dir, pods_dir
+    return pods_dir
 
 
 def collect_logs_resources(resources_to_collect, namespace_name=None):
     get_kwargs = {"dyn_client": get_admin_client()}
-    test_dir, _ = collect_logs_prepare_dirs()
+    test_dir = collect_logs_prepare_test_dir()
     for _resources in resources_to_collect:
         resource_dir = os.path.join(test_dir, _resources.__name__)
 
@@ -233,7 +277,7 @@ def collect_logs_resources(resources_to_collect, namespace_name=None):
 
 
 def collect_logs_pods(pods):
-    _, pods_dir = collect_logs_prepare_dirs()
+    pods_dir = collect_logs_prepare_pods_dir()
     for pod in pods:
         kwargs = {}
         for pod_prefix in PODS_TO_COLLECT_INFO:
@@ -399,7 +443,16 @@ def get_jira_status(jira_connection_params, jira):
 
 
 def collect_logs():
-    return os.environ.get("CNV_TEST_COLLECT_LOGS", "0") != "0"
+    """
+    This will check if the log collector is enabled for this session
+
+    Checks the value in the py_config which is configured according to the global config of the current session
+    This can also be explicitly enabled using --log-collector flag when running pytest
+
+    Returns
+        bool: log collector is enabled for the session
+    """
+    return py_config.get("log_collector", False)
 
 
 def collect_resources_for_test(resources_to_collect, namespace_name=None):
@@ -411,22 +464,19 @@ def collect_resources_for_test(resources_to_collect, namespace_name=None):
     probably you will want to use this during exception handling when a test fails
     ie: in order to collect resources that otherwise are not collected as part of the resource collection.
 
-    will only actually collect resource if CNV_TEST_COLLECT_LOGS is set
-
     Args:
         resources_to_collect (list): list of Resource object classes to collect
         namespace_name (string): (optional) the namespace to use
     """
-    if collect_logs():
-        try:
-            collect_logs_resources(
-                resources_to_collect=resources_to_collect,
-                namespace_name=namespace_name,
-            )
-        except Exception as exp:
-            LOGGER.debug(
-                f"Failed to collect resource for test: {resources_to_collect} {exp}"
-            )
+    try:
+        collect_logs_resources(
+            resources_to_collect=resources_to_collect,
+            namespace_name=namespace_name,
+        )
+    except Exception as exp:
+        LOGGER.debug(
+            f"Failed to collect resource for test: {resources_to_collect} {exp}"
+        )
 
 
 def write_to_extras_file(extras_file_name, content, extra_dir_name="extras"):
@@ -440,23 +490,20 @@ def write_to_extras_file(extras_file_name, content, extra_dir_name="extras"):
 
     this is a way to store information useful for debugging or analysis which will persist after the execution/cluster
 
-    will only actually write to the file if CNV_TEST_COLLECT_LOGS is set
-
     Args:
         extras_file_name (string): name of the file to write
         content (string): the content of the file to write
         extra_dir_name (string): (optional) the directory name to create inside the test collect dir
     """
-    if collect_logs():
-        test_dir, _ = collect_logs_prepare_dirs()
-        extras_dir = os.path.join(test_dir, extra_dir_name)
-        os.makedirs(extras_dir, exist_ok=True)
-        extras_file_path = os.path.join(extras_dir, extras_file_name)
-        try:
-            with open(extras_file_path, "w") as fd:
-                fd.write(content)
-        except Exception as exp:
-            LOGGER.debug(f"Failed to write extras to file: {extras_file_path} {exp}")
+    test_dir = collect_logs_prepare_test_dir()
+    extras_dir = os.path.join(test_dir, extra_dir_name)
+    os.makedirs(extras_dir, exist_ok=True)
+    extras_file_path = os.path.join(extras_dir, extras_file_name)
+    try:
+        with open(extras_file_path, "w") as fd:
+            fd.write(content)
+    except Exception as exp:
+        LOGGER.debug(f"Failed to write extras to file: {extras_file_path} {exp}")
 
 
 def get_pods(dyn_client, namespace, label=None):

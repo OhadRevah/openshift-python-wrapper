@@ -219,7 +219,7 @@ def pytest_addoption(parser):
     # Log collector group
     log_collector_group.addoption(
         "--log-collector",
-        help="Enable collect logs for failed tests",
+        help="Enable log collector to capture additional logs and resources for failed tests",
         action="store_true",
     )
     log_collector_group.addoption(
@@ -479,6 +479,19 @@ def pytest_sessionstart(session):
                 dict([generate_latest_os_dict(os_list=py_config["fedora_os_matrix"])])
             ]
 
+    if session.config.getoption("log_collector"):
+        # set log_collector to True if it is explicitly requested,
+        # otherwise use what is set in the global config
+        py_config["log_collector"] = True
+    if py_config.get("log_collector", False):
+        # this could already be set in the global config
+        # if it is set then the environment must be configured so that openshift-python-wrapper can use it
+        os.environ["CNV_TEST_COLLECT_LOGS"] = "1"
+    # store the base directory for log collection in the environment so it can be used by utilities
+    os.environ["CNV_TEST_COLLECT_BASE_DIR"] = session.config.getoption(
+        "log_collector_dir"
+    )
+
     tests_log_file = session.config.getoption("pytest_log_file")
     if os.path.exists(tests_log_file):
         os.remove(tests_log_file)
@@ -568,10 +581,7 @@ def pytest_exception_interact(node, call, report):
 
 @pytest.fixture(scope="session")
 def log_collector(request):
-    collect = request.session.config.getoption("log_collector")
-    if collect:
-        os.environ["CNV_TEST_COLLECT_LOGS"] = "1"
-    return collect
+    return request.session.config.getoption("log_collector")
 
 
 @pytest.fixture(scope="session")

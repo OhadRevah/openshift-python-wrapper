@@ -13,7 +13,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
-from utilities.infra import collect_resources_for_test
+from utilities.infra import collect_logs, collect_resources_for_test
 
 
 LOGGER = logging.getLogger(__name__)
@@ -63,7 +63,8 @@ def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
         LOGGER.error(
             f"timeout waiting for target cluster service version: version={hco_target_version} csvs={csvs}"
         )
-        collect_resources_for_test(resources_to_collect=[ClusterServiceVersion])
+        if collect_logs():
+            collect_resources_for_test(resources_to_collect=[ClusterServiceVersion])
         raise
 
 
@@ -94,7 +95,8 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
         LOGGER.error(
             f"timeout waiting for target install plan: version={hco_target_version} ips={install_plan_samples}"
         )
-        collect_resources_for_test(resources_to_collect=[InstallPlan])
+        if collect_logs():
+            collect_resources_for_test(resources_to_collect=[InstallPlan])
         raise
 
 

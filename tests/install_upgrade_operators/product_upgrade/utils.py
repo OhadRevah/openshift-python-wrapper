@@ -35,7 +35,11 @@ from urllib3.exceptions import (
 import utilities.constants
 from tests.install_upgrade_operators import utils
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import collect_resources_for_test, write_to_extras_file
+from utilities.infra import (
+    collect_logs,
+    collect_resources_for_test,
+    write_to_extras_file,
+)
 from utilities.virt import run_command
 
 
@@ -533,15 +537,16 @@ def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
 
     except TimeoutExpiredError:
         LOGGER.error("Nodes did not match after timeout, attempting to produce delta.")
-        collect_resources_for_test(resources_to_collect=[Node])
-        for name, data in [
-            ("nodes_status_before_upgrade.yaml", nodes_status_before_upgrade),
-            ("nodes_status_after_upgrade.yaml", nodes_status_after_upgrade),
-        ]:
-            write_to_extras_file(
-                extras_file_name=name,
-                content=yaml.dump(cleanup_node_status(node_status=data)),
-            )
+        if collect_logs():
+            collect_resources_for_test(resources_to_collect=[Node])
+            for name, data in [
+                ("nodes_status_before_upgrade.yaml", nodes_status_before_upgrade),
+                ("nodes_status_after_upgrade.yaml", nodes_status_after_upgrade),
+            ]:
+                write_to_extras_file(
+                    extras_file_name=name,
+                    content=yaml.dump(cleanup_node_status(node_status=data)),
+                )
         try:
             nodes_delta = stringify_dict_delta_for_logging(
                 first=cleanup_node_status(node_status=nodes_status_before_upgrade),
@@ -552,9 +557,10 @@ def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
             # it should be ignored so that before/after dictionaries can still be logged.
             nodes_delta = f"<ErrorObtainingDelta({exc})>"
         else:
-            write_to_extras_file(
-                extras_file_name="nodes_delta.txt", content=nodes_delta
-            )
+            if collect_logs():
+                write_to_extras_file(
+                    extras_file_name="nodes_delta.txt", content=nodes_delta
+                )
         LOGGER.error(f"Nodes delta:\n{nodes_delta}.")
         raise
 
@@ -714,16 +720,17 @@ def wait_for_mcp_update(dyn_client):
             LOGGER.error(
                 f"mcp not at desired condition before timeout: desired={condition_type} current={mcp_conditions}"
             )
-            write_to_extras_file(
-                extras_file_name="mcp_conditions.yaml",
-                content=yaml.dump(
-                    {
-                        key: list(map(dict, conditions))
-                        for key, conditions in mcp_conditions.items()
-                    }
-                ),
-            )
-            collect_resources_for_test(resources_to_collect=[MachineConfigPool])
+            if collect_logs():
+                write_to_extras_file(
+                    extras_file_name="mcp_conditions.yaml",
+                    content=yaml.dump(
+                        {
+                            key: list(map(dict, conditions))
+                            for key, conditions in mcp_conditions.items()
+                        }
+                    ),
+                )
+                collect_resources_for_test(resources_to_collect=[MachineConfigPool])
             raise
 
     LOGGER.info("Wait for mcp update to start.")
