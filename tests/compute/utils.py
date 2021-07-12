@@ -116,13 +116,29 @@ def kill_processes_by_name_windows(vm, process_name):
 
 @contextmanager
 def update_hco_config(resource, path, value):
+    jsonpatch_key = "kubevirt.kubevirt.io/jsonpatch"
+    resource_existing_jsonpatch_annotation = resource.instance.metadata.get(
+        "annotations", {}
+    ).get(jsonpatch_key)
+    hco_config_jsonpath_dict = hco_cr_jsonpatch_annotations_dict(
+        component="kubevirt",
+        path=path,
+        value=value,
+    )
+
+    # Avoid overwriting existing jsonpatch annotations
+    # example:
+    # '[{"op": "add", "path": "/spec/configuration/machineType", "value": "pc-q35-rhel8.4.0"},
+    # {"op": "add", "path": "/spec/configuration/cpuModel", "value": "Haswell-noTSX"}]]'
+    if resource_existing_jsonpatch_annotation:
+        hco_annotations_dict = hco_config_jsonpath_dict["metadata"]["annotations"]
+        hco_annotations_dict[
+            jsonpatch_key
+        ] = f"{resource_existing_jsonpatch_annotation[:-1]},{hco_annotations_dict[jsonpatch_key][1:]}"
+
     editor = ResourceEditor(
         patches={
-            resource: hco_cr_jsonpatch_annotations_dict(
-                component="kubevirt",
-                path=path,
-                value=value,
-            )
+            resource: hco_config_jsonpath_dict,
         },
     )
     editor.update(backup_resources=True)
@@ -130,7 +146,7 @@ def update_hco_config(resource, path, value):
     editor.restore()
 
 
-def wait_for_updated_kv_value(admin_client, hco_namespace, path, value):
+def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=15):
     """
     Waits for updated values in KV CR configuration
 
@@ -150,7 +166,7 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value):
     base_path = ["configuration"]
     base_path.extend(path)
     samples = TimeoutSampler(
-        wait_timeout=15,
+        wait_timeout=timeout,
         sleep=1,
         func=lambda: benedict(
             get_kubevirt_hyperconverged_spec(

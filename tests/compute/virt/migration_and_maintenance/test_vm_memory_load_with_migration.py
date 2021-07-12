@@ -17,8 +17,8 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture()
 def vm_with_mem_load(
+    cluster_cpu_model_scope_function,
     unprivileged_client,
-    nodes_common_cpu_model,
     namespace,
     data_volume_scope_function,
 ):
@@ -32,7 +32,6 @@ def vm_with_mem_load(
         cpu_limits="2",
         memory_requests="4196Mi",
         data_volume=data_volume_scope_function,
-        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
         yield vm

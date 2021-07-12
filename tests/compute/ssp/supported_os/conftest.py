@@ -92,7 +92,6 @@ def vm_object_from_template(
     data_volume_object,
     request=None,
     os_matrix=None,
-    cpu_model=None,
 ):
     """Instantiate a VM object
 
@@ -132,7 +131,6 @@ def vm_object_from_template(
         network_model=network_model,
         network_multiqueue=network_multiqueue,
         ssh=param_dict.get("ssh", True),
-        cpu_model=cpu_model,
         systemctl_support=not rhel6,
     )
 
@@ -158,7 +156,6 @@ def golden_image_vm_object_from_template_multi_storage_dv_scope_class_vm_scope_f
     unprivileged_client,
     namespace,
     golden_image_data_volume_multi_storage_scope_class,
-    nodes_common_cpu_model,
 ):
     """VM is created with function scope whereas golden image DV is created with class scope. to be used when a number
     of tests (each creates its relevant VM) are gathered under a class and use the same golden image DV.
@@ -192,25 +189,23 @@ def golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
     namespace,
     rhel_os_matrix__class__,
     golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
-    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=rhel_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
-        cpu_model=nodes_common_cpu_model,
     )
 
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class(
     request,
+    cluster_cpu_model_scope_class,
     unprivileged_client,
     namespace,
     windows_os_matrix__class__,
     golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
-    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         request=request,
@@ -218,18 +213,17 @@ def golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_cl
         namespace=namespace,
         os_matrix=windows_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
-        cpu_model=nodes_common_cpu_model,
     )
 
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class(
     request,
+    cluster_cpu_model_scope_class,
     unprivileged_client,
     namespace,
     fedora_os_matrix__class__,
     golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
-    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         request=request,
@@ -237,24 +231,22 @@ def golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_cla
         namespace=namespace,
         os_matrix=fedora_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
-        cpu_model=nodes_common_cpu_model,
     )
 
 
 @pytest.fixture(scope="class")
 def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
+    cluster_cpu_model_scope_class,
     unprivileged_client,
     namespace,
     centos_os_matrix__class__,
     golden_image_data_volume_multi_centos_multi_storage_scope_class,
-    nodes_common_cpu_model,
 ):
     return vm_object_from_template(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         os_matrix=centos_os_matrix__class__,
         data_volume_object=golden_image_data_volume_multi_centos_multi_storage_scope_class,
-        cpu_model=nodes_common_cpu_model,
     )
 
 

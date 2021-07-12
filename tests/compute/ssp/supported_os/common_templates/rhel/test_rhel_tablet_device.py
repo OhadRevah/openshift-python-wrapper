@@ -170,7 +170,6 @@ class TestRHELTabletDevice:
                     "vm_dict": utils.set_vm_tablet_device_dict(
                         {"name": "my_tablet", "type": "tablet", "bus": "usb"}
                     ),
-                    "set_vm_common_cpu": True,
                 },
                 marks=pytest.mark.polarion("CNV-5833"),
             ),
@@ -180,6 +179,7 @@ class TestRHELTabletDevice:
     def test_tablet_device_migrate_vm(
         self,
         skip_upstream,
+        cluster_cpu_model_scope_class,
         unprivileged_client,
         namespace,
         golden_image_data_volume_multi_storage_scope_class,

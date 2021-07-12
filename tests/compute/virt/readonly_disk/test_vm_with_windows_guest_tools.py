@@ -20,14 +20,19 @@ LOGGER = logging.getLogger(__name__)
 
 
 class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
-    def __init__(self, name, namespace, client, data_volume, cpu_model):
+    def __init__(
+        self,
+        name,
+        namespace,
+        client,
+        data_volume,
+    ):
         super().__init__(
             name=name,
             namespace=namespace,
             client=client,
             data_volume=data_volume,
             labels=Template.generate_template_labels(**WINDOWS_LATEST_LABELS),
-            cpu_model=cpu_model,
         )
 
     def to_dict(self):
@@ -54,10 +59,10 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
 
 @pytest.fixture(scope="class")
 def vm_with_guest_tools(
+    cluster_cpu_model_scope_class,
     namespace,
     unprivileged_client,
     golden_image_data_volume_scope_class,
-    nodes_common_cpu_model,
 ):
     """Create Windows with guest-tools cd-rom"""
     with WindowsVMWithGuestTools(
@@ -65,7 +70,6 @@ def vm_with_guest_tools(
         namespace=namespace.name,
         client=unprivileged_client,
         data_volume=golden_image_data_volume_scope_class,
-        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
         yield vm

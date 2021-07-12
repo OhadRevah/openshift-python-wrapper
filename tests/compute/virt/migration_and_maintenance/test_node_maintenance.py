@@ -84,7 +84,11 @@ def node_filter(pod, schedulable_nodes):
 
 
 @pytest.fixture()
-def vm_container_disk_fedora(namespace, unprivileged_client, nodes_common_cpu_model):
+def vm_container_disk_fedora(
+    cluster_cpu_model_scope_module,
+    namespace,
+    unprivileged_client,
+):
     name = f"vm-nodemaintenance-{random.randrange(99999)}"
     with VirtualMachineForTests(
         name=name,
@@ -92,7 +96,6 @@ def vm_container_disk_fedora(namespace, unprivileged_client, nodes_common_cpu_mo
         eviction=True,
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
-        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
         yield vm
@@ -197,7 +200,6 @@ def test_node_drain_using_console_fedora(
             {
                 "vm_name": "rhel8-template-node-maintenance",
                 "template_labels": RHEL_LATEST_LABELS,
-                "set_vm_common_cpu": True,
             },
         )
     ],
@@ -206,6 +208,7 @@ def test_node_drain_using_console_fedora(
 @pytest.mark.usefixtures(
     "skip_when_one_node",
     "skip_access_mode_rwo_scope_class",
+    "cluster_cpu_model_scope_class",
     "golden_image_data_volume_multi_storage_scope_class",
 )
 @pytest.mark.ibm_bare_metal
@@ -299,7 +302,6 @@ class TestNodeMaintenanceRHEL:
             {
                 "vm_name": "wind-template-node-cordon-and-drain",
                 "template_labels": WINDOWS_LATEST_LABELS,
-                "set_vm_common_cpu": True,
             },
         ),
     ],
@@ -308,6 +310,7 @@ class TestNodeMaintenanceRHEL:
 @pytest.mark.usefixtures(
     "skip_when_one_node",
     "skip_access_mode_rwo_scope_class",
+    "cluster_cpu_model_scope_class",
     "golden_image_data_volume_multi_storage_scope_class",
 )
 @pytest.mark.ibm_bare_metal

@@ -18,7 +18,7 @@ pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.fixture()
-def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
+def vm(request, cluster_cpu_model_scope_function, unprivileged_client, namespace):
     name = f"vm-{request.param['vm_name']}-machine-type"
 
     with VirtualMachineForTests(
@@ -27,7 +27,6 @@ def vm(request, unprivileged_client, namespace, nodes_common_cpu_model):
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
         machine_type=request.param.get("machine_type"),
-        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm, enable_ssh=False)
         yield vm

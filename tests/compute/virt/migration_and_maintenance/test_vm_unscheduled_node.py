@@ -13,11 +13,11 @@ from utilities.virt import vm_instance_from_template, wait_for_node_schedulable_
 @pytest.fixture()
 def unscheduled_node_vm(
     request,
+    cluster_cpu_model_scope_function,
     worker_node1,
     unprivileged_client,
     namespace,
     data_volume_scope_function,
-    nodes_common_cpu_model,
 ):
     with vm_instance_from_template(
         request=request,
@@ -25,7 +25,6 @@ def unscheduled_node_vm(
         namespace=namespace,
         existing_data_volume=data_volume_scope_function,
         node_selector=worker_node1.name,
-        vm_cpu_model=nodes_common_cpu_model,
     ) as vm:
         yield vm
 
@@ -44,7 +43,6 @@ def unscheduled_node_vm(
                 "vm_name": "rhel-node-maintenance",
                 "template_labels": RHEL_LATEST_LABELS,
                 "start_vm": False,
-                "set_vm_common_cpu": True,
             },
         )
     ],

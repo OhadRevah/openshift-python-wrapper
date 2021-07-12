@@ -21,7 +21,7 @@ default_run_strategy = VirtualMachine.RunStrategy.MANUAL
 
 
 @contextmanager
-def container_disk_vm(namespace, unprivileged_client, cpu_model):
+def container_disk_vm(namespace, unprivileged_client):
     name = "fedora-vm-lifecycle"
     with VirtualMachineForTests(
         name=name,
@@ -29,7 +29,6 @@ def container_disk_vm(namespace, unprivileged_client, cpu_model):
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
         run_strategy=default_run_strategy,
-        cpu_model=cpu_model,
     ) as vm:
         # Run the VM to enable SSH
         running_vm(vm=vm)
@@ -37,7 +36,7 @@ def container_disk_vm(namespace, unprivileged_client, cpu_model):
 
 
 @contextmanager
-def data_volume_vm(unprivileged_client, namespace, cpu_model):
+def data_volume_vm(unprivileged_client, namespace):
     with create_dv(
         client=get_admin_client(),
         dv_name=py_config["latest_fedora_os_dict"]["template_labels"]["os"],
@@ -60,7 +59,6 @@ def data_volume_vm(unprivileged_client, namespace, cpu_model):
             ),
             data_volume=dv,
             run_strategy=default_run_strategy,
-            cpu_model=cpu_model,
             termination_grace_period=0,
         ) as vm:
             # Run the VM to enable SSH
@@ -70,10 +68,10 @@ def data_volume_vm(unprivileged_client, namespace, cpu_model):
 
 @pytest.fixture(scope="module")
 def lifecycle_vm(
+    cluster_cpu_model_scope_module,
     unprivileged_client,
     namespace,
     vm_volumes_matrix__module__,
-    nodes_common_cpu_model,
 ):
     """Wrapper fixture to generate the desired VM
     vm_volumes_matrix returns a string.
@@ -83,6 +81,5 @@ def lifecycle_vm(
     with globals()[vm_volumes_matrix__module__](
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        cpu_model=nodes_common_cpu_model,
     ) as vm:
         yield vm

@@ -19,8 +19,8 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def vm_with_fio(
     request,
+    cluster_cpu_model_scope_function,
     unprivileged_client,
-    nodes_common_cpu_model,
     namespace,
     golden_image_data_volume_scope_function,
 ):
@@ -29,7 +29,6 @@ def vm_with_fio(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_function,
-        vm_cpu_model=nodes_common_cpu_model,
     ) as vm_with_fio:
         running_vm(vm=vm_with_fio)
         yield vm_with_fio

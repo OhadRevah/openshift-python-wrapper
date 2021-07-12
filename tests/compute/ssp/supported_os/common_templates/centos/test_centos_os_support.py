@@ -30,6 +30,7 @@ class TestCommonTemplatesCentos:
     def test_create_vm(
         self,
         skip_upstream,
+        cluster_cpu_model_scope_class,
         unprivileged_client,
         namespace,
         centos_os_matrix__class__,
