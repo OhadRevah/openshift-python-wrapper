@@ -288,13 +288,13 @@ class TestDeployCNVOnSubsetOfClusterNodes:
         assert nodes_labeled["infra3"] == expected_node_by_label["infra3"]
         # Verify all infrastructure components are removed from worker-1 and created on worker-3
         verify_all_components_on_node(
-            component_list=WORKLOADS_PODS_COMPONENTS,
+            component_list=INFRA_PODS_COMPONENTS,
             node_name=nodes_labeled["infra3"][0],
             admin_client=admin_client,
             hco_namespace=hco_namespace,
         )
         verify_no_components_on_nodes(
-            component_list=WORKLOADS_PODS_COMPONENTS,
+            component_list=INFRA_PODS_COMPONENTS,
             node_names=[nodes_labeled["infra2"][0], nodes_labeled["infra1"][0]],
             admin_client=admin_client,
             hco_namespace=hco_namespace,
