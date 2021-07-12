@@ -148,10 +148,6 @@ OS_LOGIN_PARAMS = {
 }
 
 # Collect logs constants
-TEST_LOG_FILE = "pytest-tests.log"
-TEST_COLLECT_INFO_DIR = os.environ.get(
-    "CNV_TEST_COLLECT_LOGS_DIR", "tests-collected-info"
-)
 RESOURCES_TO_COLLECT_INFO = [
     DataVolume,
     PersistentVolume,

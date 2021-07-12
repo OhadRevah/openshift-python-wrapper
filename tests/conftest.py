@@ -50,8 +50,6 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     RESOURCES_TO_COLLECT_INFO,
     SRIOV,
-    TEST_COLLECT_INFO_DIR,
-    TEST_LOG_FILE,
     TIMEOUT_4MIN,
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
@@ -65,7 +63,6 @@ from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
     base64_encode_str,
-    collect_logs,
     collect_logs_pods,
     collect_logs_resources,
     create_ns,
@@ -144,6 +141,7 @@ def pytest_addoption(parser):
     install_upgrade_group = parser.getgroup(name="Upgrade")
     storage_group = parser.getgroup(name="Storage")
     cluster_sanity_group = parser.getgroup(name="ClusterSanity")
+    log_collector_group = parser.getgroup(name="LogCollector")
 
     # Upgrade addoption
     install_upgrade_group.addoption(
@@ -210,6 +208,23 @@ def pytest_addoption(parser):
         "--cluster-sanity-skip-storage-check",
         help="Skip storage class check in cluster_sanity fixture",
         action="store_true",
+    )
+
+    # Log collector group
+    log_collector_group.addoption(
+        "--log-collector",
+        help="Enable collect logs for failed tests",
+        action="store_true",
+    )
+    log_collector_group.addoption(
+        "--log-collector-dir",
+        help="Path for log collector to store the logs",
+        default="tests-collected-info",
+    )
+    log_collector_group.addoption(
+        "--pytest-log-file",
+        help="Path to pytest log file",
+        default="pytest-tests.log",
     )
 
 
@@ -380,17 +395,23 @@ def pytest_runtest_setup(item):
         if previousfailed is not None:
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
-    prepare_test_dir_log(item=item, prefix="setup")
+    if item.session.config.getoption("log_collector"):
+        logs_path = item.session.config.getoption("log_collector_dir")
+        prepare_test_dir_log(item=item, prefix="setup", logs_path=logs_path)
 
 
 def pytest_runtest_call(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='CALL')}")
-    prepare_test_dir_log(item=item, prefix="call")
+    if item.session.config.getoption("log_collector"):
+        logs_path = item.session.config.getoption("log_collector_dir")
+        prepare_test_dir_log(item=item, prefix="call", logs_path=logs_path)
 
 
 def pytest_runtest_teardown(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='TEARDOWN')}")
-    prepare_test_dir_log(item=item, prefix="teardown")
+    if item.session.config.getoption("log_collector"):
+        logs_path = item.session.config.getoption("log_collector_dir")
+        prepare_test_dir_log(item=item, prefix="teardown", logs_path=logs_path)
 
 
 def pytest_generate_tests(metafunc):
@@ -452,11 +473,12 @@ def pytest_sessionstart(session):
                 dict([generate_latest_os_dict(os_list=py_config["fedora_os_matrix"])])
             ]
 
-    if os.path.exists(TEST_LOG_FILE):
-        os.remove(TEST_LOG_FILE)
+    tests_log_file = session.config.getoption("pytest_log_file")
+    if os.path.exists(tests_log_file):
+        os.remove(tests_log_file)
 
     setup_logging(
-        log_file=TEST_LOG_FILE,
+        log_file=tests_log_file,
         log_level=session.config.getoption("log_cli_level") or logging.INFO,
     )
     py_config_scs = py_config.get("storage_class_matrix", {})
@@ -520,8 +542,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 def pytest_exception_interact(node, call, report):
     BASIC_LOGGER.error(report.longreprtext)
-
-    if collect_logs():
+    if node.session.config.getoption("log_collector"):
         try:
             namespace_name = generate_namespace_name(
                 file_path=node.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
@@ -539,9 +560,23 @@ def pytest_exception_interact(node, call, report):
             return
 
 
+@pytest.fixture(scope="session")
+def log_collector(request):
+    collect = request.session.config.getoption("log_collector")
+    if collect:
+        os.environ["CNV_TEST_COLLECT_LOGS"] = "1"
+    return collect
+
+
+@pytest.fixture(scope="session")
+def log_collector_dir(request, log_collector):
+    return request.session.config.getoption("log_collector_dir")
+
+
 @pytest.fixture(scope="session", autouse=True)
-def tests_collect_info_dir():
-    shutil.rmtree(TEST_COLLECT_INFO_DIR, ignore_errors=True)
+def tests_collect_info_dir(log_collector, log_collector_dir):
+    if log_collector:
+        shutil.rmtree(log_collector_dir, ignore_errors=True)
 
 
 def login_to_account(api_address, user, password=None):

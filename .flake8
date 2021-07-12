@@ -61,6 +61,7 @@ fcfn_exclude_functions =
     defaultdict,
     Counter,
     bcrypt,
+    getoption,
 
 enable-extensions =
     PID,

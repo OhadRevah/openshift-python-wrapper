@@ -23,11 +23,7 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import (
-    PODS_TO_COLLECT_INFO,
-    TEST_COLLECT_INFO_DIR,
-    TIMEOUT_2MIN,
-)
+from utilities.constants import PODS_TO_COLLECT_INFO, TIMEOUT_2MIN
 from utilities.exceptions import CommandExecFailed
 
 
@@ -193,19 +189,18 @@ def run_ssh_commands(host, commands):
     return results
 
 
-def prepare_test_dir_log(item, prefix):
-    if collect_logs():
-        test_cls_name = item.cls.__name__ if item.cls else ""
-        test_dir_log = os.path.join(
-            TEST_COLLECT_INFO_DIR,
-            item.fspath.dirname.split("/tests/")[-1],
-            item.fspath.basename.partition(".py")[0],
-            test_cls_name,
-            item.name,
-            prefix,
-        )
-        os.environ["TEST_DIR_LOG"] = test_dir_log
-        os.makedirs(test_dir_log, exist_ok=True)
+def prepare_test_dir_log(item, prefix, logs_path):
+    test_cls_name = item.cls.__name__ if item.cls else ""
+    test_dir_log = os.path.join(
+        logs_path,
+        item.fspath.dirname.split("/tests/")[-1],
+        item.fspath.basename.partition(".py")[0],
+        test_cls_name,
+        item.name,
+        prefix,
+    )
+    os.environ["TEST_DIR_LOG"] = test_dir_log
+    os.makedirs(test_dir_log, exist_ok=True)
 
 
 def collect_logs_prepare_dirs():
