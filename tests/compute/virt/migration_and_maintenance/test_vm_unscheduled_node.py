@@ -53,7 +53,7 @@ def unscheduled_node_vm(
 @pytest.mark.polarion("CNV-4157")
 def test_node_maintenance_job_rhel(
     skip_when_one_node,
-    skip_access_mode_rwo_scope_function,
+    skip_rwo_default_access_mode,
     nodes,
     data_volume_scope_function,
     unscheduled_node_vm,

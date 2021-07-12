@@ -155,7 +155,7 @@ class TestWSL2:
     def test_migration_with_wsl2_guest(
         self,
         skip_upstream,
-        skip_access_mode_rwo_scope_function,
+        skip_rwo_default_access_mode,
         unprivileged_client,
         namespace,
         golden_image_data_volume_scope_class,

@@ -121,7 +121,7 @@ class TestWindowsGuestTools:
     @pytest.mark.dependency(depends=["vm_with_guest_tools"])
     def test_migrate_vm_with_windows_guest_tools(
         self,
-        skip_access_mode_rwo_scope_function,
+        skip_rwo_default_access_mode,
         vm_with_guest_tools,
     ):
         LOGGER.info("Test migration of a VM with Windows guest tools")
