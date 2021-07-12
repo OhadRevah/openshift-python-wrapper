@@ -52,7 +52,7 @@ def get_rhel_templates_list():
         for release in rhel_major_releases_list
         for flavor in LINUX_FLAVORS_LIST
         for workload in LINUX_WORKLOADS_LIST
-        if not (release == "6" and workload == Template.Workload.HIGH_PERFORMANCE)
+        if not (release == "6" and workload == Template.Workload.HIGHPERFORMANCE)
     ]
 
 
