@@ -36,6 +36,7 @@ def get_windows_timezone(ssh_exec, get_standard_name=False):
 
 
 def start_and_fetch_processid_on_windows_vm(vm, process_name):
+    wait_for_ssh_connectivity(vm=vm)
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split(f"wmic process call create {process_name}"),
@@ -67,6 +68,7 @@ def validate_pause_unpause_windows_vm(vm, pre_pause_pid=None):
 
 
 def start_and_fetch_processid_on_linux_vm(vm, process_name, args=""):
+    wait_for_ssh_connectivity(vm=vm)
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split(f"{process_name} {args} </dev/null &>/dev/null &"),
