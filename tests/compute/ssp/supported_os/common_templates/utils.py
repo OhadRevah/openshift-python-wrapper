@@ -19,7 +19,7 @@ from tests.compute.ssp.supported_os.utils import (
     get_linux_guest_agent_version,
     guest_agent_version_parser,
 )
-from tests.compute.utils import get_windows_timezone
+from tests.compute.utils import get_windows_timezone, raise_multiple_exceptions
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     OS_FLAVOR_WINDOWS,
@@ -483,10 +483,15 @@ def validate_fs_info_virtctl_vs_linux_os(vm):
                 )
                 if disk_usage_diff_validation and virtctl_info == linux_info:
                     return
-    except TimeoutExpiredError:
-        raise ValueError(
-            f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
-            f"OS: {orig_linux_info}"
+    except TimeoutExpiredError as exp:
+        raise_multiple_exceptions(
+            exceptions=[
+                ValueError(
+                    f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
+                    f"OS: {orig_linux_info}"
+                ),
+                exp,
+            ]
         )
 
 
@@ -566,10 +571,15 @@ def validate_fs_info_virtctl_vs_windows_os(vm):
                 )
                 if disk_usage_diff_validation and virtctl_info == windows_info:
                     return
-    except TimeoutExpiredError:
-        raise ValueError(
-            f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
-            f"OS: {orig_windows_info}"
+    except TimeoutExpiredError as exp:
+        raise_multiple_exceptions(
+            exceptions=[
+                ValueError(
+                    f"Data mismatch!\nVirtctl: {orig_virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
+                    f"OS: {orig_windows_info}"
+                ),
+                exp,
+            ]
         )
 
 
@@ -931,9 +941,15 @@ def check_guest_agent_sampler_data(sampler):
             if virtctl_info:
                 if virtctl_info == linux_info:
                     return
-    except TimeoutExpiredError:
-        raise ValueError(
-            f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\nOS: {linux_info}"
+    except TimeoutExpiredError as exp:
+        raise_multiple_exceptions(
+            exceptions=[
+                ValueError(
+                    f"Data mismatch!\nVirtctl: {virtctl_info}\nCNV: {cnv_info}\nLibvirt: {libvirt_info}\n"
+                    f"OS: {linux_info}"
+                ),
+                exp,
+            ]
         )
 
 
