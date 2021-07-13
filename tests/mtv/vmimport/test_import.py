@@ -442,7 +442,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     secret,
     resource_mapping,
     no_vms_in_namespace,
-    default_sc_multi_storage,
+    storage_class_matrix__function__,
 ):
 
     # Verify:
@@ -453,15 +453,17 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
     expected_vm_config = Source.vms[f"cirros-3disks-{provider_data['fqdn']}"]
     expected_vm_name = expected_vm_config["name"]
     source_data_volumes_config = expected_vm_config["volumes_details"]
+    expected_storage_class = [*storage_class_matrix__function__][0]
 
     # in the internal mapping we use  the same destination storage class&volume mode for all items
-    _sc_name = default_sc_multi_storage[0].name
-    _storage_dic = get_storage_class_dict_from_matrix(storage_class=_sc_name)[_sc_name]
-    _vol_mod = _storage_dic["volume_mode"]
-    _acc_mod = _storage_dic["access_mode"]
+    _storage_dict = get_storage_class_dict_from_matrix(
+        storage_class=expected_storage_class
+    )[expected_storage_class]
+    _vol_mod = _storage_dict["volume_mode"]
+    _acc_mod = _storage_dict["access_mode"]
 
     # all 3 disks are expected to be of the global_config default storage class at the end.
-    expected_vm_config["expected_storage_class"] = _sc_name
+    expected_vm_config["expected_storage_class"] = expected_storage_class
 
     _test_import_vm(
         name=import_name(vm_name=expected_vm_name),
@@ -476,7 +478,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
         provider_mappings=utils.ProviderMappings(
             storage_mappings=[
                 ResourceMappingItem(
-                    target_name=_sc_name,  # disk1 is overridden by Storage Name
+                    target_name=expected_storage_class,  # disk1 is overridden by Storage Name
                     source_name=source_data_volumes_config[1]["storage_name"],
                     target_volume_mode=_vol_mod,
                     target_access_modes=_acc_mod,
@@ -484,7 +486,7 @@ def test_vmimport_with_mixed_external_and_internal_storage_mappings(
             ],
             disk_mappings=[
                 ResourceMappingItem(
-                    target_name=_sc_name,  # disk2 is overridden by DiskName
+                    target_name=expected_storage_class,  # disk2 is overridden by DiskName
                     source_name=source_data_volumes_config[2]["disk_name"],
                     target_volume_mode=_vol_mod,
                     target_access_modes=_acc_mod,

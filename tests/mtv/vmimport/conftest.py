@@ -14,7 +14,6 @@ from ocp_resources.secret import Secret
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_import import ResourceMapping
-from pytest_testconfig import py_config
 
 import utilities.network
 from providers import providers
@@ -192,13 +191,22 @@ def skip_if_less_than_x_storage_classes(request, cluster_storage_classes):
         )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def resource_mapping(
-    request, namespace, pod_network, provider_data, cluster_storage_classes
+    request,
+    namespace,
+    pod_network,
+    provider_data,
+    cluster_storage_classes,
+    storage_class_matrix__function__,
 ):
     sc_names = [sc.name for sc in cluster_storage_classes]
-    sc_names.insert(0, sc_names.pop(sc_names.index(py_config["default_storage_class"])))
-    # The default storage class should be 1st so it is mapped to the 1st disk's datastore/domain
+
+    # The storage class set in storage_class_matrix__function__
+    # should be 1st so it is mapped to the 1st disk's datastore/domain
+    sc_names.insert(
+        0, sc_names.pop(sc_names.index([*storage_class_matrix__function__][0]))
+    )
 
     with ResourceMapping(
         name="resource-mapping",
