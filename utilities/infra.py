@@ -14,6 +14,7 @@ import paramiko
 import requests
 from colorlog import ColoredFormatter
 from jira import JIRA
+from ocp_resources.daemonset import DaemonSet
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
@@ -543,3 +544,23 @@ def wait_for_pods_running(admin_client, namespace):
             f"in not running state: {sample}"
         )
         raise
+
+
+def get_daemonset_by_name(admin_client, daemonset_name, namespace_name):
+    """
+    Gets a daemonset object by name
+
+    Args:
+        admin_client (DynamicClient): a DynamicClient object
+        daemonset_name (str): Name of the daemonset
+        namespace_name (str): Name of the associated namespace
+
+    Returns:
+        Daemonset: Daemonset object
+    """
+    for ds in DaemonSet.get(
+        dyn_client=admin_client,
+        namespace=namespace_name,
+        name=daemonset_name,
+    ):
+        return ds

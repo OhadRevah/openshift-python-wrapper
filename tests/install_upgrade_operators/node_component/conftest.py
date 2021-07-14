@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from ocp_resources.daemonset import DaemonSet
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
@@ -9,7 +8,6 @@ from ocp_resources.ssp import SSP
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_import_configs import VMImportConfig
-from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.node_component.utils import (
     OPERATOR_PODS_COMPONENTS,
@@ -22,6 +20,7 @@ from tests.install_upgrade_operators.utils import (
 )
 from utilities.constants import TIMEOUT_5MIN
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
+from utilities.infra import get_daemonset_by_name
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -30,15 +29,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_daemonset_by_name(admin_client, daemonset_name):
-    for ds in DaemonSet.get(
-        dyn_client=admin_client,
-        namespace=py_config["hco_namespace"],
-        name=daemonset_name,
-    ):
-        return ds
 
 
 @pytest.fixture(scope="session")
@@ -176,7 +166,7 @@ def network_deployment_placement_list(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def network_daemonsets_placement_list(admin_client):
+def network_daemonsets_placement_list(admin_client, hco_namespace):
     nodeselector_lists = []
     network_daemonsets = [
         "bridge-marker",
@@ -185,17 +175,20 @@ def network_daemonsets_placement_list(admin_client):
     ]
     for daemonset in network_daemonsets:
         nw_daemonset = get_daemonset_by_name(
-            admin_client=admin_client, daemonset_name=daemonset
+            admin_client=admin_client,
+            daemonset_name=daemonset,
+            namespace_name=hco_namespace.name,
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(nw_daemonset.get("nodeSelector"))
     return nodeselector_lists
 
 
 @pytest.fixture()
-def virt_daemonset_nodeselector_comp(admin_client):
+def virt_daemonset_nodeselector_comp(admin_client, hco_namespace):
     virt_daemonset = get_daemonset_by_name(
         admin_client=admin_client,
         daemonset_name="virt-handler",
+        namespace_name=hco_namespace.name,
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_daemonset.get("nodeSelector").get("work-comp")
 
