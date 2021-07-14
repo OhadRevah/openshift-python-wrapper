@@ -550,6 +550,7 @@ def test_two_vms_parallel_import(
     secret,
     providers_mapping_network_only,
     default_sc_multi_storage,
+    no_vms_in_namespace,
 ):
     vmimport_jobs = []
     for vm in ["cirros", "cirros2"]:
