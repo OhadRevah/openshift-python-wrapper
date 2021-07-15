@@ -92,7 +92,7 @@ HPP_NODE_PLACEMENT_DICT = {
 }
 
 
-def wait_hpp_pods_deleted(client):
+def wait_number_of_hpp_pods(client, number_of_pods):
     for sample in TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=3,
@@ -103,8 +103,18 @@ def wait_hpp_pods_deleted(client):
         get_all=True,
     ):
         # wait to all hpp pods to be deleted beside 1
-        if len(sample) == 1:
-            return
+        if len(sample) == number_of_pods:
+            return sample
+
+
+def wait_hpp_pods_deleted(client):
+    wait_number_of_hpp_pods(client=client, number_of_pods=1)
+
+
+def wait_hpp_pods_restored(client):
+    hpp_pods = wait_number_of_hpp_pods(client=client, number_of_pods=3)
+    for pod in hpp_pods:
+        pod.wait_for_status(status=pod.Status.RUNNING, timeout=TIMEOUT_10MIN)
 
 
 @contextmanager
@@ -182,6 +192,7 @@ def updated_hpp_with_node_placement(
         else:
             wait_hpp_pods_deleted(client=admin_client)
             yield updated_resource
+    wait_hpp_pods_restored(client=admin_client)
 
 
 @pytest.mark.destructive
@@ -286,6 +297,7 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
         ):
             wait_hpp_pods_deleted(client=admin_client)
             check_disk_count_in_vm(vm=vm)
+    wait_hpp_pods_restored(client=admin_client)
 
 
 @pytest.mark.post_upgrade
@@ -334,3 +346,4 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
             pvc.wait_deleted()
             pv.wait_for_status(status=PersistentVolume.Status.RELEASED)
         pv.wait_deleted()
+    wait_hpp_pods_restored(client=admin_client)
