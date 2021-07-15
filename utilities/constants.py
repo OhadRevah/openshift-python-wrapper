@@ -167,6 +167,7 @@ PODS_TO_COLLECT_INFO = [
     "virt-handler",
     "virt-template-validator",
     "cdi-importer",
+    "utility",
 ]
 
 # GPU constants
