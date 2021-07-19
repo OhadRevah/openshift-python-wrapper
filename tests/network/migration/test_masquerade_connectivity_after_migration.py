@@ -129,7 +129,7 @@ def test_connectivity_after_migration(
         f"pinging from migrated {running_vm_for_migration.name} to "
         f"{running_vm_static.name}"
     )
-    static_vm_ip = {running_vm_static.vmi.interfaces[0]["ipAddress"]}
+    static_vm_ip = running_vm_static.vmi.interfaces[0]["ipAddress"]
     vm_console_run_commands(
         console_impl=console.Fedora,
         vm=running_vm_for_migration,
