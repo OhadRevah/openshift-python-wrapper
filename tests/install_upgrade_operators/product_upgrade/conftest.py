@@ -274,26 +274,44 @@ def operatorhub_without_default_sources(
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade_path(admin_client, cnv_upgrade, pytestconfig, cnv_current_version):
+def cnv_upgrade_path(
+    request, admin_client, cnv_upgrade, pytestconfig, cnv_current_version
+):
     if cnv_upgrade:
         cnv_target_version = pytestconfig.option.cnv_version
-        # Upgrade only if a newer CNV version is requested
-        if packaging.version.parse(cnv_target_version) <= packaging.version.parse(
-            cnv_current_version
+        current_version = packaging.version.parse(version=cnv_current_version)
+        target_version = packaging.version.parse(version=cnv_target_version)
+        # skip version check if --cnv-upgrade-skip-version-check is used.
+        # This allows upgrading to a newer build on the same Z stream (for dev purposes)
+        if (
+            not request.session.config.getoption("--cnv-upgrade-skip-version-check")
+            and target_version <= current_version
         ):
+            # Upgrade only if a newer CNV version is requested
             raise ValueError(
                 f"Cannot upgrade to older/identical versions,"
                 f"current: {cnv_current_version} target: {cnv_target_version}"
             )
 
+        if current_version.major < target_version.major:
+            upgrade_stream = "x-stream"
+        elif current_version.minor < target_version.minor:
+            upgrade_stream = "y-stream"
+        elif current_version.micro < target_version.micro:
+            upgrade_stream = "z-stream"
+        elif current_version.release == target_version.release:
+            upgrade_stream = "dev-stream"
+        else:
+            raise ValueError(
+                f"unknown upgrade stream, current: {cnv_current_version} target: {cnv_target_version}"
+            )
+
         cnv_upgrade_dict = {
             "current_version": cnv_current_version,
             "target_version": cnv_target_version,
+            "upgrade_stream": upgrade_stream,
+            "target_channel": f"{target_version.major}.{target_version.minor}",
         }
-        (
-            cnv_upgrade_dict["upgrade_path"],
-            cnv_upgrade_dict["target_channel"],
-        ) = upgrade_utils.upgrade_path(cnv_upgrade_dict=cnv_upgrade_dict)
 
         return cnv_upgrade_dict
 

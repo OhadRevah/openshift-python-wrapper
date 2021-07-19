@@ -165,7 +165,11 @@ def pytest_addoption(parser):
         action="store_true",
         help="If provided, run upgrade with disruptions",
     )
-
+    install_upgrade_group.addoption(
+        "--cnv-upgrade-skip-version-check",
+        help="Skip version check in cnv_upgrade_path fixture",
+        action="store_true",
+    )
     # Matrix addoption
     matrix_group.addoption("--storage-class-matrix", help="Storage class matrix to use")
     matrix_group.addoption("--bridge-device-matrix", help="Bridge device matrix to use")

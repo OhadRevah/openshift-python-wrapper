@@ -7,6 +7,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
@@ -16,6 +17,17 @@ from utilities.infra import collect_resources_for_test
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def get_package_manifest_images(dyn_client, hco_namespace):
+    for package in PackageManifest.get(
+        dyn_client=dyn_client,
+        namespace=hco_namespace,
+        name="kubevirt-hyperconverged",
+    ):
+        for channel in package.instance.status.channels:
+            if channel.name == "stable":
+                return channel.currentCSVDesc["relatedImages"]
 
 
 def cnv_target_version_channel(cnv_version):

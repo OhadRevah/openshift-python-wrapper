@@ -1,6 +1,6 @@
 import pytest
-from ocp_resources.package_manifest import PackageManifest
-from pytest_testconfig import py_config
+
+from tests.install_upgrade_operators.utils import get_package_manifest_images
 
 
 @pytest.fixture()
@@ -8,14 +8,9 @@ def hco_package_stable_channel_images(admin_client, hco_namespace):
     """
     Get a list of all images in the kubevirt-hyperconverged package on the stable channel
     """
-    for package in PackageManifest.get(
-        dyn_client=admin_client,
-        namespace=hco_namespace,
-        name=py_config["hco_cr_name"],
-    ):
-        for channel in package.instance.status.channels:
-            if channel.name == "stable":
-                return channel.currentCSVDesc["relatedImages"]
+    return get_package_manifest_images(
+        dyn_client=admin_client, hco_namespace=hco_namespace
+    )
 
 
 @pytest.mark.polarion("CNV-4751")
