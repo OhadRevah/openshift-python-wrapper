@@ -1,10 +1,170 @@
 import pytest
+from ocp_resources.api_service import APIService
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.deployment import Deployment
+from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
+from ocp_resources.package_manifest import PackageManifest
+from ocp_resources.pod import Pod
+from ocp_resources.replicaset import ReplicaSet
+from ocp_resources.role_binding import RoleBinding
+from ocp_resources.secret import Secret
+from ocp_resources.security_context_constraints import SecurityContextConstraints
+from ocp_resources.service import Service
+from ocp_resources.service_account import ServiceAccount
+from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
 
 import utilities.network
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_bug_status,
+    get_bugzilla_connection_params,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 pytestmark = pytest.mark.sno
+
+RESOURCE_TYPES = [
+    APIService,
+    ConfigMap,
+    CustomResourceDefinition,
+    DaemonSet,
+    Deployment,
+    MutatingWebhookConfiguration,
+    PackageManifest,
+    Pod,
+    ReplicaSet,
+    RoleBinding,
+    Secret,
+    SecurityContextConstraints,
+    Service,
+    ServiceAccount,
+    ValidatingWebhookConfiguration,
+]
+EXPECTED_CNAO_COMP_NAMES = [
+    "multus",
+    "nmstate-handler",
+    "cluster-network-addons-operator",
+    "kubemacpool",
+    "bridge",
+    "nmstate",
+    "ovs-cni",
+]
+EXPECTED_CNAO_COMP = [
+    "multus",
+    "NMSTATE_HANDLER_IMAGE",
+    "cnao",
+    "kubeMacPool",
+    "linuxBridge",
+    "nmstate",
+    "ovs",
+]
+COMP_LABELS = ["component", "version", "part-of", "managed-by"]
+MANAGED_BY = "managed-by"
+OLM = "olm"
+IGNORE_LIST = [
+    "token",
+    "metrics",
+    "lock",
+    "configmap/5",
+    "lease",
+    "dockercfg",
+    "apiservice",
+    "validatingwebhook",
+    "packagemanifest",
+]
+KNOWN_BUG = "ServiceAccount/cluster-network-addons-operator"
+
+
+class UnaccountedComponents(Exception):
+    def __init__(self, components):
+        self.components = components
+
+    def __str__(self):
+        return f"{self.components} are unaccounted CNAO components. Check if relevent. if so, modify test"
+
+
+def get_all_network_resources(dyn_client, namespace):
+    # Extract all related resources, iterating through each resource type
+    return [
+        resource
+        for _type in RESOURCE_TYPES
+        for resource in _type.get(dyn_client=dyn_client, namespace=namespace)
+        if any(component in resource.name for component in EXPECTED_CNAO_COMP_NAMES)
+    ]
+
+
+def filter_resources(resources, network_addons_config):
+    bad_rcs = []
+    for resource in resources:
+        if KNOWN_BUG in f"{resource.kind}/{resource.name}" and (
+            get_bug_status(
+                bugzilla_connection_params=get_bugzilla_connection_params(), bug=1995606
+            )
+            not in BUG_STATUS_CLOSED
+        ):
+            continue
+        if any(
+            ignore in f"{resource.kind}/{resource.name}".lower()
+            for ignore in IGNORE_LIST
+        ):
+            continue
+        try:
+            for key in COMP_LABELS:
+                if (
+                    network_addons_config.labels[
+                        f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
+                    ]
+                    not in resource.labels[
+                        f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
+                    ]
+                ):
+                    if (
+                        MANAGED_BY in key
+                        and "cluster-network-addons-operator" in resource.name
+                        and resource.labels[
+                            f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
+                        ]
+                        == OLM
+                    ):
+                        continue
+
+                    bad_rcs.append(f"{resource.kind}/{resource.name}")
+        except (KeyError, TypeError):
+            bad_rcs.append(f"{resource.kind}/{resource.name}")
+
+    return bad_rcs
+
+
+def verify_cnao_labels(admin_client, namespace, network_addons_config):
+
+    cnao_resources = get_all_network_resources(
+        dyn_client=admin_client, namespace=namespace
+    )
+    bad_rcs = filter_resources(
+        resources=cnao_resources, network_addons_config=network_addons_config
+    )
+
+    assert not bad_rcs, f"Unlabeled Resources - {bad_rcs}"
+
+
+@pytest.fixture(scope="module")
+def check_components(network_addons_config):
+    """
+    Check that all CNAO components are accounted for.
+    If a new cnao component is added, the test needs to be modified.
+    It's name should be added to EXPECTED_CNAO_COMP and EXPECTED_CNAO_COMP_NAMES.
+    """
+    bad_components = []
+    for component in network_addons_config.instance.spec.keys():
+        if component == "selfSignConfiguration":
+            continue
+        if component not in EXPECTED_CNAO_COMP:
+            bad_components.append(component)
+    if bad_components:
+        raise UnaccountedComponents(components=bad_components)
 
 
 @pytest.fixture(scope="module")
@@ -67,3 +227,21 @@ def test_linux_bridge_functionality(net_add_op_bridge_attached_vm):
     deployment of linux-bridge.
     """
     net_add_op_bridge_attached_vm.vmi.wait_until_running()
+
+
+@pytest.mark.polarion("CNV-6754")
+def test_cnao_labels(
+    admin_client,
+    network_addons_config,
+    check_components,
+    hco_namespace,
+):
+    """
+    Verify that all cnao components are labeled accordingly, first checking there are no unaccounted components,
+    then checking each component's resources.
+    """
+    verify_cnao_labels(
+        admin_client=admin_client,
+        namespace=hco_namespace.name,
+        network_addons_config=network_addons_config,
+    )
