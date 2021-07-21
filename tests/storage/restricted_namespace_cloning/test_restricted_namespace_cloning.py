@@ -9,7 +9,7 @@ from kubernetes.client.rest import ApiException
 
 from tests.storage import utils
 from tests.storage.constants import DV_PARAMS, NAMESPACE_PARAMS
-from tests.storage.utils import set_permissions
+from tests.storage.utils import set_permissions, verify_snapshot_used_namespace_transfer
 from utilities.storage import ErrorMsg, create_dv
 
 
@@ -238,6 +238,9 @@ def test_user_permissions_positive(
                 client=unprivileged_client,
             ) as cdv:
                 cdv.wait()
+                verify_snapshot_used_namespace_transfer(
+                    cdv=cdv, unprivileged_client=unprivileged_client
+                )
                 with utils.create_vm_from_dv(dv=cdv):
                     return
 

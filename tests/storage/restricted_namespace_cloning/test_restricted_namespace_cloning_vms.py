@@ -17,6 +17,7 @@ from tests.storage.utils import (
     create_vm_and_verify_image_permission,
     set_permissions,
     storage_params,
+    verify_snapshot_used_namespace_transfer,
 )
 from utilities.constants import OS_FLAVOR_CIRROS, Images
 from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
@@ -139,6 +140,10 @@ def test_create_vm_with_cloned_data_volume_positive(
                 },
             ) as vm:
                 vm.start(wait=True)
+                verify_snapshot_used_namespace_transfer(
+                    cdv=data_volume_clone_settings,
+                    unprivileged_client=unprivileged_client,
+                )
 
 
 @pytest.mark.parametrize(
@@ -307,6 +312,10 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
                 },
             ) as vm:
                 vm.start(wait=True)
+                verify_snapshot_used_namespace_transfer(
+                    cdv=data_volume_clone_settings,
+                    unprivileged_client=unprivileged_client,
+                )
 
 
 @pytest.mark.parametrize(

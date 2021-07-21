@@ -9,6 +9,7 @@ from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.pod import Pod
+from ocp_resources.resource import NamespacedResource
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
@@ -341,3 +342,13 @@ def importer_container_status_reason(pod):
         return container_state.waiting.reason
     if container_state.terminated:
         return container_state.terminated.reason
+
+
+def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
+    cdv.wait()
+    if smart_clone_supported_by_sc(sc=cdv.storage_class, client=unprivileged_client):
+        clone_type = f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/cloneType"
+        clone_type_annotation = cdv.instance["metadata"]["annotations"][clone_type]
+        assert (
+            clone_type_annotation == "snapshot"
+        ), f"Clone was not performed using Namespace transfer - {clone_type}: {clone_type_annotation}"
