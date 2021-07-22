@@ -6,11 +6,6 @@ from collections import OrderedDict
 import pytest
 
 import utilities.network
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-)
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
@@ -19,19 +14,6 @@ from utilities.network import (
     network_nad,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
-
-
-@pytest.fixture(scope="class")
-def skip_bond_mode_balance_tlb_with_bz(link_aggregation_mode_matrix__class__):
-    bug_id = 1972705
-    if (
-        link_aggregation_mode_matrix__class__ == "balance-tlb"
-        and get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_id
-        )
-        not in BUG_STATUS_CLOSED
-    ):
-        pytest.skip(msg=f"Skip test: bug {bug_id}")
 
 
 @pytest.fixture(scope="class")
@@ -47,8 +29,6 @@ def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
 
 @pytest.fixture(scope="class")
 def ovs_linux_bond1_worker_1(
-    skip_bond_mode_balance_tlb_with_bz,
-    link_aggregation_mode_matrix__class__,
     index_number,
     utility_pods,
     worker_node1,
@@ -64,7 +44,7 @@ def ovs_linux_bond1_worker_1(
         slaves=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
         node_selector=worker_node1.name,
-        mode=link_aggregation_mode_matrix__class__,
+        mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
     ) as bond:
         yield bond
@@ -72,8 +52,6 @@ def ovs_linux_bond1_worker_1(
 
 @pytest.fixture(scope="class")
 def ovs_linux_bond1_worker_2(
-    skip_bond_mode_balance_tlb_with_bz,
-    link_aggregation_mode_matrix__class__,
     index_number,
     utility_pods,
     worker_node2,
@@ -90,7 +68,7 @@ def ovs_linux_bond1_worker_2(
         slaves=nodes_available_nics[worker_node2.name][0:2],
         worker_pods=utility_pods,
         node_selector=worker_node2.name,
-        mode=link_aggregation_mode_matrix__class__,
+        mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
     ) as bond:
         yield bond

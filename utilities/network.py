@@ -445,6 +445,9 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
+    class Mode:
+        ACTIVE_BACKUP = "active-backup"
+
     def __init__(
         self,
         name,
