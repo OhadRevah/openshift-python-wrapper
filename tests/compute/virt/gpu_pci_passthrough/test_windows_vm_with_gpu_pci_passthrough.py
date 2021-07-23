@@ -14,6 +14,14 @@ from utilities.constants import GPU_DEVICE_NAME, Images
 from utilities.virt import get_windows_os_dict
 
 
+pytestmark = [
+    pytest.mark.post_upgrade,
+    pytest.mark.usefixtures(
+        "skip_if_no_gpu_node", "fail_if_device_unbound_to_vfiopci_driver"
+    ),
+]
+
+
 LOGGER = logging.getLogger(__name__)
 WIN10 = get_windows_os_dict(windows_version="win-10")
 WIN10_LABELS = WIN10["template_labels"]
@@ -64,7 +72,6 @@ DV_SIZE = Images.Windows.NVIDIA_DV_SIZE
     indirect=True,
 )
 @pytest.mark.usefixtures(
-    "skip_if_no_gpu_node",
     "hco_cr_with_permitted_hostdevices",
 )
 class TestPCIPassthroughWinHostDevicesSpec:

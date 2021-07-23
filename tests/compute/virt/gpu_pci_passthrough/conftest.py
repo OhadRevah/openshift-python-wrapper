@@ -13,6 +13,9 @@ from utilities.infra import run_ssh_commands
 from utilities.virt import vm_instance_from_template
 
 
+KERNEL_DRIVER = "vfio-pci"
+
+
 @pytest.fixture(scope="session")
 def gpu_nodes(workers_ssh_executors, schedulable_nodes):
     """
@@ -29,6 +32,24 @@ def gpu_nodes(workers_ssh_executors, schedulable_nodes):
         if GPU_DEVICE_ID in out:
             nodes.update({node: out})
     return nodes
+
+
+@pytest.fixture(scope="session")
+def fail_if_device_unbound_to_vfiopci_driver(workers_ssh_executors, gpu_nodes):
+    """
+    Fail if the Kernel Driver vfio-pci is not in use by the NVIDIA GPU Device.
+    """
+    device_unbound_nodes = []
+    for node, output in gpu_nodes.items():
+        if KERNEL_DRIVER not in output:
+            device_unbound_nodes.append(node.name)
+    if device_unbound_nodes:
+        pytest.fail(
+            msg=(
+                f"On these nodes: {device_unbound_nodes} GPU Devices are not bound to the {KERNEL_DRIVER} Driver."
+                f"Ensure IOMMU and VFIO-PCI Machine Config is applied."
+            )
+        )
 
 
 @pytest.fixture(scope="session")

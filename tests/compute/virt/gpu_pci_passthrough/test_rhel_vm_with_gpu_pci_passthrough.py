@@ -20,6 +20,13 @@ from utilities.virt import (
 )
 
 
+pytestmark = [
+    pytest.mark.post_upgrade,
+    pytest.mark.usefixtures(
+        "skip_if_no_gpu_node", "fail_if_device_unbound_to_vfiopci_driver"
+    ),
+]
+
 ALLOCATABLE = "allocatable"
 CAPACITY = "capacity"
 
@@ -78,7 +85,6 @@ def resources_device_checks(gpu_node, status_type):
     indirect=True,
 )
 @pytest.mark.usefixtures(
-    "skip_if_no_gpu_node",
     "hco_cr_with_permitted_hostdevices",
     "golden_image_data_volume_scope_class",
 )
@@ -156,7 +162,6 @@ class TestPCIPassthroughRHELHostDevicesSpec:
 
 @pytest.mark.polarion("CNV-5645")
 def test_only_permitted_hostdevices_allowed(
-    skip_if_no_gpu_node,
     namespace,
     unprivileged_client,
     gpu_nodes,
