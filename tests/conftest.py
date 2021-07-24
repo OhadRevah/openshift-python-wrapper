@@ -1039,13 +1039,16 @@ class UtilityDaemonSet(DaemonSet):
 
 @pytest.fixture(scope="module")
 def namespace(request, admin_client, unprivileged_client):
-    """Generate namespace from the test's module name"""
-    client = True
-    if hasattr(request, "param"):
-        client = request.param.get("use_unprivileged_client", True)
-
+    """
+    To create namespace using admin client, pass {"use_unprivileged_client": False} to request.param
+    (default for "use_unprivileged_client" is True)
+    """
+    use_unprivileged_client = getattr(request, "param", {}).get(
+        "use_unprivileged_client", True
+    )
+    unprivileged_client = unprivileged_client if use_unprivileged_client else None
     yield from create_ns(
-        unprivileged_client=unprivileged_client if client else None,
+        unprivileged_client=unprivileged_client,
         admin_client=admin_client,
         name=generate_namespace_name(
             file_path=request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
