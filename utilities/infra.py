@@ -540,7 +540,7 @@ def wait_for_pods_running(admin_client, namespace):
                 return True
     except TimeoutExpiredError:
         LOGGER.error(
-            f"timeout waiting for all pods in namespace{namespace.name}to reach running state, following pods are "
+            f"timeout waiting for all pods in namespace {namespace.name} to reach running state, following pods are "
             f"in not running state: {sample}"
         )
         raise
