@@ -178,9 +178,6 @@ def _cloud_init_data(
     cloud_init_data = prepare_cloud_init_user_data(section="runcmd", data=runcmd)
     cloud_init_data.update(cloud_init_network_data(data=network_data_data))
 
-    cloud_init_data[
-        "userData"
-    ] = {}  # update_cloud_init_extra_user_data needs to update userData.
     if cloud_init_extra_user_data:
         update_cloud_init_extra_user_data(
             cloud_init_data=cloud_init_data["userData"],
@@ -202,19 +199,17 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
         mpls_dest_ip,
         mpls_dest_tag,
         mpls_route_next_hop,
-        cloud_init_extra_user_data=None,
         client=None,
         cloud_init_data=None,
         node_selector=None,
     ):
-
+        self.cloud_init_data = cloud_init_data
         self.mpls_local_tag = mpls_local_tag
         self.ip_addresses = ip_addresses
         self.mpls_local_ip = ip_interface(address=mpls_local_ip).ip
         self.mpls_dest_ip = mpls_dest_ip
         self.mpls_dest_tag = mpls_dest_tag
         self.mpls_route_next_hop = mpls_route_next_hop
-        self.cloud_init_extra_user_data = cloud_init_extra_user_data
 
         networks = {}
         for network in interfaces:
@@ -270,7 +265,6 @@ def bridge_attached_vm(
         mpls_dest_ip=mpls_dest_ip,
         mpls_dest_tag=mpls_dest_tag,
         mpls_route_next_hop=mpls_route_next_hop,
-        cloud_init_extra_user_data=cloud_init_extra_user_data,
         client=client,
         cloud_init_data=cloud_init_data,
         node_selector=node_selector,
