@@ -204,6 +204,11 @@ def ping_in_background(running_vma, running_vmb):
     )
 
 
+# custom exception for using xfail in test_ping_vm_migration
+class HighPacketLossError(Exception):
+    pass
+
+
 def assert_low_packet_loss(vm):
     output = run_ssh_commands(
         host=vm.ssh_exec,
@@ -214,7 +219,10 @@ def assert_low_packet_loss(vm):
     )
     packet_loss = re.findall(r"\d+.\d+% packet loss", output[1])
     assert packet_loss
-    assert float(re.findall(r"\d+.\d+", packet_loss[0])[0]) < 2
+    float_packet_loss = float(re.findall(r"\d+.\d+", packet_loss[0])[0])
+    if float_packet_loss > 2:
+        LOGGER.error(f"Current packet loss is {float_packet_loss}% (greater than 2%!)")
+        raise HighPacketLossError
 
 
 @pytest.fixture(scope="module")
@@ -263,6 +271,13 @@ def assert_ssh_alive(ssh_vm):
     assert "sshpass -p" in output
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Network infrastructure is slow from time to time. "
+        "Due to that, test might fail with packet loss greater than 2%"
+    ),
+    raises=HighPacketLossError,
+)
 @pytest.mark.polarion("CNV-2060")
 def test_ping_vm_migration(
     skip_when_one_node,
