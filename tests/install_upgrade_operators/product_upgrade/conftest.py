@@ -326,8 +326,13 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
 
 
 @pytest.fixture(scope="module")
-def nodes_status_before_upgrade(nodes):
-    return upgrade_utils.get_nodes_status(nodes=nodes)
+def nodes_taints_before_upgrade(nodes):
+    return upgrade_utils.get_nodes_taints(nodes=nodes)
+
+
+@pytest.fixture(scope="module")
+def nodes_labels_before_upgrade(nodes):
+    return upgrade_utils.get_nodes_labels(nodes=nodes)
 
 
 @pytest.fixture()

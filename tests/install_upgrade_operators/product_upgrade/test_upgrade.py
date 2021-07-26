@@ -7,6 +7,7 @@ from ocp_resources.datavolume import DataVolume
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
 from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL, TIMEOUT_2MIN
+from utilities.infra import validate_nodes_ready, validate_nodes_schedulable
 from utilities.network import (
     assert_ping_successful,
     get_vmi_mac_address_by_iface_name,
@@ -20,7 +21,10 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.upgrade
 @pytest.mark.usefixtures(
-    "skip_when_one_node", "cnv_upgrade_path", "nodes_status_before_upgrade"
+    "skip_when_one_node",
+    "cnv_upgrade_path",
+    "nodes_taints_before_upgrade",
+    "nodes_labels_before_upgrade",
 )
 class TestUpgrade:
     @pytest.mark.polarion("CNV-2974")
@@ -235,10 +239,40 @@ class TestUpgrade:
     @pytest.mark.polarion("CNV-4510")
     @pytest.mark.order(after="test_upgrade_process")
     @pytest.mark.dependency(depends=["test_upgrade_process"])
-    def test_nodes_status_after_upgrade(self, nodes, nodes_status_before_upgrade):
-        LOGGER.info("Verify nodes status after upgrade.")
-        upgrade_utils.verify_nodes_status_after_upgrade(
-            nodes=nodes, nodes_status_before_upgrade=nodes_status_before_upgrade
+    def test_nodes_ready_after_upgrade(self, nodes):
+        LOGGER.info("Verify all nodes are in ready state after upgrade")
+        validate_nodes_ready(nodes=nodes)
+
+    @pytest.mark.polarion("CNV-6865")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
+    def test_nodes_schedulable_after_upgrade(
+        self,
+        nodes,
+    ):
+        LOGGER.info("Verify all nodes are in schedulable state after upgrade")
+        validate_nodes_schedulable(nodes=nodes)
+
+    @pytest.mark.polarion("CNV-6866")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
+    def test_nodes_taints_after_upgrade(
+        self, admin_client, nodes, nodes_taints_before_upgrade
+    ):
+        LOGGER.info("Verify nodes taints after upgrade.")
+        upgrade_utils.verify_nodes_taints_after_upgrade(
+            nodes=nodes, nodes_taints_before_upgrade=nodes_taints_before_upgrade
+        )
+
+    @pytest.mark.polarion("CNV-6924")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
+    def test_nodes_labels_after_upgrade(
+        self, admin_client, nodes, nodes_labels_before_upgrade
+    ):
+        LOGGER.info("Verify nodes labels after upgrade.")
+        upgrade_utils.verify_nodes_labels_after_upgrade(
+            nodes=nodes, nodes_labels_before_upgrade=nodes_labels_before_upgrade
         )
 
     @pytest.mark.polarion("CNV-2978")

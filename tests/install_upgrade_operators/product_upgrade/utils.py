@@ -3,7 +3,6 @@ import os
 import re
 from multiprocessing import Process
 
-import dictdiffer
 import yaml
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_service_version import ClusterServiceVersion
@@ -13,7 +12,6 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
-from ocp_resources.node import Node
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
@@ -445,155 +443,72 @@ def check_tier2_pods_images(
     ), f"The following pods images were not replaced: {unreplaced_pods}"
 
 
-def get_nodes_status(nodes):
-    nodes_dict = {}
-    for node in nodes:
-        node_conditions = [
-            {condition.type: condition.status}
-            for condition in node.instance.status.conditions
-        ]
-        nodes_dict[node.name] = {
-            "labels": node.instance.metadata.labels,
-            "taints": node.instance.spec.taints,
-            "unschedulable": node.instance.unschedulable,
-            "conditions": node_conditions,
-        }
-
-    return nodes_dict
-
-
-def cleanup_node_status(node_status):
-    # converts the node_status objects into a string to be able to load it back into a dictionary
-    return dict(yaml.load(str(node_status)))
-
-
-def verify_nodes_status_after_upgrade(nodes, nodes_status_before_upgrade):
+def get_nodes_taints(nodes):
     """
-    Verifies the nodes by checking their status before and after the upgrade.
-    a nodes status is comprised of; labels, taints, conditions, and if they are unschedulable
-
-    For taints, conditions, and unschedulable status the nodes are compared directly between before and after
-    For labels there are some considerations as the labels can be modified
-        by node-labeller (kubernetes features) and/or by the underlying infrastructure (PSI)
+    Capture taints information out of all nodes and create a dictionary.
 
     Args:
-        nodes (list): Nodes in the cluster
-        nodes_status_before_upgrade (dict): status of the Nodes in the cluster before the upgrade
+        nodes (list): list of Node objects
+
+    Returns:
+        nodes_dict (dict): dictionary containing taints information associated with every nodes
     """
-
-    def _delta_add_openstack_topology_zone_nova(verb, path, patch):
-        return (
-            verb == "add"
-            and path[1:] == ["labels"]
-            and patch == [("topology.cinder.csi.openstack.org/zone", "nova")]
-        )
-
-    def _delta_remove_kubernetes_feature_labels(verb, path, patch):
-        return (
-            verb == "remove"
-            and path[1:] == ["labels"]
-            and all(
-                label_name.startswith("feature.node.kubernetes.io/")
-                for label_name, label_value in patch
-            )
-        )
-
-    def _delta_add_kubevirt_feature_labels(verb, path, patch):
-        return (
-            verb == "add"
-            and path[1:] == ["labels"]
-            and all(
-                label_name.startswith(
-                    (
-                        "hyperv.node.kubevirt.io/",
-                        "cpu-model.node.kubevirt.io/",
-                        "cpu-feature.node.kubevirt.io/",
-                    )
-                )
-                for label_name, label_value in patch
-            )
-        )
-
-    def _verify_status(before, after):
-        # some deltas are acceptable, so those must be allowed.
-        # using dictdiffer.diff to find the delta between before and after dictionaries of nodes
-        # then checking each diff in a list of functions which can take a diff and approve it
-        # if any of those functions approve the diff then this diff is acceptable
-        # if any delta is not approved by at least one acceptable function then the nodes status is not verified
-        for delta in dictdiffer.diff(
-            first=cleanup_node_status(node_status=before),
-            second=cleanup_node_status(node_status=after),
-            dot_notation=False,
-        ):
-            verb, path, patch = delta
-            if not any(func(verb, path, patch) for func in acceptable_deltas):
-                return False
-
-        # if nothing has indicated the nodes status is not verified then they are verified
-        return True
-
-    acceptable_deltas = [
-        _delta_add_openstack_topology_zone_nova,
-        _delta_remove_kubernetes_feature_labels,
-        _delta_add_kubevirt_feature_labels,
-    ]
-    nodes_status_after_upgrade = {}
-    nodes_sampler = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
-        sleep=5,
-        func=get_nodes_status,
-        nodes=nodes,
-    )
-
-    try:
-        for nodes_status_after_upgrade in nodes_sampler:
-            if _verify_status(
-                before=nodes_status_before_upgrade, after=nodes_status_after_upgrade
-            ):
-                return
-
-    except TimeoutExpiredError:
-        LOGGER.error("Nodes did not match after timeout, attempting to produce delta.")
-        if collect_logs():
-            collect_resources_for_test(resources_to_collect=[Node])
-            for name, data in [
-                ("nodes_status_before_upgrade.yaml", nodes_status_before_upgrade),
-                ("nodes_status_after_upgrade.yaml", nodes_status_after_upgrade),
-            ]:
-                write_to_extras_file(
-                    extras_file_name=name,
-                    content=yaml.dump(cleanup_node_status(node_status=data)),
-                )
-        try:
-            nodes_delta = stringify_dict_delta_for_logging(
-                first=cleanup_node_status(node_status=nodes_status_before_upgrade),
-                second=cleanup_node_status(node_status=nodes_status_after_upgrade),
-            )
-        except TypeError as exc:
-            # sometimes there is a NoneType error when creating the delta of the dictionaries,
-            # it should be ignored so that before/after dictionaries can still be logged.
-            nodes_delta = f"<ErrorObtainingDelta({exc})>"
-        else:
-            if collect_logs():
-                write_to_extras_file(
-                    extras_file_name="nodes_delta.txt", content=nodes_delta
-                )
-        LOGGER.error(f"Nodes delta:\n{nodes_delta}.")
-        raise
+    return {node.name: node.instance.spec.taints for node in nodes}
 
 
-def stringify_dict_delta_for_logging(first, second):
-    # for easier debugging it is easier to see the delta between dicts
-    return "\n".join(
-        map(
-            str,
-            dictdiffer.diff(
-                first=first,
-                second=second,
-                dot_notation=False,
-            ),
-        )
-    )
+def verify_nodes_taints_after_upgrade(nodes, nodes_taints_before_upgrade):
+    """
+    Verify that none of the nodes taints changed after cnv upgrade
+
+    Args:
+        nodes (list): list of Node objects
+        nodes_taints_before_upgrade(dict): dictionary containing node taints
+    """
+    nodes_taints_after_upgrade = get_nodes_taints(nodes=nodes)
+    taint_diff = {
+        node_name: {
+            "before": nodes_taints_before_upgrade[node_name],
+            "after": nodes_taints_after_upgrade[node_name],
+        }
+        for node_name in nodes_taints_after_upgrade
+        if nodes_taints_after_upgrade[node_name]
+        != nodes_taints_before_upgrade[node_name]
+    }
+    assert not taint_diff, f"Mismatch in node taints found after upgrade: {taint_diff}"
+
+
+def get_nodes_labels(nodes):
+    """
+    Capture labels information out of all nodes and create a dictionary.
+
+    Args:
+        nodes (list): list of Node objects
+
+    Returns:
+        nodes_dict (dict): dictionary containing labels and taints information associated with every nodes
+    """
+    return {node.name: node.instance.metadata.labels for node in nodes}
+
+
+def verify_nodes_labels_after_upgrade(nodes, nodes_labels_before_upgrade):
+    """
+    Validate that node labels and taints after upgrade are as expected
+
+    Args:
+        nodes(list): List of node objects
+        nodes_labels_before_upgrade(dict): dictionary containing labels of all nodes in the cluster
+    """
+    nodes_labels_after_upgrade = get_nodes_labels(nodes=nodes)
+    label_diff = {
+        node_name: {
+            "before": nodes_labels_before_upgrade[node_name],
+            "after": nodes_labels_after_upgrade[node_name],
+        }
+        for node_name in nodes_labels_after_upgrade
+        if nodes_labels_after_upgrade[node_name]
+        != nodes_labels_before_upgrade[node_name]
+    }
+    assert not label_diff, f"Mismatch in node labels after upgrade: {label_diff}"
 
 
 def verify_cnv_pods_are_running(dyn_client, hco_namespace):
