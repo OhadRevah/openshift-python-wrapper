@@ -55,6 +55,7 @@ from utilities.infra import (
     ClusterHosts,
     authorized_key,
     camelcase_to_mixedcase,
+    collect_logs,
     get_admin_client,
     get_bug_status,
     get_bugzilla_connection_params,
@@ -251,6 +252,7 @@ class VirtualMachineForTests(VirtualMachine):
         gpu_name=None,
         systemctl_support=True,
         vhostmd=False,
+        vm_debug_logs=False,
     ):
         """
         Virtual machine creation
@@ -309,6 +311,9 @@ class VirtualMachineForTests(VirtualMachine):
             gpu_name (str, optional): GPU Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
             systemctl_support(bool, default=True): whether OS supports systemctl (RHEL 6 does not)
             vhostmd (bool, optional, default: False): If True, configure vhostmd.
+            vm_debug_logs(bool, default=False): if True, add 'debugLogs' label to VM to
+                enable libvirt debug logs in the virt-launcher pod.
+                Is set to True if py_config["log_collector"] is True.
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -369,6 +374,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.gpu_name = gpu_name
         self.systemctl_support = systemctl_support
         self.vhostmd = vhostmd
+        self.vm_debug_logs = vm_debug_logs or collect_logs()
 
     def deploy(self):
         super().deploy()
@@ -559,9 +565,18 @@ class VirtualMachineForTests(VirtualMachine):
         return template_spec
 
     def set_labels(self, res):
-        res["spec"]["template"].setdefault("metadata", {}).setdefault(
-            "labels", {}
-        ).update({"kubevirt.io/vm": self.name, "kubevirt.io/domain": self.name})
+        vm_labels = (
+            res["spec"]["template"].setdefault("metadata", {}).setdefault("labels", {})
+        )
+        vm_labels.update(
+            {
+                f"{Resource.ApiGroup.KUBEVIRT_IO}/vm": self.name,
+                f"{Resource.ApiGroup.KUBEVIRT_IO}/domain": self.name,
+            }
+        )
+
+        if self.vm_debug_logs:
+            vm_labels["debugLogs"] = "true"
 
         return res
 
