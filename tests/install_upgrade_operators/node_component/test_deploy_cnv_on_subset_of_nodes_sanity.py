@@ -157,6 +157,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     @pytest.mark.dependency(
         depends=["test_deploying_workloads_on_selected_nodes"],
     )
+    @pytest.mark.jira("CNV-13216")
     @pytest.mark.bugzilla(
         1978812, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )

@@ -43,6 +43,7 @@ def hco_vm(unprivileged_client, namespace):
                 pytest.mark.bugzilla(
                     1917380, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
                 ),
+                pytest.mark.jira("CNV-13216"),
             ),
         )
     ],
