@@ -171,7 +171,7 @@ def test_only_permitted_hostdevices_allowed(
             namespace=namespace.name,
             client=unprivileged_client,
             image=CIRROS_IMAGE,
-            node_selector=random.choice(gpu_nodes).name,
+            node_selector=random.choice([*gpu_nodes]).name,
             host_device_name=GPU_DEVICE_NAME,
         ):
             pytest.fail("VM should get created only with allowed Permitted Hostdevices")

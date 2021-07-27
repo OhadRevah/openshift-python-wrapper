@@ -18,16 +18,16 @@ def gpu_nodes(workers_ssh_executors, schedulable_nodes):
     """
     Find GPU Worker Node, where GPU device is allocated.
     """
-    nodes = []
+    nodes = {}
     for node in schedulable_nodes:
         out = run_ssh_commands(
             host=workers_ssh_executors[node.name],
             commands=[
-                ["bash", "-c", "/sbin/lspci -nnk | grep Tesla | cut -d ' ' -f 10"]
+                shlex.split("sudo /sbin/lspci -nnk | grep -A 3 '3D controller' || true")
             ],
-        )
-        if out[0].rstrip().strip("[]") == GPU_DEVICE_ID:
-            nodes.append(node)
+        )[0]
+        if GPU_DEVICE_ID in out:
+            nodes.update({node: out})
     return nodes
 
 
@@ -50,7 +50,7 @@ def pci_passthrough_vm(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_scope_class,
-        node_selector=random.choice(gpu_nodes).name,
+        node_selector=random.choice([*gpu_nodes]).name,
     ) as pci_passthrough_vm:
         if pci_passthrough_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
             # Install NVIDIA Drivers placed on the Windows-10 or win2k19 Images.
