@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_5MIN, TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_5MIN, TIMEOUT_8MIN, TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -56,6 +56,7 @@ def get_metric_by_prometheus_query(prometheus, query):
     response = prometheus_query(
         prometheus=prometheus, query=f"/api/v1/query?query={query}"
     )
+    LOGGER.info(f"Prometheus query: {query}, response: {response}")
     return response
 
 
@@ -463,7 +464,7 @@ def assert_topk_vms(prometheus, query, vm_list, timeout=TIMEOUT_5MIN):
     )
 
 
-def wait_for_topk(prometheus, query, number_of_results, timeout=TIMEOUT_5MIN):
+def wait_for_topk(prometheus, query, number_of_results, timeout=TIMEOUT_8MIN):
     """
     Performs a topk query against prometheus api, waits until it has right number of result entries and returns the
     results
@@ -529,9 +530,17 @@ def run_node_command(vms, command, workers_ssh_executors):
     Raise:
         Asserts on command execution failure
     """
+
+    # If multiple vms are placed on the same node, we only want to run command against the node once.
+    # So we need to collect the node names first
+    node_names = []
     for vm in vms:
         node_name = vm.vmi.node.name
-        LOGGER.info(f'For vm {vm.name} running command "{command}" on node {node_name}')
+        LOGGER.info(f"For vm {vm.name} is placed on node: {node_name}")
+        if node_name not in node_names:
+            node_names.append(node_name)
+    for node_name in node_names:
+        LOGGER.info(f'Running command "{command}" on node {node_name}')
         rc, out, err = workers_ssh_executors[node_name].run_command(
             command=shlex.split(command)
         )

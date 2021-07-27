@@ -246,8 +246,8 @@ class TestKeyMetrics:
     )
     def test_top_metric_query(
         self,
-        vm_metrics_setup,
         node_setup,
+        vm_metrics_setup,
         metric_names,
         query_time,
         prometheus,
