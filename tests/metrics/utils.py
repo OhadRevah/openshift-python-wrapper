@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_5MIN, TIMEOUT_8MIN, TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_8MIN, TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -161,7 +161,7 @@ def get_hco_cr_modification_alert_state(prometheus, component_name):
 
     # Alert is not generated immediately. Wait for 30 seconds.
     samples = TimeoutSampler(
-        wait_timeout=30,
+        wait_timeout=TIMEOUT_2MIN,
         sleep=1,
         func=_get_state,
     )
@@ -199,7 +199,7 @@ def get_hco_cr_modification_alert_summary_with_count(prometheus, component_name)
     # Alert is not updated immediately. Wait for 300 seconds.
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_5MIN,
-        sleep=60,
+        sleep=2,
         func=_get_summary,
     )
     try:
@@ -247,8 +247,15 @@ def wait_for_summary_count_to_be_expected(
         Alert summary for 3 times change in component:
         "3 out-of-band CR modifications were detected in the last 10 minutes."
     """
-    current_summary = []
-    expected_summary = f"{expected_summary_value} out-of-band CR modifications were detected in the last 10 minutes."
+
+    def extract_value_from_message(message):
+        mo = re.search(
+            pattern=r"(?P<count>\d+) out-of-band CR modifications were detected in the last (?P<time>\d+) minutes.",
+            string=message,
+        )
+        assert mo, f"message is not expected format: {message}"
+        match_dict = mo.groupdict()
+        return int(match_dict["count"])
 
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
@@ -257,14 +264,17 @@ def wait_for_summary_count_to_be_expected(
         prometheus=prometheus,
         component_name=component_name,
     )
+    sample = None
     try:
         for sample in samples:
-            if sample == expected_summary:
-                current_summary.append(sample)
-                return sample
+            if sample:
+                value = extract_value_from_message(message=sample)
+                if value == expected_summary_value:
+                    return value
     except TimeoutError:
         LOGGER.error(
-            f"Summary count did not update for '{component_name}'. Current summary {current_summary}"
+            f"Summary count did not update for component {component_name}: "
+            f"current={sample} expected={expected_summary_value}"
         )
         raise
 

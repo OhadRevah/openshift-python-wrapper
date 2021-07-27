@@ -532,8 +532,8 @@ def test_metric_multiple_invalid_change(
         expected_summary_value=change_count,
     )
     # Check an alert summary updated with the 'n' times of invalid change.
-    summary_count = f"{change_count} out-of-band CR modifications were detected in the last 10 minutes."
-    assert alert_summary_with_count == summary_count
+
+    assert alert_summary_with_count == change_count
 
 
 @pytest.mark.dependency(
