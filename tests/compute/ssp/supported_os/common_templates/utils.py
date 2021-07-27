@@ -19,7 +19,7 @@ from tests.compute.ssp.supported_os.utils import (
     get_linux_guest_agent_version,
     guest_agent_version_parser,
 )
-from tests.compute.utils import get_windows_timezone, raise_multiple_exceptions
+from tests.compute.utils import get_windows_timezone
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     OS_FLAVOR_WINDOWS,
@@ -27,7 +27,7 @@ from utilities.constants import (
     TIMEOUT_90SEC,
 )
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import run_ssh_commands
+from utilities.infra import raise_multiple_exceptions, run_ssh_commands
 from utilities.virt import get_guest_os_info, run_virtctl_command, running_vm
 
 

@@ -186,31 +186,3 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=
             f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
         )
         raise
-
-
-def raise_multiple_exceptions(exceptions):
-    """Raising multiple exceptions
-
-    To be used when multiple exceptions need to be raised, for example when using TimeoutSampler,
-    and additional information should be added (so it is viewable in junit report).
-    Example:
-        except TimeoutExpiredError as exp:
-            raise_multiple_exceptions(
-                exceptions=[
-                    ValueError(f"Error message: {output}"),
-                    exp,
-                ]
-            )
-
-    Args:
-        exceptions (list): List of exceptions to be raised. The 1st exception will appear in pytest error message;
-                           all exceptions will appear in the stacktrace.
-
-    """
-    # After all exceptions were raised
-    if not exceptions:
-        return
-    try:
-        raise exceptions.pop()
-    finally:
-        raise_multiple_exceptions(exceptions=exceptions)
