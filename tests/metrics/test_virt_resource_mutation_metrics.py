@@ -209,7 +209,10 @@ COMPONENT_CONFIG = {
             COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"],
             COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
             id="config_map_v2v_vmware",
-            marks=(pytest.mark.polarion("CNV-6560")),
+            marks=(
+                pytest.mark.polarion("CNV-6560"),
+                pytest.mark.jira("CNV-13205", run=False),
+            ),
         ),
         pytest.param(
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
@@ -376,7 +379,7 @@ def test_metric_invalid_change(
             COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"][
                 "comp_name"
             ],
-            COUNT_TWO,
+            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"]["count"],
             id="config_map_storage_class",
             marks=(pytest.mark.polarion("CNV-6153")),
         ),
@@ -384,9 +387,12 @@ def test_metric_invalid_change(
             COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
             COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"],
             COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
-            COUNT_TWO,
+            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["count"],
             id="config_map_v2v_vmware",
-            marks=(pytest.mark.polarion("CNV-6689")),
+            marks=(
+                pytest.mark.polarion("CNV-6689"),
+                pytest.mark.jira("CNV-13205", run=False),
+            ),
         ),
         pytest.param(
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
