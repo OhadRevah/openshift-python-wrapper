@@ -201,8 +201,12 @@ def wait_for_new_operator_pod(
 
 
 def is_pod_in_ready_condition(pod):
-    if pod.exists:
-        for condition in pod.instance.status.conditions:
+    try:
+        conditions = pod.instance.status.conditions
+    except NotFoundError:
+        return False
+    else:
+        for condition in conditions:
             if (
                 condition.type == Pod.Condition.READY
                 and condition.status == Pod.Condition.Status.TRUE
