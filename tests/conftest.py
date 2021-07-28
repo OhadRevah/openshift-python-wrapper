@@ -90,7 +90,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
-from utilities.storage import data_volume, wait_for_default_sc_in_cdiconfig
+from utilities.storage import data_volume
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
@@ -1834,34 +1834,6 @@ def default_sc(admin_client):
         yield default_sc_list[0]
     else:
         yield
-
-
-@pytest.fixture(scope="session")
-def pyconfig_updated_default_sc(admin_client, cdi_config, default_sc):
-    # Based on py_config["default_storage_class"], update default SC, if needed
-    if default_sc:
-        yield default_sc
-    else:
-        for sc in StorageClass.get(
-            dyn_client=admin_client, name=py_config["default_storage_class"]
-        ):
-            assert (
-                sc
-            ), f'The cluster does not include {py_config["default_storage_class"]} storage class'
-            with ResourceEditor(
-                patches={
-                    sc: {
-                        "metadata": {
-                            "annotations": {
-                                StorageClass.Annotations.IS_DEFAULT_CLASS: "true"
-                            },
-                            "name": sc.name,
-                        }
-                    }
-                }
-            ):
-                wait_for_default_sc_in_cdiconfig(cdi_config=cdi_config, sc=sc.name)
-                yield sc
 
 
 @pytest.fixture()

@@ -29,6 +29,7 @@ from utilities.storage import (
     downloaded_image,
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
+    wait_for_default_sc_in_cdiconfig,
 )
 
 
@@ -308,3 +309,45 @@ def skip_if_hpp_not_in_sc_options(request):
     storage_class_matrix = request.session.config.getoption(name="storage_class_matrix")
     if storage_class_matrix and StorageClass.Types.HOSTPATH not in storage_class_matrix:
         pytest.skip("This test run only on hostpath-provisioner storage class")
+
+
+@pytest.fixture()
+def unset_predefined_scratch_sc(hyperconverged_resource_scope_module):
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_module: {
+                "spec": {"scratchSpaceStorageClass": ""}
+            }
+        }
+    ):
+        yield
+
+
+@pytest.fixture()
+def default_sc_as_fallback_for_scratch(
+    unset_predefined_scratch_sc, admin_client, cdi_config, default_sc
+):
+    # Based on py_config["default_storage_class"], update default SC, if needed
+    if default_sc:
+        yield default_sc
+    else:
+        for sc in StorageClass.get(
+            dyn_client=admin_client, name=py_config["default_storage_class"]
+        ):
+            assert (
+                sc
+            ), f'The cluster does not include {py_config["default_storage_class"]} storage class'
+            with ResourceEditor(
+                patches={
+                    sc: {
+                        "metadata": {
+                            "annotations": {
+                                StorageClass.Annotations.IS_DEFAULT_CLASS: "true"
+                            },
+                            "name": sc.name,
+                        }
+                    }
+                }
+            ):
+                wait_for_default_sc_in_cdiconfig(cdi_config=cdi_config, sc=sc.name)
+                yield sc
