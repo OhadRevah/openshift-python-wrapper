@@ -7,6 +7,16 @@ from pytest_testconfig import py_config
 from tests.metrics import utils
 
 
+QUERY_FORMAT_DICT = {
+    "kubevirt_vmi_phase_count": (
+        'kubevirt_vmi_phase_count{{os="{os_name}", flavor="{flavor}", workload="{workload}"}}'
+    ),
+    "sum_kubevirt_vmi_phase_count": (
+        'sum (kubevirt_vmi_phase_count{{os="{os_name}", flavor="{flavor}", workload="{workload}"}})'
+    ),
+}
+
+
 def get_matrix_name(os_name):
     matrix_os_name = ""
     if "win" in os_name:
@@ -30,7 +40,7 @@ def generate_skipif_params(os_name):
     }
 
 
-def generate_test_param(os_name):
+def generate_test_param(os_name, start_vm=True):
     """
     This function creates automatically the params necessary for each test.
     It verifies if each test can be run with the global_config within the environment.
@@ -41,6 +51,10 @@ def generate_test_param(os_name):
 
     Args:
         os_name (str): the OS name as it appears in the global_config matrix
+        start_vm (bool, default: True): toggle to start the VM upon creation
+
+    Returns:
+        list of values matching the test function's parameters (and fixtures)
     """
     os_data_list = [
         template_data
@@ -48,24 +62,39 @@ def generate_test_param(os_name):
         for template_name, template_data in entry.items()
     ]
     os_data_dict = os_data_list[0] if os_data_list else None
-    return [
-        os_data_dict["template_labels"] if os_data_dict else None,
-        {
+    query = QUERY_FORMAT_DICT[
+        "sum_kubevirt_vmi_phase_count" if start_vm else "kubevirt_vmi_phase_count"
+    ]
+    count_increase = int(start_vm)
+    if os_data_dict:
+        vmi_phase_count_before = {
+            "labels": os_data_dict["template_labels"],
+            "query": query,
+        }
+        golden_image_data_volume_scope_function = {
             "dv_name": os_data_dict["template_labels"]["os"],
             "image": os_data_dict["image_path"],
             "dv_size": os_data_dict["dv_size"],
             "storage_class": StorageClass.Types.HOSTPATH,
         }
-        if os_data_dict
-        else None,
-        {
+        vm_from_template = {
             "vm_name": os_name,
             "template_labels": os_data_dict["template_labels"],
             "guest_agent": False,
             "ssh": False,
+            "start_vm": start_vm,
         }
-        if os_data_dict
-        else None,
+    else:
+        vmi_phase_count_before = None
+        golden_image_data_volume_scope_function = None
+        vm_from_template = None
+
+    return [
+        query,
+        count_increase,
+        vmi_phase_count_before,
+        golden_image_data_volume_scope_function,
+        vm_from_template,
     ]
 
 
@@ -73,6 +102,8 @@ def generate_test_param(os_name):
 class TestVmTemplateMetrics:
     @pytest.mark.parametrize(
         (
+            "query",
+            "count_increase",
             "vmi_phase_count_before",
             "golden_image_data_volume_scope_function",
             "vm_from_template",
@@ -85,6 +116,14 @@ class TestVmTemplateMetrics:
                     pytest.mark.skipif(**generate_skipif_params("centos-7")),
                 ),
                 id="test_metric_on_vm_from_template_centos_7",
+            ),
+            pytest.param(
+                *generate_test_param(os_name="centos-7", start_vm=False),
+                marks=(
+                    pytest.mark.polarion("CNV-6798"),
+                    pytest.mark.skipif(**generate_skipif_params("centos-7")),
+                ),
+                id="test_metric_on_vm_from_template_centos_7_not_running",
             ),
             pytest.param(
                 *generate_test_param(os_name="centos-8"),
@@ -175,6 +214,8 @@ class TestVmTemplateMetrics:
     )
     def test_vmi_phase_count_metric(
         self,
+        query,
+        count_increase,
         prometheus,
         vmi_phase_count_before,
         golden_image_data_volume_scope_function,
@@ -196,5 +237,6 @@ class TestVmTemplateMetrics:
             os_name=vmi_annotations["vm.kubevirt.io/os"],
             flavor=vmi_annotations["vm.kubevirt.io/flavor"],
             workload=vmi_annotations["vm.kubevirt.io/workload"],
-            expected=vmi_phase_count_before + 1,
+            expected=vmi_phase_count_before + count_increase,
+            query=query,
         )

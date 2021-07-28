@@ -273,7 +273,8 @@ def vmi_phase_count_before(request, prometheus):
     """
     return get_vmi_phase_count(
         prometheus=prometheus,
-        os_name=request.param["os"],
-        flavor=request.param["flavor"],
-        workload=request.param["workload"],
+        os_name=request.param["labels"]["os"],
+        flavor=request.param["labels"]["flavor"],
+        workload=request.param["labels"]["workload"],
+        query=request.param["query"],
     )

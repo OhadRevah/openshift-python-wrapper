@@ -621,7 +621,7 @@ def enable_swap_fedora_vm(vm):
     assert SWAP_NAME not in out, f"Unable to enable swap on vm: {vm.name}: {out}"
 
 
-def get_vmi_phase_count(prometheus, os_name, flavor, workload):
+def get_vmi_phase_count(prometheus, os_name, flavor, workload, query):
     """
     Get the metric from the defined Prometheus query
 
@@ -630,11 +630,12 @@ def get_vmi_phase_count(prometheus, os_name, flavor, workload):
         os_name (str): the OS name as it appears on Prometheus, e.g. windows19
         flavor (str): the flavor as it appears on Prometheus, e.g. tiny
         workload (str): the type of the workload on the VM, e.g. server
+        query (str): query str to use according to the query_dict
 
     Returns:
         the metric value
     """
-    query = f'sum (kubevirt_vmi_phase_count{{os="{os_name}", flavor="{flavor}", workload="{workload}"}})'
+    query = query.format(os_name=os_name, flavor=flavor, workload=workload)
     LOGGER.debug(f"query for prometheus: query={query}")
     response = get_metric_by_prometheus_query(prometheus=prometheus, query=query)
 
@@ -645,7 +646,7 @@ def get_vmi_phase_count(prometheus, os_name, flavor, workload):
 
 
 def wait_until_kubevirt_vmi_phase_count_is_expected(
-    prometheus, os_name, flavor, workload, expected
+    prometheus, os_name, flavor, workload, expected, query
 ):
     LOGGER.info(
         f"Waiting for kubevirt_vmi_phase_count: expected={expected} os={os_name} flavor={flavor} workload={workload}"
@@ -658,6 +659,7 @@ def wait_until_kubevirt_vmi_phase_count_is_expected(
         os_name=os_name,
         flavor=flavor,
         workload=workload,
+        query=query,
     )
     sample = None
     try:
