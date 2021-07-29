@@ -31,8 +31,8 @@ def rhsm_created_secret(namespace):
         name=SECRET_NAME,
         namespace=namespace.name,
         data_dict={
-            "username": base64_encode_str(text="cnv-qe-auto-stage"),
-            "password": base64_encode_str(text="qum5net"),
+            "username": base64_encode_str(text="cnv-qe-automation-stage"),
+            "password": base64_encode_str(text="redhatredhat"),
         },
     ) as secret:
         yield secret
