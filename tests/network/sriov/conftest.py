@@ -36,10 +36,12 @@ def sriov_vm(
     sriov_network,
     worker=None,
 ):
+    sriov_mac = "02:00:b5:b5:b5:%02x" % _index_number
     network_data_data = {
         "ethernets": {
-            "eth1": {
+            "1": {
                 "addresses": [ip_config],
+                "match": {"macaddress": sriov_mac},
                 "set-name": VM_SRIOV_IFACE_NAME,
             }
         }
@@ -55,6 +57,7 @@ def sriov_vm(
         "interfaces": networks.keys(),
         "cloud_init_data": cloud_init_data,
         "client": unprivileged_client,
+        "macs": {sriov_network.name: sriov_mac},
         "interfaces_types": {name: SRIOV for name in networks.keys()},
     }
 
