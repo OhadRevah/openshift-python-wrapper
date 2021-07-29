@@ -286,9 +286,6 @@ def test_private_registry_recover_after_missing_configmap(
         cert_configmap=registry_config_map.name,
         **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
     ) as dv:
-        dv.wait_for_status(
-            status=DataVolume.Status.IMPORT_SCHEDULED, timeout=TIMEOUT_5MIN
-        )
         dv.wait()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
@@ -502,7 +499,7 @@ def test_fqdn_name(
             timeout=TIMEOUT_1MIN,
         )
         dv.wait_for_status(
-            status=DataVolume.Status.IMPORT_SCHEDULED,
+            status=DataVolume.Status.IMPORT_IN_PROGRESS,
             timeout=TIMEOUT_5MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )

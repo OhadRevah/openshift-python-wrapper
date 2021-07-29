@@ -91,11 +91,8 @@ def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
 @pytest.mark.polarion("CNV-675")
 def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_function):
     pvc = data_volume_multi_storage_scope_function.pvc
-    pvc.delete()
+    pvc.delete(wait=True)
     create_dummy_first_consumer_pod(pvc=pvc)
-    data_volume_multi_storage_scope_function.wait_for_status(
-        status=data_volume_multi_storage_scope_function.Status.IMPORT_SCHEDULED
-    )
     data_volume_multi_storage_scope_function.wait_for_status(
         status=data_volume_multi_storage_scope_function.Status.SUCCEEDED
     )
