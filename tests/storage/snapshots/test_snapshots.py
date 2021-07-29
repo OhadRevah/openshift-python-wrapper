@@ -11,6 +11,7 @@ from kubernetes.client.rest import ApiException
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
+from tests.storage.constants import NAMESPACE_PARAMS
 from utilities import console
 from utilities.constants import TIMEOUT_20SEC
 
@@ -229,7 +230,7 @@ class TestRestoreSnapshots:
             pytest.param(
                 {"vm_name": "vm-cnv-5049"},
                 {"number_of_snapshots": 1},
-                {"unprivileged_client": None},
+                NAMESPACE_PARAMS,
                 marks=pytest.mark.polarion("CNV-5049"),
             ),
         ],
@@ -346,13 +347,13 @@ def test_remove_snapshots_while_vm_is_running(
     "namespace, resource, error_msg",
     [
         pytest.param(
-            {"unprivileged_client": None},
+            NAMESPACE_PARAMS,
             VirtualMachineSnapshot,
             ERROR_MSG_USER_CANNOT_LIST_VM_SNAPSHOTS,
             marks=pytest.mark.polarion("CNV-5050"),
         ),
         pytest.param(
-            {"unprivileged_client": None},
+            NAMESPACE_PARAMS,
             VirtualMachineRestore,
             ERROR_MSG_USER_CANNOT_LIST_VM_RESTORE,
             marks=pytest.mark.polarion("CNV-5331"),
@@ -376,7 +377,7 @@ def test_unprivileged_client_fails_to_list_resources(
     [
         pytest.param(
             {"vm_name": "vm-cnv-4867"},
-            {"unprivileged_client": None},
+            NAMESPACE_PARAMS,
             marks=pytest.mark.polarion("CNV-4867"),
         ),
     ],
@@ -399,7 +400,7 @@ def test_fail_to_snapshot_with_unprivileged_client_no_permissions(
     [
         pytest.param(
             {"vm_name": "vm-cnv-4868"},
-            {"unprivileged_client": None},
+            NAMESPACE_PARAMS,
             marks=pytest.mark.polarion("CNV-4868"),
         ),
     ],

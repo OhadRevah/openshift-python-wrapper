@@ -1076,7 +1076,7 @@ def namespace(request, admin_client, unprivileged_client):
     """Generate namespace from the test's module name"""
     client = True
     if hasattr(request, "param"):
-        client = request.param.get("unprivileged_client", True)
+        client = request.param.get("use_unprivileged_client", True)
 
     yield from create_ns(
         unprivileged_client=unprivileged_client if client else None,
