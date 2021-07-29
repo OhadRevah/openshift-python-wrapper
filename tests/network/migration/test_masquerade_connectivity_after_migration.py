@@ -104,6 +104,7 @@ def vm_console_connection_ready(running_vm_for_migration):
 @pytest.mark.bugzilla(
     1976604, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
+@pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-6733")
 def test_connectivity_after_migration(
     skip_when_one_node,
