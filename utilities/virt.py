@@ -250,6 +250,7 @@ class VirtualMachineForTests(VirtualMachine):
         host_device_name=None,
         gpu_name=None,
         systemctl_support=True,
+        vhostmd=False,
     ):
         """
         Virtual machine creation
@@ -307,6 +308,7 @@ class VirtualMachineForTests(VirtualMachine):
             host_device_name (str, optional): PCI Host Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
             gpu_name (str, optional): GPU Device Name (For Example: "nvidia.com/GV100GL_Tesla_V100")
             systemctl_support(bool, default=True): whether OS supports systemctl (RHEL 6 does not)
+            vhostmd (bool, optional, default: False): If True, configure vhostmd.
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -366,6 +368,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.host_device_name = host_device_name
         self.gpu_name = gpu_name
         self.systemctl_support = systemctl_support
+        self.vhostmd = vhostmd
 
     def deploy(self):
         super().deploy()
@@ -412,6 +415,7 @@ class VirtualMachineForTests(VirtualMachine):
             )
             # cloud-init disks must be set after DV disks in order to boot from DV.
             template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
+            template_spec = self.set_vhostmd(template_spec=template_spec)
 
             template_spec = self.update_vm_secret_configuration(
                 template_spec=template_spec
@@ -538,6 +542,18 @@ class VirtualMachineForTests(VirtualMachine):
             ).append({"disk": {}, "name": sa})
             template_spec.setdefault("volumes", []).append(
                 {"name": sa, "serviceAccount": {"serviceAccountName": sa}}
+            )
+
+        return template_spec
+
+    def set_vhostmd(self, template_spec):
+        name = "vhostmd"
+        if self.vhostmd:
+            template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
+                "disks", []
+            ).append({"disk": {"bus": "virtio"}, "name": name})
+            template_spec.setdefault("volumes", []).append(
+                {"name": name, "downwardMetrics": {}}
             )
 
         return template_spec
@@ -1004,6 +1020,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         dedicated_iothread=False,
         cloned_dv_size=None,
         systemctl_support=True,
+        vhostmd=False,
     ):
         """
         VM creation using common templates.
@@ -1050,6 +1067,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             iothreads_policy=iothreads_policy,
             dedicated_iothread=dedicated_iothread,
             systemctl_support=systemctl_support,
+            vhostmd=vhostmd,
         )
         self.template_labels = labels
         self.data_volume = data_volume
@@ -1861,6 +1879,7 @@ def vm_instance_from_template(
         gpu_name=params.get("gpu_name"),
         cloned_dv_size=params.get("cloned_dv_size"),
         systemctl_support="rhel-6" not in vm_name,
+        vhostmd=params.get("vhostmd"),
     ) as vm:
         if params.get("start_vm", True):
             running_vm(
