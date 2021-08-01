@@ -6,6 +6,7 @@ from collections import OrderedDict
 import pytest
 
 from tests.network.utils import assert_no_ping
+from utilities.constants import MTU_9000
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     assert_ping_successful,
@@ -40,7 +41,7 @@ def jumbo_frame_bond1_worker_1(
         worker_pods=utility_pods,
         node_selector=worker_node1.name,
         mode="active-backup",
-        mtu=9000,
+        mtu=MTU_9000,
     ) as bond:
         yield bond
 
@@ -63,7 +64,7 @@ def jumbo_frame_bond1_worker_2(
         worker_pods=utility_pods,
         node_selector=worker_node2.name,
         mode="active-backup",
-        mtu=9000,
+        mtu=MTU_9000,
     ) as bond:
         yield bond
 
@@ -90,7 +91,7 @@ def jumbo_frame_bridge_on_bond_worker_1(
         network_utility_pods=utility_pods,
         node_selector=jumbo_frame_bond1_worker_1.node_selector,
         ports=[jumbo_frame_bond1_worker_1.bond_name],
-        mtu=9000,
+        mtu=MTU_9000,
     ) as br:
         yield br
 
@@ -112,7 +113,7 @@ def jumbo_frame_bridge_on_bond_worker_2(
         network_utility_pods=utility_pods,
         node_selector=jumbo_frame_bond1_worker_2.node_selector,
         ports=[jumbo_frame_bond1_worker_2.bond_name],
-        mtu=9000,
+        mtu=MTU_9000,
     ) as br:
         yield br
 
@@ -132,7 +133,7 @@ def br1bond_nad(
         nad_name=f"{jumbo_frame_bond_device_name}-bond-nad",
         interface_name=f"{jumbo_frame_bond_device_name}-bond",
         tuning=True,
-        mtu=9000,
+        mtu=MTU_9000,
     ) as nad:
         yield nad
 

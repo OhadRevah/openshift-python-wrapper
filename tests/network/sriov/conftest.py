@@ -8,7 +8,7 @@ import shlex
 import pytest
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import SRIOV
+from utilities.constants import MTU_9000, SRIOV
 from utilities.hco import (
     replace_backup_hco_cr_modification,
     restore_hco_cr_modification,
@@ -266,7 +266,7 @@ def sriov_network_mtu_9000(sriov_vm1, sriov_vm2, running_sriov_vm1, running_srio
         get_vm_sriov_network_mtu(vm=running_sriov_vm2),
     )
     for vm in vms:
-        set_vm_sriov_network_mtu(vm=vm, mtu=9000)
+        set_vm_sriov_network_mtu(vm=vm, mtu=MTU_9000)
     yield
     for vm, mtu in zip(vms, default_mtu):
         set_vm_sriov_network_mtu(vm=vm, mtu=mtu)

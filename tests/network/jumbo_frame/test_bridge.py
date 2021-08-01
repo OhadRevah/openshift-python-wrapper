@@ -6,6 +6,7 @@ from collections import OrderedDict
 import pytest
 
 from tests.network.utils import assert_no_ping
+from utilities.constants import MTU_9000
 from utilities.network import (
     assert_ping_successful,
     cloud_init_network_data,
@@ -36,6 +37,7 @@ def jumbo_frame_bridge_device_worker_1(
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
         ports=[nodes_available_nics[worker_node1.name][0]],
+        mtu=MTU_9000,
     ) as br:
         yield br
 
@@ -55,6 +57,7 @@ def jumbo_frame_bridge_device_worker_2(
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,
         ports=[nodes_available_nics[worker_node2.name][0]],
+        mtu=MTU_9000,
     ) as br:
         yield br
 
@@ -74,7 +77,7 @@ def br1test_bridge_nad(
         nad_name=f"{jumbo_frame_bridge_device_name}-nad",
         interface_name=jumbo_frame_bridge_device_name,
         tuning=True,
-        mtu=9000,
+        mtu=MTU_9000,
     ) as nad:
         yield nad
 

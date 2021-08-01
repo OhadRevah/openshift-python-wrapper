@@ -92,6 +92,7 @@ class Images:
 #  Network constants
 SRIOV = "sriov"
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"
+MTU_9000 = 9000
 
 #  Time constants
 TIMEOUT_20SEC = 20

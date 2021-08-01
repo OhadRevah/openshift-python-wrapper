@@ -9,6 +9,7 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.network.utils import assert_no_ping, run_test_guest_performance
+from utilities.constants import MTU_9000
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 from utilities.virt import migrate_vm_and_verify
 
@@ -50,7 +51,7 @@ class TestPingConnectivity:
         assert_ping_successful(
             src_vm=running_sriov_vm1,
             dst_ip=get_vmi_ip_v4_by_name(vm=running_sriov_vm2, name=sriov_network.name),
-            packet_size=9000,
+            packet_size=MTU_9000,
         )
 
     @pytest.mark.polarion("CNV-3958")

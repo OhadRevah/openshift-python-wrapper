@@ -48,6 +48,7 @@ from pytest_testconfig import config as py_config
 from utilities.constants import (
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
+    MTU_9000,
     RESOURCES_TO_COLLECT_INFO,
     SRIOV,
     TIMEOUT_4MIN,
@@ -1623,7 +1624,7 @@ def sriov_node_policy(sriov_nodes_states, sriov_iface, sriov_namespace):
         sriov_resource_name="sriov_net",
         # sriov operator doesnt pass the mtu to the VFs when using vfio-pci device driver (the one we are using)
         # so the mtu parameter only affects the PF. we need to change the mtu manually on the VM.
-        mtu=9000,
+        mtu=MTU_9000,
     ) as policy:
         wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
         yield policy
