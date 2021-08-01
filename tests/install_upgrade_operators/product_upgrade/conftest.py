@@ -627,3 +627,41 @@ def windows_vm(
         ) as vm:
             running_vm(vm=vm, check_ssh_connectivity=False)
             yield vm
+
+
+@pytest.fixture(scope="module")
+def cirros_vm_for_upgrade_a(namespace, admin_client):
+    with upgrade_utils.create_vm_for_snapshot_upgrade_tests(
+        vm_name="snapshot-upgrade-a", namespace=namespace.name, client=admin_client
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def snapshots_for_upgrade_a(
+    admin_client,
+    cirros_vm_for_upgrade_a,
+):
+    with upgrade_utils.create_snapshot_for_upgrade(
+        vm=cirros_vm_for_upgrade_a, client=admin_client
+    ) as snapshot:
+        yield snapshot
+
+
+@pytest.fixture(scope="module")
+def cirros_vm_for_upgrade_b(namespace, admin_client):
+    with upgrade_utils.create_vm_for_snapshot_upgrade_tests(
+        vm_name="snapshot-upgrade-b", namespace=namespace.name, client=admin_client
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def snapshots_for_upgrade_b(
+    admin_client,
+    cirros_vm_for_upgrade_b,
+):
+    with upgrade_utils.create_snapshot_for_upgrade(
+        vm=cirros_vm_for_upgrade_b, client=admin_client
+    ) as snapshot:
+        yield snapshot

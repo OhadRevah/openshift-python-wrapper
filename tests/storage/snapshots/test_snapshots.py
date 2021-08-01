@@ -12,8 +12,8 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.storage.constants import NAMESPACE_PARAMS
-from utilities import console
-from utilities.constants import TIMEOUT_20SEC
+from utilities.constants import LS_COMMAND
+from utilities.storage import run_command_on_cirros_vm_and_check_output
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ pytestmark = pytest.mark.usefixtures(
     "skip_test_if_no_ocs_sc",
 )
 
-LS_COMMAND = "ls -1 | sort | tr '\n' ' '"
 ERROR_MSG_VM_IS_RUNNING = (
     r".*virtualmachinerestore-validator.snapshot.kubevirt.io.*"
     r"denied the request: VirtualMachine.*is running.*"
@@ -58,12 +57,6 @@ ERROR_MSG_USER_CANNOT_LIST_VM_RESTORE = (
     f"{VIRTUAL_MACHINE_RESTORE_FORBIDDEN}.*{CANNOT_LIST_RESOURCE}.*"
     f"{VIRTUAL_MACHINE_RESTORES}.*{IN_NAMESPACE}.*"
 )
-
-
-def run_command_on_cirros_vm_and_check_output(vm, command, expected_result):
-    with console.Cirros(vm=vm) as vm_console:
-        vm_console.sendline(command)
-        vm_console.expect(expected_result, timeout=TIMEOUT_20SEC)
 
 
 def expected_output_after_restore(snapshot_number):

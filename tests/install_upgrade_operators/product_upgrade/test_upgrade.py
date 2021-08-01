@@ -4,16 +4,18 @@ from ipaddress import ip_interface
 import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
+from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
-from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL
+from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL, LS_COMMAND
 from utilities.infra import validate_nodes_ready, validate_nodes_schedulable
 from utilities.network import (
     assert_ping_successful,
     get_vmi_mac_address_by_iface_name,
     verify_ovs_installed_with_annotations,
 )
+from utilities.storage import run_command_on_cirros_vm_and_check_output
 from utilities.virt import migrate_vm_and_verify, vm_console_run_commands
 
 
@@ -211,6 +213,37 @@ class TestUpgrade:
         assert (
             hyperconverged_ovs_annotations_fetched
         ), "OVS hasn't been opt-in as needed."
+
+    @pytest.mark.polarion("CNV-5993")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_vm_snapshot_restore_before_upgrade")
+    def test_vm_snapshot_restore_before_upgrade(
+        self,
+        cirros_vm_for_upgrade_a,
+        snapshots_for_upgrade_a,
+    ):
+        with VirtualMachineRestore(
+            name=f"restore-snapshot-{cirros_vm_for_upgrade_a.name}",
+            namespace=snapshots_for_upgrade_a.namespace,
+            vm_name=cirros_vm_for_upgrade_a.name,
+            snapshot_name=snapshots_for_upgrade_a.name,
+        ) as vm_restore:
+            vm_restore.wait_complete()
+            cirros_vm_for_upgrade_a.start(wait=True)
+            run_command_on_cirros_vm_and_check_output(
+                vm=cirros_vm_for_upgrade_a,
+                command=LS_COMMAND,
+                expected_result="1",
+            )
+
+    @pytest.mark.polarion("CNV-5995")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_vm_snapshot_created_before_upgrade")
+    def test_vm_snapshot_created_before_upgrade(
+        self,
+        snapshots_for_upgrade_b,
+    ):
+        assert snapshots_for_upgrade_b.instance.status.readyToUse
 
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
@@ -539,3 +572,40 @@ class TestUpgrade:
         assert (
             not unupdated_vmi_pods_names
         ), f"The following VMI Pods were not updated: {unupdated_vmi_pods_names}"
+
+    @pytest.mark.polarion("CNV-5994")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade", "test_vm_snapshot_restore_before_upgrade"]
+    )
+    def test_vm_snapshot_restore_check_after_upgrade(
+        self,
+        cirros_vm_for_upgrade_a,
+    ):
+        run_command_on_cirros_vm_and_check_output(
+            vm=cirros_vm_for_upgrade_a,
+            command=LS_COMMAND,
+            expected_result="1",
+        )
+
+    @pytest.mark.polarion("CNV-5996")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade", "test_vm_snapshot_created_before_upgrade"]
+    )
+    def test_vm_snapshot_restore_create_after_upgrade(
+        self, cirros_vm_for_upgrade_b, snapshots_for_upgrade_b
+    ):
+        with VirtualMachineRestore(
+            name=f"restore-snapshot-{cirros_vm_for_upgrade_b.name}",
+            namespace=snapshots_for_upgrade_b.namespace,
+            vm_name=cirros_vm_for_upgrade_b.name,
+            snapshot_name=snapshots_for_upgrade_b.name,
+        ) as vm_restore:
+            vm_restore.wait_complete()
+            cirros_vm_for_upgrade_b.start(wait=True)
+            run_command_on_cirros_vm_and_check_output(
+                vm=cirros_vm_for_upgrade_b,
+                command=LS_COMMAND,
+                expected_result="1",
+            )

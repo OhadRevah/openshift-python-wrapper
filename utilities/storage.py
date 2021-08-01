@@ -22,6 +22,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+from utilities import console
 from utilities.constants import (
     OS_FLAVOR_WINDOWS,
     TIMEOUT_3MIN,
@@ -657,6 +658,7 @@ def wait_for_default_sc_in_cdiconfig(cdi_config, sc):
     for sample in samples:
         if sample:
             return
+    return data_volume_template_dict
 
 
 def get_hyperconverged_cdi(admin_client):
@@ -665,3 +667,18 @@ def get_hyperconverged_cdi(admin_client):
         name="cdi-kubevirt-hyperconverged",
     ):
         return cdi
+
+
+def write_file(vm, filename, content):
+    """Start VM if not running, write a file in the VM and stop the VM"""
+    if not vm.instance.spec.running:
+        vm.start(wait=True)
+    with console.Cirros(vm=vm) as vm_console:
+        vm_console.sendline(f"echo '{content}' >> {filename}")
+    vm.stop(wait=True)
+
+
+def run_command_on_cirros_vm_and_check_output(vm, command, expected_result):
+    with console.Cirros(vm=vm) as vm_console:
+        vm_console.sendline(command)
+        vm_console.expect(expected_result, timeout=20)

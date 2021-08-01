@@ -12,9 +12,8 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.storage.utils import set_permissions
-from utilities import console
 from utilities.constants import OS_FLAVOR_CIRROS, UNPRIVILEGED_USER, Images
-from utilities.storage import get_images_server_url
+from utilities.storage import get_images_server_url, write_file
 from utilities.virt import VirtualMachineForTests
 
 
@@ -103,14 +102,6 @@ def snapshots_with_content(
 
     for vm_snapshot in vm_snapshots:
         vm_snapshot.clean_up()
-
-
-def write_file(vm, filename, content):
-    if not vm.instance.spec.running:
-        vm.start(wait=True)
-    with console.Cirros(vm=vm) as vm_console:
-        vm_console.sendline(f"echo '{content}' >> {filename}")
-    vm.stop(wait=True)
 
 
 @pytest.fixture()

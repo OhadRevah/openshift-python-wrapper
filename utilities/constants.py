@@ -212,3 +212,5 @@ RHSM_PASSWD = "redhatredhat"
 
 # KUBECONFIG variables
 KUBECONFIG = "KUBECONFIG"
+# commands
+LS_COMMAND = "ls -1 | sort | tr '\n' ' '"
