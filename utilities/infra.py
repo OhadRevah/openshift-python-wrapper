@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 from configparser import ConfigParser
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -58,17 +59,23 @@ def create_ns(name, unprivileged_client=None, kmp_vm_label=None, admin_client=No
     """
     For kubemacpool labeling opt-modes, provide kmp_vm_label and admin_client as admin_client
     """
-    if not unprivileged_client:
-        with Namespace(client=admin_client, name=name, label=kmp_vm_label) as ns:
-            ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
-            yield ns
-    else:
-        with ProjectRequest(name=name, client=unprivileged_client):
-            project = Project(name=name, client=unprivileged_client)
-            project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
-            if kmp_vm_label:
-                label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
-            yield project
+    try:
+        if not unprivileged_client:
+            with Namespace(client=admin_client, name=name, label=kmp_vm_label) as ns:
+                ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
+                yield ns
+        else:
+            with ProjectRequest(name=name, client=unprivileged_client):
+                project = Project(name=name, client=unprivileged_client)
+                project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
+                if kmp_vm_label:
+                    label_project(
+                        name=name, label=kmp_vm_label, admin_client=admin_client
+                    )
+                yield project
+    # Force-delete namespace/project in case there are resources which fail deletion
+    except TimeoutExpiredError:
+        nudge_delete_namespace(name=name)
 
 
 def get_cert(server_type):
@@ -727,3 +734,13 @@ def raise_multiple_exceptions(exceptions):
         raise exceptions.pop()
     finally:
         raise_multiple_exceptions(exceptions=exceptions)
+
+
+def nudge_delete_namespace(name):
+    LOGGER.info(f"Nudging namespace {name} while waiting for its deletion.")
+    try:
+        # Use curl to kill stuck finalizers
+        subprocess.check_output(["./scripts/clean-namespace.sh", name])
+    except subprocess.CalledProcessError as exp:
+        LOGGER.error(f"Error happened while nudging namespace {name}: {exp}")
+        raise
