@@ -1223,16 +1223,18 @@ def run_command(command, verify_stderr=True):
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
-    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
+    sub_process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    out, err = sub_process.communicate()
     out_decoded = out.decode("utf-8")
     err_decoded = err.decode("utf-8")
 
-    if p.returncode != 0:
-        LOGGER.error(f"Failed to run {command}. rc: {p.returncode}")
+    if sub_process.returncode != 0:
+        LOGGER.error(f"Failed to run {command}. rc: {sub_process.returncode}")
         return False, out_decoded, err_decoded
 
-    # From this point and onwards we are guaranteed that p.returncode == 0
+    # From this point and onwards we are guaranteed that sub_process.returncode == 0
     if err and verify_stderr:
         LOGGER.error(f"Failed to run {command}. error: {err_decoded}")
         return False, out_decoded, err_decoded
