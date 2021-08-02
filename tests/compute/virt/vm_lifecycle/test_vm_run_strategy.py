@@ -11,7 +11,8 @@ import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
-from ocp_resources.virtual_machine import VirtualMachine, VirtualMachineInstance
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import run_ssh_commands

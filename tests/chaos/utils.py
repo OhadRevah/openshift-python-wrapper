@@ -12,7 +12,9 @@ import requests
 import yaml
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.node import Node
-from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
 from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN, TIMEOUT_25MIN

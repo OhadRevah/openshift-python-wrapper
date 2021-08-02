@@ -9,9 +9,9 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.service import Service
-from ocp_resources.virtual_machine import (
-    VirtualMachine,
-    VirtualMachineInstance,
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
+from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 

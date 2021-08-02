@@ -24,11 +24,11 @@ from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.virtual_machine import (
-    VirtualMachine,
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_import import VirtualMachineImport
+from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
-from ocp_resources.virtual_machine_import import VirtualMachineImport
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (

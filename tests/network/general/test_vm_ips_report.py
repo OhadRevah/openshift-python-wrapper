@@ -4,7 +4,9 @@ Report VM IP
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
-from ocp_resources.virtual_machine import VirtualMachineInstanceMigration
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
 
 from utilities.constants import TIMEOUT_12MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm

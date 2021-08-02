@@ -14,7 +14,7 @@ from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
-from ocp_resources.virtual_machine import VirtualMachineInstance
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 

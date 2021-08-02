@@ -2,7 +2,7 @@
 
 import pytest
 from ocp_resources.node_maintenance import NodeMaintenance
-from ocp_resources.virtual_machine import VirtualMachineInstance
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS

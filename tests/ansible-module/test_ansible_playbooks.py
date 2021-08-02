@@ -9,10 +9,10 @@ import subprocess
 import pytest
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.template import Template
-from ocp_resources.virtual_machine import (
-    VirtualMachine,
-    VirtualMachineInstance,
-    VirtualMachineInstancePreset,
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
+from ocp_resources.virtual_machine_instance_preset import VirtualMachineInstancePreset
+from ocp_resources.virtual_machine_Instance_replica_set import (
     VirtualMachineInstanceReplicaSet,
 )
 
