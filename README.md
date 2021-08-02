@@ -415,17 +415,13 @@ Remove the cluster:
 make cluster-down
 ```
 
-### Run functional tests via an OCP Jenkins job
+### Run functional tests via Jenkins job
 
 Run the Jenkins job for cnv-tests:
-    Find the right job for you patch by cnv version/branch.
-    branch cnv-2.0 will use `test-pytest-ocp-4.1-cnv-2.0-cluster`
-    branch master will use `test-pytest-ocp-4.2-cnv-2.1-cluster` which is the latest cnv version.
-
-https://cnv-qe-jenkins.rhev-ci-vms.eng.rdu2.redhat.com/job/<job name based on patch branch>
+https://main-jenkins-csb-cnvqe.apps.ocp4.prod.psi.redhat.com/job/cnv-tests-runner/
 
 Click on Build with Parameters.
-Under `SLAVE_LABEL` choose 'cnv-executor-cnv-tests'.
+Under `CLUSTER_NAME` enter your cluster's name.
 Under `REFS` add you patch refs in format `refs/changes/<link>/<commit>/<patch set>`, like: `refs/changes/71/176971/4`.
     ref can be found under 'download' in the top right corner gerrit patch page.
     can be set multiple refs.
@@ -450,7 +446,7 @@ To skip 'unprivileged_client' creation pass to pytest command:
 
 ##### ssh workers by fixture
 workers_ssh_executors fixture need to ssh the workers
-From the slave it will work since it used the default ssh key to connect
+From the executor it will work since it used the default ssh key to connect
 To use non default key:
 ```bash
 export HOST_SSH_KEY=path.to.ssh_key

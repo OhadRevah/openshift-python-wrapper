@@ -20,26 +20,28 @@ pytestmark = pytest.mark.sno
 def assert_bond_validation(workers_ssh_executors, bond):
     bonding_path = f"/sys/class/net/{bond.bond_name}/bonding"
     _exec = workers_ssh_executors[bond.node_selector]
-    mode, slaves = run_ssh_commands(
+    mode, bond_ports = run_ssh_commands(
         host=_exec,
         commands=[
             shlex.split(f"cat {bonding_path}/mode"),
-            shlex.split(f"cat {bonding_path}/slaves"),
+            shlex.split(
+                f"cat {bonding_path}/slaves"
+            ),  # TODO: rename 'slaves' once file is renamed (offensive language)
         ],
     )
-    worker_slaves = slaves.split()
-    worker_slaves.sort()
-    bond.slaves.sort()
+    worker_bond_ports = bond_ports.split()
+    worker_bond_ports.sort()
+    bond.bond_ports.sort()
     assert mode.split()[0] == bond.mode
-    assert worker_slaves == bond.slaves
+    assert worker_bond_ports == bond.bond_ports
 
 
 @contextmanager
-def create_bond(bond_idx, slaves, worker_pods, mode, node_selector, options=None):
+def create_bond(bond_idx, bond_ports, worker_pods, mode, node_selector, options=None):
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        slaves=slaves,
+        bond_ports=bond_ports,
         worker_pods=worker_pods,
         mode=mode,
         mtu=1450,
@@ -113,7 +115,7 @@ def matrix_bond_modes_bond(
     """
     with create_bond(
         bond_idx=next(index_number),
-        slaves=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         node_selector=worker_node1.name,
@@ -186,7 +188,7 @@ def active_backup_bond_with_fail_over_mac(
 ):
     with create_bond(
         bond_idx=next(index_number),
-        slaves=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         node_selector=worker_node1.name,
@@ -242,7 +244,7 @@ class TestBondWithFailOverMac:
     ):
         with create_bond(
             bond_idx=next(index_number),
-            slaves=nodes_available_nics[worker_node1.name][0:2],
+            bond_ports=nodes_available_nics[worker_node1.name][0:2],
             worker_pods=utility_pods,
             mode="active-backup",
             node_selector=worker_node1.name,

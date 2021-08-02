@@ -100,15 +100,19 @@ def node_with_bond(privileged_pod):
 
 
 @pytest.fixture(scope="module")
-def slave(workers_ssh_executors, privileged_pod, bond, node_with_bond):
+def bond_port(workers_ssh_executors, privileged_pod, bond, node_with_bond):
     node_executor = workers_ssh_executors[privileged_pod.node.name]
     all_connections = _all_connection(node_executor=node_executor)
 
     bond_string = f"connection.master:{bond}"
-    slave = get_interface_by_attribute(all_connections=all_connections, att=bond_string)
+    bond_port = get_interface_by_attribute(
+        all_connections=all_connections, att=bond_string
+    )
 
-    assert slave is not None, f"OVS Bond {bond} on node {node_with_bond} has no slaves"
-    return slave
+    assert (
+        bond_port is not None
+    ), f"OVS Bond {bond} on node {node_with_bond} has no ports"
+    return bond_port
 
 
 @pytest.fixture(scope="module")
@@ -118,14 +122,14 @@ def skip_when_no_bond(bond):
 
 
 @pytest.fixture(scope="module")
-def disconnected_slave(privileged_pod, slave, bond):
-    LOGGER.info(f"Disconnecting slave {slave} of bond {bond}")
-    privileged_pod.execute(command=["bash", "-c", f"nmcli dev disconnect {slave}"])
+def disconnected_bond_port(privileged_pod, bond_port, bond):
+    LOGGER.info(f"Disconnecting port {bond_port} of bond {bond}")
+    privileged_pod.execute(command=["bash", "-c", f"nmcli dev disconnect {bond_port}"])
 
-    yield slave
+    yield bond_port
 
-    LOGGER.info(f"Reconnecting slave {slave} of bond {bond}")
-    privileged_pod.execute(command=["bash", "-c", f"nmcli dev connect {slave}"])
+    LOGGER.info(f"Reconnecting port {bond_port} of bond {bond}")
+    privileged_pod.execute(command=["bash", "-c", f"nmcli dev connect {bond_port}"])
 
 
 def _all_connection(node_executor):

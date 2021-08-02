@@ -269,7 +269,7 @@ def vlan_iface_bond_dhcp_client_1(
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
-        slaves=hosts_common_available_ports[0:2],
+        bond_ports=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -300,7 +300,7 @@ def vlan_iface_bond_dhcp_client_2(
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-2-nncp",
         bond_name="bond4vlan",
-        slaves=hosts_common_available_ports[0:2],
+        bond_ports=hosts_common_available_ports[0:2],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -324,5 +324,5 @@ def vlan_iface_bond_dhcp_client_2(
 @pytest.fixture(scope="module")
 def vlan_base_iface(worker_node1, nodes_available_nics):
     # Select the last NIC from the list as a way to ensure that the selected NIC
-    # is not already used (e.g. as a bond's slave).
+    # is not already used (e.g. as a bond's port).
     return nodes_available_nics[worker_node1.name][-1]

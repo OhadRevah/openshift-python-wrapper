@@ -20,7 +20,7 @@ pytestmark = pytest.mark.post_upgrade
 
 LOGGER = logging.getLogger(__name__)
 
-POD_SCC_WHITELIST = [
+POD_SCC_ALLOWLIST = [
     "restricted",
     "hostpath-provisioner",
     "containerized-data-importer",
@@ -51,9 +51,9 @@ def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
 
 
 @pytest.mark.polarion("CNV-4211")
-def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
+def test_pods_scc_in_allowlist(skip_not_openshift, cnv_pods):
     """
-    Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined whitelist.
+    Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined allowlist.
     """
     bugzilla = {
         "1834839": "cluster-network-addons-operator",
@@ -77,11 +77,10 @@ def test_pods_scc_in_whitelist(skip_not_openshift, cnv_pods):
             LOGGER.info(f"Currently bug {pod_bug_id} for {pod.name}")
             continue
         pod_annotation = pod.instance.metadata.annotations.get("openshift.io/scc")
-        if pod_annotation not in POD_SCC_WHITELIST:
-            if not (
-                list(filter(pod.name.startswith, POD_SCC_ANYUID))
-                and pod_annotation == "anyuid"
-            ):
-                failed_pods.append(pod.name)
+        if pod_annotation not in POD_SCC_ALLOWLIST and not (
+            list(filter(pod.name.startswith, POD_SCC_ANYUID))
+            and pod_annotation == "anyuid"
+        ):
+            failed_pods.append(pod.name)
 
     assert not failed_pods, f"Failed pods: {' '.join(failed_pods)}"

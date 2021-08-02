@@ -145,7 +145,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             bridge_name (str): Bridge name.
             bridge_type (str): Bridge type (Linux Bridge, OVS)
             stp_config (bool): Spanning Tree enabled/disabled.
-            ports (list): The bridge's slave port(s).
+            ports (list): The bridge's port(s).
             mtu (int): MTU size
             ipv4_dhcp: determines if ipv4_dhcp should be used
         """
@@ -452,10 +452,10 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self,
         name,
         bond_name,
-        slaves,
+        bond_ports,
         worker_pods,
         mode,
-        primary_slave=None,
+        primary_bond_port=None,
         node_selector=None,
         mtu=None,
         teardown=True,
@@ -475,18 +475,18 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv6_enable=ipv6_enable,
         )
         self.bond_name = bond_name
-        self.slaves = slaves
+        self.bond_ports = bond_ports
         self.mode = mode
-        self.primary_slave = primary_slave
-        self.ports = self.slaves
+        self.primary_bond_port = primary_bond_port
+        self.ports = self.bond_ports
         self.options = options
 
     def to_dict(self):
         if not self.iface:
             options_dic = self.options or {}
             options_dic.update({"miimon": "120"})
-            if self.mode == "active-backup" and self.primary_slave is not None:
-                options_dic.update({"primary": self.primary_slave})
+            if self.mode == "active-backup" and self.primary_bond_port is not None:
+                options_dic.update({"primary": self.primary_bond_port})
 
             self.iface = {
                 "name": self.bond_name,
@@ -494,7 +494,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
                 "link-aggregation": {
                     "mode": self.mode,
-                    "slaves": self.slaves,
+                    "slaves": self.bond_ports,  # TODO: rename 'slaves' (currently required by nmstate)
                     "options": options_dic,
                 },
             }

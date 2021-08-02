@@ -36,7 +36,7 @@ def jumbo_frame_bond1_worker_1(
     with BondNodeNetworkConfigurationPolicy(
         name=f"{jumbo_frame_bond_name}-nncp",
         bond_name=jumbo_frame_bond_name,
-        slaves=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][0:2],
         worker_pods=utility_pods,
         node_selector=worker_node1.name,
         mode="active-backup",
@@ -59,7 +59,7 @@ def jumbo_frame_bond1_worker_2(
     with BondNodeNetworkConfigurationPolicy(
         name=f"{jumbo_frame_bond_name}-nncp",
         bond_name=jumbo_frame_bond_name,
-        slaves=nodes_available_nics[worker_node2.name][0:2],
+        bond_ports=nodes_available_nics[worker_node2.name][0:2],
         worker_pods=utility_pods,
         node_selector=worker_node2.name,
         mode="active-backup",

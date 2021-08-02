@@ -13,7 +13,7 @@ def test_connectivity_over_pod_network(
     skip_when_one_node,
     skip_when_no_bond,
     skip_if_workers_bms,
-    disconnected_slave,
+    disconnected_bond_port,
     running_ovs_bond_vma,
     running_ovs_bond_vmb,
 ):
