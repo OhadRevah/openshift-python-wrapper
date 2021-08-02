@@ -204,3 +204,7 @@ AMD = "AMD"
 # unprivileged_client constants
 UNPRIVILEGED_USER = "unprivileged-user"
 UNPRIVILEGED_PASSWORD = "unprivileged-password"
+
+# Red Hat Subscription Manager credentials.
+RHSM_USER = "cnv-qe-automation-stage"
+RHSM_PASSWD = "redhatredhat"
