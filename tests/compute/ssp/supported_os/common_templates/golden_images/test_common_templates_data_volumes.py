@@ -18,7 +18,6 @@ from utilities.infra import (
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
-    vm_instance_from_template,
     wait_for_vm_interfaces,
 )
 
@@ -132,22 +131,6 @@ def vm_from_golden_image_multi_storage(
 
 
 @pytest.fixture()
-def vm_with_existing_dv(
-    request,
-    unprivileged_client,
-    namespace,
-    data_volume_scope_function,
-):
-    with vm_instance_from_template(
-        request=request,
-        unprivileged_client=unprivileged_client,
-        namespace=namespace,
-        existing_data_volume=data_volume_scope_function,
-    ) as vm:
-        yield vm
-
-
-@pytest.fixture()
 def vm_from_golden_image(
     request,
     unprivileged_client,
@@ -205,7 +188,7 @@ def test_vm_from_golden_image_cluster_default_storage_class(
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function, vm_with_existing_dv",
+    "data_volume_scope_function, vm_from_template_with_existing_dv",
     [
         pytest.param(
             {
@@ -223,8 +206,10 @@ def test_vm_from_golden_image_cluster_default_storage_class(
     ],
     indirect=True,
 )
-def test_vm_with_existing_dv(data_volume_scope_function, vm_with_existing_dv):
-    vm_with_existing_dv.ssh_exec.executor().is_connective()
+def test_vm_with_existing_dv(
+    data_volume_scope_function, vm_from_template_with_existing_dv
+):
+    vm_from_template_with_existing_dv.ssh_exec.executor().is_connective()
 
 
 @pytest.mark.parametrize(

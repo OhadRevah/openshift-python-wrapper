@@ -9,10 +9,13 @@ import os
 import re
 
 import pytest
+from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
+from tests.os_params import FEDORA_LATEST_LABELS
+from utilities.constants import Images
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     JIRA_STATUS_CLOSED,
@@ -37,6 +40,11 @@ LINUX_FLAVORS_LIST = [
 WINDOWS_FLAVOR_LIST = [Template.Flavor.MEDIUM, Template.Flavor.LARGE]
 WINDOWS2K_WORKLOAD_LIST = [Template.Workload.SERVER, Template.Workload.HIGHPERFORMANCE]
 WINDOWS10_WORKLOAD_LIST = [Template.Workload.DESKTOP, Template.Workload.HIGHPERFORMANCE]
+VM_EXPECTED_ANNOTATION_KEYS = [
+    Template.VMAnnotations.FLAVOR,
+    Template.VMAnnotations.OS,
+    Template.VMAnnotations.WORKLOAD,
+]
 
 
 @pytest.fixture()
@@ -167,6 +175,10 @@ def update_rhel9_support_dict(template_support_dict):
         template_support_dict[Template.Annotations.PROVIDER_SUPPORT_LEVEL] = "Community"
 
     return template_support_dict
+
+
+def verify_annotations_match(obj_annotations, expected):
+    return sorted(obj_annotations) == sorted(expected)
 
 
 @pytest.mark.polarion("CNV-1069")
@@ -456,3 +468,107 @@ def test_provide_support_annotations(base_templates, templates_provider_support_
     assert (
         not unmatched_templates
     ), f"The following templates fail on provider and support verification: {unmatched_templates}"
+
+
+@pytest.mark.polarion("CNV-6874")
+def test_vm_annotations_in_template(base_templates):
+    """Verify template VM object has os, workload and flavor annotations which match corresponding template labels"""
+
+    def _verify_labels_annotations_match(vm_annotations, template_labels):
+        """Verify VM annotations match template corresponding labels.
+        For example: annotation = vm.kubevirt.io/flavor: medium, label = flavor.template.kubevirt.io/medium: "true"
+
+        Returns:
+            True if all annotations are matched else False
+        """
+        for annotation_name, annotation_value in vm_annotations.items():
+            # Construct template label name from the annotation
+            # Windows OS in annotation = "windows2k19", in label = "win2k19"
+            annotation_value = re.sub("windows", "win", annotation_value)
+            label_name = f"{annotation_name.split('/')[-1]}.{Resource.ApiGroup.TEMPLATE_KUBEVIRT_IO}/{annotation_value}"
+
+            # Linux-based OS annotation includes only a major release ("vm.kubevirt.io/os: rhel8")
+            # whereas the label includes a minor release ("os.template.kubevirt.io/rhel8.4")
+            if not (
+                (
+                    annotation_name == Template.VMAnnotations.OS
+                    and [
+                        True for label in template_labels.keys() if label_name in label
+                    ]
+                )
+                or template_labels.get(label_name)
+            ):
+                return False
+        return True
+
+    unmatched_templates = {}
+    for template in base_templates:
+        vm_object_annotations = template.instance.objects[
+            0
+        ].spec.template.metadata.annotations
+        template_labels = template.instance.metadata.labels
+
+        if not (
+            verify_annotations_match(
+                obj_annotations=vm_object_annotations.keys(),
+                expected=VM_EXPECTED_ANNOTATION_KEYS,
+            )
+            and _verify_labels_annotations_match(
+                vm_annotations=vm_object_annotations, template_labels=template_labels
+            )
+        ):
+            unmatched_templates[template.name] = {
+                "annotations": vm_object_annotations,
+                "labels": template_labels,
+            }
+
+    assert (
+        not unmatched_templates
+    ), f"Some templates do not have the right VM annotations:\n{unmatched_templates}."
+
+
+@pytest.mark.parametrize(
+    "data_volume_scope_function, vm_from_template_with_existing_dv",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-fedora",
+                "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+                "storage_class": py_config["default_storage_class"],
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
+            },
+            {
+                "vm_name": "fedora-vm",
+                "template_labels": FEDORA_LATEST_LABELS,
+                "ssh": False,
+                "guest_agent": False,
+            },
+            marks=pytest.mark.polarion("CNV-6890"),
+        ),
+    ],
+    indirect=True,
+)
+def test_vmi_annotations(data_volume_scope_function, vm_from_template_with_existing_dv):
+    """Verify that VM annotations are copied to the VMI object.
+    For this test the underlying OS is not important; using Cirros to reduce runtime.
+    """
+    vm_annotations = (
+        vm_from_template_with_existing_dv.instance.spec.template.metadata.annotations
+    )
+    # Use only relevant os/flavor/workload annotations
+    vmi_annotations = {
+        annotation: value
+        for annotation, value in vm_from_template_with_existing_dv.vmi.instance.metadata.annotations.items()
+        if annotation.startswith(Resource.ApiGroup.VM_KUBEVIRT_IO)
+    }
+
+    assert verify_annotations_match(
+        obj_annotations=vmi_annotations.keys(), expected=VM_EXPECTED_ANNOTATION_KEYS
+    ), f"Unexpected VMI annotations: {vmi_annotations}, expected: {VM_EXPECTED_ANNOTATION_KEYS}"
+
+    assert all(
+        [
+            vmi_ann_value == vm_annotations[vmi_ann_name]
+            for vmi_ann_name, vmi_ann_value in vmi_annotations.items()
+        ]
+    ), f"vmi annotations {vmi_annotations} do no match vm annotations {vm_annotations}"
