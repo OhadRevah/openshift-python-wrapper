@@ -1142,13 +1142,13 @@ def workers_type(workers_ssh_executors):
     for _, exec in workers_ssh_executors.items():
         out = run_ssh_commands(
             host=exec,
-            commands=[["bash", "-c", "dmesg | grep 'Hypervisor detected' | wc -l"]],
+            commands=[["bash", "-c", "systemd-detect-virt"]],
         )[0]
 
-        if int(out) > 0:
-            return ClusterHosts.Type.VIRTUAL
+        if out == "none":
+            return ClusterHosts.Type.PHYSICAL
 
-    return ClusterHosts.Type.PHYSICAL
+    return ClusterHosts.Type.VIRTUAL
 
 
 @pytest.fixture(scope="module")
