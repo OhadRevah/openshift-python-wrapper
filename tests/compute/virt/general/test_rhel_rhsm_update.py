@@ -16,6 +16,7 @@ from ocp_resources.secret import Secret
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
+from utilities.constants import RHSM_PASSWD, RHSM_USER
 from utilities.infra import base64_encode_str, run_ssh_commands
 from utilities.virt import prepare_cloud_init_user_data, vm_instance_from_template
 
@@ -31,8 +32,8 @@ def rhsm_created_secret(namespace):
         name=SECRET_NAME,
         namespace=namespace.name,
         data_dict={
-            "username": base64_encode_str(text="cnv-qe-automation-stage"),
-            "password": base64_encode_str(text="redhatredhat"),
+            "username": base64_encode_str(text=RHSM_USER),
+            "password": base64_encode_str(text=RHSM_PASSWD),
         },
     ) as secret:
         yield secret
