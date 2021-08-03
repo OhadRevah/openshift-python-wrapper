@@ -149,7 +149,12 @@ def wait_for_new_operator_pod(
             )
 
     def _check_operator_pod_image(pod):
-        return pod.instance.spec.containers[0].image == operator_target_info["image"]
+        try:
+            return (
+                pod.instance.spec.containers[0].image == operator_target_info["image"]
+            )
+        except NotFoundError:
+            return False
 
     old_operators_pods = [
         pod for pod in old_operators_pods if operator_name in pod.name
