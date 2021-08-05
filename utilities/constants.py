@@ -179,6 +179,12 @@ PODS_TO_COLLECT_INFO = [
 GPU_DEVICE_NAME = "nvidia.com/TU104GL_Tesla_T4"
 GPU_DEVICE_ID = "10de:1eb8"
 
+# Kernel Device Driver
+# Compute: GPU Devices are bound to this Kernel Driver for GPU Passthrough.
+# Networking: For SRIOV Node Policy, The driver type for the virtual functions
+KERNEL_DRIVER = "vfio-pci"
+
+
 # cloud-init constants
 CLOUD_INIT_DISK_NAME = "cloudinitdisk"
 CLOUND_INIT_CONFIG_DRIVE = "cloudInitConfigDrive"

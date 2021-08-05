@@ -8,12 +8,14 @@ import shlex
 import pytest
 from ocp_resources.resource import ResourceEditor
 
-from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME, OS_FLAVOR_WINDOWS
+from utilities.constants import (
+    GPU_DEVICE_ID,
+    GPU_DEVICE_NAME,
+    KERNEL_DRIVER,
+    OS_FLAVOR_WINDOWS,
+)
 from utilities.infra import run_ssh_commands
 from utilities.virt import vm_instance_from_template
-
-
-KERNEL_DRIVER = "vfio-pci"
 
 
 @pytest.fixture(scope="session")
@@ -47,7 +49,7 @@ def fail_if_device_unbound_to_vfiopci_driver(workers_ssh_executors, gpu_nodes):
         pytest.fail(
             msg=(
                 f"On these nodes: {device_unbound_nodes} GPU Devices are not bound to the {KERNEL_DRIVER} Driver."
-                f"Ensure IOMMU and VFIO-PCI Machine Config is applied."
+                f"Ensure IOMMU and  {KERNEL_DRIVER} Machine Config is applied."
             )
         )
 
