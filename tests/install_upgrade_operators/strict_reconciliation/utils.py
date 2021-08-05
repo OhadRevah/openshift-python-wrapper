@@ -61,9 +61,7 @@ def verify_specs(
     )
     verify_spec(
         expected_spec=cdi_spec,
-        get_spec_func=lambda: get_hyperconverged_cdi(
-            admin_client=admin_client, hco_namespace=hco_namespace
-        )
+        get_spec_func=lambda: get_hyperconverged_cdi(admin_client=admin_client)
         .instance.to_dict()
         .get("spec"),
     )
@@ -101,9 +99,7 @@ def validate_featuregates_not_in_cdi_cr(
     returns:
         bool: returns True or False
     """
-    cdi = get_hyperconverged_cdi(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    ).instance.to_dict()
+    cdi = get_hyperconverged_cdi(admin_client=admin_client).instance.to_dict()
 
     cdi_fgs = cdi["spec"]["config"]["featureGates"]
     return all(fg not in cdi_fgs for fg in feature_gates_under_test)

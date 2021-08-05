@@ -118,10 +118,9 @@ def get_hyperconverged_kubevirt(admin_client, hco_namespace):
         return kv
 
 
-def get_hyperconverged_cdi(admin_client, hco_namespace):
+def get_hyperconverged_cdi(admin_client):
     for cdi in CDI.get(
         dyn_client=admin_client,
-        namespace=hco_namespace.name,
         name="cdi-kubevirt-hyperconverged",
     ):
         return cdi

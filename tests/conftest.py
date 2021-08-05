@@ -2097,7 +2097,7 @@ def kmp_enabled_ns(kmp_vm_label):
 
 @pytest.fixture(scope="session")
 def cdi(hco_namespace):
-    cdi = CDI(name="cdi-kubevirt-hyperconverged", namespace=hco_namespace.name)
+    cdi = CDI(name="cdi-kubevirt-hyperconverged")
     assert cdi.instance is not None
     yield cdi
 

@@ -63,10 +63,8 @@ def kubevirt_resource(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def cdi_resource(admin_client, hco_namespace):
-    return get_hyperconverged_cdi(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    )
+def cdi_resource(admin_client):
+    return get_hyperconverged_cdi(admin_client=admin_client)
 
 
 @pytest.fixture()

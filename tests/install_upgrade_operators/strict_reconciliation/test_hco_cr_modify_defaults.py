@@ -258,9 +258,7 @@ class TestOperatorsModify:
         if expected["cdi_spec"]:
             wait_for_spec_change(
                 expected=expected["cdi_spec"],
-                get_spec_func=lambda: get_hyperconverged_cdi(
-                    admin_client=admin_client, hco_namespace=hco_namespace
-                )
+                get_spec_func=lambda: get_hyperconverged_cdi(admin_client=admin_client)
                 .instance.to_dict()
                 .get("spec"),
                 keys=const_src.CDI_FIELDS,
