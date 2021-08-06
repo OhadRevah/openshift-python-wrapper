@@ -480,3 +480,21 @@ class TestUpgrade:
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
             network_addons_config=network_addons_config,
         )
+
+    @pytest.mark.polarion("CNV-5932")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=[
+            "test_is_vm_running_after_upgrade",
+        ]
+    )
+    def test_vmi_pod_image_updates_after_upgrade_optin(
+        self,
+        unupdated_vmi_pods_names,
+    ):
+        """
+        Check that the VMI Pods use the latest images after the upgrade
+        """
+        assert (
+            not unupdated_vmi_pods_names
+        ), f"The following VMI Pods were not updated: {unupdated_vmi_pods_names}"

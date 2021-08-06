@@ -456,3 +456,29 @@ def hyperconverged_ovs_annotations_enabled_scope_class(
     )
 
     wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+
+
+@pytest.fixture(scope="module")
+def unupdated_vmi_pods_names(
+    admin_client,
+    hco_namespace,
+    hco_target_version,
+    vms_for_upgrade,
+):
+
+    target_related_images_name_and_versions = (
+        upgrade_utils.get_related_images_name_and_version(
+            dyn_client=admin_client,
+            hco_namespace=hco_namespace.name,
+            version=hco_target_version,
+        )
+    )
+
+    return [
+        {pod.name: pod.instance.spec.containers[0].image}
+        for pod in [vm.vmi.virt_launcher_pod for vm in vms_for_upgrade]
+        if pod.instance.spec.containers[0].image
+        not in upgrade_utils.cnv_target_images(
+            target_related_images_name_and_versions=target_related_images_name_and_versions
+        )
+    ]

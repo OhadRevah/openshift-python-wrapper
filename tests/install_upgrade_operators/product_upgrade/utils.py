@@ -402,6 +402,10 @@ def get_images_from_manifest(dyn_client, hco_namespace, target_version):
             ][0]
 
 
+def cnv_target_images(target_related_images_name_and_versions):
+    return [item["image"] for item in target_related_images_name_and_versions.values()]
+
+
 def check_tier2_pods_images(
     dyn_client,
     hco_namespace,
@@ -420,9 +424,9 @@ def check_tier2_pods_images(
         target_related_images_name_and_versions (dict): related images names and versions from post-upgrade csv
         pods_not_to_be_removed (list): list of pods not to be removed (images that don't need replacing)
     """
-    target_images_list = [
-        item["image"] for item in target_related_images_name_and_versions.values()
-    ]
+    target_images_list = cnv_target_images(
+        target_related_images_name_and_versions=target_related_images_name_and_versions
+    )
     pods_not_to_be_replaced_names = [pod.name for pod in pods_not_to_be_removed]
     current_tier2_cluster_pods = get_cluster_pods(
         dyn_client=dyn_client, hco_namespace=hco_namespace, pods_type="tier-2"
