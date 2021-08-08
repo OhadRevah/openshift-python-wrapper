@@ -77,20 +77,25 @@ def windows_efi_secureboot_vm(
         yield vm
 
 
-def validate_vm_xml_efi(vm):
+def validate_vm_xml_efi(vm, secure_boot_enabled=True):
     LOGGER.info("Verify VM XML - EFI secureBoot values.")
     os = vm.vmi.xml_dict["domain"]["os"]
     efi_path = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
-    efi_vars_path = "/usr/share/OVMF/OVMF_VARS.secboot.fd"
+    # efi vars path when secure boot is enabled: /usr/share/OVMF/OVMF_VARS.secboot.fd
+    # efi vars path when secure boot is disabled: /usr/share/OVMF/OVMF_VARS.fd
+    efi_vars_path = (
+        f"/usr/share/OVMF/OVMF_VARS.{'secboot.' if secure_boot_enabled else ''}fd"
+    )
     vmi_xml_efi_path = os["loader"]["#text"]
     vmi_xml_efi_vars_path = os["nvram"]["@template"]
     vmi_xml_os_secure = os["loader"]["@secure"]
+    os_secure = "yes" if secure_boot_enabled else "no"
     assert (
         vmi_xml_efi_path == efi_path
     ), f"EFIPath value {vmi_xml_efi_path} does not match expected {efi_path} value"
     assert (
-        vmi_xml_os_secure == "yes"
-    ), f"EFI secure value {vmi_xml_os_secure} does not seem to be set as YES"
+        vmi_xml_os_secure == os_secure
+    ), f"EFI secure value {vmi_xml_os_secure} does not seem to be set as {os_secure.capitalize()}"
     assert (
         vmi_xml_efi_vars_path == efi_vars_path
     ), f"EFIVarsPath value {vmi_xml_efi_vars_path} does not match expected {efi_vars_path} value"
@@ -115,13 +120,15 @@ def validate_windows_efi(ssh_exec):
     ), f"EFI boot not fount in path. bcdedit output:\n{out}"
 
 
-def _update_vm_efi_spec(vm):
+def _update_vm_efi_spec(vm, spec=None):
     ResourceEditor(
         {
             vm: {
                 "spec": {
                     "template": {
-                        "spec": {"domain": {"firmware": {"bootloader": {"efi": {}}}}}
+                        "spec": {
+                            "domain": {"firmware": {"bootloader": {"efi": spec or {}}}}
+                        }
                     }
                 }
             }
@@ -198,6 +205,15 @@ class TestEFISecureBootRHEL:
         validate_vm_xml_efi(vm=rhel_efi_secureboot_vm)
         validate_linux_efi(vm=rhel_efi_secureboot_vm)
 
+    @pytest.mark.polarion("CNV-6951")
+    def test_efi_secureboot_disabled(self, rhel_efi_secureboot_vm):
+        """
+        Test VM with EFI and disabled secureBoot.
+        """
+        _update_vm_efi_spec(vm=rhel_efi_secureboot_vm, spec={"secureBoot": False})
+        validate_vm_xml_efi(vm=rhel_efi_secureboot_vm, secure_boot_enabled=False)
+        validate_linux_efi(vm=rhel_efi_secureboot_vm)
+
 
 @pytest.mark.polarion("CNV-4465")
 def test_efi_secureboot_with_smm_disabled(namespace, unprivileged_client):
@@ -255,4 +271,13 @@ class TestEFISecureBootWindows:
             check_ssh_connectivity=True,
         )
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm)
+        validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
+
+    @pytest.mark.polarion("CNV-6950")
+    def test_efi_secureboot_disabled(self, windows_efi_secureboot_vm):
+        """
+        Test VM with EFI and disabled secureBoot.
+        """
+        _update_vm_efi_spec(vm=windows_efi_secureboot_vm, spec={"secureBoot": False})
+        validate_vm_xml_efi(vm=windows_efi_secureboot_vm, secure_boot_enabled=False)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
