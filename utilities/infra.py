@@ -631,8 +631,8 @@ def wait_for_consistent_resource_conditions(
     hco_namespace,
     expected_conditions,
     resource_kind,
-    condition1_key,
-    condition2_key,
+    condition_key1,
+    condition_key2,
     total_timeout=TIMEOUT_10MIN,
     polling_interval=5,
     consecutive_checks_count=10,
@@ -651,8 +651,8 @@ def wait_for_consistent_resource_conditions(
             {<condition key's value>: <condition key's value>,
             Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,}
         resource_kind (Resource): (e.g. HyperConverged, ClusterServiceVersion)
-        condition1_key (str): the key of the first condition in the actual resource_kind (e.g. type, reason, status)
-        condition2_key (str): the key of the second condition in the actual resource_kind (e.g. type, reason, status)
+        condition_key1 (str): the key of the first condition in the actual resource_kind (e.g. type, reason, status)
+        condition_key2 (str): the key of the second condition in the actual resource_kind (e.g. type, reason, status)
         total_timeout (int): total timeout to wait for (seconds)
         polling_interval (int): the time to sleep after each iteration (seconds)
         consecutive_checks_count (int): the number of repetitions for the status check to make sure the transition is
@@ -689,9 +689,9 @@ def wait_for_consistent_resource_conditions(
             status_conditions = sample[0].instance.get("status", {}).get("conditions")
             if status_conditions:
                 actual_conditions = {
-                    condition[condition1_key]: condition[condition2_key]
+                    condition[condition_key1]: condition[condition_key2]
                     for condition in status_conditions
-                    if condition[condition1_key] in expected_conditions
+                    if condition[condition_key1] in expected_conditions
                 }
                 if actual_conditions == expected_conditions:
                     current_check += 1

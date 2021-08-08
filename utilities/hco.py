@@ -46,8 +46,8 @@ def wait_for_hco_conditions(
     wait_timeout=TIMEOUT_10MIN,
     sleep=5,
     consecutive_checks_count=1,
-    condition1_key="type",
-    condition2_key="status",
+    condition_key1="type",
+    condition_key2="status",
 ):
     """
     Checking HCO conditions
@@ -57,8 +57,8 @@ def wait_for_hco_conditions(
         hco_namespace=hco_namespace,
         expected_conditions=expected_conditions,
         resource_kind=HyperConverged,
-        condition1_key=condition1_key,
-        condition2_key=condition2_key,
+        condition_key1=condition_key1,
+        condition_key2=condition_key2,
         total_timeout=wait_timeout,
         polling_interval=sleep,
         consecutive_checks_count=consecutive_checks_count,
