@@ -7,12 +7,12 @@ import tests.install_upgrade_operators.strict_reconciliation.constants as const_
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     get_hco_spec,
     validate_featuregates_not_in_kv_cr,
-    wait_for_spec_change,
 )
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
     get_hyperconverged_kubevirt,
     get_network_addon_config,
+    wait_for_spec_change,
 )
 
 

@@ -64,7 +64,11 @@ def hco_cr_custom_values(
     yield
     modify_hco_cr(
         patch={
-            "spec": {"liveMigrationConfig": {}, "certConfig": {}, "featureGates": {}}
+            "spec": {
+                "liveMigrationConfig": None,
+                "certConfig": None,
+                "featureGates": None,
+            }
         },
         hco=hyperconverged_resource_scope_function,
     )
