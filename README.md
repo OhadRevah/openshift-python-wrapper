@@ -25,11 +25,16 @@ git push origin <name-your-local-branch>
 ```
 Go to the forked repo and create a pull request.
 
-## Use unmerged merged-request
-To run the tests with unmerged merged-request from openshift-python-wrapper use the script "install-resources-mr.py"
+## Use a tag, branch, or unmerged pull-request from wrapper
+
+Use the `install-resources-mr.py` script.
+
 ```bash
-# Should be executed from cnv-tests folder.
-python install-resources-mr.py -b <unmerged branch name to fetch>
+# Should be executed from cnv-tests folder
+python install-resources-mr.py -b <branch_or_tag_to_fetch>
+
+# Use an unmerged pull request
+python install-resources-mr.py -b pull/<pr_number>/head
 ```
 
 ## Cluster requiremets
