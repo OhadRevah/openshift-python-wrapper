@@ -16,7 +16,7 @@ from ocp_resources.service import Service
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.volume_snapshot import VolumeSnapshotClass
+from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
 from pytest_testconfig import config as py_config
 
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_30MIN, Images
