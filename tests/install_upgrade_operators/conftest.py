@@ -6,6 +6,7 @@ from tests.install_upgrade_operators.utils import (
     get_hyperconverged_kubevirt,
     get_network_addon_config,
 )
+from utilities.hco import modify_hco_cr
 
 
 @pytest.fixture(scope="session")
@@ -80,3 +81,18 @@ def cnao_resource(admin_client):
 @pytest.fixture()
 def cnao_spec(cnao_resource):
     return cnao_resource.instance.to_dict()["spec"]
+
+
+@pytest.fixture()
+def update_hco_cr(request, hyperconverged_resource_scope_function):
+    """
+    This fixture updates HCO CR with values specified via request.param
+
+    Args:
+        hyperconverged_resource_scope_function (HyperConverged): HCO CR
+
+    """
+    modify_hco_cr(
+        patch=request.param["patch"], hco=hyperconverged_resource_scope_function
+    )
+    yield

@@ -76,21 +76,6 @@ def hco_cr_custom_values(
 
 
 @pytest.fixture()
-def update_hco_cr(request, hyperconverged_resource_scope_function):
-    """
-    This fixture updates HCO CR with values specified via request.param
-
-    Args:
-        hyperconverged_resource_scope_function (HyperConverged): HCO CR
-
-    """
-    modify_hco_cr(
-        patch=request.param["patch"], hco=hyperconverged_resource_scope_function
-    )
-    yield
-
-
-@pytest.fixture()
 def update_cdi_cr(request, cdi_resource):
     patch = request.param["patch"]
     with ResourceEditor(patches={cdi_resource: patch}):
