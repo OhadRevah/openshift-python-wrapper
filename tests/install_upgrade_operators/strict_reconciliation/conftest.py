@@ -8,6 +8,7 @@ from openshift.dynamic.exceptions import ConflictError
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
+    KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
 from tests.install_upgrade_operators.utils import wait_for_stabilize
@@ -122,10 +123,13 @@ def updated_kv_with_feature_gates(
     ].copy()
     fgs.extend(request.param)
 
-    assert not any(
-        get_hco_spec(admin_client=admin_client, hco_namespace=hco_namespace)[
-            "featureGates"
-        ].values()
+    hco_cr_actual_featuregates = get_hco_spec(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )["featureGates"]
+
+    assert all(
+        KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[f] == v
+        for f, v in hco_cr_actual_featuregates.items()
     ), "KubeVirt featuregates values are not as expected before testing"
 
     with ResourceEditor(
@@ -161,8 +165,8 @@ def hco_with_non_default_feature_gates(
     hco_fgs = hyperconverged_resource_scope_function.instance.to_dict()["spec"][
         "featureGates"
     ]
-    assert not any(
-        hco_fgs.values()
+    assert all(
+        KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[f] == v for f, v in hco_fgs.items()
     ), "HCO featuregates values are not as expected before testing"
     for fg in new_fgs:
         hco_fgs[fg] = True

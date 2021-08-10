@@ -78,12 +78,18 @@ def verify_specs(
 def validate_featuregates_not_in_kv_cr(
     admin_client, hco_namespace, feature_gates_under_test
 ):
-    kv = get_hyperconverged_kubevirt(
+    kv_fgs = get_hyperconverged_kubevirt(
         admin_client=admin_client, hco_namespace=hco_namespace
-    ).instance.to_dict()
-
-    kv_fgs = kv["spec"]["configuration"]["developerConfiguration"]["featureGates"]
-    return all(fg not in kv_fgs for fg in feature_gates_under_test)
+    ).instance.to_dict()["spec"]["configuration"]["developerConfiguration"][
+        "featureGates"
+    ]
+    return all(
+        [
+            (fg in kv_fgs)
+            == constants.KV_CR_FEATUREGATES_HCO_CR_DEFAULTS.get(fg, False)
+            for fg in feature_gates_under_test
+        ]
+    )
 
 
 def validate_featuregates_not_in_cdi_cr(
@@ -179,7 +185,7 @@ def wait_for_fg_update(admin_client, hco_namespace, expected_fg, validate_func):
         admin_client(DynamicClient): DynamicClient object
         hco_namespace (Namespace): Namespace object
         expected_fg (list): list of featuregates to compare against current list of featuregates
-        validate_func (function): validate function to be used for comparision
+        validate_func (function): validate function to be used for comparison
     """
     samples = TimeoutSampler(
         wait_timeout=30,
