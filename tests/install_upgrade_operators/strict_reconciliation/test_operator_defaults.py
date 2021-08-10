@@ -64,8 +64,8 @@ class TestOperatorsDefaults:
             pytest.param(
                 {
                     "featureGates": {
-                        "sriovLiveMigration": False,
-                        "withHostPassthroughCPU": False,
+                        "sriovLiveMigration": constants.FG_SRIOVLIVEMIGRATION_DEFAULT,
+                        "withHostPassthroughCPU": constants.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                     }
                 },
                 "hco",
