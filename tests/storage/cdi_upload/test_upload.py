@@ -154,19 +154,17 @@ def test_successful_upload_with_supported_formats(
     skip_upstream,
     namespace,
     tmpdir,
-    storage_class_matrix__module__,
     dv_name,
     remote_name,
     local_name,
     unprivileged_client,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
     local_name = f"{tmpdir}/{local_name}"
     downloaded_image(remote_name=remote_name, local_name=local_name)
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
         storage_ns_name=namespace.name,
         client=unprivileged_client,
     ) as dv:
