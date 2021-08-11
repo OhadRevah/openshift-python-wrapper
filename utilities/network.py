@@ -124,10 +124,10 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,
         name,
-        worker_pods,
         bridge_name,
         bridge_type,
         stp_config,
+        worker_pods=None,
         ports=None,
         mtu=None,
         node_selector=None,
@@ -195,8 +195,8 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
     def __init__(
         self,
         name,
-        worker_pods,
         bridge_name,
+        worker_pods=None,
         stp_config=False,
         ports=None,
         mtu=None,
@@ -224,9 +224,9 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
     def __init__(
         self,
         name,
-        worker_pods,
         bridge_name,
         ports,
+        worker_pods=None,
         stp_config=True,
         mtu=None,
         node_selector=None,
