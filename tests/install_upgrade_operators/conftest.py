@@ -96,3 +96,7 @@ def update_hco_cr(request, hyperconverged_resource_scope_function):
         patch=request.param["patch"], hco=hyperconverged_resource_scope_function
     )
     yield
+    if request.param.get("clean"):
+        modify_hco_cr(
+            patch=request.param["clean"], hco=hyperconverged_resource_scope_function
+        )

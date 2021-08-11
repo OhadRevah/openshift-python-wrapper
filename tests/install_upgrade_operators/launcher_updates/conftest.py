@@ -13,10 +13,6 @@ def update_workload_strategy_custom_values(
     """
     This fixture updates HCO CR with custom values for spec.workloadUpdateStrategy
     Note: This is needed for tests that modifies such fields to default values
-
-    Args:
-        hyperconverged_resource_scope_function (HyperConverged): HCO CR
-
     """
     modify_hco_cr(
         patch=CUSTOM_WORKLOAD_STRATEGY_SPEC.copy(),
