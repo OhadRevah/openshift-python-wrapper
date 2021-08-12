@@ -108,7 +108,6 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": ["fakeGate", "Sidecar"],
-                    "related_resource_name": None,
                 },
                 constants.EXPCT_FG_DEFAULTS,
                 {
@@ -121,7 +120,6 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": ["LiveMigration"],
-                    "related_resource_name": None,
                 },
                 constants.EXPCT_FG_DEFAULTS,
                 {
@@ -133,7 +131,6 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": ["Sidecar"],
-                    "related_resource_name": None,
                 },
                 constants.EXPCT_FG_DEFAULTS,
                 {
@@ -145,7 +142,6 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": ["HonorWaitForFirstConsumer"],
-                    "related_resource_name": None,
                 },
                 constants.EXPCT_FG_DEFAULTS,
                 None,
@@ -158,7 +154,6 @@ class TestHCOOptionalFeatureGatesSuite:
                         constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
                         constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
                     ],
-                    "related_resource_name": constants.KUBEVIRT_HCO_NAME,
                 },
                 {
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
@@ -174,7 +169,6 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": [constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
-                    "related_resource_name": constants.KUBEVIRT_HCO_NAME,
                 },
                 {
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
@@ -190,7 +184,6 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": [constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
-                    "related_resource_name": constants.KUBEVIRT_HCO_NAME,
                 },
                 {
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: False,

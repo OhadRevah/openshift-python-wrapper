@@ -23,7 +23,6 @@ class TestHCONonDefaultFields:
                             constants.LOCAL_STORAGE_CLASS_NAME_KEY: constants.LOCAL_STORAGE_CLASS_NAME_VALUE,
                         }
                     },
-                    "related_resource_name": "kubevirt-storage-class-defaults",
                     "raise_on_fail": False,
                 },
                 constants.LOCAL_STORAGE_CLASS_NAME_KEY,
@@ -47,7 +46,6 @@ class TestHCONonDefaultFields:
                             constants.RESOURCE_REQUIREMENTS_KEY_HCO_CR: constants.RESOURCE_REQUIREMENTS
                         },
                     },
-                    "related_resource_name": "cdi-kubevirt-hyperconverged",
                 },
                 constants.RESOURCE_REQUIREMENTS_KEY_HCO_CR,
                 constants.RESOURCE_REQUIREMENTS["storageWorkloads"],
@@ -61,7 +59,6 @@ class TestHCONonDefaultFields:
                             constants.SCRATCH_SPACE_STORAGE_CLASS_KEY: constants.SCRATCH_SPACE_STORAGE_CLASS_VALUE,
                         }
                     },
-                    "related_resource_name": "cdi-kubevirt-hyperconverged",
                 },
                 constants.SCRATCH_SPACE_STORAGE_CLASS_KEY,
                 constants.SCRATCH_SPACE_STORAGE_CLASS_VALUE,
@@ -75,7 +72,6 @@ class TestHCONonDefaultFields:
                             constants.OBSOLETE_CPUS_KEY: constants.OBSOLETE_CPUS_VALUE_HCO_CR,
                         }
                     },
-                    "related_resource_name": "kubevirt-kubevirt-hyperconverged",
                 },
                 constants.OBSOLETE_CPUS_KEY,
                 constants.OBSOLETE_CPUS_VALUE_KUBEVIRT_CR,
@@ -89,7 +85,6 @@ class TestHCONonDefaultFields:
                             constants.VDDK_INIT_IMAGE_KEY_HCO_CR: constants.VDDK_INIT_IMAGE_VALUE,
                         }
                     },
-                    "related_resource_name": "v2v-vmware",
                 },
                 constants.VDDK_INIT_IMAGE_KEY_HCO_CR,
                 constants.VDDK_INIT_IMAGE_VALUE,
@@ -103,7 +98,6 @@ class TestHCONonDefaultFields:
                             constants.STORAGE_IMPORT_KEY_HCO_CR: constants.STORAGE_IMPORT_VALUE,
                         }
                     },
-                    "related_resource_name": "cdi-kubevirt-hyperconverged",
                 },
                 constants.STORAGE_IMPORT_KEY_HCO_CR,
                 constants.STORAGE_IMPORT_VALUE,
@@ -117,7 +111,6 @@ class TestHCONonDefaultFields:
                             constants.NP_INFRA_KEY: constants.NP_INFRA_VALUE_HCO_CR,
                         }
                     },
-                    "related_resource_name": "cdi-kubevirt-hyperconverged",
                 },
                 constants.NP_INFRA_KEY,
                 constants.NP_INFRA_VALUE_CDI_CR,
@@ -131,7 +124,6 @@ class TestHCONonDefaultFields:
                             constants.NP_WORKLOADS_KEY_HCO_CR: constants.NP_WORKLOADS_VALUE_HCO_CR,
                         }
                     },
-                    "related_resource_name": "cdi-kubevirt-hyperconverged",
                 },
                 constants.NP_WORKLOADS_KEY_HCO_CR,
                 constants.NP_WORKLOADS_VALUE_CDI_CR,
