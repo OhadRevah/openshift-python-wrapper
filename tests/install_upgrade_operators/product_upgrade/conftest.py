@@ -13,7 +13,6 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
-from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
 from utilities.constants import (
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -186,8 +185,8 @@ def dvs_for_upgrade(admin_client, worker_node1):
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
-            url=f"{get_images_server_url(schema='http')}{RHEL_LATEST['image_path']}",
-            size=RHEL_LATEST["dv_size"],
+            url=f"{get_images_server_url(schema='http')}{py_config['latest_rhel_os_dict']['image_path']}",
+            size=py_config["latest_rhel_os_dict"]["dv_size"],
             bind_immediate_annotation=True,
             hostpath_node=worker_node1.name
             if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
@@ -222,7 +221,9 @@ def vms_for_upgrade(
             name=dv.name.replace("dv", "vm")[0:26],
             namespace=namespace.name,
             client=unprivileged_client,
-            labels=Template.generate_template_labels(**RHEL_LATEST_LABELS),
+            labels=Template.generate_template_labels(
+                **py_config["latest_rhel_os_dict"]["template_labels"]
+            ),
             data_volume=dv,
             networks=networks,
             cpu_model=nodes_common_cpu_model,
