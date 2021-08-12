@@ -9,15 +9,17 @@ import os
 import re
 
 import pytest
-from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates import utils
 from utilities.infra import (
     BUG_STATUS_CLOSED,
+    JIRA_STATUS_CLOSED,
     get_bug_status,
     get_bugzilla_connection_params,
+    get_jira_connection_params,
+    get_jira_status,
 )
 
 
@@ -33,6 +35,8 @@ LINUX_FLAVORS_LIST = [
     value for key, value in vars(Template.Flavor).items() if not key.startswith("_")
 ]
 WINDOWS_FLAVOR_LIST = [Template.Flavor.MEDIUM, Template.Flavor.LARGE]
+WINDOWS2K_WORKLOAD_LIST = [Template.Workload.SERVER, Template.Workload.HIGHPERFORMANCE]
+WINDOWS10_WORKLOAD_LIST = [Template.Workload.DESKTOP, Template.Workload.HIGHPERFORMANCE]
 
 
 @pytest.fixture()
@@ -45,7 +49,7 @@ def common_templates_expected_list():
 
 
 def get_rhel_templates_list():
-    rhel_major_releases_list = ["6", "7", "8"]
+    rhel_major_releases_list = ["6", "7", "8", "9"]
     # RHEL6 - only desktop and server versions are released
     return [
         f"rhel{release}-{workload}-{flavor}"
@@ -65,15 +69,27 @@ def get_fedora_templates_list():
 
 
 def get_windows_templates_list():
-    windows_releases_list = [
-        "windows10-desktop",
-        "windows2k12r2-server",
-        "windows2k16-server",
-        "windows2k19-server",
+    windows_os_list = [
+        "windows10",
+        "windows2k12r2",
+        "windows2k16",
+        "windows2k19",
     ]
+
+    windows_workload_list = []
+    for release in windows_os_list:
+        if "windows10" in release:
+            windows_workload_list.extend(
+                [f"{release}-{workload}" for workload in WINDOWS10_WORKLOAD_LIST]
+            )
+        else:
+            windows_workload_list.extend(
+                [f"{release}-{workload}" for workload in WINDOWS2K_WORKLOAD_LIST]
+            )
+
     return [
         f"{release}-{flavor}"
-        for release in windows_releases_list
+        for release in windows_workload_list
         for flavor in WINDOWS_FLAVOR_LIST
     ]
 
@@ -98,25 +114,6 @@ def base_templates(admin_client):
             label_selector=Template.Labels.BASE,
         )
     )
-    # TODO: remove once bug 1925019 is fixed ("deprecated" label should be added to older templates)
-    # After upgrade, os.template.kubevirt.io/<os name> label is removed from older templates
-    # but not all deprecated templates have "deprecated" annotation.
-    if (
-        get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=1925019
-        )
-        not in BUG_STATUS_CLOSED
-    ):
-        return [
-            template
-            for template in common_templates_list
-            if [
-                label
-                for label in template.labels
-                if label[0].startswith(f"{Resource.ApiGroup.OS_TEMPLATE_KUBEVIRT_IO}/")
-            ]
-        ]
-
     return [
         template
         for template in common_templates_list
@@ -153,6 +150,25 @@ def templates_provider_support_dict():
     return provider_support_dict
 
 
+def update_rhel9_support_dict(template_support_dict):
+    if (
+        get_jira_status(
+            jira_connection_params=get_jira_connection_params(), jira="CNV-11658"
+        )
+        not in JIRA_STATUS_CLOSED
+        and get_bug_status(
+            bugzilla_connection_params=get_bugzilla_connection_params(), bug=1993121
+        )
+        not in BUG_STATUS_CLOSED
+    ):
+        template_support_dict[
+            Template.Annotations.PROVIDER_URL
+        ] = "https://www.redhat.org"
+        template_support_dict[Template.Annotations.PROVIDER_SUPPORT_LEVEL] = "Community"
+
+    return template_support_dict
+
+
 @pytest.mark.polarion("CNV-1069")
 def test_base_templates_annotations(
     skip_not_openshift, base_templates, common_templates_expected_list
@@ -170,7 +186,6 @@ def test_base_templates_annotations(
 
 @pytest.mark.parametrize(
     ("os_type", "osinfo_filename", "memory_test"),
-    # TODO: Once RHEL9 template is added, add min and max tests.
     [
         pytest.param(
             "rhel6",
@@ -194,6 +209,13 @@ def test_base_templates_annotations(
             id="test_rhel8_minimum_memory",
         ),
         pytest.param(
+            "rhel9",
+            "rhel-9.0",
+            "minimum",
+            marks=(pytest.mark.polarion("CNV-6989")),
+            id="test_rhel9_minimum_memory",
+        ),
+        pytest.param(
             "rhel6",
             "rhel-6.10",
             "maximum",
@@ -214,6 +236,13 @@ def test_base_templates_annotations(
             marks=(pytest.mark.polarion("CNV-3623")),
             id="test_rhel8_maximum_memory",
         ),
+        pytest.param(
+            "rhel9",
+            "rhel-9.0",
+            "maximum",
+            marks=(pytest.mark.polarion("CNV-6988")),
+            id="test_rhel9_maximum_memory",
+        ),
     ],
 )
 def test_validate_rhel_min_max_memory(
@@ -231,8 +260,13 @@ def test_validate_rhel_min_max_memory(
     osinfo_file_path = os.path.join(
         f"{fetch_osinfo_path}/os/redhat.com/{osinfo_filename}.xml"
     )
+    # libosinfo "all" architecture does not include maximum values
+    resources_arch = "all" if memory_test == "minimum" else "x86_64"
+
     osinfo_memory_value = utils.fetch_osinfo_memory(
-        osinfo_file_path=osinfo_file_path, memory_test=memory_test, resources_arch="all"
+        osinfo_file_path=osinfo_file_path,
+        memory_test=memory_test,
+        resources_arch=resources_arch,
     )
 
     utils.check_default_and_validation_memory(
@@ -407,16 +441,18 @@ def test_provide_support_annotations(base_templates, templates_provider_support_
 
     unmatched_templates = {}
     for template in base_templates:
-        # RHEL 6 templates to do not have the provider annotations
-        if "rhel6" not in template.name:
-            template_annotations_dict = template.instance.to_dict()["metadata"][
-                "annotations"
-            ]
-            template_os_name = re.search(r"([a-z]+).*", template.name).group(1)
-            for key, value in _get_os_support_dict(os_name=template_os_name).items():
-                if template_annotations_dict.get(key) != value:
-                    unmatched_templates[template.name] = template_annotations_dict
-                    break
+        template_annotations_dict = template.instance.to_dict()["metadata"][
+            "annotations"
+        ]
+        template_os_name = re.search(r"([a-z]+).*", template.name).group(1)
+        template_support_dict = _get_os_support_dict(os_name=template_os_name)
+        # In CNV 4.9, RHEL9 is released as alpha without full support
+        if "rhel9" in template.name:
+            update_rhel9_support_dict(template_support_dict=template_support_dict)
+        for key, value in template_support_dict.items():
+            if template_annotations_dict.get(key) != value:
+                unmatched_templates[template.name] = template_annotations_dict
+                break
     assert (
         not unmatched_templates
     ), f"The following templates fail on provider and support verification: {unmatched_templates}"

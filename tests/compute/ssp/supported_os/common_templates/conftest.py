@@ -22,7 +22,7 @@ def fetch_osinfo_path(tmpdir_factory):
     """Obtain the osinfo path."""
 
     osinfo_repo = "https://releases.pagure.org/libosinfo/"
-    tarfile_name = "osinfo-db-20200203"
+    tarfile_name = "osinfo-db-20210809"
     cwd = os.getcwd()
     osinfo_path = tmpdir_factory.mktemp("osinfodb")
     os.chdir(osinfo_path)

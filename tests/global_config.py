@@ -303,9 +303,8 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL9_0_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_0_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            # TODO: Modify to 9.0 once it is added to templates
             "template_labels": {
-                "os": "rhel8.3",
+                "os": "rhel9.0",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
