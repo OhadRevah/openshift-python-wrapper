@@ -679,7 +679,7 @@ def wait_for_consistent_resource_conditions(
                 namespace=hco_namespace.name,
             )
         ),
-        exceptions=NotFoundError,
+        exceptions_dict={NotFoundError: []},
     )
     current_check = 0
     actual_conditions = {}

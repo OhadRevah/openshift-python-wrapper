@@ -95,7 +95,7 @@ class Console(object):
             wait_timeout=TIMEOUT_5MIN,
             sleep=5,
             func=func,
-            exceptions=pexpect.exceptions.EOF,
+            exceptions_dict={pexpect.exceptions.EOF: []},
             command=command,
             timeout=timeout,
         )

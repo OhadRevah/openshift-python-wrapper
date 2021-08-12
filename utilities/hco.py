@@ -127,7 +127,7 @@ def modify_hco_cr(patch, hco):
     samples = TimeoutSampler(
         wait_timeout=20,
         sleep=2,
-        exceptions=ConflictError,
+        exceptions_dict={ConflictError: []},
         func=_modify_cr,
     )
     try:
@@ -248,7 +248,7 @@ def replace_backup_hco_cr_modification(rpatch, admin_client, hco_namespace):
     samples = TimeoutSampler(
         wait_timeout=20,
         sleep=2,
-        exceptions=ConflictError,
+        exceptions_dict={ConflictError: []},
         func=replace_hco_cr,
         rpatch=rpatch,
         admin_client=admin_client,
@@ -269,7 +269,7 @@ def restore_hco_cr_modification(admin_client, hco_namespace, backup_data):
         samples = TimeoutSampler(
             wait_timeout=20,
             sleep=2,
-            exceptions=ConflictError,
+            exceptions_dict={ConflictError: []},
             func=replace_hco_cr,
             rpatch=backup.instance.to_dict()["spec"],
             admin_client=admin_client,
