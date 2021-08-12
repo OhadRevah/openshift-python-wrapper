@@ -4,7 +4,6 @@ import json
 import logging
 import re
 import shlex
-import socket
 import tarfile
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -57,30 +56,6 @@ def vm_os_version(vm):
     command = shlex.split(f"cat /etc/{os_name}-release | grep {os.replace('-', '.')}")
 
     run_ssh_commands(host=vm.ssh_exec, commands=command)
-
-
-def check_telnet_connection(ip, port):
-    """Verifies successful telnet connection
-    Args:
-        ip (str): host IP
-        port (int): host port
-
-    Returns:
-        bool: True if connection succeeds else False
-    """
-
-    LOGGER.info("Check telnet connection to VM.")
-    sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_3MIN,
-        sleep=15,
-        exceptions=ConnectionRefusedError,
-        func=socket.create_connection,
-        address=(ip, int(port)),
-    )
-    for sample in sampler:
-        if sample:
-            sample.close()
-            return True
 
 
 def check_vm_xml_hyperv(vm):
