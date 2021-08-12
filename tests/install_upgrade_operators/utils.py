@@ -89,7 +89,9 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
         wait_timeout=TIMEOUT_40MIN,
         sleep=1,
         func=InstallPlan.get,
-        exceptions=ConflictError,  # need to ignore ConflictError during install plan reconciliation
+        exceptions_dict={
+            ConflictError: []
+        },  # need to ignore ConflictError during install plan reconciliation
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
@@ -211,7 +213,7 @@ def wait_for_spec_change(expected, get_spec_func, keys):
     samplers = TimeoutSampler(
         wait_timeout=60,
         sleep=5,
-        exceptions=AssertionError,
+        exceptions_dict={AssertionError: []},
         func=assert_specs_values,
         expected=expected,
         get_spec_func=get_spec_func,

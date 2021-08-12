@@ -44,6 +44,14 @@ from utilities.virt import run_command
 
 
 LOGGER = logging.getLogger(__name__)
+BASE_EXCEPTIONS_DICT = {
+    NewConnectionError: [],
+    ConnectionRefusedError: [],
+    ProtocolError: [],
+    ResponseError: [],
+    MaxRetryError: [],
+    InternalServerError: [],
+}
 
 
 def wait_for_dvs_import_completed(dvs_list):
@@ -699,8 +707,6 @@ def wait_for_mcp_update(dyn_client):
     def _wait_for_condition_status(condition_type, timeout):
         # The list of exceptions is needed because during mcp update;
         # the nodes are updated and the connection may be interrupted.
-        # TODO: change exceptions to use this PR once it is merged
-        #  https://gitlab.cee.redhat.com/cnv-qe/ocp-python-wrapper/-/merge_requests/147
         LOGGER.info(
             f"mcp wait for condition: desired={condition_type} current={_get_all_mcp_conditions()}"
         )
@@ -708,14 +714,7 @@ def wait_for_mcp_update(dyn_client):
             wait_timeout=timeout,
             sleep=5,
             func=_get_all_mcp_conditions,
-            exceptions=(
-                NewConnectionError,
-                ConnectionRefusedError,
-                ProtocolError,
-                ResponseError,
-                MaxRetryError,
-                InternalServerError,
-            ),
+            exceptions_dict=BASE_EXCEPTIONS_DICT,
         )
         mcp_conditions = {}
         try:
@@ -1045,19 +1044,11 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
         wait_timeout=utilities.constants.TIMEOUT_180MIN,
         sleep=30,
         func=get_clusterversion_state_version_conditions,
-        exceptions=(
-            # TODO: these exceptions should be handled as part of the ocp_resources package.
-            #   These exceptions are to be ignored on API calls when upgrading OCP/CNV or any machine config changes.
-            #   until it is introduced to ocp_resources package they should be handled here.
-            NotFoundError,
-            ResourceNotFoundError,
-            InternalServerError,
-            NewConnectionError,
-            ConnectionRefusedError,
-            ProtocolError,
-            ResponseError,
-            MaxRetryError,
-        ),
+        exceptions_dict={
+            **BASE_EXCEPTIONS_DICT,
+            NotFoundError: [],
+            ResourceNotFoundError: [],
+        },
         dyn_client=dyn_client,
     )
 

@@ -357,7 +357,7 @@ def get_pod_per_nodes(admin_client, hco_namespace):
         wait_timeout=TIMEOUT_5MIN,
         sleep=30,
         func=_get_pods_per_nodes,
-        exceptions=NotFoundError,
+        exceptions_dict={NotFoundError: []},
     )
     try:
         for sample in samples:

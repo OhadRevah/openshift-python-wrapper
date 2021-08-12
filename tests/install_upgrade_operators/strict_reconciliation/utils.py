@@ -20,7 +20,7 @@ def verify_spec(expected_spec, get_spec_func):
     samplers = TimeoutSampler(
         wait_timeout=60,
         sleep=5,
-        exceptions=AssertionError,
+        exceptions_dict={AssertionError: []},
         func=lambda: list(diff(expected_spec, get_spec_func())),
     )
     diff_result = None

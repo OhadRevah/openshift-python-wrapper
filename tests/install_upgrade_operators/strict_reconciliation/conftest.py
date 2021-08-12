@@ -243,7 +243,7 @@ def replace_backup_cr_modification(rpatch, admin_client, hco_namespace, cr_func)
     samples = TimeoutSampler(
         wait_timeout=20,
         sleep=2,
-        exceptions=ConflictError,
+        exceptions_dict={ConflictError: []},
         func=replace_cr,
         rpatch=rpatch,
         admin_client=admin_client,
@@ -265,7 +265,7 @@ def restore_cr_modification(admin_client, hco_namespace, backup_data, cr_func):
         samples = TimeoutSampler(
             wait_timeout=20,
             sleep=2,
-            exceptions=ConflictError,
+            exceptions_dict={ConflictError: []},
             func=replace_cr,
             rpatch={"spec": backup.instance.to_dict()["spec"]},
             admin_client=admin_client,
