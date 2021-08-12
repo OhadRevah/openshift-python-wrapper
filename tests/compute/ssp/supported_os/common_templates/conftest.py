@@ -72,7 +72,7 @@ def hvinfo_binary_in_windows_vm(
         wait_timeout=120,
         sleep=1,
         func=_copy_hvinfo_to_vm,
-        exceptions=CalledProcessError,
+        exceptions_dict={CalledProcessError: []},
     ):
         if sample:
             break

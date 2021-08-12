@@ -260,7 +260,7 @@ def activate_windows_online(vm):
         sleep=30,
         func=_activate_windows,
         vm=vm,
-        exceptions=CommandExecFailed,
+        exceptions_dict={CommandExecFailed: []},
     ):
         try:
             if sample:

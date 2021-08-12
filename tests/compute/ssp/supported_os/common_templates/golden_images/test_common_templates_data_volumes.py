@@ -285,7 +285,7 @@ def test_missing_golden_image(
                 name=vm_from_golden_image.name,
             )
         ),
-        exceptions=NotFoundError,
+        exceptions_dict={NotFoundError: []},
     ):
         if (
             sample
