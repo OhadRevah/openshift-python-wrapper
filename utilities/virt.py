@@ -8,6 +8,7 @@ import subprocess
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from json import JSONDecodeError
 from subprocess import run
 
 import jinja2
@@ -1456,8 +1457,13 @@ class Prometheus(object):
             f"{self.api_url}/{query}", headers=self.headers, verify=False
         )
 
-        # parse json response and return as dict
-        return json.loads(response.content)
+        try:
+            return json.loads(response.content)
+        except JSONDecodeError as json_exception:
+            LOGGER.error(
+                f"Exception converting query response to JSON: exc={json_exception} response={response.content}"
+            )
+            raise
 
 
 def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN):
