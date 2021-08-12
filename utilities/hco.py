@@ -160,6 +160,7 @@ def apply_np_changes(
         LOGGER.info("Waiting for HCO to report progressing condition.")
         wait_for_hco_conditions(
             admin_client=admin_client,
+            hco_namespace=hco_namespace,
             expected_conditions=DEFAULT_HCO_PROGRESSING_CONDITIONS,
         )
         LOGGER.info(
@@ -167,6 +168,7 @@ def apply_np_changes(
         )
         wait_for_hco_conditions(
             admin_client=admin_client,
+            hco_namespace=hco_namespace,
             consecutive_checks_count=6,
         )
         # unfortunately at this time we are not really done:
