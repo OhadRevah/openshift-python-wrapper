@@ -1,0 +1,94 @@
+import pytest
+
+from tests.install_upgrade_operators.launcher_updates.constants import CUSTOM_STRATEGY
+from tests.install_upgrade_operators.utils import wait_for_spec_change
+from utilities.hco import get_hco_spec
+from utilities.virt import get_hyperconverged_kubevirt
+
+
+KUBEVIRT_NEGATIVE_STRATEGY = {
+    "batchEvictionInterval": "2m",
+    "batchEvictionSize": 30,
+    "workloadUpdateMethods": ["Evict"],
+}
+
+
+class TestLauncherUpdateNegative:
+    @pytest.mark.parametrize(
+        "updated_kubevirt_cr,",
+        [
+            pytest.param(
+                {
+                    "patch": {
+                        "spec": {"workloadUpdateStrategy": KUBEVIRT_NEGATIVE_STRATEGY}
+                    },
+                },
+                marks=pytest.mark.polarion("CNV-6945"),
+            ),
+            pytest.param(
+                {
+                    "patch": {
+                        "spec": {
+                            "workloadUpdateStrategy": {
+                                "batchEvictionInterval": KUBEVIRT_NEGATIVE_STRATEGY[
+                                    "batchEvictionInterval"
+                                ]
+                            }
+                        }
+                    },
+                },
+                marks=pytest.mark.polarion("CNV-6946"),
+            ),
+            pytest.param(
+                {
+                    "patch": {
+                        "spec": {
+                            "workloadUpdateStrategy": {
+                                "batchEvictionSize": KUBEVIRT_NEGATIVE_STRATEGY[
+                                    "batchEvictionSize"
+                                ]
+                            }
+                        }
+                    },
+                },
+                marks=pytest.mark.polarion("CNV-6947"),
+            ),
+            pytest.param(
+                {
+                    "patch": {
+                        "spec": {
+                            "workloadUpdateStrategy": {
+                                "workloadUpdateMethods": KUBEVIRT_NEGATIVE_STRATEGY[
+                                    "workloadUpdateMethods"
+                                ]
+                            }
+                        }
+                    },
+                },
+                marks=pytest.mark.polarion("CNV-6948"),
+            ),
+        ],
+        indirect=True,
+    )
+    def test_hyperconverged_reset_custom_workload_update_strategy(
+        self,
+        updated_workload_strategy_custom_values,
+        admin_client,
+        hco_namespace,
+        updated_kubevirt_cr,
+    ):
+        """Negative tests to validate, workload update strategy fields of kubevirt gets reconciled"""
+        wait_for_spec_change(
+            expected=CUSTOM_STRATEGY,
+            get_spec_func=lambda: get_hco_spec(
+                admin_client=admin_client, hco_namespace=hco_namespace
+            ),
+            keys=["workloadUpdateStrategy"],
+        )
+        wait_for_spec_change(
+            expected=CUSTOM_STRATEGY,
+            get_spec_func=lambda: get_hyperconverged_kubevirt(
+                admin_client=admin_client, hco_namespace=hco_namespace
+            ).instance.to_dict()["spec"],
+            keys=["workloadUpdateStrategy"],
+        )

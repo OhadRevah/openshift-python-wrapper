@@ -61,22 +61,21 @@ def hco_cr_custom_values(
 
 @pytest.fixture()
 def updated_cdi_cr(request, cdi_resource):
+    """
+    Attempts to update cdi, however, since these changes get reconciled to values propagated by hco cr, we don't need
+    to restore these.
+    """
     patch = request.param["patch"]
     with update_custom_resource(patch={cdi_resource: patch}):
         yield
 
 
 @pytest.fixture()
-def updated_kubevirt_cr(request, kubevirt_resource):
-    patch = request.param["patch"]
-    with update_custom_resource(
-        patch={kubevirt_resource: patch},
-    ):
-        yield
-
-
-@pytest.fixture()
 def updated_cnao_cr(request, cnao_resource):
+    """
+    Attempts to update cnao, however, since these changes get reconciled to values propagated by hco cr, we don't need
+    to restore these.
+    """
     patch = request.param["patch"]
     with update_custom_resource(patch={cnao_resource: patch}):
         yield

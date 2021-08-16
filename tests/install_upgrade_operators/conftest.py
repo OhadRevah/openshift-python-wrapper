@@ -1,7 +1,10 @@
 import pytest
 from pytest_testconfig import py_config
 
-from tests.install_upgrade_operators.utils import get_network_addon_config
+from tests.install_upgrade_operators.utils import (
+    get_network_addon_config,
+    wait_for_stabilize,
+)
 from utilities.infra import update_custom_resource
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
@@ -89,3 +92,15 @@ def updated_hco_cr(request, hyperconverged_resource_scope_function):
         patch={hyperconverged_resource_scope_function: request.param["patch"]},
     ):
         yield
+
+
+@pytest.fixture()
+def updated_kubevirt_cr(request, kubevirt_resource, admin_client, hco_namespace):
+    """
+    Attempts to update kubevirt CR
+    """
+    with update_custom_resource(
+        patch={kubevirt_resource: request.param["patch"]},
+    ):
+        yield
+    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
