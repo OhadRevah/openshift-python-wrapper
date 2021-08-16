@@ -215,11 +215,14 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
         pod = sample.get("pod")
         pvc = sample.get("pvc")
         if pod and pvc:
-            LOGGER.info("Found cdi-upload worker pod and scratch pvc")
-            return {
-                "pod_node": pod.instance.spec.nodeName,
-                "scratch_pvc_node": pvc.selected_node,
-            }
+            pod_node = pod.instance.spec.nodeName
+            pvc_node = pvc.selected_node
+            if pod_node and pvc_node:
+                LOGGER.info("Found cdi-upload worker pod and scratch pvc")
+                return {
+                    "pod_node": pod_node,
+                    "scratch_pvc_node": pvc_node,
+                }
 
 
 @pytest.mark.polarion("CNV-2817")
