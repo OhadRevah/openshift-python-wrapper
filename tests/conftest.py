@@ -7,7 +7,6 @@ import logging
 import os
 import os.path
 import re
-import shlex
 import shutil
 from collections import Counter
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -15,7 +14,6 @@ from subprocess import PIPE, CalledProcessError, Popen, check_output
 import bcrypt
 import kubernetes
 import pytest
-import rrmngmnt
 from ocp_resources.cdi import CDI
 from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.cluster_role import ClusterRole
@@ -63,6 +61,7 @@ from utilities.hco import (
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
+    ExecCommandOnPod,
     base64_encode_str,
     collect_logs_pods,
     collect_logs_resources,
@@ -76,7 +75,6 @@ from utilities.infra import (
     get_schedulable_nodes_ips,
     name_prefix,
     prepare_test_dir_log,
-    run_ssh_commands,
     separator,
     setup_logging,
     validate_nodes_ready,
@@ -899,38 +897,7 @@ def utility_pods(schedulable_nodes, utility_daemonset, admin_client):
 
 
 @pytest.fixture(scope="session")
-def workers_ssh_executors(utility_pods):
-    executors = {}
-    ssh_key = os.getenv("HOST_SSH_KEY")
-    for pod in utility_pods:
-        host = rrmngmnt.Host(ip=pod.instance.status.podIP)
-        if ssh_key:
-            host_user = rrmngmnt.user.UserWithPKey(name="core", private_key=ssh_key)
-        else:
-            host_user = rrmngmnt.user.User(name="core", password=None)
-        host.executor_user = host_user
-        host.add_user(user=host_user)
-        executors[pod.node.name] = host
-
-    return executors
-
-
-@pytest.fixture(scope="session")
-def node_physical_nics(admin_client, utility_pods, workers_ssh_executors):
-    if is_openshift(admin_client):
-        nics = {
-            node: workers_ssh_executors[node].network.all_interfaces()
-            for node in workers_ssh_executors.keys()
-        }
-
-    else:
-        nics = network_interfaces_k8s(utility_pods=utility_pods)
-
-    LOGGER.info(f"Nodes physical NICs: {nics}")
-    return nics
-
-
-def network_interfaces_k8s(utility_pods):
+def node_physical_nics(admin_client, utility_pods):
     interfaces = {}
     for pod in utility_pods:
         node = pod.instance.spec.nodeName
@@ -939,6 +906,7 @@ def network_interfaces_k8s(utility_pods):
         ).split("\n")
         interfaces[node] = list(filter(None, output))  # Filter out empty lines
 
+    LOGGER.info(f"Nodes physical NICs: {interfaces}")
     return interfaces
 
 
@@ -968,10 +936,10 @@ def ovs_bridge_bug_closed(bugzilla_connection_params):
 @pytest.fixture(scope="session")
 def nodes_active_nics(
     schedulable_nodes,
+    utility_pods,
     node_physical_nics,
     ovn_kubernetes_cluster,
     ovs_bridge_bug_closed,
-    workers_ssh_executors,
 ):
     # TODO: Remove this function and its usage in nodes_active_nics when BZ 1885605 is fixed.
     def _ovs_bridge_ports(node_interface):
@@ -992,41 +960,38 @@ def nodes_active_nics(
     for node in schedulable_nodes:
         nodes_nics[node.name] = {"available": [], "occupied": []}
         nns = NodeNetworkState(name=node.name)
-        host = workers_ssh_executors[node.name]
 
-        #  Use one ssh connection to the node.
-        with host.executor().session() as ssh_session:
-            for node_iface in nns.interfaces:
+        for node_iface in nns.interfaces:
+            #  Exclude SR-IOV (VFs) interfaces.
+            if re.findall(r"v\d+$", node_iface.name):
+                continue
 
-                #  Exclude SR-IOV (VFs) interfaces.
-                if re.findall(r"v\d+$", node_iface.name):
-                    continue
+            if node_iface.name in nodes_nics[node.name]["occupied"]:
+                continue
 
-                if node_iface.name in nodes_nics[node.name]["occupied"]:
-                    continue
+            # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
+            # OVS bridge, it shouldn't be used for tests' node networking.
+            bridge_ports = _ovs_bridge_ports(node_interface=node_iface)
+            for port in bridge_ports:
+                if port in node_physical_nics[node.name]:
+                    nodes_nics[node.name]["occupied"].append(port)
+                    if port in nodes_nics[node.name]["available"]:
+                        nodes_nics[node.name]["available"].remove(port)
 
-                # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
-                # OVS bridge, it shouldn't be used for tests' node networking.
-                bridge_ports = _ovs_bridge_ports(node_interface=node_iface)
-                for port in bridge_ports:
-                    if port in node_physical_nics[node.name]:
-                        nodes_nics[node.name]["occupied"].append(port)
-                        if port in nodes_nics[node.name]["available"]:
-                            nodes_nics[node.name]["available"].remove(port)
+            if node_iface.name not in node_physical_nics[node.name]:
+                continue
 
-                if node_iface.name not in node_physical_nics[node.name]:
-                    continue
+            ethtool_state = ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
+                command=f"ethtool {node_iface.name}"
+            )
 
-                ethtool_state = ssh_session.run_cmd(
-                    cmd=shlex.split(f"ethtool {node_iface.name}")
-                )[1]
-                if "Link detected: no" in ethtool_state:
-                    continue
+            if "Link detected: no" in ethtool_state:
+                continue
 
-                if node_iface["ipv4"]["address"] and node_iface["ipv4"]["dhcp"]:
-                    nodes_nics[node.name]["occupied"].append(node_iface.name)
-                else:
-                    nodes_nics[node.name]["available"].append(node_iface.name)
+            if node_iface["ipv4"]["address"] and node_iface["ipv4"]["dhcp"]:
+                nodes_nics[node.name]["occupied"].append(node_iface.name)
+            else:
+                nodes_nics[node.name]["available"].append(node_iface.name)
 
     LOGGER.info(f"Nodes active NICs: {nodes_nics}")
     return nodes_nics
@@ -1139,17 +1104,18 @@ def leftovers(admin_client, identity_provider_config):
 
 
 @pytest.fixture(scope="session")
-def workers_type(workers_ssh_executors):
-    for _, exec in workers_ssh_executors.items():
-        out = run_ssh_commands(
-            host=exec,
-            commands=[["bash", "-c", "systemd-detect-virt"]],
-        )[0]
-
+def workers_type(utility_pods):
+    physical = ClusterHosts.Type.PHYSICAL
+    virtual = ClusterHosts.Type.VIRTUAL
+    for pod in utility_pods:
+        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=pod.node)
+        out = pod_exec.exec(command="systemd-detect-virt", ignore_rc=True)
         if out == "none":
-            return ClusterHosts.Type.PHYSICAL
+            LOGGER.info(f"Cluster workers are: {physical}")
+            return physical
 
-    return ClusterHosts.Type.VIRTUAL
+    LOGGER.info(f"Cluster workers are: {virtual}")
+    return virtual
 
 
 @pytest.fixture(scope="module")
@@ -1593,13 +1559,14 @@ def sriov_workers(schedulable_nodes, labeled_sriov_nodes):
 
 
 @pytest.fixture(scope="session")
-def sriov_iface(sriov_nodes_states, workers_ssh_executors):
-    for iface in sriov_nodes_states[0].instance.status.interfaces:
+def sriov_iface(sriov_nodes_states, utility_pods):
+    node = sriov_nodes_states[0]
+    for iface in node.instance.status.interfaces:
         if (
             iface.totalvfs
-            and workers_ssh_executors[
-                sriov_nodes_states[0].name
-            ].network.get_interface_status(interface=iface.name)
+            and ExecCommandOnPod(utility_pods=utility_pods, node=node).interface_status(
+                interface=iface.name
+            )
             == "up"
         ):
             return iface

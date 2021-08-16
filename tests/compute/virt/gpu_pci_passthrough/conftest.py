@@ -14,30 +14,28 @@ from utilities.constants import (
     KERNEL_DRIVER,
     OS_FLAVOR_WINDOWS,
 )
-from utilities.infra import run_ssh_commands
+from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.virt import vm_instance_from_template
 
 
 @pytest.fixture(scope="session")
-def gpu_nodes(workers_ssh_executors, schedulable_nodes):
+def gpu_nodes(utility_pods, schedulable_nodes):
     """
     Find GPU Worker Node, where GPU device is allocated.
     """
     nodes = {}
     for node in schedulable_nodes:
-        out = run_ssh_commands(
-            host=workers_ssh_executors[node.name],
-            commands=[
-                shlex.split("sudo /sbin/lspci -nnk | grep -A 3 '3D controller' || true")
-            ],
-        )[0]
+        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+        out = pod_exec.exec(
+            command="sudo /sbin/lspci -nnk | grep -A 3 '3D controller' || true"
+        )
         if GPU_DEVICE_ID in out:
             nodes.update({node: out})
     return nodes
 
 
 @pytest.fixture(scope="session")
-def fail_if_device_unbound_to_vfiopci_driver(workers_ssh_executors, gpu_nodes):
+def fail_if_device_unbound_to_vfiopci_driver(gpu_nodes):
     """
     Fail if the Kernel Driver vfio-pci is not in use by the NVIDIA GPU Device.
     """

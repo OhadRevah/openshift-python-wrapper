@@ -1,9 +1,8 @@
-import shlex
 from collections import OrderedDict
 
 import pytest
 
-from utilities.infra import run_ssh_commands
+from utilities.infra import ExecCommandOnPod
 from utilities.network import (
     OVS,
     assert_ping_successful,
@@ -19,20 +18,12 @@ DST_IP_ADDR = SEC_IFACE_SUBNET + ".2"
 
 
 @pytest.fixture()
-def node1_executor(worker_node1, workers_ssh_executors):
-    return workers_ssh_executors[worker_node1.name]
-
-
-@pytest.fixture()
-def ovs_bridge_on_worker1(node1_executor):
+def ovs_bridge_on_worker1(worker_node1, utility_pods):
+    pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
     cmd = "sudo ovs-vsctl"
-    run_ssh_commands(
-        host=node1_executor, commands=[shlex.split(f"{cmd} add-br {OVS_BR}")]
-    )
+    pod_exec.exec(command=f"{cmd} add-br {OVS_BR}")
     yield OVS_BR
-    run_ssh_commands(
-        host=node1_executor, commands=[shlex.split(f"{cmd} del-br {OVS_BR}")]
-    )
+    pod_exec.exec(command=f"{cmd} del-br {OVS_BR}")
 
 
 @pytest.fixture()

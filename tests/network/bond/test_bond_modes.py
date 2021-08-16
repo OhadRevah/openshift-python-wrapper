@@ -2,14 +2,13 @@
 Create Linux BOND.
 Start a VM with bridge on Linux BOND.
 """
-import shlex
 from collections import OrderedDict
 from contextlib import contextmanager
 
 import pytest
 
 import utilities.network
-from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
+from utilities.infra import BUG_STATUS_CLOSED, ExecCommandOnPod
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -17,18 +16,12 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 pytestmark = pytest.mark.sno
 
 
-def assert_bond_validation(workers_ssh_executors, bond):
+def assert_bond_validation(utility_pods, bond):
+    pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=bond.node_selector)
     bonding_path = f"/sys/class/net/{bond.bond_name}/bonding"
-    _exec = workers_ssh_executors[bond.node_selector]
-    mode, bond_ports = run_ssh_commands(
-        host=_exec,
-        commands=[
-            shlex.split(f"cat {bonding_path}/mode"),
-            shlex.split(
-                f"cat {bonding_path}/slaves"
-            ),  # TODO: rename 'slaves' once file is renamed (offensive language)
-        ],
-    )
+    mode = pod_exec.exec(command=f"cat {bonding_path}/mode")
+    # TODO: rename 'slaves' once file is renamed (offensive language)
+    bond_ports = pod_exec.exec(command=f"cat {bonding_path}/slaves")
     worker_bond_ports = bond_ports.split()
     worker_bond_ports.sort()
     bond.bond_ports.sort()
@@ -219,10 +212,8 @@ def vm_with_fail_over_mac_bond(
 @pytest.mark.usefixtures("skip_no_bond_support", "skip_if_workers_bms")
 class TestBondModes:
     @pytest.mark.polarion("CNV-4382")
-    def test_bond_created(self, workers_ssh_executors, matrix_bond_modes_bond):
-        assert_bond_validation(
-            workers_ssh_executors=workers_ssh_executors, bond=matrix_bond_modes_bond
-        )
+    def test_bond_created(self, utility_pods, matrix_bond_modes_bond):
+        assert_bond_validation(utility_pods=utility_pods, bond=matrix_bond_modes_bond)
 
     @pytest.mark.polarion("CNV-4383")
     def test_vm_started(self, bond_modes_vm):
@@ -241,7 +232,6 @@ class TestBondWithFailOverMac:
         worker_node1,
         nodes_available_nics,
         utility_pods,
-        workers_ssh_executors,
     ):
         with create_bond(
             bond_idx=next(index_number),
@@ -251,9 +241,7 @@ class TestBondWithFailOverMac:
             node_selector=worker_node1.name,
             options={"fail_over_mac": "active"},
         ) as bond:
-            assert_bond_validation(
-                workers_ssh_executors=workers_ssh_executors, bond=bond
-            )
+            assert_bond_validation(utility_pods=utility_pods, bond=bond)
 
     @pytest.mark.polarion("CNV-6584")
     @pytest.mark.bugzilla(

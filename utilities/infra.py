@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import subprocess
 from configparser import ConfigParser
@@ -11,10 +12,12 @@ from pathlib import Path
 
 import bugzilla
 import kubernetes
+import netaddr
 import paramiko
 import requests
 from colorlog import ColoredFormatter
 from jira import JIRA
+from kubernetes.client import ApiException
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
@@ -27,7 +30,7 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import PODS_TO_COLLECT_INFO, TIMEOUT_2MIN, TIMEOUT_10MIN
-from utilities.exceptions import CommandExecFailed
+from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
 
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
@@ -744,3 +747,75 @@ def nudge_delete_namespace(name):
     except subprocess.CalledProcessError as exp:
         LOGGER.error(f"Error happened while nudging namespace {name}: {exp}")
         raise
+
+
+def get_worker_pod(utility_pods, worker_node):
+    """
+    This function will return a pod based on the node specified as an argument.
+
+    Args:
+        utility_pods (list): List of utility pods.
+        worker_node (Node ir str): Node to get the pod for it.
+    """
+    _worker_node_name = (
+        worker_node.name if hasattr(worker_node, "name") else worker_node
+    )
+    for pod in utility_pods:
+        if pod.node.name == _worker_node_name:
+            return pod
+
+
+class ExecCommandOnPod:
+    def __init__(self, utility_pods, node):
+        """
+        Run command on pod with chroot /host
+
+        Args:
+            utility_pods (list): List of utility pods resources.
+            node (Node): Node resource.
+
+        Returns:
+            str: Command output
+        """
+        self.pod = get_worker_pod(utility_pods=utility_pods, worker_node=node)
+        if not self.pod:
+            raise UtilityPodNotFoundError
+
+    def exec(self, command, ignore_rc=False):
+        _command = shlex.split("chroot /host bash -c")
+        _command.append(command)
+        return self.pod.execute(command=_command, ignore_rc=ignore_rc).strip()
+
+    def get_interface_ip(self, interface):
+        out = self.exec(command=f"ip addr show {interface}")
+        match_ip = re.search(r"[0-9]+(?:\.[0-9]+){3}", out)
+        if match_ip:
+            interface_ip = match_ip.group()
+            if netaddr.valid_ipv4(interface_ip):
+                return interface_ip
+
+    @property
+    def reboot(self):
+        try:
+            self.exec(command="sudo echo b > /proc/sysrq-trigger")
+        except ApiException:
+            return True
+        return False
+
+    @property
+    def is_connective(self):
+        return self.exec(command="ls")
+
+    def interface_status(self, interface):
+        return self.exec(command=f"cat /sys/class/net/{interface}/operstate")
+
+    @property
+    def release_info(self):
+        out = self.exec(command="cat /etc/os-release")
+        release_info = {}
+        for line in out.strip().splitlines():
+            values = line.split("=", 1)
+            if len(values) != 2:
+                continue
+            release_info[values[0].strip()] = values[1].strip(" \"'")
+        return release_info

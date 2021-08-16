@@ -10,7 +10,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import TIMEOUT_3MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import ExecCommandOnPod
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -33,22 +33,15 @@ def count_veth_devices_on_host(worker1_executor, bridge):
     Returns:
         int: number of veth devices on host for bridge.
     """
-    out = run_ssh_commands(
-        host=worker1_executor,
-        commands=[
-            [
-                "bash",
-                "-c",
-                f"ip -o link show type veth | grep 'master {bridge}' | wc -l",
-            ]
-        ],
-    )[0]
+    out = worker1_executor.exec(
+        command=f"ip -o link show type veth | grep 'master {bridge}' | wc -l",
+    )
     return int(out.strip())
 
 
 @pytest.fixture()
-def worker1_executor(workers_ssh_executors, worker_node1):
-    return workers_ssh_executors[worker_node1.name]
+def worker1_executor(utility_pods, worker_node1):
+    return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
 
 
 @pytest.fixture()

@@ -3,6 +3,7 @@ import logging
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.network.utils import DHCP_SERVER_CONF_FILE, update_cloud_init_extra_user_data
+from utilities.infra import ExecCommandOnPod
 from utilities.network import cloud_init_network_data
 
 
@@ -101,13 +102,13 @@ def sampling_handler(
         raise
 
 
-def assert_vlan_dynamic_ip(iface_name, workers_ssh_executors, dhcp_clients_list):
+def assert_vlan_dynamic_ip(iface_name, utility_pods, dhcp_clients_list):
     def _find_vlan_ip():
         node = None
         for node in dhcp_clients_list:
-            vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
-                interface=iface_name
-            )
+            vlan_ip = ExecCommandOnPod(
+                utility_pods=utility_pods, node=node
+            ).get_interface_ip(interface=iface_name)
             if (vlan_ip is None) or (DHCP_IP_SUBNET not in vlan_ip):
                 return False, node.name
         return True, node.name
@@ -118,13 +119,13 @@ def assert_vlan_dynamic_ip(iface_name, workers_ssh_executors, dhcp_clients_list)
     sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
 
 
-def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_list):
+def assert_vlan_iface_no_ip(utility_pods, iface_name, no_dhcp_client_list):
     def _find_vlan_ip():
         node = None
         for node in no_dhcp_client_list:
-            vlan_ip = workers_ssh_executors[node.name].network.find_ip_by_int(
-                interface=iface_name
-            )
+            vlan_ip = ExecCommandOnPod(
+                utility_pods=utility_pods, node=node
+            ).get_interface_ip(interface=iface_name)
             if vlan_ip is not None:
                 return False, node.name
         return True, node.name
@@ -133,13 +134,13 @@ def assert_vlan_iface_no_ip(iface_name, workers_ssh_executors, no_dhcp_client_li
     sampling_handler(sampled_func=_find_vlan_ip, err_msg=err_msg, iface_name=iface_name)
 
 
-def assert_vlan_interface(iface_name, workers_ssh_executors):
+def assert_vlan_interface(utility_pods, iface_name, schedulable_nodes):
     def _vlan_iface():
         node = None
-        for node in workers_ssh_executors:
-            iface_status = workers_ssh_executors[node].network.get_interface_status(
-                interface=iface_name
-            )
+        for node in schedulable_nodes:
+            iface_status = ExecCommandOnPod(
+                utility_pods=utility_pods, node=node
+            ).interface_status(interface=iface_name)
             if iface_status is None:
                 return False, node
         return True, node

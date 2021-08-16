@@ -18,7 +18,7 @@ from pytest_testconfig import config as py_config
 
 import utilities.network
 from tests.must_gather import utils as mg_utils
-from utilities.infra import MissingResourceException, create_ns
+from utilities.infra import ExecCommandOnPod, MissingResourceException, create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -164,8 +164,13 @@ def config_maps_file(hco_namespace, cnv_must_gather):
 
 
 @pytest.fixture(scope="session")
-def rhcos_workers(workers_ssh_executors):
-    return list(workers_ssh_executors.values())[0].os.release_info["ID"] == "rhcos"
+def rhcos_workers(worker_node1, utility_pods):
+    return (
+        ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1).release_info[
+            "ID"
+        ]
+        == "rhcos"
+    )
 
 
 @pytest.fixture(scope="session")

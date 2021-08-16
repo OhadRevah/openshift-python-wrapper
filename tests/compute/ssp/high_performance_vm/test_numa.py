@@ -1,11 +1,11 @@
 import re
-import shlex
 
 import pytest
 import xmltodict
 from ocp_resources.sriov_network import SriovNetwork
 
 from utilities.constants import SRIOV
+from utilities.infra import ExecCommandOnPod
 from utilities.network import sriov_network_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -18,27 +18,24 @@ pytestmark = pytest.mark.usefixtures(
 
 
 @pytest.fixture(scope="module")
-def skip_if_numa_not_configured_or_enabled(workers_ssh_executors):
-    cmd = shlex.split("cat /etc/kubernetes/kubelet.conf | grep -i single-numa-node")
-    if not check_numa_config_on_node(
-        cmd=cmd, workers_ssh_executors=workers_ssh_executors
-    ):
-        pytest.skip(msg="Test should run on nodes with single-numa-node")
-
-    cmd = shlex.split("cat /etc/kubernetes/kubelet.conf | grep -w TopologyManager")
-    if not check_numa_config_on_node(
-        cmd=cmd, workers_ssh_executors=workers_ssh_executors
-    ):
-        pytest.skip(msg="Test should run on nodes with TopologyManager enabled")
+def skip_if_numa_not_configured_or_enabled(schedulable_nodes, utility_pods):
+    cat_cmd = "cat /etc/kubernetes/kubelet.conf"
+    single_numa_node_cmd = f"{cat_cmd} | grep -i single-numa-node"
+    topology_manager_cmd = f"{cat_cmd} | grep -w TopologyManager"
+    for cmd in (single_numa_node_cmd, topology_manager_cmd):
+        if not check_numa_config_on_node(
+            cmd=cmd, schedulable_nodes=schedulable_nodes, utility_pods=utility_pods
+        ):
+            pytest.skip(msg=f"Test should run on nodes with {cmd.split()[-1]}")
 
 
-def check_numa_config_on_node(cmd, workers_ssh_executors):
-    return any(
-        [
-            True if not node_exec.run_command(command=cmd)[0] else False
-            for node_exec in workers_ssh_executors.values()
-        ]
-    )
+def check_numa_config_on_node(cmd, schedulable_nodes, utility_pods):
+    for node in schedulable_nodes:
+        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+        out = pod_exec.exec(command=cmd, ignore_rc=True)
+        if not out:
+            return False
+    return True
 
 
 @pytest.fixture(scope="module")
@@ -151,13 +148,13 @@ def get_sriov_pci_address(vm):
     return f'{addr["@domain"][2:]}:{addr["@bus"][2:]}:{addr["@slot"][2:]}.{addr["@function"][2:]}'
 
 
-def get_numa_sriov_allocation(vm, workers_ssh_executors):
+def get_numa_sriov_allocation(vm, utility_pods):
     """
     Find NUMA node # where SR-IOV device is allocated.
     """
     sriov_addr = get_sriov_pci_address(vm=vm)
-    _, out, _ = workers_ssh_executors[vm.vmi.instance.status.nodeName].run_command(
-        command=["cat", f"/sys/bus/pci/devices/{sriov_addr}/numa_node"]
+    out = ExecCommandOnPod(utility_pods=utility_pods, node=vm.vmi.node).exec(
+        command=f"cat /sys/bus/pci/devices/{sriov_addr}/numa_node"
     )
 
     return out.strip()
@@ -190,15 +187,13 @@ def test_numa_with_sriov(
     skip_when_no_sriov,
     labeled_sriov_nodes,
     vm_numa_sriov,
-    workers_ssh_executors,
+    utility_pods,
 ):
     cpu_alloc = get_numa_cpu_allocation(
         vm_cpus=get_vm_cpu_list(vm=vm_numa_sriov),
         numa_nodes=get_numa_node_cpu_dict(vm=vm_numa_sriov),
     )
-    sriov_alloc = get_numa_sriov_allocation(
-        vm=vm_numa_sriov, workers_ssh_executors=workers_ssh_executors
-    )
+    sriov_alloc = get_numa_sriov_allocation(vm=vm_numa_sriov, utility_pods=utility_pods)
 
     assert (
         cpu_alloc == sriov_alloc

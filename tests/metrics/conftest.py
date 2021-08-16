@@ -194,13 +194,13 @@ def first_metric_vm(vm_list):
 
 
 @pytest.fixture()
-def node_setup(request, vm_list, workers_ssh_executors):
+def node_setup(request, vm_list, utility_pods):
     """
     This fixture runs commands on nodes hosting vms and reverses the changes at the end.
 
     Args:
-        vm_list (list): Gets the list of vms created as a part of suite level set up
-        workers_ssh_executors (dict): Used to execute commands against nodes (where created vms are scheduled)
+        vm_list (list): Gets the list of vms created as a part of suite level set up.
+        utility_pods (list): Utility pods.
 
     """
     node_command = request.param.get("node_command")
@@ -209,17 +209,18 @@ def node_setup(request, vm_list, workers_ssh_executors):
         vms = vm_list[: request.param.get("num_vms", MIN_NUM_VM)]
         run_node_command(
             vms=vms,
-            workers_ssh_executors=workers_ssh_executors,
+            utility_pods=utility_pods,
             command=node_command["setup"],
         )
 
-    yield
-    if node_command:
+        yield
         run_node_command(
             vms=vms,
-            workers_ssh_executors=workers_ssh_executors,
+            utility_pods=utility_pods,
             command=node_command["cleanup"],
         )
+    else:
+        yield
 
 
 @pytest.fixture()

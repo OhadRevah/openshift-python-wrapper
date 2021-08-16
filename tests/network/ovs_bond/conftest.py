@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import run_ssh_commands
+from utilities.infra import ExecCommandOnPod
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -59,16 +59,16 @@ def get_interface_by_attribute(all_connections, att):
 
 
 @pytest.fixture(scope="module")
-def bond_and_privileged_pod(workers_ssh_executors, utility_pods):
+def bond_and_privileged_pod(utility_pods):
     """
     Get OVS BOND from the worker, if OVS BOND not exists the tests should be skipped.
     """
     skip_msg = "BOND is not configured on the workers on primary interface"
     for pod in utility_pods:
-        node_executor = workers_ssh_executors[pod.node.name]
+        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=pod.node)
         try:
             # TODO: use rrmngmnt to get info from nmcli
-            all_connections = _all_connection(node_executor=node_executor)
+            all_connections = _all_connection(pod_exec=pod_exec)
             bond = get_interface_by_attribute(
                 all_connections=all_connections[0], att="ovs-port.bond-mode:balance-slb"
             )
@@ -100,9 +100,9 @@ def node_with_bond(privileged_pod):
 
 
 @pytest.fixture(scope="module")
-def bond_port(workers_ssh_executors, privileged_pod, bond, node_with_bond):
-    node_executor = workers_ssh_executors[privileged_pod.node.name]
-    all_connections = _all_connection(node_executor=node_executor)
+def bond_port(utility_pods, privileged_pod, bond, node_with_bond):
+    pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node_with_bond)
+    all_connections = _all_connection(pod_exec=pod_exec)
 
     bond_string = f"connection.master:{bond}"
     bond_port = get_interface_by_attribute(
@@ -132,15 +132,10 @@ def disconnected_bond_port(privileged_pod, bond_port, bond):
     privileged_pod.execute(command=["bash", "-c", f"nmcli dev connect {bond_port}"])
 
 
-def _all_connection(node_executor):
-    return run_ssh_commands(
-        host=node_executor,
-        commands=[
-            [
-                "bash",
-                "-c",
-                'nmcli -g name con show | \
-                xargs -i nmcli -t -f connection.interface-name,ovs-port.bond-mode connection show "{}"',
-            ]
-        ],
-    )[0]
+def _all_connection(pod_exec):
+    return pod_exec.exec(
+        command=(
+            "nmcli -g name con show | xargs -i nmcli -t -f "
+            'connection.interface-name,ovs-port.bond-mode connection show "{}"'
+        )
+    )

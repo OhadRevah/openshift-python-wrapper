@@ -16,7 +16,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_15MIN
-from utilities.infra import create_ns, get_pods
+from utilities.infra import ExecCommandOnPod, create_ns, get_pods
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -261,14 +261,15 @@ def updated_descheduler(admin_client, descheduler_ns, updated_descheduler_policy
 
 
 @pytest.fixture(scope="module")
-def workers_free_memory(workers_ssh_executors):
+def workers_free_memory(schedulable_nodes, utility_pods):
     nodes_memory = {}
-    cmd = ["free", "-b", "|", "grep", "Mem", "|", "awk", "'{print", "$4,$6}'"]
-    for node, ssh_exec in workers_ssh_executors.items():
+    cmd = "free -b | grep Mem | awk '{print $4,$6}'"
+    for node in schedulable_nodes:
+        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
         nodes_memory[node] = bitmath.Byte(
-            sum([int(mem) for mem in ssh_exec.run_command(command=cmd)[1].split()])
+            sum([int(mem) for mem in pod_exec.exec(command=cmd).split()])
         ).to_GiB()
-        LOGGER.info(f"Node {node} has {nodes_memory[node]} GiB of free memory")
+        LOGGER.info(f"Node {node.name} has {nodes_memory[node]} GiB of free memory")
     return dict(sorted(nodes_memory.items(), key=lambda item: item[1]))
 
 

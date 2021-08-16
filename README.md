@@ -350,18 +350,18 @@ to nodes. This folder should be mounted to container during the run.
 
 #### Running default set of tests
 ```
-docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e HOST_SSH_KEY=/mnt/host/id_rsa -e KUBECONFIG=/mnt/host/kubeconfig -e HTTP_IMAGE_SERVER="X.X.X.X" quay.io/openshift-cnv/cnv-tests
+docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e -e KUBECONFIG=/mnt/host/kubeconfig -e HTTP_IMAGE_SERVER="X.X.X.X" quay.io/openshift-cnv/cnv-tests
 ```
 
 #### Smoke tests
 ```
-docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e HOST_SSH_KEY=/mnt/host/id_rsa -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
+docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
 pipenv run pytest --tc=server_url:"X.X.X.X" --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m smoke
 ```
 
 #### IBM cloud Win10 tests
 ```
-docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e HOST_SSH_KEY=/mnt/host/id_rsa -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
+docker run -v "$(pwd)"/toContainer:/mnt/host:Z -e -e KUBECONFIG=/mnt/host/kubeconfig quay.io/openshift-cnv/cnv-tests \
 pipenv run pytest --tc=server_url:"X.X.X.X" --windows-os-matrix=win-10 --storage-class-matrix=ocs-storagecluster-ceph-rbd --default-storage-class=ocs-storagecluster-ceph-rbd -m ibm_bare_metal
 ```
 
@@ -449,13 +449,15 @@ docs/build/html/index.html
 To skip 'unprivileged_client' creation pass to pytest command:
 --tc=no_unprivileged_client:True
 
-##### ssh workers by fixture
-workers_ssh_executors fixture need to ssh the workers
-From the executor it will work since it used the default ssh key to connect
-To use non default key:
-```bash
-export HOST_SSH_KEY=path.to.ssh_key
+#### Run command on nodes
+ExecCommandOnPod is used to run command on nodes
+##### Example
+utility_pods is a fixture that hold the pods.
+```python
+pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
+out = pod_exec.exec(command=cmd, ignore_rc=True)
 ```
+
 
 ##### Known Issues
 pycurl may fail with error:

@@ -15,6 +15,7 @@ from pytest_testconfig import config as py_config
 
 from utilities import console
 from utilities.constants import TIMEOUT_20MIN
+from utilities.infra import ExecCommandOnPod
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -103,10 +104,12 @@ def vm_ready_for_test(vm):
     )
 
 
-def stop_kubelet_on_node(node_ssh, node):
+def stop_kubelet_on_node(utility_pods, node):
     LOGGER.info(f"Stopping kubelet on node {node.name}")
-    node_ssh.run_command(command=["sudo", "systemctl", "stop", "kubelet.service"])
-    wait_node_status(node=node_ssh, status=False)
+    ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
+        command="sudo systemctl stop kubelet.service"
+    )
+    wait_node_status(node=node, status=False)
 
 
 def wait_and_verify_vmi_failover(vm):
@@ -176,13 +179,13 @@ def wait_node_status(node, status=True):
 )
 def test_ha_vm_container_disk_reboot(
     skip_if_workers_vms,
-    workers_ssh_executors,
+    utility_pods,
     machine_health_check_reboot,
     ha_vm_container_disk,
 ):
     orig_node = ha_vm_container_disk.vmi.node
     stop_kubelet_on_node(
-        node_ssh=workers_ssh_executors[ha_vm_container_disk.vmi.node.name],
+        utility_pods=utility_pods,
         node=orig_node,
     )
     wait_and_verify_vmi_failover(vm=ha_vm_container_disk)
@@ -215,7 +218,7 @@ def test_ha_vm_container_disk_reboot(
 )
 def test_ha_vm_dv_disk_reboot(
     skip_if_workers_vms,
-    workers_ssh_executors,
+    utility_pods,
     machine_health_check_reboot,
     ha_vm_dv_disk,
 ):
@@ -225,10 +228,7 @@ def test_ha_vm_dv_disk_reboot(
         vm=ha_vm_dv_disk,
         commands=["echo test >> ha-test"],
     )
-    stop_kubelet_on_node(
-        node_ssh=workers_ssh_executors[ha_vm_container_disk.vmi.node.name],
-        node=orig_node,
-    )
+    stop_kubelet_on_node(utility_pods=utility_pods, node=orig_node)
     wait_and_verify_vmi_failover(vm=ha_vm_container_disk)
     wait_node_restored(node=orig_node)
     vm_console_run_commands(

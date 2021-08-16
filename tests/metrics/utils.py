@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_8MIN, TIMEOUT_10MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.network import assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -527,20 +527,19 @@ def run_vm_commands(vms, commands):
             run_ssh_commands(host=vm.ssh_exec, commands=commands)
 
 
-def run_node_command(vms, command, workers_ssh_executors):
+def run_node_command(vms, command, utility_pods):
     """
     This is a helper function to run a command against a node associated with a given virtual machine, to prepare
     it for metric generation commands.
 
     Args:
         vms: (List): List of VirtualMachineForTests objects
-        workers_ssh_executors (dict): Dictionary of rrmngmnt.Host object associated with all nodes
+        utility_pods (list): Utility pods
         command (str): Command to be run against a given node
 
     Raise:
         Asserts on command execution failure
     """
-
     # If multiple vms are placed on the same node, we only want to run command against the node once.
     # So we need to collect the node names first
     node_names = []
@@ -551,12 +550,9 @@ def run_node_command(vms, command, workers_ssh_executors):
             node_names.append(node_name)
     for node_name in node_names:
         LOGGER.info(f'Running command "{command}" on node {node_name}')
-        rc, out, err = workers_ssh_executors[node_name].run_command(
-            command=shlex.split(command)
+        ExecCommandOnPod(utility_pods=utility_pods, node=node_name).exec(
+            command=command
         )
-        assert (
-            rc == 0
-        ), f'Command: "{command}" execution failed.: RC: "{rc}", stdout: "{out}", stderr: "{err}"'
 
 
 def assert_prometheus_metric_values(prometheus, query, vm, timeout=TIMEOUT_5MIN):

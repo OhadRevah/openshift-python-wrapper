@@ -4,8 +4,8 @@ import logging
 
 import pytest
 
-from tests.network.utils import get_worker_pod, wait_for_address_on_iface
-from utilities.infra import get_daemonset_by_name, name_prefix
+from tests.network.utils import wait_for_address_on_iface
+from utilities.infra import get_daemonset_by_name, get_worker_pod, name_prefix
 from utilities.network import LINUX_BRIDGE, network_device
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -77,9 +77,7 @@ def bridges_on_management_ifaces_node1(
     """
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
-    worker_pod = get_worker_pod(
-        network_utility_pods=utility_pods, worker_node=worker_node1
-    )
+    worker_pod = get_worker_pod(utility_pods=utility_pods, worker_node=worker_node1)
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{name_prefix(worker_node1.name)}",
@@ -106,9 +104,7 @@ def bridges_on_management_ifaces_node2(
 ):
     # Assuming for now all nodes has the same management interface name
     management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
-    worker_pod = get_worker_pod(
-        network_utility_pods=utility_pods, worker_node=worker_node2
-    )
+    worker_pod = get_worker_pod(utility_pods=utility_pods, worker_node=worker_node2)
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{name_prefix(worker_node2.name)}",

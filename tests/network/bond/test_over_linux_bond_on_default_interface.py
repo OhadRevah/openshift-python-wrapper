@@ -10,7 +10,7 @@ from ocp_resources.utils import TimeoutSampler
 
 from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import run_ssh_commands
+from utilities.infra import ExecCommandOnPod
 from utilities.network import BondNodeNetworkConfigurationPolicy, assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -151,26 +151,28 @@ class TestBondConnectivityWithNodesDefaultInterface:
         skip_when_one_node,
         skip_no_bond_support,
         namespace,
-        workers_ssh_executors,
+        utility_pods,
         lbodi_bond,
         lbodi_pod_with_bond,
     ):
         """
         Verify bond interface status and persistence after reboot
         """
-        worker_exec = workers_ssh_executors[lbodi_bond.node_selector]
+        node = lbodi_bond.node_selector
+        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
         wait_for_address_on_iface(
             worker_pod=lbodi_pod_with_bond,
             iface_name=lbodi_bond.bond_name,
         )
 
         # REBOOT - Check persistence
-        run_ssh_commands(host=worker_exec, commands=[["bash", "-c", "sudo reboot"]])
+        assert pod_exec.reboot, f"Fail to reboot {node}"
+
         LOGGER.info(f"Wait until {lbodi_bond.node_selector} reboots ...")
         samples = TimeoutSampler(
             wait_timeout=TIMEOUT_10MIN,
             sleep=SLEEP,
-            func=worker_exec.executor().is_connective,
+            func=pod_exec.is_connective,
         )
         for sample in samples:
             if sample:

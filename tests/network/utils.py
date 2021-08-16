@@ -64,15 +64,6 @@ def wait_for_address_on_iface(worker_pod, iface_name):
         raise
 
 
-def get_worker_pod(network_utility_pods, worker_node):
-    """
-    This function will return a pod based on the node specified as an argument.
-    """
-    for pod in network_utility_pods:
-        if pod.node.name == worker_node.name:
-            return pod
-
-
 def run_test_guest_performance(server_vm, client_vm, listen_ip=None, target_ip=None):
     """
     In-guest performance bandwidth passthrough.

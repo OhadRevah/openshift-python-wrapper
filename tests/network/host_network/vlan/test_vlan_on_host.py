@@ -10,6 +10,7 @@ from tests.network.host_network.vlan.utils import (
     assert_vlan_iface_no_ip,
     assert_vlan_interface,
 )
+from utilities.infra import ExecCommandOnPod
 
 
 LOGGER = logging.getLogger(__name__)
@@ -19,13 +20,15 @@ class TestVlanInterface:
     @pytest.mark.polarion("CNV-4161")
     def test_vlan_interface_on_all_hosts(
         self,
-        workers_ssh_executors,
+        schedulable_nodes,
+        utility_pods,
         namespace,
         vlan_iface_on_all_nodes,
     ):
         assert_vlan_interface(
+            utility_pods=utility_pods,
             iface_name=vlan_iface_on_all_nodes.iface_name,
-            workers_ssh_executors=workers_ssh_executors,
+            schedulable_nodes=schedulable_nodes,
         )
 
     @pytest.mark.order(before="test_vlan_deletion")
@@ -34,7 +37,7 @@ class TestVlanInterface:
         self,
         skip_when_one_node,
         skip_if_workers_vms,
-        workers_ssh_executors,
+        utility_pods,
         namespace,
         vlan_iface_dhcp_client_1,
         vlan_iface_dhcp_client_2,
@@ -46,7 +49,7 @@ class TestVlanInterface:
         """
         assert_vlan_dynamic_ip(
             iface_name=vlan_iface_dhcp_client_1.iface_name,
-            workers_ssh_executors=workers_ssh_executors,
+            utility_pods=utility_pods,
             dhcp_clients_list=dhcp_client_nodes,
         )
 
@@ -56,7 +59,7 @@ class TestVlanInterface:
         self,
         skip_when_one_node,
         skip_if_workers_vms,
-        workers_ssh_executors,
+        utility_pods,
         namespace,
         vlan_iface_dhcp_client_2,
         dhcp_server,
@@ -66,8 +69,8 @@ class TestVlanInterface:
         Test that VLAN NIC on only one host (which is not the DHCP server host) is assigned a dynamic IP address.
         """
         assert_vlan_iface_no_ip(
+            utility_pods=utility_pods,
             iface_name=vlan_iface_dhcp_client_2.iface_name,
-            workers_ssh_executors=workers_ssh_executors,
             no_dhcp_client_list=[disabled_dhcp_client_2],
         )
 
@@ -77,7 +80,7 @@ class TestVlanInterface:
         self,
         skip_when_one_node,
         skip_if_workers_vms,
-        workers_ssh_executors,
+        utility_pods,
         namespace,
         dhcp_server,
         dhcp_client_2,
@@ -88,8 +91,8 @@ class TestVlanInterface:
         between them.
         """
         assert_vlan_iface_no_ip(
+            utility_pods=utility_pods,
             iface_name=vlan_iface_on_dhcp_client_2_with_different_tag.iface_name,
-            workers_ssh_executors=workers_ssh_executors,
             no_dhcp_client_list=[dhcp_client_2],
         )
 
@@ -116,8 +119,9 @@ class TestVlanInterface:
                 # Exclude the node that run the DHCP server VM
                 continue
 
-            ip_addr_out = pod.execute(
-                command=["bash", "-c", f"ip addr show {vlan_iface_name} |  wc -l"]
+            pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=pod.node)
+            ip_addr_out = pod_exec.exec(
+                command=f"ip addr show {vlan_iface_name} |  wc -l"
             )
             assert int(ip_addr_out.strip()) == 0, (
                 f"VLAN interface {vlan_iface_name} was not deleted from node "
@@ -132,7 +136,7 @@ class TestVlanBond:
         skip_when_one_node,
         skip_if_workers_vms,
         skip_no_bond_support,
-        workers_ssh_executors,
+        utility_pods,
         namespace,
         vlan_iface_bond_dhcp_client_1,
         vlan_iface_bond_dhcp_client_2,
@@ -145,7 +149,7 @@ class TestVlanBond:
         """
         assert_vlan_dynamic_ip(
             iface_name=vlan_iface_bond_dhcp_client_1.iface_name,
-            workers_ssh_executors=workers_ssh_executors,
+            utility_pods=utility_pods,
             dhcp_clients_list=dhcp_client_nodes,
         )
 
