@@ -181,6 +181,10 @@ def pytest_addoption(parser):
     matrix_group.addoption("--provider-matrix", help="External provider matrix to use")
     matrix_group.addoption("--vm-volumes-matrix", help="VM volumes matrix to use")
     matrix_group.addoption("--run-strategy-matrix", help="RunStrategy matrix to use")
+    matrix_group.addoption(
+        "--sysprep-source-matrix",
+        help="Sysprep resource types to use (ConfigMap, Secret)",
+    )
 
     # OS addoption
     os_group.addoption(

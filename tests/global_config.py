@@ -150,6 +150,8 @@ run_strategy_matrix = [
     VirtualMachine.RunStrategy.RERUNONFAILURE,
 ]
 
+sysprep_source_matrix = ["ConfigMap", "Secret"]
+
 rhel_os_matrix = [
     {
         "rhel-6-10": {
