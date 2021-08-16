@@ -25,6 +25,9 @@ from utilities.virt import (
 pytestmark = pytest.mark.post_upgrade
 
 
+NON_EXISTING_DV_NAME = "non-existing-dv"
+
+
 @pytest.fixture()
 def updated_default_storage_class(
     admin_client,
@@ -255,7 +258,7 @@ def test_vm_dv_with_different_sc(
                 "storage_class": py_config["default_storage_class"],
             },
             {
-                "updated_dv_name": "non-existing-dv",
+                "updated_dv_name": NON_EXISTING_DV_NAME,
                 "start_vm": False,
             },
             marks=pytest.mark.polarion("CNV-5528"),
@@ -284,12 +287,18 @@ def test_missing_golden_image(
         ),
         exceptions=NotFoundError,
     ):
-        if sample and sample[0].instance.status.conditions:
-            if (
-                f"Source PVC {py_config['golden_images_namespace']}/non-existing-dv doesn't exist"
-                in sample[0].instance.status.conditions[0]["message"]
-            ):
-                break
+        if (
+            sample
+            and sample[0].instance.status.conditions
+            and any(
+                [
+                    f"Source PVC {py_config['golden_images_namespace']}/{NON_EXISTING_DV_NAME} not found"
+                    in condition["message"]
+                    for condition in sample[0].instance.status.conditions
+                ]
+            )
+        ):
+            break
 
     # Update VM spec with the correct name
     vm_data_volume_templates_dict = vm_from_golden_image.instance.to_dict()["spec"][
