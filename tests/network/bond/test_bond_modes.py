@@ -65,6 +65,7 @@ def create_vm(namespace, nad, node_selector, unprivileged_client):
         interfaces=networks.keys(),
         node_selector=node_selector,
         client=unprivileged_client,
+        ssh=False,
     ) as vm:
         yield vm
 
@@ -225,7 +226,7 @@ class TestBondModes:
 
     @pytest.mark.polarion("CNV-4383")
     def test_vm_started(self, bond_modes_vm):
-        running_vm(vm=bond_modes_vm, enable_ssh=False)
+        running_vm(vm=bond_modes_vm, enable_ssh=False, wait_for_interfaces=False)
 
 
 @pytest.mark.usefixtures(
@@ -262,4 +263,6 @@ class TestBondWithFailOverMac:
         self,
         vm_with_fail_over_mac_bond,
     ):
-        running_vm(vm=vm_with_fail_over_mac_bond, enable_ssh=False)
+        running_vm(
+            vm=vm_with_fail_over_mac_bond, enable_ssh=False, wait_for_interfaces=False
+        )
