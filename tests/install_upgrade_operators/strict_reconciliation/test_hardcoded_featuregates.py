@@ -7,6 +7,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
 from tests.install_upgrade_operators.utils import (
     get_hyperconverged_cdi,
     get_hyperconverged_kubevirt,
+    wait_for_stabilize,
 )
 
 
@@ -243,11 +244,11 @@ class TestHardcodedFeatureGates:
 
     @pytest.mark.polarion("CNV-6277")
     @pytest.mark.parametrize(
-        ("updated_delete_resource", "expected"),
+        ("update_cdi_cr", "expected"),
         [
             pytest.param(
                 {
-                    "rpatch": {"spec": {"config": {"featureGates": None}}},
+                    "patch": {"spec": {"config": {"featureGates": None}}},
                     "related_object_name": "cdi-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_cdi,
                 },
@@ -257,7 +258,7 @@ class TestHardcodedFeatureGates:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"config": {"featureGates": []}}},
+                    "patch": {"spec": {"config": {"featureGates": []}}},
                     "related_object_name": "cdi-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_cdi,
                 },
@@ -267,7 +268,7 @@ class TestHardcodedFeatureGates:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"config": None}},
+                    "patch": {"spec": {"config": None}},
                     "related_object_name": "cdi-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_cdi,
                 },
@@ -277,7 +278,7 @@ class TestHardcodedFeatureGates:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"config": {}}},
+                    "patch": {"spec": {"config": {}}},
                     "related_object_name": "cdi-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_cdi,
                 },
@@ -287,7 +288,7 @@ class TestHardcodedFeatureGates:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {}},
+                    "patch": {"spec": {}},
                     "related_object_name": "cdi-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_cdi,
                 },
@@ -296,16 +297,17 @@ class TestHardcodedFeatureGates:
                 id="delete_hardcoded_featuregates_cdi_cr_spec_empty_dict",
             ),
         ],
-        indirect=["updated_delete_resource"],
+        indirect=["update_cdi_cr"],
     )
     def test_hardcoded_featuregates_removed_from_cdi_cr(
         self,
         admin_client,
         hco_namespace,
-        updated_delete_resource,
+        update_cdi_cr,
         expected,
-        cdi_resource,
     ):
+        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
+        cdi_resource = get_hyperconverged_cdi(admin_client=admin_client)
         actual_fgs = cdi_resource.instance.to_dict()["spec"]["config"]["featureGates"]
         assert (
             actual_fgs == expected

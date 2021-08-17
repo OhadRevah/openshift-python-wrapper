@@ -306,6 +306,7 @@ EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "HostDevices",
     "WithHostModelCPU",
     "HypervStrictCheck",
+    "SRIOVLiveMigration",
 ]
 EXPECTED_CDI_HARDCODED_FEATUREGATES = [
     "HonorWaitForFirstConsumer",
