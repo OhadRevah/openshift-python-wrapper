@@ -32,8 +32,8 @@ POD_SCC_ALLOWLIST = [
     "kubevirt-node-labeller",
 ]
 
-# List of pods with anyuid SCC:
-POD_SCC_ANYUID = ["vm-import-controller"]
+# Tuple of pod prefixes with anyuid SCC annotation
+POD_SCC_ANYUID = ("vm-import-controller",)
 
 
 @pytest.mark.polarion("CNV-4438")
@@ -50,38 +50,43 @@ def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
     ), f"The following pods do not have scc annotation: {failed_pods}"
 
 
-@pytest.mark.polarion("CNV-4211")
-def test_pods_scc_in_allowlist(skip_not_openshift, cnv_pods):
-    """
-    Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined allowlist.
-    """
-    bugzilla = {
+@pytest.fixture()
+def components_with_non_closed_bugs():
+    bugzilla_component_name_dict = {
         "1834839": "cluster-network-addons-operator",
-        "1930439": "hco-operator",
         "1995295": "ssp-operator",
     }
-    bugzilla = {
-        bug_id: component
-        for bug_id, component in bugzilla.items()
+    return tuple(
+        component_name
+        for bug_id, component_name in bugzilla_component_name_dict.items()
         if get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_id
+            bugzilla_connection_params=get_bugzilla_connection_params(),
+            bug=bug_id,
         )
         not in BUG_STATUS_CLOSED
-    }
-    failed_pods = []
-    for pod in cnv_pods:
-        LOGGER.info(f"Currently Validating {pod.name} Pod.")
-        pod_bug_id = [
-            bug_id for bug_id, pod_name in bugzilla.items() if pod_name in pod.name
-        ]
-        if pod_bug_id:
-            LOGGER.info(f"Currently bug {pod_bug_id} for {pod.name}")
-            continue
-        pod_annotation = pod.instance.metadata.annotations.get("openshift.io/scc")
-        if pod_annotation not in POD_SCC_ALLOWLIST and not (
-            list(filter(pod.name.startswith, POD_SCC_ANYUID))
-            and pod_annotation == "anyuid"
-        ):
-            failed_pods.append(pod.name)
+    )
 
-    assert not failed_pods, f"Failed pods: {' '.join(failed_pods)}"
+
+@pytest.fixture()
+def pods_not_whitelisted_or_anyuid(cnv_pods, components_with_non_closed_bugs):
+    pods_scc_annotations_dict = {
+        pod.name: pod.instance.metadata.annotations.get("openshift.io/scc")
+        for pod in cnv_pods
+        if not pod.name.startswith(components_with_non_closed_bugs)
+    }
+    return [
+        pod_name
+        for pod_name, pod_scc_annotation in pods_scc_annotations_dict.items()
+        if not (pod_scc_annotation == "anyuid" and pod_name.startswith(POD_SCC_ANYUID))
+        and pod_scc_annotation not in POD_SCC_ALLOWLIST
+    ]
+
+
+@pytest.mark.polarion("CNV-4211")
+def test_pods_scc_in_allowlist(skip_not_openshift, pods_not_whitelisted_or_anyuid):
+    """
+    Validate that Pods in hco_namespace (openshift-cnv) have SCC from a predefined allowlist
+    """
+    assert (
+        not pods_not_whitelisted_or_anyuid
+    ), f"Pods not conforming to SCC annotation conditions: pods={pods_not_whitelisted_or_anyuid}"
