@@ -5,6 +5,7 @@ Import from HTTP server
 """
 
 import logging
+import math
 import multiprocessing
 
 import pytest
@@ -674,7 +675,7 @@ def test_vmi_image_size(
                     ]
                 )
                 assert unit == actual_size[-1]
-                assert round(size) == float(actual_size[:-1])
+                assert math.floor(size) == float(actual_size[:-1])
 
 
 @pytest.mark.polarion("CNV-3065")
