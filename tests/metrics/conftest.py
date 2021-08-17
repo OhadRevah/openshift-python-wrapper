@@ -1,7 +1,9 @@
 import logging
 import time
+from json import JSONDecodeError
 
 import pytest
+from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -16,7 +18,7 @@ from tests.metrics.utils import (
 )
 from utilities.constants import TIMEOUT_10MIN
 from utilities.infra import create_ns
-from utilities.virt import running_vm, vm_instance_from_template
+from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
@@ -279,3 +281,66 @@ def vmi_phase_count_before(request, prometheus):
         workload=request.param["labels"]["workload"],
         query=request.param["query"],
     )
+
+
+@pytest.fixture(scope="module")
+def prometheus_module():
+    return Prometheus()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def metrics_sanity(admin_client, prometheus_module):
+    """
+    Ensures that the cluster is ready for metrics-related tests by performing certain verifications, e.g.
+    necessary prometheus pods are running, run a query to check that the service is responding to requests
+    """
+
+    def _verify_prometheus_pods():
+        actual_prometheus_pods = list(
+            filter(
+                lambda actual_pod: actual_pod.name.startswith("prometheus"),
+                list(
+                    Pod.get(
+                        dyn_client=admin_client,
+                        namespace="openshift-monitoring",
+                        label_selector=(
+                            "app.kubernetes.io/name in (prometheus-operator, prometheus, prometheus-adapter)"
+                        ),
+                    )
+                ),
+            )
+        )
+        if len(actual_prometheus_pods) != 5:
+            return actual_prometheus_pods
+        for pod in actual_prometheus_pods:
+            if pod.status != Pod.Status.RUNNING:
+                return {pod.name: pod.status for pod in actual_prometheus_pods}
+
+    LOGGER.info("Verify that Prometheus pods exist and running as expected")
+    samples = TimeoutSampler(
+        wait_timeout=120,
+        sleep=1,
+        func=_verify_prometheus_pods,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            if not sample:
+                break
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"timeout awaiting all Prometheus pods to exist and be in Running status: {sample}"
+        )
+        raise
+
+    test_query = "/api/v1/query?query=select"
+    LOGGER.info(f"Executing a test query: query={test_query}")
+    try:
+        response = prometheus_module.query(query=test_query)
+    except JSONDecodeError:
+        LOGGER.error(
+            f"JSONDecodeError exception executing the test query: query={test_query}"
+        )
+        raise
+    if response["status"] != "success":
+        raise RuntimeError(f"Query response has unsuccessful status: {response}")
