@@ -185,6 +185,7 @@ def test_successful_import_archive(
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "file_name",
     [

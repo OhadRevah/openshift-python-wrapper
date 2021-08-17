@@ -147,6 +147,7 @@ def test_virtctl_image_upload_with_ca(
         assert pvc.bound()
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3724")
 def test_virtctl_image_upload_dv(
     download_image, namespace, storage_class_matrix__module__

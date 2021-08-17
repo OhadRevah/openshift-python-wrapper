@@ -144,7 +144,11 @@ def test_successful_clone_of_large_image(
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
                 "dv_size": "10Gi",
             },
-            marks=(pytest.mark.polarion("CNV-2148"), pytest.mark.post_upgrade()),
+            marks=(
+                pytest.mark.polarion("CNV-2148"),
+                pytest.mark.post_upgrade(),
+                pytest.mark.sno(),
+            ),
         ),
     ],
     indirect=True,

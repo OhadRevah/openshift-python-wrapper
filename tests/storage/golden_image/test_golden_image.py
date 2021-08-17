@@ -80,6 +80,7 @@ def test_regular_user_cant_delete_dv_from_cloned_dv(
         ).delete()
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "golden_image_data_volume_multi_storage_scope_function,"
     "golden_image_vm_instance_from_template_multi_storage_scope_function",

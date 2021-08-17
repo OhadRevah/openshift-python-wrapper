@@ -89,6 +89,7 @@ def allow_unprivileged_client_to_manage_vms_on_dst_ns(
         yield role_binding_vm_admin_unprivileged_client
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("data_volume_multi_storage_scope_module", "namespace"),
     [

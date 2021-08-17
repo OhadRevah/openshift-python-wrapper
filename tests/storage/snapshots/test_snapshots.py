@@ -255,6 +255,7 @@ class TestRestoreSnapshots:
             ):
                 return
 
+    @pytest.mark.sno
     @pytest.mark.parametrize(
         "cirros_vm, snapshots_with_content",
         [

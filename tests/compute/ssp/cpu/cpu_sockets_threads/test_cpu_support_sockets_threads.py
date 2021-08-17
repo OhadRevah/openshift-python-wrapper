@@ -8,7 +8,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-pytestmark = pytest.mark.post_upgrade
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 def check_vm_dumpxml(vm, cores, sockets, threads):

@@ -61,7 +61,7 @@ def test_cdi_uploadproxy_route_owner_references(skip_not_openshift, hco_namespac
             "cnv-875",
             f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
             Images.Cirros.QCOW2_IMG,
-            marks=(pytest.mark.polarion("CNV-875")),
+            marks=(pytest.mark.polarion("CNV-875"), pytest.mark.sno()),
             id=f"cnv-875-{Images.Cirros.QCOW2_IMG}",
         ),
         pytest.param(

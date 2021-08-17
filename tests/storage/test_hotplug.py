@@ -157,6 +157,7 @@ def test_hotplug_volume_with_persist(
     assert_hotplugvolume_nonexist_after_restart(vm=fedora_vm_for_hotplug)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-6425")
 @pytest.mark.parametrize(
     "hotplug_volume",

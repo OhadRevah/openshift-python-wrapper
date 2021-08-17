@@ -260,6 +260,7 @@ def test_wffc_clone_dv(
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_scope_function",
     [
@@ -292,6 +293,7 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
         _valid_vm_and_disk_count(vm=vm)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4743")
 def test_wffc_vm_with_two_data_volume_templates(
     skip_test_if_no_hpp_sc,

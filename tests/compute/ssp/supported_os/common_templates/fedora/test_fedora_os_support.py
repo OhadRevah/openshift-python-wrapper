@@ -23,6 +23,9 @@ from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 LOGGER = logging.getLogger(__name__)
 
 
+pytestmark = pytest.mark.sno
+
+
 HYPERV_DICT = {
     "spec": {
         "template": {

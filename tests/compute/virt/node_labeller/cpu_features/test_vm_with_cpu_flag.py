@@ -8,7 +8,7 @@ from utilities.constants import TIMEOUT_1MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-pytestmark = pytest.mark.post_upgrade
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.fixture()

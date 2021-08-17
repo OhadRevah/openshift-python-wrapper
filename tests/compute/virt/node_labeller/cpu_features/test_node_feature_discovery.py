@@ -13,7 +13,7 @@ MIN_CPU = "minCPUModel"
 OBSOLETE_CPU = "obsoleteCPUModels"
 
 
-pytestmark = pytest.mark.post_upgrade
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.fixture()

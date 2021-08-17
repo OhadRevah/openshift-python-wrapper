@@ -14,7 +14,7 @@ from utilities.constants import Images
 from utilities.infra import BUG_STATUS_CLOSED
 
 
-pytestmark = pytest.mark.post_upgrade
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 LOGGER = logging.getLogger(__name__)
