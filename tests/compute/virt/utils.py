@@ -1,7 +1,11 @@
 import logging
 from contextlib import contextmanager
 
-from tests.compute.utils import fetch_processid_from_linux_vm
+from tests.compute.utils import (
+    fetch_processid_from_linux_vm,
+    update_hco_config,
+    wait_for_updated_kv_value,
+)
 from utilities.infra import run_ssh_commands
 
 
@@ -51,3 +55,22 @@ def running_sleep_in_linux(vm):
     yield
     assert_process_not_running(vm=vm, process=process)
     kill_running_process(vm=vm, process=process)
+
+
+@contextmanager
+def append_feature_gate_to_hco(feature_gate, resource, client, namespace):
+    with update_hco_config(
+        resource=resource,
+        path="developerConfiguration/featureGates",
+        value=feature_gate,
+    ):
+        wait_for_updated_kv_value(
+            admin_client=client,
+            hco_namespace=namespace,
+            path=[
+                "developerConfiguration",
+                "featureGates",
+            ],
+            value=feature_gate,
+        )
+        yield

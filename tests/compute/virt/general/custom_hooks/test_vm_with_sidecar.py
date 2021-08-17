@@ -6,34 +6,8 @@ import shlex
 
 import pytest
 
-from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
 from utilities.infra import run_ssh_commands
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
-
-
-@pytest.fixture()
-def enabled_sidecar_featuregate(
-    hyperconverged_resource_scope_function,
-    kubevirt_feature_gates,
-    admin_client,
-    hco_namespace,
-):
-    kubevirt_feature_gates.append("Sidecar")
-    with update_hco_config(
-        resource=hyperconverged_resource_scope_function,
-        path="developerConfiguration/featureGates",
-        value=kubevirt_feature_gates,
-    ):
-        wait_for_updated_kv_value(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            path=[
-                "developerConfiguration",
-                "featureGates",
-            ],
-            value=kubevirt_feature_gates,
-        )
-        yield
 
 
 class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
@@ -76,8 +50,18 @@ def sidecar_vm(namespace, unprivileged_client):
         yield vm
 
 
+@pytest.mark.parametrize(
+    "enabled_featuregate_scope_function,",
+    [
+        pytest.param(
+            "Sidecar",
+            marks=pytest.mark.polarion("CNV-840"),
+        ),
+    ],
+    indirect=True,
+)
 @pytest.mark.polarion("CNV-840")
-def test_vm_with_sidecar_hook(enabled_sidecar_featuregate, sidecar_vm):
+def test_vm_with_sidecar_hook(enabled_featuregate_scope_function, sidecar_vm):
     """
     Test VM with sidecar hook, Install dmidecode with annotation
     smbios.vm.kubevirt.io/baseBoardManufacturer: "Radical Edward"
