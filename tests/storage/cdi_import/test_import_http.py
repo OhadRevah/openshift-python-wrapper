@@ -36,6 +36,7 @@ from utilities.storage import (
     create_dummy_first_consumer_pod,
     create_dv,
     get_images_server_url,
+    sc_volume_binding_mode_is_wffc,
 )
 from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
 
@@ -91,8 +92,12 @@ def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
 @pytest.mark.polarion("CNV-675")
 def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_function):
     pvc = data_volume_multi_storage_scope_function.pvc
-    pvc.delete(wait=True)
-    create_dummy_first_consumer_pod(pvc=pvc)
+    pvc_original_timestamp = pvc.instance.metadata.creationTimestamp
+    pvc.delete()
+    if sc_volume_binding_mode_is_wffc(
+        sc=data_volume_multi_storage_scope_function.storage_class
+    ):
+        create_dummy_first_consumer_pod(pvc=pvc)
     data_volume_multi_storage_scope_function.wait_for_status(
         status=data_volume_multi_storage_scope_function.Status.SUCCEEDED
     )
@@ -104,6 +109,9 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
     ) as pod:
         pod.wait_for_status(status=pod.Status.RUNNING)
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
+        assert (
+            pvc.instance.metadata.creationTimestamp != pvc_original_timestamp
+        ), "PVC should have been recreated"
 
 
 @pytest.mark.polarion("CNV-876")
