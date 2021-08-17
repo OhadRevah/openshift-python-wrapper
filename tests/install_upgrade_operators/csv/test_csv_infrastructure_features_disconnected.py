@@ -15,6 +15,10 @@ def test_csv_infrastructure_features_disconnected(csv):
             "operators.openshift.io/infrastructure-features"
         ]
     )
-    assert (
-        "disconnected" in csv_annotations
-    ), f"Disconnected Infrastructure feature is not found {csv_annotations}"
+    for infra_feature in csv_annotations:
+        if infra_feature.lower() == "disconnected":
+            return True
+    else:
+        pytest.fail(
+            f"Disconnected Infrastructure feature is not found {csv_annotations}"
+        )
