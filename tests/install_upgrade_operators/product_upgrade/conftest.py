@@ -10,6 +10,7 @@ from ocp_resources.operator_hub import OperatorHub
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
@@ -173,7 +174,7 @@ def upgrade_br1test_nad(namespace, upgrade_bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="module")
-def dvs_for_upgrade(admin_client, worker_node1):
+def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
     dvs_list = []
     for sc in py_config["system_storage_class_matrix"]:
         storage_class = [*sc][0]
@@ -185,8 +186,8 @@ def dvs_for_upgrade(admin_client, worker_node1):
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
-            url=f"{get_images_server_url(schema='http')}{py_config['latest_rhel_os_dict']['image_path']}",
-            size=py_config["latest_rhel_os_dict"]["dv_size"],
+            url=rhel_latest_os_params["rhel_image_path"],
+            size=rhel_latest_os_params["rhel_dv_size"],
             bind_immediate_annotation=True,
             hostpath_node=worker_node1.name
             if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
@@ -207,14 +208,12 @@ def dvs_for_upgrade(admin_client, worker_node1):
 def vms_for_upgrade(
     unprivileged_client,
     namespace,
-    upgrade_bridge_on_all_nodes,
+    vm_bridge_networks,
     dvs_for_upgrade,
     upgrade_br1test_nad,
     nodes_common_cpu_model,
+    rhel_latest_os_params,
 ):
-    networks = {
-        upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
-    }
     vms_list = []
     for dv in dvs_for_upgrade:
         vm = VirtualMachineForTestsFromTemplate(
@@ -222,12 +221,12 @@ def vms_for_upgrade(
             namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(
-                **py_config["latest_rhel_os_dict"]["template_labels"]
+                **rhel_latest_os_params["rhel_template_labels"]
             ),
             data_volume=dv,
-            networks=networks,
+            networks=vm_bridge_networks,
             cpu_model=nodes_common_cpu_model,
-            interfaces=sorted(networks.keys()),
+            interfaces=sorted(vm_bridge_networks.keys()),
         )
         vm.deploy()
         vm.start(timeout=TIMEOUT_40MIN, wait=False)
@@ -482,3 +481,95 @@ def unupdated_vmi_pods_names(
             target_related_images_name_and_versions=target_related_images_name_and_versions
         )
     ]
+
+
+@pytest.fixture(scope="module")
+def run_strategy_golden_image_rwx_dv(dvs_for_upgrade):
+    return [
+        dv
+        for dv in dvs_for_upgrade
+        if DataVolume.AccessMode.RWX in dv.pvc.instance.spec.accessModes
+    ][0]
+
+
+@pytest.fixture(scope="module")
+def vm_bridge_networks(upgrade_bridge_on_all_nodes):
+    return {
+        upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
+    }
+
+
+@pytest.fixture(scope="module")
+def manual_run_strategy_vm(
+    unprivileged_client,
+    namespace,
+    vm_bridge_networks,
+    run_strategy_golden_image_rwx_dv,
+    nodes_common_cpu_model,
+    rhel_latest_os_params,
+):
+    with VirtualMachineForTestsFromTemplate(
+        name="manual-run-strategy-vm",
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(
+            **rhel_latest_os_params["rhel_template_labels"]
+        ),
+        data_volume=run_strategy_golden_image_rwx_dv,
+        cpu_model=nodes_common_cpu_model,
+        run_strategy=VirtualMachine.RunStrategy.MANUAL,
+        networks=vm_bridge_networks,
+        interfaces=sorted(vm_bridge_networks.keys()),
+    ) as vm:
+        vm.start()
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def always_run_strategy_vm(
+    unprivileged_client,
+    namespace,
+    vm_bridge_networks,
+    upgrade_br1test_nad,
+    run_strategy_golden_image_rwx_dv,
+    nodes_common_cpu_model,
+    rhel_latest_os_params,
+):
+    with VirtualMachineForTestsFromTemplate(
+        name="always-run-strategy-vm",
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(
+            **rhel_latest_os_params["rhel_template_labels"]
+        ),
+        data_volume=run_strategy_golden_image_rwx_dv,
+        cpu_model=nodes_common_cpu_model,
+        run_strategy=VirtualMachine.RunStrategy.ALWAYS,
+        networks=vm_bridge_networks,
+        interfaces=sorted(vm_bridge_networks.keys()),
+    ) as vm:
+        # No need to start the VM as the VM will be automatically started (RunStrategy Always)
+        yield vm
+
+
+@pytest.fixture()
+def running_manual_run_strategy_vm(manual_run_strategy_vm):
+    running_vm(vm=manual_run_strategy_vm, check_ssh_connectivity=False)
+
+
+@pytest.fixture()
+def running_always_run_strategy_vm(always_run_strategy_vm):
+    running_vm(vm=always_run_strategy_vm, check_ssh_connectivity=False)
+
+
+@pytest.fixture(scope="module")
+def rhel_latest_os_params():
+    """This fixture is needed as during collection pytest_testconfig is empty.
+    os_params or any globals using py_config in conftest cannot be used.
+    """
+    latest_rhel_dict = py_config["latest_rhel_os_dict"]
+    return {
+        "rhel_image_path": f"{get_images_server_url(schema='http')}{latest_rhel_dict['image_path']}",
+        "rhel_dv_size": latest_rhel_dict["dv_size"],
+        "rhel_template_labels": latest_rhel_dict["template_labels"],
+    }

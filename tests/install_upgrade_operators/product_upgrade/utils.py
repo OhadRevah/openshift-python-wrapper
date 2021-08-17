@@ -38,7 +38,7 @@ from utilities.infra import (
     collect_resources_for_test,
     write_to_extras_file,
 )
-from utilities.virt import run_command
+from utilities.virt import run_command, wait_for_ssh_connectivity
 
 
 LOGGER = logging.getLogger(__name__)
@@ -1028,3 +1028,9 @@ def upgrade_ocp(ocp_image, dyn_client, ocp_channel):
     assert rc, f"OCP upgrade command failed. out: {out}. err: {err}"
 
     wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)
+
+
+def verify_vms_ssh_connectivity(vms_list):
+    ssh_timeout = utilities.constants.TIMEOUT_3MIN
+    for vm in vms_list:
+        wait_for_ssh_connectivity(vm=vm, timeout=ssh_timeout, tcp_timeout=ssh_timeout)

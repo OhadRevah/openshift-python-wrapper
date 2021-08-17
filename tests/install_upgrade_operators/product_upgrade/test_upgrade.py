@@ -3,10 +3,11 @@ from ipaddress import ip_interface
 
 import pytest
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
-from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL, TIMEOUT_2MIN
+from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL
 from utilities.infra import validate_nodes_ready, validate_nodes_schedulable
 from utilities.network import (
     assert_ping_successful,
@@ -32,7 +33,7 @@ class TestUpgrade:
     @pytest.mark.dependency(name="test_is_vm_running_before_upgrade")
     def test_is_vm_running_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            assert vm.vmi.status == "Running"
+            assert vm.vmi.status == VirtualMachineInstance.Status.RUNNING
 
     @pytest.mark.polarion("CNV-2975")
     @pytest.mark.order(before="test_upgrade_process")
@@ -76,10 +77,21 @@ class TestUpgrade:
         depends=["test_is_vm_running_before_upgrade"],
     )
     def test_vm_ssh_before_upgrade(self, vms_for_upgrade):
-        for vm in vms_for_upgrade:
-            assert vm.ssh_exec.executor().is_connective(
-                tcp_timeout=TIMEOUT_2MIN
-            ), "Failed to login via SSH"
+        upgrade_utils.verify_vms_ssh_connectivity(vms_list=vms_for_upgrade)
+
+    @pytest.mark.polarion("CNV-6999")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_vm_run_strategy_before_upgrade")
+    def test_vm_run_strategy_before_upgrade(
+        self,
+        manual_run_strategy_vm,
+        always_run_strategy_vm,
+        running_manual_run_strategy_vm,
+        running_always_run_strategy_vm,
+    ):
+        upgrade_utils.verify_vms_ssh_connectivity(
+            vms_list=[manual_run_strategy_vm, always_run_strategy_vm]
+        )
 
     @pytest.mark.polarion("CNV-2743")
     @pytest.mark.order(before="test_upgrade_process")
@@ -308,10 +320,19 @@ class TestUpgrade:
         depends=["test_upgrade_process", "test_vm_ssh_before_upgrade"]
     )
     def test_vm_ssh_after_upgrade(self, vms_for_upgrade):
-        for vm in vms_for_upgrade:
-            assert vm.ssh_exec.executor().is_connective(
-                tcp_timeout=120
-            ), "Failed to login via SSH"
+        upgrade_utils.verify_vms_ssh_connectivity(vms_list=vms_for_upgrade)
+
+    @pytest.mark.polarion("CNV-7000")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_vm_run_strategy_before_upgrade"]
+    )
+    def test_vm_run_strategy_after_upgrade(
+        self, manual_run_strategy_vm, always_run_strategy_vm
+    ):
+        upgrade_utils.verify_vms_ssh_connectivity(
+            vms_list=[manual_run_strategy_vm, always_run_strategy_vm]
+        )
 
     @pytest.mark.polarion("CNV-2979")
     @pytest.mark.order(after="test_upgrade_process")
