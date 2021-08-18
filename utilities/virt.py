@@ -1711,7 +1711,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
             2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
         )
 
-    if not vm.instance.spec.running:
+    if not vm.ready:
         vm.start(wait=True, timeout=start_vm_timeout)
 
     # Verify the VM was started (either in this function or before calling it).
