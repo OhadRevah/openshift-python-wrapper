@@ -80,7 +80,10 @@ def calculate_vm_deployment(workers_free_memory):
     total_free = sum(workers_free_memory.values()) * ocp_node_memory_ratio
     vm_amount = round(total_free / node_amount * (node_amount - 1))
     vm_memory = _get_vm_memory_value(vm_amount=vm_amount)
-    vm_adjusted_amount = round(vm_amount / int(vm_memory[:-2]))
+    # adjust vm amount based on value of memory configured for them
+    # "-1" is used to ensure the new amount will fit the cluster memory capacity
+    # (sometimes cluster mem usage is so tight that last vm is not able to schedule)
+    vm_adjusted_amount = round(vm_amount / int(vm_memory[:-2])) - 1
 
     return vm_adjusted_amount, vm_memory
 
@@ -266,10 +269,12 @@ def workers_free_memory(schedulable_nodes, utility_pods):
     cmd = "free -b | grep Mem | awk '{print $4,$6}'"
     for node in schedulable_nodes:
         pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
-        nodes_memory[node] = bitmath.Byte(
+        nodes_memory[node.name] = bitmath.Byte(
             sum([int(mem) for mem in pod_exec.exec(command=cmd).split()])
         ).to_GiB()
-        LOGGER.info(f"Node {node.name} has {nodes_memory[node]} GiB of free memory")
+        LOGGER.info(
+            f"Node {node.name} has {nodes_memory[node.name]} GiB of free memory"
+        )
     return dict(sorted(nodes_memory.items(), key=lambda item: item[1]))
 
 
@@ -329,7 +334,7 @@ def node_to_drain(
     schedulable_nodes_dict = {node.name: node for node in schedulable_nodes}
     vm_per_node_counters = Counter([node.name for node in vms_orig_nodes.values()])
 
-    for node in workers_free_memory.keys():
+    for node in workers_free_memory:
         if node != descheduler_pod.node.name and vm_per_node_counters[node] >= 1:
             return schedulable_nodes_dict[node]
 
