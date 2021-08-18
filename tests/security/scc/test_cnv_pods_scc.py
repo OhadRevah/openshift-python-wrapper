@@ -58,6 +58,7 @@ def test_pods_scc_in_allowlist(skip_not_openshift, cnv_pods):
     bugzilla = {
         "1834839": "cluster-network-addons-operator",
         "1930439": "hco-operator",
+        "1995295": "ssp-operator",
     }
     bugzilla = {
         bug_id: component
