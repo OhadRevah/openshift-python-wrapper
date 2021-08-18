@@ -3,7 +3,6 @@ import logging
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -182,14 +181,6 @@ def add_labels_to_nodes(nodes, node_labels):
     return node_resources, labels_on_nodes
 
 
-def get_kubevirt_hyperconverged_spec(admin_client, hco_namespace):
-    return KubeVirt(
-        client=admin_client,
-        namespace=hco_namespace.name,
-        name="kubevirt-kubevirt-hyperconverged",
-    ).instance.to_dict()["spec"]
-
-
 def replace_hco_cr(rpatch, admin_client, hco_namespace):
     # fetch hyperconverged_resource each time instead of using a single
     # fixture to be sure to get it with an up to date resourceVersion
@@ -245,3 +236,9 @@ def restore_hco_cr_modification(admin_client, hco_namespace, backup_data):
         except TimeoutExpiredError:
             LOGGER.error("Timeout restoring default value in hyperconverged CR.")
             raise
+
+
+def get_hco_spec(admin_client, hco_namespace):
+    return get_hyperconverged_resource(
+        client=admin_client, hco_ns_name=hco_namespace.name
+    ).instance.to_dict()["spec"]

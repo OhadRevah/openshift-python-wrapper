@@ -54,11 +54,7 @@ from utilities.constants import (
     UNPRIVILEGED_USER,
 )
 from utilities.exceptions import CommonCpusNotFoundError
-from utilities.hco import (
-    apply_np_changes,
-    get_hyperconverged_resource,
-    get_kubevirt_hyperconverged_spec,
-)
+from utilities.hco import apply_np_changes, get_hyperconverged_resource
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -93,6 +89,7 @@ from utilities.storage import data_volume
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
+    get_kubevirt_hyperconverged_spec,
     kubernetes_taint_exists,
     vm_instance_from_template,
     wait_for_windows_vm,
@@ -2139,3 +2136,13 @@ def cdi_config():
 @pytest.fixture(scope="class")
 def prometheus():
     return Prometheus()
+
+
+@pytest.fixture()
+def cdi_spec(cdi):
+    return cdi.instance.to_dict()["spec"]
+
+
+@pytest.fixture()
+def hco_spec(hyperconverged_resource_scope_function):
+    return hyperconverged_resource_scope_function.instance.to_dict()["spec"]

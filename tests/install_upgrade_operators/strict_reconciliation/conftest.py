@@ -10,9 +10,9 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
     KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
-from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.hco import (
+    get_hco_spec,
     replace_backup_hco_cr_modification,
     restore_hco_cr_modification,
 )
@@ -38,11 +38,6 @@ def deleted_stanza_on_hco_cr(
     restore_hco_cr_modification(
         admin_client=admin_client, hco_namespace=hco_namespace, backup_data=backup_data
     )
-
-
-@pytest.fixture()
-def hco_spec(admin_client, hco_namespace):
-    return get_hco_spec(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()

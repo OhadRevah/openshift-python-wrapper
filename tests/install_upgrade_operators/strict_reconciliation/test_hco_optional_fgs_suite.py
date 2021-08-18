@@ -4,13 +4,13 @@ import pytest
 
 from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
-    get_hco_spec,
     validate_featuregates_in_kv_cr,
     validate_featuregates_not_in_cdi_cr,
     validate_featuregates_not_in_kv_cr,
     verify_spec,
     wait_for_fg_update,
 )
+from utilities.hco import get_hco_spec
 
 
 LOGGER = logging.getLogger(__name__)

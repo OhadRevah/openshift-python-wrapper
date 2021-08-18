@@ -15,7 +15,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
-from utilities.hco import get_hyperconverged_resource, wait_for_hco_conditions
+from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
@@ -109,23 +109,6 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
         if collect_logs():
             collect_resources_for_test(resources_to_collect=[InstallPlan])
         raise
-
-
-def get_hyperconverged_kubevirt(admin_client, hco_namespace):
-    for kv in KubeVirt.get(
-        dyn_client=admin_client,
-        namespace=hco_namespace.name,
-        name="kubevirt-kubevirt-hyperconverged",
-    ):
-        return kv
-
-
-def get_hyperconverged_cdi(admin_client):
-    for cdi in CDI.get(
-        dyn_client=admin_client,
-        name="cdi-kubevirt-hyperconverged",
-    ):
-        return cdi
 
 
 def get_deployment_by_name(admin_client, namespace_name, deployment_name):
@@ -247,12 +230,6 @@ def get_function_name(function_name):
         str: name of the function
     """
     return inspect.getsource(function_name).split("(")[0].split(" ")[-1]
-
-
-def get_hco_spec(admin_client, hco_namespace):
-    return get_hyperconverged_resource(
-        client=admin_client, hco_ns_name=hco_namespace.name
-    ).instance.to_dict()["spec"]
 
 
 def assert_specs_values(expected, get_spec_func, keys):

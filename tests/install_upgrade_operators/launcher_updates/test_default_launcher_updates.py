@@ -7,12 +7,9 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
     DEFAULT_BATCH_EVICTION_SIZE,
     DEFAULT_WORKLOAD_UPDATE_METHODS,
 )
-from tests.install_upgrade_operators.utils import (
-    get_hco_spec,
-    get_hyperconverged_kubevirt,
-    wait_for_spec_change,
-)
-from utilities.hco import wait_for_hco_conditions
+from tests.install_upgrade_operators.utils import wait_for_spec_change
+from utilities.hco import get_hco_spec, wait_for_hco_conditions
+from utilities.virt import get_hyperconverged_kubevirt
 
 
 LOGGER = logging.getLogger(__name__)

@@ -10,6 +10,7 @@ from contextlib import contextmanager
 
 import kubernetes
 import requests
+from ocp_resources.cdi import CDI
 from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
@@ -656,3 +657,11 @@ def wait_for_default_sc_in_cdiconfig(cdi_config, sc):
     for sample in samples:
         if sample:
             return
+
+
+def get_hyperconverged_cdi(admin_client):
+    for cdi in CDI.get(
+        dyn_client=admin_client,
+        name="cdi-kubevirt-hyperconverged",
+    ):
+        return cdi

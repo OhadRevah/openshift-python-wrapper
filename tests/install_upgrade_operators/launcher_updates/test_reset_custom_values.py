@@ -6,11 +6,9 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
     MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
     MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
 )
-from tests.install_upgrade_operators.utils import (
-    get_hco_spec,
-    get_hyperconverged_kubevirt,
-    wait_for_spec_change,
-)
+from tests.install_upgrade_operators.utils import wait_for_spec_change
+from utilities.hco import get_hco_spec
+from utilities.virt import get_hyperconverged_kubevirt
 
 
 class TestLauncherUpdateResetFields:

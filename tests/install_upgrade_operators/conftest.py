@@ -1,12 +1,10 @@
 import pytest
 from pytest_testconfig import py_config
 
-from tests.install_upgrade_operators.utils import (
-    get_hyperconverged_cdi,
-    get_hyperconverged_kubevirt,
-    get_network_addon_config,
-)
+from tests.install_upgrade_operators.utils import get_network_addon_config
 from utilities.infra import update_custom_resource
+from utilities.storage import get_hyperconverged_cdi
+from utilities.virt import get_hyperconverged_kubevirt
 
 
 @pytest.fixture(scope="session")
@@ -66,11 +64,6 @@ def kubevirt_resource(admin_client, hco_namespace):
 @pytest.fixture()
 def cdi_resource(admin_client):
     return get_hyperconverged_cdi(admin_client=admin_client)
-
-
-@pytest.fixture()
-def cdi_spec(cdi_resource):
-    return cdi_resource.instance.to_dict()["spec"]
 
 
 @pytest.fixture()

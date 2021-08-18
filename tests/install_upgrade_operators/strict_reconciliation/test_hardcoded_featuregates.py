@@ -4,11 +4,9 @@ from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     create_rpatch_dict,
 )
-from tests.install_upgrade_operators.utils import (
-    get_hyperconverged_cdi,
-    get_hyperconverged_kubevirt,
-    wait_for_stabilize,
-)
+from tests.install_upgrade_operators.utils import wait_for_stabilize
+from utilities.storage import get_hyperconverged_cdi
+from utilities.virt import get_hyperconverged_kubevirt
 
 
 class TestHardcodedFeatureGates:

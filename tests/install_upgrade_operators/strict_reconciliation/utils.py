@@ -6,11 +6,11 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.utils import (
     get_function_name,
-    get_hco_spec,
-    get_hyperconverged_cdi,
-    get_hyperconverged_kubevirt,
     get_network_addon_config,
 )
+from utilities.hco import get_hco_spec
+from utilities.storage import get_hyperconverged_cdi
+from utilities.virt import get_hyperconverged_kubevirt
 
 
 LOGGER = logging.getLogger(__name__)

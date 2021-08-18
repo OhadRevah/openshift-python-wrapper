@@ -18,6 +18,7 @@ import rrmngmnt
 import yaml
 from kubernetes.client import ApiException
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.node import Node
 from ocp_resources.resource import Resource
 from ocp_resources.route import Route
@@ -1979,3 +1980,18 @@ def wait_for_node_schedulable_status(node, status, timeout=60):
         else:
             if sample and kubernetes_taint_exists(node):
                 return
+
+
+def get_hyperconverged_kubevirt(admin_client, hco_namespace):
+    for kv in KubeVirt.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+        name="kubevirt-kubevirt-hyperconverged",
+    ):
+        return kv
+
+
+def get_kubevirt_hyperconverged_spec(admin_client, hco_namespace):
+    return get_hyperconverged_kubevirt(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    ).instance.to_dict()["spec"]
