@@ -626,6 +626,7 @@ def get_virtctl_os_info(vm):
         },
         "timezone": timezone",
     }
+
     """
     cmd = ["guestosinfo", vm.name]
     res, output, err = run_virtctl_command(command=cmd, namespace=vm.namespace)
@@ -633,13 +634,8 @@ def get_virtctl_os_info(vm):
         LOGGER.error(f"Failed to get guest-agent info via virtctl. Error: {err}")
         return
     data = json.loads(output)
-    # virtctl gusetosinfo also returns filesystem and user info (if any active user is logged in)
-    # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
-    # fsInfo and userList values are checked in other tests
-    data.pop("supportedCommands", None)
-    data.pop("fsInfo", None)
-    data.pop("userList", None)
-    return data
+
+    return delete_guestosinfo_keys(data=data)
 
 
 def get_cnv_os_info(vm):
@@ -662,12 +658,7 @@ def get_cnv_os_info(vm):
     }
     """
     data = vm.vmi.guest_os_info
-    # subresource gusetosinfo also returns filesystem and user info (if any active user is logged in)
-    # here they are deleted for easy compare vs data from get_linux_os_info() & get_libvirt_os_info()
-    # fsInfo and userList values are checked in other tests
-    data.pop("fsInfo", None)
-    data.pop("userList", None)
-    return data
+    return delete_guestosinfo_keys(data=data)
 
 
 def get_libvirt_os_info(vm):
@@ -958,3 +949,15 @@ def validate_virtctl_guest_agent_data_over_time(vm):
                 return False
     except TimeoutExpiredError:
         return True
+
+
+def delete_guestosinfo_keys(data):
+    """
+    supportedCommands - removed as the data is used for internal guest agent validations
+    fsInfo, userList - checked in validate_fs_info_virtctl_vs_linux_os / validate_user_info_virtctl_vs_linux_os
+    fsFreezeStatus - removed as it is not related to GA validations
+    """
+    removed_keys = ["supportedCommands", "fsInfo", "userList", "fsFreezeStatus"]
+    [data.pop(key, None) for key in removed_keys]
+
+    return data
