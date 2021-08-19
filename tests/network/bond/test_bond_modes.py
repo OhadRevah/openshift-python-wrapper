@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import pytest
 
 import utilities.network
-from utilities.infra import BUG_STATUS_CLOSED, ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod
 from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -244,9 +244,6 @@ class TestBondWithFailOverMac:
             assert_bond_validation(utility_pods=utility_pods, bond=bond)
 
     @pytest.mark.polarion("CNV-6584")
-    @pytest.mark.bugzilla(
-        1971262, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     def test_vm_bond_with_fail_over_mac_started(
         self,
         vm_with_fail_over_mac_bond,
