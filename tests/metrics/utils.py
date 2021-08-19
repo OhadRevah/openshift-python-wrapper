@@ -4,6 +4,7 @@ import shlex
 import urllib
 from collections import Counter, defaultdict
 
+from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_8MIN, TIMEOUT_10MIN
@@ -615,13 +616,16 @@ def get_vmi_phase_count(prometheus, os_name, flavor, workload, query):
 
 
 def wait_until_kubevirt_vmi_phase_count_is_expected(
-    prometheus, os_name, flavor, workload, expected, query
+    prometheus, vmi_annotations, expected, query
 ):
+    os_name = vmi_annotations[Template.VMAnnotations.OS]
+    flavor = vmi_annotations[Template.VMAnnotations.FLAVOR]
+    workload = vmi_annotations[Template.VMAnnotations.WORKLOAD]
     LOGGER.info(
         f"Waiting for kubevirt_vmi_phase_count: expected={expected} os={os_name} flavor={flavor} workload={workload}"
     )
     query_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN,
+        wait_timeout=TIMEOUT_5MIN,
         sleep=3,
         func=get_vmi_phase_count,
         prometheus=prometheus,

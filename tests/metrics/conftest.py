@@ -243,12 +243,12 @@ def vm_metrics_setup(request, vm_list):
     yield vms
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def vm_from_template(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_volume_scope_class,
 ):
     """
     The fixture is using the context manager to create a VM instance from template, as described in
@@ -263,12 +263,12 @@ def vm_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_volume=golden_image_data_volume_scope_class,
     ) as vm:
         yield vm
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def vmi_phase_count_before(request, prometheus):
     """
     This fixture queries Prometheus with the query in the get_vmi_phase_count before a VM is created
@@ -344,3 +344,9 @@ def metrics_sanity(admin_client, prometheus_module):
         raise
     if response["status"] != "success":
         raise RuntimeError(f"Query response has unsuccessful status: {response}")
+
+
+@pytest.fixture(scope="class")
+def stopped_vm(vm_from_template):
+    vm_from_template.stop(wait=True)
+    return vm_from_template
