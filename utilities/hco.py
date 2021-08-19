@@ -107,38 +107,6 @@ def wait_for_dp(dp):
         raise
 
 
-def modify_hco_cr(patch, hco):
-    """
-    Updates hco cr with given dictionary
-
-    Args:
-        patch (dict): dictionary of values that would be used to update hco cr
-        hco (HyperConverged): HCO dictionary
-
-    Returns:
-        dict: {<Resource object>: <backup_as_dict>}
-    """
-
-    def _modify_cr():
-        res_editor = ResourceEditor(patches={hco: patch}, action="update")
-        res_editor.update(backup_resources=True)
-        return res_editor.backups
-
-    samples = TimeoutSampler(
-        wait_timeout=20,
-        sleep=2,
-        exceptions_dict={ConflictError: []},
-        func=_modify_cr,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                return sample
-    except TimeoutExpiredError:
-        LOGGER.error(f"TimedOut updating HCO CR with value: {patch}")
-        raise
-
-
 def apply_np_changes(
     admin_client, hco, hco_namespace, infra_placement=None, workloads_placement=None
 ):
@@ -149,20 +117,15 @@ def apply_np_changes(
         workloads_placement if workloads_placement is not None else current_workloads
     )
     if target_workloads != current_workloads or target_infra != current_infra:
-        LOGGER.info("Updating HCO with node placement.")
         patch = {
             "spec": {
                 "infra": target_infra or None,
                 "workloads": target_workloads or None,
             }
         }
-        modify_hco_cr(patch=patch, hco=hco)
-        LOGGER.info("Waiting for HCO to report progressing condition.")
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            expected_conditions=DEFAULT_HCO_PROGRESSING_CONDITIONS,
-        )
+        LOGGER.info(f"Updating HCO with node placement. {patch}")
+        editor = ResourceEditor(patches={hco: patch})
+        editor.update(backup_resources=False)
         LOGGER.info(
             "Waiting for all HCO conditions to detect that it's back to a stable configuration."
         )

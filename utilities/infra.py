@@ -6,6 +6,7 @@ import re
 import shlex
 import shutil
 from configparser import ConfigParser
+from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -853,3 +854,19 @@ def cluster_sanity(
     # Wait for all cnv pods to reach Running state
     LOGGER.info(f"Check that all pods in {hco_namespace.name} running")
     wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
+
+
+@contextmanager
+def update_custom_resource(patch, action="update"):
+    """Update any CR with given values
+
+    Args:
+        patch (dict): dictionary of values that would be used to update a cr. This dict should include the resource
+        as the base key
+        action (str): type of action to be performed. e.g. "update", "replace" etc.
+
+    Yields:
+        dict: {<Resource object>: <backup_as_dict>} or True in case no backup option is selected
+    """
+    with ResourceEditor(patches=patch, action=action) as edited_source:
+        yield edited_source

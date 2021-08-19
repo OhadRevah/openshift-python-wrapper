@@ -6,7 +6,7 @@ from tests.install_upgrade_operators.utils import (
     get_hyperconverged_kubevirt,
     get_network_addon_config,
 )
-from utilities.hco import modify_hco_cr
+from utilities.infra import update_custom_resource
 
 
 @pytest.fixture(scope="session")
@@ -92,11 +92,7 @@ def update_hco_cr(request, hyperconverged_resource_scope_function):
         hyperconverged_resource_scope_function (HyperConverged): HCO CR
 
     """
-    modify_hco_cr(
-        patch=request.param["patch"], hco=hyperconverged_resource_scope_function
-    )
-    yield
-    if request.param.get("clean"):
-        modify_hco_cr(
-            patch=request.param["clean"], hco=hyperconverged_resource_scope_function
-        )
+    with update_custom_resource(
+        patch={hyperconverged_resource_scope_function: request.param["patch"]},
+    ):
+        yield

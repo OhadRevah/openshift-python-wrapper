@@ -13,10 +13,10 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
 from tests.install_upgrade_operators.strict_reconciliation.utils import get_hco_spec
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.hco import (
-    modify_hco_cr,
     replace_backup_hco_cr_modification,
     restore_hco_cr_modification,
 )
+from utilities.infra import update_custom_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -58,43 +58,32 @@ def hco_cr_custom_values(
         hyperconverged_resource_scope_function (HyperConverged): HCO CR
 
     """
-    modify_hco_cr(
-        patch=CUSTOM_HCO_CR_SPEC.copy(),
-        hco=hyperconverged_resource_scope_function,
-    )
-    yield
-    modify_hco_cr(
-        patch={
-            "spec": {
-                "liveMigrationConfig": None,
-                "certConfig": None,
-                "featureGates": None,
-            }
-        },
-        hco=hyperconverged_resource_scope_function,
-    )
+    with update_custom_resource(
+        patch={hyperconverged_resource_scope_function: CUSTOM_HCO_CR_SPEC.copy()},
+    ):
+        yield
 
 
 @pytest.fixture()
 def update_cdi_cr(request, cdi_resource):
     patch = request.param["patch"]
-    with ResourceEditor(patches={cdi_resource: patch}):
+    with update_custom_resource(patch={cdi_resource: patch}):
         yield
 
 
 @pytest.fixture()
 def update_kubevirt_cr(request, kubevirt_resource):
     patch = request.param["patch"]
-
-    with ResourceEditor(patches={kubevirt_resource: patch}):
+    with update_custom_resource(
+        patch={kubevirt_resource: patch},
+    ):
         yield
 
 
 @pytest.fixture()
 def update_cnao_cr(request, cnao_resource):
     patch = request.param["patch"]
-
-    with ResourceEditor(patches={cnao_resource: patch}):
+    with update_custom_resource(patch={cnao_resource: patch}):
         yield
 
 
@@ -117,8 +106,8 @@ def updated_kv_with_feature_gates(
         for f, v in hco_cr_actual_featuregates.items()
     ), "KubeVirt featuregates values are not as expected before testing"
 
-    with ResourceEditor(
-        patches={
+    with update_custom_resource(
+        patch={
             kubevirt_resource: {
                 "spec": {
                     "configuration": {"developerConfiguration": {"featureGates": fgs}}
@@ -134,9 +123,8 @@ def updated_cdi_with_feature_gates(request, cdi_resource):
     cdi_dict = cdi_resource.instance.to_dict()
     fgs = cdi_dict["spec"]["config"]["featureGates"].copy()
     fgs.extend(request.param)
-
-    with ResourceEditor(
-        patches={cdi_resource: {"spec": {"config": {"featureGates": fgs}}}},
+    with update_custom_resource(
+        patch={cdi_resource: {"spec": {"config": {"featureGates": fgs}}}},
     ):
         yield
 
@@ -152,18 +140,19 @@ def hco_with_non_default_feature_gates(
     ]
     assert all(
         KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[f] == v for f, v in hco_fgs.items()
-    ), "HCO featuregates values are not as expected before testing"
+    ), (
+        f"HCO featuregates values before testing: {hco_fgs} are not as expected before testing"
+        f" {KV_CR_FEATUREGATES_HCO_CR_DEFAULTS}"
+    )
     for fg in new_fgs:
         hco_fgs[fg] = True
-
-    with ResourceEditor(
-        patches={
+    with update_custom_resource(
+        patch={
             hyperconverged_resource_scope_function: {"spec": {"featureGates": hco_fgs}}
-        }
+        },
     ):
         wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
         yield
-        wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
