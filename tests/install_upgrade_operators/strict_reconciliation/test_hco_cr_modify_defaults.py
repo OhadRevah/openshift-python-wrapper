@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 class TestOperatorsModify:
     @pytest.mark.parametrize(
-        "update_hco_cr, expected",
+        "updated_hco_cr, expected",
         [
             pytest.param(
                 {
@@ -222,14 +222,14 @@ class TestOperatorsModify:
                 id="Test_Modify_HCO_CR_liveMigrationConfig_progressTimeout",
             ),
         ],
-        indirect=["update_hco_cr"],
+        indirect=["updated_hco_cr"],
     )
     def test_modify_hco_cr(
         self,
         hco_cr_custom_values,
         admin_client,
         hco_namespace,
-        update_hco_cr,
+        updated_hco_cr,
         expected,
     ):
         """
@@ -275,7 +275,7 @@ class TestOperatorsModify:
             )
 
     @pytest.mark.parametrize(
-        "update_hco_cr, expected",
+        "updated_hco_cr, expected",
         [
             pytest.param(
                 {
@@ -343,14 +343,14 @@ class TestOperatorsModify:
                 id="Test_Modify_HCO_CR_featureGates_withHostPassthroughCPU",
             ),
         ],
-        indirect=["update_hco_cr"],
+        indirect=["updated_hco_cr"],
     )
     def test_modify_hco_cr_fg(
         self,
         hco_cr_custom_values,
         admin_client,
         hco_namespace,
-        update_hco_cr,
+        updated_hco_cr,
         expected,
     ):
         """

@@ -15,7 +15,7 @@ from tests.install_upgrade_operators.utils import (
 
 class TestLauncherUpdateResetFields:
     @pytest.mark.parametrize(
-        "update_hco_cr, expected",
+        "updated_hco_cr, expected",
         [
             pytest.param(
                 {
@@ -64,14 +64,14 @@ class TestLauncherUpdateResetFields:
                 marks=pytest.mark.polarion("CNV-6931"),
             ),
         ],
-        indirect=["update_hco_cr"],
+        indirect=["updated_hco_cr"],
     )
     def test_hyperconverged_reset_custom_workload_update_strategy(
         self,
-        update_workload_strategy_custom_values,
+        updated_workload_strategy_custom_values,
         admin_client,
         hco_namespace,
-        update_hco_cr,
+        updated_hco_cr,
         expected,
     ):
         """Validate ability to reset, hyperconverged's spec.workloadUpdateStrategy from custom values"""

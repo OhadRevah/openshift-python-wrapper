@@ -49,7 +49,7 @@ class TestLauncherUpdateAll:
         self,
         admin_client,
         hco_namespace,
-        update_workload_strategy_custom_values,
+        updated_workload_strategy_custom_values,
         resource_name,
         expected,
     ):
@@ -78,7 +78,7 @@ class TestLauncherUpdateAll:
 
 class TestCustomWorkLoadStrategy:
     @pytest.mark.parametrize(
-        "update_hco_cr, expected",
+        "updated_hco_cr, expected",
         [
             pytest.param(
                 {
@@ -209,10 +209,10 @@ class TestCustomWorkLoadStrategy:
                 id="test_hyperconverged_modify_workloadUpdateStrategy_batchEvictionSize_large_value",
             ),
         ],
-        indirect=["update_hco_cr"],
+        indirect=["updated_hco_cr"],
     )
     def test_hyperconverged_modify_custom_workload_update_strategy(
-        self, admin_client, hco_namespace, update_hco_cr, expected
+        self, admin_client, hco_namespace, updated_hco_cr, expected
     ):
         """Validate ability to update, hyperconverged's spec.workloadUpdateStrategy to custom values"""
         wait_for_spec_change(

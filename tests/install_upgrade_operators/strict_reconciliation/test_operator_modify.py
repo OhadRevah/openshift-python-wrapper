@@ -5,7 +5,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import verify_s
 
 class TestOperatorsModify:
     @pytest.mark.parametrize(
-        "update_cdi_cr",
+        "updated_cdi_cr",
         [
             pytest.param(
                 {
@@ -93,7 +93,7 @@ class TestOperatorsModify:
         kubevirt_hyperconverged_spec_scope_function,
         cdi_spec,
         cnao_spec,
-        update_cdi_cr,
+        updated_cdi_cr,
     ):
         assert verify_specs(
             admin_client,
@@ -105,7 +105,7 @@ class TestOperatorsModify:
         )
 
     @pytest.mark.parametrize(
-        "update_kubevirt_cr",
+        "updated_kubevirt_cr",
         [
             pytest.param(
                 {
@@ -285,7 +285,7 @@ class TestOperatorsModify:
         kubevirt_hyperconverged_spec_scope_function,
         cdi_spec,
         cnao_spec,
-        update_kubevirt_cr,
+        updated_kubevirt_cr,
     ):
         assert verify_specs(
             admin_client,
@@ -297,7 +297,7 @@ class TestOperatorsModify:
         )
 
     @pytest.mark.parametrize(
-        "update_cnao_cr",
+        "updated_cnao_cr",
         [
             pytest.param(
                 {
@@ -373,7 +373,7 @@ class TestOperatorsModify:
         kubevirt_hyperconverged_spec_scope_function,
         cdi_spec,
         cnao_spec,
-        update_cnao_cr,
+        updated_cnao_cr,
     ):
         assert verify_specs(
             admin_client,

@@ -18,7 +18,7 @@ from tests.install_upgrade_operators.utils import (
 
 class TestLauncherUpdateModifyDefault:
     @pytest.mark.parametrize(
-        "update_hco_cr, expected",
+        "updated_hco_cr, expected",
         [
             pytest.param(
                 {
@@ -69,14 +69,14 @@ class TestLauncherUpdateModifyDefault:
                 id="test_hyperconverged_modify_default_workloadUpdateMethods",
             ),
         ],
-        indirect=["update_hco_cr"],
+        indirect=["updated_hco_cr"],
     )
     def test_hyperconverged_modify_custom_workload_update_strategy(
         self,
-        update_workload_strategy_custom_values,
+        updated_workload_strategy_custom_values,
         admin_client,
         hco_namespace,
-        update_hco_cr,
+        updated_hco_cr,
         expected,
     ):
         """Validate ability to update, hyperconverged's spec.workloadUpdateStrategy to custom values"""
@@ -98,7 +98,7 @@ class TestLauncherUpdateModifyDefault:
         )
 
     @pytest.mark.parametrize(
-        "update_hco_cr, resource_name, expected",
+        "updated_hco_cr, resource_name, expected",
         [
             pytest.param(
                 {
@@ -129,14 +129,14 @@ class TestLauncherUpdateModifyDefault:
                 marks=pytest.mark.polarion("CNV-6941"),
             ),
         ],
-        indirect=["update_hco_cr"],
+        indirect=["updated_hco_cr"],
     )
     def test_hyperconverged_modify_all_workload_update_strategy(
         self,
-        update_workload_strategy_custom_values,
+        updated_workload_strategy_custom_values,
         admin_client,
         hco_namespace,
-        update_hco_cr,
+        updated_hco_cr,
         resource_name,
         expected,
     ):

@@ -244,7 +244,7 @@ class TestHardcodedFeatureGates:
 
     @pytest.mark.polarion("CNV-6277")
     @pytest.mark.parametrize(
-        ("update_cdi_cr", "expected"),
+        ("updated_cdi_cr", "expected"),
         [
             pytest.param(
                 {
@@ -297,13 +297,13 @@ class TestHardcodedFeatureGates:
                 id="delete_hardcoded_featuregates_cdi_cr_spec_empty_dict",
             ),
         ],
-        indirect=["update_cdi_cr"],
+        indirect=["updated_cdi_cr"],
     )
     def test_hardcoded_featuregates_removed_from_cdi_cr(
         self,
         admin_client,
         hco_namespace,
-        update_cdi_cr,
+        updated_cdi_cr,
         expected,
     ):
         wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)

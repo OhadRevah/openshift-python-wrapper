@@ -84,7 +84,7 @@ def cnao_spec(cnao_resource):
 
 
 @pytest.fixture()
-def update_hco_cr(request, hyperconverged_resource_scope_function):
+def updated_hco_cr(request, hyperconverged_resource_scope_function):
     """
     This fixture updates HCO CR with values specified via request.param
 

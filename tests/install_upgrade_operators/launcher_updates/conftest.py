@@ -7,7 +7,7 @@ from utilities.infra import update_custom_resource
 
 
 @pytest.fixture()
-def update_workload_strategy_custom_values(
+def updated_workload_strategy_custom_values(
     hyperconverged_resource_scope_function,
 ):
     """

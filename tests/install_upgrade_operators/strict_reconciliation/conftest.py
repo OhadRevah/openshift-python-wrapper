@@ -65,14 +65,14 @@ def hco_cr_custom_values(
 
 
 @pytest.fixture()
-def update_cdi_cr(request, cdi_resource):
+def updated_cdi_cr(request, cdi_resource):
     patch = request.param["patch"]
     with update_custom_resource(patch={cdi_resource: patch}):
         yield
 
 
 @pytest.fixture()
-def update_kubevirt_cr(request, kubevirt_resource):
+def updated_kubevirt_cr(request, kubevirt_resource):
     patch = request.param["patch"]
     with update_custom_resource(
         patch={kubevirt_resource: patch},
@@ -81,7 +81,7 @@ def update_kubevirt_cr(request, kubevirt_resource):
 
 
 @pytest.fixture()
-def update_cnao_cr(request, cnao_resource):
+def updated_cnao_cr(request, cnao_resource):
     patch = request.param["patch"]
     with update_custom_resource(patch={cnao_resource: patch}):
         yield
