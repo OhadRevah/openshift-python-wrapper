@@ -16,6 +16,7 @@ import pexpect
 import requests
 import rrmngmnt
 import yaml
+from kubernetes.client import ApiException
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.node import Node
 from ocp_resources.resource import Resource
@@ -1717,8 +1718,28 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
             2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
         )
 
-    if not vm.ready:
+    # To support all use cases of: 'running'/'runStrategy', container/VM from template, VM started outside this function
+    allowed_vm_start_exceptions_dict = {
+        ApiException: [
+            "Always does not support manual start requests",
+            "VM is already running",
+        ],
+    }
+    try:
         vm.start(wait=True, timeout=start_vm_timeout)
+    except tuple(allowed_vm_start_exceptions_dict) as exception:
+        matched_exception = False
+        if any(
+            [
+                message in exception.body
+                for message in allowed_vm_start_exceptions_dict[type(exception)]
+            ]
+        ):
+            LOGGER.warning(f"VM {vm.name} is already running; will not be started.")
+            matched_exception = True
+
+        if not matched_exception:
+            raise exception
 
     # Verify the VM was started (either in this function or before calling it).
     vm.vmi.wait_until_running()
