@@ -17,6 +17,7 @@ from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
 
 import tests.storage.utils as storage_utils
+from tests.storage.constants import CDI_SECRETS
 from utilities.constants import (
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
@@ -43,17 +44,6 @@ pytestmark = pytest.mark.post_upgrade
 LOGGER = logging.getLogger(__name__)
 RFC3339_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 LOCAL_QCOW2_IMG_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
-
-
-CDI_SECRETS = [
-    "cdi-apiserver-server-cert",
-    "cdi-apiserver-signer",
-    "cdi-uploadproxy-server-cert",
-    "cdi-uploadproxy-signer",
-    "cdi-uploadserver-client-cert",
-    "cdi-uploadserver-client-signer",
-    "cdi-uploadserver-signer",
-]
 
 
 def x509_cert_is_valid(cert, seconds):

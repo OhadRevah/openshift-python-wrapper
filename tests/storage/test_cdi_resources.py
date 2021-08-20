@@ -3,21 +3,26 @@ import logging
 import pytest
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
+from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
 from ocp_resources.replicaset import ReplicaSet
+from ocp_resources.resource import Resource
 from ocp_resources.role import Role
 from ocp_resources.role_binding import RoleBinding
+from ocp_resources.secret import Secret
 from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from tests.storage import utils as storage_utils
+from tests.storage.constants import CDI_SECRETS
 from utilities import storage as utils
 from utilities.constants import TIMEOUT_10MIN, Images
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import get_images_server_url
 
 
@@ -25,69 +30,117 @@ pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)
-CDI_LABEL = "cdi.kubevirt.io"
+CDI_LABEL = Resource.ApiGroup.CDI_KUBEVIRT_IO
+CDI_OPERATOR = "cdi-operator"
+CDI_CONTROLLER = "cdi-controller"
 
 
 def verify_label(cdi_resources):
     bad_pods = []
     for rcs in cdi_resources:
-        if rcs.name.startswith("cdi-operator"):
+        if rcs.name.startswith(CDI_OPERATOR):
             continue
-        if CDI_LABEL not in rcs.instance.metadata.labels.keys():
+        if CDI_LABEL not in rcs.labels.keys():
             bad_pods.append(rcs.name)
     assert not bad_pods, " ".join(bad_pods)
+
+
+def verify_cdi_app_label(cdi_resources, cnv_version):
+    for resource in cdi_resources:
+        if resource.kind == "Secret" and resource.name not in CDI_SECRETS:
+            continue
+        elif resource.kind == "ServiceAccount" and resource.name == CDI_OPERATOR:
+            continue
+        elif (
+            resource.kind == "ConfigMap"
+            and resource.name == "cdi-operator-leader-election-helper"
+        ):
+            continue
+        else:
+            assert (
+                resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/component"]
+                == "storage"
+            ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/component for {resource.name}"
+            assert (
+                resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/part-of"]
+                == "hyperconverged-cluster"
+            ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/part-of for {resource.name}"
+            assert (
+                resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/version"]
+                == f"v{cnv_version}"
+            ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/version for {resource.name}"
+            if resource.name.startswith(CDI_OPERATOR):
+                assert (
+                    resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
+                    == "olm"
+                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
+            elif resource.name.startswith(CDI_CONTROLLER):
+                assert (
+                    resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
+                    == CDI_CONTROLLER
+                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
+            elif resource.kind == "Secret" and resource.name == "cdi-api-signing-key":
+                assert (
+                    resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
+                    == "cdi-apiserver"
+                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
+            else:
+                assert (
+                    resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
+                    == CDI_OPERATOR
+                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
 
 
 @pytest.mark.parametrize(
     "cdi_resources",
     [
         pytest.param(
-            {"resource": Pod},
+            Pod,
             marks=(pytest.mark.polarion("CNV-1034")),
             id="cdi-pods",
         ),
         pytest.param(
-            {"resource": ServiceAccount},
+            ServiceAccount,
             marks=(pytest.mark.polarion("CNV-3478")),
             id="cdi-service-accounts",
         ),
         pytest.param(
-            {"resource": Service},
+            Service,
             marks=(pytest.mark.polarion("CNV-3479")),
             id="cdi-service",
         ),
         pytest.param(
-            {"resource": Deployment},
+            Deployment,
             marks=(pytest.mark.polarion("CNV-3480")),
             id="cdi-deployment",
         ),
         pytest.param(
-            {"resource": ReplicaSet},
+            ReplicaSet,
             marks=(pytest.mark.polarion("CNV-3481")),
             id="cdi-replicatset",
         ),
         pytest.param(
-            {"resource": CustomResourceDefinition},
+            CustomResourceDefinition,
             marks=(pytest.mark.polarion("CNV-3482")),
             id="cdi-crd",
         ),
         pytest.param(
-            {"resource": Role},
+            Role,
             marks=(pytest.mark.polarion("CNV-3483")),
             id="cdi-role",
         ),
         pytest.param(
-            {"resource": RoleBinding},
+            RoleBinding,
             marks=(pytest.mark.polarion("CNV-3484")),
             id="cdi-role-binding",
         ),
         pytest.param(
-            {"resource": ClusterRole},
+            ClusterRole,
             marks=(pytest.mark.polarion("CNV-3485")),
             id="cdi-cluster-role",
         ),
         pytest.param(
-            {"resource": ClusterRoleBinding},
+            ClusterRoleBinding,
             marks=(pytest.mark.polarion("CNV-3486")),
             id="cdi-cluster-role-binding",
         ),
@@ -209,3 +262,76 @@ def test_cloner_pods_cdi_label(
             pod_name="-source-pod",
             storage_ns_name=cdv.namespace,
         )
+
+
+@pytest.mark.bugzilla(
+    1994389, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
+@pytest.mark.parametrize(
+    "cdi_resources",
+    [
+        pytest.param(
+            Pod,
+            marks=(pytest.mark.polarion("CNV-6907")),
+            id="cdi-pods",
+        ),
+        pytest.param(
+            ServiceAccount,
+            marks=(pytest.mark.polarion("CNV-7130")),
+            id="cdi-service-accounts",
+        ),
+        pytest.param(
+            Service,
+            marks=(pytest.mark.polarion("CNV-7131")),
+            id="cdi-service",
+        ),
+        pytest.param(
+            Deployment,
+            marks=(pytest.mark.polarion("CNV-7132")),
+            id="cdi-deployment",
+        ),
+        pytest.param(
+            ReplicaSet,
+            marks=(pytest.mark.polarion("CNV-7133")),
+            id="cdi-replicatset",
+        ),
+        pytest.param(
+            CustomResourceDefinition,
+            marks=(pytest.mark.polarion("CNV-7134")),
+            id="cdi-crd",
+        ),
+        pytest.param(
+            Role,
+            marks=(pytest.mark.polarion("CNV-7138")),
+            id="cdi-role",
+        ),
+        pytest.param(
+            RoleBinding,
+            marks=(pytest.mark.polarion("CNV-7136")),
+            id="cdi-role-binding",
+        ),
+        pytest.param(
+            ClusterRole,
+            marks=(pytest.mark.polarion("CNV-7139")),
+            id="cdi-cluster-role",
+        ),
+        pytest.param(
+            ClusterRoleBinding,
+            marks=(pytest.mark.polarion("CNV-7136")),
+            id="cdi-cluster-role-binding",
+        ),
+        pytest.param(
+            ConfigMap,
+            marks=(pytest.mark.polarion("CNV-7137")),
+            id="cdi-configmap",
+        ),
+        pytest.param(
+            Secret,
+            marks=(pytest.mark.polarion("CNV-7135")),
+            id="cdi-secret",
+        ),
+    ],
+    indirect=True,
+)
+def test_verify_cdi_res_app_label(cdi_resources, cnv_current_version):
+    verify_cdi_app_label(cdi_resources=cdi_resources, cnv_version=cnv_current_version)

@@ -39,7 +39,7 @@ LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 
 @pytest.fixture()
 def cdi_resources(request, admin_client):
-    rcs_object = request.param["resource"]
+    rcs_object = request.param
     LOGGER.info(f"Get all resources with kind: {rcs_object.kind}")
     resource_list = list(rcs_object.get(dyn_client=admin_client))
     return [rcs for rcs in resource_list if rcs.name.startswith("cdi-")]
