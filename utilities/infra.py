@@ -533,21 +533,33 @@ def wait_for_pods_deletion(pods):
 
 def validate_nodes_ready(nodes):
     """
-    Validates all nodes are in ready and schedulable state
+    Validates all nodes are in ready
 
     Args:
          nodes(list): List of Node objects
 
     Raises:
-        AssertionError: when nodes are not ready or not schedulable
+        AssertionError: Assert on node(s) in not ready state
     """
-    unschedulable_nodes = [
-        node.name for node in nodes if node.instance.spec.unschedulable
-    ]
     not_ready_nodes = [node.name for node in nodes if not node.kubelet_ready]
     assert (
         not not_ready_nodes
     ), f"Following nodes are not in ready state: {not_ready_nodes}"
+
+
+def validate_nodes_schedulable(nodes):
+    """
+    Validates all nodes are in schedulable state
+
+    Args:
+         nodes(list): List of Node objects
+
+    Raises:
+        AssertionError: Asserts on node(s) not schedulable
+    """
+    unschedulable_nodes = [
+        node.name for node in nodes if node.instance.spec.unschedulable
+    ]
     assert (
         not unschedulable_nodes
     ), f"Following nodes are in not unschedulable state: {unschedulable_nodes}"

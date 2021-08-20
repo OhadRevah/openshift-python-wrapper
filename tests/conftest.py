@@ -78,6 +78,7 @@ from utilities.infra import (
     separator,
     setup_logging,
     validate_nodes_ready,
+    validate_nodes_schedulable,
     wait_for_pods_deletion,
     wait_for_pods_running,
 )
@@ -2036,6 +2037,7 @@ def cluster_sanity(
         )
     # validate that all the nodes are ready and schedulable
     validate_nodes_ready(nodes=nodes)
+    validate_nodes_schedulable(nodes=nodes)
 
     # Wait for all cnv pods to reach Running state
     wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
