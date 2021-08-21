@@ -6,9 +6,10 @@ import pytest
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.ssp import SSP
 
+from utilities.infra import get_pod_by_name_prefix
+
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
-
 
 CONDITIONS_DICT = {
     CustomResourceDefinition.Condition.PROGRESSING: "False",
@@ -31,6 +32,22 @@ def ssp_resource(admin_client, hco_namespace):
     return ssp_cr[0]
 
 
+@pytest.fixture()
+def pods_list_with_given_prefix(request, admin_client, hco_namespace):
+    namespace_name = hco_namespace.name
+    pods_prefix_name = request.param["pods_prefix_name"]
+    pods_list_by_prefix = get_pod_by_name_prefix(
+        dyn_client=admin_client,
+        pod_prefix=pods_prefix_name,
+        namespace=namespace_name,
+        get_all=True,
+    )
+    assert (
+        pods_list_by_prefix
+    ), f"Did not find pods with prefix: {pods_prefix_name} in namespace: {namespace_name}"
+    return pods_list_by_prefix
+
+
 @pytest.mark.polarion("CNV-3737")
 def test_verify_ssp_crd_conditions(ssp_resource):
     LOGGER.info("Check SSP CR conditions.")
@@ -42,3 +59,28 @@ def test_verify_ssp_crd_conditions(ssp_resource):
     assert (
         resource_conditions == CONDITIONS_DICT
     ), f"SSP CR conditions failed. Actual: {resource_conditions}, expected: {CONDITIONS_DICT}."
+
+
+@pytest.mark.parametrize(
+    "pods_list_with_given_prefix",
+    [
+        pytest.param(
+            {"pods_prefix_name": "ssp-operator"}, marks=pytest.mark.polarion("CNV-7002")
+        ),
+        pytest.param(
+            {"pods_prefix_name": "virt-template-validator"},
+            marks=pytest.mark.polarion("CNV-7003"),
+        ),
+    ],
+    indirect=True,
+)
+def test_priority_class_value(pods_list_with_given_prefix):
+    expected_priority_class_value = "system-cluster-critical"
+    failed_pods_list = [
+        pod.name
+        for pod in pods_list_with_given_prefix
+        if pod.instance.spec["priorityClassName"] != expected_priority_class_value
+    ]
+    assert (
+        not failed_pods_list
+    ), f"priorityClassName not set correctly in pods: {failed_pods_list}, should be {expected_priority_class_value}"
