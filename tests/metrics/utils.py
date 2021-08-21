@@ -96,18 +96,24 @@ def get_changed_mutation_component_value(prometheus, component_name, previous_va
         raise
 
 
-def get_query_result(prometheus, query, timeout=TIMEOUT_5MIN):
+def get_vm_metrics(prometheus, query, vm_name, timeout=TIMEOUT_5MIN):
     """
-    Performs Prometheus query, waits for the results to show up, returns the query results
+    Performs Prometheus query, waits for the expected vm related metrics to show up in results,
+    returns the query results
 
     Args:
-        prometheus (Prometheus Object): Prometheus object.
-        query (str): Prometheus query string (for strings with special characters they need to be parsed by the
+        prometheus(Prometheus Object): Prometheus object.
+        query(str): Prometheus query string (for strings with special characters they need to be parsed by the
         caller)
-        timeout: (Int): Timeout value in seconds
+        vm_name(str): name of the vm to look for in prometheus query results
+        timeout(int): Timeout value in seconds
 
     Returns:
-        list: List of query results
+        list: List of query results if appropriate vm name is found in the results.
+
+    Raise:
+        TimeoutExpiredError: if a given vm name does not show up in prometheus query results
+
     """
     sampler = TimeoutSampler(
         wait_timeout=timeout,
@@ -118,10 +124,15 @@ def get_query_result(prometheus, query, timeout=TIMEOUT_5MIN):
     )
     try:
         for sample in sampler:
-            if sample["data"]["result"]:
-                return sample["data"]["result"]
+            data_result = sample["data"]["result"]
+            if data_result and vm_name in [
+                name.get("metric").get("name") for name in data_result
+            ]:
+                return data_result
     except TimeoutExpiredError:
-        LOGGER.error(f'No vm(s) found via prometheus query: "{query}"')
+        LOGGER.error(
+            f'vm {vm_name} not found via prometheus query: "{query}" result: {data_result}'
+        )
         raise
 
 
@@ -279,23 +290,6 @@ def wait_for_summary_count_to_be_expected(
         raise
 
 
-def get_vm_names_from_metric(prometheus, query, timeout=TIMEOUT_5MIN):
-    """
-    Retrieves a list of vm names from a given prometheus api query result
-
-    Args:
-        prometheus (Prometheus Object): Prometheus object.
-        query (str): Prometheus query string (for strings with special characters they need to be parsed by the
-        caller)
-        timeout: (Int): Timeout value in seconds
-
-    Returns:
-        list: List of vm names that are present in the query result
-    """
-    result = get_query_result(prometheus=prometheus, query=query, timeout=timeout)
-    return [name.get("metric").get("name") for name in result]
-
-
 def parse_vm_metric_results(raw_output):
     """
     Parse metrics received from virt-handler pod
@@ -435,58 +429,28 @@ def get_topk_query(metric_names, time_period="5m"):
         str: query string to be used for the topk query
     """
     query_parts = [
-        f" sum by (name, namespace) (round(irate({metric}[{time_period}]), 0.1))"
+        f" sum by (name, namespace) (rate({metric}[{time_period}]))"
         for metric in metric_names
     ]
-    return f"topk(3, {(' + ').join(query_parts)}) > 0"
+    return f"topk(3, {(' + ').join(query_parts)})"
 
 
-def assert_topk_vms(prometheus, query, vm_list, timeout=TIMEOUT_5MIN):
+def assert_topk_vms(prometheus, query, vm_list, timeout=TIMEOUT_8MIN):
     """
-    Performs a topk query against prometheus api, validates it contains expected vms
-
-    Args:
-        prometheus (Prometheus Object): Prometheus object.
-        query (str): Prometheus query string
-        vm_list (list: list of vm names that are expected to be in prometheus api query result
-        timeout (int): Timeout value in seconds
-
-    Raises:
-        Asserts on mismatch between number of vms founds in topk query results vs expected number of vms
-    """
-    query_results = wait_for_topk(
-        prometheus=prometheus,
-        query=query,
-        timeout=timeout,
-        number_of_results=len(vm_list),
-    )
-    vms_found = [
-        entry["metric"]["name"]
-        for entry in query_results
-        if entry.get("metric", {})
-        and "name" in entry["metric"]
-        and entry["metric"]["name"] in vm_list
-    ]
-
-    assert Counter(vms_found) == Counter(vm_list), (
-        f"Following vms {set(vm_list) - set(vms_found)} did not show up in Topk query "
-        f"{query}, Results: {query_results}"
-    )
-
-
-def wait_for_topk(prometheus, query, number_of_results, timeout=TIMEOUT_8MIN):
-    """
-    Performs a topk query against prometheus api, waits until it has right number of result entries and returns the
+    Performs a topk query against prometheus api, waits until it has expected result entries and returns the
     results
 
     Args:
         prometheus (Prometheus Object): Prometheus object.
         query (str): Prometheus query string
-        number_of_results (Int): Expected number of result entries
+        vm_list (list): list of vms to show up in topk results
         timeout (int): Timeout value in seconds
 
     Returns:
         list: List of results
+
+    Raises:
+        TimeoutExpiredError: on mismatch between number of vms founds in topk query results vs expected number of vms
     """
     sampler = TimeoutSampler(
         wait_timeout=timeout,
@@ -498,11 +462,18 @@ def wait_for_topk(prometheus, query, number_of_results, timeout=TIMEOUT_8MIN):
     sample = None
     try:
         for sample in sampler:
-            if sample and len(sample["data"]["result"]) == number_of_results:
-                return sample["data"]["result"]
+            data_sample = sample["data"]["result"]
+            if len(data_sample) == len(vm_list):
+                vms_found = [
+                    entry["metric"]["name"]
+                    for entry in data_sample
+                    if entry.get("metric", {}).get("name") in vm_list
+                ]
+                if Counter(vms_found) == Counter(vm_list):
+                    return data_sample
     except TimeoutExpiredError:
         LOGGER.error(
-            f'Expected number of result entries "{number_of_results}" for prometheus query:'
+            f'Expected vms: "{vm_list}" for prometheus query:'
             f' "{query}" does not match with actual results: {sample} after {timeout} seconds.'
         )
         raise
@@ -568,7 +539,9 @@ def assert_prometheus_metric_values(prometheus, query, vm, timeout=TIMEOUT_5MIN)
     Raise:
         Asserts on premetheus results not matching expected result
     """
-    results = get_query_result(prometheus=prometheus, query=query, timeout=timeout)
+    results = get_vm_metrics(
+        prometheus=prometheus, query=query, vm_name=vm.name, timeout=timeout
+    )
     result_entry = [
         result["metric"]
         for result in results

@@ -1,9 +1,6 @@
 import pytest
 
-from tests.metrics.utils import (
-    assert_vm_metric_virt_handler_pod,
-    get_vm_names_from_metric,
-)
+from tests.metrics.utils import assert_vm_metric_virt_handler_pod, get_vm_metrics
 
 
 @pytest.mark.parametrize(
@@ -67,9 +64,5 @@ def test_parity_with_rhv_metric(prometheus, first_metric_vm, query):
     This test also validates ability to pull metric information from a given vm's virt-handler pod and validates
     appropriate information exists for that metrics.
     """
-    vm_name_from_metric = get_vm_names_from_metric(prometheus=prometheus, query=query)
-    assert first_metric_vm.name in vm_name_from_metric, (
-        f"Expected vm name: {first_metric_vm.name} not found in prometheus api query "
-        f"result: {vm_name_from_metric}"
-    )
+    get_vm_metrics(prometheus=prometheus, query=query, vm_name=first_metric_vm.name)
     assert_vm_metric_virt_handler_pod(query=query, vm=first_metric_vm)

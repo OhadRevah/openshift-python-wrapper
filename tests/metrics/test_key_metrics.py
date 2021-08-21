@@ -75,13 +75,7 @@ class TestKeyMetrics:
 
         """
         vm = first_metric_vm
-        vm_name_from_metric = utils.get_vm_names_from_metric(
-            prometheus=prometheus, query=query
-        )
-        assert vm.name in vm_name_from_metric, (
-            f"Expected vm name: {vm.name} not found in prometheus api query "
-            f"result: {vm_name_from_metric}"
-        )
+        utils.get_vm_metrics(prometheus=prometheus, query=query, vm_name=vm.name)
         utils.assert_vm_metric_virt_handler_pod(query=query, vm=vm)
 
     @pytest.mark.parametrize(
