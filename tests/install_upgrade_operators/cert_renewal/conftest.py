@@ -2,6 +2,7 @@ import logging
 
 import pytest
 
+from utilities.constants import TIMEOUT_1MIN
 from utilities.hco import (
     DEFAULT_HCO_PROGRESSING_CONDITIONS,
     modify_hco_cr,
@@ -29,6 +30,7 @@ def hyperconverged_resource_certconfig_change(
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_1MIN,
         expected_conditions=DEFAULT_HCO_PROGRESSING_CONDITIONS,
     )
     LOGGER.info(
@@ -37,6 +39,7 @@ def hyperconverged_resource_certconfig_change(
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_1MIN,
         consecutive_checks_count=6,
     )
     yield
