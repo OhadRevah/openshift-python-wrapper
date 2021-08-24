@@ -758,6 +758,7 @@ def test_vm_from_dv_on_different_node(
         vm_name=Images.Rhel.RHEL8_2_IMG,
         os_flavor=OS_FLAVOR_RHEL,
         node_selector=nodes[0].name,
+        memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
     ) as vm_dv:
         assert vm_dv.vmi.node.name != importer_node_name
 

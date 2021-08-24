@@ -51,6 +51,7 @@ class Images:
         RHEL9_0_IMG = "rhel-90.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/rhel-images"
         DEFAULT_DV_SIZE = "20Gi"
+        DEFAULT_MEMORY_SIZE = "1.5Gi"
 
     class Windows:
         WIM10_IMG = "win_10.qcow2"
