@@ -13,7 +13,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import (
     validate_libvirt_persistent_domain,
-    validate_pause_unpause_linux_vm,
+    validate_pause_optional_migrate_unpause_linux_vm,
 )
 from utilities import console
 from utilities.infra import BUG_STATUS_CLOSED
@@ -297,7 +297,7 @@ class TestCommonTemplatesFedora:
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
     ):
-        validate_pause_unpause_linux_vm(
+        validate_pause_optional_migrate_unpause_linux_vm(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         )
 
@@ -337,7 +337,7 @@ class TestCommonTemplatesFedora:
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         ping_process_in_fedora_os,
     ):
-        validate_pause_unpause_linux_vm(
+        validate_pause_optional_migrate_unpause_linux_vm(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
             pre_pause_pid=ping_process_in_fedora_os,
         )

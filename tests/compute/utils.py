@@ -9,7 +9,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.hco import get_hyperconverged_resource, get_kubevirt_hyperconverged_spec
 from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
-from utilities.virt import wait_for_ssh_connectivity
+from utilities.virt import migrate_vm_and_verify, wait_for_ssh_connectivity
 
 
 LOGGER = logging.getLogger(__name__)
@@ -83,13 +83,19 @@ def fetch_processid_from_linux_vm(vm, process_name):
     )[0]
 
 
-def validate_pause_unpause_linux_vm(vm, pre_pause_pid=None):
+def validate_pause_optional_migrate_unpause_linux_vm(
+    vm, pre_pause_pid=None, migrate=False
+):
     proc_name = OS_PROC_NAME["linux"]
     if not pre_pause_pid or not pre_pause_pid.isnumeric():
         pre_pause_pid = start_and_fetch_processid_on_linux_vm(
             vm=vm, process_name=proc_name, args="localhost"
         )
     vm.vmi.pause(wait=True)
+    if migrate:
+        migrate_vm_and_verify(
+            vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False
+        )
     vm.vmi.unpause(wait=True)
     wait_for_ssh_connectivity(vm=vm)
     post_pause_pid = fetch_processid_from_linux_vm(vm=vm, process_name=proc_name)
