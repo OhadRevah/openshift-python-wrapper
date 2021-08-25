@@ -2,6 +2,7 @@ import logging
 import time
 
 import pytest
+from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -9,6 +10,7 @@ from tests.metrics.utils import (
     MIN_NUM_VM,
     create_vms,
     enable_swap_fedora_vm,
+    get_metric_by_prometheus_query,
     get_mutation_component_value_from_prometheus,
     get_not_running_prometheus_pods,
     get_vmi_phase_count,
@@ -315,3 +317,37 @@ def metrics_sanity(admin_client, prometheus_module):
 def stopped_vm(vm_from_template):
     vm_from_template.stop(wait=True)
     return vm_from_template
+
+
+@pytest.fixture()
+def virt_pod_info_from_prometheus(request, prometheus):
+    """Get Virt Pod information from the recording rules (query) in the form of query_response dictionary.
+    Extract Virt Pod name and it's values from the query_response dictionary and
+    store it in the pod_details dictionary.
+
+    Returns:
+        set: It contains Pod names from the prometheus query result.
+    """
+    query_response = get_metric_by_prometheus_query(
+        prometheus=prometheus,
+        query=request.param,
+    )
+
+    return {result["metric"]["pod"] for result in query_response["data"].get("result")}
+
+
+@pytest.fixture()
+def virt_pod_names_by_label(request, admin_client, hco_namespace):
+    """Get pod names by a given label (request.param) in the list.
+
+    Returns:
+        list: It contains Pod names filtered by a given label.
+    """
+    return [
+        pod.name
+        for pod in Pod.get(
+            dyn_client=admin_client,
+            namespace=hco_namespace.name,
+            label_selector=request.param,
+        )
+    ]
