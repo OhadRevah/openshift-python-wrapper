@@ -17,10 +17,7 @@ from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import Images
 from utilities.infra import (
-    BUG_STATUS_CLOSED,
     JIRA_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
     get_jira_connection_params,
     get_jira_status,
 )
@@ -164,15 +161,8 @@ def update_rhel9_support_dict(template_support_dict):
             jira_connection_params=get_jira_connection_params(), jira="CNV-11658"
         )
         not in JIRA_STATUS_CLOSED
-        and get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=1993121
-        )
-        not in BUG_STATUS_CLOSED
     ):
-        template_support_dict[
-            Template.Annotations.PROVIDER_URL
-        ] = "https://www.redhat.org"
-        template_support_dict[Template.Annotations.PROVIDER_SUPPORT_LEVEL] = "Community"
+        template_support_dict[Template.Annotations.PROVIDER_SUPPORT_LEVEL] = "Limited"
 
     return template_support_dict
 
