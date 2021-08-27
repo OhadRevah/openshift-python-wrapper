@@ -30,12 +30,12 @@ LOGGER = logging.getLogger(__name__)
 @pytest.mark.usefixtures(
     "node_placement_labels",
     "hyperconverged_resource_before_np",
-    "cnv_sub_resource_before_np",
+    "cnv_subscription_resource_before_np",
 )
 class TestDeployCNVOnSubsetOfClusterNodes:
     @pytest.mark.polarion("CNV-5226")
     @pytest.mark.parametrize(
-        "alter_cnv_sub_configuration",
+        "alter_cnv_subscription_configuration",
         [
             {
                 "node_selector": SUBSCRIPTION_NODE_SELCTOR_2,
@@ -46,7 +46,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_change_subscription_on_selected_node_before_workload(
         self,
-        alter_cnv_sub_configuration,
+        alter_cnv_subscription_configuration,
         subscription_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
@@ -221,7 +221,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
 
     @pytest.mark.polarion("CNV-5233")
     @pytest.mark.parametrize(
-        "alter_cnv_sub_configuration",
+        "alter_cnv_subscription_configuration",
         [
             {
                 "node_selector": SUBSCRIPTION_NODE_SELCTOR_3,
@@ -238,7 +238,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     def test_operator_components_selection_change_allowed_with_workloads(
         self,
         vm_placement_vm_work3,
-        alter_cnv_sub_configuration,
+        alter_cnv_subscription_configuration,
         subscription_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
@@ -301,7 +301,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
 
     @pytest.mark.polarion("CNV-5237")
     @pytest.mark.parametrize(
-        "alter_cnv_sub_configuration",
+        "alter_cnv_subscription_configuration",
         [
             {
                 "node_selector": SUBSCRIPTION_NODE_SELCTOR_1,
@@ -317,7 +317,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_operator_components_selection_change_allowed_after_workloads(
         self,
-        alter_cnv_sub_configuration,
+        alter_cnv_subscription_configuration,
         subscription_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,

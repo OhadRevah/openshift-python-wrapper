@@ -3,23 +3,22 @@ import logging
 import pytest
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.ssp import SSP
 from ocp_resources.subscription import Subscription
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_import_configs import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
     CNV_OPERATOR_PODS_COMPONENTS,
     SELECTORS,
     get_pod_per_nodes,
+    update_subscription_config,
 )
 from tests.install_upgrade_operators.utils import (
     get_deployment_by_name,
     get_network_addon_config,
 )
 from utilities.constants import TIMEOUT_5MIN
-from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
+from utilities.hco import add_labels_to_nodes, apply_np_changes
 from utilities.infra import get_daemonset_by_name
 from utilities.virt import (
     VirtualMachineForTests,
@@ -313,96 +312,6 @@ def delete_vm_after_placement(
         vm_placement_vm_work3.delete(wait=True)
 
 
-def update_subscription_config(admin_client, hco_namespace, sub, config):
-    reseditor = ResourceEditor(
-        patches={
-            sub: {
-                "spec": {
-                    "config": config,
-                }
-            }
-        }
-    )
-    LOGGER.info("Updating CNV subscription with config.")
-    reseditor.update()
-    LOGGER.info("Waiting for CNV HCO to be Ready.")
-    wait_for_hco_conditions(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        wait_timeout=TIMEOUT_5MIN,
-        consecutive_checks_count=10,
-    )
-    LOGGER.info("Verify that there no terminating operator pods.")
-    sample = None
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
-        sleep=20,
-        func=get_terminating_operators_pods,
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-    )
-    try:
-        for sample in samples:
-            if not sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(f"Timeout waiting for terminating pods to be deleted {sample}.")
-        raise
-
-
-def apply_subscription_changes(
-    admin_client, sub, hco_namespace, node_selector=None, tolerations=None
-):
-    """
-    This method configures node placement for the CNV subscription. It set
-    the spec.config.nodeSelector and/or the spec.config.tolerations fields.
-    This method is called before node-placement subscription tests, within
-    a fixture.
-    """
-    current_config = sub.instance.to_dict()["spec"].get("config")
-
-    # no change is required, exit
-    if (not current_config) and (not node_selector) and (not tolerations):
-        return
-
-    target_config = (current_config or {}).copy()
-    if node_selector is not None:
-        target_config["nodeSelector"] = node_selector
-    if tolerations is not None:
-        target_config["tolerations"] = tolerations
-
-    if current_config == target_config:
-        LOGGER.info("No actual changes to node placement configuration, skipping")
-        return
-
-    update_subscription_config(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        sub=sub,
-        config=target_config,
-    )
-
-
-def apply_sub_config_changes(admin_client, sub, hco_namespace, config=None):
-    """
-    set the CNV subscription spec.config; node placement configuration are two
-    fields within the spec.config object. This method is used to restore the
-    whole object to the origin state as was before the test, as part of tear down.
-    The config field may be None.
-    """
-    current_config = sub.instance.to_dict()["spec"].get("config")
-
-    if current_config == config:
-        LOGGER.info("No actual changes to node placement configuration, skipping")
-        return
-    update_subscription_config(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        sub=sub,
-        config=config,
-    )
-
-
 @pytest.fixture(scope="class")
 def cnv_subscription_scope_class(admin_client, hco_namespace):
     for sub in Subscription.get(
@@ -425,7 +334,7 @@ def cnv_subscription_scope_function(admin_client, hco_namespace):
 
 
 @pytest.fixture(scope="class")
-def cnv_sub_resource_before_np(
+def cnv_subscription_resource_before_np(
     admin_client, hco_namespace, cnv_subscription_scope_class
 ):
     """
@@ -439,16 +348,16 @@ def cnv_sub_resource_before_np(
     )
     yield cnv_subscription_scope_class
     LOGGER.info("Revert to initial HCO node placement configuration ")
-    apply_sub_config_changes(
+    update_subscription_config(
         admin_client=admin_client,
-        sub=cnv_subscription_scope_class,
+        subscription=cnv_subscription_scope_class,
         hco_namespace=hco_namespace,
         config=initial_config,
     )
 
 
 @pytest.fixture()
-def alter_cnv_sub_configuration(
+def alter_cnv_subscription_configuration(
     request,
     admin_client,
     hco_namespace,
@@ -461,13 +370,22 @@ def alter_cnv_sub_configuration(
     be used in subsequent tests.
     Passing a None "node_selector" or "tolerations" will keep the
     existing correspondent value.
+    Note: cnv_subscription_resource_before_np must be used in conjunction with this fixture
+    otherwise there will be configuration leftovers in the cluster
     """
-    apply_subscription_changes(
+    config = {}
+    node_selector = request.param.get("node_selector")
+    tolerations = request.param.get("tolerations")
+    if node_selector:
+        config["nodeSelector"] = node_selector
+    if tolerations:
+        config["tolerations"] = tolerations
+
+    update_subscription_config(
         admin_client=admin_client,
-        sub=cnv_subscription_scope_function,
+        subscription=cnv_subscription_scope_function,
         hco_namespace=hco_namespace,
-        node_selector=request.param.get("node_selector"),
-        tolerations=request.param.get("tolerations"),
+        config=config or None,
     )
 
 

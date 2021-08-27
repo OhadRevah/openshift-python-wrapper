@@ -3,10 +3,12 @@ from collections import defaultdict
 
 from kubernetes.client.rest import ApiException
 from ocp_resources.pod import Pod
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
 from utilities.constants import TIMEOUT_5MIN
+from utilities.hco import wait_for_hco_conditions
 
 
 LOGGER = logging.getLogger(__name__)
@@ -373,3 +375,64 @@ def get_pod_per_nodes(admin_client, hco_namespace):
     except TimeoutExpiredError:
         LOGGER.error(f"Timeout waiting for pods to be ready {pod_names_per_nodes}.")
         raise
+
+
+def update_subscription_config(admin_client, hco_namespace, subscription, config):
+    """
+    Updates CNV subscription spec.config
+
+    Args:
+        admin_client(DynamicClient): DynamicClient object
+        hco_namespace (Resource): hco_namespace
+        subscription(Resource): subscription resource
+        config(dict): config dict to be used for patch operation
+
+    Raises:
+        TimeoutExpiredError: if appropriate pods are not re-spinned
+    """
+    editor = ResourceEditor(
+        patches={
+            subscription: {
+                "spec": {
+                    "config": config,
+                }
+            }
+        },
+    )
+    editor.update(backup_resources=False)
+
+    LOGGER.info("Waiting for CNV HCO to be Ready.")
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_5MIN,
+        consecutive_checks_count=10,
+    )
+    LOGGER.info("Verify that there no terminating operator pods.")
+    sample = None
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=20,
+        func=get_terminating_operators_pods,
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+    )
+    try:
+        for sample in samples:
+            if not sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"Timeout waiting for terminating pods to be deleted {sample}.")
+        raise
+
+
+def get_terminating_operators_pods(admin_client, hco_namespace):
+    """
+    Check the operator pod which are flagged for deletion to make sure new pods are created.
+    """
+    return [
+        pod
+        for pod in Pod.get(dyn_client=admin_client, namespace=hco_namespace.name)
+        if pod.name.startswith(tuple(CNV_OPERATOR_PODS_COMPONENTS))
+        and pod.instance.metadata.get("deletionTimestamp") is not None
+    ]
