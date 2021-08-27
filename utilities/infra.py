@@ -909,3 +909,7 @@ def update_custom_resource(patch, action="update"):
     """
     with ResourceEditor(patches=patch, action=action) as edited_source:
         yield edited_source
+
+
+class ResourceMismatch(Exception):
+    pass

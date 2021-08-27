@@ -8,13 +8,11 @@ import yaml
 from ocp_resources.service import Service
 from openshift.dynamic.client import ResourceField
 
+from utilities.infra import ResourceMismatch
+
 
 DEFAULT_NAMESPACE = "default"
 SRIOV_NETWORK_OPERATOR_NAMESPACE = "sriov-network-operator"
-
-
-class ResourceMissMatch(Exception):
-    pass
 
 
 # TODO: this is a workaround for an openshift bug
@@ -54,7 +52,7 @@ def compare_resource_contents(resource, file_content, checks):
             file_part = file_part[part]
         with ResourceFieldEqBugWorkaround():
             if oc_part != file_part:
-                raise ResourceMissMatch(
+                raise ResourceMismatch(
                     f"Comparison of resource {resource.name} "
                     f"(namespace: {resource.namespace}) "
                     f"failed for element {check}."
