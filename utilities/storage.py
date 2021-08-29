@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from contextlib import contextmanager
 
+import kubernetes
 import requests
 from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.datavolume import DataVolume
@@ -560,6 +561,13 @@ class PodWithPVC(Pod):
             }
         )
         return res
+
+    def delete(self, wait=False, timeout=TIMEOUT_3MIN, body=None):
+        super().delete(
+            wait=wait,
+            timeout=timeout,
+            body=kubernetes.client.V1DeleteOptions(grace_period_seconds=0),
+        )
 
 
 def data_volume_template_dict(
