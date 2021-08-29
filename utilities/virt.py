@@ -1131,17 +1131,16 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             # volumeMode and storageClass
             # TODO: removed once supported in templates
             dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["pvc"]
-            dv_pvc_spec[
-                "storageClassName"
-            ] = self.data_volume.pvc.instance.spec.storageClassName
-            dv_pvc_spec["accessModes"] = self.data_volume.pvc.instance.spec.accessModes
-            dv_pvc_spec["volumeMode"] = self.data_volume.pvc.instance.spec.volumeMode
+            source_dv_pvc_spec = self.data_volume.pvc.instance.spec
+            dv_pvc_spec["storageClassName"] = source_dv_pvc_spec.storageClassName
+            dv_pvc_spec["accessModes"] = source_dv_pvc_spec.accessModes
+            dv_pvc_spec["volumeMode"] = source_dv_pvc_spec.volumeMode
             # dataVolumeTemplates needs to be updated with the needed storage size,
             # if the size of the golden_image is more than the Template's default storage size.
-            if self.cloned_dv_size:
-                dv_pvc_spec.setdefault("resources", {}).setdefault("requests", {})[
-                    "storage"
-                ] = self.cloned_dv_size
+            # else use the source DV storage size.
+            dv_pvc_spec.setdefault("resources", {}).setdefault("requests", {})[
+                "storage"
+            ] = (self.cloned_dv_size or source_dv_pvc_spec.resources.requests.storage)
 
         return res
 
