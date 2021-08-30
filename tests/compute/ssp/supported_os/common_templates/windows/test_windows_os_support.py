@@ -13,7 +13,7 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.utils import (
     validate_libvirt_persistent_domain,
-    validate_pause_unpause_windows_vm,
+    validate_pause_optional_migrate_unpause_windows_vm,
 )
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_vm_and_verify, running_vm
@@ -249,7 +249,7 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """Test VM pause and unpause"""
-        validate_pause_unpause_windows_vm(
+        validate_pause_optional_migrate_unpause_windows_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
@@ -305,7 +305,7 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         mspaint_process_in_windows_os,
     ):
-        validate_pause_unpause_windows_vm(
+        validate_pause_optional_migrate_unpause_windows_vm(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
             pre_pause_pid=mspaint_process_in_windows_os,
         )

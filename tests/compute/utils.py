@@ -51,15 +51,15 @@ def fetch_processid_from_windows_vm(vm, process_name):
     return run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
 
 
-def validate_pause_unpause_windows_vm(vm, pre_pause_pid=None):
+def validate_pause_optional_migrate_unpause_windows_vm(
+    vm, pre_pause_pid=None, migrate=False
+):
     proc_name = OS_PROC_NAME["windows"]
     if not pre_pause_pid or not pre_pause_pid.isnumeric():
         pre_pause_pid = start_and_fetch_processid_on_windows_vm(
             vm=vm, process_name=proc_name
         )
-    vm.vmi.pause(wait=True)
-    vm.vmi.unpause(wait=True)
-    wait_for_ssh_connectivity(vm=vm)
+    pause_optional_migrate_unpause_and_check_connectivity(vm=vm, migrate=migrate)
     post_pause_pid = fetch_processid_from_windows_vm(vm=vm, process_name=proc_name)
     kill_processes_by_name_windows(vm=vm, process_name=proc_name)
     assert (
@@ -83,6 +83,16 @@ def fetch_processid_from_linux_vm(vm, process_name):
     )[0]
 
 
+def pause_optional_migrate_unpause_and_check_connectivity(vm, migrate=False):
+    vm.vmi.pause(wait=True)
+    if migrate:
+        migrate_vm_and_verify(
+            vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False
+        )
+    vm.vmi.unpause(wait=True)
+    wait_for_ssh_connectivity(vm=vm)
+
+
 def validate_pause_optional_migrate_unpause_linux_vm(
     vm, pre_pause_pid=None, migrate=False
 ):
@@ -91,13 +101,7 @@ def validate_pause_optional_migrate_unpause_linux_vm(
         pre_pause_pid = start_and_fetch_processid_on_linux_vm(
             vm=vm, process_name=proc_name, args="localhost"
         )
-    vm.vmi.pause(wait=True)
-    if migrate:
-        migrate_vm_and_verify(
-            vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False
-        )
-    vm.vmi.unpause(wait=True)
-    wait_for_ssh_connectivity(vm=vm)
+    pause_optional_migrate_unpause_and_check_connectivity(vm=vm, migrate=migrate)
     post_pause_pid = fetch_processid_from_linux_vm(vm=vm, process_name=proc_name)
     kill_processes_by_name_linux(vm=vm, process_name=proc_name)
     assert (

@@ -93,7 +93,9 @@ class TestPCIPassthroughWinHostDevicesSpec:
         """
         Test Windows VM with Device using hostdevices spec, can be paused and unpaused successfully.
         """
-        compute_utils.validate_pause_unpause_windows_vm(vm=pci_passthrough_vm)
+        compute_utils.validate_pause_optional_migrate_unpause_windows_vm(
+            vm=pci_passthrough_vm
+        )
 
     @pytest.mark.dependency(depends=["access_hostdevices_win_vm"])
     @pytest.mark.polarion("CNV-5648")
@@ -117,7 +119,9 @@ class TestPCIPassthroughWinHostDevicesSpec:
         """
         Test Windows VM with Device using gpus spec, can be paused and unpaused successfully.
         """
-        compute_utils.validate_pause_unpause_windows_vm(vm=pci_passthrough_vm)
+        compute_utils.validate_pause_optional_migrate_unpause_windows_vm(
+            vm=pci_passthrough_vm
+        )
 
     @pytest.mark.dependency(depends=["access_gpus_win_vm"])
     @pytest.mark.polarion("CNV-5744")

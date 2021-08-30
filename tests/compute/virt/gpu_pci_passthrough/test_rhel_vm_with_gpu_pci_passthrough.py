@@ -9,15 +9,12 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
+from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
 from tests.compute.virt.gpu_pci_passthrough import utils as passthrough_utils
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import GPU_DEVICE_NAME
-from utilities.virt import (
-    CIRROS_IMAGE,
-    VirtualMachineForTests,
-    wait_for_ssh_connectivity,
-)
+from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
 
 
 pytestmark = [
@@ -31,12 +28,6 @@ ALLOCATABLE = "allocatable"
 CAPACITY = "capacity"
 
 LOGGER = logging.getLogger(__name__)
-
-
-def pause_unpause_and_check_connectivity(vm):
-    vm.vmi.pause(wait=True)
-    vm.vmi.unpause(wait=True)
-    wait_for_ssh_connectivity(vm=vm)
 
 
 def resources_device_checks(gpu_node, status_type):
@@ -124,7 +115,9 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         Test VM with Device using hostdevices spec, can be paused and unpaused successfully.
         """
         with virt_utils.running_sleep_in_linux(vm=pci_passthrough_vm):
-            pause_unpause_and_check_connectivity(vm=pci_passthrough_vm)
+            compute_utils.pause_optional_migrate_unpause_and_check_connectivity(
+                vm=pci_passthrough_vm
+            )
 
     @pytest.mark.dependency(depends=["access_hostdevices_rhel_vm"])
     @pytest.mark.polarion("CNV-5641")
@@ -149,7 +142,9 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         Test VM with Device using GPUs spec, can be paused and unpaused successfully.
         """
         with virt_utils.running_sleep_in_linux(vm=pci_passthrough_vm):
-            pause_unpause_and_check_connectivity(vm=pci_passthrough_vm)
+            compute_utils.pause_optional_migrate_unpause_and_check_connectivity(
+                vm=pci_passthrough_vm
+            )
 
     @pytest.mark.dependency(depends=["access_gpus_rhel_vm"])
     @pytest.mark.polarion("CNV-5642")
