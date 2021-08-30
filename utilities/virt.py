@@ -1208,9 +1208,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             ),
         )
 
+        matched_templates = len(template)
         assert (
-            len(template) == 1
-        ), f"More than one template matches {self.template_labels}"
+            matched_templates == 1
+        ), f"{matched_templates} templates found which match {self.template_labels} labels"
 
         return template[0]
 
