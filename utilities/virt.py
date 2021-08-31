@@ -256,6 +256,7 @@ class VirtualMachineForTests(VirtualMachine):
         systemctl_support=True,
         vhostmd=False,
         vm_debug_logs=False,
+        priority_class_name=None,
     ):
         """
         Virtual machine creation
@@ -317,6 +318,7 @@ class VirtualMachineForTests(VirtualMachine):
             vm_debug_logs(bool, default=False): if True, add 'debugLogs' label to VM to
                 enable libvirt debug logs in the virt-launcher pod.
                 Is set to True if py_config["log_collector"] is True.
+            priority_class_name (str, optional): The name of the priority class used for the VM
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -378,6 +380,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.systemctl_support = systemctl_support
         self.vhostmd = vhostmd
         self.vm_debug_logs = vm_debug_logs or collect_logs()
+        self.priority_class_name = priority_class_name
 
     def deploy(self):
         super().deploy()
@@ -415,6 +418,7 @@ class VirtualMachineForTests(VirtualMachine):
         template_spec = self.set_hostdevice(template_spec=template_spec)
         template_spec = self.set_gpu(template_spec=template_spec)
         template_spec = self.set_disk_io_configuration(template_spec=template_spec)
+        template_spec = self.set_priority_class(template_spec=template_spec)
         # Either update storage and cloud-init configuration or remove disks from spec
         if self.diskless_vm:
             template_spec = self.set_diskless_vm(template_spec=template_spec)
@@ -531,6 +535,12 @@ class VirtualMachineForTests(VirtualMachine):
             template_spec.setdefault("domain", {}).setdefault(
                 "features", {}
             ).setdefault("smm", {})["enabled"] = self.smm_enabled
+
+        return template_spec
+
+    def set_priority_class(self, template_spec):
+        if self.priority_class_name:
+            template_spec["priorityClassName"] = self.priority_class_name
 
         return template_spec
 
