@@ -1462,7 +1462,8 @@ class Prometheus(object):
             return json.loads(response.content)
         except JSONDecodeError as json_exception:
             LOGGER.error(
-                f"Exception converting query response to JSON: exc={json_exception} response={response.content}"
+                "Exception converting query response to JSON: "
+                f"exc={json_exception} response_status_code={response.status_code} response={response.content}"
             )
             raise
 
