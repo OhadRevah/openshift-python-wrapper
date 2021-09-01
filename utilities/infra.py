@@ -836,19 +836,37 @@ class ExecCommandOnPod:
 def cluster_sanity(
     request, admin_client, cluster_storage_classes, nodes, hco_namespace
 ):
-    # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
+    skip_storage_classes_check = "--cluster-sanity-skip-storage-check"
+    skip_nodes_check = "--cluster-sanity-skip-nodes-check"
     LOGGER.info("Running cluster sanity")
-    if not request.session.config.getoption("--cluster-sanity-skip-storage-check"):
+    # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
+    if not request.session.config.getoption(skip_storage_classes_check):
+        LOGGER.info(
+            f"Check storage classes sanity. (To skip nodes check pass {skip_storage_classes_check} to pytest)"
+        )
         sc_names = [sc.name for sc in cluster_storage_classes]
         config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
         exists_sc = [scn for scn in config_sc if scn in sc_names]
         assert len(config_sc) == len(exists_sc), (
             f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
-            "either run with '--storage-class-matrix' or with '--cluster-sanity-skip-storage-check'"
+            f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
         )
-    # validate that all the nodes are ready and schedulable
-    validate_nodes_ready(nodes=nodes)
-    validate_nodes_schedulable(nodes=nodes)
+    else:
+        LOGGER.warning(
+            f"Skipping storage classes check, got {skip_storage_classes_check}"
+        )
+
+    # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
+    if not request.session.config.getoption("--cluster-sanity-skip-nodes-check"):
+        # validate that all the nodes are ready and schedulable
+        LOGGER.info(
+            f"Check nodes sanity. (To skip nodes check pass {skip_nodes_check} to pytest)"
+        )
+        validate_nodes_ready(nodes=nodes)
+        validate_nodes_schedulable(nodes=nodes)
+    else:
+        LOGGER.warning(f"Skipping nodes check, got {skip_nodes_check}")
 
     # Wait for all cnv pods to reach Running state
+    LOGGER.info(f"Check that all pods in {hco_namespace.name} running")
     wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
