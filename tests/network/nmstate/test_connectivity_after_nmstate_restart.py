@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import pytest
 
-from utilities.infra import get_pod_by_name_prefix, name_prefix
+from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
@@ -158,6 +158,9 @@ def vmb_pinged(vmb_dst_ip, nmstate_linux_bridge_attached_running_vma):
     )
 
 
+@pytest.mark.bugzilla(
+    2000052, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5780")
 def test_nmstate_restart_and_check_connectivity(
