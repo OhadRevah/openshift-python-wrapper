@@ -1723,6 +1723,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         ApiException: [
             "Always does not support manual start requests",
             "VM is already running",
+            "Internal error occurred: unable to complete request: stop/start already underway",
         ],
     }
     try:
