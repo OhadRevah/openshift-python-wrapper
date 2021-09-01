@@ -831,3 +831,24 @@ class ExecCommandOnPod:
                 continue
             release_info[values[0].strip()] = values[1].strip(" \"'")
         return release_info
+
+
+def cluster_sanity(
+    request, admin_client, cluster_storage_classes, nodes, hco_namespace
+):
+    # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
+    LOGGER.info("Running cluster sanity")
+    if not request.session.config.getoption("--cluster-sanity-skip-storage-check"):
+        sc_names = [sc.name for sc in cluster_storage_classes]
+        config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
+        exists_sc = [scn for scn in config_sc if scn in sc_names]
+        assert len(config_sc) == len(exists_sc), (
+            f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
+            "either run with '--storage-class-matrix' or with '--cluster-sanity-skip-storage-check'"
+        )
+    # validate that all the nodes are ready and schedulable
+    validate_nodes_ready(nodes=nodes)
+    validate_nodes_schedulable(nodes=nodes)
+
+    # Wait for all cnv pods to reach Running state
+    wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)

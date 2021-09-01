@@ -63,6 +63,7 @@ from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
     base64_encode_str,
+    cluster_sanity,
     collect_logs_pods,
     collect_logs_resources,
     create_ns,
@@ -77,10 +78,7 @@ from utilities.infra import (
     prepare_test_dir_log,
     separator,
     setup_logging,
-    validate_nodes_ready,
-    validate_nodes_schedulable,
     wait_for_pods_deletion,
-    wait_for_pods_running,
 )
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
@@ -420,6 +418,21 @@ def pytest_runtest_teardown(item):
         prepare_test_dir_log(item=item, prefix="teardown", logs_path=logs_path)
 
 
+def reorder_early_fixtures(metafunc):
+    """
+    Put fixtures with `pytest.mark.early` first during execution
+
+    This allows patch of configurations before the application is initialized
+    """
+    for fixturedef in metafunc._arg2fixturedefs.values():
+        fixturedef = fixturedef[0]
+        for mark in getattr(fixturedef.func, "pytestmark", []):
+            if mark.name == "early":
+                order = metafunc.fixturenames
+                order.insert(0, order.pop(order.index(fixturedef.argname)))
+                break
+
+
 def pytest_generate_tests(metafunc):
     scope_match = re.compile(r"__(module|class|function)__$")
     for fixture_name in [
@@ -450,6 +463,7 @@ def pytest_generate_tests(metafunc):
             ids=ids,
             scope=scope[0],
         )
+        reorder_early_fixtures(metafunc=metafunc)
 
 
 def pytest_sessionstart(session):
@@ -2018,29 +2032,40 @@ def cnv_pods(admin_client, hco_namespace):
     yield list(Pod.get(dyn_client=admin_client, namespace=hco_namespace.name))
 
 
-@pytest.fixture(scope="module", autouse=True)
-def cluster_sanity(
+@pytest.mark.early
+@pytest.fixture(scope="session", autouse=True)
+def cluster_sanity_scope_session(
     request, nodes, cluster_storage_classes, admin_client, hco_namespace
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
     check to ensure all are in 'Running' state, to determine current state of cluster
     """
-    # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
-    if not request.session.config.getoption("--cluster-sanity-skip-storage-check"):
-        sc_names = [sc.name for sc in cluster_storage_classes]
-        config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
-        exists_sc = [scn for scn in config_sc if scn in sc_names]
-        assert len(config_sc) == len(exists_sc), (
-            f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
-            "either run with '--storage-class-matrix' or with '--cluster-sanity-skip-storage-check'"
-        )
-    # validate that all the nodes are ready and schedulable
-    validate_nodes_ready(nodes=nodes)
-    validate_nodes_schedulable(nodes=nodes)
+    cluster_sanity(
+        request=request,
+        admin_client=admin_client,
+        cluster_storage_classes=cluster_storage_classes,
+        nodes=nodes,
+        hco_namespace=hco_namespace,
+    )
 
-    # Wait for all cnv pods to reach Running state
-    wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
+
+@pytest.mark.early
+@pytest.fixture(scope="module", autouse=True)
+def cluster_sanity_scope_module(
+    request, nodes, cluster_storage_classes, admin_client, hco_namespace
+):
+    """
+    Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
+    check to ensure all are in 'Running' state, to determine current state of cluster
+    """
+    cluster_sanity(
+        request=request,
+        admin_client=admin_client,
+        cluster_storage_classes=cluster_storage_classes,
+        nodes=nodes,
+        hco_namespace=hco_namespace,
+    )
 
 
 @pytest.fixture(scope="session")
