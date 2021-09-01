@@ -304,6 +304,7 @@ EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "HotplugVolumes",
     "GPU",
     "HostDevices",
+    "DownwardMetrics",
     "WithHostModelCPU",
     "HypervStrictCheck",
     "SRIOVLiveMigration",
