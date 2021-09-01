@@ -1709,7 +1709,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         VirtualMachine: VM object.
     """
     # For VMs from common templates
-    start_vm_timeout = TIMEOUT_4MIN
+    start_vm_timeout = wait_until_running_timeout = TIMEOUT_4MIN
 
     # For VMs from common templates (Linux and Windows based)
     if vm.is_vm_from_template:
@@ -1737,12 +1737,16 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
         ):
             LOGGER.warning(f"VM {vm.name} is already running; will not be started.")
             matched_exception = True
+            # Need to increase how much time we wait for a VMI in case a VM is started before calling this function
+            # and has a DV which is cloned from another DV
+            if vm.printable_status == VirtualMachine.Status.PROVISIONING:
+                wait_until_running_timeout = start_vm_timeout
 
         if not matched_exception:
             raise exception
 
     # Verify the VM was started (either in this function or before calling it).
-    vm.vmi.wait_until_running()
+    vm.vmi.wait_until_running(timeout=wait_until_running_timeout)
 
     if wait_for_interfaces:
         wait_for_vm_interfaces(vmi=vm.vmi)
