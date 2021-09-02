@@ -104,7 +104,7 @@ def cpu_test_vm(namespace):
     with VirtualMachineForTests(
         name=name, namespace=namespace.name, body=fedora_vm_body(name=name)
     ) as vm:
-        running_vm(vm=vm, enable_ssh=False)
+        running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm
 
 

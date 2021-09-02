@@ -35,7 +35,7 @@ def report_masquerade_ip_vmi(unprivileged_client, namespace):
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
-        running_vm(vm=vm, enable_ssh=False)
+        running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm.vmi
 
 

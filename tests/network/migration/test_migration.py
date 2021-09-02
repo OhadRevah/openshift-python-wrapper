@@ -170,7 +170,7 @@ def br1test_nad(namespace):
 @pytest.fixture()
 def restarted_vmb(running_vmb):
     running_vmb.restart(wait=True)
-    return running_vm(vm=running_vmb, enable_ssh=False)
+    return running_vm(vm=running_vmb, check_ssh_connectivity=False)
 
 
 @pytest.fixture(scope="module")

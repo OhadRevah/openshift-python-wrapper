@@ -14,7 +14,7 @@ def vm_metric_1(namespace, unprivileged_client):
         body=fedora_vm_body(name=vm_name),
         client=unprivileged_client,
     ) as vm:
-        running_vm(vm=vm, wait_for_interfaces=False, enable_ssh=False)
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm
 
 
@@ -27,7 +27,7 @@ def vm_metric_2(namespace, unprivileged_client):
         body=fedora_vm_body(name=vm_name),
         client=unprivileged_client,
     ) as vm:
-        running_vm(vm=vm, wait_for_interfaces=False, enable_ssh=False)
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm
 
 

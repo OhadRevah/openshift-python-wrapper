@@ -90,7 +90,7 @@ def remove_veth_bridge_attached_vma(namespace, unprivileged_client, worker_node1
         teardown=False,
         ssh=False,
     ) as vm:
-        running_vm(vm=vm, enable_ssh=False, wait_for_interfaces=False)
+        running_vm(vm=vm, check_ssh_connectivity=False, wait_for_interfaces=False)
         yield vm
 
 

@@ -421,4 +421,4 @@ def modified_nncp(configured_l2_bridge_vm_a, l2_bridge_device_worker_1):
 def restarted_vms(configured_l2_bridge_vm_a, l2_bridge_running_vm_b):
     for vm in (configured_l2_bridge_vm_a, l2_bridge_running_vm_b):
         vm.stop(wait=True)
-        running_vm(vm=vm, enable_ssh=False)
+        running_vm(vm=vm, check_ssh_connectivity=False)

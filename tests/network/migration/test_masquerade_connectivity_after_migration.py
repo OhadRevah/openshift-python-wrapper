@@ -59,12 +59,12 @@ def vm_for_migration(
 
 @pytest.fixture(scope="module")
 def running_vm_static(vm_static):
-    return running_vm(vm=vm_static, enable_ssh=False)
+    return running_vm(vm=vm_static, check_ssh_connectivity=False)
 
 
 @pytest.fixture(scope="module")
 def running_vm_for_migration(vm_for_migration):
-    return running_vm(vm=vm_for_migration, enable_ssh=False)
+    return running_vm(vm=vm_for_migration, check_ssh_connectivity=False)
 
 
 @pytest.fixture()

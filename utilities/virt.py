@@ -1696,14 +1696,14 @@ def get_rhel_os_dict(rhel_version):
     raise KeyError(f"Failed to extract {rhel_version} from system_rhel_os_matrix")
 
 
-def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
+def running_vm(vm, wait_for_interfaces=True, check_ssh_connectivity=True):
     """
     Wait for the VMI to be in Running state.
 
     Args:
         vm (VirtualMachine): VM object.
         wait_for_interfaces (bool): Is waiting for VM's interfaces mandatory for declaring VM as running.
-        enable_ssh (bool): Enable SSh service in the VM.
+        check_ssh_connectivity (bool): Enable SSh service in the VM.
 
     Returns:
         VirtualMachine: VM object.
@@ -1752,7 +1752,7 @@ def running_vm(vm, wait_for_interfaces=True, enable_ssh=True):
     if wait_for_interfaces:
         wait_for_vm_interfaces(vmi=vm.vmi)
 
-    if enable_ssh:
+    if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
 
     return vm
@@ -1819,7 +1819,7 @@ def restart_guest_agent(vm):
         run_ssh_commands(
             host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]
         )
-        running_vm(vm=vm, enable_ssh=False)
+        running_vm(vm=vm, check_ssh_connectivity=False)
     else:
         LOGGER.warning(
             f"bug {bug_num} is resolved. please remove all references to it from the automation"
@@ -1932,7 +1932,7 @@ def vm_instance_from_template(
             running_vm(
                 vm=vm,
                 wait_for_interfaces=params.get("guest_agent", True),
-                enable_ssh=vm.ssh,
+                check_ssh_connectivity=vm.ssh,
             )
         yield vm
 

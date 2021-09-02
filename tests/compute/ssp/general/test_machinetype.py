@@ -28,7 +28,7 @@ def vm(request, cluster_cpu_model_scope_function, unprivileged_client, namespace
         client=unprivileged_client,
         machine_type=request.param.get("machine_type"),
     ) as vm:
-        running_vm(vm=vm, enable_ssh=False)
+        running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm
 
 
