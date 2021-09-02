@@ -142,6 +142,7 @@ def pytest_addoption(parser):
     storage_group = parser.getgroup(name="Storage")
     cluster_sanity_group = parser.getgroup(name="ClusterSanity")
     log_collector_group = parser.getgroup(name="LogCollector")
+    deprecate_api_test_group = parser.getgroup(name="DeprecateTestAPI")
 
     # Upgrade addoption
     install_upgrade_group.addoption(
@@ -236,8 +237,21 @@ def pytest_addoption(parser):
         default="pytest-tests.log",
     )
 
+    # Deprecate api test_group
+    deprecate_api_test_group.addoption(
+        "--skip-deprecated-api-test",
+        help="By default test_deprecation_audit_logs will always run, pass this flag to skip it",
+        action="store_true",
+    )
+
 
 def pytest_cmdline_main(config):
+    if not config.getoption("--skip-deprecated-api-test") and getattr(
+        config, "args", None
+    ):
+        # test_deprecation_audit_logs should always run regardless the path that passed to pytest
+        config.args.append("tests/deprecated_api/test_deprecation_audit_logs.py")
+
     if config.getoption("upgrade") == "ocp":
         if not config.getoption("ocp_image"):
             raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
