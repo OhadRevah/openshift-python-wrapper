@@ -14,6 +14,7 @@ from tests.compute.virt import utils as virt_utils
 from tests.compute.virt.gpu_pci_passthrough import utils as passthrough_utils
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import GPU_DEVICE_NAME
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
 
 
@@ -155,6 +156,9 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
 
 
+@pytest.mark.bugzilla(
+    1983079, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-5645")
 def test_only_permitted_hostdevices_allowed(
     namespace,
