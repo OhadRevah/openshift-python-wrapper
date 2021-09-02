@@ -501,29 +501,31 @@ def pytest_sessionstart(session):
         # Update OS matrix list with the latest OS if running with os_group
         if session.config.getoption("latest_rhel"):
             py_config["rhel_os_matrix"] = [
-                dict([generate_latest_os_dict(os_list=py_config["rhel_os_matrix"])])
+                generate_latest_os_dict(os_list=py_config["rhel_os_matrix"])
             ]
         if session.config.getoption("latest_windows"):
             py_config["windows_os_matrix"] = [
-                dict([generate_latest_os_dict(os_list=py_config["windows_os_matrix"])])
+                generate_latest_os_dict(os_list=py_config["windows_os_matrix"])
             ]
         if session.config.getoption("latest_centos"):
             py_config["centos_os_matrix"] = [
-                dict([generate_latest_os_dict(os_list=py_config["centos_os_matrix"])])
+                generate_latest_os_dict(os_list=py_config["centos_os_matrix"])
             ]
         if session.config.getoption("latest_fedora"):
             py_config["fedora_os_matrix"] = [
-                dict([generate_latest_os_dict(os_list=py_config["fedora_os_matrix"])])
+                generate_latest_os_dict(os_list=py_config["fedora_os_matrix"])
             ]
 
     if session.config.getoption("log_collector"):
         # set log_collector to True if it is explicitly requested,
         # otherwise use what is set in the global config
         py_config["log_collector"] = True
+
     if py_config.get("log_collector", False):
         # this could already be set in the global config
         # if it is set then the environment must be configured so that openshift-python-wrapper can use it
         os.environ["CNV_TEST_COLLECT_LOGS"] = "1"
+
     # store the base directory for log collection in the environment so it can be used by utilities
     os.environ["CNV_TEST_COLLECT_BASE_DIR"] = session.config.getoption(
         "log_collector_dir"

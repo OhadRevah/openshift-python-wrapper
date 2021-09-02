@@ -6,7 +6,7 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
 from utilities.constants import INTEL, Images
-from utilities.infra import generate_latest_os_dict
+from utilities.infra import get_latest_os_dict_list
 
 
 global config
@@ -440,10 +440,14 @@ centos_os_matrix = [
     },
 ]
 
-_, latest_rhel_os_dict = generate_latest_os_dict(os_list=rhel_os_matrix)
-_, latest_windows_os_dict = generate_latest_os_dict(os_list=windows_os_matrix)
-_, latest_fedora_os_dict = generate_latest_os_dict(os_list=fedora_os_matrix)
-_, latest_centos_os_dict = generate_latest_os_dict(os_list=centos_os_matrix)
+(
+    latest_rhel_os_dict,
+    latest_windows_os_dict,
+    latest_fedora_os_dict,
+    latest_centos_os_dict,
+) = get_latest_os_dict_list(
+    os_list=[rhel_os_matrix, windows_os_matrix, fedora_os_matrix, centos_os_matrix]
+)
 
 ip_stack_version_matrix = [
     "ipv4",
