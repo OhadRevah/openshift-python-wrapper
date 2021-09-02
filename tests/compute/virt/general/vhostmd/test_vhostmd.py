@@ -5,7 +5,6 @@ import xmltodict
 from ocp_resources.resource import Resource
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import RHSM_PASSWD, RHSM_USER
 from utilities.infra import run_ssh_commands
@@ -71,31 +70,6 @@ def running_vhostmd_vm2(vhostmd_vm2):
     return running_vm(vm=vhostmd_vm2)
 
 
-@pytest.fixture()
-def enabled_vhostmd_featuregate(
-    hyperconverged_resource_scope_function,
-    kubevirt_feature_gates,
-    admin_client,
-    hco_namespace,
-):
-    kubevirt_feature_gates.append("DownwardMetrics")
-    with update_hco_config(
-        resource=hyperconverged_resource_scope_function,
-        path="developerConfiguration/featureGates",
-        value=kubevirt_feature_gates,
-    ):
-        wait_for_updated_kv_value(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            path=[
-                "developerConfiguration",
-                "featureGates",
-            ],
-            value=kubevirt_feature_gates,
-        )
-        yield
-
-
 def run_vm_dump_metrics(vm):
     return run_ssh_commands(
         host=vm.ssh_exec,
@@ -148,7 +122,6 @@ def rhsm_and_vmdumpmetrics_pkg_cloud_init_data():
 @pytest.mark.polarion("CNV-6547")
 def test_vhostmd_disk(
     skip_upstream,
-    enabled_vhostmd_featuregate,
     vhostmd_vm1,
     vhostmd_vm2,
     running_vhostmd_vm1,
