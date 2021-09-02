@@ -257,9 +257,8 @@ def pytest_cmdline_main(config):
             os.path.join(deprecation_tests_dir_path, "test_deprecation_audit_logs.py")
         )
 
-    if config.getoption("upgrade") == "ocp":
-        if not config.getoption("ocp_image"):
-            raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
+    if config.getoption("upgrade") == "ocp" and not config.getoption("ocp_image"):
+        raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
 
     if config.getoption("upgrade") == "cnv":
         if not config.getoption("cnv_version"):
@@ -295,9 +294,8 @@ def pytest_cmdline_main(config):
     if config.getoption("cnv_source") and not config.getoption("cnv_version"):
         raise ValueError("Running with --cnv-source: Missing --cnv-version")
 
-    if config.getoption("cnv_source") == "osbs":
-        if not config.getoption("cnv_image"):
-            raise ValueError("Running with --cnv-source osbs: Missing --cnv-image")
+    if config.getoption("cnv_source") == "osbs" and not config.getoption("cnv_image"):
+        raise ValueError("Running with --cnv-source osbs: Missing --cnv-image")
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -559,15 +557,13 @@ def pytest_sessionstart(session):
 
         for val in vals:
             for item in py_config[key]:
-                if isinstance(item, dict):
-                    # Extract only the dicts item which has the requested key from
-                    if [*item][0] == val:
-                        items_list.append(item)
+                # Extract only the dicts item which has the requested key from
+                if isinstance(item, dict) and [*item][0] == val:
+                    items_list.append(item)
 
-                if isinstance(item, str):
-                    # Extract only the items item which has the requested key from
-                    if item == val:
-                        items_list.append(item)
+                # Extract only the items item which has the requested key from
+                if isinstance(item, str) and item == val:
+                    items_list.append(item)
 
         py_config[key] = items_list
 
@@ -885,7 +881,7 @@ def schedulable_nodes(nodes):
     yield [
         node
         for node in nodes
-        if schedulable_label in node.labels.keys()
+        if schedulable_label in node.labels
         and node.labels[schedulable_label] == "true"
         and not node.instance.spec.unschedulable
         and not kubernetes_taint_exists(node)
@@ -895,9 +891,7 @@ def schedulable_nodes(nodes):
 
 @pytest.fixture(scope="session")
 def masters(nodes):
-    yield [
-        node for node in nodes if "node-role.kubernetes.io/master" in node.labels.keys()
-    ]
+    yield [node for node in nodes if "node-role.kubernetes.io/master" in node.labels]
 
 
 @pytest.fixture(scope="session")

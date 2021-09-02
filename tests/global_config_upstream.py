@@ -22,12 +22,7 @@ storage_class_matrix = [
 
 for _dir in dir():
     val = locals()[_dir]
-    if not (
-        isinstance(val, bool)
-        or isinstance(val, list)
-        or isinstance(val, dict)
-        or isinstance(val, str)
-    ):
+    if type(val) not in [bool, list, dict, str]:
         continue
 
     if _dir in ["encoding", "py_file"]:

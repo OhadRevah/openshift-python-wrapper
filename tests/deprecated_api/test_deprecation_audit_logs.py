@@ -24,7 +24,7 @@ IGNORED_COMPONENTS_LIST = [
 ]
 
 
-class DeprecatedAPIException(Exception):
+class DeprecatedAPIError(Exception):
     """
     Raises when calling a deprecated API
     """
@@ -136,4 +136,4 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
             deprecated_calls.pop(component)
 
     if deprecated_calls:
-        raise DeprecatedAPIException(message=_format_printed_dict())
+        raise DeprecatedAPIError(message=_format_printed_dict())
