@@ -4,6 +4,7 @@ import shlex
 import urllib
 from collections import Counter, defaultdict
 
+from ocp_resources.pod import Pod
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -644,3 +645,48 @@ def wait_until_kubevirt_vmi_phase_count_is_expected(
             f"Timeout exception while waiting for a specific value from query: current={sample} expected={expected}"
         )
         raise
+
+
+def get_prometheus_monitoring_pods(admin_client):
+    """
+    Get all Prometheus pods within the openshift-monitoring namespace
+
+    Args:
+        admin_client (DynamicClient): DynamicClient object
+
+    Returns:
+        list: list of all prometheus pods within the openshift-monitoring namespace
+    """
+    prometheus_pods_monitoring_namespace_list = list(
+        Pod.get(
+            dyn_client=admin_client,
+            namespace="openshift-monitoring",
+            label_selector=(
+                "app.kubernetes.io/name in (prometheus-operator, prometheus, prometheus-adapter)"
+            ),
+        )
+    )
+    assert (
+        prometheus_pods_monitoring_namespace_list
+    ), "no matching pods found on the cluster"
+    return prometheus_pods_monitoring_namespace_list
+
+
+def get_not_running_prometheus_pods(admin_client):
+    """
+    Get all Prometheus pods that are not in Running status
+
+    Args:
+        admin_client (DynamicClient): DynamicClient object
+
+    Returns:
+        dict: dict of prometheus pods' name (key) and status (value) that are not in Running status
+    """
+    prometheus_pods_monitoring_namespace_list = get_prometheus_monitoring_pods(
+        admin_client=admin_client
+    )
+    return {
+        pod.name: pod.status
+        for pod in prometheus_pods_monitoring_namespace_list
+        if pod.status != Pod.Status.RUNNING
+    }

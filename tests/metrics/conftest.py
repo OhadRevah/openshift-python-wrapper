@@ -1,9 +1,7 @@
 import logging
 import time
-from json import JSONDecodeError
 
 import pytest
-from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -12,6 +10,7 @@ from tests.metrics.utils import (
     create_vms,
     enable_swap_fedora_vm,
     get_mutation_component_value_from_prometheus,
+    get_not_running_prometheus_pods,
     get_vmi_phase_count,
     run_node_command,
     run_vm_commands,
@@ -291,36 +290,14 @@ def prometheus_module():
 @pytest.fixture(scope="module", autouse=True)
 def metrics_sanity(admin_client, prometheus_module):
     """
-    Ensures that the cluster is ready for metrics-related tests by performing certain verifications, e.g.
-    necessary prometheus pods are running, run a query to check that the service is responding to requests
+    Perform verification in order to ensure that the cluster is ready for metrics-related tests
     """
-
-    def _verify_prometheus_pods():
-        actual_prometheus_pods = list(
-            filter(
-                lambda actual_pod: actual_pod.name.startswith("prometheus"),
-                list(
-                    Pod.get(
-                        dyn_client=admin_client,
-                        namespace="openshift-monitoring",
-                        label_selector=(
-                            "app.kubernetes.io/name in (prometheus-operator, prometheus, prometheus-adapter)"
-                        ),
-                    )
-                ),
-            )
-        )
-        if len(actual_prometheus_pods) != 5:
-            return actual_prometheus_pods
-        for pod in actual_prometheus_pods:
-            if pod.status != Pod.Status.RUNNING:
-                return {pod.name: pod.status for pod in actual_prometheus_pods}
-
     LOGGER.info("Verify that Prometheus pods exist and running as expected")
     samples = TimeoutSampler(
         wait_timeout=120,
         sleep=1,
-        func=_verify_prometheus_pods,
+        func=get_not_running_prometheus_pods,
+        admin_client=admin_client,
     )
     sample = None
     try:
@@ -329,21 +306,9 @@ def metrics_sanity(admin_client, prometheus_module):
                 break
     except TimeoutExpiredError:
         LOGGER.error(
-            f"timeout awaiting all Prometheus pods to exist and be in Running status: {sample}"
+            f"timeout awaiting all Prometheus pods to be in Running status: violating_pods={sample}"
         )
         raise
-
-    test_query = "/api/v1/query?query=select"
-    LOGGER.info(f"Executing a test query: query={test_query}")
-    try:
-        response = prometheus_module.query(query=test_query)
-    except JSONDecodeError:
-        LOGGER.error(
-            f"JSONDecodeError exception executing the test query: query={test_query}"
-        )
-        raise
-    if response["status"] != "success":
-        raise RuntimeError(f"Query response has unsuccessful status: {response}")
 
 
 @pytest.fixture(scope="class")
