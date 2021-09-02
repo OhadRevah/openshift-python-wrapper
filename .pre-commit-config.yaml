@@ -12,12 +12,12 @@ repos:
           - --remove-all-unused-imports
 
   - repo: https://github.com/pre-commit/mirrors-isort
-    rev: "v5.8.0"
+    rev: "v5.9.3"
     hooks:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: "21.5b2"
+    rev: "21.8b0"
     hooks:
     - id: black
 
