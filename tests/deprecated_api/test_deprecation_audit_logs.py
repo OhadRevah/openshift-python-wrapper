@@ -48,14 +48,20 @@ def audit_logs():
     return nodes_logs
 
 
+def get_deprecated_calls_from_log(log, node):
+    return subprocess.getoutput(
+        f'{OC_ADM_LOGS_COMMAND} {node} {AUDIT_LOGS_PATH}/{log} | grep \'"k8s.io/deprecated":"true"\'|grep'
+        f' \'"k8s.io/removed-release":"{DEPRECATED_API_VERSION}"\''
+    ).splitlines()
+
+
+def get_log_output(logs, node):
+    for log in logs:
+        yield get_deprecated_calls_from_log(log=log, node=node)
+
+
 def get_deprecated_apis(audit_logs_dict):
     """Go over master nodes audit logs and look for calls using deprecated APIs"""
-
-    def _get_deprecated_calls_from_log(log):
-        return subprocess.getoutput(
-            f'{OC_ADM_LOGS_COMMAND} {node} {AUDIT_LOGS_PATH}/{log} | grep \'"k8s.io/deprecated":"true"\'|grep'
-            f' \'"k8s.io/removed-release":"{DEPRECATED_API_VERSION}"\''
-        ).splitlines()
 
     def _extract_data_from_log(line):
         return re.search(
@@ -66,32 +72,29 @@ def get_deprecated_apis(audit_logs_dict):
 
     failed_api_calls = defaultdict(list)
     for node, logs in audit_logs_dict.items():
-        for log in logs:
-            output = _get_deprecated_calls_from_log(log=log)
-            if output:
-                for line in output:
-                    result_dict = _extract_data_from_log(line=line)
-                    user_agent = result_dict["useragent"]
-                    component = failed_api_calls.get(user_agent)
-                    # Add to dictionary only if the reason does not already exist or add a key for a new component
-                    # Skip OCP core and kubernetes components
-                    skip_component_check = [
-                        True
-                        for comp_name in IGNORED_COMPONENTS_LIST
-                        if comp_name in user_agent
-                    ]
-                    if not skip_component_check and (
-                        (
-                            component
-                            and [
-                                True
-                                for entry in component
-                                if result_dict["reason"] not in entry
-                            ]
-                        )
-                        or not component
-                    ):
-                        failed_api_calls[user_agent].append(line)
+        for output in get_log_output(logs=logs, node=node):
+            for line in output:
+                result_dict = _extract_data_from_log(line=line)
+                user_agent = result_dict["useragent"]
+                component = failed_api_calls.get(user_agent)
+                # Add to dictionary only if the reason does not already exist or add a key for a new component
+                # Skip OCP core and kubernetes components
+                if not [
+                    True
+                    for comp_name in IGNORED_COMPONENTS_LIST
+                    if comp_name in user_agent
+                ] and (
+                    (
+                        component
+                        and [
+                            True
+                            for entry in component
+                            if result_dict["reason"] not in entry
+                        ]
+                    )
+                    or not component
+                ):
+                    failed_api_calls[user_agent].append(line)
 
     return failed_api_calls
 
