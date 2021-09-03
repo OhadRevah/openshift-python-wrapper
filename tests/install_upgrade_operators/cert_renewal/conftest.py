@@ -2,7 +2,10 @@ import logging
 
 import pytest
 
-from utilities.constants import TIMEOUT_1MIN
+from tests.install_upgrade_operators.cert_renewal.utils import (
+    get_certificates_validity_period_and_checkend_result,
+)
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import update_custom_resource
 
@@ -36,3 +39,13 @@ def hyperconverged_resource_certconfig_change(
             consecutive_checks_count=6,
         )
         yield
+
+
+@pytest.fixture()
+def initial_certificates_dates(admin_client, hco_namespace, tmpdir):
+    LOGGER.info("Retrieve the certificates dates")
+    return get_certificates_validity_period_and_checkend_result(
+        hco_namespace_name=hco_namespace.name,
+        tmpdir=tmpdir,
+        seconds=TIMEOUT_11MIN,
+    )
