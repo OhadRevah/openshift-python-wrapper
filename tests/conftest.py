@@ -246,11 +246,16 @@ def pytest_addoption(parser):
 
 
 def pytest_cmdline_main(config):
-    if not config.getoption("--skip-deprecated-api-test") and getattr(
-        config, "args", None
+    deprecation_tests_dir_path = "tests/deprecated_api"
+    if (
+        not config.getoption("--skip-deprecated-api-test")
+        and getattr(config, "args", None)
+        and not any([deprecation_tests_dir_path in arg for arg in config.args])
     ):
         # test_deprecation_audit_logs should always run regardless the path that passed to pytest
-        config.args.append("tests/deprecated_api/test_deprecation_audit_logs.py")
+        config.args.append(
+            os.path.join(deprecation_tests_dir_path, "test_deprecation_audit_logs.py")
+        )
 
     if config.getoption("upgrade") == "ocp":
         if not config.getoption("ocp_image"):
