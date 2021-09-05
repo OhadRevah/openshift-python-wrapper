@@ -291,6 +291,9 @@ def test_private_registry_recover_after_missing_configmap(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.bugzilla(
+    2000661, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
     skip_upstream,
@@ -515,6 +518,9 @@ def test_fqdn_name(
         )
 
 
+@pytest.mark.bugzilla(
+    2000661, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     ("dv_name", "update_configmap_with_cert"),
     [
