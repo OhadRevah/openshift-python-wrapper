@@ -13,15 +13,13 @@ from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities import console
-from utilities.constants import TIMEOUT_20MIN
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_20MIN
 from utilities.infra import ExecCommandOnPod
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
-    vm_console_run_commands,
-    wait_for_console,
+    running_vm,
 )
 
 
@@ -70,7 +68,7 @@ def ha_vm_container_disk(request, unprivileged_client, namespace):
         client=unprivileged_client,
         run_strategy=run_strategy,
     ) as vm:
-        vm_ready_for_test(vm=vm)
+        running_vm(vm=vm)
         yield vm
 
 
@@ -90,18 +88,8 @@ def ha_vm_dv_disk(
         data_volume=golden_image_data_volume_scope_function,
         run_strategy=run_strategy,
     ) as vm:
-        vm_ready_for_test(vm=vm)
+        running_vm(vm=vm)
         yield vm
-
-
-def vm_ready_for_test(vm):
-    if vm.run_strategy == "Manual":
-        vm.start()
-    vm.vmi.wait_until_running()
-    wait_for_console(
-        vm=vm,
-        console_impl=console.Fedora,
-    )
 
 
 def stop_kubelet_on_node(utility_pods, node):
@@ -119,26 +107,16 @@ def wait_and_verify_vmi_failover(vm):
 
     if vm.instance.spec.runStrategy == "Manual":
         vm.vmi.wait_for_status(status="Failed")
-        vm.start()
     else:
         vm.vmi.wait_for_status(status="Scheduling")
-    vm.vmi.wait_until_running()
-    wait_for_console(
-        vm=vm,
-        console_impl=console.Fedora,
-    )
+    running_vm(vm=vm)
 
     new_uid = vm.vmi.instance.metadata.uid
     new_node = vm.vmi.node
 
     assert old_uid != new_uid, "Old VMI still exists"
     assert old_node.name != new_node.name, "VMI still on old node"
-
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=vm,
-        commands=["cat /etc/os-release"],
-    )
+    vm.ssh_exec.run_command(command=["cat", "/etc/os-release"])
 
 
 def wait_node_restored(node):
@@ -150,7 +128,7 @@ def wait_node_restored(node):
 def wait_node_status(node, status=True):
     """Wait for node status Ready (status=True) or NotReady (status=False)"""
     for sample in TimeoutSampler(
-        wait_timeout=60, sleep=1, func=lambda: node.kubelet_ready
+        wait_timeout=TIMEOUT_1MIN, sleep=1, func=lambda: node.kubelet_ready
     ):
         if (status and sample) or (not status and not sample):
             return
@@ -184,10 +162,7 @@ def test_ha_vm_container_disk_reboot(
     ha_vm_container_disk,
 ):
     orig_node = ha_vm_container_disk.vmi.node
-    stop_kubelet_on_node(
-        utility_pods=utility_pods,
-        node=orig_node,
-    )
+    stop_kubelet_on_node(utility_pods=utility_pods, node=orig_node)
     wait_and_verify_vmi_failover(vm=ha_vm_container_disk)
     wait_node_restored(node=orig_node)
 
@@ -223,16 +198,10 @@ def test_ha_vm_dv_disk_reboot(
     ha_vm_dv_disk,
 ):
     orig_node = ha_vm_dv_disk.vmi.node
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=ha_vm_dv_disk,
-        commands=["echo test >> ha-test"],
-    )
+    ha_vm_dv_disk.ssh_exec.run_command(command=["echo", "test", ">>", "ha-test"])
     stop_kubelet_on_node(utility_pods=utility_pods, node=orig_node)
     wait_and_verify_vmi_failover(vm=ha_vm_container_disk)
     wait_node_restored(node=orig_node)
-    vm_console_run_commands(
-        console_impl=console.Fedora,
-        vm=ha_vm_dv_disk,
-        commands=["cat ha-test"],
-    )
+    assert (
+        "test" in ha_vm_dv_disk.ssh_exec.run_command(["cat", "ha-test"])[1]
+    ), "Content of file lost during VM failover"
