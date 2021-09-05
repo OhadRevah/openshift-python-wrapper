@@ -42,8 +42,12 @@ def audit_logs():
     ).splitlines()
     nodes_logs = defaultdict(list)
     for data in output:
-        node, log = data.split()
-        nodes_logs[node].append(log)
+        try:
+            node, log = data.split()
+            nodes_logs[node].append(log)
+        # When failing to get node log, for example "error trying to reach service: ... : connect: connection refused"
+        except ValueError:
+            LOGGER.error(f"Fail to get log: {data}")
 
     return nodes_logs
 
