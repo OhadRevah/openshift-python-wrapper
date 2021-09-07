@@ -121,7 +121,7 @@ def matrix_bond_modes_bond(
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
     ) as bond:
         yield bond
 
@@ -140,7 +140,7 @@ def matrix_bond_modes_bridge(
     with bridge_on_bond(
         interface_type=bridge_device_matrix__class__,
         utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         interface_name=bond_modes_nad.bridge_name,
         ports=[matrix_bond_modes_bond.bond_name],
     ) as br:
@@ -158,7 +158,7 @@ def bond_modes_vm(
     with create_vm(
         namespace=namespace.name,
         nad=bond_modes_nad,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         unprivileged_client=unprivileged_client,
     ) as vm:
         yield vm
@@ -178,7 +178,7 @@ def bridge_on_bond_fail_over_mac(
     with bridge_on_bond(
         interface_type=bridge_device_matrix__class__,
         utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         interface_name=bond_modes_nad.bridge_name,
         ports=[active_backup_bond_with_fail_over_mac.bond_name],
     ) as br:
@@ -194,7 +194,7 @@ def active_backup_bond_with_fail_over_mac(
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         mode="active-backup",
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         options={"fail_over_mac": "active"},
     ) as bond:
         yield bond
@@ -212,7 +212,7 @@ def vm_with_fail_over_mac_bond(
     with create_vm(
         namespace=namespace.name,
         nad=bond_modes_nad,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         unprivileged_client=unprivileged_client,
     ) as vm:
         yield vm
@@ -249,7 +249,7 @@ class TestBondWithFailOverMac:
             bond_ports=nodes_available_nics[worker_node1.name][-2:],
             worker_pods=utility_pods,
             mode="active-backup",
-            node_selector=worker_node1.name,
+            node_selector=worker_node1.hostname,
             options={"fail_over_mac": "active"},
         ) as bond:
             assert_bond_validation(utility_pods=utility_pods, bond=bond)

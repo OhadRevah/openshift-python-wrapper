@@ -104,7 +104,7 @@ def nmstate_linux_bridge_attached_vma(
         body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -138,7 +138,7 @@ def nmstate_linux_bridge_attached_vmb(
         body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:

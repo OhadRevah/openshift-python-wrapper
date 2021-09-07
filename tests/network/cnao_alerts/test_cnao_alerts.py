@@ -58,7 +58,7 @@ def bridge_device_duplicate_mac(worker_node1, schedulable_nodes, utility_pods):
         interface_type=LINUX_BRIDGE,
         nncp_name=f"{DUPLICATE_MAC_STR}-nncp",
         interface_name="bridge-dup-mac",
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         network_utility_pods=utility_pods,
         nodes=schedulable_nodes,
     ) as dev:

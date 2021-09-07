@@ -64,7 +64,7 @@ def remove_veth_bridge_device(
         nncp_name="veth-removed",
         interface_name=remove_veth_br1test_nad.bridge_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
     ) as dev:
         yield dev
 
@@ -80,7 +80,7 @@ def remove_veth_bridge_attached_vma(namespace, unprivileged_client, worker_node1
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         teardown=False,
         ssh=False,
     ) as vm:

@@ -30,7 +30,7 @@ def kubemacpool_bridge_device_worker_1(
         nncp_name=f"kubemacpool-{name_prefix(worker_node1.name)}",
         interface_name=kubemacpool_bridge_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
     ) as dev:
         yield dev
@@ -49,7 +49,7 @@ def kubemacpool_bridge_device_worker_2(
         nncp_name=f"kubemacpool-{name_prefix(worker_node2.name)}",
         interface_name=kubemacpool_bridge_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
     ) as dev:
         yield dev
@@ -198,7 +198,7 @@ def vm_a(
         name="vm-fedora-a",
         iface_config=requested_network_config,
         namespace=namespace,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         client=unprivileged_client,
         mac_pool=mac_pool,
     )
@@ -220,7 +220,7 @@ def vm_b(
         name="vm-fedora-b",
         iface_config=requested_network_config,
         namespace=namespace,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         client=unprivileged_client,
         mac_pool=mac_pool,
     )

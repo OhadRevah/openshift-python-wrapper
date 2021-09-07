@@ -37,7 +37,7 @@ def nmstate_vma(schedulable_nodes, worker_node1, namespace, unprivileged_client)
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
@@ -51,7 +51,7 @@ def nmstate_vmb(schedulable_nodes, worker_node2, namespace, unprivileged_client)
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
@@ -85,7 +85,7 @@ def bridge_on_management_ifaces_node1(
         nncp_name=f"brext-default-net-{name_prefix(worker_node1.name)}",
         interface_name="brext1",
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         nodes=[worker_node1],
         ports=[management_iface],
         ipv4_enable=True,
@@ -115,7 +115,7 @@ def bridge_on_management_ifaces_node2(
         nncp_name=f"brext-default-net-{name_prefix(worker_node2.name)}",
         interface_name="brext2",
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         nodes=[worker_node2],
         ports=[management_iface],
         ipv4_enable=True,

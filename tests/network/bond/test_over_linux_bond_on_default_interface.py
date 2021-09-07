@@ -25,7 +25,7 @@ def lbodi_vma(worker_node1, namespace, unprivileged_client):
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
@@ -39,7 +39,7 @@ def lbodi_vmb(worker_node2, namespace, unprivileged_client):
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
@@ -79,7 +79,7 @@ def lbodi_bond(
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ipv4_dhcp=True,
         ipv4_enable=True,
         primary_bond_port=primary_port,

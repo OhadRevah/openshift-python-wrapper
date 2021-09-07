@@ -85,7 +85,7 @@ def network_policy_vma(namespace_1, worker_node1, unprivileged_client):
         namespace=namespace_1.name,
         name=name,
         body=fedora_vm_body(name=name),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         client=unprivileged_client,
     ) as vm:
         vm.start(wait=True)
@@ -98,7 +98,7 @@ def network_policy_vmb(namespace_2, worker_node1, unprivileged_client):
     with VirtualMachineForTests(
         namespace=namespace_2.name,
         name=name,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:

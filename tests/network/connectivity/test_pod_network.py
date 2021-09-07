@@ -28,7 +28,7 @@ def pod_net_vma(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         client=unprivileged_client,
         network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),
@@ -51,7 +51,7 @@ def pod_net_vmb(
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         client=unprivileged_client,
         network_model=nic_models_matrix__module__,
         body=fedora_vm_body(name=name),

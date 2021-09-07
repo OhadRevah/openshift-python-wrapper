@@ -53,7 +53,7 @@ def l2_bridge_device_worker_1(
         nncp_name=f"l2-bridge-{name_prefix(worker_node1.name)}",
         interface_name=l2_bridge_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
     ) as br:
         yield br
@@ -72,7 +72,7 @@ def l2_bridge_device_worker_2(
         nncp_name=f"l2-bridge-{name_prefix(worker_node2.name)}",
         interface_name=l2_bridge_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
     ) as br:
         yield br
@@ -305,7 +305,7 @@ def l2_bridge_vm_a(namespace, worker_node1, l2_bridge_all_nads, unprivileged_cli
         mpls_dest_tag=VMB_MPLS_ROUTE_TAG,
         mpls_route_next_hop="10.200.4.2",
         client=unprivileged_client,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
     )
 
 
@@ -328,7 +328,7 @@ def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_cli
         mpls_dest_tag=VMA_MPLS_ROUTE_TAG,
         mpls_route_next_hop="10.200.4.1",
         client=unprivileged_client,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
     )
 
 

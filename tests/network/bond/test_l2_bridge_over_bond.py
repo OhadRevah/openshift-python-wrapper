@@ -43,7 +43,7 @@ def ovs_linux_bond1_worker_1(
         bond_name=f"bond{bond_idx}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
     ) as bond:
@@ -67,7 +67,7 @@ def ovs_linux_bond1_worker_2(
         bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
         bond_ports=nodes_available_nics[worker_node2.name][-2:],
         worker_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
     ) as bond:
@@ -90,7 +90,7 @@ def ovs_linux_bridge_on_bond_worker_1(
         nncp_name="bridge-on-bond-worker-1",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ports=[ovs_linux_bond1_worker_1.bond_name],
     ) as br:
         yield br
@@ -112,7 +112,7 @@ def ovs_linux_bridge_on_bond_worker_2(
         nncp_name="bridge-on-bond-worker-2",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         ports=[ovs_linux_bond1_worker_2.bond_name],
     ) as br:
         yield br
@@ -138,7 +138,7 @@ def ovs_linux_bond_bridge_attached_vma(
         body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -166,7 +166,7 @@ def ovs_linux_bond_bridge_attached_vmb(
         body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:

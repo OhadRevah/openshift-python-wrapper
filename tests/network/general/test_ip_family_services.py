@@ -74,7 +74,7 @@ def running_vm_for_exposure(
         namespace=namespace.name,
         name=vm_name,
         body=fedora_vm_body(name=vm_name),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:

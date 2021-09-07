@@ -168,7 +168,7 @@ def net_add_op_bridge_device(utility_pods, worker_node1):
         nncp_name="test-network-operator",
         interface_name="br1test",
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
     ) as br_dev:
         yield br_dev
 

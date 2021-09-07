@@ -25,7 +25,7 @@ def linux_bridge_device(
         nncp_name="cnv-tuning-nncp",
         interface_name=linux_bridge_nad.bridge_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
     ) as dev:
         yield dev
 
@@ -43,7 +43,7 @@ def cnv_tuning_vm(
         interfaces=sorted(networks.keys()),
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ssh=False,
     ) as vm:
         yield vm

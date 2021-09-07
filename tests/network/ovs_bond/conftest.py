@@ -32,7 +32,7 @@ def ovs_bond_vmb(schedulable_nodes, namespace, unprivileged_client, node_with_bo
         name=name,
         node_selector=next(
             filter(lambda node: node.name != node_with_bond, schedulable_nodes)
-        ).name,
+        ).hostname,
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
@@ -96,7 +96,7 @@ def bond(bond_and_privileged_pod):
 
 @pytest.fixture(scope="module")
 def node_with_bond(privileged_pod):
-    return privileged_pod.node.name
+    return privileged_pod.node.hostname
 
 
 @pytest.fixture(scope="module")

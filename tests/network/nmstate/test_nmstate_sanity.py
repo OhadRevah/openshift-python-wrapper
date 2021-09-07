@@ -42,7 +42,7 @@ def nmstate_linux_bridge_device_worker(
     nmstate_br_dev = LinuxBridgeNodeNetworkConfigurationPolicy(
         name=f"nmstate-{name_prefix(worker_node1.name)}",
         bridge_name=BRIDGE_NAME,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
         worker_pods=utility_pods,
     )
@@ -233,7 +233,7 @@ def test_no_ip(
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"no-ip-{name_prefix(worker_node1.name)}",
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ipv4_dhcp=False,
         worker_pods=utility_pods,
         interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
@@ -253,7 +253,7 @@ def test_static_ip(
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"static-ip-{name_prefix(worker_node1.name)}",
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ipv4_dhcp=False,
         ipv4_enable=True,
         ipv4_addresses=IP_LIST,
@@ -274,7 +274,7 @@ def test_dynamic_ip(
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"dynamic-ip-{name_prefix(worker_node1.name)}",
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ipv4_dhcp=True,
         ipv4_enable=True,
         worker_pods=utility_pods,
@@ -335,7 +335,7 @@ def test_static_route(
     }
     with EthernetNetworkConfigurationPolicy(
         name=f"static-route-{name_prefix(worker_node1.name)}",
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ipv4_dhcp=False,
         ipv4_enable=True,
         ipv4_addresses=IP_LIST,

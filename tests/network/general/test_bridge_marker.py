@@ -103,14 +103,14 @@ def non_homogenous_bridges(
         nncp_name="bridge-marker2",
         interface_name=BRIDGEMARKER2,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
     ) as bridgemarker2_ncp:
         with network_device(
             interface_type=LINUX_BRIDGE,
             nncp_name="bridge-marker3",
             interface_name=BRIDGEMARKER3,
             network_utility_pods=utility_pods,
-            node_selector=worker_node2.name,
+            node_selector=worker_node2.hostname,
         ) as bridgemarker3_ncp:
             yield bridgemarker2_ncp, bridgemarker3_ncp
 

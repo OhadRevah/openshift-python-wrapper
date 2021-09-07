@@ -35,7 +35,7 @@ def jumbo_frame_bridge_device_worker_1(
         nncp_name="jumbo-frame-bridge-nncp-1",
         interface_name=jumbo_frame_bridge_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
         mtu=MTU_9000,
     ) as br:
@@ -55,7 +55,7 @@ def jumbo_frame_bridge_device_worker_2(
         nncp_name="jumbo-frame-bridge-nncp-2",
         interface_name=jumbo_frame_bridge_device_name,
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
         mtu=MTU_9000,
     ) as br:
@@ -97,7 +97,7 @@ def bridge_attached_vma(
         body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
@@ -121,7 +121,7 @@ def bridge_attached_vmb(
         body=fedora_vm_body(name=name),
         networks=networks,
         interfaces=networks.keys(),
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
