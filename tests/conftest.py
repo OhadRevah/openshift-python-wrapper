@@ -881,7 +881,7 @@ def schedulable_nodes(nodes):
     yield [
         node
         for node in nodes
-        if schedulable_label in node.labels
+        if schedulable_label in node.labels.keys()
         and node.labels[schedulable_label] == "true"
         and not node.instance.spec.unschedulable
         and not kubernetes_taint_exists(node)
@@ -891,7 +891,9 @@ def schedulable_nodes(nodes):
 
 @pytest.fixture(scope="session")
 def masters(nodes):
-    yield [node for node in nodes if "node-role.kubernetes.io/master" in node.labels]
+    yield [
+        node for node in nodes if "node-role.kubernetes.io/master" in node.labels.keys()
+    ]
 
 
 @pytest.fixture(scope="session")
