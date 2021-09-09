@@ -1,5 +1,6 @@
 import logging
 import re
+from contextlib import contextmanager
 from copy import deepcopy
 
 import packaging.version
@@ -17,6 +18,7 @@ import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities.constants import (
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
+    TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
 from utilities.infra import create_ns
@@ -29,6 +31,7 @@ from utilities.network import (
     wait_for_ovs_status,
 )
 from utilities.storage import (
+    create_dv,
     get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
 )
@@ -499,6 +502,31 @@ def vm_bridge_networks(upgrade_bridge_on_all_nodes):
     }
 
 
+@contextmanager
+def vm_from_template(
+    client,
+    namespace,
+    vm_name,
+    data_volume,
+    cpu_model,
+    networks,
+    template_labels,
+    run_strategy=None,
+):
+    with VirtualMachineForTestsFromTemplate(
+        name=vm_name,
+        namespace=namespace,
+        client=client,
+        labels=Template.generate_template_labels(**template_labels),
+        data_volume=data_volume,
+        cpu_model=cpu_model,
+        run_strategy=run_strategy,
+        networks=networks,
+        interfaces=sorted(networks.keys()),
+    ) as vm:
+        yield vm
+
+
 @pytest.fixture(scope="module")
 def manual_run_strategy_vm(
     unprivileged_client,
@@ -508,18 +536,15 @@ def manual_run_strategy_vm(
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
-    with VirtualMachineForTestsFromTemplate(
-        name="manual-run-strategy-vm",
+    with vm_from_template(
+        vm_name="manual-run-strategy-vm",
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=Template.generate_template_labels(
-            **rhel_latest_os_params["rhel_template_labels"]
-        ),
+        template_labels=rhel_latest_os_params["rhel_template_labels"],
         data_volume=run_strategy_golden_image_rwx_dv,
-        cpu_model=nodes_common_cpu_model,
         run_strategy=VirtualMachine.RunStrategy.MANUAL,
+        cpu_model=nodes_common_cpu_model,
         networks=vm_bridge_networks,
-        interfaces=sorted(vm_bridge_networks.keys()),
     ) as vm:
         vm.start()
         yield vm
@@ -535,18 +560,15 @@ def always_run_strategy_vm(
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
-    with VirtualMachineForTestsFromTemplate(
-        name="always-run-strategy-vm",
+    with vm_from_template(
+        vm_name="always-run-strategy-vm",
         namespace=namespace.name,
         client=unprivileged_client,
-        labels=Template.generate_template_labels(
-            **rhel_latest_os_params["rhel_template_labels"]
-        ),
+        template_labels=rhel_latest_os_params["rhel_template_labels"],
         data_volume=run_strategy_golden_image_rwx_dv,
-        cpu_model=nodes_common_cpu_model,
         run_strategy=VirtualMachine.RunStrategy.ALWAYS,
+        cpu_model=nodes_common_cpu_model,
         networks=vm_bridge_networks,
-        interfaces=sorted(vm_bridge_networks.keys()),
     ) as vm:
         # No need to start the VM as the VM will be automatically started (RunStrategy Always)
         yield vm
@@ -573,3 +595,37 @@ def rhel_latest_os_params():
         "rhel_dv_size": latest_rhel_dict["dv_size"],
         "rhel_template_labels": latest_rhel_dict["template_labels"],
     }
+
+
+@pytest.fixture(scope="module")
+def windows_vm(
+    admin_client,
+    unprivileged_client,
+    namespace,
+    vm_bridge_networks,
+    upgrade_br1test_nad,
+    nodes_common_cpu_model,
+):
+    latest_windows_dict = py_config["latest_windows_os_dict"]
+    with create_dv(
+        client=admin_client,
+        dv_name=latest_windows_dict["os_version"],
+        namespace=py_config["golden_images_namespace"],
+        url=f"{get_images_server_url(schema='http')}{latest_windows_dict['image_path']}",
+        storage_class=py_config["default_storage_class"],
+        access_modes=py_config["default_access_mode"],
+        volume_mode=py_config["default_volume_mode"],
+        size=latest_windows_dict["dv_size"],
+    ) as dv:
+        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
+        with vm_from_template(
+            vm_name="windows-vm",
+            namespace=namespace.name,
+            client=unprivileged_client,
+            template_labels=latest_windows_dict["template_labels"],
+            data_volume=dv,
+            cpu_model=nodes_common_cpu_model,
+            networks=vm_bridge_networks,
+        ) as vm:
+            running_vm(vm=vm, check_ssh_connectivity=False)
+            yield vm

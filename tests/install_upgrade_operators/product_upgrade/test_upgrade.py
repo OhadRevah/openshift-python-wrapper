@@ -93,6 +93,15 @@ class TestUpgrade:
             vms_list=[manual_run_strategy_vm, always_run_strategy_vm]
         )
 
+    @pytest.mark.polarion("CNV-7243")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_windows_vm_before_upgrade")
+    def test_windows_vm_before_upgrade(
+        self,
+        windows_vm,
+    ):
+        upgrade_utils.verify_vms_ssh_connectivity(vms_list=[windows_vm])
+
     @pytest.mark.polarion("CNV-2743")
     @pytest.mark.order(before="test_upgrade_process")
     @pytest.mark.dependency(name="test_nmstate_bridge_before_upgrade")
@@ -333,6 +342,17 @@ class TestUpgrade:
         upgrade_utils.verify_vms_ssh_connectivity(
             vms_list=[manual_run_strategy_vm, always_run_strategy_vm]
         )
+
+    @pytest.mark.polarion("CNV-7244")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=["test_upgrade_process", "test_windows_vm_before_upgrade"]
+    )
+    def test_windows_vm_after_upgrade(
+        self,
+        windows_vm,
+    ):
+        upgrade_utils.verify_vms_ssh_connectivity(vms_list=[windows_vm])
 
     @pytest.mark.polarion("CNV-2979")
     @pytest.mark.order(after="test_upgrade_process")
