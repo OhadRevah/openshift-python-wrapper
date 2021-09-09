@@ -53,6 +53,7 @@ from utilities.constants import (
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
 )
+from utilities.exceptions import CommonCpusNotFoundError
 from utilities.hco import (
     apply_np_changes,
     get_hyperconverged_resource,
@@ -1704,6 +1705,8 @@ def nodes_common_cpu_model(schedulable_nodes):
         for cpu, counter in cpus_dict.items():
             if counter == len(schedulable_nodes) and cpus_family in cpu:
                 return _format_cpu_name(cpu_name=cpu)
+
+    raise CommonCpusNotFoundError(available_cpus=cpus_dict)
 
 
 @pytest.fixture(scope="session")
