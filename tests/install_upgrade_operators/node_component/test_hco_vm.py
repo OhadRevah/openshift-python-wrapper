@@ -1,6 +1,8 @@
+import logging
+
 import pytest
-from kubernetes.client.rest import ApiException
 from ocp_resources.resource import ResourceEditor
+from openshift.dynamic.exceptions import ForbiddenError
 
 from tests.install_upgrade_operators.node_component.utils import (
     NODE_PLACEMENT_INFRA,
@@ -14,6 +16,9 @@ from utilities.virt import (
     wait_for_console,
     wait_for_vm_interfaces,
 )
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -52,10 +57,18 @@ def hco_vm(unprivileged_client, namespace):
 def test_remove_workload_label_from_node_while_vm_running(
     node_placement_labels, hyperconverged_with_node_placement, hco_vm
 ):
-    with pytest.raises(
-        ApiException
-    ):  # TODO: replace with specific exception after BZ 1917380
+    node_name = hco_vm.vmi.node.name
+    LOGGER.info(f"Removing workload label from node: {node_name}")
+    try:
         with ResourceEditor(
             patches={hco_vm.vmi.node: {"metadata": {"labels": {"work-comp": None}}}}
         ):
-            pytest.fail("Workload label removed while VM is running")
+            LOGGER.info(
+                "Workload label removed from node: {node_name} while VM is running as expected"
+            )
+
+    except ForbiddenError:
+        LOGGER.error(
+            f"Unable to remove workload label from node: {node_name} while vm/workload is present"
+        )
+        raise

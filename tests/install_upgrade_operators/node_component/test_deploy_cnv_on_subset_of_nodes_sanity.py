@@ -170,9 +170,7 @@ class TestDeployCNVOnSubsetOfClusterNodes:
         LOGGER.info(
             "Attempting to update HCO with node placement, expecting it to fail"
         )
-        with pytest.raises(
-            ForbiddenError, match=r"denied the request:.*while there are running vms"
-        ):
+        try:
             with ResourceEditor(
                 patches={
                     hyperconverged_resource_scope_function: {
@@ -180,7 +178,14 @@ class TestDeployCNVOnSubsetOfClusterNodes:
                     }
                 }
             ):
-                pytest.fail("Workloads label changed while VM/Workload is present.")
+                LOGGER.info(
+                    "Expected ability to change workloads label {WORK_LABEL_1} while VM/Workload is present."
+                )
+        except ForbiddenError:
+            LOGGER.error(
+                "Unable to change workload label  {WORK_LABEL_1} while vm/workload is present"
+            )
+            raise
 
     @pytest.mark.polarion("CNV-5232")
     @pytest.mark.parametrize(
