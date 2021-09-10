@@ -9,13 +9,20 @@ from multiprocessing.pool import ThreadPool
 import pytest
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
+from ocp_resources.replicaset import ReplicaSet
+from ocp_resources.resource import Resource
+from ocp_resources.role import Role
+from ocp_resources.role_binding import RoleBinding
 from ocp_resources.security_context_constraints import SecurityContextConstraints
+from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
@@ -50,6 +57,40 @@ LOGGER = logging.getLogger(__name__)
 HPP_OPERATOR = "hostpath-provisioner-operator"
 
 pytestmark = pytest.mark.usefixtures("skip_if_hpp_not_in_sc_options")
+
+
+def verify_hpp_app_label(hpp_resources, cnv_version):
+    for resource in hpp_resources:
+        if resource.kind == "ServiceAccount" and resource.name == HPP_OPERATOR:
+            continue
+        elif (
+            resource.kind == "ConfigMap"
+            and resource.name == "hostpath-provisioner-operator-lock"
+        ):
+            continue
+        else:
+            assert (
+                resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/component"]
+                == "storage"
+            ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/component for {resource.name}"
+            assert (
+                resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/part-of"]
+                == "hyperconverged-cluster"
+            ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/part-of for {resource.name}"
+            assert (
+                resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/version"]
+                == f"v{cnv_version}"
+            ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/version for {resource.name}"
+            if resource.name.startswith(HPP_OPERATOR):
+                assert (
+                    resource.labels[f"{resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
+                    == "olm"
+                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
+            else:
+                assert (
+                    resource.labels[f"{resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
+                    == HPP_OPERATOR
+                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
 
 
 @pytest.fixture(scope="module")
@@ -739,3 +780,68 @@ def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
     assert (
         type(user_id) == int and len(str(user_id)) == 10
     ), f"Container image is not runAsUser with user id {user_id}"
+
+
+@pytest.mark.parametrize(
+    "hpp_resources",
+    [
+        pytest.param(
+            Pod,
+            marks=(pytest.mark.polarion("CNV-7204")),
+            id="hpp-pods",
+        ),
+        pytest.param(
+            ServiceAccount,
+            marks=(pytest.mark.polarion("CNV-7205")),
+            id="hpp-service-accounts",
+        ),
+        pytest.param(
+            Service,
+            marks=(pytest.mark.polarion("CNV-7206")),
+            id="hpp-service",
+        ),
+        pytest.param(
+            Deployment,
+            marks=(pytest.mark.polarion("CNV-7213")),
+            id="hpp-deployment",
+        ),
+        pytest.param(
+            ReplicaSet,
+            marks=(pytest.mark.polarion("CNV-7214")),
+            id="hpp-replicatset",
+        ),
+        pytest.param(
+            CustomResourceDefinition,
+            marks=(pytest.mark.polarion("CNV-7211")),
+            id="hpp-crd",
+        ),
+        pytest.param(
+            Role,
+            marks=(pytest.mark.polarion("CNV-7212")),
+            id="hpp-role",
+        ),
+        pytest.param(
+            RoleBinding,
+            marks=(pytest.mark.polarion("CNV-7209")),
+            id="hpp-role-binding",
+        ),
+        pytest.param(
+            ClusterRole,
+            marks=(pytest.mark.polarion("CNV-7210")),
+            id="hpp-cluster-role",
+        ),
+        pytest.param(
+            ClusterRoleBinding,
+            marks=(pytest.mark.polarion("CNV-7208")),
+            id="hpp-cluster-role-binding",
+        ),
+        pytest.param(
+            ConfigMap,
+            marks=(pytest.mark.polarion("CNV-7207")),
+            id="hpp-configmap",
+        ),
+    ],
+    indirect=True,
+)
+def test_verify_hpp_res_app_label(hpp_resources, cnv_current_version):
+    verify_hpp_app_label(hpp_resources=hpp_resources, cnv_version=cnv_current_version)

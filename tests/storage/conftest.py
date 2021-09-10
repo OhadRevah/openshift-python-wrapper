@@ -45,6 +45,14 @@ def cdi_resources(request, admin_client):
     return [rcs for rcs in resource_list if rcs.name.startswith("cdi-")]
 
 
+@pytest.fixture()
+def hpp_resources(request, admin_client):
+    rcs_object = request.param
+    LOGGER.info(f"Get all resources with kind: {rcs_object.kind}")
+    resource_list = list(rcs_object.get(dyn_client=admin_client))
+    return [rcs for rcs in resource_list if rcs.name.startswith("hostpath-")]
+
+
 @pytest.fixture(scope="module")
 def internal_http_configmap(namespace):
     path = os.path.join("tests/storage/internal_http/certs", "tls.crt")
