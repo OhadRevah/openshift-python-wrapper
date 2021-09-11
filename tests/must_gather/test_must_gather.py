@@ -51,7 +51,7 @@ from utilities.infra import BUG_STATUS_CLOSED
         ),
         pytest.param(
             VirtualMachine,
-            "namespaces/{namespace}/kubevirt.io/virtualmachines/{name}.yaml",
+            "namespaces/{namespace}/kubevirt.io/virtualmachines/custom/{name}.yaml",
             (("spec",), ("metadata", "uid"), ("metadata", "name")),
             marks=(pytest.mark.polarion("CNV-3043")),
             id="test_virtualmachine_resources",
