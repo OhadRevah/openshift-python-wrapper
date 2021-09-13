@@ -32,7 +32,7 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.oauth import OAuth
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
 from ocp_resources.service_account import ServiceAccount
@@ -1604,17 +1604,19 @@ def sriov_workers(schedulable_nodes, labeled_sriov_nodes):
 @pytest.fixture(scope="session")
 def sriov_iface(sriov_nodes_states, utility_pods):
     node = sriov_nodes_states[0]
+    state_up = Resource.Interface.State.UP
     for iface in node.instance.status.interfaces:
         if (
             iface.totalvfs
             and ExecCommandOnPod(utility_pods=utility_pods, node=node).interface_status(
                 interface=iface.name
             )
-            == "up"
+            == state_up
         ):
             return iface
     raise NotFoundError(
-        "no sriov interface with 'up' status was found, please make sure at least one sriov interface is up"
+        f"no sriov interface with '{state_up}' status was found, "
+        f"please make sure at least one sriov interface is {state_up}"
     )
 
 
