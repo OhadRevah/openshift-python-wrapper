@@ -17,7 +17,6 @@ from utilities.virt import vm_instance_from_template
 
 LOGGER = logging.getLogger(__name__)
 
-
 pytestmark = pytest.mark.usefixtures("skip_upstream")
 
 
@@ -44,10 +43,10 @@ def hyperv_vm(
         yield vm
 
 
-def get_virt_launcher_hyperv_enabled_labels(virt_launcher_node_selector):
+def get_hyperv_enabled_labels(instance_labels):
     return [
         label
-        for label, value in virt_launcher_node_selector.items()
+        for label, value in instance_labels.items()
         if label.startswith("hyperv.node.kubevirt.io/") and value == "true"
     ]
 
@@ -96,7 +95,7 @@ class TestWindowsHyperVFlags:
                     "vm_name": "win-vm-with-default-hyperv-features",
                     "template_labels": WINDOWS_LATEST_LABELS,
                 },
-                marks=(pytest.mark.polarion("CNV-6085")),
+                marks=(pytest.mark.polarion("CNV-7247")),
             ),
             pytest.param(
                 {
@@ -112,7 +111,7 @@ class TestWindowsHyperVFlags:
                         }
                     },
                 },
-                marks=(pytest.mark.polarion("CNV-6089")),
+                marks=(pytest.mark.polarion("CNV-7248")),
             ),
         ],
         indirect=True,
@@ -121,14 +120,26 @@ class TestWindowsHyperVFlags:
         self,
         hyperv_vm,
     ):
-        LOGGER.info("Verify hyperv node selector labels are added to virt-launcher pod")
-        virt_launcher_hyperv_labels = get_virt_launcher_hyperv_enabled_labels(
-            virt_launcher_node_selector=hyperv_vm.vmi.virt_launcher_pod.instance.spec.nodeSelector
+        LOGGER.info(
+            "Verify hyperv node selector labels are added to virt-launcher pod "
+            "and they match the hosting node labels"
         )
-
+        virt_launcher_hyperv_labels = get_hyperv_enabled_labels(
+            instance_labels=hyperv_vm.vmi.virt_launcher_pod.instance.spec.nodeSelector
+        )
+        node_hyperv_labels = get_hyperv_enabled_labels(
+            instance_labels=hyperv_vm.vmi.virt_launcher_pod.node.instance.metadata.labels
+        )
         assert virt_launcher_hyperv_labels, (
             "hyperv labels are missing from virt-launcher pod node selector, "
             f"node's labels: {virt_launcher_hyperv_labels}"
+        )
+        assert all(
+            label in node_hyperv_labels for label in virt_launcher_hyperv_labels
+        ), (
+            "node selector hyperV labels don't match the virt-launcher node hyperV labels"
+            f"virt-launcher labels: {virt_launcher_hyperv_labels}"
+            f"virt-launcher node labels: {node_hyperv_labels}"
         )
 
     @pytest.mark.parametrize(
