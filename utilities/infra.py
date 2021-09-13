@@ -847,9 +847,19 @@ class ExecCommandOnPod:
 def cluster_sanity(
     request, admin_client, cluster_storage_classes, nodes, hco_namespace
 ):
+    skip_cluster_sanity_check = "--cluster-sanity-skip-check"
     skip_storage_classes_check = "--cluster-sanity-skip-storage-check"
     skip_nodes_check = "--cluster-sanity-skip-nodes-check"
-    LOGGER.info("Running cluster sanity")
+
+    if request.session.config.getoption(skip_cluster_sanity_check):
+        LOGGER.warning(
+            f"Skipping cluster sanity check, got {skip_cluster_sanity_check}"
+        )
+        return
+
+    LOGGER.info(
+        "Running cluster sanity. (To skip nodes check pass {skip_cluster_sanity_check} to pytest)"
+    )
     # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
     if not request.session.config.getoption(skip_storage_classes_check):
         LOGGER.info(

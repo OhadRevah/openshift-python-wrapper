@@ -220,6 +220,11 @@ def pytest_addoption(parser):
         help="Skip nodes check in cluster_sanity fixture",
         action="store_true",
     )
+    cluster_sanity_group.addoption(
+        "--cluster-sanity-skip-check",
+        help="Skip cluster_sanity check",
+        action="store_true",
+    )
 
     # Log collector group
     log_collector_group.addoption(
