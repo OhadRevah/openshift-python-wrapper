@@ -12,7 +12,7 @@ from ocp_resources.template import Template
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import OS_FLAVOR_RHEL, Images
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTests,
@@ -73,7 +73,8 @@ def windows_efi_secureboot_vm(
         smm_enabled=True,
         efi_params={"secureBoot": True},
     ) as vm:
-        running_vm(vm=vm, wait_for_interfaces=False)
+        # EFI Windows OS takes longer to be up and connective
+        running_vm(vm=vm, wait_for_interfaces=False, ssh_timeout=TIMEOUT_5MIN)
         yield vm
 
 

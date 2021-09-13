@@ -6,7 +6,7 @@ from ocp_resources.resource import Resource
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.constants import RHSM_PASSWD, RHSM_USER
+from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_3MIN
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     prepare_cloud_init_user_data,
@@ -62,12 +62,12 @@ def vhostmd_vm2(
 
 @pytest.fixture()
 def running_vhostmd_vm1(vhostmd_vm1):
-    return running_vm(vm=vhostmd_vm1)
+    return running_vm(vm=vhostmd_vm1, ssh_timeout=TIMEOUT_3MIN)
 
 
 @pytest.fixture()
 def running_vhostmd_vm2(vhostmd_vm2):
-    return running_vm(vm=vhostmd_vm2)
+    return running_vm(vm=vhostmd_vm2, ssh_timeout=TIMEOUT_3MIN)
 
 
 def run_vm_dump_metrics(vm):

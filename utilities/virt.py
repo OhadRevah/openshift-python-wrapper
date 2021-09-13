@@ -1697,7 +1697,9 @@ def get_rhel_os_dict(rhel_version):
     raise KeyError(f"Failed to extract {rhel_version} from system_rhel_os_matrix")
 
 
-def running_vm(vm, wait_for_interfaces=True, check_ssh_connectivity=True):
+def running_vm(
+    vm, wait_for_interfaces=True, check_ssh_connectivity=True, ssh_timeout=TIMEOUT_2MIN
+):
     """
     Wait for the VMI to be in Running state.
 
@@ -1705,6 +1707,7 @@ def running_vm(vm, wait_for_interfaces=True, check_ssh_connectivity=True):
         vm (VirtualMachine): VM object.
         wait_for_interfaces (bool): Is waiting for VM's interfaces mandatory for declaring VM as running.
         check_ssh_connectivity (bool): Enable SSh service in the VM.
+        ssh_timeout (int): how much time to wait for SSH connectivity
 
     Returns:
         VirtualMachine: VM object.
@@ -1754,7 +1757,7 @@ def running_vm(vm, wait_for_interfaces=True, check_ssh_connectivity=True):
         wait_for_vm_interfaces(vmi=vm.vmi)
 
     if check_ssh_connectivity:
-        wait_for_ssh_connectivity(vm=vm)
+        wait_for_ssh_connectivity(vm=vm, timeout=ssh_timeout)
 
     return vm
 
