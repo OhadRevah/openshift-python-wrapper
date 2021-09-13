@@ -15,6 +15,10 @@ from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import py_config
 
+from tests.compute.utils import (
+    fetch_processid_from_linux_vm,
+    start_and_fetch_processid_on_linux_vm,
+)
 from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_15MIN
 from utilities.infra import ExecCommandOnPod, create_ns, get_pods
 from utilities.virt import (
@@ -31,15 +35,18 @@ pytestmark = [pytest.mark.tier3]
 LOGGER = logging.getLogger(__name__)
 DESCHEDULER_POD_LABEL = "app=descheduler"
 DESCHEDULER_SUB_NAME = "cluster-kube-descheduler-operator"
+RUNNING_PROCESS_NAME_IN_VM = "ping"
 
 
 class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
-    def __init__(self, name, namespace, memory_requests, client):
+    def __init__(self, name, namespace, memory_requests, client, cpu_model):
         super().__init__(
             name=name,
             namespace=namespace,
             client=client,
             memory_requests=memory_requests,
+            eviction=True,
+            cpu_model=cpu_model,
         )
 
     def to_dict(self):
@@ -102,18 +109,6 @@ def wait_vmi_failover(vm, orig_node):
         raise
 
 
-def verify_descheduler_balanced_vms(descheduler_pod, deployed_vms, drained_node):
-    vms = get_descheduler_evicted_vms(descheduler_pod=descheduler_pod)
-    failed_vms = []
-    LOGGER.info(f"Descheduler moved VMs: {vms}")
-    for vm in vms:
-        descheduled_vm = deployed_vms[vm]
-        running_vm(vm=descheduled_vm)
-        if descheduled_vm.vmi.node.name != drained_node.name:
-            failed_vms.append(vm)
-    assert not failed_vms, f"VMs {failed_vms} not migrated!"
-
-
 def get_descheduler_evicted_vms(descheduler_pod):
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_5MIN, sleep=5, func=descheduler_pod.log
@@ -129,6 +124,22 @@ def get_descheduler_evicted_vms(descheduler_pod):
         LOGGER.error(sample)
         LOGGER.error("No VMs evicted by descheduler")
         raise
+
+
+def verify_running_process_after_failover(vms_list, process_dict):
+    failed_vms = []
+    for vm_name, vm in vms_list.items():
+        if (
+            fetch_processid_from_linux_vm(
+                vm=vms_list[vm_name], process_name=RUNNING_PROCESS_NAME_IN_VM
+            )
+            != process_dict[vm_name]
+        ):
+            failed_vms.append(vm_name)
+
+    assert (
+        not failed_vms
+    ), f"The following VMs process ID has changed after migration: {failed_vms}"
 
 
 def wait_pod_deploy(client, namespace, label):
@@ -279,7 +290,9 @@ def workers_free_memory(schedulable_nodes, utility_pods):
 
 
 @pytest.fixture()
-def deployed_vms(namespace, unprivileged_client, workers_free_memory):
+def deployed_vms(
+    namespace, unprivileged_client, workers_free_memory, nodes_common_cpu_model
+):
     vms = {}
     vm_amount, vm_memory = calculate_vm_deployment(
         workers_free_memory=workers_free_memory
@@ -291,6 +304,7 @@ def deployed_vms(namespace, unprivileged_client, workers_free_memory):
             namespace=namespace.name,
             client=unprivileged_client,
             memory_requests=vm_memory,
+            cpu_model=nodes_common_cpu_model,
         )
         deployed_vm.deploy()
         deployed_vm.start()
@@ -311,6 +325,17 @@ def vms_orig_nodes(deployed_vms):
     for key, vm in deployed_vms.items():
         nodes[key] = vm.vmi.node
     return nodes
+
+
+@pytest.fixture()
+def vms_started_process(deployed_vms):
+    vms_process_id_dict = {}
+    for vm_name, vm in deployed_vms.items():
+        vms_process_id_dict[vm_name] = start_and_fetch_processid_on_linux_vm(
+            vm=vm, process_name=RUNNING_PROCESS_NAME_IN_VM, args="localhost"
+        )
+
+    return vms_process_id_dict
 
 
 @pytest.fixture()
@@ -356,12 +381,11 @@ def test_descheduler(
     skip_when_one_node,
     updated_descheduler,
     deployed_vms,
+    vms_started_process,
     node_to_drain,
     descheduler_pod,
     drain_node,
 ):
-    verify_descheduler_balanced_vms(
-        descheduler_pod=descheduler_pod,
-        deployed_vms=deployed_vms,
-        drained_node=node_to_drain,
+    verify_running_process_after_failover(
+        vms_list=deployed_vms, process_dict=vms_started_process
     )
