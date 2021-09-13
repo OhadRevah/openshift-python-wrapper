@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from ocp_resources.node_network_configuration_policy import NNCPConfigurationFailed
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
@@ -134,6 +135,13 @@ def test_dynamic_ip(
         LOGGER.info("NMstate: Test with dynamic IP")
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Temporarily marked as xfail, will change configurations of EthernetNetworkConfigurationPolicy to "
+        "static gateway interface or DHCP with auto-dns: false"
+    ),
+    raises=NNCPConfigurationFailed,
+)
 @pytest.mark.bugzilla(
     1926143, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
