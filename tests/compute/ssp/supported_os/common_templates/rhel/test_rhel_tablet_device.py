@@ -179,6 +179,7 @@ class TestRHELTabletDevice:
     def test_tablet_device_migrate_vm(
         self,
         skip_upstream,
+        skip_access_mode_rwo_scope_class,
         cluster_cpu_model_scope_class,
         unprivileged_client,
         namespace,
