@@ -127,11 +127,13 @@ def get_descheduler_evicted_vms(descheduler_pod):
 
 
 def verify_running_process_after_failover(vms_list, process_dict):
+    LOGGER.info(f"Verify {RUNNING_PROCESS_NAME_IN_VM} is running after migrations.")
     failed_vms = []
-    for vm_name, vm in vms_list.items():
+    for vm in vms_list:
+        vm_name = vm.name
         if (
             fetch_processid_from_linux_vm(
-                vm=vms_list[vm_name], process_name=RUNNING_PROCESS_NAME_IN_VM
+                vm=vm, process_name=RUNNING_PROCESS_NAME_IN_VM
             )
             != process_dict[vm_name]
         ):
@@ -140,6 +142,28 @@ def verify_running_process_after_failover(vms_list, process_dict):
     assert (
         not failed_vms
     ), f"The following VMs process ID has changed after migration: {failed_vms}"
+
+
+def verify_vms_distribution_after_failover(vms, nodes):
+    def _get_vms_per_nodes():
+        return vms_per_nodes(vms=vm_nodes(vms=vms))
+
+    LOGGER.info("Verify that each node has at least one VM running on it.")
+    sample = None
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=5,
+        func=_get_vms_per_nodes,
+    )
+    try:
+        for sample in samples:
+            if all([num_vms > 0 for num_vms in sample.values()]) and len(sample) == len(
+                nodes
+            ):
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"Some nodes do not have running VMs: {sample}")
+        raise
 
 
 def wait_pod_deploy(client, namespace, label):
@@ -163,6 +187,28 @@ def wait_pod_deploy(client, namespace, label):
     except TimeoutExpiredError:
         LOGGER.error("Descheduler operator deployment failed")
         raise
+
+
+def vms_per_nodes(vms):
+    """
+    Args:
+        vms (list): list of VM objects
+
+    Returns:
+        dict: keys - node names, values - number of running VMs
+    """
+    return Counter([node.name for node in vms.values()])
+
+
+def vm_nodes(vms):
+    """
+    Args:
+        vms (list): list of VM objects
+
+    Returns:
+        dict: keys- VM names, keys - running VMs nodes objects
+    """
+    return {vm.name: vm.vmi.node for vm in vms}
 
 
 @pytest.fixture(scope="module")
@@ -293,12 +339,12 @@ def workers_free_memory(schedulable_nodes, utility_pods):
 def deployed_vms(
     namespace, unprivileged_client, workers_free_memory, nodes_common_cpu_model
 ):
-    vms = {}
+    vms = []
     vm_amount, vm_memory = calculate_vm_deployment(
         workers_free_memory=workers_free_memory
     )
     LOGGER.info(f"Deploying {vm_amount} VMs, each with {vm_memory} RAM")
-    for index in range(1, vm_amount + 1):
+    for index in range(1, vm_amount):
         deployed_vm = VirtualMachineForDeschedulerTest(
             name=f"vm-{index}",
             namespace=namespace.name,
@@ -308,30 +354,27 @@ def deployed_vms(
         )
         deployed_vm.deploy()
         deployed_vm.start()
-        vms[deployed_vm.name] = deployed_vm
+        vms.append(deployed_vm)
 
-    for vm in vms.values():
+    for vm in vms:
         running_vm(vm=vm)
 
     yield vms
 
-    for vm in vms.values():
+    for vm in vms:
         vm.clean_up()
 
 
 @pytest.fixture()
 def vms_orig_nodes(deployed_vms):
-    nodes = {}
-    for key, vm in deployed_vms.items():
-        nodes[key] = vm.vmi.node
-    return nodes
+    return vm_nodes(vms=deployed_vms)
 
 
 @pytest.fixture()
 def vms_started_process(deployed_vms):
     vms_process_id_dict = {}
-    for vm_name, vm in deployed_vms.items():
-        vms_process_id_dict[vm_name] = start_and_fetch_processid_on_linux_vm(
+    for vm in deployed_vms:
+        vms_process_id_dict[vm.name] = start_and_fetch_processid_on_linux_vm(
             vm=vm, process_name=RUNNING_PROCESS_NAME_IN_VM, args="localhost"
         )
 
@@ -357,7 +400,7 @@ def node_to_drain(
     """
 
     schedulable_nodes_dict = {node.name: node for node in schedulable_nodes}
-    vm_per_node_counters = Counter([node.name for node in vms_orig_nodes.values()])
+    vm_per_node_counters = vms_per_nodes(vms=vms_orig_nodes)
 
     for node in workers_free_memory:
         if node != descheduler_pod.node.name and vm_per_node_counters[node] >= 1:
@@ -371,8 +414,8 @@ def drain_node(deployed_vms, vms_orig_nodes, node_to_drain):
     with node_mgmt_console(node=node_to_drain, node_mgmt="drain"):
         wait_for_node_schedulable_status(node=node_to_drain, status=False)
         for vm in deployed_vms:
-            if vms_orig_nodes[vm].name == node_to_drain.name:
-                wait_vmi_failover(vm=deployed_vms[vm], orig_node=vms_orig_nodes[vm])
+            if vms_orig_nodes[vm.name].name == node_to_drain.name:
+                wait_vmi_failover(vm=vm, orig_node=vms_orig_nodes[vm.name])
 
 
 @pytest.mark.polarion("CNV-5922")
@@ -385,7 +428,9 @@ def test_descheduler(
     node_to_drain,
     descheduler_pod,
     drain_node,
+    schedulable_nodes,
 ):
     verify_running_process_after_failover(
         vms_list=deployed_vms, process_dict=vms_started_process
     )
+    verify_vms_distribution_after_failover(vms=deployed_vms, nodes=schedulable_nodes)
