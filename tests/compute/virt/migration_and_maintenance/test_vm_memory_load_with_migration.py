@@ -7,8 +7,8 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.os_params import FEDORA_LATEST
-from utilities.constants import TIMEOUT_60MIN
-from utilities.infra import run_ssh_commands
+from utilities.constants import TIMEOUT_10MIN, TIMEOUT_30MIN
+from utilities.infra import run_ssh_commands, update_custom_resource
 from utilities.virt import VirtualMachineForTests, migrate_vm_and_verify, running_vm
 
 
@@ -42,7 +42,7 @@ def start_vm_stress(vm_with_mem_load):
     # TODO: Increase the load with F33 (since F32 is bit flaky)
     LOGGER.info("Running memory load in VM")
     command = (
-        "nohup sudo stress-ng --vm 1 --vm-bytes 15% --vm-method all --verify -t 15m -v --hdd 1 --io 1 "
+        f"nohup sudo stress-ng --vm 1 --vm-bytes 15% --vm-method all --verify -t {TIMEOUT_30MIN}s -v --hdd 1 --io 1 "
         "&> /tmp/OUT1 & echo $!"
     )
     run_ssh_commands(host=vm_with_mem_load.ssh_exec, commands=shlex.split(command))
@@ -56,8 +56,25 @@ def vm_info_before_migrate(vm_with_mem_load):
 
 
 @pytest.fixture()
+def updated_migration_timeout_in_hco_cr(hyperconverged_resource_scope_function):
+    with update_custom_resource(
+        patch={
+            hyperconverged_resource_scope_function: {
+                "spec": {
+                    "liveMigrationConfig": {
+                        "progressTimeout": TIMEOUT_30MIN,
+                        "bandwidthPerMigration": "128Mi",
+                    }
+                }
+            }
+        },
+    ):
+        yield
+
+
+@pytest.fixture()
 def migrate_vm_with_memory_load(vm_info_before_migrate, vm_with_mem_load):
-    migrate_vm_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_60MIN)
+    migrate_vm_and_verify(vm=vm_with_mem_load, timeout=TIMEOUT_10MIN)
 
 
 def get_stress_ng_pid(ssh_exec):
@@ -86,6 +103,7 @@ def get_stress_ng_pid(ssh_exec):
 )
 def test_vm_migarte_with_memory_load(
     skip_rwo_default_access_mode,
+    updated_migration_timeout_in_hco_cr,
     data_volume_scope_function,
     vm_with_mem_load,
     start_vm_stress,
