@@ -5,10 +5,11 @@ import re
 import shlex
 
 import pytest
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
+from utilities.constants import TIMEOUT_1MIN
 from utilities.infra import run_ssh_commands
 from utilities.virt import migrate_vm_and_verify, running_vm, vm_instance_from_template
 
@@ -52,29 +53,34 @@ def run_fio_in_vm(vm_with_fio):
 
 
 def get_disk_usage(ssh_exec):
-    def _wait_for_iotop_output():
-        # After migration, the SSH connection may not be accessible for a brief moment ("No route to host")
+    # After migration, the SSH connection may not be accessible for a brief moment ("No route to host")
+    # Sometimes fio will stop the writes/read for a brief second and then continue, need to retry to make sure that the
+    # IO continues
+    sample = None
+    try:
         for sample in TimeoutSampler(
-            wait_timeout=60,
+            wait_timeout=TIMEOUT_1MIN,
             sleep=5,
             func=run_ssh_commands,
             host=ssh_exec,
             commands=shlex.split("sudo iotop -b -n 1 -o"),
         ):
             if sample:
-                return sample
-
-    iotop_output = _wait_for_iotop_output()
-    LOGGER.info(f"iotop output: {iotop_output}")
-    # Example output for regex: 'Actual DISK READ:       3.00 M/s | Actual DISK WRITE:    1303.72 '
-    iotop_read_write_str = re.search(r"Actual DISK READ: .* ", iotop_output[0]).group(0)
-    # Example value of read_write_values : ('3.00', '3.72')
-    read_write_values = re.search(
-        r"READ:.*(\d+\.\d+) .*WRITE:.*(\d+\.\d+)", iotop_read_write_str
-    ).groups()
-    assert not any(
-        [disk_io for disk_io in read_write_values if disk_io == "0.00"]
-    ), "No load on disks"
+                iotop_read_write_str = re.search(
+                    r"Actual DISK READ: .* ", sample[0]
+                ).group(0)
+                # Example value of read_write_values : ('3.00', '3.72')
+                read_write_values = re.search(
+                    r"READ:.*(\d+\.\d+) .*WRITE:.*(\d+\.\d+)", iotop_read_write_str
+                ).groups()
+                if not any(
+                    [disk_io for disk_io in read_write_values if disk_io == "0.00"]
+                ):
+                    LOGGER.info(f"Disk load: {read_write_values}")
+                    return
+    except TimeoutExpiredError:
+        LOGGER.error(f"No load on disks: {sample}")
+        raise
 
 
 @pytest.mark.parametrize(
