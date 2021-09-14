@@ -240,9 +240,18 @@ def assert_specs_values(expected, get_spec_func, keys):
         expected (dict): dictionary of values that would be used to update hco cr
         get_spec_func (function): function to fetch current spec dictionary
         keys (list): list of associated keys for a given kind.
+
+    Raises:
+        RuntimeError: raised if no keys exist in spec_dict (used specifically because AssertionError is ignored in the
+            caller's TimeoutSampler
+        AssertionError: if a diff int he spec between the expected and actual is intercepted
     """
     spec_dict = get_spec_func()
     spec = {key: spec_dict[key] for key in keys if key in spec_dict}
+    if not spec:
+        raise RuntimeError(
+            f"no key exists in spec_dict: keys={keys} spec_dict={spec_dict}"
+        )
     diff_spec = list(
         filter(
             lambda diff_result_item: diff_result_item[0] == "change",
