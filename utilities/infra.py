@@ -861,7 +861,12 @@ def cluster_sanity(
         "Running cluster sanity. (To skip nodes check pass {skip_cluster_sanity_check} to pytest)"
     )
     # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
-    if not request.session.config.getoption(skip_storage_classes_check):
+    if request.session.config.getoption(skip_storage_classes_check):
+        LOGGER.warning(
+            f"Skipping storage classes check, got {skip_storage_classes_check}"
+        )
+
+    else:
         LOGGER.info(
             f"Check storage classes sanity. (To skip nodes check pass {skip_storage_classes_check} to pytest)"
         )
@@ -872,21 +877,18 @@ def cluster_sanity(
             f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
             f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
         )
-    else:
-        LOGGER.warning(
-            f"Skipping storage classes check, got {skip_storage_classes_check}"
-        )
 
     # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
-    if not request.session.config.getoption("--cluster-sanity-skip-nodes-check"):
+    if request.session.config.getoption("--cluster-sanity-skip-nodes-check"):
+        LOGGER.warning(f"Skipping nodes check, got {skip_nodes_check}")
+
+    else:
         # validate that all the nodes are ready and schedulable
         LOGGER.info(
             f"Check nodes sanity. (To skip nodes check pass {skip_nodes_check} to pytest)"
         )
         validate_nodes_ready(nodes=nodes)
         validate_nodes_schedulable(nodes=nodes)
-    else:
-        LOGGER.warning(f"Skipping nodes check, got {skip_nodes_check}")
 
     # Wait for all cnv pods to reach Running state
     LOGGER.info(f"Check that all pods in {hco_namespace.name} running")
