@@ -746,10 +746,8 @@ def admin_client():
 
 
 @pytest.fixture(scope="session")
-def unprivileged_secret(admin_client):
-    if py_config["distribution"] == "upstream" or py_config.get(
-        "no_unprivileged_client"
-    ):
+def unprivileged_secret(admin_client, skip_unprivileged_client):
+    if skip_unprivileged_client:
         yield
 
     else:
@@ -794,19 +792,33 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
 
 @pytest.fixture(scope="session")
-def identity_provider_config(admin_client):
+def skip_unprivileged_client():
+    # To disable unprivileged_client pass --tc=no_unprivileged_client:True to pytest commandline.
+    return py_config["distribution"] == "upstream" or py_config.get(
+        "no_unprivileged_client"
+    )
+
+
+@pytest.fixture(scope="session")
+def identity_provider_config(skip_unprivileged_client, admin_client):
+    if skip_unprivileged_client:
+        return
+
     return OAuth(client=admin_client, name="cluster")
 
 
 @pytest.fixture(scope="session")
 def unprivileged_client(
-    admin_client, unprivileged_secret, identity_provider_config, exported_kubeconfig
+    skip_unprivileged_client,
+    admin_client,
+    unprivileged_secret,
+    identity_provider_config,
+    exported_kubeconfig,
 ):
     """
     Provides none privilege API client
     """
-    # To disable unprivileged_client pass --tc=no_unprivileged_client:True to pytest commandline.
-    if not unprivileged_secret:
+    if skip_unprivileged_client:
         yield
 
     else:
@@ -1143,30 +1155,31 @@ def leftovers(admin_client, identity_provider_config):
             continue
 
     #  Remove leftovers from OAuth
-    try:
-        identity_providers_spec = identity_provider_config.instance.to_dict()["spec"]
-        identity_providers_token = identity_providers_spec.get("tokenConfig")
-        identity_providers = identity_providers_spec.get("identityProviders", [])
-
-        if ACCESS_TOKEN == identity_providers_token:
-            identity_providers_spec["tokenConfig"] = None
-
-        if HTPASSWD_PROVIDER_DICT in identity_providers:
-            identity_providers.pop(identity_providers.index(HTPASSWD_PROVIDER_DICT))
-            identity_providers_spec["identityProviders"] = identity_providers or None
-
-        r_editor = ResourceEditor(
-            patches={
-                identity_provider_config: {
-                    "metadata": {"name": identity_provider_config.name},
-                    "spec": identity_providers_spec,
-                }
-            }
-        )
-        r_editor.update()
-    except ResourceNotFoundError:
+    if not identity_provider_config:
         # When running CI (k8s) OAuth is not exists on the cluster.
         LOGGER.warning("OAuth does not exist on the cluster")
+        return
+
+    identity_providers_spec = identity_provider_config.instance.to_dict()["spec"]
+    identity_providers_token = identity_providers_spec.get("tokenConfig")
+    identity_providers = identity_providers_spec.get("identityProviders", [])
+
+    if ACCESS_TOKEN == identity_providers_token:
+        identity_providers_spec["tokenConfig"] = None
+
+    if HTPASSWD_PROVIDER_DICT in identity_providers:
+        identity_providers.pop(identity_providers.index(HTPASSWD_PROVIDER_DICT))
+        identity_providers_spec["identityProviders"] = identity_providers or None
+
+    r_editor = ResourceEditor(
+        patches={
+            identity_provider_config: {
+                "metadata": {"name": identity_provider_config.name},
+                "spec": identity_providers_spec,
+            }
+        }
+    )
+    r_editor.update()
 
 
 @pytest.fixture(scope="session")

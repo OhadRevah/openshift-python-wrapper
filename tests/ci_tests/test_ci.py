@@ -7,15 +7,11 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 @pytest.mark.ci
-def test_ci_container_disk_vm(
-    namespace,
-    unprivileged_client,
-):
+def test_ci_container_disk_vm(namespace):
     name = "ci-container-disk-vm"
     with VirtualMachineForTests(
         namespace=namespace.name,
         name=name,
-        client=unprivileged_client,
         body=fedora_vm_body(name=name),
     ) as vm:
         running_vm(vm=vm, check_ssh_connectivity=False)
