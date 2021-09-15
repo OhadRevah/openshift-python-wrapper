@@ -11,7 +11,7 @@ def validate_liveness_probe_fields(deployment):
     Args:
         deployment (Deployment object): Deployment object to be used for field validation
 
-    Raise:
+    Raises:
         Asserts on mismatch between expected and actual values of livenessProbe fields
     """
     field_expected_values = {
@@ -19,7 +19,6 @@ def validate_liveness_probe_fields(deployment):
         "periodSeconds": 5,
         "failureThreshold": 1,
     }
-    containers = deployment.instance.spec["template"]["spec"]["containers"]
 
     containers_with_mismatches = {
         container["name"]: {
@@ -31,13 +30,13 @@ def validate_liveness_probe_fields(deployment):
             if container["livenessProbe"][field_name]
             != field_expected_values[field_name]
         }
-        for container in containers
+        for container in deployment.instance.spec.template.spec.containers
     }
-
-    assert not any(mismatches for mismatches in containers_with_mismatches.values()), (
-        f"For deployment: {deployment.name}, following livenessProbe fields failed "
-        f"validations: {containers_with_mismatches}"
-    )
+    if any(containers_with_mismatches.values()):
+        raise ResourceMismatch(
+            f"For deployment: {deployment.name}, following livenessProbe fields failed "
+            f"validations: {containers_with_mismatches}"
+        )
 
 
 def validate_request_fields(deployment, cpu_min_value):
