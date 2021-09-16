@@ -10,7 +10,7 @@ endif
 
 # Local cluster preparations
 CLUSTER_DIR := local-cluster/_hco
-export KUBEVIRT_PROVIDER ?= k8s-1.20
+export KUBEVIRT_PROVIDER ?= k8s-1.21
 export KUBEVIRT_NUM_NODES ?= 2
 export KUBEVIRT_NUM_SECONDARY_NICS ?= 4
 export KUBEVIRT_WITH_CNAO=true
