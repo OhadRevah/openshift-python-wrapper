@@ -6,7 +6,6 @@ from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN
@@ -196,46 +195,6 @@ def replace_hco_cr(rpatch, admin_client, hco_namespace):
     )
     reseditor.update(backup_resources=True)
     return reseditor.backups
-
-
-def replace_backup_hco_cr_modification(rpatch, admin_client, hco_namespace):
-    samples = TimeoutSampler(
-        wait_timeout=20,
-        sleep=2,
-        exceptions_dict={ConflictError: []},
-        func=replace_hco_cr,
-        rpatch=rpatch,
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                return sample
-    except TimeoutExpiredError:
-        LOGGER.error("TimeOut: During HCO Modification")
-        raise
-
-
-def restore_hco_cr_modification(admin_client, hco_namespace, backup_data):
-    for backup in backup_data:
-        # Backup the HCO CR changes and revert back once teardown happens for class
-        samples = TimeoutSampler(
-            wait_timeout=20,
-            sleep=2,
-            exceptions_dict={ConflictError: []},
-            func=replace_hco_cr,
-            rpatch=backup.instance.to_dict()["spec"],
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-        )
-        try:
-            for sample in samples:
-                if sample:
-                    break
-        except TimeoutExpiredError:
-            LOGGER.error("Timeout restoring default value in hyperconverged CR.")
-            raise
 
 
 def get_hco_spec(admin_client, hco_namespace):
