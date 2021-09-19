@@ -858,7 +858,7 @@ def cluster_sanity(
         return
 
     LOGGER.info(
-        "Running cluster sanity. (To skip nodes check pass {skip_cluster_sanity_check} to pytest)"
+        f"Running cluster sanity. (To skip nodes check pass {skip_cluster_sanity_check} to pytest)"
     )
     # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
     if request.session.config.getoption(skip_storage_classes_check):
