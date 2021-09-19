@@ -13,6 +13,7 @@ from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
+from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_VM_YAML
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import Images
@@ -24,7 +25,6 @@ from utilities.infra import (
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -126,6 +126,20 @@ def base_templates(admin_client):
             Template.Annotations.DEPRECATED
         )
     ]
+
+
+@pytest.fixture()
+def windows_base_templates(base_templates):
+    windows_templates = [
+        template
+        for template in base_templates
+        if any(
+            label.startswith(f"{Template.Labels.OS}/win")
+            for label in template.labels.keys()
+        )
+    ]
+    assert windows_templates, "No windows templates found"
+    return windows_templates
 
 
 @pytest.fixture()
@@ -562,3 +576,22 @@ def test_vmi_annotations(data_volume_scope_function, vm_from_template_with_exist
             for vmi_ann_name, vmi_ann_value in vmi_annotations.items()
         ]
     ), f"vmi annotations {vmi_annotations} do no match vm annotations {vm_annotations}"
+
+
+@pytest.mark.polarion("CNV-7249")
+def test_hyperv_features_exist_in_windows_templates(windows_base_templates):
+    templates_with_wrong_hyperv_labels = {}
+    for template in windows_base_templates:
+        template_hyperv_features = template.instance.objects[
+            0
+        ].spec.template.spec.domain.features.get("hyperv")
+        if sorted(list(template_hyperv_features.keys())) != sorted(
+            HYPERV_FEATURES_LABELS_VM_YAML
+        ):
+            templates_with_wrong_hyperv_labels[template.name] = list(
+                template_hyperv_features.keys()
+            )
+    assert not templates_with_wrong_hyperv_labels, (
+        f"Windows templates are missing hyperV labels, hyperV features templates: {HYPERV_FEATURES_LABELS_VM_YAML}\n, "
+        f"current templates hyperV labels :{templates_with_wrong_hyperv_labels}"
+    )
