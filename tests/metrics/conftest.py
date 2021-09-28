@@ -351,3 +351,17 @@ def virt_pod_names_by_label(request, admin_client, hco_namespace):
             label_selector=request.param,
         )
     ]
+
+
+@pytest.fixture()
+def virt_up_metrics_values(request, prometheus):
+    """Get value from the 'up' recording rules(metrics).
+
+    Returns:
+        int: Return integer values of 'up' metrics value.
+    """
+    query_response = get_metric_by_prometheus_query(
+        prometheus=prometheus,
+        query=request.param,
+    )
+    return int(query_response["data"]["result"][0]["value"][1])
