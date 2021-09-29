@@ -117,7 +117,6 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
 ]
 
 TEAM_MARKERS = {
-    "ansible": ["ansible-module"],
     "compute": ["compute", "deprecated_api"],
     "network": ["network", "deprecated_api"],
     "storage": ["storage", "deprecated_api"],
