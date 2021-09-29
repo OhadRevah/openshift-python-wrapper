@@ -14,6 +14,7 @@ from ocp_resources import pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from packaging import version
 
+from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_DOM_XML
 from tests.compute.ssp.supported_os.utils import (
     get_linux_guest_agent_version,
     guest_agent_version_parser,
@@ -63,25 +64,11 @@ def check_vm_xml_hyperv(vm):
 
     # TODO: Add evmcs for fedora and Windows hyperV features, once merged
     # https://bugzilla.redhat.com/show_bug.cgi?id=1952551
-    hyperv_features_list = [
-        "relaxed",
-        "vapic",
-        "spinlocks",
-        "vpindex",
-        "synic",
-        "stimer",  # synictimer in VM yaml
-        "frequencies",
-        "ipi",
-        "reenlightenment",
-        "reset",
-        "runtime",
-        "tlbflush",
-    ]
 
     hyperv_features = vm.vmi.xml_dict["domain"]["features"]["hyperv"]
     failed_hyeperv_features = [
         hyperv_features[feature]
-        for feature in hyperv_features_list
+        for feature in HYPERV_FEATURES_LABELS_DOM_XML
         if hyperv_features[feature]["@state"] != "on"
     ]
     spinlocks_retries_value = hyperv_features["spinlocks"]["@retries"]
