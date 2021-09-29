@@ -2134,7 +2134,7 @@ def cdi_config():
     return cdi_config
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def prometheus():
     return Prometheus()
 
