@@ -240,13 +240,14 @@ def installed_descheduler_og(descheduler_ns):
         yield
 
 
+# TODO: Use "redhat-operators" source once the operator is available in 4.9.0
 @pytest.fixture()
 def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
     marketplace_ns = py_config["marketplace_namespace"]
     with Subscription(
         name=DESCHEDULER_SUB_NAME,
         namespace=descheduler_ns.name,
-        source="redhat-operators",
+        source="redhat-operators-v48",
         source_namespace=marketplace_ns,
         channel=PackageManifest(
             name=DESCHEDULER_SUB_NAME, namespace=marketplace_ns
