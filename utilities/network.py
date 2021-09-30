@@ -494,7 +494,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
                 "link-aggregation": {
                     "mode": self.mode,
-                    "slaves": self.bond_ports,  # TODO: rename 'slaves' (currently required by nmstate)
+                    "port": self.bond_ports,
                     "options": options_dic,
                 },
             }
