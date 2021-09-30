@@ -16,6 +16,15 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 pytestmark = pytest.mark.sno
 
 
+class BondNodeNetworkConfigurationPolicyWithSlaves(BondNodeNetworkConfigurationPolicy):
+    def to_dict(self):
+        res = super().to_dict()
+        self.iface["link-aggregation"]["slaves"] = self.iface["link-aggregation"].pop(
+            "port"
+        )
+        return res
+
+
 def assert_bond_validation(utility_pods, bond):
     pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=bond.node_selector)
     bonding_path = f"/sys/class/net/{bond.bond_name}/bonding"
@@ -254,4 +263,25 @@ class TestBondWithFailOverMac:
             vm=vm_with_fail_over_mac_bond,
             check_ssh_connectivity=False,
             wait_for_interfaces=False,
+        )
+
+
+@pytest.mark.polarion("CNV-7263")
+def test_bond_with_slaves(
+    index_number, worker_node1, nodes_available_nics, utility_pods
+):
+    bond_idx = next(index_number)
+    with BondNodeNetworkConfigurationPolicyWithSlaves(
+        name=f"bond{bond_idx}nncp",
+        bond_name=f"bond{bond_idx}",
+        bond_ports=nodes_available_nics[worker_node1.name][0:2],
+        worker_pods=utility_pods,
+        mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
+        mtu=1450,
+        node_selector=worker_node1.hostname,
+    ) as bond:
+        # Since we override slave with port we must set it back after creation
+        # for cleanup to work.
+        bond.iface["link-aggregation"]["port"] = bond.iface["link-aggregation"].pop(
+            "slaves"
         )
