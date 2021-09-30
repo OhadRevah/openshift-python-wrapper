@@ -1,7 +1,7 @@
 import pytest
 from ocp_resources.resource import Resource
 
-from utilities.infra import BUG_STATUS_CLOSED
+from tests.metrics.utils import validate_virt_handler_data
 
 
 pytestmark = pytest.mark.sno
@@ -65,9 +65,6 @@ def test_virt_recording_rules(
     ), f"Actual pods {virt_pod_names_by_label} not matching with expected pods {virt_pod_info_from_prometheus}"
 
 
-@pytest.mark.bugzilla(
-    2008166, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "virt_up_metrics_values, virt_pod_names_by_label",
     [
@@ -117,3 +114,25 @@ def test_virt_up_recording_rules(
     assert (
         len(virt_pod_names_by_label) == virt_up_metrics_values
     ), f"Actual pod count {virt_pod_names_by_label} not matching with expected pod count {virt_up_metrics_values}"
+
+
+@pytest.mark.parametrize(
+    "virt_handler_pod_and_node_names_with_value_from_prometheus",
+    [
+        pytest.param(
+            "kubevirt_num_virt_handlers_by_node_running_virt_launcher",
+            marks=pytest.mark.polarion("CNV-7238"),
+        ),
+    ],
+    indirect=True,
+)
+def test_num_virt_handlers_by_node_running_virt_launcher(
+    prometheus,
+    single_metric_vm,
+    virt_handler_pod_and_node_names_with_value_from_prometheus,
+):
+    """This test will check count of virt-handlers pod on respective nodes."""
+    validate_virt_handler_data(
+        virt_handler_pod_and_node_names=virt_handler_pod_and_node_names_with_value_from_prometheus,
+        vm=single_metric_vm,
+    )

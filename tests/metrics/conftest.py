@@ -7,7 +7,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.metrics.utils import (
-    MIN_NUM_VM,
+    SINGLE_VM,
     create_vms,
     enable_swap_fedora_vm,
     get_metric_by_prometheus_query,
@@ -209,7 +209,7 @@ def node_setup(request, vm_list, utility_pods):
     node_command = request.param.get("node_command")
 
     if node_command:
-        vms = vm_list[: request.param.get("num_vms", MIN_NUM_VM)]
+        vms = vm_list[: request.param.get("num_vms", SINGLE_VM)]
         run_node_command(
             vms=vms,
             utility_pods=utility_pods,
@@ -238,7 +238,7 @@ def vm_metrics_setup(request, vm_list):
         list: list of vm objects against which commands to generate metric has been issued
     """
     vm_commands = request.param.get("vm_commands")
-    vms = vm_list[: request.param.get("num_vms", MIN_NUM_VM)]
+    vms = vm_list[: request.param.get("num_vms", SINGLE_VM)]
     if vm_commands:
         run_vm_commands(vms=vms, commands=vm_commands)
     yield vms
@@ -332,17 +332,12 @@ def virt_pod_info_from_prometheus(request, prometheus):
         prometheus=prometheus,
         query=request.param,
     )
-
     return {result["metric"]["pod"] for result in query_response["data"].get("result")}
 
 
 @pytest.fixture()
 def virt_pod_names_by_label(request, admin_client, hco_namespace):
-    """Get pod names by a given label (request.param) in the list.
-
-    Returns:
-        list: It contains Pod names filtered by a given label.
-    """
+    """Get pod names by a given label (request.param) in the list."""
     return [
         pod.name
         for pod in Pod.get(
@@ -354,14 +349,55 @@ def virt_pod_names_by_label(request, admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def virt_up_metrics_values(request, prometheus):
-    """Get value from the 'up' recording rules(metrics).
+def single_metric_vm(namespace):
+    """Returns the first vm from the list of created vms"""
+    vm = create_vms(
+        name_prefix="test-metric-vm",
+        namespace_name=namespace.name,
+        vm_count=SINGLE_VM,
+        ssh=False,
+    )[0]
+    running_vm(vm=vm, check_ssh_connectivity=False)
+    yield vm
+    vm.clean_up()
 
-    Returns:
-        int: Return integer values of 'up' metrics value.
-    """
+
+@pytest.fixture()
+def virt_up_metrics_values(request, prometheus):
+    """Get value(int) from the 'up' recording rules(metrics)."""
     query_response = get_metric_by_prometheus_query(
         prometheus=prometheus,
         query=request.param,
     )
     return int(query_response["data"]["result"][0]["value"][1])
+
+
+@pytest.fixture()
+def virt_handler_pod_and_node_names_with_value_from_prometheus(request, prometheus):
+    """Return dictionary which contains 'virt-handler' Pod name as key and tuple of 'node, metric value' as value."""
+
+    query = request.param
+
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_2MIN,
+        sleep=5,
+        func=get_metric_by_prometheus_query,
+        prometheus=prometheus,
+        query=query,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            result = sample["data"].get("result", [])
+            if result:
+                return {
+                    result[0]["metric"]["pod"]: (
+                        result[0]["metric"]["node"],
+                        int(result[0]["value"][1]),
+                    )
+                }
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Failed to get data from query '{query}'. Current data:  {sample}"
+        )
+        raise

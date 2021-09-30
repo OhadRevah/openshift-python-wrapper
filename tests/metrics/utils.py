@@ -29,7 +29,7 @@ PING = "ping"
 VIRT_HANDLER_CONTAINER = "virt-handler"
 JOB_NAME = "kubevirt-prometheus-metrics"
 TOPK_VMS = 3
-MIN_NUM_VM = 1
+SINGLE_VM = 1
 SWAP_NAME = "myswap"
 SWAP_ENABLE_COMMANDS = [
     f"sudo dd if=/dev/zero of=/{SWAP_NAME} bs=1M count=1000",
@@ -376,7 +376,9 @@ def assert_validate_vm_metric(vm, metrics_list):
     )
 
 
-def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None):
+def create_vms(
+    name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None, ssh=True
+):
     """
     Create n number of fedora vms.
 
@@ -385,6 +387,7 @@ def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None):
         namespace_name (str): Namespace to be used for vm creation
         vm_count (int): Number of vms to be created
         client (DynamicClient): DynamicClient object
+        ssh (bool): enable SSH on the VM
 
     Returns:
         list: List of VirtualMachineForTests
@@ -398,7 +401,7 @@ def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None):
             body=fedora_vm_body(name=vm_name),
             teardown=False,
             running=True,
-            ssh=True,
+            ssh=ssh,
             client=client,
         ) as vm:
             vms_list.append(vm)
@@ -750,4 +753,48 @@ def validate_vm_vcpu_cpu_affinity_with_prometheus(prometheus, nodes, query, vm):
     assert cpu_count_from_node == len(cpu_info_from_prometheus), (
         f"Actual CPU count {cpu_count_from_node} not matching with "
         f"expected CPU count {len(cpu_info_from_prometheus)} for VM CPU {cpu_count_from_vm}"
+    )
+
+
+def validate_virt_handler_data(virt_handler_pod_and_node_names, vm):
+    """Verify node and virt_handler pod information from running VM with metrics output.
+    This will also check the metrics value which is 1.
+
+    Args:
+        virt_handler_pod_and_node_names (dict): virt-handler pod name as key and a tuple of the node and metric as value
+        vm (VirtualMachine): VM object
+
+    Raises:
+        AssertionError: if there were mismatches between data from virt-handler pod prometheus.
+        Also when value doesn't match.
+    """
+    virt_handler_pod_names_from_vm = [vm.vmi.virt_handler_pod.name]
+    node_name_from_vm = [vm.vmi.node.name]
+    virt_handler_pod_names_prometheus = list(virt_handler_pod_and_node_names)
+    virt_handler_node_and_metric_prometheus = list(
+        virt_handler_pod_and_node_names.values()
+    )
+
+    assert virt_handler_pod_names_from_vm == virt_handler_pod_names_prometheus, (
+        f"Actual 'virt-handler' pod {virt_handler_pod_names_from_vm} not matching with "
+        f"expected 'virt-handler' from prometheus {virt_handler_pod_names_prometheus}"
+    )
+
+    node_name_from_metrics = [
+        node_name[0] for node_name in virt_handler_node_and_metric_prometheus
+    ]
+
+    assert node_name_from_vm == node_name_from_metrics, (
+        f"Actual node name {node_name_from_vm} not matching with "
+        f"expected node name from prometheus {virt_handler_node_and_metric_prometheus}"
+    )
+
+    assert all(
+        [
+            metric_value[1] == 1
+            for metric_value in virt_handler_node_and_metric_prometheus
+        ]
+    ), (
+        f"Actual 'virt-handler' pods count {virt_handler_pod_names_from_vm} not "
+        f"matching with expected 'virt-handler' pods {virt_handler_node_and_metric_prometheus}"
     )
