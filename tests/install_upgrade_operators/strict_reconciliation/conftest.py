@@ -1,4 +1,6 @@
+import importlib
 import logging
+import pkgutil
 
 import pytest
 from ocp_resources.configmap import ConfigMap
@@ -196,3 +198,23 @@ def v2v_vmware_configmap_dict(admin_client, hco_namespace):
             namespace=hco_namespace.name,
         )
     )[0].instance.to_dict()
+
+
+@pytest.fixture(scope="module")
+def ocp_resources_submodule_list():
+    """
+    Gets the list of submodules in ocp_resources. This list is needed to make get and patch call to the right resource
+
+    """
+    path = importlib.util.find_spec("ocp_resources").submodule_search_locations
+    list_submodules = [module.name for module in pkgutil.iter_modules(path)]
+    LOGGER.info(f"list of modules: {list_submodules}")
+    return list_submodules
+
+
+@pytest.fixture(scope="module")
+def related_objects(hyperconverged_resource_scope_module):
+    """
+    Gets HCO.status.relatedObjects list
+    """
+    return hyperconverged_resource_scope_module.instance.status.relatedObjects

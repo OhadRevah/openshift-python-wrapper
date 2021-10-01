@@ -1,6 +1,8 @@
+import importlib
 import logging
 
 from dictdiffer import diff
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.constants import (
@@ -20,7 +22,8 @@ from tests.install_upgrade_operators.utils import (
     get_function_name,
     get_network_addon_config,
 )
-from utilities.hco import get_hco_spec
+from utilities.constants import TIMEOUT_3MIN
+from utilities.hco import get_hco_spec, get_hyperconverged_resource
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -216,3 +219,322 @@ def wait_for_fg_update(admin_client, hco_namespace, expected_fg, validate_func):
             f"{get_function_name(function_name=validate_func)}: comparing with fg: {expected_fg}"
         )
         raise
+
+
+def get_ocp_resource_module_name(related_object_kind, list_submodules):
+    """
+    From a list of ocp_resources submodule, based on kubernetes 'kind' name pick the right module name
+
+    Args:
+        related_object_kind (str): Kubernetes kind name of a resource
+        list_submodules (list): list of ocp_resources submodule names
+
+    Returns:
+        str: Name of the ocp_resources submodule
+
+    Raises:
+        ModuleNotFoundError: if a module associated with related object kind is not found
+    """
+    for module_name in list_submodules:
+        expected_module_name = module_name.replace("_", "")
+        if related_object_kind.lower() == expected_module_name:
+            return module_name
+    raise ModuleNotFoundError(
+        f"{related_object_kind} module not found in ocp_resources"
+    )
+
+
+def get_resource(related_obj, admin_client, module_name):
+    """
+    Gets CR based on associated HCO.status.relatedObject entry and ocp_reources module name
+
+    Args:
+        related_obj (dict): Associated HCO.status.relatedObject dict
+        admin_client (DynamicClient): Dynamic client object
+        module_name (str): Associated ocp_reources module name to be used
+
+    Returns:
+        Resource: Associated cr object
+
+    Raises:
+        AssertionError: if a related object kind is not in module name
+    """
+    kwargs = {"client": admin_client, "name": related_obj["name"]}
+    if related_obj["namespace"]:
+        kwargs["namespace"] = related_obj["namespace"]
+
+    module = importlib.import_module(f"ocp_resources.{module_name}")
+    cls_related_obj = getattr(module, related_obj["kind"], None)
+    assert cls_related_obj, f"class {related_obj['kind']} is not in {module_name}"
+    LOGGER.info(f"reading class {related_obj['kind']} from module {module_name}")
+    return cls_related_obj(**kwargs)
+
+
+def update_resource_label(component):
+    """
+    Adds a label to a CR and waits for an expected value to be updated in the CR.
+    Note: This does not need to be undone, since the expected behavior is the cr would be reconciled.
+
+    Args:
+        component (Resource): Resource object
+    """
+    expected_labels_value = component.instance.metadata.labels
+    resource_update = ResourceEditor(
+        patches={component: {"metadata": {"labels": {"temp_label": "test"}}}}
+    )
+    resource_update.update(backup_resources=False)
+    wait_for_cr_labels_change(expected_value=expected_labels_value, component=component)
+
+
+def wait_for_cr_labels_change(expected_value, component):
+    """
+    Waits for CR metadata.labels to reach expected values
+
+    Args:
+        expected_value (dict): expected value for metadata.labels
+        component (Resource): Resource object
+
+    Returns:
+        bool: Indicates a match is found
+
+    Raises:
+        TimeoutExpiredError: If the CR's metadata.labels does not match with expected value.
+    """
+    samplers = TimeoutSampler(
+        wait_timeout=TIMEOUT_3MIN,
+        sleep=5,
+        func=lambda: component.instance.metadata.labels,
+    )
+    labels = None
+    try:
+        for labels in samplers:
+            if labels == expected_value:
+                LOGGER.info(
+                    f"For {component.name}: Found expected spec values: '{expected_value}'"
+                )
+                return True
+
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"{component.name}: Timed out waiting for CR labels to reach expected value: '{expected_value}'"
+            f" current value:'{labels}'"
+        )
+        raise
+
+
+def get_hco_related_object_version(client, hco_namespace, resource_name, resource_kind):
+    """
+    Gets related object version from hco.status.relatedObject
+
+    Args:
+        client (DynamicClient): Dynamic client object
+        hco_namespace (Namespace): Namespace object
+        resource_name (str): Name of the resource
+        resource_kind (str): resource kind
+
+    Returns:
+        str: current resourceVersion from hco.status.relatedObject
+    """
+    related_objects = get_hyperconverged_resource(
+        client=client, hco_ns_name=hco_namespace.name
+    ).instance.status.relatedObjects
+    for related_obj in related_objects:
+        if (
+            related_obj["kind"] == resource_kind
+            and related_obj["name"] == resource_name
+        ):
+            return related_obj["resourceVersion"]
+
+
+def wait_for_resource_version_change(
+    admin_client, hco_namespace, component, resource_kind
+):
+    """
+    Waits for hco.status.relatedObject to get updated with expected resourceVersion value
+
+    Args:
+        admin_client (DynamicClient): Dynamic client object
+        hco_namespace (Namespace): Namespace object
+        component (Resource): Resource object
+        resource_kind (str): resource kind
+
+    Returns:
+        str: empty, in case a match found, else, error string
+    """
+    resource_name = component.name
+    expected_version = component.instance.metadata.resourceVersion
+    LOGGER.info(
+        f"waiting for {resource_name}/{resource_kind} to reach {expected_version}"
+    )
+    samplers = TimeoutSampler(
+        wait_timeout=TIMEOUT_3MIN,
+        sleep=5,
+        func=get_hco_related_object_version,
+        client=admin_client,
+        hco_namespace=hco_namespace,
+        resource_kind=resource_kind,
+        resource_name=resource_name,
+    )
+    resource_version = None
+    error = ""
+    try:
+        for resource_version in samplers:
+            if resource_version == expected_version:
+                LOGGER.info(
+                    f"For {resource_name}, current resource version: {resource_version} matches with expected"
+                    f" value in hco.status.relatedObjects."
+                )
+                return error
+
+    except TimeoutExpiredError:
+        error = (
+            f"Component: {resource_name}/{resource_kind} hco.status.relatedObjects was not updated with correct "
+            f"resource version: {expected_version}. Actual value: {resource_version}"
+        )
+        LOGGER.error(error)
+        return error
+
+
+def validate_related_objects(
+    related_objects, ocp_resources_submodule_list, admin_client, hco_namespace
+):
+    """
+    Validates all HCO.status.relatedObjects to ensure they get reconciled, appropriate resourceVersion gets reported
+
+    Args:
+        related_objects (list): list of dictionary of related objects
+        ocp_resources_submodule_list (list): list of ocp_resources submodules
+        admin_client (DynamicClient): Dynamic client object
+        hco_namespace (Namespace): Namespace object
+
+    Raises:
+        AssertionError: if related objects are not reconciled, if resourceVersion is not updated for HCO
+    """
+    error_reconciliation = {}
+    error_resource_version = {}
+
+    for related_obj in related_objects:
+        pre_update_resource_version = related_obj["resourceVersion"]
+        component = get_resource_from_module_name(
+            related_obj=related_obj,
+            ocp_resources_submodule_list=ocp_resources_submodule_list,
+            admin_client=admin_client,
+        )
+        pre_update_label = component.instance.metadata.labels
+        update_resource_label(
+            component=component,
+        )
+
+        error_reconciliation[component.name] = validate_resource_reconciliation(
+            pre_update_resource_version=pre_update_resource_version,
+            component=component,
+            pre_update_label=pre_update_label,
+        )
+
+        error_resource_versionvalue = wait_for_resource_version_change(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            component=component,
+            resource_kind=related_obj["kind"],
+        )
+        if error_resource_versionvalue:
+            error_resource_version[component.name] = error_resource_versionvalue
+
+    assert not any(error_reconciliation.values()), (
+        f"Reconciliation failed for the following related "
+        f"object: {error_reconciliation}"
+    )
+    assert not any(error_resource_version.values()), (
+        f"Resource version update on hco.status.relatedObjects did not "
+        f"take place for these components: {error_resource_version}"
+    )
+
+
+def get_resource_from_module_name(
+    related_obj, ocp_resources_submodule_list, admin_client
+):
+    """
+    Gets resource object based on module name
+
+    Args:
+        related_obj (dict): Related object Dictionary
+        ocp_resources_submodule_list (list): list of submudule names associated with ocp_resources package
+        admin_client (DynamicClient): Dynamic client object
+
+    Returns:
+        Resource: Associated cr object
+    """
+    module_name = get_ocp_resource_module_name(
+        related_object_kind=related_obj["kind"],
+        list_submodules=ocp_resources_submodule_list,
+    )
+    return get_resource(
+        admin_client=admin_client,
+        related_obj=related_obj,
+        module_name=module_name,
+    )
+
+
+def validate_resource_reconciliation(
+    component, pre_update_resource_version, pre_update_label
+):
+    """
+    Validates a resource is getting reconciled post patch command
+
+    Args:
+        component (Resource): Resource object to be checked
+        pre_update_resource_version (str): string indicating pre patch resource version
+        pre_update_label (dict): Indicates metadata.labels associated with the resource - pre patch
+
+    Returns:
+        str: Errors indicating the failure in reconciliation.
+    """
+    errors = []
+    post_update_resource_version = component.instance.metadata.resourceVersion
+    post_update_label = component.instance.metadata.labels
+    errors.append(
+        compare_resource_version(
+            pre_update_resource_version=pre_update_resource_version,
+            post_update_resource_version=post_update_resource_version,
+        )
+    )
+    errors.append(
+        compare_resource_labels(
+            pre_update_label=pre_update_label, post_update_label=post_update_label
+        )
+    )
+
+    return "\n".join(filter(None, errors))
+
+
+def compare_resource_version(pre_update_resource_version, post_update_resource_version):
+    """
+    Compare two resource versions and if they are same return an error message
+
+    Args:
+        pre_update_resource_version (str): pre update reource version string
+        post_update_resource_version (str): post update resource version string
+
+    Returns:
+        str: error message string if pre update and post update resource version matches, empty string otherwise
+    """
+    if pre_update_resource_version == post_update_resource_version:
+        return f"Pre update resource version is same as current resource version: {pre_update_resource_version}"
+    return ""
+
+
+def compare_resource_labels(pre_update_label, post_update_label):
+    """
+    Compare pre update and post update metadata.labels for the same resource and if they are not same return an error
+    message
+
+    Args:
+        pre_update_label (str): pre update reource version string
+        post_update_label (str): post update resource version string
+
+    Returns:
+        str: error message string, if pre update and post update resource label does not match, empty string otherwise
+    """
+    if pre_update_label != post_update_label:
+        return f"Pre update labels: {pre_update_label} does not match with post update labels: {post_update_label}"
+    return ""
