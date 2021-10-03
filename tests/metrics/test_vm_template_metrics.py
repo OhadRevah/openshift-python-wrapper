@@ -18,9 +18,7 @@ SUM_QUERY = f"sum({METRIC_QUERY})"
         pytest.param(
             {
                 "dv_name": RHEL_LATEST_OS,
-                # we do not really care about the underlying OS here, since we are testing templates (annotations) and
-                # the VM is only started, but never interacted with.
-                # specifically, CirrOS is used since it is lightweight and takes the minimal time to create.
+                # Cirros is used because the underlying OS is not relevant for this test
                 "image": os.path.join(Images.Cirros.DIR, Images.Cirros.QCOW2_IMG),
                 "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
                 "storage_class": py_config["default_storage_class"],
@@ -41,7 +39,7 @@ SUM_QUERY = f"sum({METRIC_QUERY})"
 )
 class TestVmTemplateMetrics:
     @pytest.mark.polarion("CNV-6504")
-    @pytest.mark.dependency(name="create_and_start_vm")
+    @pytest.mark.dependency(name="test_vmi_phase_count_metric")
     def test_vmi_phase_count_metric(
         self,
         prometheus,
@@ -56,8 +54,8 @@ class TestVmTemplateMetrics:
         )
 
     @pytest.mark.polarion("CNV-6798")
-    @pytest.mark.dependency(name="stopped_vm", depends=["create_and_start_vm"])
-    @pytest.mark.order(after="create_and_start_vm")
+    @pytest.mark.dependency(depends=["test_vmi_phase_count_metric"])
+    @pytest.mark.order(after="test_vmi_phase_count_metric")
     def test_vmi_phase_count_metric_after_stopped_vm(
         self,
         prometheus,
