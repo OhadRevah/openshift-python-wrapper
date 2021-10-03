@@ -4,7 +4,7 @@ import pytest
 from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.console_cli_download import ConsoleCLIDownload
-from ocp_resources.console_quick_starts import ConsoleQuickStart
+from ocp_resources.console_quick_start import ConsoleQuickStart
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.priority_class import PriorityClass
