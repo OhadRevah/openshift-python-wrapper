@@ -1465,8 +1465,13 @@ class Prometheus(object):
 
     def query(self, query):
         requests.packages.urllib3.disable_warnings()
+
+        # TODO: Remove query_path once all code refactor
+        _query_path_prefix = "/api/v1/"
+        _query_path = f"{_query_path_prefix}query?query="
+        query_path = _query_path if _query_path_prefix not in query else ""
         response = requests.get(
-            f"{self.api_url}/{query}", headers=self.headers, verify=False
+            f"{self.api_url}{query_path}{query}", headers=self.headers, verify=False
         )
 
         try:
