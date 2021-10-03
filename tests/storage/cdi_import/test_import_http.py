@@ -27,6 +27,7 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     TIMEOUT_5MIN,
     TIMEOUT_12MIN,
+    TIMEOUT_20SEC,
     TIMEOUT_30SEC,
     Images,
 )
@@ -53,6 +54,16 @@ TAR_IMG = "archive.tar"
 
 def get_file_url(url, file_name):
     return f"{url}{file_name}"
+
+
+def wait_for_pvc_recreate(pvc, pvc_original_timestamp):
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_20SEC,
+        sleep=1,
+        func=lambda: pvc.instance.metadata.creationTimestamp != pvc_original_timestamp,
+    ):
+        if sample:
+            break
 
 
 @pytest.fixture()
@@ -95,6 +106,7 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
     pvc = data_volume_multi_storage_scope_function.pvc
     pvc_original_timestamp = pvc.instance.metadata.creationTimestamp
     pvc.delete()
+    wait_for_pvc_recreate(pvc=pvc, pvc_original_timestamp=pvc_original_timestamp)
     if sc_volume_binding_mode_is_wffc(
         sc=data_volume_multi_storage_scope_function.storage_class
     ):
@@ -110,9 +122,6 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
     ) as pod:
         pod.wait_for_status(status=pod.Status.RUNNING)
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
-        assert (
-            pvc.instance.metadata.creationTimestamp != pvc_original_timestamp
-        ), "PVC should have been recreated"
 
 
 @pytest.mark.polarion("CNV-876")
