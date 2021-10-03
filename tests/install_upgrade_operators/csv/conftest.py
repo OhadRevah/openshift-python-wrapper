@@ -1,21 +1,12 @@
 import logging
 
 import pytest
-from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.package_manifest import PackageManifest
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def csv(admin_client):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=admin_client, namespace="openshift-cnv"
-    ):
-        return csv
 
 
 @pytest.fixture()

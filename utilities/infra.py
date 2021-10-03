@@ -155,7 +155,7 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
         get_all (bool): Return all pods if True else only the first one.
 
     Returns:
-        list: A list of all matching pods if get_all (empty list if no pods found) else only the first pod.
+        list or Pod: A list of all matching pods if get_all (empty list if no pods found) else only the first pod.
     """
     pods = [
         pod
