@@ -9,7 +9,13 @@ from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_8MIN, TIMEOUT_10MIN
+from utilities.constants import (
+    TIMEOUT_1MIN,
+    TIMEOUT_2MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_8MIN,
+    TIMEOUT_10MIN,
+)
 from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.network import assert_ping_successful
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -372,13 +378,13 @@ def assert_validate_vm_metric(vm, metrics_list):
 
 def create_vms(name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None):
     """
-     Create n number of fedora vms.
+    Create n number of fedora vms.
 
-     Args:
-         name_prefix (str): prefix to be used to name virtualmachines
-         namespace_name (str): Namespace to be used for vm creation
-         vm_count (int): Number of vms to be created
-         client (DynamicClient): DynamicClient object
+    Args:
+        name_prefix (str): prefix to be used to name virtualmachines
+        namespace_name (str): Namespace to be used for vm creation
+        vm_count (int): Number of vms to be created
+        client (DynamicClient): DynamicClient object
 
     Returns:
         list: List of VirtualMachineForTests
@@ -674,3 +680,74 @@ def get_not_running_prometheus_pods(admin_client):
         for pod in prometheus_pods_monitoring_namespace_list
         if pod.status != Pod.Status.RUNNING
     }
+
+
+def get_vm_vcpu_cpu_info_from_prometheus(prometheus, query):
+    """Gets vcpu and cpu information from the metrics of specific VM.
+
+    Args:
+        prometheus (Prometheus): Prometheus object
+        query (str): query str to use according to the query_dict
+
+    Returns:
+        dict: It contains dictionary of 'vcpu_cpu and it's value'.
+    """
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=2,
+        func=get_metric_by_prometheus_query,
+        prometheus=prometheus,
+        query=query,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            result = sample["data"].get("result")
+            if result:
+                return [
+                    vcpu_keys
+                    for vcpu_keys, vcpu_values in result[0].get("metric").items()
+                    if vcpu_keys.startswith("vcpu") and vcpu_values == "true"
+                ]
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Failed to get data from query '{query}' in time. Current data: {sample}"
+        )
+        raise
+
+
+def validate_vm_vcpu_cpu_affinity_with_prometheus(prometheus, nodes, query, vm):
+    """
+    This will check the 'vcpu_cpu' count of running VM with node CPU count on which VM placed.
+
+    Args:
+        prometheus (Prometheus object): Prometheus object
+        nodes (list): List of nodes objects
+        query (str): Prometheus query string
+        vm (VirtaulMachine): a VirtualMachineForTests object
+
+    Raises:
+        AssertionError: If CPU count from VM not matches with Prometheus metrics output.
+    """
+    cpu = vm.instance.spec.template.spec.domain.cpu
+    cpu_count_from_vm = (cpu.threads or 1) * (cpu.cores or 1) * (cpu.sockets or 1)
+
+    cpu_info_from_prometheus = get_vm_vcpu_cpu_info_from_prometheus(
+        prometheus=prometheus,
+        query=urllib.parse.quote_plus(query),
+    )
+
+    cpu_count_from_node = [
+        int(vm.vmi.node.instance.status.capacity.cpu)
+        for node in nodes
+        if node.name == vm.vmi.node.name
+    ][0]
+    LOGGER.info(f"Cpu count from node {vm.vmi.node.name}: {cpu_count_from_node}")
+
+    if cpu_count_from_vm > 1:
+        cpu_count_from_node = cpu_count_from_node * cpu_count_from_vm
+
+    assert cpu_count_from_node == len(cpu_info_from_prometheus), (
+        f"Actual CPU count {cpu_count_from_node} not matching with "
+        f"expected CPU count {len(cpu_info_from_prometheus)} for VM CPU {cpu_count_from_vm}"
+    )
