@@ -122,8 +122,8 @@ def test_image_upload_with_overridden_url(
 
 @pytest.mark.polarion("CNV-3031")
 def test_virtctl_image_upload_with_ca(
+    enabled_ca,
     skip_no_reencrypt_route,
-    skip_router_wildcard_cert_not_trusted,
     skip_not_openshift,
     tmpdir,
     namespace,

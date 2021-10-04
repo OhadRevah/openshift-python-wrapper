@@ -2,12 +2,12 @@
 CDI Import
 """
 
+import base64
 import logging
 import os
-import re
-import subprocess
 
 import pytest
+from ocp_resources.secret import Secret
 
 from utilities.constants import Images
 from utilities.storage import downloaded_image
@@ -29,33 +29,6 @@ def upload_file_path(request, tmpdir):
     yield local_name
 
 
-@pytest.fixture(scope="session")
-def skip_router_wildcard_cert_not_trusted(admin_client):
-    trust_store_dir = "/etc/pki/ca-trust/source/anchors/"
-    wildcard_hostname = (
-        f"*.apps{re.search(r'.*api(.*):.*', admin_client.configuration.host).group(1)}"
-    )
-    extensions = (".crt", ".cer", "pem")
-
-    for file in os.listdir(trust_store_dir):
-        if file.endswith(extensions):
-            try:
-                output = subprocess.check_output(
-                    f"openssl x509 -in {os.path.join(trust_store_dir, file)} -noout -text",
-                    shell=True,
-                )
-                if wildcard_hostname in output.decode("utf-8"):
-                    return
-            except subprocess.CalledProcessError as e:
-                # Ignore errors, local system can have corrupt certs
-                # If needed cert exists, we can proceed
-                LOGGER.warning(e.output)
-
-    pytest.skip(
-        msg="Skip testing. Wildcard router certificate not in systems trust store."
-    )
-
-
 @pytest.fixture()
 def download_specified_image(request, tmpdir_factory):
     local_path = tmpdir_factory.mktemp("cdi_upload").join(
@@ -63,3 +36,34 @@ def download_specified_image(request, tmpdir_factory):
     )
     downloaded_image(remote_name=request.param.get("image_path"), local_name=local_path)
     return local_path
+
+
+@pytest.fixture()
+def router_cert_secret(admin_client):
+    return list(
+        Secret.get(
+            dyn_client=admin_client,
+            name="router-certs-default",
+            namespace="openshift-ingress",
+        )
+    )[0]
+
+
+@pytest.fixture()
+def enabled_ca(tmpdir, router_cert_secret):
+    update_ca_trust_command = "sudo update-ca-trust"
+    router_cert_name = "router.crt"
+    router_cert_path = f"{tmpdir}/{router_cert_name}"
+    ca_path = "/etc/pki/ca-trust/source/anchors/"
+    with open(router_cert_path, "w") as the_file:
+        the_file.write(
+            (
+                base64.standard_b64decode(router_cert_secret.instance.data["tls.crt"])
+            ).decode("utf-8")
+        )
+    # copy to the trusted secure list and update
+    os.popen(f"sudo cp {router_cert_path} {ca_path}")
+    os.popen(update_ca_trust_command)
+    yield
+    os.popen(f"sudo rm {ca_path}{router_cert_name}")
+    os.popen(update_ca_trust_command)
