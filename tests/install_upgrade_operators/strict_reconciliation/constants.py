@@ -273,7 +273,7 @@ NP_WORKLOADS_VALUE_HCO_CR = {
                             "matchExpressions": [
                                 {
                                     "key": "my-cloud.io/num-cpus",
-                                    "operator": "gt",
+                                    "operator": "Gt",
                                     "values": ["8"],
                                 }
                             ]
