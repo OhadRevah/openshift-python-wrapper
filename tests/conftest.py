@@ -57,7 +57,6 @@ from utilities.constants import (
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
 from utilities.hco import apply_np_changes, get_hyperconverged_resource
 from utilities.infra import (
-    BUG_STATUS_CLOSED,
     ClusterHosts,
     ExecCommandOnPod,
     base64_encode_str,
@@ -68,7 +67,6 @@ from utilities.infra import (
     generate_latest_os_dict,
     generate_namespace_name,
     get_admin_client,
-    get_bug_status,
     get_bugzilla_connection_params,
     get_cluster_resources,
     get_pods,
@@ -1001,32 +999,18 @@ def skip_if_ovn_cluster(ovn_kubernetes_cluster):
         pytest.skip("Test cannot run on cluster with OVN network type")
 
 
-# TODO: Remove this fixture and its usage in nodes_active_nics when BZ 1885605 is fixed.
-@pytest.fixture(scope="session")
-def ovs_bridge_bug_closed(bugzilla_connection_params):
-    return (
-        get_bug_status(
-            bugzilla_connection_params=bugzilla_connection_params, bug=1885605
-        )
-        in BUG_STATUS_CLOSED
-    )
-
-
 @pytest.fixture(scope="session")
 def nodes_active_nics(
     schedulable_nodes,
     utility_pods,
     node_physical_nics,
-    ovn_kubernetes_cluster,
-    ovs_bridge_bug_closed,
 ):
-    # TODO: Remove this function and its usage in nodes_active_nics when BZ 1885605 is fixed.
-    def _ovs_bridge_ports(node_interface):
+    def _bridge_ports(node_interface):
         ports = set()
-        if ovs_bridge_bug_closed or not ovn_kubernetes_cluster:
-            return ports
-
-        if node_interface.type == "ovs-bridge" and node_interface.bridge.port:
+        if (
+            node_interface.type in ("ovs-bridge", "linux-bridge")
+            and node_interface.bridge.port
+        ):
             for bridge_port in node_interface.bridge.port:
                 ports.add(bridge_port.name)
         return ports
@@ -1050,7 +1034,7 @@ def nodes_active_nics(
 
             # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
             # OVS bridge, it shouldn't be used for tests' node networking.
-            bridge_ports = _ovs_bridge_ports(node_interface=node_iface)
+            bridge_ports = _bridge_ports(node_interface=node_iface)
             for port in bridge_ports:
                 if port in node_physical_nics[node.name]:
                     nodes_nics[node.name]["occupied"].append(port)
