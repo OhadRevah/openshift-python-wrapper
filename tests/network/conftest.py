@@ -14,6 +14,7 @@ from utilities.network import (
     get_ipv6_address,
     ip_version_data_from_matrix,
 )
+from utilities.virt import get_hyperconverged_ovs_annotations
 
 
 @pytest.fixture(scope="session")
@@ -94,3 +95,12 @@ def ipv6_network_data(
         return compose_dual_stack_network_data(
             dhcp4_enable=ip_version_data_from_matrix(request) is not None
         )
+
+
+@pytest.fixture()
+def hyperconverged_ovs_annotations_disabled_by_default(
+    hyperconverged_resource_scope_function,
+):
+    assert not get_hyperconverged_ovs_annotations(
+        hyperconverged=hyperconverged_resource_scope_function
+    ), "deployOVS should be disabled by default"

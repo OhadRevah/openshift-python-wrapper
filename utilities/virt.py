@@ -2010,3 +2010,9 @@ def get_kubevirt_hyperconverged_spec(admin_client, hco_namespace):
     return get_hyperconverged_kubevirt(
         admin_client=admin_client, hco_namespace=hco_namespace
     ).instance.to_dict()["spec"]
+
+
+def get_hyperconverged_ovs_annotations(hyperconverged):
+    return (hyperconverged.instance.to_dict()["metadata"].get("annotations", {})).get(
+        "deployOVS"
+    )

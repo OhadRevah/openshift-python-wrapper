@@ -92,6 +92,7 @@ from utilities.storage import data_volume
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
+    get_hyperconverged_ovs_annotations,
     get_kubevirt_hyperconverged_spec,
     kubernetes_taint_exists,
     vm_instance_from_template,
@@ -1957,11 +1958,9 @@ def ovs_daemonset(admin_client, hco_namespace):
 
 @pytest.fixture()
 def hyperconverged_ovs_annotations_fetched(hyperconverged_resource_scope_function):
-    return (
-        hyperconverged_resource_scope_function.instance.to_dict()["metadata"][
-            "annotations"
-        ]
-    ).get("deployOVS")
+    return get_hyperconverged_ovs_annotations(
+        hyperconverged=hyperconverged_resource_scope_function
+    )
 
 
 @pytest.fixture(scope="module")

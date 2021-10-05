@@ -16,6 +16,10 @@ OVS_BR = "test-ovs-br"
 SEC_IFACE_SUBNET = "10.0.200"
 DST_IP_ADDR = SEC_IFACE_SUBNET + ".2"
 
+pytestmark = pytest.mark.usefixtures(
+    "skip_if_ovn_cluster", "hyperconverged_ovs_annotations_disabled_by_default"
+)
+
 
 @pytest.fixture()
 def ovs_bridge_on_worker1(worker_node1, utility_pods):
@@ -113,7 +117,6 @@ def running_vmb_with_ovs_based_l2(vmb_with_ovs_based_l2):
 
 @pytest.mark.polarion("CNV-5636")
 def test_ovs_bridge_sanity(
-    skip_if_ovn_cluster,
     hyperconverged_ovs_annotations_enabled,
     vma_with_ovs_based_l2,
     vmb_with_ovs_based_l2,

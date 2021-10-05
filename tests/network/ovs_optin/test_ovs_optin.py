@@ -14,7 +14,9 @@ from utilities.network import (
 
 LOGGER = logging.getLogger()
 
-pytestmark = pytest.mark.usefixtures("skip_if_ovn_cluster")
+pytestmark = pytest.mark.usefixtures(
+    "skip_if_ovn_cluster", "hyperconverged_ovs_annotations_disabled_by_default"
+)
 
 
 def wait_for_ovs_removed(admin_client, ovs_daemonset, network_addons_config):

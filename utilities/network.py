@@ -895,12 +895,13 @@ def wait_for_ovs_status(network_addons_config, status=True):
     samples = TimeoutSampler(
         wait_timeout=60,
         sleep=1,
-        func=lambda: network_addons_config.instance.to_dict()["spec"].get("ovs"),
+        func=lambda: network_addons_config.instance.spec.ovs,
     )
 
     try:
         for sample in samples:
-            if bool(sample is not None) == status:
+            # sample is {} when opt-out
+            if bool(sample) == status:
                 return True
 
     except TimeoutExpiredError:
