@@ -9,6 +9,8 @@ from utilities.network import assert_ping_successful
 LOGGER = logging.getLogger(__name__)
 REMOTE_IP = "8.8.8.8"
 
+pytestmark = pytest.mark.skip("Test should be refactor, this test break the node")
+
 
 @pytest.mark.destructive
 @pytest.mark.order(before="TestAfterBridgeTeardown")
