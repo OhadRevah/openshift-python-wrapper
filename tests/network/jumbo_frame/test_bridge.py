@@ -76,7 +76,6 @@ def br1test_bridge_nad(
         nad_type=bridge_device_matrix__class__,
         nad_name=f"{jumbo_frame_bridge_device_name}-nad",
         interface_name=jumbo_frame_bridge_device_name,
-        tuning=True,
         mtu=MTU_9000,
     ) as nad:
         yield nad

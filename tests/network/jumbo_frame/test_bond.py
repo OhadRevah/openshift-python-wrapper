@@ -132,7 +132,6 @@ def br1bond_nad(
         nad_type=bridge_device_matrix__class__,
         nad_name=f"{jumbo_frame_bond_device_name}-bond-nad",
         interface_name=f"{jumbo_frame_bond_device_name}-bond",
-        tuning=True,
         mtu=MTU_9000,
     ) as nad:
         yield nad

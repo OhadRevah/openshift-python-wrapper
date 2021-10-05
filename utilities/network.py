@@ -332,10 +332,12 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         client=None,
         mtu=None,
         teardown=True,
+        old_nad_format=False,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
         )
+        self.old_nad_format = old_nad_format
 
         # An object must not be created as type BridgeNetworkAttachmentDefinition, but only as one of its successors.
         sub_lvl = sub_resource_level(
@@ -363,7 +365,10 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
             bridge_dict["mtu"] = self.mtu
         if self.vlan:
             bridge_dict["vlan"] = self.vlan
-        spec_config["plugins"] = [bridge_dict]
+        if self.old_nad_format:
+            spec_config["plugins"] = [bridge_dict]
+        else:
+            spec_config.update(bridge_dict)
 
         res["spec"]["config"] = spec_config
         return res
@@ -379,7 +384,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         vlan=None,
         client=None,
         mtu=None,
-        tuning_type="cnv-tuning",
+        tuning_type=None,
         teardown=True,
     ):
         super().__init__(
@@ -396,12 +401,11 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
     def to_dict(self):
         res = super().to_dict()
-        config_plugins = res["spec"]["config"]["plugins"]
-
         if self.tuning_type:
-            tuning_dict = {"type": self.tuning_type}
-
-            config_plugins.append(tuning_dict)
+            self.old_nad_format = True
+            res["spec"]["config"].setdefault("plugins", []).append(
+                {"type": self.tuning_type}
+            )
 
         res["spec"]["config"] = json.dumps(res["spec"]["config"])
         return res

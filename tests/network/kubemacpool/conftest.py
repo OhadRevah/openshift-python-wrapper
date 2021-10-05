@@ -99,7 +99,6 @@ def manual_mac_out_of_pool_nad(
         nad_name=f"{kubemacpool_bridge_device_name}-manual-out-pool-mac-nad",
         interface_name=kubemacpool_bridge_device_name,
         namespace=namespace,
-        tuning=True,
     ) as manual_mac_out_pool_nad:
         yield manual_mac_out_pool_nad
 
@@ -116,7 +115,6 @@ def automatic_mac_tuning_net_nad(
         nad_name=f"{kubemacpool_bridge_device_name}-automatic-mac-tun-net-nad",
         interface_name=kubemacpool_bridge_device_name,
         namespace=namespace,
-        tuning=True,
     ) as automatic_mac_tuning_net_nad:
         yield automatic_mac_tuning_net_nad
 

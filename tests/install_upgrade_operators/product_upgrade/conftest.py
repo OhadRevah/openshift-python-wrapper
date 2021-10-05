@@ -96,7 +96,6 @@ def upgrade_bridge_marker_nad(bridge_on_one_node, kmp_enabled_namespace):
         nad_name=bridge_on_one_node.bridge_name,
         interface_name=bridge_on_one_node.bridge_name,
         namespace=kmp_enabled_namespace,
-        tuning=True,
     ) as nad:
         yield nad
 
@@ -171,7 +170,6 @@ def upgrade_br1test_nad(namespace, upgrade_bridge_on_all_nodes):
         nad_name=upgrade_bridge_on_all_nodes.bridge_name,
         interface_name=upgrade_bridge_on_all_nodes.bridge_name,
         namespace=namespace,
-        tuning=True,
     ) as nad:
         yield nad
 
