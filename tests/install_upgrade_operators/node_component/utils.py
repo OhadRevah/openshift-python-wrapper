@@ -7,8 +7,9 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
+from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import TIMEOUT_5MIN
-from utilities.hco import wait_for_hco_conditions
+from utilities.hco import wait_for_hco_post_update_stable_state
 
 
 LOGGER = logging.getLogger(__name__)
@@ -402,37 +403,14 @@ def update_subscription_config(admin_client, hco_namespace, subscription, config
     editor.update(backup_resources=False)
 
     LOGGER.info("Waiting for CNV HCO to be Ready.")
-    wait_for_hco_conditions(
+    wait_for_stabilize(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
         wait_timeout=TIMEOUT_5MIN,
         consecutive_checks_count=10,
     )
-    LOGGER.info("Verify that there no terminating operator pods.")
-    sample = None
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
-        sleep=20,
-        func=get_terminating_operators_pods,
+
+    wait_for_hco_post_update_stable_state(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
     )
-    try:
-        for sample in samples:
-            if not sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(f"Timeout waiting for terminating pods to be deleted {sample}.")
-        raise
-
-
-def get_terminating_operators_pods(admin_client, hco_namespace):
-    """
-    Check the operator pod which are flagged for deletion to make sure new pods are created.
-    """
-    return [
-        pod
-        for pod in Pod.get(dyn_client=admin_client, namespace=hco_namespace.name)
-        if pod.name.startswith(tuple(CNV_OPERATOR_PODS_COMPONENTS))
-        and pod.instance.metadata.get("deletionTimestamp") is not None
-    ]

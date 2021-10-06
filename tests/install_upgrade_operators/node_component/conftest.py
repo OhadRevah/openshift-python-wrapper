@@ -2,13 +2,11 @@ import logging
 
 import pytest
 from ocp_resources.node import Node
-from ocp_resources.pod import Pod
 from ocp_resources.ssp import SSP
 from ocp_resources.subscription import Subscription
 from ocp_resources.vm_import_config import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
-    CNV_OPERATOR_PODS_COMPONENTS,
     SELECTORS,
     get_pod_per_nodes,
     update_subscription_config,
@@ -395,15 +393,3 @@ def subscription_pods_per_nodes_after_altering_placement(
     hco_namespace,
 ):
     return get_pod_per_nodes(admin_client=admin_client, hco_namespace=hco_namespace)
-
-
-def get_terminating_operators_pods(admin_client, hco_namespace):
-    """
-    Check the operator pod which are flagged for deletion to make sure new pods are created.
-    """
-    return [
-        pod
-        for pod in Pod.get(dyn_client=admin_client, namespace=hco_namespace.name)
-        if pod.name.startswith(tuple(CNV_OPERATOR_PODS_COMPONENTS))
-        and pod.instance.metadata.get("deletionTimestamp") is not None
-    ]

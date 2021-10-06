@@ -124,44 +124,57 @@ def apply_np_changes(
         LOGGER.info(f"Updating HCO with node placement. {patch}")
         editor = ResourceEditor(patches={hco: patch})
         editor.update(backup_resources=False)
-        LOGGER.info(
-            "Waiting for all HCO conditions to detect that it's back to a stable configuration."
-        )
-        wait_for_hco_conditions(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            consecutive_checks_count=6,
-        )
-        # unfortunately at this time we are not really done:
-        # HCO propagated the change to components operators that propagated it
-        # to their operands (deployments and daemonsets)
-        # so all the CNV operators reports progressing=False and even HCO reports progressing=False
-        # but deployment and daemonsets controllers has still to kill and restart pods.
-        # with the following lines we can wait for all the deployment and daemonsets in
-        # openshift-cnv namespace to be back to uptodate status.
-        # The remain issue is that if we check it too fast, we can even check before
-        # deployment and daemonsets controller report uptodate=false.
-        # We have also to compare the observedGeneration with the generation number
-        # to be sure that the relevant controller already updated the status
-        for ds in DaemonSet.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-        ):
-            # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
-            if not ds.name.startswith(StorageClass.Types.HOSTPATH):
-                wait_for_ds(ds=ds)
-        for dp in Deployment.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-        ):
-            wait_for_dp(dp=dp)
-        wait_for_pods_running(
-            admin_client=admin_client,
-            namespace=hco_namespace,
-            number_of_consecutive_checks=3,
+        wait_for_hco_post_update_stable_state(
+            admin_client=admin_client, hco_namespace=hco_namespace
         )
     else:
         LOGGER.info("No actual changes to node placement configuration, skipping")
+
+
+def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
+    """
+    Waits for hco to reach stable state post hco update
+
+    Args:
+        admin_client (DynamicClient): Dynamic client object
+        hco_namespace (Namespace): Namespace object
+    """
+    LOGGER.info(
+        "Waiting for all HCO conditions to detect that it's back to a stable configuration."
+    )
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        consecutive_checks_count=6,
+    )
+    # unfortunately at this time we are not really done:
+    # HCO propagated the change to components operators that propagated it
+    # to their operands (deployments and daemonsets)
+    # so all the CNV operators reports progressing=False and even HCO reports progressing=False
+    # but deployment and daemonsets controllers has still to kill and restart pods.
+    # with the following lines we can wait for all the deployment and daemonsets in
+    # openshift-cnv namespace to be back to uptodate status.
+    # The remain issue is that if we check it too fast, we can even check before
+    # deployment and daemonsets controller report uptodate=false.
+    # We have also to compare the observedGeneration with the generation number
+    # to be sure that the relevant controller already updated the status
+    for ds in DaemonSet.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+    ):
+        # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
+        if not ds.name.startswith(StorageClass.Types.HOSTPATH):
+            wait_for_ds(ds=ds)
+    for dp in Deployment.get(
+        dyn_client=admin_client,
+        namespace=hco_namespace.name,
+    ):
+        wait_for_dp(dp=dp)
+    wait_for_pods_running(
+        admin_client=admin_client,
+        namespace=hco_namespace,
+        number_of_consecutive_checks=3,
+    )
 
 
 def add_labels_to_nodes(nodes, node_labels):
