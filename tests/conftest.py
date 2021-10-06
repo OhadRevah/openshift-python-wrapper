@@ -46,6 +46,7 @@ from pytest_testconfig import config as py_config
 from utilities.constants import (
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
+    KUBECONFIG,
     MTU_9000,
     RESOURCES_TO_COLLECT_INFO,
     SRIOV,
@@ -701,6 +702,28 @@ def junitxml_polarion(record_testsuite_property):
     record_testsuite_property("polarion-custom-env_os", os.getenv("POLARION_OS"))
 
 
+@pytest.fixture(scope="session")
+def kubeconfig_export_path():
+    return os.environ.get(KUBECONFIG)
+
+
+@pytest.fixture(scope="session")
+def exported_kubeconfig(unprivileged_secret, tmp_path_factory, kubeconfig_export_path):
+    if not unprivileged_secret:
+        yield
+    else:
+        dir_path = tmp_path_factory.mktemp(KUBECONFIG.lower())
+        dest_path = os.path.join(dir_path, KUBECONFIG.lower())
+
+        LOGGER.info(f"Copy {KUBECONFIG} to {dest_path}")
+        shutil.copyfile(src=kubeconfig_export_path, dst=dest_path)
+        LOGGER.info(f"Set: {KUBECONFIG}={dest_path.lower()}")
+        os.environ[KUBECONFIG] = dest_path
+        yield
+        LOGGER.info(f"Set: {KUBECONFIG}={kubeconfig_export_path.lower()}")
+        os.environ[KUBECONFIG] = kubeconfig_export_path
+
+
 @pytest.fixture(scope="session", autouse=True)
 def admin_client():
     """
@@ -763,7 +786,9 @@ def identity_provider_config(admin_client):
 
 
 @pytest.fixture(scope="session")
-def unprivileged_client(admin_client, unprivileged_secret, identity_provider_config):
+def unprivileged_client(
+    admin_client, unprivileged_secret, identity_provider_config, exported_kubeconfig
+):
     """
     Provides none privilege API client
     """
@@ -774,13 +799,13 @@ def unprivileged_client(admin_client, unprivileged_secret, identity_provider_con
     else:
         token = None
         kube_config_path = os.path.join(os.path.expanduser("~"), ".kube/config")
-        kubeconfig_env = os.environ.get("KUBECONFIG")
+        kubeconfig_env = os.environ.get(KUBECONFIG)
         kube_config_exists = os.path.isfile(kube_config_path)
         if kubeconfig_env and kube_config_exists:
             raise ValueError(
-                f"Both KUBECONFIG {kubeconfig_env} and {kube_config_path} exists. "
+                f"Both {KUBECONFIG} {kubeconfig_env} and {kube_config_path} exists. "
                 f"Only one should be used, "
-                f"either remove {kube_config_path} file or unset KUBECONFIG"
+                f"either remove {kube_config_path} file or unset {KUBECONFIG}"
             )
 
         # Update identity provider
@@ -802,7 +827,7 @@ def unprivileged_client(admin_client, unprivileged_secret, identity_provider_con
             check_output("oc whoami", shell=True).decode().strip()
         )  # Get current admin account
         if kube_config_exists:
-            os.environ["KUBECONFIG"] = ""
+            os.environ[KUBECONFIG] = ""
 
         if login_to_account(
             api_address=admin_client.configuration.host,
@@ -823,7 +848,7 @@ def unprivileged_client(admin_client, unprivileged_secret, identity_provider_con
                 setattr(configuration, k, v)
 
             if kubeconfig_env:
-                os.environ["KUBECONFIG"] = kubeconfig_env
+                os.environ[KUBECONFIG] = kubeconfig_env
 
             login_to_account(
                 api_address=admin_client.configuration.host, user=current_user.strip()
@@ -841,7 +866,7 @@ def unprivileged_client(admin_client, unprivileged_secret, identity_provider_con
         if token:
             try:
                 if kube_config_exists:
-                    os.environ["KUBECONFIG"] = ""
+                    os.environ[KUBECONFIG] = ""
 
                 login_to_account(
                     api_address=admin_client.configuration.host,
@@ -852,7 +877,7 @@ def unprivileged_client(admin_client, unprivileged_secret, identity_provider_con
                 Popen(args=["oc", "logout"], stdout=PIPE, stderr=PIPE).communicate()
             finally:
                 if kubeconfig_env:
-                    os.environ["KUBECONFIG"] = kubeconfig_env
+                    os.environ[KUBECONFIG] = kubeconfig_env
 
                 login_to_account(
                     api_address=admin_client.configuration.host,

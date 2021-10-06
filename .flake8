@@ -62,6 +62,7 @@ fcfn_exclude_functions =
     Counter,
     bcrypt,
     getoption,
+    tmp_path_factory,
 
 enable-extensions =
     PID,
