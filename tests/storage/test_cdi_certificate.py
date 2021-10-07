@@ -15,6 +15,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
+from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
 from tests.storage.constants import CDI_SECRETS
@@ -30,6 +31,7 @@ from utilities.constants import (
 from utilities.storage import (
     create_dummy_first_consumer_pod,
     create_dv,
+    downloaded_image,
     get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
     sc_volume_binding_mode_is_wffc,
@@ -306,3 +308,60 @@ def test_upload_after_validate_aggregated_api_cert(
         dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
+
+
+@pytest.fixture()
+def certificate_exists(cdi_spec, hco_spec):
+    # Verify CDI and HCO spec for cert configuration
+    for spec in (cdi_spec, hco_spec):
+        assert spec.get("certConfig"), "No certConfig found in spec."
+
+
+@pytest.fixture()
+def updated_certconfig_in_hco_cr(
+    hyperconverged_resource_scope_function, certificate_exists
+):
+    # Update cert rotation with a short interval for easy testing.
+    with ResourceEditor(
+        patches={
+            hyperconverged_resource_scope_function: {
+                "spec": {
+                    "certConfig": {
+                        "ca": {"duration": "1h20m0s", "renewBefore": "1h10m0s"},
+                        "server": {"duration": "1h10m0s", "renewBefore": "1h5m0s"},
+                    }
+                }
+            }
+        }
+    ):
+        yield
+
+
+@pytest.fixture()
+def downloaded_cirros_image(tmpdir):
+    local_path = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
+    downloaded_image(
+        remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=local_path
+    )
+    return local_path
+
+
+@pytest.mark.polarion("CNV-5708")
+def test_cert_exposure_rotation(
+    enabled_ca,
+    updated_certconfig_in_hco_cr,
+    namespace,
+    downloaded_cirros_image,
+):
+    with virtctl_upload_dv(
+        namespace=namespace.name,
+        name="cnv-5708",
+        size="1Gi",
+        storage_class=py_config["default_storage_class"],
+        image_path=downloaded_cirros_image,
+        insecure=False,
+    ) as res:
+        status, out, err = res
+        LOGGER.info(out)
+        assert "Processing completed successfully" in out, out
+        assert status, err

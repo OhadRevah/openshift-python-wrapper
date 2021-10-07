@@ -4,6 +4,7 @@
 Pytest conftest file for CNV CDI tests
 """
 
+import base64
 import logging
 import os
 
@@ -15,6 +16,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.storage_class import StorageClass
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
@@ -35,6 +37,7 @@ from utilities.storage import (
 
 LOGGER = logging.getLogger(__name__)
 LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
+ROUTER_CERT_NAME = "router.crt"
 
 
 @pytest.fixture()
@@ -359,3 +362,39 @@ def default_sc_as_fallback_for_scratch(
             ):
                 wait_for_default_sc_in_cdiconfig(cdi_config=cdi_config, sc=sc.name)
                 yield sc
+
+
+@pytest.fixture()
+def router_cert_secret(admin_client):
+    router_secret = "router-certs-default"
+    for secret in Secret.get(
+        dyn_client=admin_client,
+        name=router_secret,
+        namespace="openshift-ingress",
+    ):
+        return secret
+    raise ResourceNotFoundError(f"secret: {router_secret} not found")
+
+
+@pytest.fixture()
+def temp_router_cert(tmpdir, router_cert_secret):
+    router_cert_path = f"{tmpdir}/{ROUTER_CERT_NAME}"
+    with open(router_cert_path, "w") as the_file:
+        the_file.write(
+            (
+                base64.standard_b64decode(router_cert_secret.instance.data["tls.crt"])
+            ).decode("utf-8")
+        )
+    yield router_cert_path
+
+
+@pytest.fixture()
+def enabled_ca(temp_router_cert):
+    update_ca_trust_command = "sudo update-ca-trust"
+    ca_path = "/etc/pki/ca-trust/source/anchors/"
+    # copy to the trusted secure list and update
+    os.popen(f"sudo cp {temp_router_cert} {ca_path}")
+    os.popen(update_ca_trust_command)
+    yield
+    os.popen(f"sudo rm {ca_path}{ROUTER_CERT_NAME}")
+    os.popen(update_ca_trust_command)
