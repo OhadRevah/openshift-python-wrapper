@@ -632,6 +632,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         teardown=True,
         ipv4_enable=False,
         ipv4_dhcp=False,
+        ipv4_auto_dns=True,
         node_active_nics=None,
         ipv4_addresses=None,
         dns_resolver=None,
@@ -651,6 +652,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         )
         self.interfaces_name = interfaces_name
         self.iface_state = iface_state
+        self.ipv4_auto_dns = ipv4_auto_dns
 
     def to_dict(self):
         res = super().to_dict()
@@ -660,6 +662,9 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     "name": nic,
                     "type": "ethernet",
                     "state": self.iface_state,
+                    "ipv4": {
+                        "auto-dns": self.ipv4_auto_dns,
+                    },
                 }
                 self.set_interface(interface=self.iface)
                 res = super().to_dict()

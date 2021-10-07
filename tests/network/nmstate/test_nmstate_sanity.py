@@ -1,15 +1,27 @@
+import copy
 import logging
+import re
 
 import pytest
-from ocp_resources.node_network_configuration_policy import NNCPConfigurationFailed
+from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
-from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
+from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    ExecCommandOnPod,
+    get_pod_by_name_prefix,
+    name_prefix,
+)
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     LinuxBridgeNodeNetworkConfigurationPolicy,
 )
+
+
+CAT_RESOLV_CONF_CMD = "cat /etc/resolv.conf"
 
 
 LOGGER = logging.getLogger(__name__)
@@ -74,6 +86,115 @@ def deleted_nmstate_pod_during_nncp_configuration(
             return
 
 
+@pytest.fixture()
+def pod_executor(utility_pods, worker_node1):
+    return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
+
+
+@pytest.fixture()
+def dns_gathered_current_state(utility_pods, worker_node1, pod_executor):
+    """
+    This fixture gathers the current DNS configurations from the node and creates the new dns_resolver configurations in
+    order to configure the DNS.
+
+    dns_resolve should not contain duplicate entries.
+
+    Returns:
+        dns_resolver (dict): new dns setting to configure in the NNCP
+    """
+    dns_data = pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
+    dns_addresses = re.findall(r"\d+\.\d+\.\d+\.\d", str(dns_data))
+    LOGGER.info(f"resolv.conf currently holds: {dns_addresses}")
+    dns_resolver = {
+        "config": {
+            "server": [dns_addresses[1], PUBLIC_DNS_SERVER_IP],
+        }
+    }
+
+    return dns_resolver
+
+
+@pytest.fixture()
+def worker1_saved_original_interface_configurations(worker_node1, nodes_occupied_nics):
+    nns = NodeNetworkState(name=worker_node1.name)
+    return nns.get_interface(name=(nodes_occupied_nics[worker_node1.name][0]))
+
+
+@pytest.fixture()
+def dns_nncp(
+    worker_node1,
+    utility_pods,
+    nodes_occupied_nics,
+    worker1_saved_original_interface_configurations,
+):
+    node_nics = nodes_occupied_nics[worker_node1.name]
+    with EthernetNetworkConfigurationPolicy(
+        name=f"dns-{name_prefix(worker_node1.name)}",
+        node_selector=worker_node1.name,
+        ipv4_dhcp=worker1_saved_original_interface_configurations.ipv4["dhcp"],
+        ipv4_enable=worker1_saved_original_interface_configurations.ipv4["enabled"],
+        ipv4_auto_dns=worker1_saved_original_interface_configurations.ipv4["auto-dns"],
+        worker_pods=utility_pods,
+        interfaces_name=node_nics,
+        node_active_nics=node_nics,
+    ) as nncp_dns:
+        nncp_dns.wait_for_status_success()
+        yield nncp_dns
+
+
+@pytest.fixture()
+def dns_nncp_restored(
+    worker_node1,
+    utility_pods,
+    nodes_occupied_nics,
+    worker1_saved_original_interface_configurations,
+):
+    yield
+    LOGGER.info("Restoring DNS configurations on the node")
+    node_nics = nodes_occupied_nics[worker_node1.name]
+    with EthernetNetworkConfigurationPolicy(
+        name=f"dns-{name_prefix(worker_node1.name)}-restored",
+        node_selector=worker_node1.name,
+        ipv4_dhcp=worker1_saved_original_interface_configurations.ipv4["dhcp"],
+        ipv4_enable=worker1_saved_original_interface_configurations.ipv4["enabled"],
+        ipv4_auto_dns=worker1_saved_original_interface_configurations.ipv4["auto-dns"],
+        worker_pods=utility_pods,
+        interfaces_name=node_nics,
+        node_active_nics=node_nics,
+        dns_resolver={"config": {"server": []}},
+    ) as nncp_dns:
+        nncp_dns.wait_for_status_success()
+
+
+@pytest.fixture()
+def dns_nncp_configured(
+    worker_node1,
+    dns_gathered_current_state,
+    utility_pods,
+    dns_nncp,
+    worker1_saved_original_interface_configurations,
+):
+    LOGGER.info("Editing the existing NNCP with the new DNS configuration")
+    interfaces_dict = copy.copy(dict(worker1_saved_original_interface_configurations))
+    # ipv4 is ResourceField and needs to be converted to dict.
+    interfaces_dict["ipv4"] = dict(interfaces_dict["ipv4"])
+    interfaces_dict["ipv4"]["auto-dns"] = False
+    with ResourceEditor(
+        patches={
+            dns_nncp: {
+                "spec": {
+                    "desiredState": {
+                        "dns-resolver": dns_gathered_current_state,
+                        "interfaces": [interfaces_dict],
+                    },
+                }
+            }
+        }
+    ):
+        dns_nncp.wait_for_status_success()
+        yield dns_nncp
+
+
 @pytest.mark.polarion("CNV-5721")
 def test_no_ip(
     skip_if_no_multinic_nodes,
@@ -135,31 +256,25 @@ def test_dynamic_ip(
         LOGGER.info("NMstate: Test with dynamic IP")
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Temporarily marked as xfail, will change configurations of EthernetNetworkConfigurationPolicy to "
-        "static gateway interface or DHCP with auto-dns: false"
-    ),
-    raises=NNCPConfigurationFailed,
-)
 @pytest.mark.bugzilla(
     1926143, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5724")
-def test_dns(worker_node1, utility_pods, nodes_occupied_nics):
-    dns_resolver = {
-        "config": {
-            "search": ["example.com"],
-            "server": ["8.8.8.8"],
-        }
-    }
-    with EthernetNetworkConfigurationPolicy(
-        name=f"dns-{name_prefix(worker_node1.name)}",
-        node_selector=worker_node1.name,
-        dns_resolver=dns_resolver,
-    ):
-        LOGGER.info("NMstate: Test DNS")
+def test_dns(
+    worker_node1,
+    utility_pods,
+    pod_executor,
+    dns_gathered_current_state,
+    dns_nncp_configured,
+    dns_nncp_restored,
+):
+    LOGGER.info("NMstate: Test DNS")
+    dns_current_state = pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
+    assert (
+        PUBLIC_DNS_SERVER_IP in dns_current_state
+        and dns_gathered_current_state["config"]["server"][0] in dns_current_state
+    ), f"NNCP failed to configure the new dns address, {PUBLIC_DNS_SERVER_IP}, on the node's interface"
 
 
 @pytest.mark.polarion("CNV-5725")
