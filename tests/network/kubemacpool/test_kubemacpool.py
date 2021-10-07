@@ -122,7 +122,6 @@ class TestKMPConnectivity:
         )
 
 
-@pytest.mark.sno
 class TestNegatives:
     @pytest.mark.polarion("CNV-4199")
     def test_disabled_assignment_ns(
