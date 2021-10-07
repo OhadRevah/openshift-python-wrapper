@@ -54,7 +54,7 @@ from utilities.constants import (
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
 )
-from utilities.exceptions import CommonCpusNotFoundError
+from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
 from utilities.hco import apply_np_changes, get_hyperconverged_resource
 from utilities.infra import (
     BUG_STATUS_CLOSED,
@@ -70,9 +70,11 @@ from utilities.infra import (
     get_admin_client,
     get_bug_status,
     get_bugzilla_connection_params,
+    get_cluster_resources,
     get_pods,
     get_schedulable_nodes_ips,
     name_prefix,
+    ocp_resources_submodule_files_path,
     prepare_test_dir_log,
     separator,
     setup_logging,
@@ -141,6 +143,7 @@ def pytest_addoption(parser):
     cluster_sanity_group = parser.getgroup(name="ClusterSanity")
     log_collector_group = parser.getgroup(name="LogCollector")
     deprecate_api_test_group = parser.getgroup(name="DeprecateTestAPI")
+    leftovers_collector = parser.getgroup(name="LeftoversCollector")
 
     # Upgrade addoption
     install_upgrade_group.addoption(
@@ -244,6 +247,13 @@ def pytest_addoption(parser):
     deprecate_api_test_group.addoption(
         "--skip-deprecated-api-test",
         help="By default test_deprecation_audit_logs will always run, pass this flag to skip it",
+        action="store_true",
+    )
+
+    # LeftoversCollector group
+    leftovers_collector.addoption(
+        "--leftovers-collector",
+        help="By default will not run, to run pass --leftovers-collector.",
         action="store_true",
     )
 
@@ -2172,3 +2182,38 @@ def cdi_spec(cdi):
 @pytest.fixture()
 def hco_spec(hyperconverged_resource_scope_function):
     return hyperconverged_resource_scope_function.instance.to_dict()["spec"]
+
+
+@pytest.fixture(scope="session")
+def run_leftovers_collector(request):
+    return request.config.getoption("--leftovers-collector")
+
+
+@pytest.fixture(scope="session")
+def ocp_resources_files_path(run_leftovers_collector):
+    if run_leftovers_collector:
+        return ocp_resources_submodule_files_path()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def leftovers_collector(
+    run_leftovers_collector, admin_client, ocp_resources_files_path
+):
+    if run_leftovers_collector:
+        return get_cluster_resources(
+            admin_client=admin_client, resource_files_path=ocp_resources_files_path
+        )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def leftovers_validator(
+    run_leftovers_collector, admin_client, ocp_resources_files_path, leftovers_collector
+):
+    yield
+    if run_leftovers_collector:
+        collected_resources = get_cluster_resources(
+            admin_client=admin_client, resource_files_path=ocp_resources_files_path
+        )
+        leftovers = list(set(collected_resources) - set(leftovers_collector))
+        if leftovers:
+            raise LeftoversFoundError(leftovers=leftovers)

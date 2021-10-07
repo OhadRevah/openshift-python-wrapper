@@ -1,4 +1,6 @@
+import ast
 import base64
+import importlib
 import json
 import logging
 import os
@@ -913,3 +915,62 @@ def update_custom_resource(patch, action="update"):
 
 class ResourceMismatch(Exception):
     pass
+
+
+def ocp_resources_submodule_files_path():
+    """
+    Get the list of submodules file path in ocp_resources.
+    """
+    ignore_files = [
+        "utils.py",
+        "__init__.py",
+        "resource.py",
+    ]
+    path = importlib.util.find_spec("ocp_resources").submodule_search_locations[0]
+    return [
+        os.path.join(path, _file)
+        for _file in os.listdir(path)
+        if _file not in ignore_files
+    ]
+
+
+def get_cluster_resources(admin_client, resource_files_path):
+    import ocp_resources  # noqa: F401
+
+    results = []
+    exclude_classes = (
+        "Resource",
+        "NamespacedResource",
+        "Event",
+        "MTV",
+        "UploadTokenRequest",
+    )
+    exclude_resources_prefix = ("deployer-", "default-", "builder-")
+    for _file in resource_files_path:
+        with open(_file, "r") as fd:
+            tree = ast.parse(source=fd.read())
+            for _cls in [cls for cls in tree.body if isinstance(cls, ast.ClassDef)]:
+                if _cls.name in exclude_classes:
+                    continue
+
+                base_path = f"ocp_resources.{os.path.basename(_file)}"
+                resource_path = re.sub(r"\.py$", "", base_path)
+                resource_import = importlib.import_module(name=resource_path)
+                try:
+                    cls_obj = getattr(resource_import, _cls.name)
+                    results.extend(
+                        [
+                            res.name
+                            for res in cls_obj.get(dyn_client=admin_client)
+                            if not res.name.startswith(exclude_resources_prefix)
+                        ]
+                    )
+                except (
+                    NotImplementedError,
+                    ResourceNotFoundError,
+                    AttributeError,
+                    TypeError,
+                    ValueError,
+                ):
+                    continue
+    return results

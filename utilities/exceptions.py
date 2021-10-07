@@ -21,3 +21,11 @@ class CommonCpusNotFoundError(Exception):
 
     def __str__(self):
         return f"Failed to find a common CPU for all nodes: {self.available_cpus}"
+
+
+class LeftoversFoundError(Exception):
+    def __init__(self, leftovers):
+        self.leftovers = "\n".join(leftovers)
+
+    def __str__(self):
+        return self.leftovers
