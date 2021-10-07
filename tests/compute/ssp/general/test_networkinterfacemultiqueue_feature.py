@@ -17,7 +17,7 @@ from utilities.constants import TIMEOUT_2MIN
 from utilities.virt import wait_for_vm_interfaces
 
 
-pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
+pytestmark = pytest.mark.post_upgrade
 
 
 def update_cpu_spec(vm, network_multiqueue=True, cores=1, sockets=1, threads=1):
@@ -91,6 +91,7 @@ def update_validate_cpu_in_vm(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.usefixtures("golden_image_data_volume_multi_storage_scope_class")
 class TestLatestRHEL:
     """
