@@ -410,7 +410,7 @@ def storage_class_for_updating_cdiconfig_scratch(
 
 @pytest.fixture(scope="module")
 def override_cdiconfig_scratch_spec(
-    cdi,
+    hyperconverged_resource_scope_module,
     cdi_config,
     storage_class_for_updating_cdiconfig_scratch,
 ):
@@ -432,7 +432,11 @@ def override_cdiconfig_scratch_spec(
                     return
 
         with ResourceEditor(
-            patches={cdi: {"spec": {"config": {"scratchSpaceStorageClass": new_sc}}}}
+            patches={
+                hyperconverged_resource_scope_module: {
+                    "spec": {"scratchSpaceStorageClass": new_sc}
+                }
+            }
         ) as edited_cdi_config:
             _wait_for_sc_update()
 
