@@ -77,7 +77,6 @@ HYPERV_DICT = {
     indirect=True,
 )
 class TestCommonTemplatesFedora:
-    @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(name="create_vm")
@@ -100,7 +99,6 @@ class TestCommonTemplatesFedora:
             wait=True
         )
 
-    @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
@@ -137,7 +135,6 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
-    @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(depends=["start_vm"])
@@ -191,7 +188,6 @@ class TestCommonTemplatesFedora:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
-    @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
@@ -213,7 +209,6 @@ class TestCommonTemplatesFedora:
     @pytest.mark.bugzilla(
         1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
-    @pytest.mark.smoke
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3937")
     def test_vmi_guest_agent_info(
@@ -301,7 +296,6 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         )
 
-    @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.polarion("CNV-5842")
@@ -356,7 +350,6 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         ), "Guest agent stopped responding"
 
-    @pytest.mark.smoke
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(depends=["create_vm"])

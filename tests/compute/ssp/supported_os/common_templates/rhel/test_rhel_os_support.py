@@ -29,6 +29,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TestCommonTemplatesRhel:
+    @pytest.mark.smoke
     @pytest.mark.dependency(name="create_vm")
     @pytest.mark.polarion("CNV-3802")
     def test_create_vm(
@@ -49,6 +50,7 @@ class TestCommonTemplatesRhel:
             wait=True
         )
 
+    @pytest.mark.smoke
     @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
     @pytest.mark.polarion("CNV-3266")
     def test_start_vm(
@@ -69,6 +71,7 @@ class TestCommonTemplatesRhel:
             wait_for_interfaces=guest_agent_support,
         )
 
+    @pytest.mark.smoke
     @pytest.mark.dependency(depends=["start_vm"])
     @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
@@ -128,6 +131,7 @@ class TestCommonTemplatesRhel:
             == golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.name
         ), f"Wrong domain label: {label}"
 
+    @pytest.mark.smoke
     @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
     @pytest.mark.polarion("CNV-3320")
     def test_expose_ssh(
@@ -144,6 +148,7 @@ class TestCommonTemplatesRhel:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
+    @pytest.mark.smoke
     @pytest.mark.dependency(name="vmi_guest_agent", depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-6688")
     def test_vmi_guest_agent_exists(
@@ -265,6 +270,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.smoke
     @pytest.mark.polarion("CNV-3038")
     @pytest.mark.dependency(name="migrate_vm_and_verify", depends=["vm_expose_ssh"])
     def test_migrate_vm(
@@ -319,6 +325,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         ), "Guest agent stopped responding"
 
+    @pytest.mark.smoke
     @pytest.mark.dependency(depends=["create_vm"])
     @pytest.mark.polarion("CNV-3269")
     def test_vm_deletion(
