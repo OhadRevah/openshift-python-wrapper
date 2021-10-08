@@ -331,6 +331,7 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         vlan=None,
         client=None,
         mtu=None,
+        macspoofchk=None,
         teardown=True,
         old_nad_format=False,
     ):
@@ -356,6 +357,7 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         self.cni_type = cni_type
         self.vlan = vlan
         self.mtu = mtu
+        self.macspoofchk = macspoofchk
 
     def to_dict(self):
         res = super().to_dict()
@@ -369,6 +371,8 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
             spec_config["plugins"] = [bridge_dict]
         else:
             spec_config.update(bridge_dict)
+        if self.macspoofchk:
+            spec_config["macspoofchk"] = self.macspoofchk
 
         res["spec"]["config"] = spec_config
         return res
@@ -386,6 +390,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         mtu=None,
         tuning_type=None,
         teardown=True,
+        macspoofchk=None,
     ):
         super().__init__(
             name=name,
@@ -396,6 +401,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
             client=client,
             mtu=mtu,
             teardown=teardown,
+            macspoofchk=macspoofchk,
         )
         self.tuning_type = tuning_type
 
@@ -587,6 +593,7 @@ def network_nad(
     vlan=None,
     mtu=None,
     ipam=None,
+    macspoofchk=None,
     sriov_resource_name=None,
     sriov_network_namespace=None,
 ):
@@ -600,6 +607,7 @@ def network_nad(
         kwargs["tuning_type"] = py_config["bridge_tuning"] if tuning else None
         kwargs["bridge_name"] = interface_name
         kwargs["mtu"] = mtu
+        kwargs["macspoofchk"] = macspoofchk
 
     if nad_type == SRIOV:
         kwargs["network_namespace"] = sriov_network_namespace
