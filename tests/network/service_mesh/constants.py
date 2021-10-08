@@ -20,11 +20,12 @@ SERVER_DEPLOYMENT_STRATEGY = {
     "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1},
     "type": "RollingUpdate",
 }
-SERVER_IMAGE = "quay.io/rhrazdil/server-demo"
+SERVER_IMAGE = "quay.io/openshift-cnv/qe-cnv-service-mesh-server-demo"
 SERVER_V1_IMAGE = f"{SERVER_IMAGE}:{VERSION_1_DEPLOYMENT}.0"
 SERVER_V2_IMAGE = f"{SERVER_IMAGE}:{VERSION_2_DEPLOYMENT}.0"
 GATEWAY_SELECTOR = {"istio": "ingressgateway"}
 PORT_80 = 80
+SSH_PORT = 22
 PORT_8080 = 8080
 HTTP_PROTOCOL = "HTTP"
 SERVICE_TYPE = "service"
@@ -33,3 +34,5 @@ DESTINATION_RULE_TYPE = "dr"
 VIRTUAL_SERVICE_TYPE = "vs"
 PEER_AUTHENTICATION_TYPE = "pa"
 DEPLOYMENT_TYPE = "dp"
+SM_VM_MEMORY_REQ = "128M"
+INGRESS_SERVICE = "istio-ingressgateway"
