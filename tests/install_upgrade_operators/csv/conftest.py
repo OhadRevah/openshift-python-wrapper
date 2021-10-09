@@ -59,3 +59,13 @@ def stable_channel_package_manifest(kubevirt_package_manifest, cnv_current_versi
         for channel in kubevirt_package_manifest.status.channels
         if kubevirt_version == cnv_current_version
     ]
+
+
+@pytest.fixture()
+def csv_annotation(csv):
+    """
+    Gets csv annotation for csv.ApiGroup.INFRA_FEATURES
+    """
+    return csv.instance.metadata.annotations.get(
+        f"{csv.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features"
+    )

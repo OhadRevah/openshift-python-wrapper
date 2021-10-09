@@ -82,3 +82,16 @@ def test_csv_properties(csv):
     annotations = csv.instance.metadata.annotations
     assert annotations.get("capabilities") == "Full Lifecycle"
     assert annotations.get("support") == "Red Hat"
+
+
+@pytest.mark.polarion("CNV-7297")
+def test_csv_fips_annotation(csv, csv_annotation):
+    """
+    Validates "fips" has been added to csv's operators.openshift.io/infrastructure-features annotation
+    """
+    expected_value = "fips"
+    assert expected_value in csv_annotation, (
+        f"For csv: {csv.name} annotation "
+        f"{csv.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features:"
+        f" {csv_annotation} does not contain expected value: {expected_value}"
+    )
