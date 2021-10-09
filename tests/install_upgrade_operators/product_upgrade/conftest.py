@@ -16,6 +16,7 @@ from pytest_testconfig import py_config
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities.constants import (
+    HOTPLUG_DISK_SERIAL,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
     TIMEOUT_30MIN,
@@ -34,6 +35,7 @@ from utilities.storage import (
     create_dv,
     get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
+    virtctl_volume,
 )
 from utilities.virt import (
     VirtualMachineForTests,
@@ -665,3 +667,44 @@ def snapshots_for_upgrade_b(
         vm=cirros_vm_for_upgrade_b, client=admin_client
     ) as snapshot:
         yield snapshot
+
+
+@pytest.fixture(scope="module")
+def blank_disk_dv_with_default_sc(namespace):
+    with create_dv(
+        source="blank",
+        dv_name="blank-dv",
+        namespace=namespace.name,
+        size="1Gi",
+        storage_class=py_config["default_storage_class"],
+        volume_mode=py_config["default_volume_mode"],
+        access_modes=py_config["default_access_mode"],
+    ) as dv:
+        yield dv
+
+
+@pytest.fixture(scope="module")
+def fedora_vm_for_hotplug_upg(namespace):
+    name = "fedora-hotplug-upg"
+    with VirtualMachineForTests(
+        name=name,
+        namespace=namespace.name,
+        body=fedora_vm_body(name=name),
+    ) as vm:
+        running_vm(vm=vm)
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def hotplug_volume_upg(fedora_vm_for_hotplug_upg):
+    with virtctl_volume(
+        action="add",
+        namespace=fedora_vm_for_hotplug_upg.namespace,
+        vm_name=fedora_vm_for_hotplug_upg.name,
+        volume_name="blank-dv",
+        persist=True,
+        serial=HOTPLUG_DISK_SERIAL,
+    ) as res:
+        status, out, err = res
+        assert status, f"Failed to add volume to VM, out: {out}, err: {err}."
+        yield

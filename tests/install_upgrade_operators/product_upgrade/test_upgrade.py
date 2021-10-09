@@ -15,7 +15,12 @@ from utilities.network import (
     get_vmi_mac_address_by_iface_name,
     verify_ovs_installed_with_annotations,
 )
-from utilities.storage import run_command_on_cirros_vm_and_check_output
+from utilities.storage import (
+    assert_disk_serial,
+    assert_hotplugvolume_nonexist_optional_restart,
+    run_command_on_cirros_vm_and_check_output,
+    wait_for_vm_volume_ready,
+)
 from utilities.virt import migrate_vm_and_verify, vm_console_run_commands
 
 
@@ -244,6 +249,22 @@ class TestUpgrade:
         snapshots_for_upgrade_b,
     ):
         assert snapshots_for_upgrade_b.instance.status.readyToUse
+
+    @pytest.mark.polarion("CNV-7258")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_vm_with_hotplug_before_upgrade")
+    def test_vm_with_hotplug_before_upgrade(
+        self,
+        namespace,
+        blank_disk_dv_with_default_sc,
+        fedora_vm_for_hotplug_upg,
+        hotplug_volume_upg,
+    ):
+        wait_for_vm_volume_ready(vm=fedora_vm_for_hotplug_upg)
+        assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
+        assert_hotplugvolume_nonexist_optional_restart(
+            vm=fedora_vm_for_hotplug_upg, restart=True
+        )
 
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
@@ -609,3 +630,21 @@ class TestUpgrade:
                 command=LS_COMMAND,
                 expected_result="1",
             )
+
+    @pytest.mark.polarion("CNV-5310")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=[
+            "test_upgrade_process",
+            "test_vm_with_hotplug_before_upgrade",
+        ]
+    )
+    def test_vm_with_hotplug_after_upgrade(
+        self,
+        namespace,
+        blank_disk_dv_with_default_sc,
+        fedora_vm_for_hotplug_upg,
+        hotplug_volume_upg,
+    ):
+        assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
+        assert_hotplugvolume_nonexist_optional_restart(vm=fedora_vm_for_hotplug_upg)

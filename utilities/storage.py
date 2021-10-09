@@ -1,6 +1,7 @@
 import logging
 import math
 import os
+import shlex
 import socket
 import ssl
 import threading
@@ -24,7 +25,9 @@ from pytest_testconfig import config as py_config
 
 from utilities import console
 from utilities.constants import (
+    HOTPLUG_DISK_SERIAL,
     OS_FLAVOR_WINDOWS,
+    TIMEOUT_2MIN,
     TIMEOUT_3MIN,
     TIMEOUT_5MIN,
     TIMEOUT_30MIN,
@@ -32,6 +35,7 @@ from utilities.constants import (
 )
 from utilities.infra import (
     get_admin_client,
+    run_ssh_commands,
     url_excluded_from_validation,
     validate_file_exists_in_url,
 )
@@ -43,6 +47,10 @@ DEFAULT_CDI_CONDITIONS = {
     Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
     Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
 }
+
+
+HOTPLUG_VOLUME = "hotplugVolume"
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -682,3 +690,29 @@ def run_command_on_cirros_vm_and_check_output(vm, command, expected_result):
     with console.Cirros(vm=vm) as vm_console:
         vm_console.sendline(command)
         vm_console.expect(expected_result, timeout=20)
+
+
+def assert_disk_serial(vm, command=shlex.split("sudo ls /dev/disk/by-id")):
+    assert (
+        HOTPLUG_DISK_SERIAL in run_ssh_commands(host=vm.ssh_exec, commands=command)[0]
+    ), f"hotplug disk serial id {HOTPLUG_DISK_SERIAL} is not in VM"
+
+
+def assert_hotplugvolume_nonexist_optional_restart(vm, restart=False):
+    if restart:
+        vm.restart(wait=True)
+    volume_status = vm.vmi.instance.status.volumeStatus[0]
+    assert (
+        HOTPLUG_VOLUME not in volume_status
+    ), f"{HOTPLUG_VOLUME} in {volume_status}, hotplug disk should become a regular disk for VM after restart"
+
+
+def wait_for_vm_volume_ready(vm):
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_2MIN,
+        sleep=1,
+        func=lambda: vm.vmi.instance,
+    )
+    for sample in sampler:
+        if sample.status.volumeStatus[0]["reason"] == "VolumeReady":
+            return

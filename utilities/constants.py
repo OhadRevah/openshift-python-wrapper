@@ -212,5 +212,9 @@ RHSM_PASSWD = "redhatredhat"
 
 # KUBECONFIG variables
 KUBECONFIG = "KUBECONFIG"
+
 # commands
 LS_COMMAND = "ls -1 | sort | tr '\n' ' '"
+
+# hotplug disk serial
+HOTPLUG_DISK_SERIAL = "1234567890"

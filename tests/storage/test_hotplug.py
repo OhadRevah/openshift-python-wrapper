@@ -5,49 +5,26 @@ import shlex
 
 import pytest
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.utils import TimeoutSampler
 
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS
 from tests.storage.utils import storage_params
-from utilities.constants import TIMEOUT_2MIN
+from utilities.constants import HOTPLUG_DISK_SERIAL
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_bug_status,
     get_bugzilla_connection_params,
-    run_ssh_commands,
 )
-from utilities.storage import create_dv, virtctl_volume
+from utilities.storage import (
+    assert_disk_serial,
+    assert_hotplugvolume_nonexist_optional_restart,
+    create_dv,
+    virtctl_volume,
+    wait_for_vm_volume_ready,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
-
-
-SERIAL = "1234567890"
-
-
-def vm_volume_ready(vm):
-    sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN,
-        sleep=1,
-        func=lambda: vm.vmi.instance,
-    )
-    for sample in sampler:
-        if sample.status.volumeStatus[0]["reason"] == "VolumeReady":
-            return
-
-
-def assert_disk_serial(vm, command=shlex.split("sudo ls /dev/disk/by-id")):
-    assert (
-        SERIAL in run_ssh_commands(host=vm.ssh_exec, commands=command)[0]
-    ), "hotplug disk serial id is not in VM"
-
-
-def assert_hotplugvolume_nonexist_after_restart(vm):
-    vm.restart(wait=True)
-    assert (
-        "hotplugVolume" not in vm.vmi.instance.status.volumeStatus[0]
-    ), "hotplug disk should become a regular disk for VM after restart"
 
 
 @pytest.fixture()
@@ -126,7 +103,7 @@ def test_hotplugvolumes_feature_gate(kubevirt_feature_gates):
 @pytest.mark.polarion("CNV-6013")
 @pytest.mark.parametrize(
     "hotplug_volume",
-    [{"serial": SERIAL}],
+    [{"serial": HOTPLUG_DISK_SERIAL}],
     indirect=True,
 )
 def test_hotplug_volume_with_serial(
@@ -136,7 +113,7 @@ def test_hotplug_volume_with_serial(
     fedora_vm_for_hotplug,
     hotplug_volume,
 ):
-    vm_volume_ready(vm=fedora_vm_for_hotplug)
+    wait_for_vm_volume_ready(vm=fedora_vm_for_hotplug)
     assert_disk_serial(vm=fedora_vm_for_hotplug)
 
 
@@ -153,15 +130,17 @@ def test_hotplug_volume_with_persist(
     fedora_vm_for_hotplug,
     hotplug_volume,
 ):
-    vm_volume_ready(vm=fedora_vm_for_hotplug)
-    assert_hotplugvolume_nonexist_after_restart(vm=fedora_vm_for_hotplug)
+    wait_for_vm_volume_ready(vm=fedora_vm_for_hotplug)
+    assert_hotplugvolume_nonexist_optional_restart(
+        vm=fedora_vm_for_hotplug, restart=True
+    )
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-6425")
 @pytest.mark.parametrize(
     "hotplug_volume",
-    [{"persist": True, "serial": SERIAL}],
+    [{"persist": True, "serial": HOTPLUG_DISK_SERIAL}],
     indirect=True,
 )
 def test_hotplug_volume_with_serial_and_persist(
@@ -171,9 +150,11 @@ def test_hotplug_volume_with_serial_and_persist(
     fedora_vm_for_hotplug,
     hotplug_volume,
 ):
-    vm_volume_ready(vm=fedora_vm_for_hotplug)
+    wait_for_vm_volume_ready(vm=fedora_vm_for_hotplug)
     assert_disk_serial(vm=fedora_vm_for_hotplug)
-    assert_hotplugvolume_nonexist_after_restart(vm=fedora_vm_for_hotplug)
+    assert_hotplugvolume_nonexist_optional_restart(
+        vm=fedora_vm_for_hotplug, restart=True
+    )
 
 
 @pytest.mark.tier3
@@ -194,7 +175,7 @@ def test_hotplug_volume_with_serial_and_persist(
                 "template_labels": WINDOWS_LATEST_LABELS,
             },
             {"os_version": WINDOWS_LATEST["os_version"]},
-            {"persist": True, "serial": SERIAL},
+            {"persist": True, "serial": HOTPLUG_DISK_SERIAL},
             marks=pytest.mark.polarion("CNV-6525"),
         ),
     ],
@@ -211,11 +192,12 @@ def test_windows_hotplug(
     started_windows_vm,
     hotplug_volume_windows,
 ):
-    vm_volume_ready(vm=vm_instance_from_template_multi_storage_scope_function)
+    wait_for_vm_volume_ready(vm=vm_instance_from_template_multi_storage_scope_function)
     assert_disk_serial(
         command=shlex.split("wmic diskdrive get SerialNumber"),
         vm=vm_instance_from_template_multi_storage_scope_function,
     )
-    assert_hotplugvolume_nonexist_after_restart(
-        vm=vm_instance_from_template_multi_storage_scope_function
+    assert_hotplugvolume_nonexist_optional_restart(
+        vm=vm_instance_from_template_multi_storage_scope_function,
+        restart=True,
     )
