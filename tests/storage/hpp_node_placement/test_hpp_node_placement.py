@@ -3,8 +3,7 @@
 """
 HPP Node Placement test suite
 """
-
-import re
+import logging
 from contextlib import contextmanager
 
 import pytest
@@ -16,21 +15,21 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from openshift.dynamic.exceptions import NotFoundError
-from pytest_testconfig import config as py_config
 
 from tests.storage.utils import check_disk_count_in_vm
 from utilities.constants import (
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
+    TIMEOUT_2MIN,
     TIMEOUT_5MIN,
-    TIMEOUT_10MIN,
     Images,
 )
 from utilities.hco import add_labels_to_nodes
-from utilities.infra import get_pod_by_name_prefix
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests, running_vm
 
+
+LOGGER = logging.getLogger(__name__)
 
 HPP_KEY = "hpp-key"
 HPP_VAL = "hpp-val1"
@@ -92,29 +91,17 @@ HPP_NODE_PLACEMENT_DICT = {
 }
 
 
-def wait_number_of_hpp_pods(client, number_of_pods):
+def wait_for_desired_hpp_pods_running(hpp_daemonset, number_of_pods):
+    LOGGER.info(f"Wait for {number_of_pods} hpp pods to be running")
     for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=3,
-        func=get_pod_by_name_prefix,
-        dyn_client=client,
-        namespace=py_config["hco_namespace"],
-        pod_prefix=re.compile("hostpath-provisioner-(?!operator).*"),
-        get_all=True,
+        wait_timeout=TIMEOUT_2MIN,
+        sleep=1,
+        func=lambda: hpp_daemonset.instance.status.desiredNumberScheduled
+        == number_of_pods,
     ):
-        # wait to all hpp pods to be deleted beside 1
-        if len(sample) == number_of_pods:
-            return sample
-
-
-def wait_hpp_pods_deleted(client):
-    wait_number_of_hpp_pods(client=client, number_of_pods=1)
-
-
-def wait_hpp_pods_restored(client):
-    hpp_pods = wait_number_of_hpp_pods(client=client, number_of_pods=3)
-    for pod in hpp_pods:
-        pod.wait_for_status(status=pod.Status.RUNNING, timeout=TIMEOUT_10MIN)
+        if sample:
+            hpp_daemonset.wait_until_deployed()
+            break
 
 
 @contextmanager
@@ -177,7 +164,13 @@ def update_node_labels(worker_node1):
 
 @pytest.fixture()
 def updated_hpp_with_node_placement(
-    worker_node2, worker_node3, hostpath_provisioner, request, admin_client
+    worker_node2,
+    worker_node3,
+    hostpath_provisioner,
+    request,
+    admin_client,
+    hpp_daemonset,
+    schedulable_nodes,
 ):
     node_placement_type = request.param["type"]
     with ResourceEditor(
@@ -187,12 +180,21 @@ def updated_hpp_with_node_placement(
             with update_node_taint(node=worker_node2), update_node_taint(
                 node=worker_node3
             ):
-                wait_hpp_pods_deleted(client=admin_client)
+                # Wait for 1 hpp pod to be running, and for others to be deleted
+                wait_for_desired_hpp_pods_running(
+                    hpp_daemonset=hpp_daemonset, number_of_pods=1
+                )
                 yield updated_resource
         else:
-            wait_hpp_pods_deleted(client=admin_client)
+            # Wait for 1 hpp pod to be running, and for others to be deleted
+            wait_for_desired_hpp_pods_running(
+                hpp_daemonset=hpp_daemonset, number_of_pods=1
+            )
             yield updated_resource
-    wait_hpp_pods_restored(client=admin_client)
+    # Wait for hpp pods to be restored
+    wait_for_desired_hpp_pods_running(
+        hpp_daemonset=hpp_daemonset, number_of_pods=len(schedulable_nodes)
+    )
 
 
 @pytest.mark.destructive
@@ -282,6 +284,8 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
     admin_client,
     namespace,
     update_node_labels,
+    hpp_daemonset,
+    schedulable_nodes,
 ):
     with cirros_vm_on_hpp(
         dv_name="dv-5601",
@@ -295,9 +299,15 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
         with ResourceEditor(
             patches={hostpath_provisioner: HPP_NODE_PLACEMENT_DICT["node_selector"]}
         ):
-            wait_hpp_pods_deleted(client=admin_client)
+            # Wait for 1 hpp pod to be running, and for others to be deleted
+            wait_for_desired_hpp_pods_running(
+                hpp_daemonset=hpp_daemonset, number_of_pods=1
+            )
             check_disk_count_in_vm(vm=vm)
-    wait_hpp_pods_restored(client=admin_client)
+    # Wait for hpp pods to be restored
+    wait_for_desired_hpp_pods_running(
+        hpp_daemonset=hpp_daemonset, number_of_pods=len(schedulable_nodes)
+    )
 
 
 @pytest.mark.post_upgrade
@@ -309,6 +319,8 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
     admin_client,
     namespace,
     update_node_labels,
+    hpp_daemonset,
+    schedulable_nodes,
 ):
     dv_name = "dv-5616"
     with cirros_vm_on_hpp(
@@ -341,9 +353,15 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
         with ResourceEditor(
             patches={hostpath_provisioner: HPP_NODE_PLACEMENT_DICT["node_selector"]}
         ):
-            wait_hpp_pods_deleted(client=admin_client)
+            # Wait for 1 hpp pod to be running, and for others to be deleted
+            wait_for_desired_hpp_pods_running(
+                hpp_daemonset=hpp_daemonset, number_of_pods=1
+            )
             vm.delete(wait=True)
             pvc.wait_deleted()
             pv.wait_for_status(status=PersistentVolume.Status.RELEASED)
         pv.wait_deleted()
-    wait_hpp_pods_restored(client=admin_client)
+    # Wait for hpp pods to be restored
+    wait_for_desired_hpp_pods_running(
+        hpp_daemonset=hpp_daemonset, number_of_pods=len(schedulable_nodes)
+    )

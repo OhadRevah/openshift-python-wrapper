@@ -11,7 +11,6 @@ from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
-from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
@@ -140,14 +139,6 @@ def hpp_clusterrole():
 @pytest.fixture(scope="module")
 def hpp_clusterrolebinding():
     yield ClusterRoleBinding(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
-
-
-@pytest.fixture(scope="module")
-def hpp_daemonset(hco_namespace):
-    yield DaemonSet(
-        name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
-        namespace=hco_namespace.name,
-    )
 
 
 @pytest.fixture(scope="module")

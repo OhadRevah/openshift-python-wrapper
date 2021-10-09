@@ -10,8 +10,10 @@ import os
 
 import pytest
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
+from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
@@ -398,3 +400,13 @@ def enabled_ca(temp_router_cert):
     yield
     os.popen(f"sudo rm {ca_path}{ROUTER_CERT_NAME}")
     os.popen(update_ca_trust_command)
+
+
+@pytest.fixture(scope="session")
+def hpp_daemonset(hco_namespace):
+    daemonset = DaemonSet(
+        name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
+        namespace=hco_namespace.name,
+    )
+    assert daemonset.exists, "hpp_daemonset does not exist"
+    yield daemonset
