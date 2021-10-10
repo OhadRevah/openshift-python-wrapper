@@ -118,7 +118,10 @@ def updated_cdi_with_feature_gates(request, cdi_resource, admin_client, hco_name
 
 @pytest.fixture()
 def hco_with_non_default_feature_gates(
-    request, admin_client, hco_namespace, hyperconverged_resource_scope_function
+    request,
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource_scope_function,
 ):
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
     new_fgs = request.param["fgs"]
@@ -145,13 +148,13 @@ def hco_with_non_default_feature_gates(
 
 @pytest.fixture()
 def cr_func_map(
-    hyperconverged_resource_scope_function,
+    hco_spec,
     kubevirt_hyperconverged_spec_scope_function,
     cdi_spec,
     network_addons_config,
 ):
     yield {
-        "hco": hyperconverged_resource_scope_function.instance.to_dict()["spec"],
+        "hco": hco_spec,
         "kubevirt": kubevirt_hyperconverged_spec_scope_function,
         "cdi": cdi_spec,
         "cnao": network_addons_config.instance.to_dict(),
