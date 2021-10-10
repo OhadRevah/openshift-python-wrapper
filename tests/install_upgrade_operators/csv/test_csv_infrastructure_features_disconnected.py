@@ -12,7 +12,7 @@ def test_csv_infrastructure_features_disconnected(csv):
     """
     csv_annotations = ast.literal_eval(
         node_or_string=csv.instance.metadata.annotations[
-            "operators.openshift.io/infrastructure-features"
+            f"{csv.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features"
         ]
     )
     for infra_feature in csv_annotations:
