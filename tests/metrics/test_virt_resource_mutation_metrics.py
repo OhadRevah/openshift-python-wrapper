@@ -13,7 +13,7 @@ from ocp_resources.service import Service
 from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.virtual_machine_import_configs import VMImportConfig
+from ocp_resources.vm_import_config import VMImportConfig
 
 from tests.metrics.utils import (
     get_all_hco_cr_modification_alert,

@@ -15,7 +15,7 @@ from ocp_resources.route import Route
 from ocp_resources.service import Service
 from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
-from ocp_resources.virtual_machine_import_configs import VMImportConfig
+from ocp_resources.vm_import_config import VMImportConfig
 
 
 CLUSTER_SCOPE_RESOURCES = [

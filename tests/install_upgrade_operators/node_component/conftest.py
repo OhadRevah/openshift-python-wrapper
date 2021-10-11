@@ -5,7 +5,7 @@ from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.ssp import SSP
 from ocp_resources.subscription import Subscription
-from ocp_resources.virtual_machine_import_configs import VMImportConfig
+from ocp_resources.vm_import_config import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
     CNV_OPERATOR_PODS_COMPONENTS,
