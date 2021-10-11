@@ -1,0 +1,193 @@
+import logging
+import shlex
+from collections import OrderedDict
+
+import pytest
+from ocp_resources.utils import TimeoutSampler
+
+from utilities.constants import TIMEOUT_30SEC
+from utilities.infra import name_prefix, run_ssh_commands
+from utilities.network import (
+    LINUX_BRIDGE,
+    assert_ping_successful,
+    compose_cloud_init_data_dict,
+    get_vmi_ip_v4_by_name,
+    network_device,
+    network_nad,
+)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+
+
+ETH1_INTERFACE_NAME = "eth1"
+BRIDGE_NAME = "br1macspoof"
+MAC_ADDRESS_SPOOF = "02:00:b5:b5:b5:c9"
+
+LOGGER = logging.getLogger(__name__)
+
+
+def _networks_data(nad, ip):
+    networks = OrderedDict()
+    networks[nad.name] = f"{nad.name}"
+    network_data_data = {
+        "ethernets": {
+            ETH1_INTERFACE_NAME: {"addresses": [ip]},
+        }
+    }
+    return networks, network_data_data
+
+
+def get_vm_bridge_network_mac(vm):
+    return run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[shlex.split(f"cat /sys/class/net/{ETH1_INTERFACE_NAME}/address")],
+    )[0].strip()
+
+
+def set_vm_interface_network_mac(vm, mac):
+    run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[
+            shlex.split(f"sudo ip link set dev {ETH1_INTERFACE_NAME} address {mac}")
+        ],
+    )
+    LOGGER.info(f"wait for {vm.name} {ETH1_INTERFACE_NAME}  mac to be {mac}")
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_30SEC, sleep=1, func=get_vm_bridge_network_mac, vm=vm
+    ):
+        if sample == mac:
+            return
+
+
+@pytest.fixture()
+def linux_bridge_device_worker_1(
+    skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node1
+):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"bridge-{name_prefix(worker_node1.hostname)}",
+        interface_name=BRIDGE_NAME,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.hostname,
+        ports=[nodes_available_nics[worker_node1.hostname][0]],
+    ) as br_dev:
+        yield br_dev
+
+
+@pytest.fixture()
+def linux_bridge_device_worker_2(
+    skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node2
+):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"bridge-{name_prefix(worker_node2.hostname)}",
+        interface_name=BRIDGE_NAME,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.hostname,
+        ports=[nodes_available_nics[worker_node2.hostname][0]],
+    ) as br_dev:
+        yield br_dev
+
+
+@pytest.fixture()
+def linux_macspoof_nad(
+    namespace,
+    linux_bridge_device_worker_1,
+    linux_bridge_device_worker_2,
+):
+    with network_nad(
+        namespace=namespace,
+        nad_type=linux_bridge_device_worker_1.bridge_type,
+        nad_name=linux_bridge_device_worker_1.bridge_name,
+        interface_name=linux_bridge_device_worker_1.iface["name"],
+        macspoofchk=True,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture()
+def linux_bridge_attached_vma(
+    worker_node1,
+    unprivileged_client,
+    linux_macspoof_nad,
+):
+    name = "vma"
+    networks, network_data_data = _networks_data(
+        nad=linux_macspoof_nad, ip="10.200.0.1/24"
+    )
+    cloud_init_data = compose_cloud_init_data_dict(
+        network_data=network_data_data,
+    )
+
+    with VirtualMachineForTests(
+        namespace=linux_macspoof_nad.namespace,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=worker_node1.hostname,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture()
+def linux_bridge_attached_vmb(
+    worker_node2,
+    unprivileged_client,
+    linux_macspoof_nad,
+):
+    name = "vmb"
+    networks, network_data_data = _networks_data(
+        nad=linux_macspoof_nad, ip="10.200.0.2/24"
+    )
+    cloud_init_data = compose_cloud_init_data_dict(
+        network_data=network_data_data,
+    )
+
+    with VirtualMachineForTests(
+        namespace=linux_macspoof_nad.namespace,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=worker_node2.hostname,
+        cloud_init_data=cloud_init_data,
+        client=unprivileged_client,
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture()
+def linux_bridge_attached_running_vma(linux_bridge_attached_vma):
+    return running_vm(vm=linux_bridge_attached_vma)
+
+
+@pytest.fixture()
+def linux_bridge_attached_running_vmb(linux_bridge_attached_vmb):
+    return running_vm(vm=linux_bridge_attached_vmb)
+
+
+@pytest.fixture()
+def vmb_ip_address(linux_bridge_device_worker_1, linux_bridge_attached_running_vmb):
+    return get_vmi_ip_v4_by_name(
+        vm=linux_bridge_attached_running_vmb,
+        name=linux_bridge_device_worker_1.bridge_name,
+    )
+
+
+@pytest.fixture()
+def ping_vmb_from_vma(vmb_ip_address, linux_bridge_attached_running_vma):
+    assert_ping_successful(
+        src_vm=linux_bridge_attached_running_vma,
+        dst_ip=vmb_ip_address,
+    )
+
+
+@pytest.fixture()
+def vma_interface_spoofed_mac(linux_bridge_attached_vma):
+    return set_vm_interface_network_mac(
+        vm=linux_bridge_attached_vma, mac=MAC_ADDRESS_SPOOF
+    )
