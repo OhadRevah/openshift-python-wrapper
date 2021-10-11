@@ -1,9 +1,6 @@
-import os
-
 import pytest_testconfig
-from ocp_resources.template import Template
 
-from utilities.constants import Images
+from utilities.infra import generate_latest_os_dict
 
 
 global config
@@ -26,19 +23,9 @@ storage_class_matrix = [
 ]
 
 fedora_os_matrix = [
-    {
-        "fedora-33": {
-            "image_name": Images.Fedora.FEDORA33_IMG,
-            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA33_IMG),
-            "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "fedora33",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
+    generate_latest_os_dict(os_list=config["fedora_os_matrix"])  # noqa: F821
 ]
+
 for _dir in dir():
     val = locals()[_dir]
     if type(val) not in [bool, list, dict, str]:
