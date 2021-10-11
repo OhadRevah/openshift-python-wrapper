@@ -5,7 +5,6 @@
 
 import logging
 import re
-import shlex
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -13,14 +12,12 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
+from pytest_testconfig import py_config
+from rrmngmnt import power_manager
 
+from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import run_ssh_commands
-from utilities.virt import (
-    migrate_vm_and_verify,
-    wait_for_ssh_connectivity,
-    wait_for_vm_interfaces,
-)
+from utilities.virt import migrate_vm_and_verify, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -98,17 +95,18 @@ def skip_run_strategy_halted(run_strategy_matrix__class__):
 
 
 def updated_vm_run_strategy(run_strategy, vm_for_test):
-    LOGGER.info(f"Update VM with runStrategy {run_strategy}")
+    if vm_for_test.instance.spec.runStrategy != run_strategy:
+        LOGGER.info(f"Update VM with runStrategy {run_strategy}")
 
-    if (
-        vm_for_test.vmi.exists
-        and vm_for_test.vmi.status == VirtualMachineInstance.Status.RUNNING
-    ):
-        vm_for_test.stop(wait=True)
+        if (
+            vm_for_test.vmi.exists
+            and vm_for_test.vmi.status == VirtualMachineInstance.Status.RUNNING
+        ):
+            vm_for_test.stop(wait=True)
 
-    ResourceEditor(
-        patches={vm_for_test: {"spec": {"runStrategy": run_strategy}}}
-    ).update()
+        ResourceEditor(
+            patches={vm_for_test: {"spec": {"runStrategy": run_strategy}}}
+        ).update()
     return run_strategy
 
 
@@ -130,29 +128,7 @@ def request_updated_vm_run_strategy(request, lifecycle_vm):
 
 @pytest.fixture()
 def start_vm_if_not_running(lifecycle_vm):
-
-    vm_run_strategy = lifecycle_vm.instance.spec.runStrategy
-
-    if not lifecycle_vm.ready:
-        # runStrategy policy acc. to vm's current run strategy
-        run_strategy_policy = RUN_STRATEGY_DICT[vm_run_strategy]["start"]
-        LOGGER.info(f"Starting VM {lifecycle_vm.name}")
-        run_vm_action(
-            vm=lifecycle_vm,
-            vm_action="start",
-            expected_exceptions=run_strategy_policy.get("expected_exceptions"),
-        )
-
-    lifecycle_vm.vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=lifecycle_vm.vmi)
-    wait_for_ssh_connectivity(vm=lifecycle_vm)
-
-
-@pytest.fixture(scope="module")
-def stop_vm_if_running(lifecycle_vm):
-    # Tests should start with a stopped VM
-    if lifecycle_vm.ready:
-        lifecycle_vm.stop(wait=True)
+    running_vm(vm=lifecycle_vm)
 
 
 def run_vm_action(vm, vm_action, expected_exceptions=None):
@@ -188,7 +164,7 @@ def verify_vm_vmi_status(vm, ready):
     LOGGER.info(f"Verify VMI status: {ready}")
     vm.wait_for_status(status=ready, timeout=TIMEOUT_10MIN)
     if ready:
-        vm.vmi.wait_for_status(status=VirtualMachineInstance.Status.RUNNING)
+        running_vm(vm=vm)
 
 
 def verify_vm_run_strategy(vm, run_strategy):
@@ -209,7 +185,9 @@ def verify_vm_action(vm, vm_action, run_strategy):
 
 def pause_unpause_vmi_and_verify_status(vm):
     vm.vmi.pause(wait=True)
-    verify_vm_vmi_status(vm=vm, ready=True)
+    assert (
+        vm.printable_status == vm.Status.PAUSED
+    ), f"VM is not paused, status: {vm.printable_status}"
     vm.vmi.unpause(wait=True)
     verify_vm_vmi_status(vm=vm, ready=True)
 
@@ -222,7 +200,26 @@ def migrate_validate_run_strategy_vm(vm, run_strategy):
     verify_vm_run_strategy(vm=vm, run_strategy=run_strategy)
 
 
-@pytest.mark.usefixtures("stop_vm_if_running")
+def shutdown_vm_guest_os(vm):
+    LOGGER.info(f"Powering off {vm.name}")
+    host = vm.ssh_exec
+    host.sudo = True
+    host.add_power_manager(pm_type=power_manager.SSH_TYPE)
+    host.power_manager.poweroff()
+
+
+@pytest.mark.parametrize(
+    "golden_image_data_volume_scope_module",
+    [
+        {
+            "dv_name": RHEL_LATEST_OS,
+            "image": RHEL_LATEST["image_path"],
+            "dv_size": RHEL_LATEST["dv_size"],
+            "storage_class": py_config["default_storage_class"],
+        },
+    ],
+    indirect=True,
+)
 class TestRunStrategy:
     @pytest.mark.parametrize(
         "vm_action",
@@ -232,7 +229,6 @@ class TestRunStrategy:
             pytest.param("stop", marks=pytest.mark.polarion("CNV-4687")),
         ],
     )
-    @pytest.mark.order("first")
     def test_run_strategy_policy(
         self,
         lifecycle_vm,
@@ -248,6 +244,7 @@ class TestRunStrategy:
             run_strategy=matrix_updated_vm_run_strategy,
         )
 
+    @pytest.mark.order(after="test_run_strategy_policy")
     @pytest.mark.polarion("CNV-5054")
     def test_run_strategy_shutdown(
         self,
@@ -261,10 +258,7 @@ class TestRunStrategy:
         run_strategy = matrix_updated_vm_run_strategy
         status = RUN_STRATEGY_SHUTDOWN_STATUS[run_strategy]
 
-        # Send poweroff
-        run_ssh_commands(
-            host=lifecycle_vm.ssh_exec, commands=shlex.split("sudo poweroff")
-        )
+        shutdown_vm_guest_os(vm=lifecycle_vm)
 
         # runStrategy "Always" first terminates the pod, then re-raises it
         # The other two runStrategies go directly to completed
@@ -275,68 +269,56 @@ class TestRunStrategy:
         vmi.wait_for_status(status=status["vmi"])
         vmi.virt_launcher_pod.wait_for_status(status=status["launcher_pod"])
 
-
-@pytest.mark.parametrize(
-    "request_updated_vm_run_strategy",
-    [
-        pytest.param(
-            {"run_strategy": MANUAL},
-            marks=pytest.mark.polarion("CNV-4688"),
-            id="Manual",
-        ),
-        pytest.param(
-            {"run_strategy": ALWAYS},
-            marks=pytest.mark.polarion("CNV-4689"),
-            id="Always",
-        ),
-    ],
-    indirect=True,
-)
-def test_run_strategy_pause_unpause_vmi(
-    lifecycle_vm, request_updated_vm_run_strategy, start_vm_if_not_running
-):
-    LOGGER.info(
-        f"Verify VMI pause/un-pause with runStrategy: {request_updated_vm_run_strategy}"
+    @pytest.mark.order(after="test_run_strategy_policy")
+    @pytest.mark.parametrize(
+        "request_updated_vm_run_strategy",
+        [
+            pytest.param(
+                {"run_strategy": MANUAL},
+                marks=pytest.mark.polarion("CNV-4688"),
+                id="Manual",
+            ),
+            pytest.param(
+                {"run_strategy": ALWAYS},
+                marks=pytest.mark.polarion("CNV-4689"),
+                id="Always",
+            ),
+        ],
+        indirect=True,
     )
-    pause_unpause_vmi_and_verify_status(vm=lifecycle_vm)
-
-
-@pytest.mark.parametrize(
-    "request_updated_vm_run_strategy",
-    [
-        pytest.param(
-            {"run_strategy": ALWAYS},
-            marks=pytest.mark.polarion("CNV-4690"),
-            id="Always",
+    def test_run_strategy_pause_unpause_vmi(
+        self, lifecycle_vm, request_updated_vm_run_strategy, start_vm_if_not_running
+    ):
+        LOGGER.info(
+            f"Verify VMI pause/un-pause with runStrategy: {request_updated_vm_run_strategy}"
         )
-    ],
-    indirect=True,
-)
-def test_always_run_migrate_vm(
-    skip_upstream,
-    skip_rwo_default_access_mode,
-    lifecycle_vm,
-    request_updated_vm_run_strategy,
-):
-    migrate_validate_run_strategy_vm(vm=lifecycle_vm, run_strategy=ALWAYS)
+        pause_unpause_vmi_and_verify_status(vm=lifecycle_vm)
 
-
-@pytest.mark.parametrize(
-    "request_updated_vm_run_strategy",
-    [
-        pytest.param(
-            {"run_strategy": MANUAL},
-            marks=pytest.mark.polarion("CNV-5893"),
-            id="Manual",
+    @pytest.mark.order(after="test_run_strategy_policy")
+    @pytest.mark.parametrize(
+        "request_updated_vm_run_strategy",
+        [
+            pytest.param(
+                {"run_strategy": ALWAYS},
+                marks=pytest.mark.polarion("CNV-4690"),
+                id="Always",
+            ),
+            pytest.param(
+                {"run_strategy": MANUAL},
+                marks=pytest.mark.polarion("CNV-5893"),
+                id="Manual",
+            ),
+        ],
+        indirect=True,
+    )
+    def test_run_strategy_migrate_vm(
+        self,
+        skip_upstream,
+        skip_rwo_default_access_mode,
+        lifecycle_vm,
+        request_updated_vm_run_strategy,
+        start_vm_if_not_running,
+    ):
+        migrate_validate_run_strategy_vm(
+            vm=lifecycle_vm, run_strategy=request_updated_vm_run_strategy
         )
-    ],
-    indirect=True,
-)
-def test_manual_run_migrate_vm(
-    skip_upstream,
-    skip_rwo_default_access_mode,
-    lifecycle_vm,
-    request_updated_vm_run_strategy,
-    start_vm_if_not_running,
-):
-    migrate_validate_run_strategy_vm(vm=lifecycle_vm, run_strategy=MANUAL)
