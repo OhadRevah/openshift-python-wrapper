@@ -3,22 +3,18 @@ import logging
 import shlex
 from contextlib import contextmanager
 
-from benedict import benedict
 from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from utilities.constants import RHSM_PASSWD, RHSM_USER
-from utilities.hco import get_hyperconverged_resource
 from utilities.infra import (
     base64_encode_str,
     hco_cr_jsonpatch_annotations_dict,
     run_ssh_commands,
 )
 from utilities.virt import (
-    get_kubevirt_hyperconverged_spec,
     migrate_vm_and_verify,
     prepare_cloud_init_user_data,
     wait_for_ssh_connectivity,
@@ -200,49 +196,6 @@ def scale_deployment_replicas(deployment_name, namespace, replica_count):
     yield
     deployment.scale_replicas(replica_count=initial_replicas)
     deployment.wait_for_replicas(deployed=initial_replicas > 0)
-
-
-def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=15):
-    """
-    Waits for updated values in KV CR configuration
-
-    Args:
-        admin_client (:obj:`DynamicClient`): DynamicClient object
-        hco_namespace (:obj:`Namespace`): HCO namespace object
-        path (list): list of nested keys to be looked up in KV CR configuration dict
-        value (any): the expected value of the last key in path
-
-    Example:
-        path - ['minCPUModel'], value - 'Haswell-noTSX'
-        {"configuration": {"minCPUModel": "Haswell-noTSX"}} will be matched against KV CR spec.
-
-    Raises:
-        TimeoutExpiredError: After timeout is reached if the expected key value does not match the actual value
-    """
-    base_path = ["configuration"]
-    base_path.extend(path)
-    samples = TimeoutSampler(
-        wait_timeout=timeout,
-        sleep=1,
-        func=lambda: benedict(
-            get_kubevirt_hyperconverged_spec(
-                admin_client=admin_client, hco_namespace=hco_namespace
-            ),
-            keypath_separator=None,
-        ).get(base_path),
-    )
-    try:
-        for sample in samples:
-            if sample and sample == value:
-                break
-    except TimeoutExpiredError:
-        hco_annotations = get_hyperconverged_resource(
-            client=admin_client, hco_ns_name=hco_namespace.name
-        ).instance.metadata.annotations
-        LOGGER.error(
-            f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
-        )
-        raise
 
 
 def verify_pods_priority_class_value(pods, expected_value):

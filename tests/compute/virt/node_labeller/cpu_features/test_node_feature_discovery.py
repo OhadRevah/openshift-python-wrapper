@@ -5,9 +5,14 @@ from xml.etree import ElementTree
 
 import pytest
 
-from tests.compute.utils import update_hco_annotations, wait_for_updated_kv_value
+from tests.compute.utils import update_hco_annotations
 from tests.compute.virt.node_labeller.constants import CPU_MODEL_LABEL_PREFIX
-from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    fedora_vm_body,
+    running_vm,
+    wait_for_updated_kv_value,
+)
 
 
 MIN_CPU = "minCPUModel"

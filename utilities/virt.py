@@ -17,6 +17,7 @@ import pexpect
 import requests
 import rrmngmnt
 import yaml
+from benedict import benedict
 from kubernetes.client import ApiException
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.kubevirt import KubeVirt
@@ -61,6 +62,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import CommandExecFailed
+from utilities.hco import get_hyperconverged_resource
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     ClusterHosts,
@@ -71,14 +73,6 @@ from utilities.infra import (
     get_bug_status,
     run_ssh_commands,
 )
-
-
-DEFAULT_KUBEVIRT_CONDITIONS = {
-    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
-    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
-    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
-    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
-}
 
 
 LOGGER = logging.getLogger(__name__)
@@ -2149,3 +2143,47 @@ def get_template_by_labels(admin_client, template_labels):
     ), f"{matched_templates} templates found which match {template_labels} labels"
 
     return template[0]
+
+
+def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=15):
+    """
+    Waits for updated values in KV CR configuration
+
+    Args:
+        admin_client (:obj:`DynamicClient`): DynamicClient object
+        hco_namespace (:obj:`Namespace`): HCO namespace object
+        path (list): list of nested keys to be looked up in KV CR configuration dict
+        value (any): the expected value of the last key in path
+        timeout (int): timeout in seconds
+
+    Example:
+        path - ['minCPUModel'], value - 'Haswell-noTSX'
+        {"configuration": {"minCPUModel": "Haswell-noTSX"}} will be matched against KV CR spec.
+
+    Raises:
+        TimeoutExpiredError: After timeout is reached if the expected key value does not match the actual value
+    """
+    base_path = ["configuration"]
+    base_path.extend(path)
+    samples = TimeoutSampler(
+        wait_timeout=timeout,
+        sleep=1,
+        func=lambda: benedict(
+            get_kubevirt_hyperconverged_spec(
+                admin_client=admin_client, hco_namespace=hco_namespace
+            ),
+            keypath_separator=None,
+        ).get(base_path),
+    )
+    try:
+        for sample in samples:
+            if sample and sample == value:
+                break
+    except TimeoutExpiredError:
+        hco_annotations = get_hyperconverged_resource(
+            client=admin_client, hco_ns_name=hco_namespace.name
+        ).instance.metadata.annotations
+        LOGGER.error(
+            f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
+        )
+        raise

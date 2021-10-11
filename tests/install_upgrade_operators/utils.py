@@ -10,7 +10,7 @@ from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
-from ocp_resources.resource import ResourceEditor
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
@@ -22,9 +22,14 @@ from utilities.infra import (
     wait_for_consistent_resource_conditions,
 )
 from utilities.storage import DEFAULT_CDI_CONDITIONS
-from utilities.virt import DEFAULT_KUBEVIRT_CONDITIONS
 
 
+DEFAULT_KUBEVIRT_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
 LOGGER = logging.getLogger(__name__)
 
 

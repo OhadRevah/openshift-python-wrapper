@@ -8,7 +8,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import MachineTypesNames
-from tests.compute.utils import update_hco_annotations, wait_for_updated_kv_value
+from tests.compute.utils import update_hco_annotations
 from tests.os_params import (
     RHEL_6_10_TEMPLATE_LABELS,
     RHEL_7_6,
@@ -20,6 +20,7 @@ from utilities.virt import (
     fedora_vm_body,
     migrate_vm_and_verify,
     running_vm,
+    wait_for_updated_kv_value,
     wait_for_vm_interfaces,
 )
 

@@ -1,12 +1,9 @@
 import logging
 from contextlib import contextmanager
 
-from tests.compute.utils import (
-    fetch_processid_from_linux_vm,
-    update_hco_annotations,
-    wait_for_updated_kv_value,
-)
+from tests.compute.utils import fetch_processid_from_linux_vm, update_hco_annotations
 from utilities.infra import run_ssh_commands
+from utilities.virt import wait_for_updated_kv_value
 
 
 LOGGER = logging.getLogger(__name__)
