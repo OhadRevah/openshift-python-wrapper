@@ -64,8 +64,14 @@ fcfn_exclude_functions =
     getoption,
     tmp_path_factory,
 
+
+nift_exclude_imports =
+    os_params,
+
+
 enable-extensions =
     PID,
     FCFN,
     UFN,
     NIFC,
+    NIFT,
