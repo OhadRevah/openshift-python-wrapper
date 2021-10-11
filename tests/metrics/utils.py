@@ -5,6 +5,7 @@ import urllib
 from collections import Counter, defaultdict
 
 from ocp_resources.pod import Pod
+from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -662,7 +663,10 @@ def get_prometheus_monitoring_pods(admin_client):
             dyn_client=admin_client,
             namespace="openshift-monitoring",
             label_selector=(
-                "app.kubernetes.io/name in (prometheus-operator, prometheus, prometheus-adapter)"
+                (
+                    f"{Resource.ApiGroup.APP_KUBERNETES_IO}/name in "
+                    "(prometheus-operator, prometheus, prometheus-adapter)"
+                )
             ),
         )
     )

@@ -17,7 +17,7 @@ from tests.metrics.utils import (
     run_node_command,
     run_vm_commands,
 )
-from utilities.constants import TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.infra import create_ns
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
@@ -296,7 +296,7 @@ def metrics_sanity(admin_client, prometheus_module):
     """
     LOGGER.info("Verify that Prometheus pods exist and running as expected")
     samples = TimeoutSampler(
-        wait_timeout=120,
+        wait_timeout=TIMEOUT_2MIN,
         sleep=1,
         func=get_not_running_prometheus_pods,
         admin_client=admin_client,
