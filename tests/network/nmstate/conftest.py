@@ -14,10 +14,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def node_management_iface_stats_node(nodes_active_nics, worker_node1, worker_node2):
+def worker_nodes_management_iface_stats(nodes_active_nics, worker_node1, worker_node2):
     """
-    This function will return a dictionary where  host node name for 2  workers is the
-    key and value is another dictionary consist of worker iface_name as key.
+    The fixture create a daictionary containing the host node name and the iface_name:
+        node_stats = {
+            'n-awax-49-8-v6cnv-worker-0-qsb45': {'iface_name': 'ens3'},
+            'n-awax-49-8-v6cnv-worker-0-tgxlk': {'iface_name': 'ens3'}
+        }
     """
     node_stats = {}
     for worker in worker_node1, worker_node2:
@@ -66,17 +69,15 @@ def running_nmstate_vmb(nmstate_vmb):
 
 
 @pytest.fixture(scope="module")
-def bridges_on_management_ifaces_node1(
+def bridge_on_management_ifaces_node1(
     utility_pods,
-    node_management_iface_stats_node,
+    worker_nodes_management_iface_stats,
     worker_node1,
 ):
-    """
-    This function will return a dictionary where  host node name of worker0 is the  key
-    and value is another dictionary consist of worker0 iface_name and worker0 host ip as key.
-    """
-    # Assuming for now all nodes has the same management interface name
-    management_iface = node_management_iface_stats_node[worker_node1.name]["iface_name"]
+    # Assuming for now all nodes have the same management interface name
+    management_iface = worker_nodes_management_iface_stats[worker_node1.name][
+        "iface_name"
+    ]
     worker_pod = get_worker_pod(utility_pods=utility_pods, worker_node=worker_node1)
     with network_device(
         interface_type=LINUX_BRIDGE,
@@ -89,21 +90,24 @@ def bridges_on_management_ifaces_node1(
         ipv4_enable=True,
         ipv4_dhcp=True,
     ) as br_dev:
-        # Wait for bridget to get management ip
+        # Wait for bridge to get management IP
         wait_for_address_on_iface(worker_pod=worker_pod, iface_name=br_dev.bridge_name)
         yield br_dev
-    # Verify Ip is back to the port
+
+    # Verify IP is back to the port
     wait_for_address_on_iface(worker_pod=worker_pod, iface_name=management_iface)
 
 
 @pytest.fixture(scope="module")
-def bridges_on_management_ifaces_node2(
+def bridge_on_management_ifaces_node2(
     utility_pods,
-    node_management_iface_stats_node,
+    worker_nodes_management_iface_stats,
     worker_node2,
 ):
     # Assuming for now all nodes has the same management interface name
-    management_iface = node_management_iface_stats_node[worker_node2.name]["iface_name"]
+    management_iface = worker_nodes_management_iface_stats[worker_node2.name][
+        "iface_name"
+    ]
     worker_pod = get_worker_pod(utility_pods=utility_pods, worker_node=worker_node2)
     with network_device(
         interface_type=LINUX_BRIDGE,
@@ -116,11 +120,11 @@ def bridges_on_management_ifaces_node2(
         ipv4_enable=True,
         ipv4_dhcp=True,
     ) as br_dev:
-        # Wait for bridget to get management ip
+        # Wait for bridge to get management IP
         wait_for_address_on_iface(worker_pod=worker_pod, iface_name=br_dev.bridge_name)
         yield br_dev
 
-    # Verify Ip is back to the port
+    # Verify IP is back to the port
     wait_for_address_on_iface(worker_pod=worker_pod, iface_name=management_iface)
 
 

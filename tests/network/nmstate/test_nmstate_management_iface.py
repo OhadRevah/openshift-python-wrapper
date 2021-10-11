@@ -3,11 +3,11 @@ from ipaddress import ip_interface
 
 import pytest
 
+from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from utilities.network import assert_ping_successful
 
 
 LOGGER = logging.getLogger(__name__)
-REMOTE_IP = "8.8.8.8"
 
 pytestmark = pytest.mark.skip("Test should be refactor, this test break the node")
 
@@ -21,8 +21,8 @@ class TestWithDhcpOverBridge:
         skip_when_one_node,
         worker_nodes_ipv4_false_secondary_nics,
         utility_pods,
-        bridges_on_management_ifaces_node1,
-        bridges_on_management_ifaces_node2,
+        bridge_on_management_ifaces_node1,
+        bridge_on_management_ifaces_node2,
         nmstate_vma,
         nmstate_vmb,
         running_nmstate_vma,
@@ -38,15 +38,14 @@ class TestWithDhcpOverBridge:
         self,
         skip_when_one_node,
         worker_nodes_ipv4_false_secondary_nics,
-        bridges_on_management_ifaces_node1,
-        bridges_on_management_ifaces_node2,
+        bridge_on_management_ifaces_node1,
+        bridge_on_management_ifaces_node2,
         nmstate_vma,
         nmstate_vmb,
         running_nmstate_vma,
         running_nmstate_vmb,
     ):
-        assert_ping_successful(src_vm=running_nmstate_vma, dst_ip=REMOTE_IP)
-        assert_ping_successful(src_vm=running_nmstate_vmb, dst_ip=REMOTE_IP)
+        assert_ping_successful(src_vm=running_nmstate_vma, dst_ip=PUBLIC_DNS_SERVER_IP)
 
 
 # Test class should be run as last, because it should check connectivity after,
@@ -79,5 +78,4 @@ class TestAfterBridgeTeardown:
         running_nmstate_vma,
         running_nmstate_vmb,
     ):
-        assert_ping_successful(src_vm=running_nmstate_vma, dst_ip=REMOTE_IP)
-        assert_ping_successful(src_vm=running_nmstate_vmb, dst_ip=REMOTE_IP)
+        assert_ping_successful(src_vm=running_nmstate_vma, dst_ip=PUBLIC_DNS_SERVER_IP)
