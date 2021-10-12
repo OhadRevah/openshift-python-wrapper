@@ -1,5 +1,11 @@
 import pytest
 
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    COMPLETION_TIMEOUT_PER_GIB,
+    PARALLEL_MIGRATIONS_PER_CLUSTER,
+    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE,
+    PROGRESS_TIMEOUT,
+)
 from tests.install_upgrade_operators.strict_reconciliation.utils import verify_specs
 
 
@@ -198,11 +204,10 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    "bandwidthPerMigration": "32Ki",
-                                    "completionTimeoutPerGiB": 777,
-                                    "parallelMigrationsPerCluster": 3,
-                                    "parallelOutboundMigrationsPerNode": 4,
-                                    "progressTimeout": 1500,
+                                    COMPLETION_TIMEOUT_PER_GIB: 777,
+                                    PARALLEL_MIGRATIONS_PER_CLUSTER: 3,
+                                    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: 4,
+                                    PROGRESS_TIMEOUT: 1500,
                                 }
                             }
                         }
@@ -215,20 +220,8 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "configuration": {
-                                "migrations": {"bandwidthPerMigration": "32Ki"}
-                            }
-                        }
-                    }
-                },
-                marks=pytest.mark.polarion("CNV-6331"),
-            ),
-            pytest.param(
-                {
-                    "patch": {
-                        "spec": {
-                            "configuration": {
                                 "migrations": {
-                                    "completionTimeoutPerGiB": 777,
+                                    COMPLETION_TIMEOUT_PER_GIB: 777,
                                 }
                             }
                         }
@@ -242,7 +235,7 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    "parallelMigrationsPerCluster": 3,
+                                    PARALLEL_MIGRATIONS_PER_CLUSTER: 3,
                                 }
                             }
                         }
@@ -256,7 +249,7 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    "parallelOutboundMigrationsPerNode": 4,
+                                    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: 4,
                                 }
                             }
                         }
@@ -268,7 +261,7 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "configuration": {"migrations": {"progressTimeout": 1500}}
+                            "configuration": {"migrations": {PROGRESS_TIMEOUT: 1500}}
                         }
                     }
                 },

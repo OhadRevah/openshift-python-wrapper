@@ -3,6 +3,13 @@ import logging
 import pytest
 
 import tests.install_upgrade_operators.strict_reconciliation.constants as src
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    COMPLETION_TIMEOUT_PER_GIB,
+    LIVE_MIGRATION_CONFIG_KEY,
+    PARALLEL_MIGRATIONS_PER_CLUSTER,
+    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE,
+    PROGRESS_TIMEOUT,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -296,8 +303,8 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "parallelMigrationsPerCluster": None
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PARALLEL_MIGRATIONS_PER_CLUSTER: None
                             }
                         }
                     },
@@ -310,8 +317,8 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "parallelOutboundMigrationsPerNode": None
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: None
                             }
                         }
                     },
@@ -323,17 +330,11 @@ class TestCRDefaultsOnStanzaDeletion:
             pytest.param(
                 {
                     "rpatch": {
-                        "spec": {"liveMigrationConfig": {"bandwidthPerMigration": None}}
-                    },
-                },
-                src.EXPCT_LM_DEFAULTS,
-                id="defaults_lm_b_none",
-                marks=(pytest.mark.polarion("CNV-6405")),
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {"liveMigrationConfig": {"bandwidthPerMigration": None}}
+                        "spec": {
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                COMPLETION_TIMEOUT_PER_GIB: None
+                            }
+                        }
                     },
                 },
                 src.EXPCT_LM_DEFAULTS,
@@ -343,7 +344,7 @@ class TestCRDefaultsOnStanzaDeletion:
             pytest.param(
                 {
                     "rpatch": {
-                        "spec": {"liveMigrationConfig": {"bandwidthPerMigration": None}}
+                        "spec": {LIVE_MIGRATION_CONFIG_KEY: {PROGRESS_TIMEOUT: None}}
                     },
                 },
                 src.EXPCT_LM_DEFAULTS,
@@ -352,7 +353,7 @@ class TestCRDefaultsOnStanzaDeletion:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"liveMigrationConfig": {}}},
+                    "rpatch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: {}}},
                 },
                 src.EXPCT_LM_DEFAULTS,
                 id="defaults_lm_empty",
@@ -360,7 +361,7 @@ class TestCRDefaultsOnStanzaDeletion:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"liveMigrationConfig": None}},
+                    "rpatch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: None}},
                 },
                 src.EXPCT_LM_DEFAULTS,
                 id="defaults_lm_none",
@@ -394,8 +395,8 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "parallelMigrationsPerCluster": src.LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PARALLEL_MIGRATIONS_PER_CLUSTER: src.LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM
                             }
                         }
                     },
@@ -408,8 +409,8 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "parallelOutboundMigrationsPerNode": src.LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: src.LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM
                             }
                         }
                     },
@@ -422,22 +423,8 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "bandwidthPerMigration": src.LM_BANDWIDTHPERMIGRATION_CUSTOM
-                            }
-                        }
-                    },
-                },
-                src.EXPCT_LM_CUSTOM_B,
-                id="defaults_lm_custom_b",
-                marks=(pytest.mark.polarion("CNV-6415")),
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {
-                            "liveMigrationConfig": {
-                                "completionTimeoutPerGiB": src.LM_COMPLETIONTIMEOUTPERGIB_CUSTOM
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                COMPLETION_TIMEOUT_PER_GIB: src.LM_COMPLETIONTIMEOUTPERGIB_CUSTOM
                             }
                         }
                     },
@@ -450,8 +437,8 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "progressTimeout": src.LM_PROGRESSTIMEOUT_CUSTOM
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PROGRESS_TIMEOUT: src.LM_PROGRESSTIMEOUT_CUSTOM
                             }
                         }
                     },
@@ -472,6 +459,6 @@ class TestCRDefaultsOnStanzaDeletion:
         assert (
             hyperconverged_resource_scope_function.instance.to_dict()
             .get("spec")
-            .get("liveMigrationConfig")
+            .get(LIVE_MIGRATION_CONFIG_KEY)
             == expected
         )

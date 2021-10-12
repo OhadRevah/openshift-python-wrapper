@@ -4,6 +4,12 @@ import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import tests.install_upgrade_operators.strict_reconciliation.constants as const_src
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    COMPLETION_TIMEOUT_PER_GIB,
+    LIVE_MIGRATION_CONFIG_KEY,
+    PARALLEL_MIGRATIONS_PER_CLUSTER,
+    PROGRESS_TIMEOUT,
+)
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     validate_featuregates_not_in_kv_cr,
 )
@@ -122,11 +128,13 @@ class TestOperatorsModify:
             pytest.param(
                 {
                     "patch": {
-                        "spec": {"liveMigrationConfig": const_src.EXPCT_LM_DEFAULTS}
+                        "spec": {LIVE_MIGRATION_CONFIG_KEY: const_src.EXPCT_LM_DEFAULTS}
                     }
                 },
                 {
-                    "hco_spec": {"liveMigrationConfig": const_src.EXPCT_LM_DEFAULTS},
+                    "hco_spec": {
+                        LIVE_MIGRATION_CONFIG_KEY: const_src.EXPCT_LM_DEFAULTS
+                    },
                     "kubevirt_spec": {"migrations": const_src.EXPCT_LM_DEFAULTS},
                     "cdi_spec": None,
                     "cnao_spec": None,
@@ -138,33 +146,16 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "bandwidthPerMigration": const_src.LM_BANDWIDTHPERMIGRATION_DEFAULT,
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                COMPLETION_TIMEOUT_PER_GIB: const_src.LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
                             }
                         }
                     }
                 },
                 {
-                    "hco_spec": {"liveMigrationConfig": const_src.LM_CUST_DEFAULT_B},
-                    "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_B},
-                    "cdi_spec": None,
-                    "cnao_spec": None,
-                },
-                marks=pytest.mark.polarion("CNV-6704"),
-                id="Test_Modify_HCO_CR_liveMigrationConfig_bandwidthPerMigration",
-            ),
-            pytest.param(
-                {
-                    "patch": {
-                        "spec": {
-                            "liveMigrationConfig": {
-                                "completionTimeoutPerGiB": const_src.LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
-                            }
-                        }
-                    }
-                },
-                {
-                    "hco_spec": {"liveMigrationConfig": const_src.LM_CUST_DEFAULT_C},
+                    "hco_spec": {
+                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_C
+                    },
                     "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_C},
                     "cdi_spec": None,
                     "cnao_spec": None,
@@ -176,14 +167,16 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "parallelMigrationsPerCluster": const_src.LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT,
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PARALLEL_MIGRATIONS_PER_CLUSTER: const_src.LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT,
                             }
                         }
                     }
                 },
                 {
-                    "hco_spec": {"liveMigrationConfig": const_src.LM_CUST_DEFAULT_PM},
+                    "hco_spec": {
+                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_PM
+                    },
                     "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_PM},
                     "cdi_spec": None,
                     "cnao_spec": None,
@@ -192,9 +185,15 @@ class TestOperatorsModify:
                 id="Test_Modify_HCO_CR_liveMigrationConfig_parallelMigrationsPerCluster",
             ),
             pytest.param(
-                {"patch": {"spec": {"liveMigrationConfig": const_src.LM_PO_DEFAULT}}},
                 {
-                    "hco_spec": {"liveMigrationConfig": const_src.LM_CUST_DEFAULT_PO},
+                    "patch": {
+                        "spec": {LIVE_MIGRATION_CONFIG_KEY: const_src.LM_PO_DEFAULT}
+                    }
+                },
+                {
+                    "hco_spec": {
+                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_PO
+                    },
                     "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_PO},
                     "cdi_spec": None,
                     "cnao_spec": None,
@@ -206,14 +205,16 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "liveMigrationConfig": {
-                                "progressTimeout": const_src.LM_PROGRESSTIMEOUT_DEFAULT,
+                            LIVE_MIGRATION_CONFIG_KEY: {
+                                PROGRESS_TIMEOUT: const_src.LM_PROGRESSTIMEOUT_DEFAULT,
                             }
                         }
                     }
                 },
                 {
-                    "hco_spec": {"liveMigrationConfig": const_src.LM_CUST_DEFAULT_PT},
+                    "hco_spec": {
+                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_PT
+                    },
                     "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_PT},
                     "cdi_spec": None,
                     "cnao_spec": None,

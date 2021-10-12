@@ -4,6 +4,9 @@ import logging
 import pytest
 
 from tests.install_upgrade_operators.strict_reconciliation import constants
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    LIVE_MIGRATION_CONFIG_KEY,
+)
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     compare_expected_with_cr,
     expected_certconfig_stanza,
@@ -75,7 +78,7 @@ class TestOperatorsDefaults:
             ),
             pytest.param(
                 {
-                    "liveMigrationConfig": constants.EXPCT_LM_DEFAULTS,
+                    LIVE_MIGRATION_CONFIG_KEY: constants.EXPCT_LM_DEFAULTS,
                 },
                 "hco",
                 [],
