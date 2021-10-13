@@ -11,7 +11,6 @@ from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST_LABELS, WINDOWS_LATEST_LABELS
 from utilities.constants import Images
-from utilities.virt import vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
@@ -19,24 +18,8 @@ LOGGER = logging.getLogger(__name__)
 SMALL_VM_IMAGE = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 
 
-@pytest.fixture()
-def diskless_vm(
-    request,
-    unprivileged_client,
-    namespace,
-    golden_image_data_volume_scope_function,
-):
-    with vm_instance_from_template(
-        request=request,
-        unprivileged_client=unprivileged_client,
-        namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
-    ) as diskless_vm:
-        yield diskless_vm
-
-
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function, diskless_vm",
+    "golden_image_data_volume_scope_function, vm_from_template_scope_function",
     [
         pytest.param(
             {
@@ -76,7 +59,9 @@ def test_diskless_vm_creation(
     unprivileged_client,
     namespace,
     golden_image_data_volume_scope_function,
-    diskless_vm,
+    vm_from_template_scope_function,
 ):
     LOGGER.info("Verify diskless VM is created.")
-    assert diskless_vm.exists, f"{diskless_vm.name} VM was not created."
+    assert (
+        vm_from_template_scope_function.exists
+    ), f"{vm_from_template_scope_function.name} VM was not created."
