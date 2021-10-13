@@ -1308,12 +1308,12 @@ def run_virtctl_command(command, namespace=None):
     virtctl_cmd = ["virtctl"]
     kubeconfig = os.getenv("KUBECONFIG")
     if namespace:
-        virtctl_cmd += ["-n", namespace]
+        virtctl_cmd.extend(["-n", namespace])
 
     if kubeconfig:
-        virtctl_cmd += ["--kubeconfig", kubeconfig]
+        virtctl_cmd.extend(["--kubeconfig", kubeconfig])
 
-    virtctl_cmd += command
+    virtctl_cmd.extend(command)
     res, out, err = run_command(command=virtctl_cmd)
 
     return res, out, err
