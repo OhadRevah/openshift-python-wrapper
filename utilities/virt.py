@@ -1049,6 +1049,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         cloned_dv_size=None,
         systemctl_support=True,
         vhostmd=False,
+        machine_type=None,
     ):
         """
         VM creation using common templates.
@@ -1096,6 +1097,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             dedicated_iothread=dedicated_iothread,
             systemctl_support=systemctl_support,
             vhostmd=vhostmd,
+            machine_type=machine_type,
         )
         self.template_labels = labels
         self.data_volume = data_volume
@@ -1947,6 +1949,7 @@ def vm_instance_from_template(
         cloned_dv_size=params.get("cloned_dv_size"),
         systemctl_support="rhel-6" not in vm_name,
         vhostmd=params.get("vhostmd"),
+        machine_type=params.get("machine_type"),
     ) as vm:
         if params.get("start_vm", True):
             running_vm(
