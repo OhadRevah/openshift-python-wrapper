@@ -3,12 +3,49 @@ import logging
 import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-import tests.install_upgrade_operators.strict_reconciliation.constants as const_src
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_CA_KEY,
+    HCO_CR_CERT_CONFIG_DURATION_KEY,
+    HCO_CR_CERT_CONFIG_KEY,
+    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
+    HCO_CR_CERT_CONFIG_SERVER_KEY,
+)
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
-    COMPLETION_TIMEOUT_PER_GIB,
+    CDI_CR_CERT_CONFIG_KEY,
+    CERTC_DEFAULT_12H,
+    CERTC_DEFAULT_24H,
+    CERTC_DEFAULT_48H,
+    CNAO_CERT_CONFIG_DEFAULT,
+    CNAO_CR_CERT_CONFIG_KEY,
+    CNAO_MOD_DEFAULT_CA_DUR,
+    CNAO_MOD_DEFAULT_SER_DUR,
+    CNAO_MOD_DEFAULT_SER_RB,
+    COMPLETION_TIMEOUT_PER_GIB_KEY,
+    EXPCT_CERTC_DEFAULTS,
+    EXPCT_LM_DEFAULTS,
+    FG_SRIOVLIVEMIGRATION_DEFAULT,
+    FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+    HCO_CR_FIELDS,
+    HCO_MOD_DEFAUTL_CA_DUR,
+    HCO_MOD_DEFAUTL_CA_RB,
+    HCO_MOD_DEFAUTL_SER_DUR,
+    HCO_MOD_DEFAUTL_SER_RB,
+    KUBEVIRT_DEFAULT,
+    KUBEVIRT_FIELDS,
+    KV_MOD_DEFAUTL_CA_DUR,
+    KV_MOD_DEFAUTL_SER_DUR,
+    KV_MOD_DEFAUTL_SER_RB,
     LIVE_MIGRATION_CONFIG_KEY,
-    PARALLEL_MIGRATIONS_PER_CLUSTER,
-    PROGRESS_TIMEOUT,
+    LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
+    LM_CUST_DEFAULT_C,
+    LM_CUST_DEFAULT_PM,
+    LM_CUST_DEFAULT_PO,
+    LM_CUST_DEFAULT_PT,
+    LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT,
+    LM_PO_DEFAULT,
+    LM_PROGRESSTIMEOUT_DEFAULT,
+    PARALLEL_MIGRATIONS_PER_CLUSTER_KEY,
+    PROGRESS_TIMEOUT_KEY,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     validate_featuregates_not_in_kv_cr,
@@ -31,13 +68,13 @@ class TestOperatorsModify:
         [
             pytest.param(
                 {
-                    "patch": {"spec": {"certConfig": const_src.EXPCT_CERTC_DEFAULTS}},
+                    "patch": {"spec": {HCO_CR_CERT_CONFIG_KEY: EXPCT_CERTC_DEFAULTS}},
                 },
                 {
-                    "hco_spec": {"certConfig": const_src.EXPCT_CERTC_DEFAULTS},
-                    "kubevirt_spec": const_src.KUBEVIRT_DEFAULT,
-                    "cdi_spec": {"certConfig": const_src.EXPCT_CERTC_DEFAULTS},
-                    "cnao_spec": {"selfSignConfiguration": const_src.CNAO_DEFAULT},
+                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: EXPCT_CERTC_DEFAULTS},
+                    "kubevirt_spec": KUBEVIRT_DEFAULT,
+                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: EXPCT_CERTC_DEFAULTS},
+                    "cnao_spec": {CNAO_CR_CERT_CONFIG_KEY: CNAO_CERT_CONFIG_DEFAULT},
                 },
                 marks=pytest.mark.polarion("CNV-6698"),
             ),
@@ -45,19 +82,19 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "ca": {
-                                    "duration": const_src.CERTC_DEFAULT_48H,
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_DEFAULT_48H,
                                 },
                             }
                         }
                     },
                 },
                 {
-                    "hco_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_CA_DUR},
-                    "kubevirt_spec": const_src.KV_MOD_DEFAUTL_CA_DUR,
-                    "cdi_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_CA_DUR},
-                    "cnao_spec": const_src.CNAO_MOD_DEFAULT_CA_DUR,
+                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_DUR},
+                    "kubevirt_spec": KV_MOD_DEFAUTL_CA_DUR,
+                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_DUR},
+                    "cnao_spec": CNAO_MOD_DEFAULT_CA_DUR,
                 },
                 marks=pytest.mark.polarion("CNV-6699"),
                 id="Test_Modify_HCO_CR_CertConfig_ca_duration",
@@ -66,19 +103,19 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "ca": {
-                                    "renewBefore": const_src.CERTC_DEFAULT_24H,
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_DEFAULT_24H,
                                 },
                             }
                         }
                     },
                 },
                 {
-                    "hco_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_CA_RB},
-                    "kubevirt_spec": const_src.KV_MOD_DEFAUTL_SER_RB,
-                    "cdi_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_CA_RB},
-                    "cnao_spec": const_src.CNAO_MOD_DEFAULT_SER_RB,
+                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_RB},
+                    "kubevirt_spec": KV_MOD_DEFAUTL_SER_RB,
+                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_RB},
+                    "cnao_spec": CNAO_MOD_DEFAULT_SER_RB,
                 },
                 marks=pytest.mark.polarion("CNV-6700"),
                 id="Test_Modify_HCO_CR_CertConfig_ca_renewBefore",
@@ -87,19 +124,19 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "server": {
-                                    "duration": const_src.CERTC_DEFAULT_24H,
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_DEFAULT_24H,
                                 },
                             }
                         }
                     },
                 },
                 {
-                    "hco_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_SER_DUR},
-                    "kubevirt_spec": const_src.KV_MOD_DEFAUTL_SER_DUR,
-                    "cdi_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_SER_DUR},
-                    "cnao_spec": const_src.CNAO_MOD_DEFAULT_SER_DUR,
+                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_DUR},
+                    "kubevirt_spec": KV_MOD_DEFAUTL_SER_DUR,
+                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_DUR},
+                    "cnao_spec": CNAO_MOD_DEFAULT_SER_DUR,
                 },
                 marks=pytest.mark.polarion("CNV-6701"),
                 id="Test_Modify_HCO_CR_CertConfig_server_duration",
@@ -108,34 +145,28 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "server": {
-                                    "renewBefore": const_src.CERTC_DEFAULT_12H,
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_DEFAULT_12H,
                                 },
                             }
                         }
                     },
                 },
                 {
-                    "hco_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_SER_RB},
-                    "kubevirt_spec": const_src.KV_MOD_DEFAUTL_SER_RB,
-                    "cdi_spec": {"certConfig": const_src.HCO_MOD_DEFAUTL_SER_RB},
-                    "cnao_spec": const_src.CNAO_MOD_DEFAULT_SER_RB,
+                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_RB},
+                    "kubevirt_spec": KV_MOD_DEFAUTL_SER_RB,
+                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_RB},
+                    "cnao_spec": CNAO_MOD_DEFAULT_SER_RB,
                 },
                 marks=pytest.mark.polarion("CNV-6702"),
                 id="Test_Modify_HCO_CR_CertConfig_server_renewBefore",
             ),
             pytest.param(
+                {"patch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: EXPCT_LM_DEFAULTS}}},
                 {
-                    "patch": {
-                        "spec": {LIVE_MIGRATION_CONFIG_KEY: const_src.EXPCT_LM_DEFAULTS}
-                    }
-                },
-                {
-                    "hco_spec": {
-                        LIVE_MIGRATION_CONFIG_KEY: const_src.EXPCT_LM_DEFAULTS
-                    },
-                    "kubevirt_spec": {"migrations": const_src.EXPCT_LM_DEFAULTS},
+                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: EXPCT_LM_DEFAULTS},
+                    "kubevirt_spec": {"migrations": EXPCT_LM_DEFAULTS},
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -147,16 +178,14 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                COMPLETION_TIMEOUT_PER_GIB: const_src.LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
+                                COMPLETION_TIMEOUT_PER_GIB_KEY: LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
                             }
                         }
                     }
                 },
                 {
-                    "hco_spec": {
-                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_C
-                    },
-                    "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_C},
+                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_C},
+                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_C},
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -168,16 +197,14 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PARALLEL_MIGRATIONS_PER_CLUSTER: const_src.LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT,
+                                PARALLEL_MIGRATIONS_PER_CLUSTER_KEY: LM_PARALLELMIGRATIONSPERCLUSTER_DEFAULT,
                             }
                         }
                     }
                 },
                 {
-                    "hco_spec": {
-                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_PM
-                    },
-                    "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_PM},
+                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_PM},
+                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_PM},
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -185,16 +212,10 @@ class TestOperatorsModify:
                 id="Test_Modify_HCO_CR_liveMigrationConfig_parallelMigrationsPerCluster",
             ),
             pytest.param(
+                {"patch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: LM_PO_DEFAULT}}},
                 {
-                    "patch": {
-                        "spec": {LIVE_MIGRATION_CONFIG_KEY: const_src.LM_PO_DEFAULT}
-                    }
-                },
-                {
-                    "hco_spec": {
-                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_PO
-                    },
-                    "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_PO},
+                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_PO},
+                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_PO},
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -206,16 +227,14 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PROGRESS_TIMEOUT: const_src.LM_PROGRESSTIMEOUT_DEFAULT,
+                                PROGRESS_TIMEOUT_KEY: LM_PROGRESSTIMEOUT_DEFAULT,
                             }
                         }
                     }
                 },
                 {
-                    "hco_spec": {
-                        LIVE_MIGRATION_CONFIG_KEY: const_src.LM_CUST_DEFAULT_PT
-                    },
-                    "kubevirt_spec": {"migrations": const_src.LM_CUST_DEFAULT_PT},
+                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_PT},
+                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_PT},
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -244,7 +263,7 @@ class TestOperatorsModify:
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                keys=const_src.HCO_CR_FIELDS,
+                keys=HCO_CR_FIELDS,
             )
         if expected["kubevirt_spec"]:
             wait_for_spec_change(
@@ -254,7 +273,7 @@ class TestOperatorsModify:
                 )
                 .instance.to_dict()
                 .get("spec"),
-                keys=const_src.KUBEVIRT_FIELDS,
+                keys=KUBEVIRT_FIELDS,
             )
         if expected["cdi_spec"]:
             wait_for_spec_change(
@@ -262,7 +281,7 @@ class TestOperatorsModify:
                 get_spec_func=lambda: get_hyperconverged_cdi(admin_client=admin_client)
                 .instance.to_dict()
                 .get("spec"),
-                keys=const_src.CDI_FIELDS,
+                keys=[CDI_CR_CERT_CONFIG_KEY],
             )
         if expected["cnao_spec"]:
             wait_for_spec_change(
@@ -272,7 +291,7 @@ class TestOperatorsModify:
                 )
                 .instance.to_dict()
                 .get("spec"),
-                keys=const_src.CNAO_FIELDS,
+                keys=[CNAO_CR_CERT_CONFIG_KEY],
             )
 
     @pytest.mark.parametrize(
@@ -283,8 +302,8 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "featureGates": {
-                                "sriovLiveMigration": const_src.FG_SRIOVLIVEMIGRATION_DEFAULT,
-                                "withHostPassthroughCPU": const_src.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+                                "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
+                                "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                             }
                         }
                     }
@@ -292,8 +311,8 @@ class TestOperatorsModify:
                 {
                     "hco_spec": {
                         "featureGates": {
-                            "sriovLiveMigration": const_src.FG_SRIOVLIVEMIGRATION_DEFAULT,
-                            "withHostPassthroughCPU": const_src.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+                            "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
+                            "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                         },
                     },
                     "kubevirt_spec": ["WithHostPassthroughCPU", "SRIOVLiveMigration"],
@@ -306,7 +325,7 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "featureGates": {
-                                "sriovLiveMigration": const_src.FG_SRIOVLIVEMIGRATION_DEFAULT,
+                                "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                             }
                         }
                     }
@@ -314,7 +333,7 @@ class TestOperatorsModify:
                 {
                     "hco_spec": {
                         "featureGates": {
-                            "sriovLiveMigration": const_src.FG_SRIOVLIVEMIGRATION_DEFAULT,
+                            "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                         },
                     },
                     "kubevirt_spec": ["SRIOVLiveMigration"],
@@ -327,7 +346,7 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "featureGates": {
-                                "withHostPassthroughCPU": const_src.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+                                "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                             }
                         }
                     }
@@ -335,7 +354,7 @@ class TestOperatorsModify:
                 {
                     "hco_spec": {
                         "featureGates": {
-                            "withHostPassthroughCPU": const_src.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+                            "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                         },
                     },
                     "kubevirt_spec": ["WithHostPassthroughCPU"],
@@ -364,7 +383,7 @@ class TestOperatorsModify:
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                keys=const_src.HCO_CR_FIELDS,
+                keys=HCO_CR_FIELDS,
             )
         if expected["kubevirt_spec"]:
             samples = TimeoutSampler(

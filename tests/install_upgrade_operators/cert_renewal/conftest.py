@@ -5,6 +5,11 @@ import pytest
 from tests.install_upgrade_operators.cert_renewal.utils import (
     get_certificates_validity_period_and_checkend_result,
 )
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_CA_KEY,
+    HCO_CR_CERT_CONFIG_KEY,
+    HCO_CR_CERT_CONFIG_SERVER_KEY,
+)
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import update_custom_resource
@@ -20,12 +25,15 @@ def hyperconverged_resource_certconfig_change(
     """
     Update HCO CR with certconfig
     """
-    target_certconfig_stanza = {"ca": {**request.param}, "server": {**request.param}}
+    target_certconfig_stanza = {
+        HCO_CR_CERT_CONFIG_CA_KEY: {**request.param},
+        HCO_CR_CERT_CONFIG_SERVER_KEY: {**request.param},
+    }
     LOGGER.info("Modifying certconfig in HCO CR")
     with update_custom_resource(
         patch={
             hyperconverged_resource_scope_class: {
-                "spec": {"certConfig": target_certconfig_stanza}
+                "spec": {HCO_CR_CERT_CONFIG_KEY: target_certconfig_stanza}
             }
         },
     ):

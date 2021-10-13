@@ -3,8 +3,21 @@ import logging
 
 import pytest
 
-from tests.install_upgrade_operators.strict_reconciliation import constants
+from tests.install_upgrade_operators.constants import HCO_CR_CERT_CONFIG_KEY
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    CERTC_DEFAULT_12H,
+    CERTC_DEFAULT_24H,
+    CERTC_DEFAULT_48H,
+    CNAO_CR_CERT_CONFIG_CA_DURATION_KEY,
+    CNAO_CR_CERT_CONFIG_KEY_CA_RENEW_BEFORE_KEY,
+    CNAO_CR_CERT_CONFIG_KEY_SERVER_RENEW_BEFORE_KEY,
+    CNAO_CR_CERT_CONFIG_SERVER_DURATION_KEY,
+    EXPCT_LM_DEFAULTS,
+    EXPECTED_CDI_HARDCODED_FEATUREGATES,
+    EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
+    FG_SRIOVLIVEMIGRATION_DEFAULT,
+    FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+    KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY,
     LIVE_MIGRATION_CONFIG_KEY,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
@@ -24,7 +37,7 @@ class TestOperatorsDefaults:
             pytest.param(
                 expected_certconfig_stanza(),
                 "hco",
-                ["certConfig"],
+                [HCO_CR_CERT_CONFIG_KEY],
                 marks=(
                     pytest.mark.polarion("CNV-6108"),
                     pytest.mark.bugzilla(
@@ -37,14 +50,17 @@ class TestOperatorsDefaults:
             pytest.param(
                 expected_certconfig_stanza(),
                 "cdi",
-                ["certConfig"],
+                [HCO_CR_CERT_CONFIG_KEY],
                 marks=(pytest.mark.polarion("CNV-6109"),),
                 id="verify_defaults_certconfig_cdi_cr",
             ),
             pytest.param(
                 expected_certconfig_stanza(),
                 "kubevirt",
-                ["certificateRotateStrategy", "selfSigned"],
+                [
+                    "certificateRotateStrategy",
+                    KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY,
+                ],
                 marks=(pytest.mark.polarion("CNV-6111"),),
                 id="verify_defaults_certconfig_kubevirt_cr",
             ),
@@ -52,10 +68,10 @@ class TestOperatorsDefaults:
                 {
                     "spec": {
                         "selfSignConfiguration": {
-                            "caRotateInterval": constants.CERTC_DEFAULT_48H,
-                            "caOverlapInterval": constants.CERTC_DEFAULT_24H,
-                            "certRotateInterval": constants.CERTC_DEFAULT_24H,
-                            "certOverlapInterval": constants.CERTC_DEFAULT_12H,
+                            CNAO_CR_CERT_CONFIG_CA_DURATION_KEY: CERTC_DEFAULT_48H,
+                            CNAO_CR_CERT_CONFIG_KEY_CA_RENEW_BEFORE_KEY: CERTC_DEFAULT_24H,
+                            CNAO_CR_CERT_CONFIG_SERVER_DURATION_KEY: CERTC_DEFAULT_24H,
+                            CNAO_CR_CERT_CONFIG_KEY_SERVER_RENEW_BEFORE_KEY: CERTC_DEFAULT_12H,
                         }
                     }
                 },
@@ -67,8 +83,8 @@ class TestOperatorsDefaults:
             pytest.param(
                 {
                     "featureGates": {
-                        "sriovLiveMigration": constants.FG_SRIOVLIVEMIGRATION_DEFAULT,
-                        "withHostPassthroughCPU": constants.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+                        "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
+                        "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                     }
                 },
                 "hco",
@@ -78,7 +94,7 @@ class TestOperatorsDefaults:
             ),
             pytest.param(
                 {
-                    LIVE_MIGRATION_CONFIG_KEY: constants.EXPCT_LM_DEFAULTS,
+                    LIVE_MIGRATION_CONFIG_KEY: EXPCT_LM_DEFAULTS,
                 },
                 "hco",
                 [],
@@ -94,7 +110,7 @@ class TestOperatorsDefaults:
             pytest.param(
                 {
                     "configuration": {
-                        "migrations": constants.EXPCT_LM_DEFAULTS,
+                        "migrations": EXPCT_LM_DEFAULTS,
                     }
                 },
                 "kubevirt",
@@ -109,7 +125,7 @@ class TestOperatorsDefaults:
                 id="verify_defaults_livemigrationconfig_kubevirt_cr",
             ),
             pytest.param(
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
+                EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
                 "kubevirt",
                 ["configuration", "developerConfiguration", "featureGates"],
                 marks=(
@@ -122,7 +138,7 @@ class TestOperatorsDefaults:
                 id="verify_defaults_hardcoded_featuregates_kubevirt_cr",
             ),
             pytest.param(
-                constants.EXPECTED_CDI_HARDCODED_FEATUREGATES,
+                EXPECTED_CDI_HARDCODED_FEATUREGATES,
                 "cdi",
                 ["config", "featureGates"],
                 marks=(pytest.mark.polarion("CNV-6448"),),

@@ -1,10 +1,26 @@
 import pytest
 
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_CA_KEY,
+    HCO_CR_CERT_CONFIG_DURATION_KEY,
+    HCO_CR_CERT_CONFIG_KEY,
+    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
+    HCO_CR_CERT_CONFIG_SERVER_KEY,
+)
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
-    COMPLETION_TIMEOUT_PER_GIB,
-    PARALLEL_MIGRATIONS_PER_CLUSTER,
-    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE,
-    PROGRESS_TIMEOUT,
+    CNAO_CR_CERT_CONFIG_CA_DURATION_KEY,
+    CNAO_CR_CERT_CONFIG_KEY_CA_RENEW_BEFORE_KEY,
+    CNAO_CR_CERT_CONFIG_KEY_SERVER_RENEW_BEFORE_KEY,
+    CNAO_CR_CERT_CONFIG_SERVER_DURATION_KEY,
+    COMPLETION_TIMEOUT_PER_GIB_KEY,
+    COMPLETION_TIMEOUT_PER_GIB_VALUE,
+    KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY,
+    PARALLEL_MIGRATIONS_PER_CLUSTER_KEY,
+    PARALLEL_MIGRATIONS_PER_CLUSTER_VALUE,
+    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY,
+    PARALLEL_OUTBOUND_MIGRATIONS_PN_VALUE,
+    PROGRESS_TIMEOUT_KEY,
+    PROGRESS_TIMEOUT_VALUE,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import verify_specs
 
@@ -17,14 +33,14 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "ca": {
-                                    "duration": "9h",
-                                    "renewBefore": "2h",
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: "9h",
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "2h",
                                 },
-                                "server": {
-                                    "duration": "3h",
-                                    "renewBefore": "1h",
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: "3h",
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "1h",
                                 },
                             }
                         }
@@ -36,9 +52,9 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "ca": {
-                                    "duration": "99h",
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: "99h",
                                 }
                             }
                         }
@@ -50,9 +66,9 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "ca": {
-                                    "renewBefore": "2h",
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "2h",
                                 },
                             }
                         }
@@ -64,9 +80,9 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "server": {
-                                    "duration": "33h",
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: "33h",
                                 },
                             }
                         }
@@ -78,9 +94,9 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "certConfig": {
-                                "server": {
-                                    "renewBefore": "1h",
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "1h",
                                 },
                             }
                         }
@@ -118,14 +134,14 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "certificateRotateStrategy": {
-                                "selfSigned": {
-                                    "ca": {
-                                        "duration": "9h",
-                                        "renewBefore": "2h",
+                                KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY: {
+                                    HCO_CR_CERT_CONFIG_CA_KEY: {
+                                        HCO_CR_CERT_CONFIG_DURATION_KEY: "9h",
+                                        HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "2h",
                                     },
-                                    "server": {
-                                        "duration": "3h",
-                                        "renewBefore": "1h",
+                                    HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                        HCO_CR_CERT_CONFIG_DURATION_KEY: "3h",
+                                        HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "1h",
                                     },
                                 }
                             }
@@ -139,9 +155,9 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "certificateRotateStrategy": {
-                                "selfSigned": {
-                                    "ca": {
-                                        "duration": "99h",
+                                KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY: {
+                                    HCO_CR_CERT_CONFIG_CA_KEY: {
+                                        HCO_CR_CERT_CONFIG_DURATION_KEY: "99h",
                                     }
                                 }
                             }
@@ -155,9 +171,9 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "certificateRotateStrategy": {
-                                "selfSigned": {
-                                    "ca": {
-                                        "renewBefore": "2h",
+                                KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY: {
+                                    HCO_CR_CERT_CONFIG_CA_KEY: {
+                                        HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "2h",
                                     },
                                 }
                             }
@@ -171,9 +187,9 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "certificateRotateStrategy": {
-                                "selfSigned": {
-                                    "server": {
-                                        "duration": "33h",
+                                KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY: {
+                                    HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                        HCO_CR_CERT_CONFIG_DURATION_KEY: "33h",
                                     },
                                 }
                             }
@@ -187,9 +203,9 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "certificateRotateStrategy": {
-                                "selfSigned": {
-                                    "server": {
-                                        "renewBefore": "1h",
+                                KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY: {
+                                    HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                        HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "1h",
                                     },
                                 }
                             }
@@ -204,10 +220,10 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    COMPLETION_TIMEOUT_PER_GIB: 777,
-                                    PARALLEL_MIGRATIONS_PER_CLUSTER: 3,
-                                    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: 4,
-                                    PROGRESS_TIMEOUT: 1500,
+                                    COMPLETION_TIMEOUT_PER_GIB_KEY: COMPLETION_TIMEOUT_PER_GIB_VALUE,
+                                    PARALLEL_MIGRATIONS_PER_CLUSTER_KEY: PARALLEL_MIGRATIONS_PER_CLUSTER_VALUE,
+                                    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY: PARALLEL_OUTBOUND_MIGRATIONS_PN_VALUE,
+                                    PROGRESS_TIMEOUT_KEY: PROGRESS_TIMEOUT_VALUE,
                                 }
                             }
                         }
@@ -221,7 +237,7 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    COMPLETION_TIMEOUT_PER_GIB: 777,
+                                    COMPLETION_TIMEOUT_PER_GIB_KEY: COMPLETION_TIMEOUT_PER_GIB_VALUE,
                                 }
                             }
                         }
@@ -235,7 +251,7 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    PARALLEL_MIGRATIONS_PER_CLUSTER: 3,
+                                    PARALLEL_MIGRATIONS_PER_CLUSTER_KEY: PARALLEL_MIGRATIONS_PER_CLUSTER_VALUE,
                                 }
                             }
                         }
@@ -249,7 +265,7 @@ class TestOperatorsModify:
                         "spec": {
                             "configuration": {
                                 "migrations": {
-                                    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: 4,
+                                    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY: PARALLEL_OUTBOUND_MIGRATIONS_PN_VALUE,
                                 }
                             }
                         }
@@ -261,7 +277,11 @@ class TestOperatorsModify:
                 {
                     "patch": {
                         "spec": {
-                            "configuration": {"migrations": {PROGRESS_TIMEOUT: 1500}}
+                            "configuration": {
+                                "migrations": {
+                                    PROGRESS_TIMEOUT_KEY: PROGRESS_TIMEOUT_VALUE
+                                }
+                            }
                         }
                     }
                 },
@@ -297,10 +317,10 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "selfSignConfiguration": {
-                                "caOverlapInterval": "2h",
-                                "caRotateInterval": "9h",
-                                "certOverlapInterval": "2h",
-                                "certRotateInterval": "3h",
+                                CNAO_CR_CERT_CONFIG_KEY_CA_RENEW_BEFORE_KEY: "2h",
+                                CNAO_CR_CERT_CONFIG_CA_DURATION_KEY: "9h",
+                                CNAO_CR_CERT_CONFIG_KEY_SERVER_RENEW_BEFORE_KEY: "2h",
+                                CNAO_CR_CERT_CONFIG_SERVER_DURATION_KEY: "3h",
                             }
                         }
                     }
@@ -312,7 +332,7 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "selfSignConfiguration": {
-                                "caRotateInterval": "99h",
+                                CNAO_CR_CERT_CONFIG_CA_DURATION_KEY: "99h",
                             }
                         }
                     }
@@ -324,7 +344,7 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "selfSignConfiguration": {
-                                "caOverlapInterval": "2h",
+                                CNAO_CR_CERT_CONFIG_KEY_CA_RENEW_BEFORE_KEY: "2h",
                             }
                         }
                     }
@@ -336,7 +356,7 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "selfSignConfiguration": {
-                                "certRotateInterval": "33h",
+                                CNAO_CR_CERT_CONFIG_SERVER_DURATION_KEY: "33h",
                             }
                         }
                     }
@@ -348,7 +368,7 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "selfSignConfiguration": {
-                                "certOverlapInterval": "1h",
+                                CNAO_CR_CERT_CONFIG_KEY_SERVER_RENEW_BEFORE_KEY: "1h",
                             }
                         }
                     }

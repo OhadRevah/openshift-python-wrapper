@@ -2,13 +2,41 @@ import logging
 
 import pytest
 
-import tests.install_upgrade_operators.strict_reconciliation.constants as src
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_CA_KEY,
+    HCO_CR_CERT_CONFIG_DURATION_KEY,
+    HCO_CR_CERT_CONFIG_KEY,
+    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
+    HCO_CR_CERT_CONFIG_SERVER_KEY,
+)
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
-    COMPLETION_TIMEOUT_PER_GIB,
+    CERTC_CUSTOM_18H,
+    CERTC_CUSTOM_36H,
+    CERTC_CUSTOM_96H,
+    COMPLETION_TIMEOUT_PER_GIB_KEY,
+    EXPCT_CERTC_CUSTOM_CA_DUR,
+    EXPCT_CERTC_CUSTOM_CA_RB,
+    EXPCT_CERTC_CUSTOM_SERVER_DUR,
+    EXPCT_CERTC_CUSTOM_SERVER_RB,
+    EXPCT_CERTC_DEFAULTS,
+    EXPCT_FG_CUSTOM_S,
+    EXPCT_FG_CUSTOM_W,
+    EXPCT_FG_DEFAULTS,
+    EXPCT_LM_CUSTOM_C,
+    EXPCT_LM_CUSTOM_PM,
+    EXPCT_LM_CUSTOM_PO,
+    EXPCT_LM_CUSTOM_PT,
+    EXPCT_LM_DEFAULTS,
+    FG_SRIOVLIVEMIGRATION_DEFAULT,
+    FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
     LIVE_MIGRATION_CONFIG_KEY,
-    PARALLEL_MIGRATIONS_PER_CLUSTER,
-    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE,
-    PROGRESS_TIMEOUT,
+    LM_COMPLETIONTIMEOUTPERGIB_CUSTOM,
+    LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM,
+    LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM,
+    LM_PROGRESSTIMEOUT_CUSTOM,
+    PARALLEL_MIGRATIONS_PER_CLUSTER_KEY,
+    PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY,
+    PROGRESS_TIMEOUT_KEY,
 )
 
 
@@ -21,83 +49,131 @@ class TestCRDefaultsOnStanzaDeletion:
         [
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"ca": {"duration": None}}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: None
+                                }
+                            }
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_ca_duration_none",
                 marks=(pytest.mark.polarion("CNV-6377")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"ca": {"renewBefore": None}}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: None
+                                }
+                            }
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_ca_renewbefore_none",
                 marks=(pytest.mark.polarion("CNV-6378")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"ca": {}}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {HCO_CR_CERT_CONFIG_CA_KEY: {}}
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_ca_empty",
                 marks=(pytest.mark.polarion("CNV-6379")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"ca": None}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {HCO_CR_CERT_CONFIG_CA_KEY: None}
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_ca_none",
                 marks=(pytest.mark.polarion("CNV-6380")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"server": {"duration": None}}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: None
+                                }
+                            }
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_server_duration_none",
                 marks=(pytest.mark.polarion("CNV-6381")),
             ),
             pytest.param(
                 {
                     "rpatch": {
-                        "spec": {"certConfig": {"server": {"renewBefore": None}}}
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: None
+                                }
+                            }
+                        }
                     },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_server_renewbefore_none",
                 marks=(pytest.mark.polarion("CNV-6382")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"server": {}}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {HCO_CR_CERT_CONFIG_SERVER_KEY: {}}
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_server_empty",
                 marks=(pytest.mark.polarion("CNV-6383")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {"server": None}}},
+                    "rpatch": {
+                        "spec": {
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: None
+                            }
+                        }
+                    },
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_server_none",
                 marks=(pytest.mark.polarion("CNV-6384")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": {}}},
+                    "rpatch": {"spec": {HCO_CR_CERT_CONFIG_KEY: {}}},
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_empty",
                 marks=(pytest.mark.polarion("CNV-6385")),
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"certConfig": None}},
+                    "rpatch": {"spec": {HCO_CR_CERT_CONFIG_KEY: None}},
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_none",
                 marks=(pytest.mark.polarion("CNV-6386")),
             ),
@@ -105,7 +181,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {}},
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_spec_empty",
                 marks=(pytest.mark.polarion("CNV-6387")),
             ),
@@ -113,7 +189,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": None},
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_spec_none",
                 marks=(pytest.mark.polarion("CNV-6388")),
             ),
@@ -121,7 +197,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {},
                 },
-                src.EXPCT_CERTC_DEFAULTS,
+                EXPCT_CERTC_DEFAULTS,
                 id="defaults_cr_empty",
                 marks=(pytest.mark.polarion("CNV-6389")),
             ),
@@ -129,11 +205,15 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "certConfig": {"ca": {"duration": src.CERTC_CUSTOM_96H}}
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_CUSTOM_96H
+                                }
+                            }
                         }
                     },
                 },
-                src.EXPCT_CERTC_CUSTOM_CA_DUR,
+                EXPCT_CERTC_CUSTOM_CA_DUR,
                 id="defaults_cr_custom_ca_dur",
                 marks=(pytest.mark.polarion("CNV-6390")),
             ),
@@ -141,11 +221,15 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "certConfig": {"ca": {"renewBefore": src.CERTC_CUSTOM_36H}}
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_CA_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_CUSTOM_36H
+                                }
+                            }
                         }
                     },
                 },
-                src.EXPCT_CERTC_CUSTOM_CA_RB,
+                EXPCT_CERTC_CUSTOM_CA_RB,
                 id="defaults_cr_custom_ca_rb",
                 marks=(pytest.mark.polarion("CNV-6391")),
             ),
@@ -153,11 +237,15 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "certConfig": {"server": {"duration": src.CERTC_CUSTOM_36H}}
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_CUSTOM_36H
+                                }
+                            }
                         }
                     },
                 },
-                src.EXPCT_CERTC_CUSTOM_SERVER_DUR,
+                EXPCT_CERTC_CUSTOM_SERVER_DUR,
                 id="defaults_cr_custom_server_dur",
                 marks=(pytest.mark.polarion("CNV-6392")),
             ),
@@ -165,13 +253,15 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {
                         "spec": {
-                            "certConfig": {
-                                "server": {"renewBefore": src.CERTC_CUSTOM_18H}
+                            HCO_CR_CERT_CONFIG_KEY: {
+                                HCO_CR_CERT_CONFIG_SERVER_KEY: {
+                                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_CUSTOM_18H
+                                }
                             }
                         }
                     },
                 },
-                src.EXPCT_CERTC_CUSTOM_SERVER_RB,
+                EXPCT_CERTC_CUSTOM_SERVER_RB,
                 id="defaults_cr_custom_server_rb",
                 marks=(pytest.mark.polarion("CNV-6393")),
             ),
@@ -187,7 +277,7 @@ class TestCRDefaultsOnStanzaDeletion:
         assert (
             hyperconverged_resource_scope_function.instance.to_dict()
             .get("spec")
-            .get("certConfig")
+            .get(HCO_CR_CERT_CONFIG_KEY)
             == expected
         )
 
@@ -200,7 +290,7 @@ class TestCRDefaultsOnStanzaDeletion:
                         "spec": {"featureGates": {"withHostPassthroughCPU": None}}
                     },
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_whp_none",
                 marks=(pytest.mark.polarion("CNV-6394")),
             ),
@@ -208,7 +298,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {"featureGates": {"sriovLiveMigration": None}}},
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_slm_none",
                 marks=(pytest.mark.polarion("CNV-6395")),
             ),
@@ -216,7 +306,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {"featureGates": {}}},
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_empty",
                 marks=(pytest.mark.polarion("CNV-6396")),
             ),
@@ -224,7 +314,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {"featureGates": None}},
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_none",
                 marks=(pytest.mark.polarion("CNV-6397")),
             ),
@@ -232,7 +322,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {}},
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_spec_empty",
                 marks=(pytest.mark.polarion("CNV-6398")),
             ),
@@ -240,7 +330,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": None},
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_spec_none",
                 marks=(pytest.mark.polarion("CNV-6399")),
             ),
@@ -248,7 +338,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {},
                 },
-                src.EXPCT_FG_DEFAULTS,
+                EXPCT_FG_DEFAULTS,
                 id="defaults_fg_cr_empty",
                 marks=(pytest.mark.polarion("CNV-6400")),
             ),
@@ -257,12 +347,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             "featureGates": {
-                                "withHostPassthroughCPU": not src.FG_WITHHOSTPASSTHROUGHCPU_DEFAULT
+                                "withHostPassthroughCPU": not FG_WITHHOSTPASSTHROUGHCPU_DEFAULT
                             }
                         }
                     },
                 },
-                src.EXPCT_FG_CUSTOM_W,
+                EXPCT_FG_CUSTOM_W,
                 id="defaults_fg_custom_whp",
                 marks=(pytest.mark.polarion("CNV-6401")),
             ),
@@ -271,12 +361,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             "featureGates": {
-                                "sriovLiveMigration": not src.FG_SRIOVLIVEMIGRATION_DEFAULT
+                                "sriovLiveMigration": not FG_SRIOVLIVEMIGRATION_DEFAULT
                             }
                         }
                     },
                 },
-                src.EXPCT_FG_CUSTOM_S,
+                EXPCT_FG_CUSTOM_S,
                 id="defaults_fg_custom_slm",
                 marks=(pytest.mark.polarion("CNV-6402")),
             ),
@@ -304,12 +394,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PARALLEL_MIGRATIONS_PER_CLUSTER: None
+                                PARALLEL_MIGRATIONS_PER_CLUSTER_KEY: None
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_pm_none",
                 marks=(pytest.mark.polarion("CNV-6403")),
             ),
@@ -318,12 +408,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: None
+                                PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY: None
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_po_none",
                 marks=(pytest.mark.polarion("CNV-6404")),
             ),
@@ -332,22 +422,24 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                COMPLETION_TIMEOUT_PER_GIB: None
+                                COMPLETION_TIMEOUT_PER_GIB_KEY: None
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_c_none",
                 marks=(pytest.mark.polarion("CNV-6406")),
             ),
             pytest.param(
                 {
                     "rpatch": {
-                        "spec": {LIVE_MIGRATION_CONFIG_KEY: {PROGRESS_TIMEOUT: None}}
+                        "spec": {
+                            LIVE_MIGRATION_CONFIG_KEY: {PROGRESS_TIMEOUT_KEY: None}
+                        }
                     },
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_pt_none",
                 marks=(pytest.mark.polarion("CNV-6407")),
             ),
@@ -355,7 +447,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: {}}},
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_empty",
                 marks=(pytest.mark.polarion("CNV-6408")),
             ),
@@ -363,7 +455,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: None}},
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_none",
                 marks=(pytest.mark.polarion("CNV-6409")),
             ),
@@ -371,7 +463,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {}},
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_spec_empty",
                 marks=(pytest.mark.polarion("CNV-6410")),
             ),
@@ -379,7 +471,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": None},
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_spec_none",
                 marks=(pytest.mark.polarion("CNV-6411")),
             ),
@@ -387,7 +479,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {},
                 },
-                src.EXPCT_LM_DEFAULTS,
+                EXPCT_LM_DEFAULTS,
                 id="defaults_lm_cr_empty",
                 marks=(pytest.mark.polarion("CNV-6412")),
             ),
@@ -396,12 +488,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PARALLEL_MIGRATIONS_PER_CLUSTER: src.LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM
+                                PARALLEL_MIGRATIONS_PER_CLUSTER_KEY: LM_PARALLELMIGRATIONSPERCLUSTER_CUSTOM
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_CUSTOM_PM,
+                EXPCT_LM_CUSTOM_PM,
                 id="defaults_lm_custom_pm",
                 marks=(pytest.mark.polarion("CNV-6413")),
             ),
@@ -410,12 +502,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE: src.LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM
+                                PARALLEL_OUTBOUND_MIGRATIONS_PER_NODE_KEY: LM_PARALLELOUTBOUNDMIGRATIONSPERNODE_CUSTOM
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_CUSTOM_PO,
+                EXPCT_LM_CUSTOM_PO,
                 id="defaults_lm_custom_po",
                 marks=(pytest.mark.polarion("CNV-6414")),
             ),
@@ -424,12 +516,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                COMPLETION_TIMEOUT_PER_GIB: src.LM_COMPLETIONTIMEOUTPERGIB_CUSTOM
+                                COMPLETION_TIMEOUT_PER_GIB_KEY: LM_COMPLETIONTIMEOUTPERGIB_CUSTOM
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_CUSTOM_C,
+                EXPCT_LM_CUSTOM_C,
                 id="defaults_lm_custom_c",
                 marks=(pytest.mark.polarion("CNV-6416")),
             ),
@@ -438,12 +530,12 @@ class TestCRDefaultsOnStanzaDeletion:
                     "rpatch": {
                         "spec": {
                             LIVE_MIGRATION_CONFIG_KEY: {
-                                PROGRESS_TIMEOUT: src.LM_PROGRESSTIMEOUT_CUSTOM
+                                PROGRESS_TIMEOUT_KEY: LM_PROGRESSTIMEOUT_CUSTOM
                             }
                         }
                     },
                 },
-                src.EXPCT_LM_CUSTOM_PT,
+                EXPCT_LM_CUSTOM_PT,
                 id="defaults_lm_custom_pt",
                 marks=(pytest.mark.polarion("CNV-6417")),
             ),

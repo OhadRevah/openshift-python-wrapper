@@ -3,7 +3,19 @@ import logging
 from dictdiffer import diff
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.install_upgrade_operators.strict_reconciliation import constants
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_CA_KEY,
+    HCO_CR_CERT_CONFIG_DURATION_KEY,
+    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
+    HCO_CR_CERT_CONFIG_SERVER_KEY,
+)
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    CERTC_DEFAULT_12H,
+    CERTC_DEFAULT_24H,
+    CERTC_DEFAULT_48H,
+    EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
+    KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
+)
 from tests.install_upgrade_operators.utils import (
     get_function_name,
     get_network_addon_config,
@@ -85,8 +97,7 @@ def validate_featuregates_not_in_kv_cr(
     ]
     return all(
         [
-            (fg in kv_fgs)
-            == constants.KV_CR_FEATUREGATES_HCO_CR_DEFAULTS.get(fg, False)
+            (fg in kv_fgs) == KV_CR_FEATUREGATES_HCO_CR_DEFAULTS.get(fg, False)
             for fg in feature_gates_under_test
         ]
     )
@@ -124,20 +135,20 @@ def compare_expected_with_cr(expected, actual):
 
 def expected_certconfig_stanza():
     return {
-        "ca": {
-            "duration": constants.CERTC_DEFAULT_48H,
-            "renewBefore": constants.CERTC_DEFAULT_24H,
+        HCO_CR_CERT_CONFIG_CA_KEY: {
+            HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_DEFAULT_48H,
+            HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_DEFAULT_24H,
         },
-        "server": {
-            "duration": constants.CERTC_DEFAULT_24H,
-            "renewBefore": constants.CERTC_DEFAULT_12H,
+        HCO_CR_CERT_CONFIG_SERVER_KEY: {
+            HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_DEFAULT_24H,
+            HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_DEFAULT_12H,
         },
     }
 
 
 def remove_items_from_hardcoded_feature_gates(hardcoded_featuregate_to_remove):
     return list(
-        set(constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES)
+        set(EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES)
         - set(hardcoded_featuregate_to_remove)
     )
 

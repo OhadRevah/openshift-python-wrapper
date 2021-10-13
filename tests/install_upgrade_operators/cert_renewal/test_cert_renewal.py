@@ -6,6 +6,10 @@ from tests.install_upgrade_operators.cert_renewal.utils import (
     verify_certificates_dates_identical_to_initial_dates,
     wait_for_certificates_renewal,
 )
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_DURATION_KEY,
+    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
+)
 from utilities.infra import BUG_STATUS_CLOSED
 
 
@@ -20,7 +24,12 @@ class TestCertRotation:
     @pytest.mark.parametrize(
         "hyperconverged_resource_certconfig_change",
         [
-            pytest.param({"duration": "11m", "renewBefore": "10m"}),
+            pytest.param(
+                {
+                    HCO_CR_CERT_CONFIG_DURATION_KEY: "11m",
+                    HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: "10m",
+                }
+            ),
         ],
         indirect=True,
     )
