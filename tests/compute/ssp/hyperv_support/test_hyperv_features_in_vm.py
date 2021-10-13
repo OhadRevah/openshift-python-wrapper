@@ -11,7 +11,6 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import vm_instance_from_template
 
 
@@ -176,10 +175,7 @@ class TestWindowsHyperVFlags:
                 },
                 marks=(
                     pytest.mark.polarion("CNV-6202"),
-                    pytest.mark.bugzilla(
-                        1952551,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
+                    pytest.mark.jira("CNV-11966", run=False),
                 ),
             ),
         ],
