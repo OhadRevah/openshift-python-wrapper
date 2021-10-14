@@ -3,13 +3,12 @@ import logging
 import pytest
 from pytest_testconfig import py_config
 
-from utilities.virt import get_rhel_os_dict, vm_instance_from_template
+from tests.os_params import RHEL_6_10, RHEL_6_10_TEMPLATE_LABELS
+from utilities.virt import vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
 
-RHEL_6 = get_rhel_os_dict(rhel_version="rhel-6-10")
-RHEL_VERSION_TEMPLATE_LABELS = RHEL_6["template_labels"]
 VIRTIO_TRANSITIONAL = "virtio-transitional"
 VIRTIO = "virtio"
 
@@ -35,14 +34,14 @@ def rhel_6_vm(
     [
         pytest.param(
             {
-                "dv_name": RHEL_VERSION_TEMPLATE_LABELS["os"],
-                "image": RHEL_6["image_path"],
-                "dv_size": RHEL_6["dv_size"],
+                "dv_name": RHEL_6_10_TEMPLATE_LABELS["os"],
+                "image": RHEL_6_10["image_path"],
+                "dv_size": RHEL_6_10["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {
                 "vm_name": "rhel-6-vm",
-                "template_labels": RHEL_VERSION_TEMPLATE_LABELS,
+                "template_labels": RHEL_6_10_TEMPLATE_LABELS,
                 "guest_agent": False,
             },
         ),
