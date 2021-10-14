@@ -2204,3 +2204,9 @@ def leftovers_validator(
         leftovers = list(set(collected_resources) - set(leftovers_collector))
         if leftovers:
             raise LeftoversFoundError(leftovers=leftovers)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def tempdir_removed(tmpdir_factory):
+    yield
+    shutil.rmtree(path=tmpdir_factory.getbasetemp(), ignore_errors=True)
