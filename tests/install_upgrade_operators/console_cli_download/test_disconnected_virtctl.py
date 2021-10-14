@@ -42,13 +42,13 @@ class TestDisconnectedVirtctlDownloadAndExecute:
     def test_download_and_execute_virtcli_binary_linux(
         self, virtctl_client_and_server_versions
     ):
-        client_and_server_versions, virtctl_output = virtctl_client_and_server_versions
-        assert (
-            len(client_and_server_versions) == 2
-        ), f"regex did not produced the expected number of matches: virtctl_output={virtctl_output}"
-        assert len(set(client_and_server_versions)) == 1, (
+        assert len(virtctl_client_and_server_versions) == 2, (
+            "regex did not produced the expected number of matches: "
+            "virtctl_client_and_server_versions={virtctl_client_and_server_versions}"
+        )
+        assert len(set(virtctl_client_and_server_versions)) == 1, (
             "Compare error: virtctl client and server versions are not identical: "
-            f"client_and_server_versions={client_and_server_versions}"
+            f"client_and_server_versions={virtctl_client_and_server_versions}"
         )
 
 

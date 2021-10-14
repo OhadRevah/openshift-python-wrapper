@@ -89,7 +89,7 @@ def virtctl_client_and_server_versions(downloaded_and_extracted_virtctl_binary_f
     Get the client and server versions from the virtctl version command
 
     Returns:
-        tuple: re results, virtctl version command output (for triaging)
+        list: re results (client and server virtctl versions)
     """
     _, virtctl_output, _ = run_command(
         command=[f"{downloaded_and_extracted_virtctl_binary_for_os} version"],
@@ -99,4 +99,4 @@ def virtctl_client_and_server_versions(downloaded_and_extracted_virtctl_binary_f
         r'(?:Client|Server).*version.*{GitVersion:"v(.*)",\s+GitCommit',
         virtctl_output,
     )
-    return client_and_server_versions, virtctl_output
+    return client_and_server_versions
