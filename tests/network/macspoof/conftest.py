@@ -1,8 +1,10 @@
 import logging
+import re
 import shlex
 from collections import OrderedDict
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import TIMEOUT_30SEC
@@ -58,7 +60,7 @@ def set_vm_interface_network_mac(vm, mac):
             return
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_bridge_device_worker_1(
     skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node1
 ):
@@ -73,7 +75,7 @@ def linux_bridge_device_worker_1(
         yield br_dev
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_bridge_device_worker_2(
     skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node2
 ):
@@ -88,7 +90,7 @@ def linux_bridge_device_worker_2(
         yield br_dev
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_macspoof_nad(
     namespace,
     linux_bridge_device_worker_1,
@@ -104,7 +106,7 @@ def linux_macspoof_nad(
         yield nad
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_bridge_attached_vma(
     worker_node1,
     unprivileged_client,
@@ -132,7 +134,7 @@ def linux_bridge_attached_vma(
         yield vm
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_bridge_attached_vmb(
     worker_node2,
     unprivileged_client,
@@ -160,17 +162,17 @@ def linux_bridge_attached_vmb(
         yield vm
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_bridge_attached_running_vma(linux_bridge_attached_vma):
     return running_vm(vm=linux_bridge_attached_vma)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def linux_bridge_attached_running_vmb(linux_bridge_attached_vmb):
     return running_vm(vm=linux_bridge_attached_vmb)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def vmb_ip_address(linux_bridge_device_worker_1, linux_bridge_attached_running_vmb):
     return get_vmi_ip_v4_by_name(
         vm=linux_bridge_attached_running_vmb,
@@ -178,7 +180,7 @@ def vmb_ip_address(linux_bridge_device_worker_1, linux_bridge_attached_running_v
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def ping_vmb_from_vma(vmb_ip_address, linux_bridge_attached_running_vma):
     assert_ping_successful(
         src_vm=linux_bridge_attached_running_vma,
@@ -191,3 +193,39 @@ def vma_interface_spoofed_mac(linux_bridge_attached_vma):
     return set_vm_interface_network_mac(
         vm=linux_bridge_attached_vma, mac=MAC_ADDRESS_SPOOF
     )
+
+
+@pytest.fixture()
+def stopped_vms(linux_bridge_attached_running_vma, linux_bridge_attached_running_vmb):
+    vms = (linux_bridge_attached_running_vma, linux_bridge_attached_running_vmb)
+    for vm in vms:
+        vm.stop(wait=True)
+
+    return vms
+
+
+@pytest.fixture()
+def mac_spoof_disabled_nad(linux_macspoof_nad):
+    config = linux_macspoof_nad.instance.spec.config
+    config = re.sub('"macspoofchk": true', '"macspoofchk": false', config)
+    ResourceEditor(
+        patches={
+            linux_macspoof_nad: {
+                "spec": {
+                    "config": config,
+                }
+            }
+        }
+    ).update()
+
+
+@pytest.fixture()
+def vms_without_mac_spoof(
+    stopped_vms,
+    mac_spoof_disabled_nad,
+):
+    for vm in stopped_vms:
+        vm.start(wait=True)
+
+    for vm in stopped_vms:
+        running_vm(vm=vm)
