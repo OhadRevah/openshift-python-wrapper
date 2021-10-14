@@ -1,4 +1,5 @@
 import logging
+import shlex
 import time
 
 import pytest
@@ -9,10 +10,10 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.peer_authentication import PeerAuthentication
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.service import Service
+from ocp_resources.service_account import ServiceAccount
 from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_service import VirtualService
-from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.service_mesh.constants import (
     DEPLOYMENT_TYPE,
@@ -20,8 +21,12 @@ from tests.network.service_mesh.constants import (
     GATEWAY_SELECTOR,
     GATEWAY_TYPE,
     HTTP_PROTOCOL,
+    HTTPBIN_COMMAND,
+    HTTPBIN_IMAGE,
+    HTTPBIN_NAME,
     INGRESS_SERVICE,
     ISTIO_SYSTEM_DEFAULT_NS,
+    MESH_EXCLUDED_NS,
     PEER_AUTHENTICATION_TYPE,
     PORT_80,
     PORT_8080,
@@ -34,13 +39,16 @@ from tests.network.service_mesh.constants import (
     SM_PORT,
     SM_VM_MEMORY_REQ,
     SMMR_NAME,
-    SSH_PORT,
     VERSION_1_DEPLOYMENT,
     VERSION_2_DEPLOYMENT,
     VIRTUAL_SERVICE_TYPE,
 )
-from tests.network.service_mesh.utils import traffic_management_request
+from tests.network.service_mesh.utils import (
+    authentication_request,
+    traffic_management_request,
+)
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN
+from utilities.infra import create_ns, run_ssh_commands
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
@@ -52,7 +60,7 @@ def unique_name(name, type):
     return f"{name}-{type}-{time.time()}".replace(".", "-")
 
 
-class CirrosVirtualMachinefForServiceMesh(VirtualMachineForTests):
+class CirrosVirtualMachineForServiceMesh(VirtualMachineForTests):
     def __init__(
         self,
         name,
@@ -82,19 +90,6 @@ class CirrosVirtualMachinefForServiceMesh(VirtualMachineForTests):
         res["spec"]["template"]["metadata"]["annotations"] = {
             SM_INJECT_ANNOTATION: "true",
         }
-        res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"] = [
-            {
-                "name": "default",
-                "masquerade": {},
-                "ports": [
-                    {
-                        "port": self.interface_port,
-                    },
-                    {"port": SSH_PORT},
-                ],
-            }
-        ]
-        res["spec"]["template"]["spec"]["networks"] = [{"name": "default", "pod": {}}]
 
         return res
 
@@ -227,14 +222,11 @@ class VirtualServiceForTests(VirtualService):
 
 
 class PeerAuthenticationForTests(PeerAuthentication):
-    def __init__(
-        self,
-        name,
-    ):
+    def __init__(self, name, namespace):
         self.name = unique_name(name=name, type=PEER_AUTHENTICATION_TYPE)
         super().__init__(
             name=self.name,
-            namespace=ISTIO_SYSTEM_DEFAULT_NS,
+            namespace=namespace,
         )
 
     def to_dict(self):
@@ -336,16 +328,15 @@ class ServiceMeshMemberRollForTests(ServiceMeshMemberRoll):
         return res
 
 
-def wait_sm_components_convergence(vm, server, destination):
+def wait_sm_components_convergence(func, vm, **kwargs):
     server_response = None
     try:
         for sample in TimeoutSampler(
             wait_timeout=TIMEOUT_1MIN,
             sleep=5,
-            func=traffic_management_request,
+            func=func,
             vm=vm,
-            server=server,
-            destination=destination,
+            **kwargs,
         ):
             server_response = sample[0]
             if "no healthy upstream" not in server_response:
@@ -366,14 +357,7 @@ def skip_if_service_mesh_not_installed(istio_system_namespace):
 
 @pytest.fixture(scope="module")
 def istio_system_namespace(admin_client):
-    try:
-        for ns in Namespace.get(
-            name=ISTIO_SYSTEM_DEFAULT_NS,
-            dyn_client=admin_client,
-        ):
-            return ns
-    except NotFoundError:
-        return None
+    return Namespace(name=ISTIO_SYSTEM_DEFAULT_NS, client=admin_client).exists
 
 
 @pytest.fixture(scope="module")
@@ -383,16 +367,40 @@ def service_mesh_member_roll(namespace):
 
 
 @pytest.fixture(scope="module")
+def mesh_excluded_ns(admin_client):
+    yield from create_ns(admin_client=admin_client, name=MESH_EXCLUDED_NS)
+
+
+@pytest.fixture(scope="module")
 def vm_cirros_with_sm_annotation(
     unprivileged_client,
     namespace,
     service_mesh_member_roll,
 ):
     vm_name = "sm-vm"
-    with CirrosVirtualMachinefForServiceMesh(
+    with CirrosVirtualMachineForServiceMesh(
         client=unprivileged_client,
         name=vm_name,
         namespace=namespace.name,
+    ) as vm:
+        vm.custom_service_enable(
+            service_name=vm_name,
+            port=SM_PORT,
+        )
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
+        yield vm
+
+
+@pytest.fixture(scope="module")
+def outside_mesh_vm_cirros_with_sm_annotation(
+    admin_client,
+    mesh_excluded_ns,
+):
+    vm_name = "out-sm-vm"
+    with CirrosVirtualMachineForServiceMesh(
+        client=admin_client,
+        name=vm_name,
+        namespace=mesh_excluded_ns.name,
     ) as vm:
         vm.custom_service_enable(
             service_name=vm_name,
@@ -486,6 +494,7 @@ def traffic_management_sm_convergence(
     sm_ingress_service_addr,
 ):
     wait_sm_components_convergence(
+        func=traffic_management_request,
         vm=vm_cirros_with_sm_annotation,
         server=server_deployment_v1,
         destination=sm_ingress_service_addr,
@@ -497,13 +506,18 @@ def sm_ingress_service_addr(admin_client, istio_system_namespace):
     for svc in Service.get(
         dyn_client=admin_client,
         name=INGRESS_SERVICE,
-        namespace=istio_system_namespace.name,
+        namespace=istio_system_namespace.metadata.name,
     ):
         return svc.instance.spec.clusterIP
 
 
 @pytest.fixture()
-def change_routing_to_v2(virtual_service_sm, server_deployment_v2):
+def change_routing_to_v2(
+    virtual_service_sm,
+    server_deployment_v2,
+    vm_cirros_with_sm_annotation,
+    sm_ingress_service_addr,
+):
     LOGGER.info(
         f"Change routing to direct traffic only to: {server_deployment_v2.version}"
     )
@@ -525,3 +539,77 @@ def change_routing_to_v2(virtual_service_sm, server_deployment_v2):
         }
     }
     ResourceEditor(patches={virtual_service_sm: patch}).update()
+    wait_sm_components_convergence(
+        func=traffic_management_request,
+        vm=vm_cirros_with_sm_annotation,
+        server=server_deployment_v2,
+        destination=sm_ingress_service_addr,
+    )
+
+
+@pytest.fixture(scope="class")
+def httpbin_deployment_sm(namespace):
+    with ServiceMeshDeployments(
+        name=HTTPBIN_NAME,
+        namespace=namespace.name,
+        version=VERSION_1_DEPLOYMENT,
+        image=HTTPBIN_IMAGE,
+        command=HTTPBIN_COMMAND,
+        port=PORT_8080,
+        service_port=SM_PORT,
+        service_account=True,
+    ) as dp:
+        yield dp
+
+
+@pytest.fixture(scope="class")
+def httpbin_service_account_sm(httpbin_deployment_sm):
+    with ServiceAccount(
+        name=httpbin_deployment_sm.app_name, namespace=httpbin_deployment_sm.namespace
+    ) as sa:
+        yield sa
+
+
+@pytest.fixture(scope="class")
+def httpbin_service_sm(httpbin_deployment_sm, httpbin_service_account_sm):
+    with SMDeploymentService(
+        namespace=httpbin_deployment_sm.namespace,
+        app_name=httpbin_deployment_sm.app_name,
+        port=httpbin_deployment_sm.service_port,
+    ) as sv:
+        yield sv
+
+
+@pytest.fixture(scope="class")
+def peer_authentication_strict_sm(service_mesh_member_roll, namespace):
+    with PeerAuthenticationForTests(
+        name=service_mesh_member_roll.name, namespace=namespace.name
+    ) as pa:
+        yield pa
+
+
+@pytest.fixture(scope="class")
+def peer_authentication_sm_deployment(
+    istio_system_namespace,
+    namespace,
+    service_mesh_member_roll,
+    vm_cirros_with_sm_annotation,
+    mesh_excluded_ns,
+    httpbin_service_sm,
+    peer_authentication_strict_sm,
+):
+    wait_sm_components_convergence(
+        func=authentication_request,
+        vm=vm_cirros_with_sm_annotation,
+        service=httpbin_service_sm.app_name,
+    )
+
+
+@pytest.fixture()
+def vmi_http_server(vm_cirros_with_sm_annotation):
+    run_ssh_commands(
+        host=vm_cirros_with_sm_annotation.ssh_exec,
+        commands=shlex.split(
+            f'while true ; do  echo -e "HTTP/1.1 200 OK\n\n $(date)" | nc -l -p {SM_PORT}  ; done &'
+        ),
+    )

@@ -2,8 +2,8 @@ import shlex
 
 
 SMMR_NAME = "default"
-HTTP_BIN_SERVICE_NAME = "httpbin"
-IN_MESH_NS = "in-mesh"
+HTTPBIN_NAME = "httpbin"
+MESH_EXCLUDED_NS = "outside-mesh"
 ISTIO_SYSTEM_DEFAULT_NS = "istio-system"
 SERVER_DEMO_HOST = "server-demo.example.com"
 SERVER_DEMO_NAME = "server-demo"
