@@ -18,6 +18,7 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
     KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY,
+    LIVE_MIGRATION_CONFIG_BANDWIDTH_PER_MIGRATION_KEY,
     LIVE_MIGRATION_CONFIG_KEY,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
@@ -238,3 +239,16 @@ class TestOperatorsDefaults:
         cr_func_map,
     ):
         assert expected_to_be_absent not in str(cr_func_map[resource_kind_str]).lower()
+
+    @pytest.mark.polarion("CNV-7312")
+    def test_bandwidthpermigration_does_not_exist_in_hco_cr(
+        self,
+        hco_spec,
+    ):
+        assert (
+            LIVE_MIGRATION_CONFIG_BANDWIDTH_PER_MIGRATION_KEY
+            not in hco_spec[LIVE_MIGRATION_CONFIG_KEY]
+        ), (
+            "the key exists, not as expected: "
+            f"key={LIVE_MIGRATION_CONFIG_BANDWIDTH_PER_MIGRATION_KEY} spec={hco_spec[LIVE_MIGRATION_CONFIG_KEY]}"
+        )
