@@ -3,7 +3,10 @@ import logging
 
 import pytest
 
-from tests.install_upgrade_operators.constants import HCO_CR_CERT_CONFIG_KEY
+from tests.install_upgrade_operators.constants import (
+    HCO_CR_CERT_CONFIG_KEY,
+    SIDECAR_FEATURE_GATE_KEY,
+)
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CERTC_DEFAULT_12H,
     CERTC_DEFAULT_24H,
@@ -251,4 +254,17 @@ class TestOperatorsDefaults:
         ), (
             "the key exists, not as expected: "
             f"key={LIVE_MIGRATION_CONFIG_BANDWIDTH_PER_MIGRATION_KEY} spec={hco_spec[LIVE_MIGRATION_CONFIG_KEY]}"
+        )
+
+    @pytest.mark.post_upgrade
+    @pytest.mark.polarion("CNV-7313")
+    def test_sidecar_does_not_exist_in_kubevirt_cr(
+        self,
+        kubevirt_feature_gates,
+    ):
+        assert (
+            SIDECAR_FEATURE_GATE_KEY.lower() not in str(kubevirt_feature_gates).lower()
+        ), (
+            "the key exists, not as expected: "
+            f"key={SIDECAR_FEATURE_GATE_KEY.lower()} spec_featuregates={kubevirt_feature_gates}"
         )
