@@ -1,6 +1,5 @@
-import os.path
+import logging
 import re
-import shutil
 
 import pytest
 from ocp_resources.console_cli_download import ConsoleCLIDownload
@@ -10,6 +9,9 @@ from tests.install_upgrade_operators.console_cli_download.utils import (
     download_and_extract_virtctl_from_cluster,
 )
 from utilities.virt import run_command
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -78,9 +80,7 @@ def downloaded_and_extracted_virtctl_binary_for_os(request, all_virtctl_urls, tm
     assert (
         len(extracted_files) == 1
     ), f"Only a single file expected in archive: extracted_files={extracted_files}"
-    virtctl_binary_full_path = extracted_files[0]
-    yield virtctl_binary_full_path
-    shutil.rmtree(os.path.dirname(virtctl_binary_full_path))
+    return extracted_files[0]
 
 
 @pytest.fixture()
