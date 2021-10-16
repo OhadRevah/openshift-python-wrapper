@@ -6,7 +6,6 @@ from tests.install_upgrade_operators.relationship_labels.constants import (
     CLUSTER_SCOPE_RESOURCES,
     DEPLOYMENTS,
     EXPECTED_COMPONENT_LABELS_DICT_MAP,
-    VERSION_LABEL_KEY,
 )
 
 
@@ -166,16 +165,5 @@ def compare_expected_vs_actual_labels_and_values_get_mismatches(
             "actual": actual_labels[expected_label_key],
         }
         for expected_label_key, expected_label_value in expected_labels.items()
-        if compare_label_key(
-            expected=expected_label_value,
-            actual=actual_labels[expected_label_key],
-            label_key=expected_label_key,
-        )
+        if expected_label_value != actual_labels[expected_label_key]
     }
-
-
-def compare_label_key(expected, actual, label_key):
-    # in nightly/pre-release, the csv version string includes the build number
-    if label_key == VERSION_LABEL_KEY:
-        expected = expected.split("-")[0]
-    return expected != actual

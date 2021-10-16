@@ -12,15 +12,25 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
     verify_labels_values_in_olm_deployments,
     verify_no_missing_labels_in_olm_deployments,
 )
+from utilities.hco import get_hyperconverged_resource
 
 
 @pytest.fixture(scope="class")
-def init_labels_dicts(cnv_current_version):
+def hco_version(admin_client, hco_namespace):
+    return (
+        get_hyperconverged_resource(client=admin_client, hco_ns_name=hco_namespace.name)
+        .instance.status.versions[0]
+        .version
+    )
+
+
+@pytest.fixture(scope="class")
+def init_labels_dicts(hco_version):
     """
     Populate each labels dict with updates with cnv current version
     """
     for label_dict in ALL_EXPECTED_LABELS_DICTS.copy():
-        label_dict[VERSION_LABEL_KEY] = f"v{cnv_current_version}"
+        label_dict[VERSION_LABEL_KEY] = hco_version
 
 
 @pytest.fixture(scope="class")
