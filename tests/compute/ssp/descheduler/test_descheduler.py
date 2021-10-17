@@ -9,6 +9,7 @@ from ocp_resources.configmap import ConfigMap
 from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.operator_group import OperatorGroup
+from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -239,21 +240,17 @@ def installed_descheduler_og(descheduler_ns):
         yield
 
 
-# TODO: Use "redhat-operators" source once the operator is available in 4.9.0
-#       AND
-#         PackageManifest(
-#             name=DESCHEDULER_SUB_NAME, namespace=marketplace_ns
-#         ).instance.status.defaultChannel
-#        for channel
 @pytest.fixture()
 def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
     marketplace_ns = py_config["marketplace_namespace"]
     with Subscription(
         name=DESCHEDULER_SUB_NAME,
         namespace=descheduler_ns.name,
-        source="redhat-operators-v48",
+        source="redhat-operators",
         source_namespace=marketplace_ns,
-        channel="4.8",
+        channel=PackageManifest(
+            name=DESCHEDULER_SUB_NAME, namespace=marketplace_ns
+        ).instance.status.defaultChannel,
     ):
         wait_pod_deploy(
             client=admin_client,
