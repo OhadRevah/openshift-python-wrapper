@@ -1420,9 +1420,14 @@ class Prometheus(object):
         up = prometheus.query("/api/v1/query?query=up")
     """
 
-    def __init__(self, client=None):
-        self.namespace = "openshift-monitoring"
-        self.resource_name = "prometheus-k8s"
+    def __init__(
+        self,
+        namespace="openshift-monitoring",
+        resource_name="prometheus-k8s",
+        client=None,
+    ):
+        self.namespace = namespace
+        self.resource_name = resource_name
         self.client = client or get_admin_client()
         self.api_v1 = "/api/v1"
 
