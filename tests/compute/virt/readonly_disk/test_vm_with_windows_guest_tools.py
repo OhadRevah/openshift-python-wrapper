@@ -119,7 +119,7 @@ class TestWindowsGuestTools:
         verify_cdrom_in_xml(vm=vm_with_guest_tools)
 
     @pytest.mark.bugzilla(
-        2003473, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+        2014438, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.polarion("CNV-6518")
     @pytest.mark.dependency(depends=["vm_with_guest_tools"])
