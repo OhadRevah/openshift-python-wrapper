@@ -10,6 +10,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.operator_group import OperatorGroup
 from ocp_resources.package_manifest import PackageManifest
+from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -19,8 +20,15 @@ from tests.compute.utils import (
     fetch_processid_from_linux_vm,
     start_and_fetch_processid_on_linux_vm,
 )
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN, TIMEOUT_15MIN
-from utilities.infra import ExecCommandOnPod, create_ns, get_pods
+from utilities.constants import (
+    TIMEOUT_1MIN,
+    TIMEOUT_3MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_5SEC,
+    TIMEOUT_10MIN,
+    TIMEOUT_15MIN,
+)
+from utilities.infra import create_ns, get_pods
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -36,6 +44,14 @@ LOGGER = logging.getLogger(__name__)
 DESCHEDULER_POD_LABEL = "app=descheduler"
 DESCHEDULER_SUB_NAME = "cluster-kube-descheduler-operator"
 RUNNING_PROCESS_NAME_IN_VM = "ping"
+
+
+class UnexpectedBehaviorError(Exception):
+    def __init__(self, error_msg):
+        self.error_msg = error_msg
+
+    def __str__(self):
+        return f"Unexpected behavior: {self.error_msg}"
 
 
 class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
@@ -74,19 +90,20 @@ def calculate_vm_deployment(workers_free_memory):
         tuple: (amount of vms to deploy, vm memory requests value)
     """
 
-    def _get_vm_memory_value(vm_amount):
+    def _get_vm_memory_value():
         breakpoints = [20, 50, 400, 8000]
         memory_values = ["1Gi", "2Gi", "10Gi", "80Gi"]
         return memory_values[bisect(breakpoints, vm_amount)]
 
+    # TODO: Calculations should be refined
     # Total free memory value of OS is higher than resources available to OCP node
     # ocp_node_memory_ratio is used to adjust output of "free" command
-    ocp_node_memory_ratio = 0.8
+    ocp_node_memory_ratio = 0.6
     node_amount = len(workers_free_memory)
     assert node_amount >= 2, "Test should run on cluster with 2+ worker nodes"
     total_free = sum(workers_free_memory.values()) * ocp_node_memory_ratio
     vm_amount = round(total_free / node_amount * (node_amount - 1))
-    vm_memory = _get_vm_memory_value(vm_amount=vm_amount)
+    vm_memory = _get_vm_memory_value()
     # adjust vm amount based on value of memory configured for them
     # "-1" is used to ensure the new amount will fit the cluster memory capacity
     # (sometimes cluster mem usage is so tight that last vm is not able to schedule)
@@ -97,7 +114,7 @@ def calculate_vm_deployment(workers_free_memory):
 
 def wait_vmi_failover(vm, orig_node):
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_15MIN, sleep=5, func=lambda: vm.vmi.node.name
+        wait_timeout=TIMEOUT_15MIN, sleep=TIMEOUT_5SEC, func=lambda: vm.vmi.node.name
     )
     LOGGER.info(f"Waiting for {vm.name} to be moved from node {orig_node.name}")
     try:
@@ -106,23 +123,6 @@ def wait_vmi_failover(vm, orig_node):
                 return
     except TimeoutExpiredError:
         LOGGER.error(f"VM {vm.name} failed to deploy on new node")
-        raise
-
-
-def get_descheduler_evicted_vms(descheduler_pod):
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN, sleep=5, func=descheduler_pod.log
-    )
-    sample = None
-    LOGGER.info("Checking descheduler log to get migrated VM names")
-    try:
-        for sample in samples:
-            if "Total number of pods evicted" in sample:
-                LOGGER.info("Descheduler evicted VMs")
-                return re.findall(r"-(vm-\d*-\d*-\d*)-", sample)
-    except TimeoutExpiredError:
-        LOGGER.error(sample)
-        LOGGER.error("No VMs evicted by descheduler")
         raise
 
 
@@ -152,7 +152,7 @@ def verify_vms_distribution_after_failover(vms, nodes):
     sample = None
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_5MIN,
-        sleep=5,
+        sleep=TIMEOUT_5SEC,
         func=_get_vms_per_nodes,
     )
     try:
@@ -172,7 +172,7 @@ def wait_pod_deploy(client, namespace, label):
     """
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_3MIN,
-        sleep=5,
+        sleep=TIMEOUT_5SEC,
         func=get_pods,
         dyn_client=client,
         namespace=namespace,
@@ -192,7 +192,7 @@ def wait_pod_deploy(client, namespace, label):
 def vms_per_nodes(vms):
     """
     Args:
-        vms (list): list of VM objects
+        vms (dict): dict of VM objects
 
     Returns:
         dict: keys - node names, values - number of running VMs
@@ -211,7 +211,7 @@ def vm_nodes(vms):
     return {vm.name: vm.vmi.node for vm in vms}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def skip_if_1tb_memory_or_more_node(workers_free_memory):
     """
     One of QE BM setups has worker with 5 TiB RAM memory while rest workers
@@ -223,14 +223,14 @@ def skip_if_1tb_memory_or_more_node(workers_free_memory):
             pytest.skip("Cluster has node with more than 1 TiB RAM")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def descheduler_ns(admin_client):
     yield from create_ns(
         admin_client=admin_client, name="openshift-kube-descheduler-operator"
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def installed_descheduler_og(descheduler_ns):
     with OperatorGroup(
         name="descheduler-operator-group",
@@ -240,7 +240,7 @@ def installed_descheduler_og(descheduler_ns):
         yield
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
     marketplace_ns = py_config["marketplace_namespace"]
     with Subscription(
@@ -260,7 +260,7 @@ def installed_descheduler_sub(admin_client, descheduler_ns, installed_deschedule
         yield
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_sub):
     with KubeDescheduler(
         name="cluster",
@@ -274,33 +274,52 @@ def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_su
         yield kd
 
 
-@pytest.fixture()
-def updated_descheduler_deployment(installed_descheduler):
-    # Scale descheduler-operator to 0 is a W/A to force descheduler to use threasholds from config map
-    Deployment(
-        name="descheduler-operator", namespace=installed_descheduler.namespace
-    ).scale_replicas(replica_count=0)
+@pytest.fixture(scope="class")
+def downsscaled_descheduler_operator_deployment(admin_client, installed_descheduler):
+    deployment_name = "descheduler-operator"
+    LOGGER.info(
+        f"Scale {deployment_name} to 0 is a W/A to force descheduler to use threasholds from config map"
+    )
+    scale_descheduler_deployment(
+        installed_descheduler=installed_descheduler,
+        deployment_name=deployment_name,
+        replica_count=0,
+    )
 
 
 @pytest.fixture()
-def updated_descheduler_policy(installed_descheduler, updated_descheduler_deployment):
+def downsscaled_descheduler_cluster_deployment(admin_client, installed_descheduler):
+    deployment_name = "cluster"
+    LOGGER.info(f"Scale down descheduler {deployment_name} deployment to stop its work")
+    scale_descheduler_deployment(
+        installed_descheduler=installed_descheduler,
+        deployment_name=deployment_name,
+        replica_count=0,
+    )
+
+
+@pytest.fixture(scope="class")
+def updated_descheduler_policy(
+    installed_descheduler, downsscaled_descheduler_operator_deployment
+):
+    policy_yaml_name = "policy.yaml"
     cm = ConfigMap(
         name=installed_descheduler.name, namespace=installed_descheduler.namespace
     )
     threshold_data = re.search(
         r"targetThresholds\D*(.*?)\D*?thresholdPriority",
-        cm.instance["data"]["policy.yaml"],
+        cm.instance["data"][policy_yaml_name],
         re.DOTALL,
     ).group(1)
     new_thresholds = (
-        "60\n          memory: 60\n          pods: 60\n        thresholds:"
+        "60\n          memory: 80\n          pods: 100\n        thresholds:"
         "\n          cpu: 30\n          memory: 50\n          pods: 30"
     )
     ResourceEditor(
         patches={
             cm: {
                 "data": {
-                    "policy.yaml": re.sub(
+                    policy_yaml_name: re.sub(
                         threshold_data,
                         new_thresholds,
                         cm.instance["data"]["policy.yaml"],
@@ -311,7 +330,7 @@ def updated_descheduler_policy(installed_descheduler, updated_descheduler_deploy
     ).update()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def updated_descheduler(admin_client, descheduler_ns, updated_descheduler_policy):
     get_pods(
         dyn_client=admin_client, namespace=descheduler_ns, label=DESCHEDULER_POD_LABEL
@@ -320,14 +339,13 @@ def updated_descheduler(admin_client, descheduler_ns, updated_descheduler_policy
     ].clean_up()  # apply cm update
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def workers_free_memory(schedulable_nodes, utility_pods):
     nodes_memory = {}
-    cmd = "free -b | grep Mem | awk '{print $4,$6}'"
     for node in schedulable_nodes:
-        pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=node)
-        nodes_memory[node.name] = bitmath.Byte(
-            sum([int(mem) for mem in pod_exec.exec(command=cmd).split()])
+        # allocatable.memory format does not include the Bytes suffix(e.g: 23514144Ki)
+        nodes_memory[node.name] = bitmath.parse_string_unsafe(
+            node.instance.status.allocatable.memory
         ).to_GiB()
         LOGGER.info(
             f"Node {node.name} has {nodes_memory[node.name]} GiB of free memory"
@@ -335,7 +353,7 @@ def workers_free_memory(schedulable_nodes, utility_pods):
     return dict(sorted(nodes_memory.items(), key=lambda item: item[1]))
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def deployed_vms(
     namespace, unprivileged_client, workers_free_memory, nodes_common_cpu_model
 ):
@@ -418,19 +436,122 @@ def drain_node(deployed_vms, vms_orig_nodes, node_to_drain):
                 wait_vmi_failover(vm=vm, orig_node=vms_orig_nodes[vm.name])
 
 
-@pytest.mark.polarion("CNV-5922")
-def test_descheduler(
-    skip_if_1tb_memory_or_more_node,
-    skip_when_one_node,
-    updated_descheduler,
-    deployed_vms,
-    vms_started_process,
-    node_to_drain,
-    descheduler_pod,
-    drain_node,
-    schedulable_nodes,
-):
-    verify_running_process_after_failover(
-        vms_list=deployed_vms, process_dict=vms_started_process
+@pytest.fixture()
+def completed_migrations(admin_client, namespace):
+    """Verify VMs PodDisruptionBudgets are not updated to start migrations.
+
+    Check that once deschduler cluster deployment is scaled down to 0 all VMs have 1 as the desired number of pods.
+    Having a desired state greater than 1 for a VM (i.e its virt-launcher pod) leads to VM migration.
+    """
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=10,
+        func=lambda: list(
+            PodDisruptionBudget.get(
+                dyn_client=admin_client,
+                namespace=namespace.name,
+            )
+        ),
     )
-    verify_vms_distribution_after_failover(vms=deployed_vms, nodes=schedulable_nodes)
+    pdbs_desired_states = None
+    try:
+        for sample in samples:
+            pdbs_desired_states = {
+                pdb.name: pdb.instance.spec.minAvailable
+                for pdb in sample
+                if pdb.instance.spec.minAvailable > 1
+            }
+            # Return if there are no more required migrations
+            if not pdbs_desired_states:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"Some migrations are still created: {pdbs_desired_states}")
+        raise
+
+
+def verify_vms_consistent_virt_launcher_pods(running_vms):
+    """Verify VMs virt launcher pods are not replaced (sampled every one minute).
+
+    Using VMs virt launcher pods to verify that VMs are not migrated nor restarted.
+
+    Args:
+        running_vms (list): list of VMs
+    """
+
+    def _vms_launcher_pods():
+        return {
+            vm.name: vm.vmi.virt_launcher_pod
+            for vm in running_vms
+            if vm.vmi.virt_launcher_pod.status
+            == vm.vmi.virt_launcher_pod.Status.RUNNING
+        }
+
+    orig_virt_launcher_pods = _vms_launcher_pods()
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=TIMEOUT_1MIN,
+        func=_vms_launcher_pods,
+    )
+    try:
+        for sample in samples:
+            if any(
+                [
+                    pod.name != orig_virt_launcher_pods[vm].name
+                    for vm, pod in sample.items()
+                ]
+            ):
+                raise UnexpectedBehaviorError(
+                    error_msg=f"Some VMs were migrated: {sample}"
+                )
+
+    except TimeoutExpiredError:
+        LOGGER.info("No VMs were migrated.")
+
+
+def scale_descheduler_deployment(installed_descheduler, deployment_name, replica_count):
+    """Scale descheduler deployment and wait until all replicas are updated"""
+    descheduler_deployment = Deployment(
+        name=deployment_name, namespace=installed_descheduler.namespace
+    )
+    descheduler_deployment.scale_replicas(replica_count=replica_count)
+    descheduler_deployment.wait_for_replicas(
+        deployed=True if replica_count > 0 else False
+    )
+
+
+@pytest.mark.usefixtures(
+    "skip_if_1tb_memory_or_more_node",
+    "skip_when_one_node",
+)
+class TestDeschduler:
+    @pytest.mark.dependency(name="test_descheduler")
+    @pytest.mark.polarion("CNV-5922")
+    def test_descheduler(
+        self,
+        updated_descheduler,
+        descheduler_pod,
+        deployed_vms,
+        vms_started_process,
+        node_to_drain,
+        drain_node,
+        schedulable_nodes,
+    ):
+        verify_running_process_after_failover(
+            vms_list=deployed_vms, process_dict=vms_started_process
+        )
+        verify_vms_distribution_after_failover(
+            vms=deployed_vms, nodes=schedulable_nodes
+        )
+
+    @pytest.mark.dependency(depends=["test_descheduler"])
+    @pytest.mark.polarion("CNV-7316")
+    def test_no_migrations_storm(
+        self,
+        deployed_vms,
+        downsscaled_descheduler_cluster_deployment,
+        completed_migrations,
+    ):
+        LOGGER.info(
+            "Verify no migration storm after triggered migrations by the descheduler."
+        )
+        verify_vms_consistent_virt_launcher_pods(running_vms=deployed_vms)
