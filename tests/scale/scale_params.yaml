@@ -1,0 +1,29 @@
+# This structure must be preserved in order to run scale tests.
+keep_resources: False
+test_namespace: "scale-test"
+default_vms_cores: &default_num_cores 1
+default_vms_memory: &default_vm_memory 2Gi
+test_duration: 720
+vms_verification_interval: 10
+vms:
+  rhel:
+    ocs:
+      vms: 1
+    nfs:
+      vms: 1
+    cores: *default_num_cores
+    memory: *default_vm_memory
+  win:
+    ocs:
+      vms: 1
+    nfs:
+      vms: 1
+    cores: *default_num_cores
+    memory: 4Gi
+  fedora:
+    ocs:
+      vms: 1
+    nfs:
+      vms: 1
+    cores: *default_num_cores
+    memory: *default_vm_memory
