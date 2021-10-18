@@ -81,7 +81,7 @@ def importer_pod(admin_client, namespace):
             {
                 "vm_priority_class_value": 1000000,
             },
-            marks=(pytest.mark.polarion("CNV-6806")),
+            marks=(pytest.mark.polarion("CNV-6808")),
         ),
     ],
     indirect=True,
