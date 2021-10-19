@@ -26,17 +26,17 @@ EXPECTED_LINK_MAP = {
 @pytest.mark.polarion("CNV-4456")
 @pytest.mark.smoke
 @pytest.mark.ocp_interop
-def test_csv_keywords(csv):
+def test_csv_keywords(csv_scope_session):
     """
     Assert keywords. Check that each one of the expected keywords are actually there
     """
-    assert EXPECTED_KEYWORDS_SET == set(csv.instance.spec.keywords)
+    assert EXPECTED_KEYWORDS_SET == set(csv_scope_session.instance.spec.keywords)
 
 
 @pytest.mark.polarion("CNV-4457")
 @pytest.mark.smoke
 @pytest.mark.ocp_interop
-def test_csv_links(csv):
+def test_csv_links(csv_scope_session):
     """
     Check links list.
     """
@@ -44,24 +44,24 @@ def test_csv_links(csv):
     # translate the links list to a single name:url dict
     csv_link_map = {
         link_dict.get("name"): link_dict.get("url")
-        for link_dict in csv.instance.spec.links
+        for link_dict in csv_scope_session.instance.spec.links
     }
     # check that the links list contains all the required name:url pairs
     assert EXPECTED_LINK_MAP == csv_link_map
     # check that there are no duplication in links list
-    assert len(EXPECTED_LINK_MAP) == len(csv.instance.spec.links)
+    assert len(EXPECTED_LINK_MAP) == len(csv_scope_session.instance.spec.links)
 
 
 @pytest.mark.polarion("CNV-4458")
 @pytest.mark.smoke
 @pytest.mark.ocp_interop
-def test_csv_icon(csv):
+def test_csv_icon(csv_scope_session):
     """
     Assert Icon/Logo.
     """
-    assert len(csv.instance.spec.icon) == 1
-    assert csv.instance.spec.icon[0].mediatype == "image/svg+xml"
-    svg = b64decode(s=csv.instance.spec.icon[0].base64data)
+    assert len(csv_scope_session.instance.spec.icon) == 1
+    assert csv_scope_session.instance.spec.icon[0].mediatype == "image/svg+xml"
+    svg = b64decode(s=csv_scope_session.instance.spec.icon[0].base64data)
     with open("tests/install_upgrade_operators/csv/logo.svg", "rb") as logo_file:
         expected_svg = logo_file.read()
 
@@ -72,26 +72,26 @@ def test_csv_icon(csv):
 @pytest.mark.polarion("CNV-4376")
 @pytest.mark.smoke
 @pytest.mark.ocp_interop
-def test_csv_properties(csv):
+def test_csv_properties(csv_scope_session):
     """
     Asserting remaining csv properties.
     """
-    assert csv.instance.spec.provider.name == "Red Hat"
-    assert csv.instance.spec.displayName == "OpenShift Virtualization"
+    assert csv_scope_session.instance.spec.provider.name == "Red Hat"
+    assert csv_scope_session.instance.spec.displayName == "OpenShift Virtualization"
 
-    annotations = csv.instance.metadata.annotations
+    annotations = csv_scope_session.instance.metadata.annotations
     assert annotations.get("capabilities") == "Deep Insights"
     assert annotations.get("support") == "Red Hat"
 
 
 @pytest.mark.polarion("CNV-7297")
-def test_csv_fips_annotation(csv, csv_annotation):
+def test_csv_fips_annotation(csv_scope_session, csv_annotation):
     """
     Validates "fips" has been added to csv's operators.openshift.io/infrastructure-features annotation
     """
     expected_value = "fips"
     assert expected_value in csv_annotation, (
-        f"For csv: {csv.name} annotation "
-        f"{csv.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features:"
+        f"For csv: {csv_scope_session.name} annotation "
+        f"{csv_scope_session.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features:"
         f" {csv_annotation} does not contain expected value: {expected_value}"
     )

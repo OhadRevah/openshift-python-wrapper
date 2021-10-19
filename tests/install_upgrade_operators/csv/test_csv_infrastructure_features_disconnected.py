@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.polarion("CNV-5840")
-def test_csv_infrastructure_features_disconnected(csv, csv_annotation):
+def test_csv_infrastructure_features_disconnected(csv_annotation):
     """
     In the Cluster Service Version annotations for Infrastructure Feature disconnected looks like:
     '["disconnected", "proxy-aware"]'.

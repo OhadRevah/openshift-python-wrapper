@@ -73,7 +73,11 @@ from utilities.constants import (
     UNPRIVILEGED_USER,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
-from utilities.hco import apply_np_changes, get_hyperconverged_resource
+from utilities.hco import (
+    apply_np_changes,
+    get_hyperconverged_resource,
+    get_installed_hco_csv,
+)
 from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
@@ -87,7 +91,6 @@ from utilities.infra import (
     get_admin_client,
     get_cluster_resources,
     get_clusterversion,
-    get_csv_by_name,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -1595,19 +1598,17 @@ def worker_nodes_ipv4_false_secondary_nics(
 
 
 @pytest.fixture(scope="session")
-def csv(admin_client, hco_namespace, cnv_subscription_scope_session):
-    if cnv_subscription_scope_session:
-        return get_csv_by_name(
-            csv_name=cnv_subscription_scope_session.instance.status.installedCSV,
-            admin_client=admin_client,
-            namespace=hco_namespace.name,
+def csv_scope_session(is_downstream_distribution, admin_client, hco_namespace):
+    if is_downstream_distribution:
+        return get_installed_hco_csv(
+            admin_client=admin_client, hco_namespace=hco_namespace
         )
 
 
 @pytest.fixture(scope="session")
-def cnv_current_version(is_downstream_distribution, csv):
-    if is_downstream_distribution:
-        return csv.instance.spec.version
+def cnv_current_version(csv_scope_session):
+    if csv_scope_session:
+        return csv_scope_session.instance.spec.version
 
 
 @pytest.fixture(scope="session")

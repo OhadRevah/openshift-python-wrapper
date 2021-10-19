@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 import pytest
-from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 
@@ -16,17 +15,9 @@ NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
 
 
 @pytest.fixture(scope="class")
-def csv_scope_class(admin_client, hco_namespace):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=admin_client, namespace=hco_namespace.name
-    ):
-        return csv
-
-
-@pytest.fixture(scope="class")
-def bad_cnao_deployment_linux_bridge(csv_scope_class):
+def bad_cnao_deployment_linux_bridge(csv_scope_session):
     name = "cluster-network-addons-operator"
-    csv_dict = deepcopy(csv_scope_class.instance.to_dict())
+    csv_dict = deepcopy(csv_scope_session.instance.to_dict())
     for deployment in csv_dict["spec"]["install"]["spec"]["deployments"]:
         if deployment["name"] == name:
             deployment_env = deployment["spec"]["template"]["spec"]["containers"][0][
@@ -40,9 +31,9 @@ def bad_cnao_deployment_linux_bridge(csv_scope_class):
 
 
 @pytest.fixture(scope="class")
-def bad_cnao_operator(csv_scope_class):
+def bad_cnao_operator(csv_scope_session):
     name = "cluster-network-addons-operator"
-    csv_dict = deepcopy(csv_scope_class.instance.to_dict())
+    csv_dict = deepcopy(csv_scope_session.instance.to_dict())
     for deployment in csv_dict["spec"]["install"]["spec"]["deployments"]:
         if deployment["name"] == name:
             containers = deployment["spec"]["template"]["spec"]["containers"][0]
@@ -57,17 +48,17 @@ def bad_cnao_operator(csv_scope_class):
 
 @pytest.fixture(scope="class")
 def invalid_cnao_linux_bridge(
-    admin_client, hco_namespace, csv_scope_class, bad_cnao_deployment_linux_bridge
+    admin_client, hco_namespace, csv_scope_session, bad_cnao_deployment_linux_bridge
 ):
-    with ResourceEditor(patches={csv_scope_class: bad_cnao_deployment_linux_bridge}):
+    with ResourceEditor(patches={csv_scope_session: bad_cnao_deployment_linux_bridge}):
         yield
 
 
 @pytest.fixture(scope="class")
 def invalid_cnao_operator(
-    admin_client, hco_namespace, csv_scope_class, bad_cnao_operator
+    admin_client, hco_namespace, csv_scope_session, bad_cnao_operator
 ):
-    with ResourceEditor(patches={csv_scope_class: bad_cnao_operator}):
+    with ResourceEditor(patches={csv_scope_session: bad_cnao_operator}):
         yield
 
 

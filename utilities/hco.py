@@ -8,8 +8,15 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN, TIMEOUT_15MIN
+from utilities.constants import (
+    HCO_SUBSCRIPTION,
+    TIMEOUT_4MIN,
+    TIMEOUT_10MIN,
+    TIMEOUT_15MIN,
+)
 from utilities.infra import (
+    get_csv_by_name,
+    get_subscription,
     wait_for_consistent_resource_conditions,
     wait_for_pods_running,
 )
@@ -214,6 +221,19 @@ def get_hco_spec(admin_client, hco_namespace):
     return get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     ).instance.to_dict()["spec"]
+
+
+def get_installed_hco_csv(admin_client, hco_namespace):
+    cnv_subscription = get_subscription(
+        admin_client=admin_client,
+        namespace=hco_namespace.name,
+        subscription_name=HCO_SUBSCRIPTION,
+    )
+    return get_csv_by_name(
+        csv_name=cnv_subscription.instance.status.installedCSV,
+        admin_client=admin_client,
+        namespace=hco_namespace.name,
+    )
 
 
 def get_hco_version(client, hco_ns_name):

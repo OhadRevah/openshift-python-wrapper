@@ -62,10 +62,10 @@ def skip_if_nightly_channel(kubevirt_package_manifest):
 
 
 @pytest.fixture()
-def csv_annotation(csv):
+def csv_annotation(csv_scope_session):
     """
-    Gets csv annotation for csv.ApiGroup.INFRA_FEATURES
+    Gets csv annotation for csv_scope_session.ApiGroup.INFRA_FEATURES
     """
-    return csv.instance.metadata.annotations.get(
-        f"{csv.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features"
+    return csv_scope_session.instance.metadata.annotations.get(
+        f"{csv_scope_session.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features"
     )
