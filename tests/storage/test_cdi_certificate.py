@@ -216,6 +216,7 @@ def test_dv_delete_from_vm(
 
 @pytest.mark.polarion("CNV-3667")
 def test_upload_after_certs_renewal(
+    skip_if_sc_volume_binding_mode_is_wffc,
     refresh_cdi_certificates,
     download_image,
     namespace,
@@ -235,7 +236,7 @@ def test_upload_after_certs_renewal(
     ) as res:
         status, out, _ = res
         LOGGER.info(out)
-        assert status
+        assert status, out
         assert "Processing completed successfully" in out
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=TIMEOUT_1MIN)
@@ -283,6 +284,7 @@ def test_import_clone_after_certs_renewal(
 
 @pytest.mark.polarion("CNV-3977")
 def test_upload_after_validate_aggregated_api_cert(
+    skip_if_sc_volume_binding_mode_is_wffc,
     valid_aggregated_api_client_cert,
     namespace,
     storage_class_matrix__module__,
@@ -302,7 +304,7 @@ def test_upload_after_validate_aggregated_api_cert(
     ) as res:
         status, out, _ = res
         LOGGER.info(out)
-        assert status
+        assert status, out
         assert "Processing completed successfully" in out
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=TIMEOUT_1MIN)

@@ -380,3 +380,12 @@ def skip_if_post_cnv_upgrade_cluster_and_labels_bug_not_closed(
         get_bug_status(bug=2017478) not in BUG_STATUS_CLOSED
     ) and is_post_cnv_upgrade_cluster:
         pytest.skip("Skip labels test on post cnv upgrade cluster")
+
+
+@pytest.fixture()
+def skip_if_sc_volume_binding_mode_is_wffc(storage_class_matrix__module__):
+    storage_class = [*storage_class_matrix__module__][0]
+    if sc_volume_binding_mode_is_wffc(sc=storage_class):
+        pytest.skip(
+            "Test does not support storage class with WaitForFirstConsumer binding mode"
+        )
