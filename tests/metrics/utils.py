@@ -56,7 +56,9 @@ def prometheus_query(prometheus, query):
 
 def get_metric_by_prometheus_query(prometheus, query):
 
-    response = prometheus_query(prometheus=prometheus, query=query)
+    response = prometheus_query(
+        prometheus=prometheus, query=f"/api/v1/query?query={query}"
+    )
     LOGGER.info(f"Prometheus query: {query}, response: {response}")
     return response
 
@@ -137,6 +139,18 @@ def get_vm_metrics(prometheus, query, vm_name, timeout=TIMEOUT_5MIN):
         raise
 
 
+def get_all_prometheus_alerts(prometheus):
+    """This function will give all alerts.
+
+    Args:
+        prometheus (:obj:`Prometheus`): Prometheus object.
+
+    Returns:
+        Dictionary: Query response.
+    """
+    return prometheus_query(prometheus=prometheus, query="/api/v1/alerts")
+
+
 def get_hco_cr_modification_alert_state(prometheus, component_name):
     """This function will check the 'KubevirtHyperconvergedClusterOperatorCRModification'
     an alert generated after the 'kubevirt_hco_out_of_band_modifications_count' metrics triggered.
@@ -150,7 +164,9 @@ def get_hco_cr_modification_alert_state(prometheus, component_name):
 
     # Find an alert "KubevirtHyperconvergedClusterOperatorCRModification" and return it's state.
     def _get_state():
-        for alert in prometheus.alerts["data"].get("alerts", []):
+        for alert in get_all_prometheus_alerts(prometheus=prometheus)["data"].get(
+            "alerts", []
+        ):
             if (
                 alert["labels"]["alertname"] == KUBEVIRT_CR_ALERT_NAME
                 and component_name == alert["labels"]["component_name"]
@@ -185,7 +201,9 @@ def get_hco_cr_modification_alert_summary_with_count(prometheus, component_name)
 
     # Find an alert "KubevirtHyperconvergedClusterOperatorCRModification" and return it's summary.
     def _get_summary():
-        for alert in prometheus.alerts["data"].get("alerts", []):
+        for alert in get_all_prometheus_alerts(prometheus=prometheus)["data"].get(
+            "alerts", []
+        ):
             if (
                 alert["labels"]["alertname"] == KUBEVIRT_CR_ALERT_NAME
                 and component_name == alert["labels"]["component_name"]
@@ -217,7 +235,9 @@ def get_all_hco_cr_modification_alert(prometheus):
     """
     # Find how many "KubevirtHyperconvergedClusterOperatorCRModification" alert are present.
     present_alerts = []
-    for alert in prometheus.alerts["data"].get("alerts", []):
+    for alert in get_all_prometheus_alerts(prometheus=prometheus)["data"].get(
+        "alerts", []
+    ):
         if alert["labels"]["alertname"] == KUBEVIRT_CR_ALERT_NAME:
             present_alerts.append(alert)
     return present_alerts

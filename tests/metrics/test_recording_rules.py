@@ -63,7 +63,7 @@ def test_virt_recording_rules(
     2008166, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.parametrize(
-    "virt_up_metrics_values, virt_pod_names_by_label",
+    "virt_pod_names_by_label, virt_up_metrics_values",
     [
         pytest.param(
             "kubevirt_virt_api_up_total",

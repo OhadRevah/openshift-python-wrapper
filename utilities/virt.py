@@ -1429,7 +1429,6 @@ class Prometheus(object):
         self.namespace = "openshift-monitoring"
         self.resource_name = "prometheus-k8s"
         self.client = client or get_admin_client()
-        self.api_v1 = "/api/v1"
 
         # get route to prometheus HTTP api
         self.api_url = self._get_route()
@@ -1466,10 +1465,15 @@ class Prometheus(object):
 
         return {"Authorization": f"Bearer {token}"}
 
-    def _get_response(self, query):
+    def query(self, query):
         requests.packages.urllib3.disable_warnings()
+
+        # TODO: Remove query_path once all code refactor
+        _query_path_prefix = "/api/v1/"
+        _query_path = f"{_query_path_prefix}query?query="
+        query_path = _query_path if _query_path_prefix not in query else ""
         response = requests.get(
-            f"{self.api_url}{query}", headers=self.headers, verify=False
+            f"{self.api_url}{query_path}{query}", headers=self.headers, verify=False
         )
 
         try:
@@ -1480,13 +1484,6 @@ class Prometheus(object):
                 f"exc={json_exception} response_status_code={response.status_code} response={response.content}"
             )
             raise
-
-    def query(self, query):
-        return self._get_response(query=f"{self.api_v1}/query?query={query}")
-
-    @property
-    def alerts(self):
-        return self._get_response(query=f"{self.api_v1}/alerts")
 
 
 def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN):
