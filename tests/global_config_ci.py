@@ -15,7 +15,7 @@ sriov_namespace = "sriov-network-operator"
 linux_bridge_cni = "bridge"
 bridge_tuning = "tuning"
 region = "EMEA"
-
+golden_images_namespace = "kubevirt-os-images"
 default_storage_class = "local"
 
 storage_class_matrix = [
