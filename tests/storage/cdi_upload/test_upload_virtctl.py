@@ -269,8 +269,9 @@ def test_virtctl_image_upload_with_exist_dv(
             status, out, _ = res
             LOGGER.info(out)
             assert "Processing completed successfully" in out
-            with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-                storage_utils.check_disk_count_in_vm(vm=vm)
+            if not sc_volume_binding_mode_is_wffc(sc=storage_class):
+                with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
+                    storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.fixture()
@@ -323,15 +324,16 @@ def test_virtctl_image_upload_with_exist_pvc(
         status, out, _ = res
         LOGGER.info(out)
         assert "Processing completed successfully" in out
-        with VirtualMachineForTests(
-            name="cnv-3727-vm",
-            namespace=empty_pvc.namespace,
-            os_flavor=OS_FLAVOR_CIRROS,
-            memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-            pvc=empty_pvc,
-        ) as vm:
-            running_vm(vm=vm, wait_for_interfaces=False)
-            storage_utils.check_disk_count_in_vm(vm=vm)
+        if not sc_volume_binding_mode_is_wffc(sc=storage_class):
+            with VirtualMachineForTests(
+                name="cnv-3727-vm",
+                namespace=empty_pvc.namespace,
+                os_flavor=OS_FLAVOR_CIRROS,
+                memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+                pvc=empty_pvc,
+            ) as vm:
+                running_vm(vm=vm, wait_for_interfaces=False)
+                storage_utils.check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.polarion("CNV-3729")
