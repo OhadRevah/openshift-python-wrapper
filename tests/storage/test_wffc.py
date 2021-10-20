@@ -10,9 +10,10 @@ import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN, TIMEOUT_10MIN, Images
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_10MIN, Images
 from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
@@ -22,7 +23,7 @@ from utilities.storage import (
     get_images_server_url,
     virtctl_upload_dv,
 )
-from utilities.virt import VirtualMachineForTests, running_vm
+from utilities.virt import VirtualMachineForTests, running_vm, wait_for_ssh_connectivity
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -30,6 +31,8 @@ pytestmark = pytest.mark.post_upgrade
 
 LOGGER = logging.getLogger(__name__)
 
+
+WFFC_DV_NAME = "wffc-dv-name"
 REMOTE_PATH = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 DV_PARAMS = {
     "dv_name": "dv-wffc-tests",
@@ -124,6 +127,106 @@ def _valid_vm_and_disk_count(vm):
     storage_utils.check_disk_count_in_vm(vm=vm)
 
 
+@pytest.fixture(scope="class")
+def downloaded_image_full_path(tmpdir_factory):
+    return tmpdir_factory.mktemp("wffc_upload").join(Images.Cirros.QCOW2_IMG)
+
+
+@pytest.fixture(scope="class")
+def uploaded_wffc_dv(namespace):
+    return DataVolume(namespace=namespace.name, name=WFFC_DV_NAME)
+
+
+@pytest.fixture(scope="class")
+def downloaded_image_scope_class(downloaded_image_full_path):
+    downloaded_image(
+        remote_name=REMOTE_PATH,
+        local_name=downloaded_image_full_path,
+    )
+
+
+@pytest.fixture(scope="class")
+def uploaded_dv_via_virtctl_wffc(
+    namespace, downloaded_image_full_path, downloaded_image_scope_class
+):
+    with virtctl_upload_dv(
+        namespace=namespace.name,
+        name=WFFC_DV_NAME,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        image_path=downloaded_image_full_path,
+        storage_class=StorageClass.Types.HOSTPATH,
+        insecure=True,
+        consume_wffc=False,
+    ) as res:
+        yield res
+
+
+@pytest.fixture()
+def vm_from_uploaded_dv(namespace, uploaded_dv_via_virtctl_wffc, uploaded_wffc_dv):
+    with storage_utils.create_vm_from_dv(
+        dv=uploaded_wffc_dv,
+        vm_name=WFFC_DV_NAME,
+        start=False,
+    ) as vm_dv:
+        vm_dv.start(wait=False)
+        vm_dv.vmi.wait_for_status(status=VirtualMachineInstance.Status.PENDING)
+        yield vm_dv
+
+
+class TestWFFCUploadVirtctl:
+    @pytest.mark.polarion("CNV-4711")
+    def test_wffc_fail_to_upload_dv_via_virtctl(
+        self,
+        namespace,
+        skip_test_if_no_hpp_sc,
+        skip_when_hpp_no_waitforfirstconsumer,
+        enable_wffc_feature_gate,
+        uploaded_dv_via_virtctl_wffc,
+        uploaded_wffc_dv,
+    ):
+        status, out, _ = uploaded_dv_via_virtctl_wffc
+        assert (
+            not status
+        ), "Upload DV via virtctl, with wffc SC binding mode ended up with success instead of failure"
+        assert (
+            "cannot upload to DataVolume in WaitForFirstConsumer state, make sure the PVC is Bound"
+            in out
+        ), out
+        pending_status = uploaded_wffc_dv.pvc.Status.PENDING
+        wffc_status = uploaded_wffc_dv.Status.WAIT_FOR_FIRST_CONSUMER
+        assert (
+            uploaded_wffc_dv.pvc.status == pending_status
+        ), f"The status of PVC {uploaded_wffc_dv.pvc.name}:{uploaded_wffc_dv.pvc.status} and not {pending_status}"
+        assert (
+            uploaded_wffc_dv.status == wffc_status
+        ), f"The status of DV {uploaded_wffc_dv.name}:{uploaded_wffc_dv.status} and not {wffc_status}"
+
+    @pytest.mark.polarion("CNV-7413")
+    def test_wffc_create_vm_from_uploaded_dv_via_virtctl(
+        self,
+        skip_test_if_no_hpp_sc,
+        skip_when_hpp_no_waitforfirstconsumer,
+        enable_wffc_feature_gate,
+        downloaded_image_full_path,
+        vm_from_uploaded_dv,
+    ):
+        with virtctl_upload_dv(
+            namespace=vm_from_uploaded_dv.namespace,
+            name=WFFC_DV_NAME,
+            size=Images.Cirros.DEFAULT_DV_SIZE,
+            image_path=downloaded_image_full_path,
+            storage_class=StorageClass.Types.HOSTPATH,
+            insecure=True,
+            consume_wffc=False,
+            cleanup=False,
+        ) as res:
+            status, out, _ = res
+            assert status, out
+            vm_from_uploaded_dv.vmi.wait_until_running()
+            wait_for_ssh_connectivity(vm=vm_from_uploaded_dv, timeout=TIMEOUT_2MIN)
+            storage_utils.check_disk_count_in_vm(vm=vm_from_uploaded_dv)
+
+
 @pytest.mark.parametrize(
     "data_volume_scope_function",
     [
@@ -195,35 +298,6 @@ def test_wffc_upload_dv_via_token(
             storage_ns_name=namespace.name, pvc_name=dv.pvc.name, data=local_name
         )
         dv.wait()
-        with storage_utils.create_vm_from_dv(dv=dv, vm_name=dv_name) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm=vm_dv)
-
-
-@pytest.mark.polarion("CNV-4711")
-def test_wffc_upload_dv_via_virtctl(
-    skip_test_if_no_hpp_sc,
-    skip_when_hpp_no_waitforfirstconsumer,
-    enable_wffc_feature_gate,
-    namespace,
-    tmpdir,
-):
-    dv_name = "cnv-4711"
-    local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
-    downloaded_image(
-        remote_name=REMOTE_PATH,
-        local_name=local_name,
-    )
-    with virtctl_upload_dv(
-        namespace=namespace.name,
-        name=dv_name,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-        image_path=local_name,
-        storage_class=StorageClass.Types.HOSTPATH,
-        insecure=True,
-        consume_wffc=True,
-    ):
-        dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, vm_name=dv_name) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 

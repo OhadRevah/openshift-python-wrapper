@@ -394,6 +394,7 @@ def virtctl_upload_dv(
     insecure=False,
     no_create=False,
     consume_wffc=True,
+    cleanup=True,
 ):
     command = [
         "image-upload",
@@ -457,7 +458,8 @@ def virtctl_upload_dv(
 
     if thread:
         thread.join()
-    resource_to_cleanup.delete(wait=True)
+    if cleanup:
+        resource_to_cleanup.clean_up()
 
 
 class HttpDeployment(Deployment):
