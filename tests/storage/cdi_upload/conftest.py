@@ -5,9 +5,10 @@ CDI Import
 import logging
 
 import pytest
+from ocp_resources.datavolume import DataVolume
 
-from utilities.constants import Images
-from utilities.storage import downloaded_image
+from utilities.constants import TIMEOUT_1MIN, Images
+from utilities.storage import downloaded_image, virtctl_upload_dv
 
 
 LOGGER = logging.getLogger(__name__)
@@ -33,3 +34,35 @@ def download_specified_image(request, tmpdir_factory):
     )
     downloaded_image(remote_name=request.param.get("image_path"), local_name=local_path)
     return local_path
+
+
+@pytest.fixture()
+def uploaded_dv(
+    request,
+    namespace,
+    storage_class_matrix__module__,
+    tmpdir,
+):
+    storage_class = [*storage_class_matrix__module__][0]
+    image_file = request.param.get("image_file")
+    dv_name = image_file.split(".")[0].replace("_", "-").lower()
+    local_path = f"{tmpdir}/{image_file}"
+    downloaded_image(
+        remote_name=request.param.get("remote_name"), local_name=local_path
+    )
+    with virtctl_upload_dv(
+        namespace=namespace.name,
+        name=dv_name,
+        size=request.param.get("dv_size"),
+        storage_class=storage_class,
+        image_path=local_path,
+        insecure=True,
+    ) as res:
+        status, out, _ = res
+        LOGGER.info(out)
+        assert status
+        dv = DataVolume(namespace=namespace.name, name=dv_name)
+        dv.wait(timeout=TIMEOUT_1MIN)
+        assert dv.pvc.bound(), f"PVC status is {dv.pvc.status}"
+        yield dv
+        dv.delete(wait=True)

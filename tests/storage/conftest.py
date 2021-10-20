@@ -11,7 +11,6 @@ import os
 import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.resource import ResourceEditor
@@ -22,7 +21,7 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
-from utilities.constants import TIMEOUT_1MIN, Images
+from utilities.constants import Images
 from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
     get_cert,
@@ -32,7 +31,6 @@ from utilities.storage import (
     HttpDeployment,
     downloaded_image,
     sc_volume_binding_mode_is_wffc,
-    virtctl_upload_dv,
     wait_for_default_sc_in_cdiconfig,
 )
 
@@ -233,46 +231,6 @@ def registry_config_map(namespace):
         data={"tlsregistry.crt": get_cert(server_type="registry_cert")},
     ) as configmap:
         yield configmap
-
-
-@pytest.fixture()
-def uploaded_dv(
-    request,
-    namespace,
-    storage_class_matrix__class__,
-    tmpdir,
-):
-    storage_class = [*storage_class_matrix__class__][0]
-    image_file = request.param.get("image_file")
-    dv_name = image_file.split(".")[0].replace("_", "-").lower()
-    local_path = f"{tmpdir}/{image_file}"
-    downloaded_image(
-        remote_name=request.param.get("remote_name"), local_name=local_path
-    )
-    with virtctl_upload_dv(
-        namespace=namespace.name,
-        name=dv_name,
-        size=request.param.get("dv_size"),
-        storage_class=storage_class,
-        image_path=local_path,
-        insecure=True,
-    ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status
-        dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=TIMEOUT_1MIN)
-        assert dv.pvc.bound()
-        yield dv
-        dv.delete(wait=True)
-        # We do not want 11-30G~ files in /tmp
-        # Pytest will only cleanup every 3 tmpdir calls
-        try:
-            LOGGER.info("Deleting image file from tmpdir")
-            os.remove(os.path.join(tmpdir, image_file))
-        except OSError as e:
-            LOGGER.error(e)
-            raise
 
 
 @pytest.fixture()
