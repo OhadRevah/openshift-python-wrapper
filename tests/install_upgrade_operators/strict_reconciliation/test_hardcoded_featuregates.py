@@ -9,6 +9,9 @@ from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
+
+
 class TestHardcodedFeatureGates:
     @pytest.mark.parametrize(
         ("updated_delete_resource", "expected"),

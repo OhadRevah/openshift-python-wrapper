@@ -3,6 +3,9 @@ import ast
 import pytest
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.polarion("CNV-5840")
 def test_csv_infrastructure_features_disconnected(csv_annotation):
     """

@@ -6,6 +6,9 @@ from tests.install_upgrade_operators.deployment.utils import (
 )
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.parametrize(
     "deployment_by_name",
     [

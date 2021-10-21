@@ -5,13 +5,13 @@ import pytest
 from tests.metrics import utils
 
 
+pytestmark = pytest.mark.sno
 STRESS_NG = "stress-ng --cpu 8 --io 2 --vm 2 --vm-bytes 128M --timeout 60s &>1 &"
 STORAGE_WRITE = "for i in {1..10}; do head -c 10M </dev/urandom > randfile$i; done"
 STORAGE_READ = "for i in {1..20}; do cat /etc/hosts; done"
 NODE_STRESS_SETUP = "sudo sysctl -w kernel.sched_schedstats=1"
 NODE_STRESS_CLEANUP = "sudo sysctl -w kernel.sched_schedstats=0"
 STRESS_NG_MEMORY = "stress-ng --vm 2 --vm-bytes 90% --vm-method all -t 15m  &>1 &"
-
 LOGGER = logging.getLogger(__name__)
 
 

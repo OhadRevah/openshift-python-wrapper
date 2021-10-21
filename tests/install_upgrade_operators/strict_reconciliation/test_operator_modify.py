@@ -25,6 +25,9 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
 from tests.install_upgrade_operators.strict_reconciliation.utils import verify_specs
 
 
+pytestmark = pytest.mark.sno
+
+
 class TestOperatorsModify:
     @pytest.mark.parametrize(
         "updated_cdi_cr",

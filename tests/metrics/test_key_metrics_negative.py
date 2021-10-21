@@ -6,6 +6,7 @@ from openshift.dynamic.exceptions import ForbiddenError
 from utilities.virt import Prometheus
 
 
+pytestmark = pytest.mark.sno
 ERRORS = r"unprivileged-user.*" r"cannot get resource.*"
 
 

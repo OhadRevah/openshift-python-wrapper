@@ -6,6 +6,7 @@ from utilities.hco import get_hco_spec
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
 KUBEVIRT_NEGATIVE_STRATEGY = {
     "batchEvictionInterval": "2m",
     "batchEvictionSize": 30,

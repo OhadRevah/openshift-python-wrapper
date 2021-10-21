@@ -22,6 +22,7 @@ from tests.metrics.utils import (
 )
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 COUNT_FIVE = 5
 COUNT_THREE = 3

@@ -12,6 +12,7 @@ from tests.install_upgrade_operators.constants import (
 )
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 
 

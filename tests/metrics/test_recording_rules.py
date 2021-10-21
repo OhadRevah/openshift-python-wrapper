@@ -4,6 +4,9 @@ from ocp_resources.resource import Resource
 from utilities.infra import BUG_STATUS_CLOSED
 
 
+pytestmark = pytest.mark.sno
+
+
 virt_label_dict = {
     "virt-api": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-api",
     "virt-handler": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-handler",

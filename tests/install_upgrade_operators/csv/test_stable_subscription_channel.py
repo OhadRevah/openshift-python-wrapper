@@ -1,6 +1,9 @@
 import pytest
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.polarion("CNV-7169")
 def test_only_stable_channel_in_subscription(
     skip_if_nightly_channel, kubevirt_package_manifest_channel

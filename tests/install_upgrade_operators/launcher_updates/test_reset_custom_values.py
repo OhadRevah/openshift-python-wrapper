@@ -12,6 +12,9 @@ from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
+
+
 class TestLauncherUpdateResetFields:
     @pytest.mark.parametrize(
         "updated_hco_cr, expected",

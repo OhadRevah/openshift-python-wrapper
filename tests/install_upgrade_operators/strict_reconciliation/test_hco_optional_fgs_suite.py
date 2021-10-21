@@ -13,6 +13,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
 from utilities.hco import get_hco_spec
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 
 

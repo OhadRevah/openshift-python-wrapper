@@ -40,6 +40,7 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
 )
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 
 

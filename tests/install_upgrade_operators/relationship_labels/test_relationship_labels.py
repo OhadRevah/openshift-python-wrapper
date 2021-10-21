@@ -15,6 +15,9 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
 from utilities.hco import get_hco_version
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.fixture(scope="class")
 def hco_version(admin_client, hco_namespace):
     return get_hco_version(client=admin_client, hco_ns_name=hco_namespace.name)

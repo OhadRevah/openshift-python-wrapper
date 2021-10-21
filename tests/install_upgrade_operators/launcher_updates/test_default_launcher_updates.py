@@ -13,6 +13,7 @@ from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 
 

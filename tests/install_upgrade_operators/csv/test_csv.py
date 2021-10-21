@@ -3,6 +3,9 @@ from base64 import b64decode
 import pytest
 
 
+pytestmark = pytest.mark.sno
+
+
 # Check CSV properties like keywords, title, provided by, links etc.
 
 EXPECTED_KEYWORDS_SET = {

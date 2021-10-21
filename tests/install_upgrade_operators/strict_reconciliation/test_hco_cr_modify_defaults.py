@@ -59,6 +59,7 @@ from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 
 

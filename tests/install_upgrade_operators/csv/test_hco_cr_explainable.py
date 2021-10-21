@@ -5,6 +5,9 @@ import pytest
 from utilities.virt import run_command
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.polarion("CNV-5884")
 def test_hco_cr_explainable(hyperconverged_resource_scope_function):
     """

@@ -3,6 +3,9 @@ import os.path
 import pytest
 
 
+pytestmark = pytest.mark.sno
+
+
 class TestDisconnectedVirtctlDownload:
     @pytest.mark.parametrize(
         "downloaded_and_extracted_virtctl_binary_for_os",

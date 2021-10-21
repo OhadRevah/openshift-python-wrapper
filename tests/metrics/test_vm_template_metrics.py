@@ -8,6 +8,7 @@ from tests.os_params import RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import Images
 
 
+pytestmark = pytest.mark.sno
 METRIC_QUERY = 'kubevirt_vmi_phase_count{{os="{os_name}", flavor="{flavor}", workload="{workload}"}}'
 SUM_QUERY = f"sum({METRIC_QUERY})"
 

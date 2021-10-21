@@ -9,6 +9,7 @@ from tests.install_upgrade_operators.resource_params.utils import (
 from utilities.hco import get_hyperconverged_resource, wait_for_hco_conditions
 
 
+pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
 
 

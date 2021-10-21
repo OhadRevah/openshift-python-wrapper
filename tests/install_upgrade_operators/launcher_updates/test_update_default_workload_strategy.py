@@ -14,6 +14,9 @@ from utilities.hco import get_hco_spec
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
+
+
 class TestLauncherUpdateModifyDefault:
     @pytest.mark.parametrize(
         "updated_hco_cr, expected",

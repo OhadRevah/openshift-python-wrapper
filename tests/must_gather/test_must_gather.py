@@ -23,6 +23,9 @@ from tests.must_gather import utils
 from utilities.infra import BUG_STATUS_CLOSED
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.parametrize(
     ("resource_type", "resource_path", "checks"),
     [

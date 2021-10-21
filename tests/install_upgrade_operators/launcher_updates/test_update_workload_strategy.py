@@ -21,6 +21,9 @@ from utilities.hco import get_hco_spec
 from utilities.virt import get_hyperconverged_kubevirt
 
 
+pytestmark = pytest.mark.sno
+
+
 class TestLauncherUpdateAll:
     @pytest.mark.parametrize(
         "resource_name, expected",

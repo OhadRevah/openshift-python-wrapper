@@ -3,6 +3,9 @@ import pytest
 from tests.install_upgrade_operators.utils import get_package_manifest_images
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.fixture()
 def hco_package_stable_channel_images(admin_client, hco_namespace):
     """

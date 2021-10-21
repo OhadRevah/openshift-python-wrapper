@@ -2,6 +2,9 @@ import pytest
 from ocp_resources.resource import Resource
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.polarion("CNV-5832")
 def test_hyperconverged_cr_api_version(hyperconverged_resource_scope_function):
     """

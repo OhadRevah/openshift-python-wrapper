@@ -8,6 +8,9 @@ from tests.install_upgrade_operators.pod_validation.utils import (
 )
 
 
+pytestmark = pytest.mark.sno
+
+
 @pytest.mark.polarion("CNV-7261")
 def test_pods_priority_class_name(cnv_pods):
     validate_cnv_pods_priority_class_name_exists(cnv_pods=cnv_pods)
