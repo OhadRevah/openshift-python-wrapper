@@ -622,7 +622,7 @@ class TestUpgrade:
     @pytest.mark.polarion("CNV-5994")
     @pytest.mark.order(after="test_upgrade_process")
     @pytest.mark.dependency(
-        depends=["test_upgrade", "test_vm_snapshot_restore_before_upgrade"]
+        depends=["test_upgrade_process", "test_vm_snapshot_restore_before_upgrade"]
     )
     def test_vm_snapshot_restore_check_after_upgrade(
         self,
@@ -637,7 +637,7 @@ class TestUpgrade:
     @pytest.mark.polarion("CNV-5996")
     @pytest.mark.order(after="test_upgrade_process")
     @pytest.mark.dependency(
-        depends=["test_upgrade", "test_vm_snapshot_created_before_upgrade"]
+        depends=["test_upgrade_process", "test_vm_snapshot_created_before_upgrade"]
     )
     def test_vm_snapshot_restore_create_after_upgrade(
         self, cirros_vm_for_upgrade_b, snapshots_for_upgrade_b
