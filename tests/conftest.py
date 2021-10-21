@@ -105,6 +105,7 @@ from utilities.storage import data_volume
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
+    get_base_templates_list,
     get_hyperconverged_kubevirt,
     get_hyperconverged_ovs_annotations,
     get_kubevirt_hyperconverged_spec,
@@ -2365,3 +2366,8 @@ def junitxml_plugin(request, record_testsuite_property):
         if request.config.pluginmanager.has_plugin("junitxml")
         else None
     )
+
+
+@pytest.fixture(scope="module")
+def base_templates(admin_client):
+    return get_base_templates_list(client=admin_client)

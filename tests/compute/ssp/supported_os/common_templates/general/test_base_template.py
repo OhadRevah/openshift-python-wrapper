@@ -109,25 +109,6 @@ def get_centos_templates_list():
     ]
 
 
-@pytest.fixture(scope="module")
-def base_templates(admin_client):
-    """Return templates list by label"""
-    common_templates_list = list(
-        Template.get(
-            dyn_client=admin_client,
-            singular_name=Template.singular_name,
-            label_selector=Template.Labels.BASE,
-        )
-    )
-    return [
-        template
-        for template in common_templates_list
-        if not template.instance.metadata.annotations.get(
-            Template.Annotations.DEPRECATED
-        )
-    ]
-
-
 @pytest.fixture()
 def windows_base_templates(base_templates):
     windows_templates = [

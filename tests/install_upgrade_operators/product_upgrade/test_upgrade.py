@@ -34,6 +34,7 @@ LOGGER = logging.getLogger(__name__)
     "cnv_upgrade_path",
     "nodes_taints_before_upgrade",
     "nodes_labels_before_upgrade",
+    "base_templates",
 )
 class TestUpgrade:
     @pytest.mark.polarion("CNV-2974")
@@ -699,3 +700,24 @@ class TestUpgrade:
                 name=vmb_upgrade_mac_spoof.interfaces[0],
             ),
         )
+
+    @pytest.mark.polarion("CNV-5749")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(depends=["test_upgrade_process"])
+    def test_golden_image_pvc_names_after_upgrade(
+        self, base_templates, base_templates_after_upgrade
+    ):
+        LOGGER.info(
+            f"Comparing default value for parameter {upgrade_utils.SRC_PVC_NAME} "
+            f"in base templates before and after upgrade"
+        )
+        mismatching_templates = upgrade_utils.mismatching_src_pvc_names(
+            pre_upgrade_templates=base_templates,
+            post_upgrade_templates=base_templates_after_upgrade,
+        )
+
+        if mismatching_templates:
+            raise upgrade_utils.ResourceValueError(
+                f"Golden image default {upgrade_utils.SRC_PVC_NAME} "
+                f"mismatch after upgrade:\n{mismatching_templates}"
+            )

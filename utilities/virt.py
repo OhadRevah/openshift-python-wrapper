@@ -2032,3 +2032,21 @@ def get_hyperconverged_ovs_annotations(hyperconverged):
     return (hyperconverged.instance.to_dict()["metadata"].get("annotations", {})).get(
         "deployOVS"
     )
+
+
+def get_base_templates_list(client):
+    """Return SSP base templates"""
+    common_templates_list = list(
+        Template.get(
+            dyn_client=client,
+            singular_name=Template.singular_name,
+            label_selector=Template.Labels.BASE,
+        )
+    )
+    return [
+        template
+        for template in common_templates_list
+        if not template.instance.metadata.annotations.get(
+            template.Annotations.DEPRECATED
+        )
+    ]

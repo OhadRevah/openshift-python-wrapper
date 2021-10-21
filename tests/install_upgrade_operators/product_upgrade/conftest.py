@@ -41,6 +41,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
+    get_base_templates_list,
     running_vm,
     wait_for_vm_interfaces,
 )
@@ -777,3 +778,8 @@ def running_vma_upgrade_mac_spoof(vma_upgrade_mac_spoof):
 @pytest.fixture(scope="module")
 def running_vmb_upgrade_mac_spoof(vmb_upgrade_mac_spoof):
     return running_vm(vm=vmb_upgrade_mac_spoof)
+
+
+@pytest.fixture()
+def base_templates_after_upgrade(admin_client):
+    return get_base_templates_list(client=admin_client)
