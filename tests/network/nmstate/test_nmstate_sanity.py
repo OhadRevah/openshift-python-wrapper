@@ -128,12 +128,13 @@ def dns_nncp(
     worker1_saved_original_interface_configurations,
 ):
     node_nics = nodes_occupied_nics[worker_node1.name]
+    ipv4_data = worker1_saved_original_interface_configurations["ipv4"]
     with EthernetNetworkConfigurationPolicy(
         name=f"dns-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.name,
-        ipv4_dhcp=worker1_saved_original_interface_configurations.ipv4["dhcp"],
-        ipv4_enable=worker1_saved_original_interface_configurations.ipv4["enabled"],
-        ipv4_auto_dns=worker1_saved_original_interface_configurations.ipv4["auto-dns"],
+        ipv4_dhcp=ipv4_data["dhcp"],
+        ipv4_enable=ipv4_data["enabled"],
+        ipv4_auto_dns=ipv4_data["auto-dns"],
         worker_pods=utility_pods,
         interfaces_name=node_nics,
         node_active_nics=node_nics,
@@ -152,12 +153,13 @@ def dns_nncp_restored(
     yield
     LOGGER.info("Restoring DNS configurations on the node")
     node_nics = nodes_occupied_nics[worker_node1.name]
+    ipv4_data = worker1_saved_original_interface_configurations["ipv4"]
     with EthernetNetworkConfigurationPolicy(
         name=f"dns-{name_prefix(worker_node1.name)}-restored",
         node_selector=worker_node1.name,
-        ipv4_dhcp=worker1_saved_original_interface_configurations.ipv4["dhcp"],
-        ipv4_enable=worker1_saved_original_interface_configurations.ipv4["enabled"],
-        ipv4_auto_dns=worker1_saved_original_interface_configurations.ipv4["auto-dns"],
+        ipv4_dhcp=ipv4_data["dhcp"],
+        ipv4_enable=ipv4_data["enabled"],
+        ipv4_auto_dns=ipv4_data["auto-dns"],
         worker_pods=utility_pods,
         interfaces_name=node_nics,
         node_active_nics=node_nics,
@@ -176,8 +178,6 @@ def dns_nncp_configured(
 ):
     LOGGER.info("Editing the existing NNCP with the new DNS configuration")
     interfaces_dict = copy.copy(dict(worker1_saved_original_interface_configurations))
-    # ipv4 is ResourceField and needs to be converted to dict.
-    interfaces_dict["ipv4"] = dict(interfaces_dict["ipv4"])
     interfaces_dict["ipv4"]["auto-dns"] = False
     with ResourceEditor(
         patches={
