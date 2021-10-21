@@ -12,6 +12,7 @@ from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL, LS_C
 from utilities.infra import validate_nodes_ready, validate_nodes_schedulable
 from utilities.network import (
     assert_ping_successful,
+    get_vmi_ip_v4_by_name,
     get_vmi_mac_address_by_iface_name,
     verify_ovs_installed_with_annotations,
 )
@@ -264,6 +265,28 @@ class TestUpgrade:
         assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
         assert_hotplugvolume_nonexist_optional_restart(
             vm=fedora_vm_for_hotplug_upg, restart=True
+        )
+
+    @pytest.mark.polarion("CNV-7343")
+    @pytest.mark.order(before="test_upgrade_process")
+    @pytest.mark.dependency(name="test_vm_connectivity_with_macspoofing_before_upgrade")
+    def test_vm_connectivity_with_macspoofing_before_upgrade(
+        self,
+        vma_upgrade_mac_spoof,
+        vmb_upgrade_mac_spoof,
+        running_vma_upgrade_mac_spoof,
+        running_vmb_upgrade_mac_spoof,
+    ):
+        """
+        Added test to verify ping works when macspoof is set.
+        Adding field should not break existing tests. However this test will not work if nftables are missing.
+        """
+        assert_ping_successful(
+            src_vm=vma_upgrade_mac_spoof,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vm=vmb_upgrade_mac_spoof,
+                name=vmb_upgrade_mac_spoof.interfaces[0],
+            ),
         )
 
     @pytest.mark.upgrade_resilience
@@ -648,3 +671,29 @@ class TestUpgrade:
     ):
         assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
         assert_hotplugvolume_nonexist_optional_restart(vm=fedora_vm_for_hotplug_upg)
+
+    @pytest.mark.polarion("CNV-7402")
+    @pytest.mark.order(after="test_upgrade_process")
+    @pytest.mark.dependency(
+        depends=[
+            "test_upgrade_process",
+            "test_vm_connectivity_with_macspoofing_before_upgrade",
+        ]
+    )
+    def test_vm_connectivity_with_macspoofing_after_upgrade(
+        self,
+        vma_upgrade_mac_spoof,
+        vmb_upgrade_mac_spoof,
+    ):
+        """
+        Added test to verify ping works when macspoof is set.
+        After upgrade, adding macspoofing in NAD should not make ping test to failed.
+        This test is expected to fail if nftables are missing after upgrade.
+        """
+        assert_ping_successful(
+            src_vm=vma_upgrade_mac_spoof,
+            dst_ip=get_vmi_ip_v4_by_name(
+                vm=vmb_upgrade_mac_spoof,
+                name=vmb_upgrade_mac_spoof.interfaces[0],
+            ),
+        )
