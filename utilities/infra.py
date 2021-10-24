@@ -465,11 +465,8 @@ def get_connection_params(conf_file_name):
     return params_dict
 
 
-def get_bugzilla_connection_params():
-    return get_connection_params(conf_file_name="bugzilla.cfg")
-
-
-def get_bug_status(bugzilla_connection_params, bug):
+def get_bug_status(bug):
+    bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
     bzapi = bugzilla.Bugzilla(
         url=bugzilla_connection_params["bugzilla_url"],
         user=bugzilla_connection_params["bugzilla_username"],

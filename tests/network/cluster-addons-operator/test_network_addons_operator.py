@@ -16,11 +16,7 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
 
 import utilities.network
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-)
+from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -100,10 +96,7 @@ def filter_resources(resources, network_addons_config, is_post_cnv_upgrade_clust
     bad_rcs = []
     for resource in resources:
         if KNOWN_BUG in f"{resource.kind}/{resource.name}" and (
-            get_bug_status(
-                bugzilla_connection_params=get_bugzilla_connection_params(), bug=1995606
-            )
-            not in BUG_STATUS_CLOSED
+            get_bug_status(bug=1995606) not in BUG_STATUS_CLOSED
         ):
             continue
         if any(

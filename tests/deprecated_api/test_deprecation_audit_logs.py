@@ -5,11 +5,7 @@ from collections import defaultdict
 
 import pytest
 
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-)
+from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 
 
 LOGGER = logging.getLogger(__name__)
@@ -127,11 +123,7 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
         if [
             True
             for comp, bug in components_bugs.items()
-            if comp in component
-            and get_bug_status(
-                bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug
-            )
-            not in BUG_STATUS_CLOSED
+            if comp in component and get_bug_status(bug=bug) not in BUG_STATUS_CLOSED
         ]:
             deprecated_calls.pop(component)
 

@@ -62,7 +62,6 @@ from utilities.infra import (
     collect_logs,
     get_admin_client,
     get_bug_status,
-    get_bugzilla_connection_params,
     run_ssh_commands,
 )
 
@@ -100,12 +99,7 @@ def wait_for_guest_agent(vmi, timeout=TIMEOUT_12MIN):
 
     except TimeoutExpiredError:
         LOGGER.error(f"Guest agent is not installed or not active on {vmi.name}")
-        if (
-            get_bug_status(
-                bugzilla_connection_params=get_bugzilla_connection_params(), bug=1945703
-            )
-            not in BUG_STATUS_CLOSED
-        ):
+        if get_bug_status(bug=1945703) not in BUG_STATUS_CLOSED:
             LOGGER.error(
                 "Due to bug 1945703 guest agent may not report its status and VM interfaces may not be available."
             )
@@ -1504,7 +1498,6 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
             break
 
     if get_bug_status(
-        bugzilla_connection_params=get_bugzilla_connection_params(),
         bug=2005693,
     ):
         sampler = TimeoutSampler(
@@ -1851,12 +1844,7 @@ def migrate_vm_and_verify(
 def restart_guest_agent(vm):
     bug_num = 1907707
     restart = "restart qemu-guest-agent"
-    if (
-        get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=bug_num
-        )
-        not in BUG_STATUS_CLOSED
-    ):
+    if get_bug_status(bug=bug_num) not in BUG_STATUS_CLOSED:
         LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
         run_ssh_commands(
             host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]

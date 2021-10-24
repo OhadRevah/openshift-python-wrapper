@@ -8,11 +8,7 @@ import logging
 
 import pytest
 
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-)
+from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -60,7 +56,6 @@ def components_with_non_closed_bugs():
         component_name
         for bug_id, component_name in bugzilla_component_name_dict.items()
         if get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(),
             bug=bug_id,
         )
         not in BUG_STATUS_CLOSED

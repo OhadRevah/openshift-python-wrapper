@@ -30,7 +30,7 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_30SEC,
 )
-from utilities.infra import get_bug_status, get_bugzilla_connection_params
+from utilities.infra import get_bug_status
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -113,7 +113,6 @@ def assert_pod_status_completed(source_pod):
         )
     except TimeoutExpiredError:
         if get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(),
             bug=1943164,
         ):
             source_pod.wait_for_status(status=Pod.Status.FAILED, timeout=TIMEOUT_3MIN)

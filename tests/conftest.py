@@ -81,7 +81,6 @@ from utilities.infra import (
     generate_latest_os_dict,
     generate_namespace_name,
     get_admin_client,
-    get_bugzilla_connection_params,
     get_cluster_resources,
     get_clusterversion,
     get_pods,
@@ -1711,11 +1710,6 @@ def sriov_node_policy(sriov_nodes_states, sriov_iface, sriov_namespace):
         wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
         yield policy
     wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
-
-
-@pytest.fixture(scope="session")
-def bugzilla_connection_params(pytestconfig):
-    return get_bugzilla_connection_params()
 
 
 @pytest.fixture(scope="session")

@@ -26,7 +26,6 @@ from utilities.infra import (
     BUG_STATUS_CLOSED,
     INTERNAL_HTTP_SERVER_ADDRESS,
     get_bug_status,
-    get_bugzilla_connection_params,
     get_cert,
     hco_cr_jsonpatch_annotations_dict,
 )
@@ -378,9 +377,6 @@ def skip_if_post_cnv_upgrade_cluster_and_labels_bug_not_closed(
     is_post_cnv_upgrade_cluster,
 ):
     if (
-        get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(), bug=2017478
-        )
-        not in BUG_STATUS_CLOSED
+        get_bug_status(bug=2017478) not in BUG_STATUS_CLOSED
     ) and is_post_cnv_upgrade_cluster:
         pytest.skip("Skip labels test on post cnv upgrade cluster")

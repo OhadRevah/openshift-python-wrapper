@@ -1,10 +1,6 @@
 import logging
 
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    get_bugzilla_connection_params,
-)
+from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 
 
 VALID_PRIORITY_CLASS = [
@@ -40,7 +36,6 @@ def get_cnv_pod_names_with_open_bugs():
         pod_type
         for pod_type, bug_id in pods_with_bugs.items()
         if get_bug_status(
-            bugzilla_connection_params=get_bugzilla_connection_params(),
             bug=bug_id,
         )
         not in BUG_STATUS_CLOSED
