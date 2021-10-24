@@ -21,7 +21,6 @@ def download_and_extract_virtctl_from_cluster(tmpdir, virtctl_url):
     Returns:
         list: list of extracted filenames
     """
-    os.chdir(tmpdir)
     LOGGER.info(f"Downloading virtctl archive: url={virtctl_url}")
     requests.packages.urllib3.disable_warnings()
     response = requests.get(virtctl_url, verify=False)
@@ -32,7 +31,7 @@ def download_and_extract_virtctl_from_cluster(tmpdir, virtctl_url):
         archive_file_object = zipfile.ZipFile(file=archive_file_data)
     else:
         archive_file_object = tarfile.open(fileobj=archive_file_data, mode="r")
-    archive_file_object.extractall()
+    archive_file_object.extractall(path=tmpdir)
     extracted_filenames = (
         archive_file_object.namelist()
         if virtctl_url.endswith(".zip")
