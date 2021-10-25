@@ -609,6 +609,7 @@ def pytest_sessionfinish(session, exitstatus):
         f"{reporter.xpass_count} {'xpass'} "
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
+    shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
 
 
 def pytest_exception_interact(node, call, report):
@@ -2216,9 +2217,3 @@ def leftovers_validator(
         leftovers = list(set(collected_resources) - set(leftovers_collector))
         if leftovers:
             raise LeftoversFoundError(leftovers=leftovers)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def tempdir_removed(tmpdir_factory):
-    yield
-    shutil.rmtree(path=tmpdir_factory.getbasetemp(), ignore_errors=True)
