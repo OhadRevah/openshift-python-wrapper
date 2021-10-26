@@ -39,6 +39,7 @@ class TestCertRotation:
         hyperconverged_resource_certconfig_change,
         tmpdir,
         initial_certificates_dates,
+        secrets_with_non_closed_bugs,
     ):
         """
         The test verifies the proper certificate rotation/renewal in high-level, that is using the openssl command with
@@ -63,12 +64,15 @@ class TestCertRotation:
             not certificates_not_expired
         ), f"Some certificates will not expire: certificates={certificates_not_expired}"
 
-        certificate_utils_args_dict = {
-            "hco_namespace": hco_namespace,
-            "initial_certificates_dates": initial_certificates_dates,
-            "tmpdir": tmpdir,
-        }
         verify_certificates_dates_identical_to_initial_dates(
-            **certificate_utils_args_dict
+            hco_namespace=hco_namespace,
+            initial_certificates_dates=initial_certificates_dates,
+            secrets_to_skip=secrets_with_non_closed_bugs,
+            tmpdir=tmpdir,
         )
-        wait_for_certificates_renewal(**certificate_utils_args_dict)
+        wait_for_certificates_renewal(
+            hco_namespace=hco_namespace,
+            initial_certificates_dates=initial_certificates_dates,
+            secrets_to_skip=secrets_with_non_closed_bugs,
+            tmpdir=tmpdir,
+        )

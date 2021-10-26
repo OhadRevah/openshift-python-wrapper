@@ -1,8 +1,10 @@
 import logging
 
 import pytest
+from ocp_resources.secret import Secret
 
 from tests.install_upgrade_operators.cert_renewal.utils import (
+    SECRETS,
     get_certificates_validity_period_and_checkend_result,
 )
 from tests.install_upgrade_operators.constants import (
@@ -12,7 +14,7 @@ from tests.install_upgrade_operators.constants import (
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import update_custom_resource
+from utilities.infra import BUG_STATUS_CLOSED, get_bug_status, update_custom_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -50,10 +52,35 @@ def hyperconverged_resource_certconfig_change(
 
 
 @pytest.fixture()
-def initial_certificates_dates(admin_client, hco_namespace, tmpdir):
+def initial_certificates_dates(
+    admin_client, hco_namespace, tmpdir, secrets_with_non_closed_bugs
+):
+    LOGGER.info(
+        "Delete secrets so that the cert-manager will create new ones with the updated certConfig"
+    )
+    for secret in SECRETS:
+        Secret(name=secret, namespace=hco_namespace.name).delete(wait=True)
+
     LOGGER.info("Retrieve the certificates dates")
     return get_certificates_validity_period_and_checkend_result(
         hco_namespace_name=hco_namespace.name,
         tmpdir=tmpdir,
+        secrets_to_skip=secrets_with_non_closed_bugs,
         seconds=TIMEOUT_11MIN,
+    )
+
+
+@pytest.fixture(scope="module")
+def secrets_with_non_closed_bugs():
+    bugzilla_component_name_dict = {
+        2017415: "ssp-operator-service-cert",
+        2017442: "virt-template-validator-certs",
+    }
+    return tuple(
+        component_name
+        for bug_id, component_name in bugzilla_component_name_dict.items()
+        if get_bug_status(
+            bug=bug_id,
+        )
+        not in BUG_STATUS_CLOSED
     )
