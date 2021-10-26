@@ -4,6 +4,7 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from tests.compute.ssp import utils as ssp_utils
+from tests.compute.ssp.constants import MachineTypesNames
 from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
 from utilities.virt import (
     VirtualMachineForTests,
@@ -75,8 +76,8 @@ def test_default_machine_type(machine_type_from_kubevirt_config, vm):
     "vm, expected",
     [
         pytest.param(
-            {"vm_name": "pc-q35", "machine_type": "pc-q35-rhel7.6.0"},
-            "pc-q35-rhel7.6.0",
+            {"vm_name": "pc-q35", "machine_type": MachineTypesNames.pc_q35_rhel7_6},
+            MachineTypesNames.pc_q35_rhel7_6,
             marks=pytest.mark.polarion("CNV-3311"),
         )
     ],
@@ -112,7 +113,7 @@ def test_migrate_vm(
     [
         pytest.param(
             {"vm_name": "default-cm"},
-            {"machine_type": "pc-q35-rhel8.1.0"},
+            {"machine_type": MachineTypesNames.pc_q35_rhel8_1},
             marks=pytest.mark.polarion("CNV-4347"),
         )
     ],
@@ -148,7 +149,7 @@ def test_machine_type_after_cm_update(
     [
         pytest.param(
             {"vm_name": "updated-cm"},
-            {"machine_type": "pc-q35-rhel8.1.0"},
+            {"machine_type": MachineTypesNames.pc_q35_rhel8_1},
             marks=pytest.mark.polarion("CNV-3681"),
         )
     ],
@@ -157,7 +158,9 @@ def test_machine_type_after_cm_update(
 def test_machine_type_cm_update(updated_configmap_machine_type, vm):
     """Test machine type change in ConfigMap; new VM gets new value"""
 
-    ssp_utils.validate_machine_type(vm=vm, expected_machine_type="pc-q35-rhel8.1.0")
+    ssp_utils.validate_machine_type(
+        vm=vm, expected_machine_type=MachineTypesNames.pc_q35_rhel8_1
+    )
 
 
 @pytest.mark.polarion("CNV-3688")
@@ -170,7 +173,7 @@ def test_unsupported_machine_type(namespace, unprivileged_client):
             namespace=namespace.name,
             body=fedora_vm_body(name=vm_name),
             client=unprivileged_client,
-            machine_type="pc-i440fx",
+            machine_type=MachineTypesNames.pc_i440fx_rhel7_6,
         ):
             pytest.fail("VM created with invalid machine type.")
 
