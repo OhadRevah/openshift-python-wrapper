@@ -84,12 +84,25 @@ def test_csv_properties(csv_scope_session):
     assert annotations.get("support") == "Red Hat"
 
 
-@pytest.mark.polarion("CNV-7297")
-def test_csv_fips_annotation(csv_scope_session, csv_annotation):
+@pytest.mark.parametrize(
+    "expected_value",
+    [
+        pytest.param(
+            "fips",
+            marks=pytest.mark.polarion("CNV-7297"),
+            id="test_csv_fips_annotation",
+        ),
+        pytest.param(
+            "sno",
+            marks=(pytest.mark.polarion("CNV-7397"), pytest.mark.sno()),
+            id="test_csv_sno_annotation",
+        ),
+    ],
+)
+def test_csv_annotations(csv_scope_session, csv_annotation, expected_value):
     """
-    Validates "fips" has been added to csv's operators.openshift.io/infrastructure-features annotation
+    Validates badges have been added to csv's operators.openshift.io/infrastructure-features annotation
     """
-    expected_value = "fips"
     assert expected_value in csv_annotation, (
         f"For csv: {csv_scope_session.name} annotation "
         f"{csv_scope_session.ApiGroup.OPERATORS_OPENSHIFT_IO}/infrastructure-features:"
