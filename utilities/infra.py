@@ -16,6 +16,7 @@ import bugzilla
 import kubernetes
 import netaddr
 import paramiko
+import pytest
 import requests
 from colorlog import ColoredFormatter
 from jira import JIRA
@@ -31,7 +32,12 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import PODS_TO_COLLECT_INFO, TIMEOUT_2MIN, TIMEOUT_10MIN
+from utilities.constants import (
+    PODS_TO_COLLECT_INFO,
+    SANITY_TESTS_FAILURE,
+    TIMEOUT_2MIN,
+    TIMEOUT_10MIN,
+)
 from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
 
 
@@ -57,6 +63,14 @@ LOGGER = logging.getLogger(__name__)
 
 class OsDictNotFoundError(Exception):
     pass
+
+
+class ClusterSanityError(Exception):
+    def __init__(self, err_str):
+        self.err_str = err_str
+
+    def __str__(self):
+        return self.err_str
 
 
 def label_project(name, label, admin_client):
@@ -565,9 +579,10 @@ def validate_nodes_ready(nodes):
         AssertionError: Assert on node(s) in not ready state
     """
     not_ready_nodes = [node.name for node in nodes if not node.kubelet_ready]
-    assert (
-        not not_ready_nodes
-    ), f"Following nodes are not in ready state: {not_ready_nodes}"
+    if not_ready_nodes:
+        raise ClusterSanityError(
+            err_str=f"Following nodes are not in ready state: {not_ready_nodes}"
+        )
 
 
 def validate_nodes_schedulable(nodes):
@@ -583,9 +598,10 @@ def validate_nodes_schedulable(nodes):
     unschedulable_nodes = [
         node.name for node in nodes if node.instance.spec.unschedulable
     ]
-    assert (
-        not unschedulable_nodes
-    ), f"Following nodes are in not unschedulable state: {unschedulable_nodes}"
+    if unschedulable_nodes:
+        raise ClusterSanityError(
+            err_str=f"Following nodes are in not unschedulable state: {unschedulable_nodes}"
+        )
 
 
 def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=1):
@@ -849,9 +865,20 @@ class ExecCommandOnPod:
 def cluster_sanity(
     request, admin_client, cluster_storage_classes, nodes, hco_namespace
 ):
+    def _storage_sanity_check():
+        sc_names = [sc.name for sc in cluster_storage_classes]
+        config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
+        exists_sc = [scn for scn in config_sc if scn in sc_names]
+        if sorted(config_sc) != sorted(exists_sc):
+            raise ClusterSanityError(
+                err_str=f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
+                f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
+            )
+
     skip_cluster_sanity_check = "--cluster-sanity-skip-check"
     skip_storage_classes_check = "--cluster-sanity-skip-storage-check"
     skip_nodes_check = "--cluster-sanity-skip-nodes-check"
+    exceptions_filename = "cluster_sanity_failure.txt"
 
     if request.session.config.getoption(skip_cluster_sanity_check):
         LOGGER.warning(
@@ -869,16 +896,13 @@ def cluster_sanity(
         )
 
     else:
-        LOGGER.info(
-            f"Check storage classes sanity. (To skip nodes check pass {skip_storage_classes_check} to pytest)"
-        )
-        sc_names = [sc.name for sc in cluster_storage_classes]
-        config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
-        exists_sc = [scn for scn in config_sc if scn in sc_names]
-        assert sorted(config_sc) == sorted(exists_sc), (
-            f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
-            f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
-        )
+        try:
+            LOGGER.info(
+                f"Check storage classes sanity. (To skip nodes check pass {skip_storage_classes_check} to pytest)"
+            )
+            _storage_sanity_check()
+        except ClusterSanityError as ex:
+            exit_pytest_execution(filename=exceptions_filename, message=ex.err_str)
 
     # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
     if request.session.config.getoption("--cluster-sanity-skip-nodes-check"):
@@ -889,8 +913,11 @@ def cluster_sanity(
         LOGGER.info(
             f"Check nodes sanity. (To skip nodes check pass {skip_nodes_check} to pytest)"
         )
-        validate_nodes_ready(nodes=nodes)
-        validate_nodes_schedulable(nodes=nodes)
+        try:
+            validate_nodes_ready(nodes=nodes)
+            validate_nodes_schedulable(nodes=nodes)
+        except ClusterSanityError as ex:
+            exit_pytest_execution(filename=exceptions_filename, message=ex.err_str)
 
     # Wait for all cnv pods to reach Running state
     LOGGER.info(f"Check that all pods in {hco_namespace.name} running")
@@ -974,3 +1001,21 @@ def get_cluster_resources(admin_client, resource_files_path):
                 ):
                     continue
     return results
+
+
+def exit_pytest_execution(message, return_code=SANITY_TESTS_FAILURE, filename=None):
+    """Exit pytest execution
+
+    Exit pytest execution; invokes pytest_sessionfinish.
+    Optionally, log an error message to tests-collected-info/utilities/errors_dir/<filename>
+
+    Args:
+        message (str):  Message to dispaly upon exit and to log in errors file
+        return_code (int. Default: 99): Exit return code
+        filename (str, optional. Default: None): filename where the given message will be saved
+    """
+    if filename:
+        write_to_extras_file(
+            extras_file_name=filename, content=message, extra_dir_name="errors_dir"
+        )
+    pytest.exit(msg=message, returncode=return_code)

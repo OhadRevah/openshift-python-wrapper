@@ -628,9 +628,10 @@ def pytest_sessionfinish(session, exitstatus):
         f"{reporter.pass_count} {'passed'}, "
         f"{reporter.skip_count} {'skipped'}, "
         f"{reporter.fail_count} {'failed'}, "
-        f"{reporter.error_count} {'error'} "
-        f"{reporter.xfail_count} {'xfail'} "
-        f"{reporter.xpass_count} {'xpass'} "
+        f"{reporter.error_count} {'error'}, "
+        f"{reporter.xfail_count} {'xfail'}, "
+        f"{reporter.xpass_count} {'xpass'}, "
+        f"exit status {exitstatus} "
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
     shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
