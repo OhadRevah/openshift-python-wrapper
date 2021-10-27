@@ -32,14 +32,12 @@ def vm_metric_2(namespace, unprivileged_client):
 
 
 @pytest.fixture(scope="class")
-def number_of_vmis_exists(admin_client):
+def number_of_running_vmis(admin_client):
     return len(list(VirtualMachineInstance.get(dyn_client=admin_client)))
 
 
 def check_vmi_metric(prometheus):
-    response = prometheus.query(
-        query="/api/v1/query?query=cnv:vmi_status_running:count"
-    )
+    response = prometheus.query(query="cnv:vmi_status_running:count")
     assert response["status"] == "success"
     return sum(int(node["value"][1]) for node in response["data"]["result"])
 
@@ -63,20 +61,20 @@ class TestVMICountMetric:
         self,
         skip_not_openshift,
         prometheus,
-        number_of_vmis_exists,
+        number_of_running_vmis,
         vm_metric_1,
         vm_metric_2,
     ):
-        assert check_vmi_count_metric(number_of_vmis_exists + 2, prometheus)
+        assert check_vmi_count_metric(number_of_running_vmis + 2, prometheus)
 
     @pytest.mark.polarion("CNV-3589")
     def test_vmi_count_metric_decrease(
         self,
         skip_not_openshift,
         prometheus,
-        number_of_vmis_exists,
+        number_of_running_vmis,
         vm_metric_1,
         vm_metric_2,
     ):
         vm_metric_2.stop(wait=True)
-        assert check_vmi_count_metric(number_of_vmis_exists + 1, prometheus)
+        assert check_vmi_count_metric(number_of_running_vmis + 1, prometheus)
