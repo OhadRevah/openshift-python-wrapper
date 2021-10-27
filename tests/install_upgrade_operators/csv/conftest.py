@@ -43,22 +43,31 @@ def kubevirt_package_manifest(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def stable_channel_package_manifest(kubevirt_package_manifest, cnv_current_version):
+def kubevirt_package_manifest_channel(kubevirt_package_manifest, cnv_current_version):
     """
-    Return 'stable' channel from Kubevirt Package Manifest.
+    Return channel name from Kubevirt Package Manifest.
     """
-    kubevirt_version = kubevirt_package_manifest.status.channels[
-        0
-    ].currentCSVDesc.version
-    LOGGER.info(
-        f"Getting channels associated with kubevirt version: {kubevirt_version},"
-        f"cnv version: {cnv_current_version}"
+    for channel in kubevirt_package_manifest.status.channels:
+        if channel.currentCSVDesc.version == cnv_current_version:
+            LOGGER.info(
+                f"Getting channel associated with cnv version: {cnv_current_version}"
+            )
+            return channel.name
+    raise NotFoundError(
+        (
+            "Not able to find 'stable' channel in the package manifest."
+            f"Avaliable channels: {kubevirt_package_manifest.status.channels}"
+        )
     )
-    return [
-        channel.name
-        for channel in kubevirt_package_manifest.status.channels
-        if kubevirt_version == cnv_current_version
-    ]
+
+
+@pytest.fixture()
+def skip_if_nightly_channel(kubevirt_package_manifest):
+    for channel in kubevirt_package_manifest.status.channels:
+        if "nightly" in channel.name:
+            pytest.skip(
+                f"Test skipping due to nightly build. Current channel is {channel.name}"
+            )
 
 
 @pytest.fixture()
