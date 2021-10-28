@@ -35,7 +35,7 @@ from urllib3.exceptions import (
 import utilities.constants
 from tests.install_upgrade_operators import utils
 from utilities.constants import Images
-from utilities.hco import wait_for_hco_conditions
+from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
@@ -704,6 +704,7 @@ def upgrade_cnv(
     upgrade_resilience,
     cnv_subscription_source,
     cnv_source,
+    cnv_target_version,
 ):
     LOGGER.info(f"CNV upgrade: {cnv_upgrade_path}")
     LOGGER.info("Get all operators Pods before upgrade")
@@ -822,6 +823,13 @@ def upgrade_cnv(
         admin_client=dyn_client,
         hco_namespace=hco_namespace,
         wait_timeout=utilities.constants.TIMEOUT_20MIN,
+    )
+
+    LOGGER.info("Wait for HCO version to be updated.")
+    wait_for_hco_version(
+        client=dyn_client,
+        hco_ns_name=hco_namespace.name,
+        cnv_version=cnv_target_version,
     )
 
     LOGGER.info("Wait for HCO operator to be ready")

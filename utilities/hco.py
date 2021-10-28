@@ -8,7 +8,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN
+from utilities.constants import TIMEOUT_4MIN, TIMEOUT_10MIN, TIMEOUT_15MIN
 from utilities.infra import (
     wait_for_consistent_resource_conditions,
     wait_for_pods_running,
@@ -214,3 +214,56 @@ def get_hco_spec(admin_client, hco_namespace):
     return get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     ).instance.to_dict()["spec"]
+
+
+def get_hco_version(client, hco_ns_name):
+    """
+    Get current hco version
+
+    Args:
+        client (DynamicClient): Dynamic client object
+        hco_ns_name (str): hco namespace name
+
+    Returns:
+        str: hyperconverged operator version
+    """
+    return (
+        get_hyperconverged_resource(client=client, hco_ns_name=hco_ns_name)
+        .instance.status.versions[0]
+        .version
+    )
+
+
+def wait_for_hco_version(client, hco_ns_name, cnv_version):
+    """
+    Wait for hco version to get updated.
+
+    Args:
+        client (DynamicClient): Dynamic client object
+        hco_ns_name (str): hco namespace name
+        cnv_version (str): cnv version string that should match with current cnv version
+
+    Returns:
+        str: hco version string
+
+    Raises:
+        TimeoutExpiredError: if hco resource is not updated with expected version string
+    """
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_15MIN,
+        sleep=5,
+        func=get_hco_version,
+        client=client,
+        hco_ns_name=hco_ns_name,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            if sample and sample == f"v{cnv_version}":
+                LOGGER.info(f"HCO version updated to {cnv_version}")
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Expected HCO version: {cnv_version}, actual hco version: {sample}"
+        )
+        raise

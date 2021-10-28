@@ -304,6 +304,7 @@ class TestUpgrade:
         cnv_registry_source,
         update_image_content_source,
         cnv_source,
+        cnv_target_version,
     ):
         if pytestconfig.option.upgrade == "ocp":
             upgrade_utils.upgrade_ocp(
@@ -323,6 +324,7 @@ class TestUpgrade:
                 upgrade_resilience=pytestconfig.option.upgrade_resilience,
                 cnv_subscription_source=cnv_registry_source["cnv_subscription_source"],
                 cnv_source=cnv_source,
+                cnv_target_version=cnv_target_version,
             )
 
     @pytest.mark.polarion("CNV-4509")

@@ -12,16 +12,12 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
     verify_labels_values_in_olm_deployments,
     verify_no_missing_labels_in_olm_deployments,
 )
-from utilities.hco import get_hyperconverged_resource
+from utilities.hco import get_hco_version
 
 
 @pytest.fixture(scope="class")
 def hco_version(admin_client, hco_namespace):
-    return (
-        get_hyperconverged_resource(client=admin_client, hco_ns_name=hco_namespace.name)
-        .instance.status.versions[0]
-        .version
-    )
+    return get_hco_version(client=admin_client, hco_ns_name=hco_namespace.name)
 
 
 @pytest.fixture(scope="class")
