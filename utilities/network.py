@@ -334,6 +334,7 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         macspoofchk=None,
         teardown=True,
         old_nad_format=False,
+        add_resource_name=True,
     ):
         super().__init__(
             name=name, namespace=namespace, client=client, teardown=teardown
@@ -358,6 +359,7 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         self.vlan = vlan
         self.mtu = mtu
         self.macspoofchk = macspoofchk
+        self.add_resource_name = add_resource_name
 
     def to_dict(self):
         res = super().to_dict()
@@ -391,6 +393,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         tuning_type=None,
         teardown=True,
         macspoofchk=None,
+        add_resource_name=True,
     ):
         super().__init__(
             name=name,
@@ -402,6 +405,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
             mtu=mtu,
             teardown=teardown,
             macspoofchk=macspoofchk,
+            add_resource_name=add_resource_name,
         )
         self.tuning_type = tuning_type
 
@@ -418,7 +422,8 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
     @property
     def resource_name(self):
-        return f"bridge.network.kubevirt.io/{self.bridge_name}"
+        if self.add_resource_name:
+            return f"bridge.network.kubevirt.io/{self.bridge_name}"
 
 
 class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
@@ -596,6 +601,7 @@ def network_nad(
     macspoofchk=None,
     sriov_resource_name=None,
     sriov_network_namespace=None,
+    add_resource_name=True,
 ):
     kwargs = {
         "name": nad_name,
@@ -608,6 +614,7 @@ def network_nad(
         kwargs["bridge_name"] = interface_name
         kwargs["mtu"] = mtu
         kwargs["macspoofchk"] = macspoofchk
+        kwargs["add_resource_name"] = add_resource_name
 
     if nad_type == SRIOV:
         kwargs["network_namespace"] = sriov_network_namespace
