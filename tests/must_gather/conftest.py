@@ -14,7 +14,6 @@ import yaml
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
-from pytest_testconfig import config as py_config
 
 import utilities.network
 from tests.must_gather import utils as mg_utils
@@ -26,8 +25,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def must_gather_image_url(cnv_current_version):
-    if py_config["distribution"] == "upstream":
+def must_gather_image_url(is_upstream_distribution, cnv_current_version):
+    if is_upstream_distribution:
         return "quay.io/kubevirt/must-gather"
 
     must_gather_image = "container-native-virtualization-cnv-must-gather-rhel8"

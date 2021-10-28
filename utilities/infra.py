@@ -22,6 +22,7 @@ from colorlog import ColoredFormatter
 from jira import JIRA
 from kubernetes.client import ApiException
 from ocp_resources.cluster_service_version import ClusterServiceVersion
+from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.namespace import Namespace
 from ocp_resources.package_manifest import PackageManifest
@@ -1105,3 +1106,8 @@ def get_csv_by_name(csv_name, admin_client, namespace):
     ):
         return csv
     raise NotFoundError(f"Csv {csv_name} not found in namespace: {namespace}")
+
+
+def get_clusterversion(dyn_client):
+    for cvo in ClusterVersion.get(dyn_client=dyn_client):
+        return cvo

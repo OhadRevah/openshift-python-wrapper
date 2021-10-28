@@ -14,6 +14,7 @@ from subprocess import PIPE, CalledProcessError, Popen, check_output
 import bcrypt
 import kubernetes
 import pytest
+from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cdi import CDI
 from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.cluster_role import ClusterRole
@@ -57,6 +58,7 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (
+    HCO_SUBSCRIPTION,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
     KUBECONFIG,
@@ -81,8 +83,10 @@ from utilities.infra import (
     get_admin_client,
     get_bugzilla_connection_params,
     get_cluster_resources,
+    get_clusterversion,
     get_pods,
     get_schedulable_nodes_ips,
+    get_subscription,
     name_prefix,
     ocp_resources_submodule_files_path,
     prepare_test_dir_log,
@@ -102,6 +106,7 @@ from utilities.storage import data_volume
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
+    get_hyperconverged_kubevirt,
     get_hyperconverged_ovs_annotations,
     get_kubevirt_hyperconverged_spec,
     kubernetes_taint_exists,
@@ -823,11 +828,9 @@ def _wait_for_oauth_openshift_deployment(admin_client):
 
 
 @pytest.fixture(scope="session")
-def skip_unprivileged_client():
+def skip_unprivileged_client(is_upstream_distribution):
     # To disable unprivileged_client pass --tc=no_unprivileged_client:True to pytest commandline.
-    return py_config["distribution"] == "upstream" or py_config.get(
-        "no_unprivileged_client"
-    )
+    return is_upstream_distribution or py_config.get("no_unprivileged_client")
 
 
 @pytest.fixture(scope="session")
@@ -1162,8 +1165,8 @@ def namespace(request, admin_client, unprivileged_client):
 
 
 @pytest.fixture(scope="session")
-def skip_upstream():
-    if py_config["distribution"] == "upstream":
+def skip_upstream(is_upstream_distribution):
+    if is_upstream_distribution:
         pytest.skip(
             msg="Running only on downstream,"
             "Reason: HTTP/Registry servers are not available for upstream",
@@ -1584,11 +1587,12 @@ def worker_nodes_ipv4_false_secondary_nics(
 
 
 @pytest.fixture(scope="session")
-def cnv_current_version(admin_client, hco_namespace):
-    for csv in ClusterServiceVersion.get(
-        dyn_client=admin_client, namespace=hco_namespace.name
-    ):
-        return csv.instance.spec.version
+def cnv_current_version(is_downstream_distribution, admin_client, hco_namespace):
+    if is_downstream_distribution:
+        for csv in ClusterServiceVersion.get(
+            dyn_client=admin_client, namespace=hco_namespace.name
+        ):
+            return csv.instance.spec.version
 
 
 @pytest.fixture(scope="session")
@@ -2262,3 +2266,87 @@ def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
         )
         > 1
     )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cluster_info(
+    is_downstream_distribution,
+    is_upstream_distribution,
+    openshift_current_version,
+    cnv_current_version,
+    hco_image,
+    ocs_current_version,
+    kubevirt_resource_scope_session,
+):
+    if is_downstream_distribution:
+        LOGGER.info(
+            f"Openshift version: {openshift_current_version}, CNV version: {cnv_current_version}, "
+            f"HCO image: {hco_image}, OCS version: {ocs_current_version}"
+        )
+    elif is_upstream_distribution:
+        LOGGER.info(
+            "Running on upstream cluster. Kubevirt version: "
+            f"{kubevirt_resource_scope_session.instance.status.targetKubeVirtVersion}"
+        )
+
+
+@pytest.fixture(scope="session")
+def ocs_current_version(ocs_storage_class, admin_client):
+    if ocs_storage_class:
+        for csv in ClusterServiceVersion.get(
+            dyn_client=admin_client,
+            namespace="openshift-storage",
+            label_selector=f"{ClusterServiceVersion.ApiGroup.OPERATORS_COREOS_COM}/ocs-operator.openshift-storage",
+        ):
+            return csv.instance.spec.version
+
+
+@pytest.fixture(scope="session")
+def openshift_current_version(is_downstream_distribution, admin_client):
+    if is_downstream_distribution:
+        return (
+            get_clusterversion(dyn_client=admin_client)
+            .instance.status.history[0]
+            .version
+        )
+
+
+@pytest.fixture(scope="session")
+def hco_image(is_downstream_distribution, admin_client, cnv_subscription_scope_session):
+    if is_downstream_distribution:
+        source_name = cnv_subscription_scope_session.instance.spec.source
+        for cs in CatalogSource.get(
+            dyn_client=admin_client,
+            name=source_name,
+            namespace=py_config["marketplace_namespace"],
+        ):
+            return cs.instance.spec.image
+
+
+@pytest.fixture(scope="session")
+def cnv_subscription_scope_session(
+    is_downstream_distribution, admin_client, hco_namespace
+):
+    if is_downstream_distribution:
+        return get_subscription(
+            admin_client=admin_client,
+            namespace=hco_namespace.name,
+            subscription_name=HCO_SUBSCRIPTION,
+        )
+
+
+@pytest.fixture(scope="session")
+def kubevirt_resource_scope_session(admin_client, hco_namespace):
+    return get_hyperconverged_kubevirt(
+        admin_client=admin_client, hco_namespace=hco_namespace
+    )
+
+
+@pytest.fixture(scope="session")
+def is_upstream_distribution():
+    return py_config["distribution"] == "upstream"
+
+
+@pytest.fixture(scope="session")
+def is_downstream_distribution():
+    return py_config["distribution"] == "downstream"

@@ -7,7 +7,6 @@ from multiprocessing import Process
 import yaml
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_service_version import ClusterServiceVersion
-from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
@@ -39,6 +38,7 @@ from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
+    get_clusterversion,
     get_subscription,
     write_to_extras_file,
 )
@@ -311,11 +311,6 @@ def get_operators_names_and_info(csv):
             "strategy": deploy.spec.strategy.get("type", "RollingUpdate"),
         }
     return operators_info
-
-
-def get_clusterversion(dyn_client):
-    for cvo in ClusterVersion.get(dyn_client=dyn_client):
-        return cvo
 
 
 def update_clusterversion_channel(dyn_client, ocp_channel):

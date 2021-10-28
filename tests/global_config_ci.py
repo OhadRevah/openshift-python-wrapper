@@ -10,11 +10,12 @@ global_config = pytest_testconfig.load_python(
 
 
 no_unprivileged_client = True
+distribution = "upstream"
 hco_namespace = "kubevirt-hyperconverged"
 sriov_namespace = "sriov-network-operator"
 linux_bridge_cni = "bridge"
 bridge_tuning = "tuning"
-region = "EMEA"
+region = "USA"
 golden_images_namespace = "kubevirt-os-images"
 default_storage_class = "local"
 
