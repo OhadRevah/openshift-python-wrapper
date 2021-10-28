@@ -5,6 +5,7 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
     MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
     MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
     MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
+    WORKLOAD_UPDATE_STRATEGY_KEY_NAME,
 )
 from tests.install_upgrade_operators.utils import wait_for_spec_change
 from utilities.hco import get_hco_spec
@@ -21,10 +22,10 @@ class TestLauncherUpdateResetFields:
         [
             pytest.param(
                 {
-                    "patch": {"spec": {"workloadUpdateStrategy": None}},
+                    "patch": {"spec": {WORKLOAD_UPDATE_STRATEGY_KEY_NAME: None}},
                 },
                 {
-                    "workloadUpdateStrategy": DEFAULT_WORKLOAD_UPDATE_STRATEGY,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: DEFAULT_WORKLOAD_UPDATE_STRATEGY,
                 },
                 marks=(
                     pytest.mark.polarion("CNV-6928"),
@@ -38,36 +39,46 @@ class TestLauncherUpdateResetFields:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {"batchEvictionInterval": None}
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
+                                "batchEvictionInterval": None
+                            }
                         }
                     },
                 },
                 {
-                    "workloadUpdateStrategy": MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
                 },
                 marks=pytest.mark.polarion("CNV-6929"),
-            ),
-            pytest.param(
-                {
-                    "patch": {
-                        "spec": {"workloadUpdateStrategy": {"batchEvictionSize": None}}
-                    },
-                },
-                {
-                    "workloadUpdateStrategy": MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
-                },
-                marks=pytest.mark.polarion("CNV-6930"),
+                id="test_hyperconverged_reset_workload_update_strategy_batch_eviction_size",
             ),
             pytest.param(
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {"workloadUpdateMethods": None}
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
+                                "batchEvictionSize": None
+                            }
                         }
                     },
                 },
                 {
-                    "workloadUpdateStrategy": MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
+                },
+                marks=pytest.mark.polarion("CNV-6930"),
+                id="test_hyperconverged_reset_workload_update_strategy_workload_update_methods",
+            ),
+            pytest.param(
+                {
+                    "patch": {
+                        "spec": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
+                                "workloadUpdateMethods": None
+                            }
+                        }
+                    },
+                },
+                {
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
                 },
                 marks=pytest.mark.polarion("CNV-6931"),
             ),
@@ -88,7 +99,7 @@ class TestLauncherUpdateResetFields:
             get_spec_func=lambda: get_hco_spec(
                 admin_client=admin_client, hco_namespace=hco_namespace
             ),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )
         wait_for_spec_change(
             expected=expected,
@@ -97,5 +108,5 @@ class TestLauncherUpdateResetFields:
             )
             .instance.to_dict()
             .get("spec"),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )

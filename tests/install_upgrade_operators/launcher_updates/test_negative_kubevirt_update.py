@@ -1,6 +1,9 @@
 import pytest
 
-from tests.install_upgrade_operators.launcher_updates.constants import CUSTOM_STRATEGY
+from tests.install_upgrade_operators.launcher_updates.constants import (
+    CUSTOM_STRATEGY,
+    WORKLOAD_UPDATE_STRATEGY_KEY_NAME,
+)
 from tests.install_upgrade_operators.utils import wait_for_spec_change
 from utilities.hco import get_hco_spec
 from utilities.virt import get_hyperconverged_kubevirt
@@ -21,7 +24,9 @@ class TestLauncherUpdateNegative:
             pytest.param(
                 {
                     "patch": {
-                        "spec": {"workloadUpdateStrategy": KUBEVIRT_NEGATIVE_STRATEGY}
+                        "spec": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: KUBEVIRT_NEGATIVE_STRATEGY
+                        }
                     },
                 },
                 marks=pytest.mark.polarion("CNV-6945"),
@@ -30,7 +35,7 @@ class TestLauncherUpdateNegative:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionInterval": KUBEVIRT_NEGATIVE_STRATEGY[
                                     "batchEvictionInterval"
                                 ]
@@ -44,7 +49,7 @@ class TestLauncherUpdateNegative:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionSize": KUBEVIRT_NEGATIVE_STRATEGY[
                                     "batchEvictionSize"
                                 ]
@@ -58,7 +63,7 @@ class TestLauncherUpdateNegative:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "workloadUpdateMethods": KUBEVIRT_NEGATIVE_STRATEGY[
                                     "workloadUpdateMethods"
                                 ]
@@ -84,12 +89,12 @@ class TestLauncherUpdateNegative:
             get_spec_func=lambda: get_hco_spec(
                 admin_client=admin_client, hco_namespace=hco_namespace
             ),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )
         wait_for_spec_change(
             expected=CUSTOM_STRATEGY,
             get_spec_func=lambda: get_hyperconverged_kubevirt(
                 admin_client=admin_client, hco_namespace=hco_namespace
             ).instance.to_dict()["spec"],
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )

@@ -2,7 +2,7 @@ import inspect
 import logging
 import re
 
-from dictdiffer import diff
+from benedict import benedict
 from ocp_resources.cdi import CDI
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.deployment import Deployment
@@ -209,28 +209,32 @@ def get_network_addon_config(admin_client):
         return nao
 
 
-def wait_for_spec_change(expected, get_spec_func, keys):
+def wait_for_spec_change(expected, get_spec_func, base_path):
     """
     Waits for spec values to get propagated
 
     Args:
         expected (dict): dictionary of values that would be used to update hco cr
         get_spec_func (function): function to fetch current spec dictionary
-        keys (list): list of associated keys for a given kind.
+        base_path (list): list of associated keys for a given kind
     """
+
+    def _compare_spec_values():
+        spec_dict = benedict(get_spec_func()).get(base_path)
+        return (
+            sorted(expected.items()) == sorted(spec_dict.items()),
+            f"Compare mismatch: expected={expected} spec_dict={spec_dict}",
+        )
+
     samplers = TimeoutSampler(
         wait_timeout=60,
         sleep=5,
         exceptions_dict={AssertionError: []},
-        func=assert_specs_values,
-        expected=expected,
-        get_spec_func=get_spec_func,
-        keys=keys,
+        func=_compare_spec_values,
     )
-    diff_result = None
     try:
-        for diff_result in samplers:
-            if not diff_result:
+        for compare_result in samplers:
+            if _compare_spec_values:
                 LOGGER.info(
                     f"{get_function_name(function_name=get_spec_func)}: Found expected spec values: '{expected}'"
                 )
@@ -239,7 +243,7 @@ def wait_for_spec_change(expected, get_spec_func, keys):
     except TimeoutExpiredError:
         LOGGER.error(
             f"{get_function_name(function_name=get_spec_func)}: Timed out waiting for CR with expected spec."
-            f" spec: '{expected}' diff:'{diff_result}'"
+            f" spec: '{expected}' diff:'{compare_result}'"
         )
         raise
 
@@ -255,35 +259,3 @@ def get_function_name(function_name):
         str: name of the function
     """
     return inspect.getsource(function_name).split("(")[0].split(" ")[-1]
-
-
-def assert_specs_values(expected, get_spec_func, keys):
-    """
-    Asserts that expected values of spec fields
-
-    Args:
-        expected (dict): dictionary of values that would be used to update hco cr
-        get_spec_func (function): function to fetch current spec dictionary
-        keys (list): list of associated keys for a given kind.
-
-    Raises:
-        RuntimeError: raised if no keys exist in spec_dict (used specifically because AssertionError is ignored in the
-            caller's TimeoutSampler
-        AssertionError: if a diff int he spec between the expected and actual is intercepted
-    """
-    spec_dict = get_spec_func()
-    spec = {key: spec_dict[key] for key in keys if key in spec_dict}
-    if not spec:
-        raise RuntimeError(
-            f"no key exists in spec_dict: keys={keys} spec_dict={spec_dict}"
-        )
-    diff_spec = list(
-        filter(
-            lambda diff_result_item: diff_result_item[0] == "change",
-            list(diff(spec, expected)),
-        )
-    )
-    assert not diff_spec, (
-        f"For {get_function_name(function_name=get_spec_func)}, expected value: {expected} "
-        f"does not match with actual value: {spec}"
-    )

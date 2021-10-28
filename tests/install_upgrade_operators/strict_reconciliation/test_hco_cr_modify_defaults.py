@@ -17,24 +17,28 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CERTC_DEFAULT_48H,
     CNAO_CERT_CONFIG_DEFAULT,
     CNAO_CR_CERT_CONFIG_KEY,
-    CNAO_MOD_DEFAULT_CA_DUR,
-    CNAO_MOD_DEFAULT_SER_DUR,
-    CNAO_MOD_DEFAULT_SER_RB,
+    CNAO_MOD_DEFAULT_CA_DUR_EXPECTED,
+    CNAO_MOD_DEFAULT_CA_RB_EXPECTED,
+    CNAO_MOD_DEFAULT_SER_DUR_EXPECTED,
+    CNAO_MOD_DEFAULT_SER_RB_EXPECTED,
     COMPLETION_TIMEOUT_PER_GIB_KEY,
     EXPCT_CERTC_DEFAULTS,
     EXPCT_LM_DEFAULTS,
     FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
-    HCO_CR_FIELDS,
-    HCO_MOD_DEFAUTL_CA_DUR,
-    HCO_MOD_DEFAUTL_CA_RB,
-    HCO_MOD_DEFAUTL_SER_DUR,
-    HCO_MOD_DEFAUTL_SER_RB,
+    HCO_CR_FEATURE_GATES_KEY,
+    HCO_MOD_DEFAULT_CA_DUR,
+    HCO_MOD_DEFAULT_CA_RB,
+    HCO_MOD_DEFAULT_SER_DUR,
+    HCO_MOD_DEFAULT_SER_RB,
+    KUBEVIRT_CR_CERT_CONFIG_KEY,
+    KUBEVIRT_CR_CONFIGURATION_KEY,
+    KUBEVIRT_CR_MIGRATIONS_KEY,
     KUBEVIRT_DEFAULT,
-    KUBEVIRT_FIELDS,
-    KV_MOD_DEFAUTL_CA_DUR,
-    KV_MOD_DEFAUTL_SER_DUR,
-    KV_MOD_DEFAUTL_SER_RB,
+    KV_MOD_DEFAULT_CA_DUR,
+    KV_MOD_DEFAULT_CA_RB,
+    KV_MOD_DEFAULT_SER_DUR,
+    KV_MOD_DEFAULT_SER_RB,
     LIVE_MIGRATION_CONFIG_KEY,
     LM_COMPLETIONTIMEOUTPERGIB_DEFAULT,
     LM_CUST_DEFAULT_C,
@@ -65,19 +69,26 @@ LOGGER = logging.getLogger(__name__)
 
 class TestOperatorsModify:
     @pytest.mark.parametrize(
-        "updated_hco_cr, expected",
+        ("updated_hco_cr", "expected"),
         [
             pytest.param(
                 {
                     "patch": {"spec": {HCO_CR_CERT_CONFIG_KEY: EXPCT_CERTC_DEFAULTS}},
                 },
                 {
-                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: EXPCT_CERTC_DEFAULTS},
-                    "kubevirt_spec": KUBEVIRT_DEFAULT,
-                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: EXPCT_CERTC_DEFAULTS},
-                    "cnao_spec": {CNAO_CR_CERT_CONFIG_KEY: CNAO_CERT_CONFIG_DEFAULT},
+                    "hco_spec": {
+                        "expected": EXPCT_CERTC_DEFAULTS,
+                        "base_path": [HCO_CR_CERT_CONFIG_KEY],
+                    },
+                    "kubevirt_spec": {
+                        "expected": KUBEVIRT_DEFAULT,
+                        "base_path": [KUBEVIRT_CR_CERT_CONFIG_KEY],
+                    },
+                    "cdi_spec": EXPCT_CERTC_DEFAULTS,
+                    "cnao_spec": CNAO_CERT_CONFIG_DEFAULT,
                 },
                 marks=pytest.mark.polarion("CNV-6698"),
+                id="modify_defaults_certconfig",
             ),
             pytest.param(
                 {
@@ -92,10 +103,16 @@ class TestOperatorsModify:
                     },
                 },
                 {
-                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_DUR},
-                    "kubevirt_spec": KV_MOD_DEFAUTL_CA_DUR,
-                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_DUR},
-                    "cnao_spec": CNAO_MOD_DEFAULT_CA_DUR,
+                    "hco_spec": {
+                        "expected": HCO_MOD_DEFAULT_CA_DUR,
+                        "base_path": [HCO_CR_CERT_CONFIG_KEY],
+                    },
+                    "kubevirt_spec": {
+                        "expected": KV_MOD_DEFAULT_CA_DUR,
+                        "base_path": [KUBEVIRT_CR_CERT_CONFIG_KEY],
+                    },
+                    "cdi_spec": HCO_MOD_DEFAULT_CA_DUR,
+                    "cnao_spec": CNAO_MOD_DEFAULT_CA_DUR_EXPECTED,
                 },
                 marks=pytest.mark.polarion("CNV-6699"),
                 id="Test_Modify_HCO_CR_CertConfig_ca_duration",
@@ -113,10 +130,16 @@ class TestOperatorsModify:
                     },
                 },
                 {
-                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_RB},
-                    "kubevirt_spec": KV_MOD_DEFAUTL_SER_RB,
-                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_CA_RB},
-                    "cnao_spec": CNAO_MOD_DEFAULT_SER_RB,
+                    "hco_spec": {
+                        "expected": HCO_MOD_DEFAULT_CA_RB,
+                        "base_path": HCO_CR_CERT_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": KV_MOD_DEFAULT_CA_RB,
+                        "base_path": KUBEVIRT_CR_CERT_CONFIG_KEY,
+                    },
+                    "cdi_spec": HCO_MOD_DEFAULT_CA_RB,
+                    "cnao_spec": CNAO_MOD_DEFAULT_CA_RB_EXPECTED,
                 },
                 marks=pytest.mark.polarion("CNV-6700"),
                 id="Test_Modify_HCO_CR_CertConfig_ca_renewBefore",
@@ -134,10 +157,16 @@ class TestOperatorsModify:
                     },
                 },
                 {
-                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_DUR},
-                    "kubevirt_spec": KV_MOD_DEFAUTL_SER_DUR,
-                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_DUR},
-                    "cnao_spec": CNAO_MOD_DEFAULT_SER_DUR,
+                    "hco_spec": {
+                        "expected": HCO_MOD_DEFAULT_SER_DUR,
+                        "base_path": HCO_CR_CERT_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": KV_MOD_DEFAULT_SER_DUR,
+                        "base_path": KUBEVIRT_CR_CERT_CONFIG_KEY,
+                    },
+                    "cdi_spec": HCO_MOD_DEFAULT_SER_DUR,
+                    "cnao_spec": CNAO_MOD_DEFAULT_SER_DUR_EXPECTED,
                 },
                 marks=pytest.mark.polarion("CNV-6701"),
                 id="Test_Modify_HCO_CR_CertConfig_server_duration",
@@ -155,10 +184,16 @@ class TestOperatorsModify:
                     },
                 },
                 {
-                    "hco_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_RB},
-                    "kubevirt_spec": KV_MOD_DEFAUTL_SER_RB,
-                    "cdi_spec": {HCO_CR_CERT_CONFIG_KEY: HCO_MOD_DEFAUTL_SER_RB},
-                    "cnao_spec": CNAO_MOD_DEFAULT_SER_RB,
+                    "hco_spec": {
+                        "expected": HCO_MOD_DEFAULT_SER_RB,
+                        "base_path": HCO_CR_CERT_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": KV_MOD_DEFAULT_SER_RB,
+                        "base_path": KUBEVIRT_CR_CERT_CONFIG_KEY,
+                    },
+                    "cdi_spec": HCO_MOD_DEFAULT_SER_RB,
+                    "cnao_spec": CNAO_MOD_DEFAULT_SER_RB_EXPECTED,
                 },
                 marks=pytest.mark.polarion("CNV-6702"),
                 id="Test_Modify_HCO_CR_CertConfig_server_renewBefore",
@@ -166,8 +201,17 @@ class TestOperatorsModify:
             pytest.param(
                 {"patch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: EXPCT_LM_DEFAULTS}}},
                 {
-                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: EXPCT_LM_DEFAULTS},
-                    "kubevirt_spec": {"migrations": EXPCT_LM_DEFAULTS},
+                    "hco_spec": {
+                        "expected": EXPCT_LM_DEFAULTS,
+                        "base_path": LIVE_MIGRATION_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": EXPCT_LM_DEFAULTS,
+                        "base_path": [
+                            KUBEVIRT_CR_CONFIGURATION_KEY,
+                            KUBEVIRT_CR_MIGRATIONS_KEY,
+                        ],
+                    },
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -185,8 +229,17 @@ class TestOperatorsModify:
                     }
                 },
                 {
-                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_C},
-                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_C},
+                    "hco_spec": {
+                        "expected": LM_CUST_DEFAULT_C,
+                        "base_path": LIVE_MIGRATION_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": LM_CUST_DEFAULT_C,
+                        "base_path": [
+                            KUBEVIRT_CR_CONFIGURATION_KEY,
+                            KUBEVIRT_CR_MIGRATIONS_KEY,
+                        ],
+                    },
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -204,8 +257,17 @@ class TestOperatorsModify:
                     }
                 },
                 {
-                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_PM},
-                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_PM},
+                    "hco_spec": {
+                        "expected": LM_CUST_DEFAULT_PM,
+                        "base_path": LIVE_MIGRATION_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": LM_CUST_DEFAULT_PM,
+                        "base_path": [
+                            KUBEVIRT_CR_CONFIGURATION_KEY,
+                            KUBEVIRT_CR_MIGRATIONS_KEY,
+                        ],
+                    },
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -215,8 +277,17 @@ class TestOperatorsModify:
             pytest.param(
                 {"patch": {"spec": {LIVE_MIGRATION_CONFIG_KEY: LM_PO_DEFAULT}}},
                 {
-                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_PO},
-                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_PO},
+                    "hco_spec": {
+                        "expected": LM_CUST_DEFAULT_PO,
+                        "base_path": LIVE_MIGRATION_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": LM_CUST_DEFAULT_PO,
+                        "base_path": [
+                            KUBEVIRT_CR_CONFIGURATION_KEY,
+                            KUBEVIRT_CR_MIGRATIONS_KEY,
+                        ],
+                    },
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -234,8 +305,17 @@ class TestOperatorsModify:
                     }
                 },
                 {
-                    "hco_spec": {LIVE_MIGRATION_CONFIG_KEY: LM_CUST_DEFAULT_PT},
-                    "kubevirt_spec": {"migrations": LM_CUST_DEFAULT_PT},
+                    "hco_spec": {
+                        "expected": LM_CUST_DEFAULT_PT,
+                        "base_path": LIVE_MIGRATION_CONFIG_KEY,
+                    },
+                    "kubevirt_spec": {
+                        "expected": LM_CUST_DEFAULT_PT,
+                        "base_path": [
+                            KUBEVIRT_CR_CONFIGURATION_KEY,
+                            KUBEVIRT_CR_MIGRATIONS_KEY,
+                        ],
+                    },
                     "cdi_spec": None,
                     "cnao_spec": None,
                 },
@@ -260,21 +340,21 @@ class TestOperatorsModify:
         """
         if expected["hco_spec"]:
             wait_for_spec_change(
-                expected=expected["hco_spec"],
+                expected=expected["hco_spec"]["expected"],
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                keys=HCO_CR_FIELDS,
+                base_path=expected["hco_spec"]["base_path"],
             )
         if expected["kubevirt_spec"]:
             wait_for_spec_change(
-                expected=expected["kubevirt_spec"],
+                expected=expected["kubevirt_spec"]["expected"],
                 get_spec_func=lambda: get_hyperconverged_kubevirt(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 )
                 .instance.to_dict()
                 .get("spec"),
-                keys=KUBEVIRT_FIELDS,
+                base_path=expected["kubevirt_spec"]["base_path"],
             )
         if expected["cdi_spec"]:
             wait_for_spec_change(
@@ -282,7 +362,7 @@ class TestOperatorsModify:
                 get_spec_func=lambda: get_hyperconverged_cdi(admin_client=admin_client)
                 .instance.to_dict()
                 .get("spec"),
-                keys=[CDI_CR_CERT_CONFIG_KEY],
+                base_path=[CDI_CR_CERT_CONFIG_KEY],
             )
         if expected["cnao_spec"]:
             wait_for_spec_change(
@@ -292,7 +372,7 @@ class TestOperatorsModify:
                 )
                 .instance.to_dict()
                 .get("spec"),
-                keys=[CNAO_CR_CERT_CONFIG_KEY],
+                base_path=[CNAO_CR_CERT_CONFIG_KEY],
             )
 
     @pytest.mark.parametrize(
@@ -337,7 +417,7 @@ class TestOperatorsModify:
                             "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                         },
                     },
-                    "kubevirt_spec": ["SRIOVLiveMigration"],
+                    "kubevirt_spec": "SRIOVLiveMigration",
                 },
                 marks=pytest.mark.polarion("CNV-6710"),
                 id="Test_Modify_HCO_CR_featureGates_sriovLiveMigration",
@@ -358,7 +438,7 @@ class TestOperatorsModify:
                             "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                         },
                     },
-                    "kubevirt_spec": ["WithHostPassthroughCPU"],
+                    "kubevirt_spec": "WithHostPassthroughCPU",
                 },
                 marks=pytest.mark.polarion("CNV-6711"),
                 id="Test_Modify_HCO_CR_featureGates_withHostPassthroughCPU",
@@ -384,7 +464,7 @@ class TestOperatorsModify:
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                keys=HCO_CR_FIELDS,
+                base_path=[HCO_CR_FEATURE_GATES_KEY],
             )
         if expected["kubevirt_spec"]:
             samples = TimeoutSampler(

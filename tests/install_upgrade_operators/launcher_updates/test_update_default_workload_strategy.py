@@ -8,6 +8,7 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
     MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
     MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
     MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
+    WORKLOAD_UPDATE_STRATEGY_KEY_NAME,
 )
 from tests.install_upgrade_operators.utils import wait_for_spec_change
 from utilities.hco import get_hco_spec
@@ -25,14 +26,14 @@ class TestLauncherUpdateModifyDefault:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionInterval": DEFAULT_BATCH_EVICTION_INTERVAL
                             }
                         }
                     },
                 },
                 {
-                    "workloadUpdateStrategy": MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
                 },
                 marks=pytest.mark.polarion("CNV-6942"),
                 id="test_hyperconverged_modify_default_batchEvictionInterval",
@@ -41,14 +42,14 @@ class TestLauncherUpdateModifyDefault:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionSize": DEFAULT_BATCH_EVICTION_SIZE
                             }
                         }
                     },
                 },
                 {
-                    "workloadUpdateStrategy": MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_CUST_DEFAULT_BATCH_EVICTION_SIZE,
                 },
                 marks=pytest.mark.polarion("CNV-6943"),
                 id="Test_hyperconverged_modify_default_batchEvictionSize",
@@ -57,14 +58,14 @@ class TestLauncherUpdateModifyDefault:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "workloadUpdateMethods": DEFAULT_WORKLOAD_UPDATE_METHODS
                             }
                         }
                     },
                 },
                 {
-                    "workloadUpdateStrategy": MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_CUST_DEFAULT_WORKLOAD_UPDATE_METHOD,
                 },
                 marks=pytest.mark.polarion("CNV-6944"),
                 id="test_hyperconverged_modify_default_workloadUpdateMethods",
@@ -86,7 +87,7 @@ class TestLauncherUpdateModifyDefault:
             get_spec_func=lambda: get_hco_spec(
                 admin_client=admin_client, hco_namespace=hco_namespace
             ),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )
         wait_for_spec_change(
             expected=expected,
@@ -95,7 +96,7 @@ class TestLauncherUpdateModifyDefault:
             )
             .instance.to_dict()
             .get("spec"),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )
 
     @pytest.mark.parametrize(
@@ -105,13 +106,13 @@ class TestLauncherUpdateModifyDefault:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": DEFAULT_WORKLOAD_UPDATE_STRATEGY,
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: DEFAULT_WORKLOAD_UPDATE_STRATEGY,
                         }
                     },
                 },
                 "hyperconverged",
                 {
-                    "workloadUpdateStrategy": DEFAULT_WORKLOAD_UPDATE_STRATEGY,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: DEFAULT_WORKLOAD_UPDATE_STRATEGY,
                 },
                 marks=pytest.mark.polarion("CNV-6940"),
             ),
@@ -119,13 +120,13 @@ class TestLauncherUpdateModifyDefault:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": DEFAULT_WORKLOAD_UPDATE_STRATEGY,
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: DEFAULT_WORKLOAD_UPDATE_STRATEGY,
                         }
                     },
                 },
                 "kubevirt",
                 {
-                    "workloadUpdateStrategy": DEFAULT_WORKLOAD_UPDATE_STRATEGY,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: DEFAULT_WORKLOAD_UPDATE_STRATEGY,
                 },
                 marks=pytest.mark.polarion("CNV-6941"),
             ),
@@ -148,7 +149,7 @@ class TestLauncherUpdateModifyDefault:
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                keys=["workloadUpdateStrategy"],
+                base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
             )
         elif resource_name == "kubevirt":
             wait_for_spec_change(
@@ -158,7 +159,7 @@ class TestLauncherUpdateModifyDefault:
                 )
                 .instance.to_dict()
                 .get("spec"),
-                keys=["workloadUpdateStrategy"],
+                base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
             )
         else:
             raise AssertionError(f"Unexpected resource name: {resource_name}")

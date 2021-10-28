@@ -15,6 +15,7 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
     MOD_DEFAULT_BATCH_EVICTION_SIZE_ZERO,
     MOD_DEFAULT_WORKLOAD_UPDATE_METHOD,
     MOD_DEFAULT_WORKLOAD_UPDATE_METHOD_EMPTY,
+    WORKLOAD_UPDATE_STRATEGY_KEY_NAME,
 )
 from tests.install_upgrade_operators.utils import wait_for_spec_change
 from utilities.hco import get_hco_spec
@@ -31,7 +32,7 @@ class TestLauncherUpdateAll:
             pytest.param(
                 "hyperconverged",
                 {
-                    "workloadUpdateStrategy": CUSTOM_WORKLOAD_UPDATE_STRATEGY,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: CUSTOM_WORKLOAD_UPDATE_STRATEGY,
                 },
                 marks=pytest.mark.polarion("CNV-6926"),
                 id="test_hyperconverged_modify_custom_workload_update_strategy_all",
@@ -39,7 +40,7 @@ class TestLauncherUpdateAll:
             pytest.param(
                 "kubevirt",
                 {
-                    "workloadUpdateStrategy": CUSTOM_WORKLOAD_UPDATE_STRATEGY,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: CUSTOM_WORKLOAD_UPDATE_STRATEGY,
                 },
                 marks=pytest.mark.polarion("CNV-6927"),
                 id="test_kubevirt_modify_custom_workload_update_strategy",
@@ -61,7 +62,7 @@ class TestLauncherUpdateAll:
                 get_spec_func=lambda: get_hco_spec(
                     admin_client=admin_client, hco_namespace=hco_namespace
                 ),
-                keys=["workloadUpdateStrategy"],
+                base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
             )
         elif resource_name == "kubevirt":
             wait_for_spec_change(
@@ -71,7 +72,7 @@ class TestLauncherUpdateAll:
                 )
                 .instance.to_dict()
                 .get("spec"),
-                keys=["workloadUpdateStrategy"],
+                base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
             )
         else:
             raise AssertionError(f"Unexpected resource name: {resource_name}")
@@ -85,15 +86,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionInterval": CUSTOM_BATCH_EVICTION_INTERVAL
                             }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_BATCH_EVICTION_INTERVAL,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_BATCH_EVICTION_INTERVAL,
                 },
                 marks=pytest.mark.polarion("CNV-6932"),
                 id="test_hyperconverged_modify_custom_workloadUpdateStrategy_batchEvictionInterval",
@@ -102,15 +102,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionSize": CUSTOM_BATCH_EVICTION_SIZE
                             }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_BATCH_EVICTION_SIZE,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_BATCH_EVICTION_SIZE,
                 },
                 marks=pytest.mark.polarion("CNV-6933"),
                 id="test_hyperconverged_modify_custom_workloadUpdateStrategy_batchEvictionSize",
@@ -119,15 +118,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "workloadUpdateMethods": CUSTOM_WORKLOAD_UPDATE_METHODS
                             }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_WORKLOAD_UPDATE_METHOD,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_WORKLOAD_UPDATE_METHOD,
                 },
                 marks=pytest.mark.polarion("CNV-6934"),
                 id="test_hyperconverged_modify_custom_workloadUpdateStrategy_workloadUpdateMethods",
@@ -136,13 +134,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {"workloadUpdateMethods": []}
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
+                                "workloadUpdateMethods": []
+                            }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_WORKLOAD_UPDATE_METHOD_EMPTY,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_WORKLOAD_UPDATE_METHOD_EMPTY,
                 },
                 marks=pytest.mark.polarion("CNV-6935"),
                 id="test_hyperconverged_modify_workloadUpdateStrategy_workloadUpdateMethods_empty",
@@ -151,13 +150,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {"batchEvictionInterval": "0s"}
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
+                                "batchEvictionInterval": "0s"
+                            }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_BATCH_EVICTION_INTERVAL_ZERO,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_BATCH_EVICTION_INTERVAL_ZERO,
                 },
                 marks=pytest.mark.polarion("CNV-6936"),
                 id="test_hyperconverged_modify_workloadUpdateStrategy_batchEvictionInterval_zero",
@@ -166,15 +166,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionInterval": CUSTOM_BATCH_EVICTION_INTERVAL_INT
                             }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_BATCH_EVICTION_INTERVAL_INT,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_BATCH_EVICTION_INTERVAL_INT,
                 },
                 marks=pytest.mark.polarion("CNV-6937"),
                 id="Test_hyperconverged_modify_workloadUpdateStrategy_batchEvictionInterval_large_value",
@@ -182,12 +181,13 @@ class TestCustomWorkLoadStrategy:
             pytest.param(
                 {
                     "patch": {
-                        "spec": {"workloadUpdateStrategy": {"batchEvictionSize": 0}}
+                        "spec": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {"batchEvictionSize": 0}
+                        }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_BATCH_EVICTION_SIZE_ZERO,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_BATCH_EVICTION_SIZE_ZERO,
                 },
                 marks=pytest.mark.polarion("CNV-6938"),
                 id="Test_hyperconverged_modify_workloadUpdateStrategy_batchEvictionSize_zero",
@@ -196,15 +196,14 @@ class TestCustomWorkLoadStrategy:
                 {
                     "patch": {
                         "spec": {
-                            "workloadUpdateStrategy": {
+                            WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                                 "batchEvictionSize": CUSTOM_BATCH_EVICTION_SIZE_INT
                             }
                         }
                     },
-                    "clean": {"spec": {"workloadUpdateStrategy": None}},
                 },
                 {
-                    "workloadUpdateStrategy": MOD_DEFAULT_BATCH_EVICTION_SIZE_INT,
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: MOD_DEFAULT_BATCH_EVICTION_SIZE_INT,
                 },
                 marks=pytest.mark.polarion("CNV-6939"),
                 id="test_hyperconverged_modify_workloadUpdateStrategy_batchEvictionSize_large_value",
@@ -221,7 +220,7 @@ class TestCustomWorkLoadStrategy:
             get_spec_func=lambda: get_hco_spec(
                 admin_client=admin_client, hco_namespace=hco_namespace
             ),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )
         wait_for_spec_change(
             expected=expected,
@@ -230,5 +229,5 @@ class TestCustomWorkLoadStrategy:
             )
             .instance.to_dict()
             .get("spec"),
-            keys=["workloadUpdateStrategy"],
+            base_path=[WORKLOAD_UPDATE_STRATEGY_KEY_NAME],
         )
