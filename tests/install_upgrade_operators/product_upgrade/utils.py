@@ -1037,6 +1037,7 @@ def upgrade_ocp(ocp_image, dyn_client, ocp_channel):
     assert rc, f"OCP upgrade command failed. out: {out}. err: {err}"
 
     wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)
+    wait_for_mcp_update(dyn_client=dyn_client)
 
 
 def verify_vms_ssh_connectivity(vms_list):
