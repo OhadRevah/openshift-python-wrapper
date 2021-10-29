@@ -560,3 +560,10 @@ def compare_resource_labels(pre_update_label, post_update_label):
     if pre_update_label != post_update_label:
         return f"Pre update labels: {pre_update_label} does not match with post update labels: {post_update_label}"
     return ""
+
+
+def assert_expected_hardcoded_feature_gates(actual, expected, hco_spec):
+    assert sorted(actual) == sorted(expected), (
+        "actual featureGates list in KubeVirt CR is not as expected: "
+        f"expected={expected} actual={actual} hco_spec: {hco_spec}"
+    )

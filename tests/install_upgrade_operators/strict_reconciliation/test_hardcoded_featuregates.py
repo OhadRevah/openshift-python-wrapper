@@ -2,6 +2,7 @@ import pytest
 
 from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
+    assert_expected_hardcoded_feature_gates,
     create_rpatch_dict,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
@@ -234,14 +235,14 @@ class TestHardcodedFeatureGates:
         updated_delete_resource,
         expected,
         kubevirt_hyperconverged_spec_scope_function,
+        hco_spec,
     ):
         actual_fgs = kubevirt_hyperconverged_spec_scope_function["configuration"][
             "developerConfiguration"
         ]["featureGates"]
-        assert (
-            actual_fgs == expected
-        ), "actual featureGates list in KubeVirt CR is not as expected: "
-        f"expected={expected} actual={actual_fgs}"
+        assert_expected_hardcoded_feature_gates(
+            actual=actual_fgs, expected=expected, hco_spec=hco_spec
+        )
 
     @pytest.mark.polarion("CNV-6277")
     @pytest.mark.parametrize(
@@ -306,11 +307,11 @@ class TestHardcodedFeatureGates:
         hco_namespace,
         updated_cdi_cr,
         expected,
+        hco_spec,
     ):
         wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
         cdi_resource = get_hyperconverged_cdi(admin_client=admin_client)
         actual_fgs = cdi_resource.instance.to_dict()["spec"]["config"]["featureGates"]
-        assert (
-            actual_fgs == expected
-        ), "actual featureGates list in CDI CR is not as expected: "
-        f"expected={expected} actual={actual_fgs}"
+        assert_expected_hardcoded_feature_gates(
+            actual=actual_fgs, expected=expected, hco_spec=hco_spec
+        )
