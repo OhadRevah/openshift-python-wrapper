@@ -722,12 +722,15 @@ def kubeconfig_export_path():
 
 
 @pytest.fixture(scope="session")
-def exported_kubeconfig(unprivileged_secret, tmp_path_factory, kubeconfig_export_path):
+def exported_kubeconfig(unprivileged_secret, kubeconfig_export_path):
     if not unprivileged_secret:
         yield
     else:
-        dir_path = tmp_path_factory.mktemp(KUBECONFIG.lower())
-        dest_path = os.path.join(dir_path, KUBECONFIG.lower())
+        kubeconfig_path = "/tmp/cnv-tests-kubeconfig"
+        if not os.path.isdir(kubeconfig_path):
+            os.mkdir(kubeconfig_path)
+
+        dest_path = os.path.join(kubeconfig_path, KUBECONFIG.lower())
 
         LOGGER.info(f"Copy {KUBECONFIG} to {dest_path}")
         shutil.copyfile(src=kubeconfig_export_path, dst=dest_path)
