@@ -196,3 +196,6 @@ HOTPLUG_DISK_SERIAL = "1234567890"
 # pyetest configuration
 SANITY_TESTS_FAILURE = 99
 HCO_SUBSCRIPTION = "hco-operatorhub"
+
+# VM configuration
+LIVE_MIGRATE = "LiveMigrate"

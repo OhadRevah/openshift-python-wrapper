@@ -20,6 +20,7 @@ from kubernetes.client import ApiException
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.node import Node
+from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import Resource
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
@@ -41,6 +42,7 @@ from utilities.constants import (
     CLOUND_INIT_CONFIG_DRIVE,
     CNV_SSH_KEY_PATH,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+    LIVE_MIGRATE,
     OS_FLAVOR_CIRROS,
     OS_FLAVOR_FEDORA,
     OS_FLAVOR_WINDOWS,
@@ -766,7 +768,7 @@ class VirtualMachineForTests(VirtualMachine):
             }
 
         if self.eviction:
-            template_spec["evictionStrategy"] = "LiveMigrate"
+            template_spec["evictionStrategy"] = LIVE_MIGRATE
 
         # cpu settings
         if self.cpu_flags:
@@ -1835,6 +1837,8 @@ def migrate_vm_and_verify(
         if not wait_for_migration_success:
             return mig
         mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
+        if vm.instance.spec.template.spec.evictionStrategy == LIVE_MIGRATE:
+            verify_one_pdb_per_vm(vm=vm)
 
     assert vm.vmi.node != node_before
 
@@ -2050,3 +2054,26 @@ def get_base_templates_list(client):
             template.Annotations.DEPRECATED
         )
     ]
+
+
+def verify_one_pdb_per_vm(vm):
+    """Verify one PodDisruptionBudget created for a VM; VM must be configured with evictionStrategy: LiveMigrate
+
+    Args:
+        vm (VirtualMachine): VM object
+
+    Raises:
+        AssertionError if there is more than one PDB for the VM
+    """
+    pdb_resource_name = "PodDisruptionBudget"
+    LOGGER.info(f"Verify one {pdb_resource_name} for VM {vm.name}")
+    pdbs_dict = {}
+    for pdb in PodDisruptionBudget.get(
+        dyn_client=get_admin_client(), namespace=vm.namespace
+    ):
+        if pdb.instance.metadata.ownerReferences[0].name == vm.name:
+            pdbs_dict[pdb.name] = pdb.instance.metadata
+
+    assert (
+        len(pdbs_dict) == 1
+    ), f"VM {vm.name} must have one {pdb_resource_name}, current: {pdbs_dict}"

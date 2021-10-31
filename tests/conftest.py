@@ -43,6 +43,7 @@ from ocp_resources.oauth import OAuth
 from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
+from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
@@ -166,6 +167,7 @@ RESOURCES_TO_COLLECT_INFO = [
     Service,
     Namespace,
     NodeNetworkConfigurationEnactment,
+    PodDisruptionBudget,
 ]
 
 

@@ -36,6 +36,7 @@ from utilities.virt import (
     fedora_vm_body,
     node_mgmt_console,
     running_vm,
+    verify_one_pdb_per_vm,
     wait_for_node_schedulable_status,
 )
 
@@ -134,6 +135,7 @@ def check_draining_process(dyn_client, source_pod, vm):
     assert_pod_status_completed(source_pod=source_pod)
     target_pod = vm.vmi.virt_launcher_pod
     target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
+    verify_one_pdb_per_vm(vm=vm)
     target_node = target_pod.node
     LOGGER.info(f"The VMI is currently running on {target_node.name}")
     assert (
