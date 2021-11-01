@@ -4,6 +4,7 @@ from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
+from ocp_resources.installplan import InstallPlan
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
@@ -96,7 +97,7 @@ def get_all_network_resources(dyn_client, namespace):
     ]
 
 
-def filter_resources(resources, network_addons_config):
+def filter_resources(resources, network_addons_config, is_post_cnv_upgrade_cluster):
     bad_rcs = []
     for resource in resources:
         if KNOWN_BUG in f"{resource.kind}/{resource.name}" and (
@@ -109,7 +110,7 @@ def filter_resources(resources, network_addons_config):
         if any(
             ignore in f"{resource.kind}/{resource.name}".lower()
             for ignore in IGNORE_LIST
-        ):
+        ) or ("Secret" in resource.kind and is_post_cnv_upgrade_cluster):
             continue
         try:
             for key in COMP_LABELS:
@@ -138,16 +139,34 @@ def filter_resources(resources, network_addons_config):
     return bad_rcs
 
 
-def verify_cnao_labels(admin_client, namespace, network_addons_config):
-
+def verify_cnao_labels(
+    admin_client, namespace, network_addons_config, is_post_cnv_upgrade_cluster
+):
     cnao_resources = get_all_network_resources(
         dyn_client=admin_client, namespace=namespace
     )
     bad_rcs = filter_resources(
-        resources=cnao_resources, network_addons_config=network_addons_config
+        resources=cnao_resources,
+        network_addons_config=network_addons_config,
+        is_post_cnv_upgrade_cluster=is_post_cnv_upgrade_cluster,
     )
 
     assert not bad_rcs, f"Unlabeled Resources - {bad_rcs}"
+
+
+@pytest.fixture(scope="module")
+def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
+    return (
+        len(
+            list(
+                InstallPlan.get(
+                    dyn_client=admin_client,
+                    namespace=hco_namespace.name,
+                )
+            )
+        )
+        > 1
+    )
 
 
 @pytest.fixture(scope="module")
@@ -235,6 +254,7 @@ def test_cnao_labels(
     network_addons_config,
     check_components,
     hco_namespace,
+    is_post_cnv_upgrade_cluster,
 ):
     """
     Verify that all cnao components are labeled accordingly, first checking there are no unaccounted components,
@@ -244,4 +264,5 @@ def test_cnao_labels(
         admin_client=admin_client,
         namespace=hco_namespace.name,
         network_addons_config=network_addons_config,
+        is_post_cnv_upgrade_cluster=is_post_cnv_upgrade_cluster,
     )
