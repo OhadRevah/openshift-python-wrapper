@@ -875,7 +875,7 @@ def cluster_sanity(
         sc_names = [sc.name for sc in cluster_storage_classes]
         config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
         exists_sc = [scn for scn in config_sc if scn in sc_names]
-        assert len(config_sc) == len(exists_sc), (
+        assert sorted(config_sc) == sorted(exists_sc), (
             f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
             f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
         )
