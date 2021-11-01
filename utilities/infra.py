@@ -21,12 +21,15 @@ import requests
 from colorlog import ColoredFormatter
 from jira import JIRA
 from kubernetes.client import ApiException
+from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.namespace import Namespace
+from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.service import Service
+from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
@@ -1019,3 +1022,83 @@ def exit_pytest_execution(message, return_code=SANITY_TESTS_FAILURE, filename=No
             extras_file_name=filename, content=message, extra_dir_name="errors_dir"
         )
     pytest.exit(msg=message, returncode=return_code)
+
+
+def get_kubevirt_package_manifest(admin_client):
+    """
+    Gets kubevirt package manifest associated with hco-catalogsource label
+
+    Args:
+        admin_client (DynamicClient): dynamic client object
+
+    Returns:
+        Resource: Package manifest resource
+
+    Raises:
+        NotFoundError: when the kubevirt-hyperconverged package manifest associated with hco-catalogsource is not found
+    """
+    package_manifest_name = py_config["hco_cr_name"]
+    label_selector = "catalog=hco-catalogsource"
+    for resource_field in PackageManifest.get(
+        dyn_client=admin_client,
+        namespace=py_config["marketplace_namespace"],
+        label_selector=label_selector,
+        raw=True,
+    ):
+        if resource_field.metadata.name == package_manifest_name:
+            LOGGER.info(
+                f"Found expected packagemanefest: {resource_field.metadata.name}: "
+                f"in catalog: {resource_field.metadata.labels.catalog}"
+            )
+            return resource_field
+    raise NotFoundError(
+        f"Not able to find any packagemanifest {package_manifest_name} in {label_selector} source."
+    )
+
+
+def get_subscription(admin_client, namespace, subscription_name):
+    """
+    Gets subscription by name
+
+    Args:
+        admin_client (DynamicClient): Dynamic client object
+        namespace (str): Name of the namespace
+        subscription_name (str): Name of the subscription
+
+    Returns:
+        Resource: subscription resource
+
+    Raises:
+        NotFoundError: when a given subscription is not found in a given namespace
+    """
+    for sub in Subscription.get(
+        dyn_client=admin_client,
+        name=subscription_name,
+        namespace=namespace,
+    ):
+        return sub
+    raise NotFoundError(
+        f"Subscription {subscription_name} not found in namespace: {namespace}"
+    )
+
+
+def get_csv_by_name(csv_name, admin_client, namespace):
+    """
+    Gets csv from a given namespace by name
+
+    Args:
+        csv_name (str): Name of the csv
+        admin_client (DynamicClient): dynamic client object
+        namespace (str): namespace name
+
+    Returns:
+        Resource: csv resource
+
+    Raises:
+        NotFoundError: when a given csv is not found in a given namespace
+    """
+    for csv in ClusterServiceVersion.get(
+        dyn_client=admin_client, namespace=namespace, name=csv_name
+    ):
+        return csv
+    raise NotFoundError(f"Csv {csv_name} not found in namespace: {namespace}")
