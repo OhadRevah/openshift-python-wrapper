@@ -87,6 +87,7 @@ from utilities.infra import (
     get_admin_client,
     get_cluster_resources,
     get_clusterversion,
+    get_csv_by_name,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -1594,12 +1595,19 @@ def worker_nodes_ipv4_false_secondary_nics(
 
 
 @pytest.fixture(scope="session")
-def cnv_current_version(is_downstream_distribution, admin_client, hco_namespace):
+def csv(admin_client, hco_namespace, cnv_subscription_scope_session):
+    if cnv_subscription_scope_session:
+        return get_csv_by_name(
+            csv_name=cnv_subscription_scope_session.instance.status.installedCSV,
+            admin_client=admin_client,
+            namespace=hco_namespace.name,
+        )
+
+
+@pytest.fixture(scope="session")
+def cnv_current_version(is_downstream_distribution, csv):
     if is_downstream_distribution:
-        for csv in ClusterServiceVersion.get(
-            dyn_client=admin_client, namespace=hco_namespace.name
-        ):
-            return csv.instance.spec.version
+        return csv.instance.spec.version
 
 
 @pytest.fixture(scope="session")

@@ -39,6 +39,7 @@ from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
     get_clusterversion,
+    get_csv_by_name,
     get_subscription,
     write_to_extras_file,
 )
@@ -298,10 +299,10 @@ def wait_for_operator_pod_replacements(
 
 def get_related_images_name_and_version(dyn_client, hco_namespace, version):
     related_images_name_and_versions = {}
-    csv = utils.get_current_csv(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
-        hco_current_version=version,
+    csv = get_csv_by_name(
+        admin_client=dyn_client,
+        namespace=hco_namespace,
+        csv_name=version,
     )
     for item in csv.instance.spec.relatedImages:
         # example of "name": 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
@@ -729,10 +730,10 @@ def upgrade_cnv(
     }
 
     LOGGER.info(f"Get current CSV {hco_current_version}")
-    current_csv = utils.get_current_csv(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        hco_current_version=hco_current_version,
+    current_csv = get_csv_by_name(
+        admin_client=dyn_client,
+        namespace=hco_namespace.name,
+        csv_name=hco_current_version,
     )
 
     LOGGER.info("Get all operators Pods names and images version from the current CSV")
