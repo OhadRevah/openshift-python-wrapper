@@ -54,7 +54,7 @@ tests: virtctl pipenv
 	pipenv run pytest $(PYTEST_ARGS)
 
 ci-tests: virtctl pipenv
-	pipenv run pytest --tc-file=tests/global_config_ci.py --tc-format=python --log-collector --junit-xml xunit_results.xml --cluster-sanity-skip-storage-check --skip-deprecated-api-test -s -m ci
+	pipenv run pytest --tc-file=tests/global_config_ci.py --tc-format=python --log-collector --junit-xml xunit_results.xml --cluster-sanity-skip-check --skip-deprecated-api-test -s -m ci
 
 cluster-down: $(CLUSTER_DOWN)
 	$(CLUSTER_DOWN)
