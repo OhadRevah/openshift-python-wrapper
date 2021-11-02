@@ -25,12 +25,20 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def must_gather_image_url(is_upstream_distribution, cnv_current_version):
+def must_gather_image_url(is_upstream_distribution, csv):
     if is_upstream_distribution:
         return "quay.io/kubevirt/must-gather"
+    LOGGER.info(f"Csv name is : {csv.name}")
+    must_gather_image = [
+        image["image"]
+        for image in csv.instance.spec.relatedImages
+        if "must-gather" in image["name"]
+    ]
+    assert (
+        must_gather_image
+    ), f"Csv: {csv.name}, related images: {csv.instance.spec.relatedImages} does not have must gather image."
 
-    must_gather_image = "container-native-virtualization-cnv-must-gather-rhel8"
-    return f"registry-proxy.engineering.redhat.com/rh-osbs/{must_gather_image}:v{cnv_current_version}"
+    return must_gather_image[0]
 
 
 @pytest.fixture(scope="module")
