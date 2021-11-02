@@ -21,24 +21,36 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
+from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
 from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node import Node
+from ocp_resources.node_network_configuration_policy import (
+    NodeNetworkConfigurationPolicy,
+)
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.oauth import OAuth
+from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
+from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
@@ -48,7 +60,6 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     KUBECONFIG,
     MTU_9000,
-    RESOURCES_TO_COLLECT_INFO,
     SRIOV,
     TIMEOUT_4MIN,
     UNPRIVILEGED_PASSWORD,
@@ -132,6 +143,19 @@ TEAM_MARKERS = {
         "metrics",
     ],
 }
+
+RESOURCES_TO_COLLECT_INFO = [
+    DataVolume,
+    PersistentVolume,
+    PersistentVolumeClaim,
+    VirtualMachine,
+    VirtualMachineInstance,
+    VirtualMachineInstanceMigration,
+    NetworkAttachmentDefinition,
+    NodeNetworkConfigurationPolicy,
+    NodeNetworkState,
+    Service,
+]
 
 
 def pytest_addoption(parser):

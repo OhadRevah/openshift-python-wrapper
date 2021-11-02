@@ -1,20 +1,5 @@
 import os
 
-from ocp_resources.datavolume import DataVolume
-from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
-from ocp_resources.node_network_configuration_policy import (
-    NodeNetworkConfigurationPolicy,
-)
-from ocp_resources.node_network_state import NodeNetworkState
-from ocp_resources.persistent_volume import PersistentVolume
-from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
-from ocp_resources.service import Service
-from ocp_resources.virtual_machine import VirtualMachine
-from ocp_resources.virtual_machine_instance import VirtualMachineInstance
-from ocp_resources.virtual_machine_instance_migration import (
-    VirtualMachineInstanceMigration,
-)
-
 
 # Images
 BASE_IMAGES_DIR = "cnv-tests"
@@ -151,19 +136,6 @@ OS_LOGIN_PARAMS = {
     },
 }
 
-# Collect logs constants
-RESOURCES_TO_COLLECT_INFO = [
-    DataVolume,
-    PersistentVolume,
-    PersistentVolumeClaim,
-    VirtualMachine,
-    VirtualMachineInstance,
-    VirtualMachineInstanceMigration,
-    NetworkAttachmentDefinition,
-    NodeNetworkConfigurationPolicy,
-    NodeNetworkState,
-    Service,
-]
 PODS_TO_COLLECT_INFO = [
     "virt-launcher",
     "virt-api",
