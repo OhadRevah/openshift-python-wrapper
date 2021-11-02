@@ -3,7 +3,6 @@ import logging
 import pytest
 from ocp_resources.node import Node
 from ocp_resources.ssp import SSP
-from ocp_resources.subscription import Subscription
 from ocp_resources.vm_import_config import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
@@ -15,9 +14,9 @@ from tests.install_upgrade_operators.utils import (
     get_deployment_by_name,
     get_network_addon_config,
 )
-from utilities.constants import TIMEOUT_5MIN
+from utilities.constants import HCO_SUBSCRIPTION, TIMEOUT_5MIN
 from utilities.hco import add_labels_to_nodes, apply_np_changes
-from utilities.infra import get_daemonset_by_name
+from utilities.infra import get_daemonset_by_name, get_subscription
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -312,11 +311,11 @@ def delete_vm_after_placement(
 
 @pytest.fixture(scope="class")
 def cnv_subscription_scope_class(admin_client, hco_namespace):
-    for sub in Subscription.get(
-        dyn_client=admin_client,
+    return get_subscription(
+        admin_client=admin_client,
         namespace=hco_namespace.name,
-    ):
-        return sub
+        subscription_name=HCO_SUBSCRIPTION,
+    )
 
 
 @pytest.fixture()
@@ -324,11 +323,11 @@ def cnv_subscription_scope_function(admin_client, hco_namespace):
     """
     Retrieves the CNV subscription
     """
-    for sub in Subscription.get(
-        dyn_client=admin_client,
+    return get_subscription(
+        admin_client=admin_client,
         namespace=hco_namespace.name,
-    ):
-        return sub
+        subscription_name=HCO_SUBSCRIPTION,
+    )
 
 
 @pytest.fixture(scope="class")

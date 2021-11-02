@@ -17,7 +17,6 @@ from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from openshift.dynamic.exceptions import (
@@ -40,6 +39,7 @@ from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
+    get_subscription,
     write_to_extras_file,
 )
 from utilities.storage import get_images_server_url, write_file
@@ -356,21 +356,21 @@ def update_subscription_channel_and_source(
     LOGGER.info(
         f"Change subscription channel and source: channel={cnv_subscription_channel} source={cnv_subscription_source}"
     )
-    for subscription in Subscription.get(
-        dyn_client=dyn_client,
+    subscription = get_subscription(
+        admin_client=dyn_client,
         namespace=hco_namespace,
-        name="hco-operatorhub",
-    ):
-        ResourceEditor(
-            {
-                subscription: {
-                    "spec": {
-                        "channel": cnv_subscription_channel,
-                        "source": cnv_subscription_source,
-                    }
+        subscription_name=utilities.constants.HCO_SUBSCRIPTION,
+    )
+    ResourceEditor(
+        {
+            subscription: {
+                "spec": {
+                    "channel": cnv_subscription_channel,
+                    "source": cnv_subscription_source,
                 }
             }
-        ).update()
+        }
+    ).update()
 
 
 def get_cluster_pods(dyn_client, hco_namespace, pods_type):
