@@ -32,6 +32,7 @@ from ocp_resources.virtual_machine_import import VirtualMachineImport
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
+from paramiko.ssh_exception import NoValidConnectionsError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (
@@ -1500,7 +1501,23 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
     )
     for sample in sampler:
         if sample:
-            return
+            break
+
+    if get_bug_status(
+        bugzilla_connection_params=get_bugzilla_connection_params(),
+        bug=2005693,
+    ):
+        sampler = TimeoutSampler(
+            wait_timeout=timeout,
+            sleep=1,
+            func=vm.ssh_exec.run_command,
+            command=["ls"],
+            tcp_timeout=tcp_timeout,
+            exceptions_dict={NoValidConnectionsError: []},
+        )
+        for sample in sampler:
+            if sample:
+                return
 
 
 def wait_for_console(vm, console_impl):
