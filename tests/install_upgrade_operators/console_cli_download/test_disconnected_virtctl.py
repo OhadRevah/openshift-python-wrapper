@@ -3,7 +3,7 @@ import os.path
 import pytest
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 class TestDisconnectedVirtctlDownload:

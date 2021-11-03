@@ -15,6 +15,9 @@ virt_label_dict = {
 }
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 @pytest.mark.parametrize(
     "virt_pod_info_from_prometheus, virt_pod_names_by_label",
     [

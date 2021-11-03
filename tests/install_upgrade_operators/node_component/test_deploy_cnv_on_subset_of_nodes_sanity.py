@@ -24,6 +24,9 @@ from tests.install_upgrade_operators.node_component.utils import (
 from utilities.infra import BUG_STATUS_CLOSED
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 

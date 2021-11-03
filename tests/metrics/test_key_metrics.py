@@ -12,6 +12,9 @@ STORAGE_READ = "for i in {1..20}; do cat /etc/hosts; done"
 NODE_STRESS_SETUP = "sudo sysctl -w kernel.sched_schedstats=1"
 NODE_STRESS_CLEANUP = "sudo sysctl -w kernel.sched_schedstats=0"
 STRESS_NG_MEMORY = "stress-ng --vm 2 --vm-bytes 90% --vm-method all -t 15m  &>1 &"
+
+
+pytestmark = pytest.mark.post_upgrade
 LOGGER = logging.getLogger(__name__)
 
 

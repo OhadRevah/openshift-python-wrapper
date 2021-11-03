@@ -5,6 +5,9 @@ from ocp_resources.pod import Pod
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 @pytest.fixture()
 def developer_vm(
     unprivileged_client,

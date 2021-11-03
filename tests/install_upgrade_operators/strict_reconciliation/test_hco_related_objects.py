@@ -6,7 +6,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
 from utilities.infra import BUG_STATUS_CLOSED
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.mark.bugzilla(

@@ -11,6 +11,8 @@ from tests.install_upgrade_operators.node_component.utils import (
 )
 
 
+pytestmark = pytest.mark.post_upgrade
+
 LOGGER = logging.getLogger(__name__)
 
 

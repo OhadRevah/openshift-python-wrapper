@@ -26,6 +26,9 @@ EXPECTED_LINK_MAP = {
 }
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 @pytest.mark.polarion("CNV-4456")
 @pytest.mark.smoke
 @pytest.mark.ocp_interop

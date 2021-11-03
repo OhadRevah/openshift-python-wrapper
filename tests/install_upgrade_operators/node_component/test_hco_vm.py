@@ -18,6 +18,9 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 LOGGER = logging.getLogger(__name__)
 
 

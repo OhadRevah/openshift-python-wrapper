@@ -15,7 +15,7 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
 from utilities.hco import get_hco_version
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.fixture(scope="class")

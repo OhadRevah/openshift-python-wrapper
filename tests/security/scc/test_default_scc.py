@@ -8,6 +8,9 @@ import pytest
 from ocp_resources.security_context_constraints import SecurityContextConstraints
 
 
+pytestmark = pytest.mark.post_upgrade
+
+
 @pytest.fixture(scope="module")
 def privileged_scc():
     yield SecurityContextConstraints(name="privileged")

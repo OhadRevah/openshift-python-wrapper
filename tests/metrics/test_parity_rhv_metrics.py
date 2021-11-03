@@ -3,7 +3,7 @@ import pytest
 from tests.metrics.utils import assert_vm_metric_virt_handler_pod, get_vm_metrics
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.mark.parametrize(

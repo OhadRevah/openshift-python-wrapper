@@ -6,7 +6,7 @@ from tests.install_upgrade_operators.deployment.utils import (
 )
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.mark.parametrize(
