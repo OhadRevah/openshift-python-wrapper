@@ -834,5 +834,9 @@ def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
     ],
     indirect=True,
 )
-def test_verify_hpp_res_app_label(hpp_resources, cnv_current_version):
+def test_verify_hpp_res_app_label(
+    skip_if_post_cnv_upgrade_cluster_and_labels_bug_not_closed,
+    hpp_resources,
+    cnv_current_version,
+):
     verify_hpp_app_label(hpp_resources=hpp_resources, cnv_version=cnv_current_version)

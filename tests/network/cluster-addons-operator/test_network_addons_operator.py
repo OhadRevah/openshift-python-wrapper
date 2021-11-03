@@ -4,7 +4,6 @@ from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
-from ocp_resources.installplan import InstallPlan
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
@@ -152,21 +151,6 @@ def verify_cnao_labels(
     )
 
     assert not bad_rcs, f"Unlabeled Resources - {bad_rcs}"
-
-
-@pytest.fixture(scope="module")
-def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
-    return (
-        len(
-            list(
-                InstallPlan.get(
-                    dyn_client=admin_client,
-                    namespace=hco_namespace.name,
-                )
-            )
-        )
-        > 1
-    )
 
 
 @pytest.fixture(scope="module")

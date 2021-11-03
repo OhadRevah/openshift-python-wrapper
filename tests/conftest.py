@@ -24,6 +24,7 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
+from ocp_resources.installplan import InstallPlan
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network import Network
@@ -2245,3 +2246,18 @@ def leftovers_validator(
         leftovers = list(set(collected_resources) - set(leftovers_collector))
         if leftovers:
             raise LeftoversFoundError(leftovers=leftovers)
+
+
+@pytest.fixture(scope="module")
+def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
+    return (
+        len(
+            list(
+                InstallPlan.get(
+                    dyn_client=admin_client,
+                    namespace=hco_namespace.name,
+                )
+            )
+        )
+        > 1
+    )
