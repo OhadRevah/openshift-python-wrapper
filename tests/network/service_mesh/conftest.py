@@ -14,7 +14,6 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_service import VirtualService
 
 from tests.network.service_mesh.constants import (
-    CIRROS_IMAGE,
     DEPLOYMENT_TYPE,
     DESTINATION_RULE_TYPE,
     GATEWAY_SELECTOR,
@@ -41,7 +40,7 @@ from tests.network.service_mesh.constants import (
 )
 from tests.network.service_mesh.utils import traffic_management_request
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN
-from utilities.virt import VirtualMachineForTests, running_vm
+from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
 
 
 LOGGER = logging.getLogger(__name__)

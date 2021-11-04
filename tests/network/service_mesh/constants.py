@@ -12,7 +12,6 @@ SM_INJECT_ANNOTATION = (
 )
 VERSION_1_DEPLOYMENT = "v1"
 VERSION_2_DEPLOYMENT = "v2"
-CIRROS_IMAGE = "quay.io/kubevirt/cirros-container-disk-demo"
 SM_PORT = 8000
 HTTPBIN_IMAGE = "docker.io/kennethreitz/httpbin"
 HTTPBIN_COMMAND = shlex.split("gunicorn -b 0.0.0.0:8000 httpbin:app -k gevent")
