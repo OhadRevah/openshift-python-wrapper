@@ -655,12 +655,16 @@ def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=
                     return True
             else:
                 current_check = 0
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"timeout waiting for all pods in namespace {namespace.name} to reach running state, following pods are "
-            f"in not running state: {sample}"
+    except TimeoutExpiredError as exp:
+        raise_multiple_exceptions(
+            exceptions=[
+                ClusterSanityError(
+                    err_str=f"timeout waiting for all pods in namespace {namespace.name} to reach "
+                    f"running state, following pods are in not running state: {sample}"
+                ),
+                exp,
+            ]
         )
-        raise
 
 
 def get_daemonset_by_name(admin_client, daemonset_name, namespace_name):
@@ -912,19 +916,16 @@ def cluster_sanity(
         LOGGER.warning(f"Skipping nodes check, got {skip_nodes_check}")
 
     else:
-        # validate that all the nodes are ready and schedulable
+        # validate that all the nodes are ready and schedulable and CNV pods are running
         LOGGER.info(
             f"Check nodes sanity. (To skip nodes check pass {skip_nodes_check} to pytest)"
         )
         try:
             validate_nodes_ready(nodes=nodes)
             validate_nodes_schedulable(nodes=nodes)
+            wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
         except ClusterSanityError as ex:
             exit_pytest_execution(filename=exceptions_filename, message=ex.err_str)
-
-    # Wait for all cnv pods to reach Running state
-    LOGGER.info(f"Check that all pods in {hco_namespace.name} running")
-    wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
 
 
 @contextmanager
