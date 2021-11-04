@@ -2,7 +2,6 @@ import logging
 
 import pytest
 from ocp_resources.node import Node
-from ocp_resources.ssp import SSP
 
 from tests.install_upgrade_operators.node_component.utils import (
     SELECTORS,
@@ -93,18 +92,6 @@ def np_nodes_labels_dict(admin_client):
 @pytest.fixture(scope="class")
 def nodes_labeled(np_nodes_labels_dict):
     return create_dict_by_label(values=np_nodes_labels_dict)
-
-
-@pytest.fixture()
-def ssp_cr_spec(admin_client, hco_namespace):
-    ssp_cr = list(
-        SSP.get(
-            dyn_client=admin_client,
-            name="ssp-kubevirt-hyperconverged",
-            namespace=hco_namespace.name,
-        )
-    )
-    return ssp_cr[0].instance.to_dict()["spec"]
 
 
 @pytest.fixture()

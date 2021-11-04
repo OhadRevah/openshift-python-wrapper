@@ -18,6 +18,8 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     EXPCT_LM_DEFAULTS,
     EXPECTED_CDI_HARDCODED_FEATUREGATES,
     EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
+    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
+    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
     FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
     KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY,
@@ -91,6 +93,7 @@ class TestOperatorsDefaults:
                     "featureGates": {
                         "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                         "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
+                        FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     }
                 },
                 "hco",

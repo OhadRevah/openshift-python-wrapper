@@ -3,6 +3,10 @@ import logging
 import pytest
 
 from tests.install_upgrade_operators.strict_reconciliation import constants
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
+    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
+)
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     validate_featuregates_in_kv_cr,
     validate_featuregates_not_in_cdi_cr,
@@ -158,6 +162,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     ],
                 },
                 {
+                    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
                     constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
                 },
@@ -173,6 +178,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     "fgs": [constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
                 },
                 {
+                    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
                     constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
                 },
@@ -188,6 +194,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     "fgs": [constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
                 },
                 {
+                    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: False,
                     constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
                 },
