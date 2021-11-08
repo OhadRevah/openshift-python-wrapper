@@ -10,7 +10,6 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import TIMEOUT_3MIN
-from utilities.infra import ExecCommandOnPod
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -22,26 +21,21 @@ BR2TEST = "br2test"
 pytestmark = pytest.mark.sno
 
 
-def count_veth_devices_on_host(worker1_executor, bridge):
+def count_veth_devices_on_host(pod_executor, bridge):
     """
     Return how many veth devices exist on the host running pod
 
     Args:
-        worker1_executor (Host): Worker executor.
+        pod_executor (Host): Worker executor.
         bridge (str): Master bridge name.
 
     Returns:
         int: number of veth devices on host for bridge.
     """
-    out = worker1_executor.exec(
+    out = pod_executor.exec(
         command=f"ip -o link show type veth | grep 'master {bridge}' | wc -l",
     )
     return int(out.strip())
-
-
-@pytest.fixture()
-def worker1_executor(utility_pods, worker_node1):
-    return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
 
 
 @pytest.fixture()
@@ -95,10 +89,10 @@ def remove_veth_bridge_attached_vma(namespace, unprivileged_client, worker_node1
 
 
 @pytest.fixture()
-def veth_interfaces_exists(worker1_executor, remove_veth_bridge_device):
+def veth_interfaces_exists(worker_node1_pod_executor, remove_veth_bridge_device):
     assert (
         count_veth_devices_on_host(
-            worker1_executor=worker1_executor,
+            pod_executor=worker_node1_pod_executor,
             bridge=remove_veth_bridge_device.bridge_name,
         )
         == 2
@@ -107,7 +101,7 @@ def veth_interfaces_exists(worker1_executor, remove_veth_bridge_device):
 
 @pytest.mark.polarion("CNV-681")
 def test_veth_removed_from_host_after_vm_deleted(
-    worker1_executor,
+    worker_node1_pod_executor,
     remove_veth_br1test_nad,
     remove_veth_bridge_device,
     remove_veth_bridge_attached_vma,
@@ -121,7 +115,7 @@ def test_veth_removed_from_host_after_vm_deleted(
         wait_timeout=TIMEOUT_3MIN,
         sleep=1,
         func=count_veth_devices_on_host,
-        worker1_executor=worker1_executor,
+        pod_executor=worker_node1_pod_executor,
         bridge=remove_veth_bridge_device.bridge_name,
     )
     for sample in sampler:

@@ -2,7 +2,6 @@ from collections import OrderedDict
 
 import pytest
 
-from utilities.infra import ExecCommandOnPod
 from utilities.network import (
     OVS,
     assert_ping_successful,
@@ -22,12 +21,11 @@ pytestmark = pytest.mark.usefixtures(
 
 
 @pytest.fixture()
-def ovs_bridge_on_worker1(worker_node1, utility_pods):
-    pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
+def ovs_bridge_on_worker1(worker_node1_pod_executor):
     cmd = "sudo ovs-vsctl"
-    pod_exec.exec(command=f"{cmd} add-br {OVS_BR}")
+    worker_node1_pod_executor.exec(command=f"{cmd} add-br {OVS_BR}")
     yield OVS_BR
-    pod_exec.exec(command=f"{cmd} del-br {OVS_BR}")
+    worker_node1_pod_executor.exec(command=f"{cmd} del-br {OVS_BR}")
 
 
 @pytest.fixture()

@@ -8,7 +8,7 @@ import pytest
 from ocp_resources.pod import Pod
 
 from tests.network.constants import IPV6_STR
-from utilities.infra import ClusterHosts
+from utilities.infra import ClusterHosts, ExecCommandOnPod
 from utilities.network import (
     compose_dual_stack_network_data,
     get_ipv6_address,
@@ -104,3 +104,8 @@ def hyperconverged_ovs_annotations_disabled_by_default(
     assert not get_hyperconverged_ovs_annotations(
         hyperconverged=hyperconverged_resource_scope_function
     ), "deployOVS should be disabled by default"
+
+
+@pytest.fixture()
+def worker_node1_pod_executor(utility_pods, worker_node1):
+    return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)

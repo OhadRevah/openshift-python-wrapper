@@ -9,12 +9,7 @@ from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    ExecCommandOnPod,
-    get_pod_by_name_prefix,
-    name_prefix,
-)
+from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     LinuxBridgeNodeNetworkConfigurationPolicy,
@@ -87,12 +82,7 @@ def deleted_nmstate_pod_during_nncp_configuration(
 
 
 @pytest.fixture()
-def pod_executor(utility_pods, worker_node1):
-    return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
-
-
-@pytest.fixture()
-def dns_gathered_current_state(utility_pods, worker_node1, pod_executor):
+def dns_gathered_current_state(worker_node1_pod_executor):
     """
     This fixture gathers the current DNS configurations from the node and creates the new dns_resolver configurations in
     order to configure the DNS.
@@ -102,7 +92,7 @@ def dns_gathered_current_state(utility_pods, worker_node1, pod_executor):
     Returns:
         dns_resolver (dict): new dns setting to configure in the NNCP
     """
-    dns_data = pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
+    dns_data = worker_node1_pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
     dns_addresses = re.findall(r"\d+\.\d+\.\d+\.\d", str(dns_data))
     LOGGER.info(f"resolv.conf currently holds: {dns_addresses}")
     dns_resolver = {
@@ -262,15 +252,13 @@ def test_dynamic_ip(
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5724")
 def test_dns(
-    worker_node1,
-    utility_pods,
-    pod_executor,
+    worker_node1_pod_executor,
     dns_gathered_current_state,
     dns_nncp_configured,
     dns_nncp_restored,
 ):
     LOGGER.info("NMstate: Test DNS")
-    dns_current_state = pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
+    dns_current_state = worker_node1_pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
     assert (
         PUBLIC_DNS_SERVER_IP in dns_current_state
         and dns_gathered_current_state["config"]["server"][0] in dns_current_state
