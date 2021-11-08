@@ -156,6 +156,7 @@ RESOURCES_TO_COLLECT_INFO = [
     NodeNetworkConfigurationPolicy,
     NodeNetworkState,
     Service,
+    Namespace,
 ]
 
 
