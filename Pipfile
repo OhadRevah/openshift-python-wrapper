@@ -35,7 +35,7 @@ openshift-python-wrapper = "*"
 docker="*"
 pyvmomi="*"
 pytest-dependency="*"
-pytest-progress="*"  # https://github.com/ssrikanta/pytest-progress
+pytest-progress="==1.2.2"  # https://github.com/ssrikanta/pytest-progress
 colorlog="*"
 dictdiffer="*"
 python-benedict="*"
