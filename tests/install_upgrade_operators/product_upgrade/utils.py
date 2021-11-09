@@ -562,9 +562,7 @@ def delete_icsp(admin_client):
     Args:
         admin_client (DynamicClient): Open connection to remote cluster
     """
-    for icsp in ImageContentSourcePolicy.get(
-        dyn_client=admin_client, label_selector="operators.openshift.org/catalog=true"
-    ):
+    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
         LOGGER.info(f"Deleting ImageContentSourcePolicy {icsp.name}")
         icsp.delete(wait=True)
 
