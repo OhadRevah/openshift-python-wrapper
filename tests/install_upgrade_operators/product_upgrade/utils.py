@@ -576,7 +576,7 @@ def generate_icsp_file(tmpdir, cnv_index_image, cnv_image_name, source_map):
         ],
         verify_stderr=False,
     )
-    assert rc, f"Command to generate catalog mirror failed. out={out}"
+    assert rc, f"Command to generate catalog mirror failed: out={out} err={err}"
 
     icsp_file_path = os.path.join(output_directory, icsp_file_name)
     assert os.path.isfile(
@@ -590,7 +590,9 @@ def create_icsp_from_file(icsp_file_path):
     rc, out, err = run_command(
         command=["oc", "create", "-f", icsp_file_path], verify_stderr=False
     )
-    assert rc, f"Failed to create ICSP policy {icsp_file_path}"
+    assert (
+        rc
+    ), f"Failed to create ICSP policy: icsp_file_path={icsp_file_path} out={out} err={err}"
 
 
 def update_icsp_stage_mirror(icsp_file_path):
@@ -604,7 +606,9 @@ def update_icsp_stage_mirror(icsp_file_path):
             icsp_file_path,
         ]
     )
-    assert rc, f"Failed to update stage mirror in ICSP {icsp_file_path}"
+    assert (
+        rc
+    ), f"Failed to update stage mirror in ICSP: icsp_file_path={icsp_file_path} out={out} err={err}"
 
 
 def wait_for_mcp_update(dyn_client):
