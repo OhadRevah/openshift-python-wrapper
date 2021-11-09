@@ -1011,16 +1011,18 @@ def exit_pytest_execution(message, return_code=SANITY_TESTS_FAILURE, filename=No
     """Exit pytest execution
 
     Exit pytest execution; invokes pytest_sessionfinish.
-    Optionally, log an error message to tests-collected-info/utilities/errors_dir/<filename>
+    Optionally, log an error message to tests-collected-info/utilities/pytest_exit_errors/<filename>
 
     Args:
-        message (str):  Message to dispaly upon exit and to log in errors file
+        message (str):  Message to display upon exit and to log in errors file
         return_code (int. Default: 99): Exit return code
         filename (str, optional. Default: None): filename where the given message will be saved
     """
     if filename:
         write_to_extras_file(
-            extras_file_name=filename, content=message, extra_dir_name="errors_dir"
+            extras_file_name=filename,
+            content=message,
+            extra_dir_name="pytest_exit_errors",
         )
     pytest.exit(msg=message, returncode=return_code)
 
