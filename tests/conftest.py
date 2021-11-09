@@ -143,7 +143,6 @@ TEAM_MARKERS = {
     "compute": ["compute", "deprecated_api"],
     "network": ["network", "deprecated_api"],
     "storage": ["storage", "deprecated_api"],
-    "mtv": ["mtv", "deprecated_api"],
     "iuo": [
         "csv",
         "install_upgrade_operators",

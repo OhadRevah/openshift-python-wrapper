@@ -41,32 +41,6 @@ linux_bridge_cni = "cnv-bridge"
 bridge_tuning = "cnv-tuning"
 nodes_cpu_architecture = INTEL  # INTEL = "Intel" AMD = "AMD"
 
-provider_matrix = [
-    {
-        "rhv44": {
-            "type": "ovirt",
-            "version": "4.4",
-            "fqdn": "env-rhv44-mgr.cfme2.lab.eng.rdu2.redhat.com",
-            "api_url": "https://env-rhv44-mgr.cfme2.lab.eng.rdu2.redhat.com/ovirt-engine/api",
-            "username": "admin@internal",
-            "password": "Tux4Linux!",
-            "cluster_name": "Default",
-        }
-    },
-    {
-        "vsphere65": {
-            "type": "vmware",
-            "version": "6.5",
-            "fqdn": "rhev-node-05.rdu2.scalelab.redhat.com",
-            "api_url": "https://rhev-node-05.rdu2.scalelab.redhat.com/sdk",
-            "username": "administrator@vsphere.local",
-            "password": "Heslo123!",
-            "cluster_name": "MTV",
-            "thumbprint": "31:14:EB:9E:F1:78:68:10:A5:78:D1:A7:DF:BB:54:B7:1B:91:9F:30",
-        }
-    },
-]
-
 windows_username = "Administrator"
 windows_password = "Heslo123"
 

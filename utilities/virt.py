@@ -30,7 +30,6 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
-from ocp_resources.virtual_machine_import import VirtualMachineImport
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
@@ -1659,40 +1658,6 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
         ]
 
     return bootcmds
-
-
-@contextmanager
-def import_vm(
-    name,
-    namespace,
-    provider_credentials_secret_name,
-    provider_credentials_secret_namespace,
-    provider_type,
-    target_vm_name,
-    resource_mapping_name=None,
-    resource_mapping_namespace=None,
-    vm_id=None,
-    vm_name=None,
-    cluster_name=None,
-    provider_mappings=None,
-    start_vm=False,
-):
-    with VirtualMachineImport(
-        name=name,
-        namespace=namespace,
-        provider_credentials_secret_name=provider_credentials_secret_name,
-        provider_credentials_secret_namespace=provider_credentials_secret_namespace,
-        vm_id=vm_id,
-        target_vm_name=target_vm_name,
-        start_vm=start_vm,
-        provider_mappings=provider_mappings,
-        provider_type=provider_type,
-        vm_name=vm_name,
-        cluster_name=cluster_name,
-        resource_mapping_name=resource_mapping_name,
-        resource_mapping_namespace=resource_mapping_namespace,
-    ) as vmimport:
-        yield vmimport
 
 
 # TODO: Remove once bug 1945703 is fixed
