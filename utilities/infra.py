@@ -868,7 +868,12 @@ class ExecCommandOnPod:
 
 
 def cluster_sanity(
-    request, admin_client, cluster_storage_classes, nodes, hco_namespace
+    request,
+    admin_client,
+    cluster_storage_classes,
+    nodes,
+    hco_namespace,
+    junitxml_property=None,
 ):
     def _storage_sanity_check():
         sc_names = [sc.name for sc in cluster_storage_classes]
@@ -907,7 +912,11 @@ def cluster_sanity(
             )
             _storage_sanity_check()
         except ClusterSanityError as ex:
-            exit_pytest_execution(filename=exceptions_filename, message=ex.err_str)
+            exit_pytest_execution(
+                filename=exceptions_filename,
+                message=ex.err_str,
+                junitxml_property=junitxml_property,
+            )
 
     # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
     if request.session.config.getoption("--cluster-sanity-skip-nodes-check"):
@@ -923,7 +932,11 @@ def cluster_sanity(
             validate_nodes_schedulable(nodes=nodes)
             wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
         except ClusterSanityError as ex:
-            exit_pytest_execution(filename=exceptions_filename, message=ex.err_str)
+            exit_pytest_execution(
+                filename=exceptions_filename,
+                message=ex.err_str,
+                junitxml_property=junitxml_property,
+            )
 
 
 @contextmanager
@@ -1005,7 +1018,9 @@ def get_cluster_resources(admin_client, resource_files_path):
     return results
 
 
-def exit_pytest_execution(message, return_code=SANITY_TESTS_FAILURE, filename=None):
+def exit_pytest_execution(
+    message, return_code=SANITY_TESTS_FAILURE, filename=None, junitxml_property=None
+):
     """Exit pytest execution
 
     Exit pytest execution; invokes pytest_sessionfinish.
@@ -1015,6 +1030,7 @@ def exit_pytest_execution(message, return_code=SANITY_TESTS_FAILURE, filename=No
         message (str):  Message to display upon exit and to log in errors file
         return_code (int. Default: 99): Exit return code
         filename (str, optional. Default: None): filename where the given message will be saved
+        junitxml_property (pytest plugin): record_testsuite_property
     """
     if filename:
         write_to_extras_file(
@@ -1022,6 +1038,8 @@ def exit_pytest_execution(message, return_code=SANITY_TESTS_FAILURE, filename=No
             content=message,
             extra_dir_name="pytest_exit_errors",
         )
+    if junitxml_property:
+        junitxml_property(name="exit_code", value=return_code)
     pytest.exit(msg=message, returncode=return_code)
 
 

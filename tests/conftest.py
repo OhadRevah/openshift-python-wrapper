@@ -2126,7 +2126,12 @@ def cnv_pods(admin_client, hco_namespace):
 @pytest.mark.early
 @pytest.fixture(scope="session", autouse=True)
 def cluster_sanity_scope_session(
-    request, nodes, cluster_storage_classes, admin_client, hco_namespace
+    request,
+    nodes,
+    cluster_storage_classes,
+    admin_client,
+    hco_namespace,
+    junitxml_plugin,
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
@@ -2138,13 +2143,19 @@ def cluster_sanity_scope_session(
         cluster_storage_classes=cluster_storage_classes,
         nodes=nodes,
         hco_namespace=hco_namespace,
+        junitxml_property=junitxml_plugin,
     )
 
 
 @pytest.mark.early
 @pytest.fixture(scope="module", autouse=True)
 def cluster_sanity_scope_module(
-    request, nodes, cluster_storage_classes, admin_client, hco_namespace
+    request,
+    nodes,
+    cluster_storage_classes,
+    admin_client,
+    hco_namespace,
+    junitxml_plugin,
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
@@ -2156,6 +2167,7 @@ def cluster_sanity_scope_module(
         cluster_storage_classes=cluster_storage_classes,
         nodes=nodes,
         hco_namespace=hco_namespace,
+        junitxml_property=junitxml_plugin,
     )
 
 
@@ -2344,3 +2356,12 @@ def is_upstream_distribution():
 @pytest.fixture(scope="session")
 def is_downstream_distribution():
     return py_config["distribution"] == "downstream"
+
+
+@pytest.fixture(scope="session")
+def junitxml_plugin(request, record_testsuite_property):
+    return (
+        record_testsuite_property
+        if request.config.pluginmanager.has_plugin("junitxml")
+        else None
+    )
