@@ -9,6 +9,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.operator_condition import OperatorCondition
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -74,6 +75,40 @@ def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
         )
         if collect_logs():
             collect_resources_for_test(resources_to_collect=[ClusterServiceVersion])
+        raise
+
+
+def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):
+    LOGGER.info(f"Wait for the operator condition. Name:{name} Upgradable:{upgradable}")
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=1,
+        func=OperatorCondition.get,
+        dyn_client=dyn_client,
+        namespace=hco_namespace,
+        name=name,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            for operator_condition in sample:
+                upgradeable_condition = next(
+                    (
+                        condition
+                        for condition in operator_condition.instance.spec.conditions
+                        if condition.type == "Upgradeable"
+                    ),
+                    None,
+                )
+                if (
+                    upgradeable_condition is not None
+                    and upgradeable_condition.status == str(upgradable)
+                ):
+                    return operator_condition
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"timeout waiting for operator version: name={name}, upgradable:{upgradable}"
+        )
         raise
 
 

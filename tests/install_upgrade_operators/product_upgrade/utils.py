@@ -793,6 +793,13 @@ def upgrade_cnv(
             LOGGER.error(f"CSV status {new_csv.instance.status.phase}")
             raise
 
+    utils.wait_for_operator_condition(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        name=hco_target_version,
+        upgradable=False,
+    )
+
     LOGGER.info("determine which old pods should be gone after upgrade")
     pods_to_be_removed, pods_not_to_be_removed = determine_pods_to_be_removed(
         all_old_pods=all_old_pods,
@@ -866,6 +873,13 @@ def upgrade_cnv(
         status=new_csv.Status.SUCCEEDED,
         timeout=utilities.constants.TIMEOUT_10MIN,
         stop_status=None,
+    )
+
+    utils.wait_for_operator_condition(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        name=hco_target_version,
+        upgradable=True,
     )
 
     if check_images_during_upgrade:
