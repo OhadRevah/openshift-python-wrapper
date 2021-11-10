@@ -5,13 +5,14 @@ Pytest conftest file for CNV network tests
 """
 
 import pytest
+from kubernetes.dynamic.exceptions import NotFoundError
 from ocp_resources.pod import Pod
 
-from tests.network.constants import IPV6_STR
+from utilities.constants import IPV4_STR, IPV6_STR
 from utilities.infra import ClusterHosts, ExecCommandOnPod
 from utilities.network import (
     compose_dual_stack_network_data,
-    get_ipv6_address,
+    get_ip_from_vm_or_virt_handler_pod,
     ip_version_data_from_matrix,
 )
 from utilities.virt import get_hyperconverged_ovs_annotations
@@ -61,15 +62,34 @@ def vlan_tag_id(index_number):
 
 
 @pytest.fixture(scope="session")
-def dual_stack_cluster(admin_client):
-    virt_handler_pod = list(
-        Pod.get(
-            dyn_client=admin_client,
-            label_selector="kubevirt.io=virt-handler",
-        )
-    )[0]
+def virt_handler_pod(admin_client):
+    virt_handler = "virt-handler"
+    for pod in Pod.get(
+        dyn_client=admin_client,
+        label_selector=f"{Pod.ApiGroup.KUBEVIRT_IO}={virt_handler}",
+    ):
+        return pod
 
-    return get_ipv6_address(cnv_resource=virt_handler_pod) is not None
+    raise NotFoundError(f"No {virt_handler} Pod found.")
+
+
+@pytest.fixture(scope="session")
+def ipv4_supported_cluster(virt_handler_pod):
+    return get_ip_from_vm_or_virt_handler_pod(
+        family=IPV4_STR, virt_handler_pod=virt_handler_pod
+    )
+
+
+@pytest.fixture(scope="session")
+def ipv6_supported_cluster(virt_handler_pod):
+    return get_ip_from_vm_or_virt_handler_pod(
+        family=IPV6_STR, virt_handler_pod=virt_handler_pod
+    )
+
+
+@pytest.fixture(scope="session")
+def dual_stack_cluster(ipv4_supported_cluster, ipv6_supported_cluster):
+    return ipv4_supported_cluster and ipv6_supported_cluster
 
 
 @pytest.fixture()

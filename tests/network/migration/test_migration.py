@@ -13,6 +13,7 @@ from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import (
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+    IPV6_STR,
     OS_FLAVOR_FEDORA,
     OS_LOGIN_PARAMS,
     TIMEOUT_2MIN,
@@ -22,7 +23,7 @@ from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
     compose_cloud_init_data_dict,
-    get_ipv6_ip_str,
+    get_valid_ip_address,
     get_vmi_ip_v4_by_name,
     network_device,
     network_nad,
@@ -41,7 +42,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def http_port_accessible(vm, server_ip, server_port):
-    if get_ipv6_ip_str(dst_ip=server_ip):
+    if get_valid_ip_address(family=IPV6_STR, dst_ip=server_ip):
         server_ip = f"'[{server_ip}]'"
 
     sampler = TimeoutSampler(

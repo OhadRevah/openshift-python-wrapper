@@ -79,6 +79,8 @@ class Images:
 SRIOV = "sriov"
 IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"
 MTU_9000 = 9000
+IPV4_STR = "ipv4"
+IPV6_STR = "ipv6"
 CLUSTER_NETWORK_ADDONS_OPERATOR = "cluster-network-addons-operator"
 
 #  Time constants

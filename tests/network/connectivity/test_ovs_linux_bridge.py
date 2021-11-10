@@ -6,13 +6,13 @@ from collections import OrderedDict
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.network.constants import IPV6_STR
 from tests.network.utils import assert_no_ping, run_test_guest_performance
+from utilities.constants import IPV6_STR
 from utilities.infra import BUG_STATUS_CLOSED, name_prefix
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
-    get_ipv6_address,
+    get_ip_from_vm_or_virt_handler_pod,
     get_vmi_ip_v4_by_name,
     network_device,
     network_nad,
@@ -34,7 +34,7 @@ def _masquerade_vmib_ip(vmb, bridge, ipv6_testing):
     ]
     if masquerade_interface:
         if ipv6_testing:
-            return get_ipv6_address(cnv_resource=vmb)
+            return get_ip_from_vm_or_virt_handler_pod(family=IPV6_STR, vm=vmb)
         return vmb.vmi.virt_launcher_pod.instance.status.podIP
 
     return get_vmi_ip_v4_by_name(vm=vmb, name=bridge)

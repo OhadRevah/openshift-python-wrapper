@@ -6,12 +6,12 @@ from ipaddress import ip_interface
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.network.constants import IPV6_STR
 from tests.network.utils import run_test_guest_performance
+from utilities.constants import IPV6_STR
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
-    get_ipv6_address,
+    get_ip_from_vm_or_virt_handler_pod,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -91,7 +91,9 @@ def test_connectivity_over_pod_network(
     Check connectivity
     """
     if ip_stack_version_matrix__module__ == IPV6_STR:
-        dst_ip = get_ipv6_address(cnv_resource=pod_net_running_vmb)
+        dst_ip = get_ip_from_vm_or_virt_handler_pod(
+            family=IPV6_STR, vm=pod_net_running_vmb
+        )
         assert (
             dst_ip
         ), f"Cannot get valid IPv6 address from {pod_net_running_vmb.vmi.name}."

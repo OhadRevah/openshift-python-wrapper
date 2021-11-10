@@ -21,7 +21,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import SRIOV, TIMEOUT_2MIN
+from utilities.constants import IPV4_STR, IPV6_STR, SRIOV, TIMEOUT_2MIN
 from utilities.infra import get_pod_by_name_prefix
 from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
 
@@ -784,7 +784,7 @@ def ping(src_vm, dst_ip, packet_size=None, count=None, quiet_output=True):
     Returns:
         int: The packet loss amount in a number (Range - 0 to 100).
     """
-    ping_ipv6 = "-6" if get_ipv6_ip_str(dst_ip=dst_ip) else ""
+    ping_ipv6 = "-6" if get_valid_ip_address(dst_ip=dst_ip, family=IPV6_STR) else ""
 
     ping_cmd = f"ping {'-q' if quiet_output else ''} {ping_ipv6} -c {count if count else '3'} {dst_ip}"
     if packet_size:
@@ -811,33 +811,48 @@ def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
     )
 
 
-def get_ipv6_address(cnv_resource):
+def get_ip_from_vm_or_virt_handler_pod(family, vm=None, virt_handler_pod=None):
     """
-    Attempt to find an IPv6 address in one of 2 possible sources - VirtualMachineInstance or Pod.
+    Attempt to find an IP in one of 2 possible sources - VirtualMachine or virt-handler Pod.
 
-    Args:
-        cnv_resource (Resource): VirtualMachine or Pod
+     Args:
+        vm (object): the VM which IP address is requested
+        virt_handler_pod (pod): a virt-handler pod which IP address is requested
+        family (str): IP version requested - "ipv4" or "ipv6"
 
     Returns:
-        str: First found IPv6 address, or None.
+        str or None: First found valid IP version address, or None.
+    """
+    if not (vm or virt_handler_pod):
+        raise ValueError("must send VM or virt-handler pod")
+
+    if vm:
+        addr_list = vm.vmi.interfaces[0]["ipAddresses"]
+    else:
+        addr_list = [
+            ip_addr["ip"] for ip_addr in virt_handler_pod.instance.status.podIPs
+        ]
+
+    ip_list = [ip for ip in addr_list if get_valid_ip_address(dst_ip=ip, family=family)]
+    return ip_list[0] if ip_list else None
+
+
+def get_valid_ip_address(dst_ip, family):
+    """
+    Return the IP address string if the input address is either IPv4 or IPv6 address, else None.
+
+    Args:
+        family (str): IP version requested - "ipv4" or "ipv6"
+
+    Returns:
+        str or None: If IP is valid - return IP, if not - return None
     """
     try:
-        # Assume the resource type is VM
-        addr_list = cnv_resource.vmi.interfaces[0]["ipAddresses"]
-    except AttributeError:
-        # Base assumption failed - so now assume the resource type is Pod.
-        addr_list = [ip_addr["ip"] for ip_addr in cnv_resource.instance.status.podIPs]
-
-    ipv6_list = [ip for ip in addr_list if get_ipv6_ip_str(dst_ip=ip)]
-    return ipv6_list[0] if ipv6_list else None
-
-
-def get_ipv6_ip_str(dst_ip):
-    """
-    Return the IPv6 address string if the input address is an IPv6 address, else None.
-    """
-    try:
-        return ipaddress.IPv6Address(address=dst_ip)
+        return (
+            ipaddress.IPv4Address(address=dst_ip)
+            if family == IPV4_STR
+            else ipaddress.IPv6Address(address=dst_ip)
+        )
     except ipaddress.AddressValueError:
         return
 
