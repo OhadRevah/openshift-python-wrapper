@@ -4,10 +4,15 @@ from tests.install_upgrade_operators.product_upgrade.utils import get_operator_b
 
 
 HCO_CR_DATA_IMPORT_SCHEDULE_KEY = "dataImportSchedule"
-DATA_IMPORT_SCHEDULE_RANDOM_MINUTES_REGEX = r"(\d+)\s+\*\/12\s+\*\s+\*\s+\*\s*$"
+RE_NAMED_GROUP_MINUTES = "minutes"
+RE_NAMED_GROUP_HOURS = "hours"
+DATA_IMPORT_SCHEDULE_RANDOM_MINUTES_REGEX = (
+    rf"(?P<{RE_NAMED_GROUP_MINUTES}>\d+)\s+"
+    rf"(?P<{RE_NAMED_GROUP_HOURS}>\d+)\/12\s+\*\s+\*\s+\*\s*$"
+)
 
 
-def get_random_minutes_field_from_data_import_schedule(target_string):
+def get_random_minutes_hours_fields_from_data_import_schedule(target_string):
     """
     Gets the minutes field from the dataImportSchedule field in HCO CR
 
@@ -22,7 +27,9 @@ def get_random_minutes_field_from_data_import_schedule(target_string):
         "No regex match against the string: "
         f"regex={DATA_IMPORT_SCHEDULE_RANDOM_MINUTES_REGEX} target_value={target_string}"
     )
-    return re_result.group(1)
+    return re_result.group(RE_NAMED_GROUP_MINUTES), re_result.group(
+        RE_NAMED_GROUP_HOURS
+    )
 
 
 def delete_hco_operator_pod(admin_client, hco_namespace):
