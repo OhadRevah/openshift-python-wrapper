@@ -9,6 +9,9 @@ from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN
 from utilities.infra import get_pod_by_name_prefix
 
 
+# TODO: Fix hco_ready to check OperatorConditions resource
+pytestmark = pytest.mark.skip(msg="Fix hco_ready to check OperatorConditions resource")
+
 NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
 
 
