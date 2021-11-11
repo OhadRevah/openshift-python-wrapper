@@ -32,6 +32,9 @@ from ocp_resources.network import Network
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node import Node
+from ocp_resources.node_network_configuration_enactment import (
+    NodeNetworkConfigurationEnactment,
+)
 from ocp_resources.node_network_configuration_policy import (
     NodeNetworkConfigurationPolicy,
 )
@@ -162,6 +165,7 @@ RESOURCES_TO_COLLECT_INFO = [
     NodeNetworkState,
     Service,
     Namespace,
+    NodeNetworkConfigurationEnactment,
 ]
 
 

@@ -144,6 +144,7 @@ PODS_TO_COLLECT_INFO = [
     "virt-template-validator",
     "cdi-importer",
     "utility",
+    "nmstate-handler",
 ]
 
 # GPU constants
