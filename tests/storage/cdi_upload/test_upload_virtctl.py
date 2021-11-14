@@ -441,6 +441,7 @@ def test_successful_vm_from_uploaded_dv_windows(
     )
 
 
+@pytest.mark.smoke
 @pytest.mark.polarion("CNV-4033")
 def test_disk_image_after_upload_virtctl(
     skip_block_volumemode_scope_module,

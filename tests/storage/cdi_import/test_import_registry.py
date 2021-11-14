@@ -362,7 +362,7 @@ def test_private_registry_with_untrusted_certificate(
             None,
             "",
             "5Gi",
-            marks=(pytest.mark.polarion("CNV-2197")),
+            marks=(pytest.mark.polarion("CNV-2197"), pytest.mark.smoke()),
         ),
         pytest.param(
             "import-public-registry-quay-dv",

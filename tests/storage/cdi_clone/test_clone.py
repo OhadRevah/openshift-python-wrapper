@@ -237,7 +237,7 @@ def test_successful_vm_from_cloned_dv_windows(
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
                 "dv_size": "1Gi",
             },
-            marks=pytest.mark.polarion("CNV-4035"),
+            marks=(pytest.mark.polarion("CNV-4035"), pytest.mark.smoke()),
         )
     ],
     indirect=True,

@@ -319,7 +319,7 @@ def test_successful_import_secure_image(
         pytest.param(
             DataVolume.ContentType.KUBEVIRT,
             Images.Cirros.RAW_IMG_XZ,
-            marks=(pytest.mark.polarion("CNV-784")),
+            marks=(pytest.mark.polarion("CNV-784"), pytest.mark.smoke()),
         ),
     ],
     ids=["import_basic_auth_archive", "import_basic_auth_kubevirt"],
