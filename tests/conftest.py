@@ -1076,11 +1076,12 @@ def nodes_active_nics(
         nns = NodeNetworkState(name=node.name)
 
         for node_iface in nns.interfaces:
+            iface_name = node_iface["name"]
             #  Exclude SR-IOV (VFs) interfaces.
-            if re.findall(r"v\d+$", node_iface["name"]):
+            if re.findall(r"v\d+$", iface_name):
                 continue
 
-            if node_iface["name"] in nodes_nics[node.name]["occupied"]:
+            if iface_name in nodes_nics[node.name]["occupied"]:
                 continue
 
             # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
@@ -1092,20 +1093,21 @@ def nodes_active_nics(
                     if port in nodes_nics[node.name]["available"]:
                         nodes_nics[node.name]["available"].remove(port)
 
-            if node_iface["name"] not in node_physical_nics[node.name]:
+            if iface_name not in node_physical_nics[node.name]:
                 continue
 
             ethtool_state = ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
-                command=f"ethtool {node_iface['name']}"
+                command=f"ethtool {iface_name}"
             )
 
             if "Link detected: no" in ethtool_state:
+                LOGGER.warning(f"{node.name} {iface_name} link is down")
                 continue
 
-            if node_iface["ipv4"]["address"] and node_iface["ipv4"]["dhcp"]:
-                nodes_nics[node.name]["occupied"].append(node_iface["name"])
+            if node_iface["ipv4"].get("address") and node_iface["ipv4"]["dhcp"]:
+                nodes_nics[node.name]["occupied"].append(iface_name)
             else:
-                nodes_nics[node.name]["available"].append(node_iface["name"])
+                nodes_nics[node.name]["available"].append(iface_name)
 
     LOGGER.info(f"Nodes active NICs: {nodes_nics}")
     return nodes_nics
