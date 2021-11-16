@@ -5,7 +5,7 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN
+from utilities.constants import TIMEOUT_20MIN
 from utilities.infra import get_pod_by_name_prefix
 
 
@@ -13,20 +13,6 @@ from utilities.infra import get_pod_by_name_prefix
 pytestmark = pytest.mark.skip(msg="Fix hco_ready to check OperatorConditions resource")
 
 NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
-
-
-def sampler_alert(prometheus, query):
-    alert_prefix = "ALERTS{alertname="
-    sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=1,
-        func=prometheus.query,
-        query=f"{alert_prefix}{query}",
-    )
-    for sample in sampler:
-        result = sample["data"]["result"]
-        if result and result[0]["value"][-1] == "1":
-            return
 
 
 @pytest.fixture(scope="class")
@@ -123,8 +109,8 @@ def hco_ready(admin_client, hco_namespace):
 class TestInvalidCNAO:
     @pytest.mark.polarion("CNV-7274")
     def test_cnao_not_ready(self, hco_ready, invalid_cnao_linux_bridge, prometheus):
-        sampler_alert(prometheus=prometheus, query="'NetworkAddonsConfigNotReady'}")
+        prometheus.alert_sampler(alert="NetworkAddonsConfigNotReady")
 
     @pytest.mark.polarion("CNV-7275")
     def test_cnao_is_down(self, hco_ready, invalid_cnao_operator, prometheus):
-        sampler_alert(prometheus=prometheus, query="'CnaoDown'}")
+        prometheus.alert_sampler(alert="CnaoDown")

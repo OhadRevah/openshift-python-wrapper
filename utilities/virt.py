@@ -53,6 +53,7 @@ from utilities.constants import (
     TIMEOUT_3MIN,
     TIMEOUT_4MIN,
     TIMEOUT_6MIN,
+    TIMEOUT_10MIN,
     TIMEOUT_12MIN,
     TIMEOUT_25MIN,
     Images,
@@ -845,7 +846,11 @@ class VirtualMachineForTests(VirtualMachine):
             storage_class, access_mode = self.get_storage_configuration()
 
             # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
-            if DataVolume.AccessMode.RWX not in access_mode:
+            # (Except when evictionStrategy is explicitly set)
+            if not self.eviction and DataVolume.AccessMode.RWX not in access_mode:
+                LOGGER.info(
+                    "'evictionStrategy' removed from VM because data volume access mode is not RWX"
+                )
                 template_spec.pop("evictionStrategy", None)
 
             # Needed only for VMs which are not created from common templates
@@ -1489,6 +1494,19 @@ class Prometheus(object):
 
     def query(self, query):
         return self._get_response(query=f"{self.api_v1}/query?query={query}")
+
+    def alert_sampler(self, alert):
+        query = f'ALERTS{{alertname="{alert}"}}'
+        sampler = TimeoutSampler(
+            wait_timeout=TIMEOUT_10MIN,
+            sleep=1,
+            func=self.query,
+            query=query,
+        )
+        for sample in sampler:
+            result = sample["data"]["result"]
+            if result and result[0]["value"][-1] == "1":
+                return
 
     @property
     def alerts(self):
