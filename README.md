@@ -99,9 +99,8 @@ NOTE: Local cluster runs OKD4 by default and due to that, it has high memory req
 
 
 ```bash
-UPSTREAM=1 make cluster-up cluster-install-hco # deploy okd 4.1 as default
-UPSTREAM=1 KUBEVIRT_PROVIDER=k8s-1.13.3 make cluster-up cluster-install-hco # deploy on ks8 1.13.3
-UPSTREAM=1 KUBEVIRT_PROVIDER=okd-4.1 make cluster-up cluster-install-hco # deploy on okd 4.1
+UPSTREAM=1 make cluster-up # deploy k8s 1.21 as default
+UPSTREAM=1 KUBEVIRT_PROVIDER=k8s-1.22 make cluster-up # deploy on ks8 1.22
 ```
 
 ### Arbitrary cluster
@@ -140,7 +139,7 @@ define `KUBECTL` and `VIRTCTL` environment variables to point to the binaries.
 ### Using emulated virtualization
 
 If you want to use emulated virtualization in your cluster, define `VIRT_EMULATION=1` before you setup
-HCO cluster (ie. before running `make cluster-install-hco`).
+HCO cluster (ie. before running `make cluster-up`).
 
 
 ## Running the tests
@@ -411,7 +410,7 @@ development before proper verification described in the following section.
 Run tests locally:
 
 ```bash
-UPSTREAM=1 make cluster-up cluster-install-hco cluster-tests
+UPSTREAM=1 make cluster-up tests
 ```
 
 Remove the cluster:
