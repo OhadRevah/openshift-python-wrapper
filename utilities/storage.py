@@ -30,6 +30,7 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
     TIMEOUT_5MIN,
+    TIMEOUT_20SEC,
     TIMEOUT_30MIN,
     TIMEOUT_60MIN,
 )
@@ -58,7 +59,8 @@ LOGGER = logging.getLogger(__name__)
 def dv_reached_wffc_phase(dv):
     try:
         dv.wait_for_status(
-            status=StorageClass.VolumeBindingMode.WaitForFirstConsumer, timeout=10
+            status=StorageClass.VolumeBindingMode.WaitForFirstConsumer,
+            timeout=TIMEOUT_20SEC,
         )
         return True
     except TimeoutExpiredError:
