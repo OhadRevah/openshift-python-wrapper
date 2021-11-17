@@ -38,6 +38,7 @@ pytest-progress="==1.2.2"  # https://github.com/ssrikanta/pytest-progress
 colorlog="*"
 dictdiffer="*"
 python-benedict="*"
+bs4="*"
 
 [requires]
 python_version = "3"

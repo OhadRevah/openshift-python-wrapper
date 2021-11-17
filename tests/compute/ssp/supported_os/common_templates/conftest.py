@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-
 import logging
 import os
+import re
 import shutil
 from subprocess import CalledProcessError, check_output
 
 import pytest
+import requests
+from bs4 import BeautifulSoup
 from ocp_resources.utils import TimeoutSampler
 
 from tests.compute.ssp.supported_os.common_templates.utils import (
@@ -19,18 +21,34 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def downloaded_latest_libosinfo_db(tmpdir_factory):
+def downloaded_latest_libosinfo_db(
+    tmpdir_factory, latest_osinfo_db_file_name, osinfo_repo
+):
     """Obtain the osinfo path."""
-
-    osinfo_repo = "https://releases.pagure.org/libosinfo/"
-    tarfile_name = "osinfo-db-20210809"
-    cwd = os.getcwd()
     osinfo_path = tmpdir_factory.mktemp("osinfodb")
-    os.chdir(osinfo_path)
-    download_and_extract_tar(tarfile_url=f"{osinfo_repo}{tarfile_name}.tar.xz")
-    os.chdir(cwd)
-    yield os.path.join(osinfo_path, tarfile_name)
-    shutil.rmtree(osinfo_path)
+    download_and_extract_tar(
+        tarfile_url=f"{osinfo_repo}{latest_osinfo_db_file_name}",
+        dest_path=osinfo_path,
+    )
+    osinfo_db_file_name_no_suffix = latest_osinfo_db_file_name.partition(".")[0]
+    yield os.path.join(osinfo_path, osinfo_db_file_name_no_suffix)
+
+
+@pytest.fixture(scope="module")
+def latest_osinfo_db_file_name(osinfo_repo):
+    sorted_osinfo_repo = f"{osinfo_repo}/?C=M;O=D"
+    soup_page = BeautifulSoup(
+        markup=requests.get(sorted_osinfo_repo).text, features="html.parser"
+    )
+    full_link = soup_page.find(
+        "a", {"href": re.compile(r"osinfo-db-[0-9]*.tar.xz")}
+    ).get("href")
+    return os.path.splitext(full_link)[0]
+
+
+@pytest.fixture(scope="module")
+def osinfo_repo():
+    return "https://releases.pagure.org/libosinfo/"
 
 
 @pytest.fixture(scope="class")

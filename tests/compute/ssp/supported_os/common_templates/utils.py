@@ -313,12 +313,12 @@ def validate_memory(memory_test, template_memory_value, osinfo_memory_value):
         )
 
 
-def download_and_extract_tar(tarfile_url):
+def download_and_extract_tar(tarfile_url, dest_path):
     """Download and Extract the tar file."""
 
     tar_data = urllib.request.urlopen(tarfile_url)
     thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
-    thetarfile.extractall()
+    thetarfile.extractall(path=dest_path)
 
 
 def check_default_and_validation_memory(
