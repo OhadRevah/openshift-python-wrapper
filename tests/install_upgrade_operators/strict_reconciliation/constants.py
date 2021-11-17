@@ -350,6 +350,7 @@ EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "CPUNodeDiscovery",
     "Snapshot",
     "HotplugVolumes",
+    "ExpandDisks",
     "GPU",
     "HostDevices",
     "DownwardMetrics",
