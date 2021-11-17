@@ -94,9 +94,9 @@ from utilities.infra import (
     ocp_resources_submodule_files_path,
     prepare_test_dir_log,
     separator,
-    setup_logging,
     wait_for_pods_deletion,
 )
+from utilities.logger import setup_logging
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     MacPool,
