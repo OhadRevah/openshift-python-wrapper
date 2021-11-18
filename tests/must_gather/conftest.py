@@ -17,7 +17,12 @@ from ocp_resources.pod import Pod
 
 import utilities.network
 from tests.must_gather import utils as mg_utils
-from utilities.infra import ExecCommandOnPod, MissingResourceException, create_ns
+from utilities.infra import (
+    ExecCommandOnPod,
+    MissingResourceException,
+    create_ns,
+    get_log_dir,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -41,7 +46,7 @@ def cnv_must_gather(
         must_gather_cmd = f"oc adm must-gather --image={must_gather_image_url} --dest-dir={path} &> {output_file}"
         LOGGER.info(f"Running: {must_gather_cmd}")
         check_output(must_gather_cmd, shell=True)
-        must_gather_log_dir = mg_utils.get_log_dir(path=path)
+        must_gather_log_dir = get_log_dir(path=path)
         yield must_gather_log_dir
     finally:
         shutil.rmtree(path)

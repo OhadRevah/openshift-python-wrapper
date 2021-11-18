@@ -1080,3 +1080,11 @@ def get_csv_by_name(csv_name, admin_client, namespace):
 def get_clusterversion(dyn_client):
     for cvo in ClusterVersion.get(dyn_client=dyn_client):
         return cvo
+
+
+def get_log_dir(path):
+    for item in os.listdir(path):
+        new_path = os.path.join(path, item)
+        if os.path.isdir(new_path):
+            return new_path
+    raise FileNotFoundError(f"No log directory was created in '{path}'")
