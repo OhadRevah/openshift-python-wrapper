@@ -245,7 +245,7 @@ def test_base_templates_annotations(
 def test_validate_rhel_min_max_memory(
     skip_not_openshift,
     base_templates,
-    fetch_osinfo_path,
+    downloaded_latest_libosinfo_db,
     os_type,
     osinfo_filename,
     memory_test,
@@ -255,7 +255,7 @@ def test_validate_rhel_min_max_memory(
     """
 
     osinfo_file_path = os.path.join(
-        f"{fetch_osinfo_path}/os/redhat.com/{osinfo_filename}.xml"
+        f"{downloaded_latest_libosinfo_db}/os/redhat.com/{osinfo_filename}.xml"
     )
     # libosinfo "all" architecture does not include maximum values
     resources_arch = "all" if memory_test == "minimum" else "x86_64"
@@ -339,7 +339,7 @@ def test_validate_rhel_min_max_memory(
 def test_validate_windows_min_max_memory(
     skip_not_openshift,
     base_templates,
-    fetch_osinfo_path,
+    downloaded_latest_libosinfo_db,
     osinfo_filename,
     os_template,
     memory_test,
@@ -349,7 +349,7 @@ def test_validate_windows_min_max_memory(
     """
 
     osinfo_file_path = os.path.join(
-        f"{fetch_osinfo_path}/os/microsoft.com/{osinfo_filename}.xml"
+        f"{downloaded_latest_libosinfo_db}/os/microsoft.com/{osinfo_filename}.xml"
     )
     osinfo_memory_value = utils.fetch_osinfo_memory(
         osinfo_file_path=osinfo_file_path,

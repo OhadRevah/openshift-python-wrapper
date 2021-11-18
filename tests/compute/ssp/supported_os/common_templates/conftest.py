@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def fetch_osinfo_path(tmpdir_factory):
+def downloaded_latest_libosinfo_db(tmpdir_factory):
     """Obtain the osinfo path."""
 
     osinfo_repo = "https://releases.pagure.org/libosinfo/"
