@@ -19,6 +19,7 @@ from utilities.constants import OS_FLAVOR_CIRROS, Images
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import (
     ErrorMsg,
+    check_upload_virtctl_result,
     create_dummy_first_consumer_pod,
     create_dv,
     downloaded_image,
@@ -57,8 +58,7 @@ def test_successful_virtctl_upload_no_url(namespace, tmpdir):
         image_path=local_name,
         insecure=True,
     ) as virtctl_upload:
-        assert virtctl_upload
-        LOGGER.info(f"{virtctl_upload}")
+        check_upload_virtctl_result(result=virtctl_upload)
         assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
@@ -88,11 +88,12 @@ def test_successful_virtctl_upload_no_route(
         image_path=local_name,
         insecure=True,
     ) as res:
-        virtctl_upload, virtctl_upload_out, _ = res
-        LOGGER.info(f"{virtctl_upload_out}")
-        assert (
-            virtctl_upload is False
-        ), "virtctl image-upload command successful, must fail with a non-zero rc"
+        check_upload_virtctl_result(
+            result=res,
+            expected_success=False,
+            expected_output="uploadproxy URL not found",
+            assert_message="virtctl image-upload command successful, must fail with a non-zero rc",
+        )
 
 
 @pytest.mark.polarion("CNV-2217")
@@ -116,8 +117,7 @@ def test_image_upload_with_overridden_url(
         image_path=local_name,
         insecure=True,
     ) as virtctl_upload:
-        assert virtctl_upload
-        LOGGER.info(f"{virtctl_upload}")
+        check_upload_virtctl_result(result=virtctl_upload)
         assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
@@ -141,9 +141,7 @@ def test_virtctl_image_upload_with_ca(
         storage_class=py_config["default_storage_class"],
         image_path=local_path,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status
+        check_upload_virtctl_result(result=res)
         pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
         assert pvc.bound()
 
@@ -169,9 +167,7 @@ def test_virtctl_image_upload_dv(
         storage_class=storage_class,
         insecure=True,
     ) as res:
-        status, out, _ = res
-        assert status, out
-        assert "Processing completed successfully" in out
+        check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=60)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
@@ -209,12 +205,11 @@ def test_virtctl_image_upload_with_exist_dv_image(
         insecure=True,
         no_create=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert not status
-        assert (
-            f"PVC {data_volume_multi_storage_scope_function.name} already successfully imported/cloned/updated"
-            in out
+        check_upload_virtctl_result(
+            result=res,
+            expected_success=False,
+            expected_output=f"PVC {data_volume_multi_storage_scope_function.name} already successfully "
+            "imported/cloned/updated",
         )
 
 
@@ -235,9 +230,7 @@ def test_virtctl_image_upload_pvc(
         storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status
+        check_upload_virtctl_result(result=res)
         pvc = PersistentVolumeClaim(namespace=namespace.name, name=pvc_name)
         assert pvc.bound()
 
@@ -269,9 +262,7 @@ def test_virtctl_image_upload_with_exist_dv(
             storage_class=storage_class,
             no_create=True,
         ) as res:
-            status, out, _ = res
-            LOGGER.info(out)
-            assert "Processing completed successfully" in out
+            check_upload_virtctl_result(result=res)
             if not sc_volume_binding_mode_is_wffc(sc=storage_class):
                 with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
                     storage_utils.check_disk_count_in_vm(vm=vm)
@@ -324,9 +315,7 @@ def test_virtctl_image_upload_with_exist_pvc(
         insecure=True,
         no_create=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert "Processing completed successfully" in out
+        check_upload_virtctl_result(result=res)
         if not sc_volume_binding_mode_is_wffc(sc=storage_class):
             with VirtualMachineForTests(
                 name="cnv-3727-vm",
@@ -356,9 +345,7 @@ def test_virtctl_image_upload_with_exist_pvc_image(
         storage_class=storage_class,
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert "Processing completed successfully" in out
+        check_upload_virtctl_result(result=res)
         with virtctl_upload_dv(
             namespace=namespace.name,
             name=pvc_name,
@@ -368,12 +355,10 @@ def test_virtctl_image_upload_with_exist_pvc_image(
             insecure=True,
             no_create=True,
         ) as res_new:
-            status_new, out_new, _ = res_new
-            LOGGER.info(out_new)
-            assert not status_new
-            assert (
-                f"PVC {pvc_name} already successfully imported/cloned/updated"
-                in out_new
+            check_upload_virtctl_result(
+                result=res_new,
+                expected_success=False,
+                expected_output=f"PVC {pvc_name} already successfully imported/cloned/updated",
             )
 
 
@@ -398,10 +383,11 @@ def test_virtctl_image_upload_dv_with_exist_pvc(
         storage_class=storage_class,
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert not status
-        assert "No DataVolume is associated with the existing PVC" in out
+        check_upload_virtctl_result(
+            result=res,
+            expected_success=False,
+            expected_output="No DataVolume is associated with the existing PVC",
+        )
 
 
 @pytest.mark.tier3
@@ -462,9 +448,7 @@ def test_disk_image_after_upload_virtctl(
         storage_class=StorageClass.Types.NFS,
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status, out
+        check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         storage_utils.create_vm_and_verify_image_permission(dv=dv)
 
@@ -499,7 +483,8 @@ def test_print_response_body_on_error_upload_virtctl(
         storage_class=storage_class,
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert not status
-        assert ErrorMsg.LARGER_PVC_REQUIRED in out
+        check_upload_virtctl_result(
+            result=res,
+            expected_success=False,
+            expected_output=ErrorMsg.LARGER_PVC_REQUIRED,
+        )

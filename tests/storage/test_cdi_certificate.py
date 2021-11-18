@@ -29,6 +29,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.storage import (
+    check_upload_virtctl_result,
     create_dummy_first_consumer_pod,
     create_dv,
     downloaded_image,
@@ -234,10 +235,7 @@ def test_upload_after_certs_renewal(
         storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status, out
-        assert "Processing completed successfully" in out
+        check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
@@ -302,10 +300,7 @@ def test_upload_after_validate_aggregated_api_cert(
         storage_class=[*storage_class_matrix__module__][0],
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status, out
-        assert "Processing completed successfully" in out
+        check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
@@ -363,7 +358,4 @@ def test_cert_exposure_rotation(
         image_path=downloaded_cirros_image,
         insecure=False,
     ) as res:
-        status, out, err = res
-        LOGGER.info(out)
-        assert "Processing completed successfully" in out, out
-        assert status, err
+        check_upload_virtctl_result(result=res)

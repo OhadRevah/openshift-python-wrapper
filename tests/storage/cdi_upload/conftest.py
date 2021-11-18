@@ -8,7 +8,11 @@ import pytest
 from ocp_resources.datavolume import DataVolume
 
 from utilities.constants import TIMEOUT_1MIN, Images
-from utilities.storage import downloaded_image, virtctl_upload_dv
+from utilities.storage import (
+    check_upload_virtctl_result,
+    downloaded_image,
+    virtctl_upload_dv,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -58,9 +62,7 @@ def uploaded_dv(
         image_path=local_path,
         insecure=True,
     ) as res:
-        status, out, _ = res
-        LOGGER.info(out)
-        assert status
+        check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait(timeout=TIMEOUT_1MIN)
         assert dv.pvc.bound(), f"PVC status is {dv.pvc.status}"

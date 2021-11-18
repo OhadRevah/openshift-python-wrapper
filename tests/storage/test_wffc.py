@@ -18,6 +18,7 @@ from utilities.infra import hco_cr_jsonpatch_annotations_dict
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
+    check_upload_virtctl_result,
     create_dv,
     downloaded_image,
     get_images_server_url,
@@ -184,14 +185,12 @@ class TestWFFCUploadVirtctl:
         uploaded_dv_via_virtctl_wffc,
         uploaded_wffc_dv,
     ):
-        status, out, _ = uploaded_dv_via_virtctl_wffc
-        assert (
-            not status
-        ), "Upload DV via virtctl, with wffc SC binding mode ended up with success instead of failure"
-        assert (
-            "cannot upload to DataVolume in WaitForFirstConsumer state, make sure the PVC is Bound"
-            in out
-        ), out
+        check_upload_virtctl_result(
+            result=uploaded_dv_via_virtctl_wffc,
+            expected_success=False,
+            expected_output="cannot upload to DataVolume in WaitForFirstConsumer state, make sure the PVC is Bound",
+            assert_message="Upload DV via virtctl, with wffc SC binding mode ended up with success instead of failure",
+        )
         pending_status = uploaded_wffc_dv.pvc.Status.PENDING
         wffc_status = uploaded_wffc_dv.Status.WAIT_FOR_FIRST_CONSUMER
         assert (
@@ -220,8 +219,7 @@ class TestWFFCUploadVirtctl:
             consume_wffc=False,
             cleanup=False,
         ) as res:
-            status, out, _ = res
-            assert status, out
+            check_upload_virtctl_result(result=res)
             vm_from_uploaded_dv.vmi.wait_until_running()
             wait_for_ssh_connectivity(vm=vm_from_uploaded_dv, timeout=TIMEOUT_2MIN)
             storage_utils.check_disk_count_in_vm(vm=vm_from_uploaded_dv)

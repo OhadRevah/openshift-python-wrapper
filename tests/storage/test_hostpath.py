@@ -42,6 +42,7 @@ from utilities.constants import (
 from utilities.infra import get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
+    check_upload_virtctl_result,
     create_dv,
     downloaded_image,
     get_images_server_url,
@@ -470,8 +471,8 @@ def test_hpp_upload_virtctl(
         image_path=local_name,
         insecure=True,
     ) as virtctl_upload:
+        check_upload_virtctl_result(result=virtctl_upload)
         return_val = async_result.get()  # get return value from side thread
-        assert virtctl_upload
         pvc = PersistentVolumeClaim(name=pvc_name, namespace=namespace.name)
         assert pvc.bound()
         assert all(
