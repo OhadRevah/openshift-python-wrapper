@@ -13,7 +13,6 @@ from ocp_resources.service import Service
 from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.vm_import_config import VMImportConfig
 
 from tests.metrics.utils import (
     get_all_hco_cr_modification_alert,
@@ -57,24 +56,9 @@ COMPONENT_CONFIG = {
             "count": COUNT_TWO,
         },
     },
-    "vmimportconfig": {
-        "resource_info": {
-            "comp_name": "vmimportconfig/vmimport-kubevirt-hyperconverged",
-            "resource": VMImportConfig,
-            "count": COUNT_TWO,
-        },
-    },
     "config_map_kubevirt_storage": {
         "resource_info": {
             "comp_name": "configmap/kubevirt-storage-class-defaults",
-            "resource": ConfigMap,
-            "name": "kubevirt-storage-class-defaults",
-            "count": COUNT_TWO,
-        },
-    },
-    "config_map_v2v_vmware": {
-        "resource_info": {
-            "comp_name": "configmap/v2v-vmware",
             "resource": ConfigMap,
             "name": "kubevirt-storage-class-defaults",
             "count": COUNT_TWO,
@@ -144,14 +128,6 @@ COMPONENT_CONFIG = {
             "count": COUNT_TWO,
         },
     },
-    "console_quick_start_import_vmware_vm": {
-        "resource_info": {
-            "comp_name": "consolequickstart/import-vmware-vm",
-            "resource": ConsoleQuickStart,
-            "name": "import-vmware-vm",
-            "count": COUNT_TWO,
-        },
-    },
 }
 
 
@@ -205,28 +181,11 @@ COMPONENT_CONFIG = {
             marks=(pytest.mark.polarion("CNV-6134")),
         ),
         pytest.param(
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"],
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
-            id="config_map_v2v_vmware",
-            marks=(
-                pytest.mark.polarion("CNV-6560"),
-                pytest.mark.jira("CNV-13205", run=False),
-            ),
-        ),
-        pytest.param(
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
             COMPONENT_CONFIG["cluster"]["resource_info"],
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
             id="networkaddonsconfig",
             marks=(pytest.mark.polarion("CNV-6135")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"]["comp_name"],
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"],
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"]["comp_name"],
-            id="vmimportconfig",
-            marks=(pytest.mark.polarion("CNV-6136")),
         ),
         pytest.param(
             COMPONENT_CONFIG["service"]["resource_info"]["comp_name"],
@@ -281,17 +240,6 @@ COMPONENT_CONFIG = {
             ],
             id="console_quick_start_create_rhel_vm",
             marks=(pytest.mark.polarion("CNV-6142")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"][
-                "comp_name"
-            ],
-            id="console_quick_start_import_vmware_vm",
-            marks=(pytest.mark.polarion("CNV-6143")),
         ),
     ],
     indirect=[
@@ -384,31 +332,12 @@ def test_metric_invalid_change(
             marks=(pytest.mark.polarion("CNV-6153")),
         ),
         pytest.param(
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"],
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["comp_name"],
-            COMPONENT_CONFIG["config_map_v2v_vmware"]["resource_info"]["count"],
-            id="config_map_v2v_vmware",
-            marks=(
-                pytest.mark.polarion("CNV-6689"),
-                pytest.mark.jira("CNV-13205", run=False),
-            ),
-        ),
-        pytest.param(
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
             COMPONENT_CONFIG["cluster"]["resource_info"],
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
             COMPONENT_CONFIG["cluster"]["resource_info"]["count"],
             id="networkaddonsconfig",
             marks=(pytest.mark.polarion("CNV-6154")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"]["comp_name"],
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"],
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"]["comp_name"],
-            COMPONENT_CONFIG["vmimportconfig"]["resource_info"]["count"],
-            id="vmimportconfig",
-            marks=(pytest.mark.polarion("CNV-6155")),
         ),
         pytest.param(
             COMPONENT_CONFIG["service"]["resource_info"]["comp_name"],
@@ -473,20 +402,6 @@ def test_metric_invalid_change(
             ],
             id="console_quick_start_create_rhel_vm",
             marks=(pytest.mark.polarion("CNV-6161")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"],
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["console_quick_start_import_vmware_vm"]["resource_info"][
-                "count"
-            ],
-            id="console_quick_start_import_vmware_vm",
-            marks=(pytest.mark.polarion("CNV-6162")),
         ),
     ],
     indirect=[

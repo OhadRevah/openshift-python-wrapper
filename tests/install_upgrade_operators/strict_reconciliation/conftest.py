@@ -189,17 +189,6 @@ def kubevirt_storage_class_defaults_configmap_dict(admin_client, hco_namespace):
     )[0].instance.to_dict()
 
 
-@pytest.fixture
-def v2v_vmware_configmap_dict(admin_client, hco_namespace):
-    yield list(
-        ConfigMap.get(
-            dyn_client=admin_client,
-            name="v2v-vmware",
-            namespace=hco_namespace.name,
-        )
-    )[0].instance.to_dict()
-
-
 @pytest.fixture(scope="module")
 def ocp_resources_submodule_list():
     """

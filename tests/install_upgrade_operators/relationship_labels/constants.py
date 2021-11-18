@@ -15,7 +15,6 @@ from ocp_resources.route import Route
 from ocp_resources.service import Service
 from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
-from ocp_resources.vm_import_config import VMImportConfig
 
 
 CLUSTER_SCOPE_RESOURCES = [
@@ -152,9 +151,6 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
         "kubevirt-storage-class-defaults": {
             "expected_labels": EXPECTED_STORAGE_LABELS,
         },
-        "v2v-vmware": {
-            "expected_labels": EXPECTED_IMPORT_LABELS,
-        },
         "grafana-dashboard-kubevirt-top-consumers": {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
             "namespace": "openshift-config-managed",
@@ -163,11 +159,6 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
     NetworkAddonsConfig: {
         "cluster": {
             "expected_labels": EXPECTED_NETWORK_LABELS,
-        },
-    },
-    VMImportConfig: {
-        "vmimport-kubevirt-hyperconverged": {
-            "expected_labels": EXPECTED_IMPORT_LABELS,
         },
     },
     SSP: {
@@ -211,9 +202,6 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
         },
         "create-rhel-vm": {
-            "expected_labels": EXPECTED_COMPUTE_LABELS,
-        },
-        "import-vmware-vm": {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
         },
     },

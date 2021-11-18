@@ -225,9 +225,6 @@ SCRATCH_SPACE_STORAGE_CLASS_KEY = "scratchSpaceStorageClass"
 SCRATCH_SPACE_STORAGE_CLASS_VALUE = "customScratch"
 LOCAL_STORAGE_CLASS_NAME_KEY = "localStorageClassName"
 LOCAL_STORAGE_CLASS_NAME_VALUE = "myLocalStorageClassName"
-VDDK_INIT_IMAGE_KEY_HCO_CR = "vddkInitImage"
-VDDK_INIT_IMAGE_KEY_CONFIGMAP = "vddk-init-image"
-VDDK_INIT_IMAGE_VALUE = "dummy_registry_route_or_server_path/vddk:123"
 STORAGE_IMPORT_KEY_HCO_CR = "storageImport"
 STORAGE_IMPORT_VALUE = {
     "insecureRegistries": [

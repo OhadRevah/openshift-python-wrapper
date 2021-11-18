@@ -82,19 +82,6 @@ class TestHCONonDefaultFields:
                 {
                     "rpatch": {
                         "spec": {
-                            constants.VDDK_INIT_IMAGE_KEY_HCO_CR: constants.VDDK_INIT_IMAGE_VALUE,
-                        }
-                    },
-                },
-                constants.VDDK_INIT_IMAGE_KEY_HCO_CR,
-                constants.VDDK_INIT_IMAGE_VALUE,
-                marks=(pytest.mark.polarion("CNV-6543")),
-                id="set_non_default_field_vddkInitImage",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {
                             constants.STORAGE_IMPORT_KEY_HCO_CR: constants.STORAGE_IMPORT_VALUE,
                         }
                     },
@@ -140,7 +127,6 @@ class TestHCONonDefaultFields:
         deleted_stanza_on_hco_cr,
         kubevirt_storage_class_defaults_configmap_dict,
         kubevirt_hyperconverged_spec_scope_function,
-        v2v_vmware_configmap_dict,
         cdi_resource,
         resource_to_verify,
         expected,
@@ -173,13 +159,6 @@ class TestHCONonDefaultFields:
             assert not compare_expected_with_cr(
                 expected=expected,
                 actual=cdi_resource.instance.to_dict()["spec"]["config"],
-            )
-        elif resource_to_verify == constants.VDDK_INIT_IMAGE_KEY_HCO_CR:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=v2v_vmware_configmap_dict["data"][
-                    constants.VDDK_INIT_IMAGE_KEY_CONFIGMAP
-                ],
             )
         elif resource_to_verify == constants.NP_INFRA_KEY:
             assert not compare_expected_with_cr(
