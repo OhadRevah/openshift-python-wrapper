@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shlex
+import socket
 import subprocess
 import time
 from collections import defaultdict
@@ -1511,9 +1512,9 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
             wait_timeout=timeout,
             sleep=1,
             func=vm.ssh_exec.run_command,
-            command=["ls"],
+            command=["echo"],
             tcp_timeout=tcp_timeout,
-            exceptions_dict={NoValidConnectionsError: []},
+            exceptions_dict={NoValidConnectionsError: [], socket.timeout: []},
         )
         for sample in sampler:
             if sample:
