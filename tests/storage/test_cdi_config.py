@@ -186,9 +186,8 @@ def test_cdi_config_scratch_space_value_is_default(
     default_sc_as_fallback_for_scratch,
     cdi_config,
 ):
-    assert (
-        cdi_config.scratch_space_storage_class_from_status
-        == default_sc_as_fallback_for_scratch.name
+    wait_for_default_sc_in_cdiconfig(
+        cdi_config=cdi_config, sc=default_sc_as_fallback_for_scratch.name
     )
 
 

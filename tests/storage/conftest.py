@@ -17,6 +17,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.storage_class import StorageClass
+from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
@@ -33,7 +34,6 @@ from utilities.storage import (
     HttpDeployment,
     downloaded_image,
     sc_volume_binding_mode_is_wffc,
-    wait_for_default_sc_in_cdiconfig,
 )
 
 
@@ -285,14 +285,22 @@ def skip_if_hpp_not_in_sc_options(request):
 
 
 @pytest.fixture()
-def unset_predefined_scratch_sc(hyperconverged_resource_scope_module):
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource_scope_module: {
-                "spec": {"scratchSpaceStorageClass": ""}
-            }
-        }
-    ):
+def unset_predefined_scratch_sc(hyperconverged_resource_scope_module, cdi_config):
+    if cdi_config.instance.spec.scratchSpaceStorageClass:
+        empty_scratch_space_spec = {"spec": {"scratchSpaceStorageClass": ""}}
+        with ResourceEditor(
+            patches={hyperconverged_resource_scope_module: empty_scratch_space_spec}
+        ):
+            LOGGER.info(f"wait for {empty_scratch_space_spec} in CDIConfig")
+            for sample in TimeoutSampler(
+                wait_timeout=20,
+                sleep=1,
+                func=lambda: not cdi_config.instance.spec.scratchSpaceStorageClass,
+            ):
+                if sample:
+                    break
+            yield
+    else:
         yield
 
 
@@ -322,7 +330,6 @@ def default_sc_as_fallback_for_scratch(
                     }
                 }
             ):
-                wait_for_default_sc_in_cdiconfig(cdi_config=cdi_config, sc=sc.name)
                 yield sc
 
 
