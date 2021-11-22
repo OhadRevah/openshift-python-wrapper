@@ -21,6 +21,7 @@ from kubernetes.client import ApiException
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.node import Node
+from ocp_resources.pod import Pod
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import Resource
 from ocp_resources.route import Route
@@ -49,6 +50,7 @@ from utilities.constants import (
     OS_LOGIN_PARAMS,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
+    TIMEOUT_3MIN,
     TIMEOUT_4MIN,
     TIMEOUT_6MIN,
     TIMEOUT_12MIN,
@@ -1793,6 +1795,8 @@ def migrate_vm_and_verify(
                         completed.
     """
     node_before = vm.vmi.node
+    vmi_source_pod = vm.vmi.virt_launcher_pod
+
     LOGGER.info(f"VMI is running on {node_before.name} before migration.")
     with VirtualMachineInstanceMigration(
         name=vm.name,
@@ -1811,6 +1815,10 @@ def migrate_vm_and_verify(
     assert vm.vmi.instance.status.migrationState.completed
     if wait_for_interfaces:
         wait_for_vm_interfaces(vmi=vm.vmi)
+
+    # Bug 2005693 - trying to SSH to a VM may fail if the source virt-launcher pod is terminating
+    if get_bug_status(bug=2005693) not in BUG_STATUS_CLOSED:
+        assert_pod_status_completed(source_pod=vmi_source_pod)
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
 
@@ -2043,3 +2051,20 @@ def verify_one_pdb_per_vm(vm):
     assert (
         len(pdbs_dict) == 1
     ), f"VM {vm.name} must have one {pdb_resource_name}, current: {pdbs_dict}"
+
+
+def assert_pod_status_completed(source_pod):
+    # TODO: remove TimeoutExpiredError exception once bug 1943164 is resolved
+    try:
+        source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=TIMEOUT_3MIN)
+        assert (
+            source_pod.instance.status.containerStatuses[0].state.terminated.reason
+            == Pod.Status.COMPLETED
+        )
+    except TimeoutExpiredError:
+        if get_bug_status(
+            bug=1943164,
+        ):
+            source_pod.wait_for_status(status=Pod.Status.FAILED, timeout=TIMEOUT_3MIN)
+        else:
+            raise

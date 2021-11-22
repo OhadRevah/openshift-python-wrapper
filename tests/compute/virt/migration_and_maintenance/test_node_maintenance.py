@@ -30,9 +30,9 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_30SEC,
 )
-from utilities.infra import get_bug_status
 from utilities.virt import (
     VirtualMachineForTests,
+    assert_pod_status_completed,
     fedora_vm_body,
     node_mgmt_console,
     running_vm,
@@ -102,23 +102,6 @@ def vm_container_disk_fedora(
     ) as vm:
         running_vm(vm=vm)
         yield vm
-
-
-def assert_pod_status_completed(source_pod):
-    # TODO: remove TimeoutExpiredError exception once bug 1943164 is resolved
-    try:
-        source_pod.wait_for_status(status=Pod.Status.SUCCEEDED, timeout=TIMEOUT_3MIN)
-        assert (
-            source_pod.instance.status.containerStatuses[0].state.terminated.reason
-            == Pod.Status.COMPLETED
-        )
-    except TimeoutExpiredError:
-        if get_bug_status(
-            bug=1943164,
-        ):
-            source_pod.wait_for_status(status=Pod.Status.FAILED, timeout=TIMEOUT_3MIN)
-        else:
-            raise
 
 
 def check_draining_process(dyn_client, source_pod, vm):
