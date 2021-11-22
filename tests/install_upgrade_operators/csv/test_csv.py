@@ -80,7 +80,7 @@ def test_csv_properties(csv):
     assert csv.instance.spec.displayName == "OpenShift Virtualization"
 
     annotations = csv.instance.metadata.annotations
-    assert annotations.get("capabilities") == "Full Lifecycle"
+    assert annotations.get("capabilities") == "Deep Insights"
     assert annotations.get("support") == "Red Hat"
 
 
