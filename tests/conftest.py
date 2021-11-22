@@ -1167,6 +1167,7 @@ def namespace(request, admin_client, unprivileged_client):
     use_unprivileged_client = getattr(request, "param", {}).get(
         "use_unprivileged_client", True
     )
+    teardown = getattr(request, "param", {}).get("teardown", True)
     unprivileged_client = unprivileged_client if use_unprivileged_client else None
     yield from create_ns(
         unprivileged_client=unprivileged_client,
@@ -1174,6 +1175,7 @@ def namespace(request, admin_client, unprivileged_client):
         name=generate_namespace_name(
             file_path=request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
         ),
+        teardown=teardown,
     )
 
 
