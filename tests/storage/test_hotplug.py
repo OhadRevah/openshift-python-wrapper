@@ -42,6 +42,7 @@ def blank_disk_dv(namespace, storage_class_matrix__function__):
         namespace=namespace.name,
         size="1Gi",
         **storage_params(storage_class_matrix=storage_class_matrix__function__),
+        consume_wffc=False,
     ) as dv:
         yield dv
 
