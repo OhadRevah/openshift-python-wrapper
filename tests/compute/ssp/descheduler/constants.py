@@ -1,0 +1,1 @@
+RUNNING_PROCESS_NAME_IN_VM = "ping"
