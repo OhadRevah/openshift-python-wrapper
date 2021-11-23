@@ -10,6 +10,19 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.service_account import ServiceAccount
 
 from tests.storage.constants import DV_PARAMS, NAMESPACE_PARAMS
+from tests.storage.restricted_namespace_cloning.constants import (
+    ALL,
+    CREATE,
+    DATAVOLUMES,
+    DATAVOLUMES_AND_DVS_SRC,
+    DATAVOLUMES_SRC,
+    PERMISSIONS_DST,
+    PERMISSIONS_SRC,
+    PVC,
+    TARGET_DV,
+    VERBS_DST,
+    VERBS_SRC,
+)
 from tests.storage.utils import (
     create_cluster_role,
     create_dv,
@@ -23,6 +36,14 @@ from utilities.constants import OS_FLAVOR_CIRROS, Images
 from utilities.storage import ErrorMsg, sc_is_hpp_with_immediate_volume_binding
 from utilities.virt import VirtualMachineForTests
 
+
+PERMISSIONS_SRC_SA = "permissions_src_sa"
+PERMISSIONS_DST_SA = "permissions_dst_sa"
+VERBS_SRC_SA = "verbs_src_sa"
+VERBS_DST_SA = "verbs_dst_sa"
+VM_FOR_TEST = "vm-for-test"
+METADATA = "metadata"
+SPEC = "spec"
 
 pytestmark = [
     pytest.mark.usefixtures("skip_when_no_unprivileged_client_available"),
@@ -44,20 +65,20 @@ def cluster_role_for_creating_pods():
     with create_cluster_role(
         name="pod-creator",
         api_groups=[""],
-        verbs=["create"],
+        verbs=CREATE,
         permissions_to_resources=["pods"],
     ) as cluster_role_pod_creator:
         yield cluster_role_pod_creator
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def data_volume_clone_settings(
     namespace, dst_ns, data_volume_multi_storage_scope_module
 ):
     dv = DataVolume(
-        name="dv",
+        name=TARGET_DV,
         namespace=dst_ns.name,
-        source="pvc",
+        source=PVC,
         source_pvc=data_volume_multi_storage_scope_module.name,
         source_namespace=namespace.name,
         volume_mode=data_volume_multi_storage_scope_module.volume_mode,
@@ -89,13 +110,47 @@ def allow_unprivileged_client_to_manage_vms_on_dst_ns(
         yield role_binding_vm_admin_unprivileged_client
 
 
+@pytest.fixture()
+def permissions_src_sa(request, namespace, dst_ns, restricted_ns_service_account):
+    with set_permissions(
+        role_name="datavolume-cluster-role-src",
+        verbs=request.param[VERBS_SRC_SA],
+        permissions_to_resources=request.param[PERMISSIONS_SRC_SA],
+        binding_name="role_bind_src",
+        namespace=namespace.name,
+        subjects_kind=restricted_ns_service_account.kind,
+        subjects_name=restricted_ns_service_account.name,
+        subjects_namespace=dst_ns.name,
+    ):
+        yield
+
+
+@pytest.fixture()
+def permissions_dst_sa(request, dst_ns, restricted_ns_service_account):
+    with set_permissions(
+        role_name="datavolume-cluster-role-dst",
+        verbs=request.param[VERBS_DST_SA],
+        permissions_to_resources=request.param[PERMISSIONS_DST_SA],
+        binding_name="role_bind_dst",
+        namespace=dst_ns.name,
+        subjects_kind=restricted_ns_service_account.kind,
+        subjects_name=restricted_ns_service_account.name,
+        subjects_namespace=dst_ns.name,
+    ):
+        yield
+
+
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    ("data_volume_multi_storage_scope_module", "namespace"),
+    "namespace, data_volume_multi_storage_scope_module, permissions_src_sa, permissions_dst_sa",
     [
         pytest.param(
-            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2826")
-        ),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            {PERMISSIONS_SRC_SA: DATAVOLUMES_AND_DVS_SRC, VERBS_SRC_SA: ALL},
+            {PERMISSIONS_DST_SA: DATAVOLUMES_AND_DVS_SRC, VERBS_DST_SA: ALL},
+            marks=pytest.mark.polarion("CNV-2826"),
+        )
     ],
     indirect=True,
 )
@@ -106,53 +161,39 @@ def test_create_vm_with_cloned_data_volume_positive(
     unprivileged_client,
     allow_unprivileged_client_to_manage_vms_on_dst_ns,
     data_volume_clone_settings,
+    permissions_src_sa,
+    permissions_dst_sa,
 ):
-    with set_permissions(
-        role_name="datavolume-cluster-role-src",
-        verbs=["*"],
-        permissions_to_resources=["datavolumes", "datavolumes/source"],
-        binding_name="role_bind_src",
-        namespace=namespace.name,
-        subjects_kind=restricted_ns_service_account.kind,
-        subjects_name=restricted_ns_service_account.name,
-        subjects_namespace=dst_ns.name,
-    ):
-        with set_permissions(
-            role_name="datavolume-cluster-role-dst",
-            verbs=["*"],
-            permissions_to_resources=["datavolumes", "datavolumes/source"],
-            binding_name="role_bind_dst",
-            namespace=dst_ns.name,
-            subjects_kind=restricted_ns_service_account.kind,
-            subjects_name=restricted_ns_service_account.name,
-            subjects_namespace=dst_ns.name,
-        ):
-            dv_clone_dict = data_volume_clone_settings.to_dict()
-            with VirtualMachineForTests(
-                name="vm-for-test",
-                namespace=dst_ns.name,
-                os_flavor=OS_FLAVOR_CIRROS,
-                service_accounts=[restricted_ns_service_account.name],
-                client=unprivileged_client,
-                memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-                data_volume_template={
-                    "metadata": dv_clone_dict["metadata"],
-                    "spec": dv_clone_dict["spec"],
-                },
-            ) as vm:
-                vm.start(wait=True)
-                verify_snapshot_used_namespace_transfer(
-                    cdv=data_volume_clone_settings,
-                    unprivileged_client=unprivileged_client,
-                )
+    dv_clone_dict = data_volume_clone_settings.to_dict()
+    with VirtualMachineForTests(
+        name=VM_FOR_TEST,
+        namespace=dst_ns.name,
+        os_flavor=OS_FLAVOR_CIRROS,
+        service_accounts=[restricted_ns_service_account.name],
+        client=unprivileged_client,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={
+            METADATA: dv_clone_dict[METADATA],
+            SPEC: dv_clone_dict[SPEC],
+        },
+    ) as vm:
+        vm.start(wait=True)
+        verify_snapshot_used_namespace_transfer(
+            cdv=data_volume_clone_settings,
+            unprivileged_client=unprivileged_client,
+        )
 
 
 @pytest.mark.parametrize(
-    ("data_volume_multi_storage_scope_module", "namespace"),
+    "namespace, data_volume_multi_storage_scope_module, permissions_src, permissions_dst",
     [
         pytest.param(
-            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2828")
-        ),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            {PERMISSIONS_SRC: DATAVOLUMES_SRC, VERBS_SRC: ALL},
+            {PERMISSIONS_DST: DATAVOLUMES, VERBS_DST: ALL},
+            marks=pytest.mark.polarion("CNV-2828"),
+        )
     ],
     indirect=True,
 )
@@ -161,57 +202,41 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
     dst_ns,
     restricted_ns_service_account,
     unprivileged_client,
-    unprivileged_user_username,
     allow_unprivileged_client_to_manage_vms_on_dst_ns,
     data_volume_clone_settings,
-    api_group,
+    permissions_src,
+    permissions_dst,
 ):
-    with set_permissions(
-        role_name="datavolume-cluster-role-src",
-        verbs=["*"],
-        permissions_to_resources=["datavolumes/source"],
-        binding_name="role_bind_src",
-        namespace=namespace.name,
-        subjects_kind="User",
-        subjects_name=unprivileged_user_username,
-        subjects_api_group=api_group,
+    with pytest.raises(
+        ApiException,
+        match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
-        with set_permissions(
-            role_name="datavolume-cluster-role-dst",
-            verbs=["*"],
-            permissions_to_resources=["datavolumes"],
-            binding_name="role_bind_dst",
+        dv_clone_dict = data_volume_clone_settings.to_dict()
+        with VirtualMachineForTests(
+            name=VM_FOR_TEST,
             namespace=dst_ns.name,
-            subjects_kind="User",
-            subjects_name=unprivileged_user_username,
-            subjects_api_group=api_group,
+            os_flavor=OS_FLAVOR_CIRROS,
+            service_accounts=[restricted_ns_service_account.name],
+            client=unprivileged_client,
+            memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+            data_volume_template={
+                METADATA: dv_clone_dict[METADATA],
+                SPEC: dv_clone_dict[SPEC],
+            },
         ):
-            with pytest.raises(
-                ApiException,
-                match=ErrorMsg.CANNOT_CREATE_RESOURCE,
-            ):
-                dv_clone_dict = data_volume_clone_settings.to_dict()
-                with VirtualMachineForTests(
-                    name="vm-for-test",
-                    namespace=dst_ns.name,
-                    os_flavor=OS_FLAVOR_CIRROS,
-                    service_accounts=[restricted_ns_service_account.name],
-                    client=unprivileged_client,
-                    memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-                    data_volume_template={
-                        "metadata": dv_clone_dict["metadata"],
-                        "spec": dv_clone_dict["spec"],
-                    },
-                ):
-                    return
+            return
 
 
 @pytest.mark.parametrize(
-    ("data_volume_multi_storage_scope_module", "namespace"),
+    "namespace, data_volume_multi_storage_scope_module, permissions_src_sa, permissions_dst_sa",
     [
         pytest.param(
-            DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2827")
-        ),
+            NAMESPACE_PARAMS,
+            DV_PARAMS,
+            {PERMISSIONS_SRC_SA: DATAVOLUMES, VERBS_SRC_SA: ALL},
+            {PERMISSIONS_DST_SA: DATAVOLUMES, VERBS_DST_SA: ALL},
+            marks=pytest.mark.polarion("CNV-2827"),
+        )
     ],
     indirect=True,
 )
@@ -221,49 +246,31 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
     restricted_ns_service_account,
     unprivileged_client,
     data_volume_clone_settings,
+    permissions_src_sa,
+    permissions_dst_sa,
 ):
-    with set_permissions(
-        role_name="datavolume-cluster-role-src",
-        verbs=["*"],
-        permissions_to_resources=["datavolumes"],
-        binding_name="role_bind_src",
-        namespace=namespace.name,
-        subjects_kind=restricted_ns_service_account.kind,
-        subjects_name=restricted_ns_service_account.name,
-        subjects_namespace=dst_ns.name,
+    with pytest.raises(
+        ApiException,
+        match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
-        with set_permissions(
-            role_name="datavolume-cluster-role-dst",
-            verbs=["*"],
-            permissions_to_resources=["datavolumes"],
-            binding_name="role_bind_dst",
+        dv_clone_dict = data_volume_clone_settings.to_dict()
+        with VirtualMachineForTests(
+            name=VM_FOR_TEST,
             namespace=dst_ns.name,
-            subjects_kind=restricted_ns_service_account.kind,
-            subjects_name=restricted_ns_service_account.name,
-            subjects_namespace=dst_ns.name,
+            os_flavor=OS_FLAVOR_CIRROS,
+            service_accounts=[restricted_ns_service_account.name],
+            client=unprivileged_client,
+            memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+            data_volume_template={
+                METADATA: dv_clone_dict[METADATA],
+                SPEC: dv_clone_dict[SPEC],
+            },
         ):
-            with pytest.raises(
-                ApiException,
-                match=ErrorMsg.CANNOT_CREATE_RESOURCE,
-            ):
-                dv_clone_dict = data_volume_clone_settings.to_dict()
-                with VirtualMachineForTests(
-                    name="vm-for-test",
-                    namespace=dst_ns.name,
-                    os_flavor=OS_FLAVOR_CIRROS,
-                    service_accounts=[restricted_ns_service_account.name],
-                    client=unprivileged_client,
-                    memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-                    data_volume_template={
-                        "metadata": dv_clone_dict["metadata"],
-                        "spec": dv_clone_dict["spec"],
-                    },
-                ):
-                    return
+            return
 
 
 @pytest.mark.parametrize(
-    ("data_volume_multi_storage_scope_module", "namespace"),
+    "data_volume_multi_storage_scope_module, namespace",
     [
         pytest.param(
             DV_PARAMS, NAMESPACE_PARAMS, marks=pytest.mark.polarion("CNV-2829")
@@ -301,15 +308,15 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
         ):
             dv_clone_dict = data_volume_clone_settings.to_dict()
             with VirtualMachineForTests(
-                name="vm-for-test",
+                name=VM_FOR_TEST,
                 namespace=dst_ns.name,
                 os_flavor=OS_FLAVOR_CIRROS,
                 service_accounts=[restricted_ns_service_account.name],
                 client=unprivileged_client,
                 memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
                 data_volume_template={
-                    "metadata": dv_clone_dict["metadata"],
-                    "spec": dv_clone_dict["spec"],
+                    METADATA: dv_clone_dict[METADATA],
+                    SPEC: dv_clone_dict[SPEC],
                 },
             ) as vm:
                 vm.start(wait=True)
@@ -320,22 +327,17 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
 
 
 @pytest.mark.parametrize(
-    (
-        "namespace",
-        "data_volume_multi_storage_scope_module",
-        "permissions_src",
-        "permissions_dst",
-    ),
+    "namespace, data_volume_multi_storage_scope_module, permissions_src, permissions_dst",
     [
         pytest.param(
             NAMESPACE_PARAMS,
             DV_PARAMS,
-            (["datavolumes", "datavolumes/source"], ["*"]),
-            (["datavolumes", "datavolumes/source"], ["*"]),
-            marks=(pytest.mark.polarion("CNV-4034")),
+            {PERMISSIONS_SRC: DATAVOLUMES_AND_DVS_SRC, VERBS_SRC: ALL},
+            {PERMISSIONS_DST: DATAVOLUMES_AND_DVS_SRC, VERBS_DST: ALL},
+            marks=pytest.mark.polarion("CNV-4034"),
         )
     ],
-    indirect=["namespace", "data_volume_multi_storage_scope_module"],
+    indirect=True,
 )
 def test_disk_image_after_create_vm_with_restricted_clone(
     skip_block_volumemode_scope_module,
@@ -346,38 +348,16 @@ def test_disk_image_after_create_vm_with_restricted_clone(
     unprivileged_client,
     permissions_src,
     permissions_dst,
-    unprivileged_user_username,
-    api_group,
 ):
-    with set_permissions(
-        role_name="datavolume-cluster-role-src",
-        verbs=permissions_src[1],
-        permissions_to_resources=permissions_src[0],
-        binding_name="role_bind_src",
-        namespace=namespace.name,
-        subjects_kind="User",
-        subjects_name=unprivileged_user_username,
-        subjects_api_group=api_group,
-    ):
-        with set_permissions(
-            role_name="datavolume-cluster-role-dst",
-            verbs=permissions_dst[1],
-            permissions_to_resources=permissions_dst[0],
-            binding_name="role_bind_dst",
-            namespace=dst_ns.name,
-            subjects_kind="User",
-            subjects_name=unprivileged_user_username,
-            subjects_api_group=api_group,
-        ):
-            with create_dv(
-                dv_name="target-dv",
-                namespace=dst_ns.name,
-                source="pvc",
-                size=data_volume_multi_storage_scope_module.size,
-                source_pvc=data_volume_multi_storage_scope_module.pvc.name,
-                source_namespace=namespace.name,
-                client=unprivileged_client,
-                **storage_params(storage_class_matrix=storage_class_matrix__module__),
-            ) as cdv:
-                cdv.wait()
-                create_vm_and_verify_image_permission(dv=cdv)
+    with create_dv(
+        dv_name=TARGET_DV,
+        namespace=dst_ns.name,
+        source=PVC,
+        size=data_volume_multi_storage_scope_module.size,
+        source_pvc=data_volume_multi_storage_scope_module.pvc.name,
+        source_namespace=namespace.name,
+        client=unprivileged_client,
+        **storage_params(storage_class_matrix=storage_class_matrix__module__),
+    ) as cdv:
+        cdv.wait()
+        create_vm_and_verify_image_permission(dv=cdv)

@@ -236,8 +236,8 @@ def set_permissions(
     permissions_to_resources,
     binding_name,
     namespace,
-    subjects_kind,
     subjects_name,
+    subjects_kind="User",
     subjects_api_group=None,
     subjects_namespace=None,
 ):
