@@ -237,7 +237,7 @@ def test_successful_vm_from_cloned_dv_windows(
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
                 "dv_size": "1Gi",
             },
-            marks=(pytest.mark.polarion("CNV-4035"), pytest.mark.smoke()),
+            marks=(pytest.mark.polarion("CNV-4035")),
         )
     ],
     indirect=True,
@@ -353,7 +353,7 @@ def test_clone_from_fs_to_block_using_dv_template(
             {
                 "volume_mode": DataVolume.VolumeMode.BLOCK,
             },
-            marks=(pytest.mark.polarion("CNV-5608")),
+            marks=(pytest.mark.polarion("CNV-5608"), pytest.mark.smoke()),
         ),
     ],
     indirect=True,
