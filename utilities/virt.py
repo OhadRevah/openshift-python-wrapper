@@ -1055,6 +1055,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         systemctl_support=True,
         vhostmd=False,
         machine_type=None,
+        teardown=True,
     ):
         """
         VM creation using common templates.
@@ -1104,6 +1105,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             systemctl_support=systemctl_support,
             vhostmd=vhostmd,
             machine_type=machine_type,
+            teardown=teardown,
         )
         self.template_labels = labels
         self.data_volume = data_volume
