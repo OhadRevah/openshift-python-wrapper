@@ -11,7 +11,12 @@ import pytest
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import IP_FAMILY_POLICY_PREFER_DUAL_STACK, TIMEOUT_2MIN
+from utilities.constants import (
+    IP_FAMILY_POLICY_PREFER_DUAL_STACK,
+    OS_FLAVOR_FEDORA,
+    OS_LOGIN_PARAMS,
+    TIMEOUT_2MIN,
+)
 from utilities.infra import run_ssh_commands
 from utilities.network import (
     LINUX_BRIDGE,
@@ -231,12 +236,14 @@ def ssh_in_background(running_vma, running_vmb):
     Start ssh connection to the vm
     """
     dst_ip = get_vmi_ip_v4_by_name(vm=running_vmb, name=BR1TEST)
+    password = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["password"]
+    username = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["username"]
     LOGGER.info(f"Start ssh connection to {running_vmb.name} from {running_vma.name}")
     run_ssh_commands(
         host=running_vma.ssh_exec,
         commands=[
             shlex.split(
-                f"sshpass -p fedora ssh -o 'StrictHostKeyChecking no' fedora@{dst_ip} 'sleep 99999' &>1 &"
+                f"sshpass -p {password} ssh -o 'StrictHostKeyChecking no' {username}@{dst_ip} 'sleep 99999' &>1 &"
             )
         ],
     )
