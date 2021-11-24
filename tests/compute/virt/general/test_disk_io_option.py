@@ -11,6 +11,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
+from utilities.storage import create_data_source
 from utilities.virt import get_guest_os_info, vm_instance_from_template
 
 
@@ -53,17 +54,26 @@ def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
 
 
 @pytest.fixture()
+def golden_image_dv_scope_class_data_source_scope_function(
+    admin_client, golden_image_data_volume_scope_class
+):
+    yield from create_data_source(
+        admin_client=admin_client, dv=golden_image_data_volume_scope_class
+    )
+
+
+@pytest.fixture()
 def disk_options_vm(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_class,
+    golden_image_dv_scope_class_data_source_scope_function,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_dv_scope_class_data_source_scope_function,
     ) as vm:
         yield vm
 

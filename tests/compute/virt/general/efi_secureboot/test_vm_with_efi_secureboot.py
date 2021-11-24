@@ -58,7 +58,7 @@ def windows_efi_secureboot_vm(
     cluster_cpu_model_scope_class,
     namespace,
     unprivileged_client,
-    golden_image_data_volume_scope_class,
+    golden_image_data_source_scope_class,
 ):
     """Create VM with EFI secureBoot set as True"""
     with VirtualMachineForTestsFromTemplate(
@@ -68,7 +68,7 @@ def windows_efi_secureboot_vm(
         labels=Template.generate_template_labels(
             **py_config["system_windows_os_matrix"][0]["win-10"]["template_labels"]
         ),
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
         cpu_cores=VM_CPU,
         smm_enabled=True,
         efi_params={"secureBoot": True},

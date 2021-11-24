@@ -7,6 +7,7 @@ from pytest_testconfig import config as py_config
 from tests.compute.utils import validate_pause_optional_migrate_unpause_linux_vm
 from tests.compute.virt.utils import append_feature_gate_to_hco
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
+from utilities.storage import create_data_source
 from utilities.virt import (
     get_kubevirt_hyperconverged_spec,
     migrate_vm_and_verify,
@@ -97,18 +98,27 @@ def kubevirt_feature_gates_scope_class(kubevirt_config_scope_class):
 
 
 @pytest.fixture(scope="class")
+def golden_image_dv_scope_module_data_source_scope_class(
+    admin_client, golden_image_data_volume_scope_module
+):
+    yield from create_data_source(
+        admin_client=admin_client, dv=golden_image_data_volume_scope_module
+    )
+
+
+@pytest.fixture(scope="class")
 def nonroot_vm_scope_class(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_module,
+    golden_image_dv_scope_module_data_source_scope_class,
     nodes_common_cpu_model,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_module,
+        data_source=golden_image_dv_scope_module_data_source_scope_class,
         vm_cpu_model=nodes_common_cpu_model,
     ) as nonroot_vm_scope_class:
         yield nonroot_vm_scope_class
@@ -119,14 +129,14 @@ def privilege_based_vm_scope_function(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_module,
+    golden_image_dv_scope_module_data_source_scope_class,
     nodes_common_cpu_model,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_module,
+        data_source=golden_image_dv_scope_module_data_source_scope_class,
         vm_cpu_model=nodes_common_cpu_model,
     ) as privilege_based_vm_scope_function:
         yield privilege_based_vm_scope_function

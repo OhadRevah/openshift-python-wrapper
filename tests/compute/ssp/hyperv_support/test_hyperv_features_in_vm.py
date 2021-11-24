@@ -24,7 +24,7 @@ def hyperv_vm(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_class,
+    golden_image_data_source_scope_class,
 ):
     hyperv_dict = request.param.get("hyperv_dict")
     if hyperv_dict:
@@ -37,7 +37,7 @@ def hyperv_vm(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
     ) as vm:
         yield vm
 

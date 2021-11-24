@@ -1463,7 +1463,7 @@ def vm_instance_from_template_multi_storage_scope_function(
     request,
     unprivileged_client,
     namespace,
-    data_volume_multi_storage_scope_function,
+    data_source_multi_storage_scope_function,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1475,7 +1475,7 @@ def vm_instance_from_template_multi_storage_scope_function(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=data_volume_multi_storage_scope_function,
+        data_source=data_source_multi_storage_scope_function,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1488,7 +1488,7 @@ def golden_image_vm_instance_from_template_multi_storage_scope_function(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_multi_storage_scope_function,
+    golden_image_data_source_multi_storage_scope_function,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1500,7 +1500,7 @@ def golden_image_vm_instance_from_template_multi_storage_scope_function(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_multi_storage_scope_function,
+        data_source=golden_image_data_source_multi_storage_scope_function,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1513,7 +1513,7 @@ def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_multi_storage_scope_class,
+    golden_image_data_source_multi_storage_scope_class,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1527,7 +1527,7 @@ def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_multi_storage_scope_class,
+        data_source=golden_image_data_source_multi_storage_scope_class,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
@@ -1540,7 +1540,7 @@ def golden_image_vm_instance_from_template_multi_storage_scope_class(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_multi_storage_scope_class,
+    golden_image_data_source_multi_storage_scope_class,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1552,7 +1552,7 @@ def golden_image_vm_instance_from_template_multi_storage_scope_class(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_multi_storage_scope_class,
+        data_source=golden_image_data_source_multi_storage_scope_class,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,

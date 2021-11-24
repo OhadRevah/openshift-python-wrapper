@@ -5,6 +5,7 @@ from copy import deepcopy
 
 import packaging.version
 import pytest
+from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.operator_hub import OperatorHub
@@ -33,6 +34,7 @@ from utilities.network import (
 )
 from utilities.storage import (
     create_dv,
+    generate_data_source_dict,
     get_images_server_url,
     sc_is_hpp_with_immediate_volume_binding,
     virtctl_volume,
@@ -210,25 +212,44 @@ def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
 
 
 @pytest.fixture(scope="module")
+def datasources_for_upgrade(admin_client, dvs_for_upgrade):
+    data_source_list = []
+    for dv in dvs_for_upgrade:
+        data_source = DataSource(
+            name=dv.name.replace("dv", "ds")[0:26],
+            namespace=dv.namespace,
+            client=admin_client,
+            source=generate_data_source_dict(dv=dv),
+        )
+        data_source.deploy()
+        data_source_list.append(data_source)
+
+    yield data_source_list
+
+    for data_source in data_source_list:
+        data_source.clean_up()
+
+
+@pytest.fixture(scope="module")
 def vms_for_upgrade(
     unprivileged_client,
     namespace,
     vm_bridge_networks,
-    dvs_for_upgrade,
+    datasources_for_upgrade,
     upgrade_br1test_nad,
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
     vms_list = []
-    for dv in dvs_for_upgrade:
+    for data_source in datasources_for_upgrade:
         vm = VirtualMachineForTestsFromTemplate(
-            name=dv.name.replace("dv", "vm")[0:26],
+            name=data_source.name.replace("ds", "vm")[0:26],
             namespace=namespace.name,
             client=unprivileged_client,
             labels=Template.generate_template_labels(
                 **rhel_latest_os_params["rhel_template_labels"]
             ),
-            data_volume=dv,
+            data_source=data_source,
             networks=vm_bridge_networks,
             cpu_model=nodes_common_cpu_model,
             interfaces=sorted(vm_bridge_networks.keys()),
@@ -515,7 +536,7 @@ def vm_from_template(
     client,
     namespace,
     vm_name,
-    data_volume,
+    data_source,
     cpu_model,
     networks,
     template_labels,
@@ -526,7 +547,7 @@ def vm_from_template(
         namespace=namespace,
         client=client,
         labels=Template.generate_template_labels(**template_labels),
-        data_volume=data_volume,
+        data_source=data_source,
         cpu_model=cpu_model,
         run_strategy=run_strategy,
         networks=networks,
@@ -540,7 +561,7 @@ def manual_run_strategy_vm(
     unprivileged_client,
     namespace,
     vm_bridge_networks,
-    run_strategy_golden_image_rwx_dv,
+    run_strategy_golden_image_rwx_data_source,
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
@@ -549,7 +570,7 @@ def manual_run_strategy_vm(
         namespace=namespace.name,
         client=unprivileged_client,
         template_labels=rhel_latest_os_params["rhel_template_labels"],
-        data_volume=run_strategy_golden_image_rwx_dv,
+        data_source=run_strategy_golden_image_rwx_data_source,
         run_strategy=VirtualMachine.RunStrategy.MANUAL,
         cpu_model=nodes_common_cpu_model,
         networks=vm_bridge_networks,
@@ -564,7 +585,7 @@ def always_run_strategy_vm(
     namespace,
     vm_bridge_networks,
     upgrade_br1test_nad,
-    run_strategy_golden_image_rwx_dv,
+    run_strategy_golden_image_rwx_data_source,
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
@@ -573,7 +594,7 @@ def always_run_strategy_vm(
         namespace=namespace.name,
         client=unprivileged_client,
         template_labels=rhel_latest_os_params["rhel_template_labels"],
-        data_volume=run_strategy_golden_image_rwx_dv,
+        data_source=run_strategy_golden_image_rwx_data_source,
         run_strategy=VirtualMachine.RunStrategy.ALWAYS,
         cpu_model=nodes_common_cpu_model,
         networks=vm_bridge_networks,
@@ -626,17 +647,23 @@ def windows_vm(
         size=latest_windows_dict["dv_size"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
-        with vm_from_template(
-            vm_name="windows-vm",
-            namespace=namespace.name,
-            client=unprivileged_client,
-            template_labels=latest_windows_dict["template_labels"],
-            data_volume=dv,
-            cpu_model=nodes_common_cpu_model,
-            networks=vm_bridge_networks,
-        ) as vm:
-            running_vm(vm=vm, check_ssh_connectivity=False)
-            yield vm
+        with DataSource(
+            name=dv.name,
+            namespace=dv.namespace,
+            client=admin_client,
+            source=generate_data_source_dict(dv=dv),
+        ) as ds:
+            with vm_from_template(
+                vm_name="windows-vm",
+                namespace=namespace.name,
+                client=unprivileged_client,
+                template_labels=latest_windows_dict["template_labels"],
+                data_source=ds,
+                cpu_model=nodes_common_cpu_model,
+                networks=vm_bridge_networks,
+            ) as vm:
+                running_vm(vm=vm, check_ssh_connectivity=False)
+                yield vm
 
 
 @pytest.fixture(scope="module")
@@ -789,3 +816,16 @@ def running_vmb_upgrade_mac_spoof(vmb_upgrade_mac_spoof):
 @pytest.fixture()
 def base_templates_after_upgrade(admin_client):
     return get_base_templates_list(client=admin_client)
+
+
+@pytest.fixture(scope="module")
+def run_strategy_golden_image_rwx_data_source(
+    admin_client, run_strategy_golden_image_rwx_dv
+):
+    with DataSource(
+        name=run_strategy_golden_image_rwx_dv.name,
+        namespace=run_strategy_golden_image_rwx_dv.namespace,
+        client=admin_client,
+        source=generate_data_source_dict(dv=run_strategy_golden_image_rwx_dv),
+    ) as ds:
+        yield ds

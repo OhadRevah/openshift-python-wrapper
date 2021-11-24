@@ -24,13 +24,13 @@ pytestmark = pytest.mark.sno
 def rdp_vm(
     request,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
     unprivileged_client,
 ):
     with vm_instance_from_template(
         request=request,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_source=golden_image_data_source_scope_function,
         unprivileged_client=unprivileged_client,
     ) as rdp_vm:
         rdp_vm.custom_service_enable(

@@ -25,13 +25,13 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
         name,
         namespace,
         client,
-        data_volume,
+        data_source,
     ):
         super().__init__(
             name=name,
             namespace=namespace,
             client=client,
-            data_volume=data_volume,
+            data_source=data_source,
             labels=Template.generate_template_labels(**WINDOWS_LATEST_LABELS),
         )
 
@@ -62,14 +62,14 @@ def vm_with_guest_tools(
     cluster_cpu_model_scope_class,
     namespace,
     unprivileged_client,
-    golden_image_data_volume_scope_class,
+    golden_image_data_source_scope_class,
 ):
     """Create Windows with guest-tools cd-rom"""
     with WindowsVMWithGuestTools(
         name="windows-vm-wth-guest-tools",
         namespace=namespace.name,
         client=unprivileged_client,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
     ) as vm:
         running_vm(vm=vm)
         yield vm

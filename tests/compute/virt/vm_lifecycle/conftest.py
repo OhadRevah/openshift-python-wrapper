@@ -16,8 +16,8 @@ default_run_strategy = VirtualMachine.RunStrategy.MANUAL
 
 
 @contextmanager
-def container_disk_vm(namespace, unprivileged_client, dv=None):
-    """lifecycle_vm is used to call this fixture and data_volume_vm; dv is not needed in this use cases"""
+def container_disk_vm(namespace, unprivileged_client, data_source=None):
+    """lifecycle_vm is used to call this fixture and data_volume_vm; data_source is not needed in this use cases"""
     name = "fedora-vm-lifecycle"
     with VirtualMachineForTests(
         name=name,
@@ -30,7 +30,7 @@ def container_disk_vm(namespace, unprivileged_client, dv=None):
 
 
 @contextmanager
-def data_volume_vm(unprivileged_client, namespace, dv):
+def data_volume_vm(unprivileged_client, namespace, data_source):
     with VirtualMachineForTestsFromTemplate(
         name="rhel-vm-lifecycle",
         namespace=namespace.name,
@@ -38,7 +38,7 @@ def data_volume_vm(unprivileged_client, namespace, dv):
         labels=Template.generate_template_labels(
             **py_config["latest_rhel_os_dict"]["template_labels"]
         ),
-        data_volume=dv,
+        data_source=data_source,
         run_strategy=default_run_strategy,
     ) as vm:
         yield vm
@@ -50,7 +50,7 @@ def lifecycle_vm(
     unprivileged_client,
     namespace,
     vm_volumes_matrix__module__,
-    golden_image_data_volume_scope_module,
+    golden_image_data_source_scope_module,
 ):
     """Wrapper fixture to generate the desired VM
     vm_volumes_matrix returns a string.
@@ -60,6 +60,6 @@ def lifecycle_vm(
     with globals()[vm_volumes_matrix__module__](
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        dv=golden_image_data_volume_scope_module,
+        data_source=golden_image_data_source_scope_module,
     ) as vm:
         yield vm

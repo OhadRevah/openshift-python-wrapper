@@ -59,9 +59,9 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
         namespace,
         client,
         labels,
-        data_volume,
+        data_source,
         updated_storage_class_params=None,
-        updated_dv_name=None,
+        updated_source_pvc_name=None,
         use_full_storage_api=False,
     ):
         super().__init__(
@@ -69,12 +69,12 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
             namespace=namespace,
             client=client,
             labels=labels,
-            data_volume=data_volume,
+            data_source=data_source,
             use_full_storage_api=use_full_storage_api,
         )
-        self.data_volume = data_volume
+        self.data_source = data_source
         self.updated_storage_class_params = updated_storage_class_params
-        self.updated_dv_name = updated_dv_name
+        self.updated_source_pvc_name = updated_source_pvc_name
 
     def to_dict(self):
         res = super().to_dict()
@@ -93,10 +93,16 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
                 self.updated_storage_class_params["access_mode"]
             ]
 
-        if self.updated_dv_name:
-            res["spec"]["dataVolumeTemplates"][0]["spec"]["source"]["pvc"][
-                "name"
-            ] = self.updated_dv_name
+        if self.updated_source_pvc_name:
+            ResourceEditor(
+                patches={
+                    self.data_source: {
+                        "spec": {
+                            "source": {"pvc": {"name": self.updated_source_pvc_name}}
+                        }
+                    }
+                }
+            ).update()
 
         return res
 
@@ -106,14 +112,14 @@ def vm_from_golden_image_multi_storage(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_multi_storage_scope_function,
+    golden_image_data_source_multi_storage_scope_function,
 ):
     with DataVolumeTemplatesVirtualMachine(
         name="vm-from-golden-image",
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
-        data_volume=golden_image_data_volume_multi_storage_scope_function,
+        data_source=golden_image_data_source_multi_storage_scope_function,
         use_full_storage_api=request.param.get("use_full_storage_api"),
     ) as vm:
         running_vm(vm=vm)
@@ -125,30 +131,19 @@ def vm_from_golden_image(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
 ):
     with DataVolumeTemplatesVirtualMachine(
         name="vm-from-golden-image-mismatching-sc",
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
-        data_volume=golden_image_data_volume_scope_function,
+        data_source=golden_image_data_source_scope_function,
         updated_storage_class_params=request.param.get("updated_storage_class_params"),
-        updated_dv_name=request.param.get("updated_dv_name"),
+        updated_source_pvc_name=request.param.get("updated_source_pvc_name"),
     ) as vm:
         if request.param.get("start_vm", True):
             running_vm(vm=vm)
-        yield vm
-
-
-@pytest.fixture()
-def vm_missing_golden_image(unprivileged_client, namespace):
-    with VirtualMachineForTestsFromTemplate(
-        name="vm-missing-golden-image",
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
-    ) as vm:
         yield vm
 
 
@@ -245,7 +240,7 @@ def test_vm_dv_with_different_sc(
                 "storage_class": py_config["default_storage_class"],
             },
             {
-                "updated_dv_name": NON_EXISTING_DV_NAME,
+                "updated_source_pvc_name": NON_EXISTING_DV_NAME,
                 "start_vm": False,
             },
             marks=pytest.mark.polarion("CNV-5528"),
@@ -253,10 +248,10 @@ def test_vm_dv_with_different_sc(
     ],
     indirect=True,
 )
-def test_missing_golden_image(
+def test_missing_golden_image_pvc(
     admin_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
     vm_from_golden_image,
 ):
     vm_from_golden_image.start()
@@ -287,15 +282,11 @@ def test_missing_golden_image(
         ):
             break
 
-    # Update VM spec with the correct name
-    vm_data_volume_templates_dict = vm_from_golden_image.instance.to_dict()["spec"][
-        "dataVolumeTemplates"
-    ][0]
-    vm_data_volume_templates_dict["spec"]["source"]["pvc"]["name"] = "fedora-dv"
+    # Update dataSource spec with the correct name
     ResourceEditor(
         patches={
-            vm_from_golden_image: {
-                "spec": {"dataVolumeTemplates": [vm_data_volume_templates_dict]}
+            golden_image_data_source_scope_function: {
+                "spec": {"source": {"pvc": {"name": "fedora-dv"}}}
             }
         }
     ).update()

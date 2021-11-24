@@ -23,13 +23,13 @@ def vm_with_fio(
     cluster_cpu_model_scope_function,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_source=golden_image_data_source_scope_function,
     ) as vm_with_fio:
         running_vm(vm=vm_with_fio)
         yield vm_with_fio

@@ -842,7 +842,10 @@ class VirtualMachineForTests(VirtualMachine):
             )
 
         # DV/PVC info may be taken from self.data_volume_template, self.data_volume or self.pvc
-        if self.data_volume_template or self.data_volume or self.pvc:
+        # Needed only for VMs which are not created from common templates
+        if (
+            self.data_volume_template or self.data_volume or self.pvc
+        ) and not self.is_vm_from_template:
             storage_class, access_mode = self.get_storage_configuration()
 
             # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
@@ -853,44 +856,42 @@ class VirtualMachineForTests(VirtualMachine):
                 )
                 template_spec.pop("evictionStrategy", None)
 
-            # Needed only for VMs which are not created from common templates
-            if not self.is_vm_from_template:
-                if self.pvc:
-                    pvc_disk_name = f"{self.pvc.name}-pvc-disk"
-                    template_spec.setdefault("domain", {}).setdefault(
-                        "devices", {}
-                    ).setdefault("disks", []).append(
-                        {"disk": {"bus": "virtio"}, "name": pvc_disk_name}
-                    )
-                    template_spec.setdefault("volumes", []).append(
-                        {
-                            "name": pvc_disk_name,
-                            "persistentVolumeClaim": {"claimName": self.pvc.name},
-                        }
-                    )
-                # self.data_volume / self.data_volume_template
-                else:
-                    data_volume_name = (
-                        self.data_volume.name
-                        if self.data_volume
-                        else self.data_volume_template["metadata"]["name"]
-                    )
-                    template_spec.setdefault("domain", {}).setdefault(
-                        "devices", {}
-                    ).setdefault("disks", []).append(
-                        {"disk": {"bus": "virtio"}, "name": "dv-disk"}
-                    )
-                    template_spec.setdefault("volumes", []).append(
-                        {
-                            "name": "dv-disk",
-                            "dataVolume": {"name": data_volume_name},
-                        }
-                    )
+            if self.pvc:
+                pvc_disk_name = f"{self.pvc.name}-pvc-disk"
+                template_spec.setdefault("domain", {}).setdefault(
+                    "devices", {}
+                ).setdefault("disks", []).append(
+                    {"disk": {"bus": "virtio"}, "name": pvc_disk_name}
+                )
+                template_spec.setdefault("volumes", []).append(
+                    {
+                        "name": pvc_disk_name,
+                        "persistentVolumeClaim": {"claimName": self.pvc.name},
+                    }
+                )
+            # self.data_volume / self.data_volume_template
+            else:
+                data_volume_name = (
+                    self.data_volume.name
+                    if self.data_volume
+                    else self.data_volume_template["metadata"]["name"]
+                )
+                template_spec.setdefault("domain", {}).setdefault(
+                    "devices", {}
+                ).setdefault("disks", []).append(
+                    {"disk": {"bus": "virtio"}, "name": "dv-disk"}
+                )
+                template_spec.setdefault("volumes", []).append(
+                    {
+                        "name": "dv-disk",
+                        "dataVolume": {"name": data_volume_name},
+                    }
+                )
 
-                if self.data_volume_template:
-                    res["spec"].setdefault("dataVolumeTemplates", []).append(
-                        self.data_volume_template
-                    )
+            if self.data_volume_template:
+                res["spec"].setdefault("dataVolumeTemplates", []).append(
+                    self.data_volume_template
+                )
 
         return res, template_spec
 
@@ -1019,7 +1020,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         namespace,
         client,
         labels,
-        data_volume=None,
+        data_source=None,
         data_volume_template=None,
         existing_data_volume=None,
         networks=None,
@@ -1062,7 +1063,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         VM creation using common templates.
 
         Args:
-            data_volume (obj `DataVolume`): DV object that will be cloned into a VM PVC
+            data_source (obj `DataSource`): DS object points to a golden image PVC.
+                VM's disk will be cloned from the PVC.
             data_volume_template (dict): dataVolumeTemplates dict to replace template's default dataVolumeTemplates
             existing_data_volume (obj `DataVolume`): An existing DV object that will be used as the VM's volume. Cloning
                 will not be done and the template's dataVolumeTemplates will be removed.
@@ -1093,7 +1095,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             cloud_init_data=cloud_init_data,
             node_selector=node_selector,
             attached_secret=attached_secret,
-            data_volume=data_volume,
             data_volume_template=data_volume_template,
             diskless_vm=diskless_vm,
             run_strategy=run_strategy,
@@ -1112,7 +1113,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             teardown=teardown,
         )
         self.template_labels = labels
-        self.data_volume = data_volume
+        self.data_source = data_source
         self.data_volume_template = data_volume_template
         self.existing_data_volume = existing_data_volume
         self.vm_dict = vm_dict
@@ -1122,6 +1123,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.cloud_init_data = cloud_init_data
         self.cloned_dv_size = cloned_dv_size
         self.use_full_storage_api = use_full_storage_api
+        self.access_modes = None  # required for evictionStrategy policy
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1146,24 +1148,40 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             spec = self._update_vm_storage_config(
                 spec=spec, name=self.existing_data_volume.name
             )
+            self.access_modes = self.existing_data_volume.pvc.instance.spec.accessModes
         # Template's dataVolumeTemplates will be replaced with self.data_volume_template
         elif self.data_volume_template:
             res["spec"]["dataVolumeTemplates"] = [self.data_volume_template]
             spec = self._update_vm_storage_config(
                 spec=spec, name=self.data_volume_template["metadata"]["name"]
             )
-        # Otherwise clone self.data_volume
+            self.access_modes = self.data_volume_template["spec"]["pvc"]["accessModes"]
+        # Otherwise clone PVC referenced in self.data_source
         else:
-            dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["storage"]
-            source_dv_pvc_spec = self.data_volume.pvc.instance.spec
+            pvc_from_data_source = self.data_source.instance.spec.source.pvc
+            golden_image_dv = DataVolume(
+                name=pvc_from_data_source.name,
+                namespace=pvc_from_data_source.namespace,
+            )
+            source_dv_pvc_spec = golden_image_dv.pvc.instance.spec
+            dv_storage_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"][
+                "storage"
+            ]
+            self.access_modes = source_dv_pvc_spec.accessModes
             # dataVolumeTemplates needs to be updated with the needed storage size,
             # if the size of the golden_image is more than the Template's default storage size.
             # else use the source DV storage size.
-            dv_pvc_spec.setdefault("resources", {}).setdefault("requests", {})[
+            dv_storage_pvc_spec.setdefault("resources", {}).setdefault("requests", {})[
                 "storage"
             ] = (self.cloned_dv_size or source_dv_pvc_spec.resources.requests.storage)
             if not self.use_full_storage_api:
-                dv_pvc_spec["storageClassName"] = source_dv_pvc_spec.storageClassName
+                dv_storage_pvc_spec[
+                    "storageClassName"
+                ] = source_dv_pvc_spec.storageClassName
+
+        # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
+        if not self.diskless_vm and DataVolume.AccessMode.RWX not in self.access_modes:
+            spec.pop("evictionStrategy", None)
 
         return res
 
@@ -1194,10 +1212,12 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         # If existing DV or custom dataVolumeTemplates are used, use mock source PVC name and namespace
         template_kwargs = {
             "NAME": self.name,
-            "SRC_PVC_NAME": self.data_volume.name if self.data_volume else "mock_pvc",
-            "SRC_PVC_NAMESPACE": self.data_volume.namespace
-            if self.data_volume
-            else "mock_pvc_ns",
+            "SRC_PVC_NAME": self.data_source.name  # TODO: Change to DATA_SOURCE_NAME
+            if self.data_source
+            else "mock-data-source",
+            "SRC_PVC_NAMESPACE": self.data_source.namespace  # TODO: Change to DATA_SOURCE_NAMESPACE
+            if self.data_source
+            else "mock-data-source-ns",
         }
 
         # Set password for non-Windows VMs; for Windows VM, the password is already set in the image
@@ -1908,7 +1928,7 @@ def vm_instance_from_template(
     request,
     unprivileged_client,
     namespace,
-    data_volume=None,
+    data_source=None,
     data_volume_template=None,
     existing_data_volume=None,
     cloud_init_data=None,
@@ -1936,7 +1956,7 @@ def vm_instance_from_template(
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**params["template_labels"]),
-        data_volume=data_volume,
+        data_source=data_source,
         data_volume_template=data_volume_template,
         existing_data_volume=existing_data_volume,
         vm_dict=params.get("vm_dict"),

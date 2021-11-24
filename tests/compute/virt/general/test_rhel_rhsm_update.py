@@ -55,14 +55,14 @@ def rhsm_vm(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
     rhsm_cloud_init_data,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_source=golden_image_data_source_scope_function,
         cloud_init_data=rhsm_cloud_init_data,
     ) as rhsm_vm:
         yield rhsm_vm

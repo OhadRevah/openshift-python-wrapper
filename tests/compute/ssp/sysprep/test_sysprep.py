@@ -131,7 +131,7 @@ def sysprep_resource(
 @pytest.fixture(scope="class")
 def sysprep_vm(
     sysprep_source_matrix__class__,
-    golden_image_data_volume_scope_class,
+    golden_image_data_source_scope_class,
     unprivileged_client,
     namespace,
 ):
@@ -139,7 +139,7 @@ def sysprep_vm(
         name=f"sysprep-{sysprep_source_matrix__class__.lower()}-vm",
         namespace=namespace.name,
         client=unprivileged_client,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
         labels=Template.generate_template_labels(**WINDOWS_LATEST_LABELS),
     ) as vm:
         running_vm(vm=vm)

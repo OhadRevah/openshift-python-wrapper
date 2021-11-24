@@ -43,13 +43,13 @@ NEW_PASSWORD = "General_Ken0bi!"
 
 @pytest.fixture(scope="class")
 def persistence_vm(
-    request, golden_image_data_volume_scope_class, unprivileged_client, namespace
+    request, golden_image_data_source_scope_class, unprivileged_client, namespace
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
     ) as vm:
         yield vm
 

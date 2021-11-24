@@ -25,14 +25,14 @@ def vhostmd_vm1(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
     schedulable_nodes,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_source=golden_image_data_source_scope_function,
         node_selector=schedulable_nodes[0].name,
         cloud_init_data=rhsm_and_vmdumpmetrics_pkg_cloud_init_data(),
     ) as vhostmd_vm1:
@@ -45,14 +45,14 @@ def vhostmd_vm2(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_function,
+    golden_image_data_source_scope_function,
     schedulable_nodes,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_function,
+        data_source=golden_image_data_source_scope_function,
         node_selector=schedulable_nodes[0].name,
         cloud_init_data=rhsm_and_vmdumpmetrics_pkg_cloud_init_data(),
     ) as vhostmd_vm2:

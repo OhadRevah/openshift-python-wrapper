@@ -53,7 +53,7 @@ class TestUpgrade:
     )
     def test_migration_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
+            if DataVolume.AccessMode.RWO in vm.access_modes:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
             migrate_vm_and_verify(
@@ -442,7 +442,7 @@ class TestUpgrade:
     )
     def test_migration_after_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
-            if vm.data_volume.access_modes == DataVolume.AccessMode.RWO:
+            if DataVolume.AccessMode.RWO in vm.access_modes:
                 LOGGER.info(f"Cannot migrate a VM {vm.name} with RWO PVC.")
                 continue
             migrate_vm_and_verify(vm=vm)

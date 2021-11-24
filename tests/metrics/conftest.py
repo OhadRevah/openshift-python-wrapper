@@ -249,7 +249,7 @@ def vm_from_template(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_volume_scope_class,
+    golden_image_data_source_scope_class,
 ):
     """
     The fixture is using the context manager to create a VM instance from template, as described in
@@ -264,7 +264,7 @@ def vm_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
     ) as vm:
         yield vm
 

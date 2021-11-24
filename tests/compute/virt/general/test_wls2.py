@@ -85,7 +85,7 @@ def is_wsl2_guest_running(vm, timeout=5):
 def windows_10_vm(
     namespace,
     unprivileged_client,
-    golden_image_data_volume_scope_class,
+    golden_image_data_source_scope_class,
     nodes_common_cpu_model,
 ):
     """Create Windows 10 VM, Run VM and wait for WLS2 guest to start"""
@@ -97,7 +97,7 @@ def windows_10_vm(
         ),
         namespace=namespace.name,
         client=unprivileged_client,
-        data_volume=golden_image_data_volume_scope_class,
+        data_source=golden_image_data_source_scope_class,
         cpu_model=nodes_common_cpu_model
         if py_config["nodes_cpu_architecture"] == INTEL
         else None,
