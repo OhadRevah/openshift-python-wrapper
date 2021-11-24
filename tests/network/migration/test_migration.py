@@ -62,7 +62,7 @@ def vma(
     namespace,
     unprivileged_client,
     nodes_common_cpu_model,
-    ipv6_network_data,
+    dual_stack_network_data,
     bridge_worker_1,
 ):
     name = "vma"
@@ -70,7 +70,7 @@ def vma(
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
-        ipv6_network_data=ipv6_network_data,
+        ipv6_network_data=dual_stack_network_data,
     )
     with VirtualMachineForTests(
         namespace=namespace.name,
@@ -91,7 +91,7 @@ def vmb(
     namespace,
     unprivileged_client,
     nodes_common_cpu_model,
-    ipv6_network_data,
+    dual_stack_network_data,
     bridge_worker_2,
 ):
     name = "vmb"
@@ -99,7 +99,7 @@ def vmb(
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
-        ipv6_network_data=ipv6_network_data,
+        ipv6_network_data=dual_stack_network_data,
     )
 
     with VirtualMachineForTests(

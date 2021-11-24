@@ -11,7 +11,6 @@ from ocp_resources.pod import Pod
 from utilities.constants import IPV4_STR, IPV6_STR
 from utilities.infra import ClusterHosts, ExecCommandOnPod
 from utilities.network import (
-    compose_dual_stack_network_data,
     get_ip_from_vm_or_virt_handler_pod,
     ip_version_data_from_matrix,
 )
@@ -104,19 +103,6 @@ def skip_ipv6_if_not_dual_stack_cluster(
         pytest.skip(msg="IPv6 is not supported in this cluster")
 
 
-@pytest.fixture(scope="module")
-def ipv6_network_data(
-    request,
-    dual_stack_cluster,
-):
-    # dhcp4 should be enabled if it's a dual-stack flow, i.e. both IPv4 and IPv6 should be enabled
-    # on the primary interface. The value returned from ip_version_data_from_matrix indicates that.
-    if dual_stack_cluster:
-        return compose_dual_stack_network_data(
-            dhcp4_enable=ip_version_data_from_matrix(request) is not None
-        )
-
-
 @pytest.fixture()
 def hyperconverged_ovs_annotations_disabled_by_default(
     hyperconverged_resource_scope_function,
@@ -129,3 +115,17 @@ def hyperconverged_ovs_annotations_disabled_by_default(
 @pytest.fixture()
 def worker_node1_pod_executor(utility_pods, worker_node1):
     return ExecCommandOnPod(utility_pods=utility_pods, node=worker_node1)
+
+
+@pytest.fixture(scope="module")
+def dual_stack_network_data(dual_stack_cluster):
+    if dual_stack_cluster:
+        return {
+            "ethernets": {
+                "eth0": {
+                    "dhcp4": True,
+                    "addresses": ["fd10:0:2::2/120"],
+                    "gateway6": "fd10:0:2::1",
+                },
+            },
+        }

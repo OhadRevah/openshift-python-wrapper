@@ -6,10 +6,7 @@ import pytest
 from ocp_resources.service import Service
 
 from utilities.infra import MissingResourceException
-from utilities.network import (
-    compose_cloud_init_data_dict,
-    compose_dual_stack_network_data,
-)
+from utilities.network import compose_cloud_init_data_dict
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -83,12 +80,6 @@ def running_vm_for_exposure(
     ) as vm:
         running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm
-
-
-@pytest.fixture(scope="module")
-def dual_stack_network_data(dual_stack_cluster):
-    if dual_stack_cluster:
-        return compose_dual_stack_network_data()
 
 
 @pytest.fixture()

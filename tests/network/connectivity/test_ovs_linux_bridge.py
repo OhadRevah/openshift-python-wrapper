@@ -175,7 +175,7 @@ def ovs_linux_bridge_attached_vma(
     ovs_linux_nad,
     ovs_linux_br1vlan1000_nad,
     ovs_linux_br1vlan1001_nad,
-    ipv6_network_data,
+    dual_stack_network_data,
 ):
     name = "vma"
     networks = OrderedDict()
@@ -192,7 +192,7 @@ def ovs_linux_bridge_attached_vma(
 
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
-        ipv6_network_data=ipv6_network_data,
+        ipv6_network_data=dual_stack_network_data,
     )
 
     with VirtualMachineForTests(
@@ -217,7 +217,7 @@ def ovs_linux_bridge_attached_vmb(
     ovs_linux_nad,
     ovs_linux_br1vlan1000_nad,
     ovs_linux_br1vlan1002_nad,
-    ipv6_network_data,
+    dual_stack_network_data,
 ):
     name = "vmb"
     networks = OrderedDict()
@@ -234,7 +234,7 @@ def ovs_linux_bridge_attached_vmb(
 
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
-        ipv6_network_data=ipv6_network_data,
+        ipv6_network_data=dual_stack_network_data,
     )
 
     with VirtualMachineForTests(
