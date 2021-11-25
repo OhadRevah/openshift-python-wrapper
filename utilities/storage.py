@@ -4,7 +4,6 @@ import os
 import shlex
 import socket
 import ssl
-import threading
 import urllib.error
 import urllib.request
 from contextlib import contextmanager
@@ -437,30 +436,15 @@ def virtctl_upload_dv(
         command.append("--block-volume")
     if no_create:
         command.append("--no-create")
-    # WFFC needs a dummy first consumer pod to be created in order to trigger CDI workers
-    thread = False
     if (
         sc_volume_binding_mode_is_wffc(sc=storage_class)
         and consume_wffc
         and not no_create
     ):
-        # We can safely consume this PVC because:
-        # sc is wffc && consume flag set to True && cmd creates dv/pvc => available for consumption
-        wffc_args_dict = {}
-        if pvc:
-            wffc_args_dict["pvc"] = resource_to_cleanup
-        else:
-            wffc_args_dict["dv"] = resource_to_cleanup
-        thread = threading.Thread(
-            target=create_dummy_first_consumer_pod, kwargs=wffc_args_dict
-        )
-        thread.daemon = True
-        thread.start()
+        command.append("--force-bind")
 
     yield run_virtctl_command(command=command, namespace=namespace)
 
-    if thread:
-        thread.join()
     if cleanup:
         resource_to_cleanup.clean_up()
 
