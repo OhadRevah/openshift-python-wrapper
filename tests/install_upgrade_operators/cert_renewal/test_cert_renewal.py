@@ -10,16 +10,12 @@ from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_DURATION_KEY,
     HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class TestCertRotation:
-    @pytest.mark.bugzilla(
-        2001048, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.polarion("CNV-6203")
     @pytest.mark.parametrize(
         "hyperconverged_resource_certconfig_change",
