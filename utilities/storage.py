@@ -13,6 +13,7 @@ import kubernetes
 import requests
 from ocp_resources.cdi import CDI
 from ocp_resources.cdi_config import CDIConfig
+from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
@@ -735,3 +736,17 @@ def wait_for_vm_volume_ready(vm):
     for sample in sampler:
         if sample.status.volumeStatus[0]["reason"] == "VolumeReady":
             return
+
+
+def generate_data_source_dict(dv):
+    return {"pvc": {"name": dv.name, "namespace": dv.namespace}}
+
+
+def create_data_source(admin_client, dv):
+    with DataSource(
+        name=dv.name,
+        namespace=dv.namespace,
+        client=admin_client,
+        source=generate_data_source_dict(dv=dv),
+    ) as ds:
+        yield ds

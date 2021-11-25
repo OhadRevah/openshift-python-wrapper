@@ -114,7 +114,11 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
-from utilities.storage import data_volume, get_storage_class_dict_from_matrix
+from utilities.storage import (
+    create_data_source,
+    data_volume,
+    get_storage_class_dict_from_matrix,
+)
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
@@ -1313,6 +1317,15 @@ def golden_image_data_volume_multi_storage_scope_class(
     )
 
 
+@pytest.fixture(scope="class")
+def golden_image_data_source_multi_storage_scope_class(
+    admin_client, golden_image_data_volume_multi_storage_scope_class
+):
+    yield from create_data_source(
+        admin_client=admin_client, dv=golden_image_data_volume_multi_storage_scope_class
+    )
+
+
 @pytest.fixture()
 def golden_image_data_volume_multi_storage_scope_function(
     admin_client,
@@ -1328,6 +1341,16 @@ def golden_image_data_volume_multi_storage_scope_function(
         schedulable_nodes=schedulable_nodes,
         check_dv_exists=True,
         admin_client=admin_client,
+    )
+
+
+@pytest.fixture()
+def golden_image_data_source_multi_storage_scope_function(
+    admin_client, golden_image_data_volume_multi_storage_scope_function
+):
+    yield from create_data_source(
+        admin_client=admin_client,
+        dv=golden_image_data_volume_multi_storage_scope_function,
     )
 
 
@@ -1375,6 +1398,15 @@ def golden_image_data_volume_scope_class(
     )
 
 
+@pytest.fixture(scope="class")
+def golden_image_data_source_scope_class(
+    admin_client, golden_image_data_volume_scope_class
+):
+    yield from create_data_source(
+        admin_client=admin_client, dv=golden_image_data_volume_scope_class
+    )
+
+
 @pytest.fixture(scope="module")
 def golden_image_data_volume_scope_module(
     request, admin_client, golden_images_namespace, schedulable_nodes
@@ -1389,6 +1421,15 @@ def golden_image_data_volume_scope_module(
     )
 
 
+@pytest.fixture(scope="module")
+def golden_image_data_source_scope_module(
+    admin_client, golden_image_data_volume_scope_module
+):
+    yield from create_data_source(
+        admin_client=admin_client, dv=golden_image_data_volume_scope_module
+    )
+
+
 @pytest.fixture()
 def golden_image_data_volume_scope_function(
     request, admin_client, golden_images_namespace, schedulable_nodes
@@ -1400,6 +1441,15 @@ def golden_image_data_volume_scope_function(
         schedulable_nodes=schedulable_nodes,
         check_dv_exists=True,
         admin_client=admin_client,
+    )
+
+
+@pytest.fixture()
+def golden_image_data_source_scope_function(
+    admin_client, golden_image_data_volume_scope_function
+):
+    yield from create_data_source(
+        admin_client=admin_client, dv=golden_image_data_volume_scope_function
     )
 
 
