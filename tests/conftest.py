@@ -72,6 +72,7 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
+    WORKERS_TYPE,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
 from utilities.hco import (
@@ -1227,7 +1228,8 @@ def leftovers(admin_client, identity_provider_config):
     r_editor.update()
 
 
-@pytest.fixture(scope="session")
+# TODO: Remove autouse=True after BZ 2026621 fixed
+@pytest.fixture(scope="session", autouse=True)
 def workers_type(utility_pods):
     physical = ClusterHosts.Type.PHYSICAL
     virtual = ClusterHosts.Type.VIRTUAL
@@ -1236,9 +1238,11 @@ def workers_type(utility_pods):
         out = pod_exec.exec(command="systemd-detect-virt", ignore_rc=True)
         if out == "none":
             LOGGER.info(f"Cluster workers are: {physical}")
+            os.environ[WORKERS_TYPE] = physical
             return physical
 
     LOGGER.info(f"Cluster workers are: {virtual}")
+    os.environ[WORKERS_TYPE] = virtual
     return virtual
 
 
