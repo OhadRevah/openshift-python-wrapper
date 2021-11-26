@@ -63,6 +63,7 @@ fcfn_exclude_functions =
     bcrypt,
     getoption,
     tmp_path_factory,
+    signal,
 
 
 nift_exclude_imports =

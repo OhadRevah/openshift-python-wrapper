@@ -9,6 +9,7 @@ import os.path
 import re
 import shutil
 from collections import Counter
+from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
 import bcrypt
@@ -2364,3 +2365,31 @@ def must_gather_image_url(is_upstream_distribution, csv):
     ), f"Csv: {csv.name}, related images: {csv.instance.spec.relatedImages} does not have must gather image."
 
     return must_gather_image[0]
+
+
+@pytest.fixture(autouse=True)
+def term_handler_scope_function():
+    orig = signal(SIGTERM, getsignal(SIGINT))
+    yield
+    signal(SIGTERM, orig)
+
+
+@pytest.fixture(scope="class", autouse=True)
+def term_handler_scope_class():
+    orig = signal(SIGTERM, getsignal(SIGINT))
+    yield
+    signal(SIGTERM, orig)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def term_handler_scope_module():
+    orig = signal(SIGTERM, getsignal(SIGINT))
+    yield
+    signal(SIGTERM, orig)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def term_handler_scope_session():
+    orig = signal(SIGTERM, getsignal(SIGINT))
+    yield
+    signal(SIGTERM, orig)
