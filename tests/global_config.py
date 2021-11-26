@@ -98,6 +98,12 @@ storage_class_matrix = [
             "default": True,
         }
     },
+    {
+        StorageClass.Types.HOSTPATH_CSI: {
+            "volume_mode": DataVolume.VolumeMode.FILE,
+            "access_mode": DataVolume.AccessMode.RWO,
+        }
+    },
 ]
 
 default_storage_class, default_storage_class_configuration = _get_default_storage_class(
