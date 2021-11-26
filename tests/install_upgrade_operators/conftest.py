@@ -112,13 +112,18 @@ def updated_kubevirt_cr(request, kubevirt_resource, admin_client, hco_namespace)
 
 
 @pytest.fixture()
-def ssp_cr_spec(admin_client, hco_namespace):
+def ssp_cr(admin_client, hco_namespace):
     try:
         for ssp in SSP.get(
             dyn_client=admin_client,
             name="ssp-kubevirt-hyperconverged",
             namespace=hco_namespace.name,
         ):
-            return ssp.instance.to_dict()["spec"]
+            return ssp
     except NotFoundError:
         raise NotFoundError("SSP CR was not found")
+
+
+@pytest.fixture()
+def ssp_cr_spec(ssp_cr):
+    return ssp_cr.instance.to_dict()["spec"]

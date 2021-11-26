@@ -3,6 +3,7 @@ import re
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 
 
+FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME = "enableCommonBootImageImport"
 HCO_CR_DATA_IMPORT_SCHEDULE_KEY = "dataImportSchedule"
 RE_NAMED_GROUP_MINUTES = "minutes"
 RE_NAMED_GROUP_HOURS = "hours"
@@ -45,6 +46,3 @@ def delete_hco_operator_pod(admin_client, hco_namespace):
         hco_namespace=hco_namespace.name,
         operator_name="hco-operator",
     ).delete(wait=True)
-
-
-FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME = "enableCommonBootImageImport"

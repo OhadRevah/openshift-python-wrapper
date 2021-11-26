@@ -1,4 +1,8 @@
+import logging
+
 import pytest
+from benedict import benedict
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constants import (
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
@@ -6,8 +10,10 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constan
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
 )
+from utilities.constants import TIMEOUT_1MIN
 
 
+LOGGER = logging.getLogger(__name__)
 SSP_CR_COMMON_TEMPLATES_KEY_NAME = "commonTemplates"
 
 
@@ -34,17 +40,41 @@ class TestEnableCommonBootImageImport:
     )
     def test_set_featuregate_enable_common_boot_image_import_true_ssp_cr(
         self,
-        ssp_cr_spec,
-        ssp_cr_common_templates_with_schedule,
+        admin_client,
+        hco_namespace,
+        ssp_cr,
+        expected_ssp_cr_common_templates_with_schedule,
     ):
+        def _wait_for_common_templates_population():
+            samples = TimeoutSampler(
+                wait_timeout=TIMEOUT_1MIN,
+                sleep=1,
+                func=lambda: benedict(
+                    ssp_cr.instance.to_dict()["spec"], keypath_separator=None
+                ).get(
+                    [
+                        SSP_CR_COMMON_TEMPLATES_KEY_NAME,
+                        SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
+                    ]
+                ),
+            )
+            try:
+                for sample in samples:
+                    if sample:
+                        return sample
+            except TimeoutExpiredError:
+                LOGGER.error(
+                    f"Could not get SSP CR commonTemplates: ssp_cr_spec={ssp_cr.instance.spec}"
+                )
+                raise
+
+        ssp_cr_data_import_cron_templates = _wait_for_common_templates_population()
         assert (
-            ssp_cr_spec[SSP_CR_COMMON_TEMPLATES_KEY_NAME][
-                SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
-            ]
-            == ssp_cr_common_templates_with_schedule[
+            ssp_cr_data_import_cron_templates
+            == expected_ssp_cr_common_templates_with_schedule[
                 SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
             ]
         ), (
             "SSP CR commonTemplates is not as expected: "
-            f"expect={ssp_cr_common_templates_with_schedule} ssp_cr_spec={ssp_cr_spec}"
+            f"expect={expected_ssp_cr_common_templates_with_schedule} ssp_cr_spec={ssp_cr_data_import_cron_templates}"
         )

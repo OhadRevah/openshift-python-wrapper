@@ -1,4 +1,5 @@
 import pytest
+from ocp_resources.pod import Pod
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constants import (
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
@@ -6,8 +7,10 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constan
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
     HCO_CR_DATA_IMPORT_SCHEDULE_KEY,
+    delete_hco_operator_pod,
     get_random_minutes_hours_fields_from_data_import_schedule,
 )
+from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.infra import update_custom_resource
 
@@ -45,7 +48,7 @@ def enabled_hco_featuregate_enable_common_boot_image_import(
 
 
 @pytest.fixture()
-def ssp_cr_common_templates_with_schedule(data_import_schedule):
+def expected_ssp_cr_common_templates_with_schedule(data_import_schedule):
     return {
         SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME: [
             {
@@ -134,7 +137,7 @@ def ssp_cr_common_templates_with_schedule(data_import_schedule):
                             "storage": {
                                 "resources": {
                                     "requests": {
-                                        "storage": "5Gi",
+                                        "storage": "10Gi",
                                     }
                                 }
                             },
@@ -176,3 +179,20 @@ def ssp_cr_common_templates_with_schedule(data_import_schedule):
             },
         ]
     }
+
+
+@pytest.fixture()
+def deleted_hco_operator_pod(
+    admin_client, hco_namespace, hyperconverged_resource_scope_function
+):
+    delete_hco_operator_pod(admin_client=admin_client, hco_namespace=hco_namespace)
+    get_operator_by_name(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        operator_name="hco-operator",
+    ).wait_for_status(status=Pod.Status.RUNNING)
+    return get_random_minutes_hours_fields_from_data_import_schedule(
+        target_string=hyperconverged_resource_scope_function.instance.status.get(
+            HCO_CR_DATA_IMPORT_SCHEDULE_KEY
+        )
+    )
