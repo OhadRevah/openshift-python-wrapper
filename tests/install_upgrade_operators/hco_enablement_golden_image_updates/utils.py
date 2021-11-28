@@ -45,3 +45,6 @@ def delete_hco_operator_pod(admin_client, hco_namespace):
         hco_namespace=hco_namespace.name,
         operator_name="hco-operator",
     ).delete(wait=True)
+
+
+FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME = "enableCommonBootImageImport"
