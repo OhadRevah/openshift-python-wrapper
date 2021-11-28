@@ -1262,21 +1262,6 @@ def data_volume_multi_storage_scope_function(
     )
 
 
-@pytest.fixture(scope="class")
-def data_volume_multi_storage_scope_class(
-    request,
-    namespace,
-    storage_class_matrix__class__,
-    schedulable_nodes,
-):
-    yield from data_volume(
-        request=request,
-        namespace=namespace,
-        storage_class_matrix=storage_class_matrix__class__,
-        schedulable_nodes=schedulable_nodes,
-    )
-
-
 @pytest.fixture(scope="module")
 def data_volume_multi_storage_scope_module(
     request,
@@ -1475,31 +1460,6 @@ def golden_image_vm_instance_from_template_multi_storage_dv_scope_class_vm_scope
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_volume=golden_image_data_volume_multi_storage_scope_class,
-        vm_cpu_model=nodes_common_cpu_model
-        if request.param.get("set_vm_common_cpu")
-        else None,
-    ) as vm:
-        yield vm
-
-
-@pytest.fixture(scope="class")
-def vm_instance_from_template_multi_storage_scope_class(
-    request,
-    unprivileged_client,
-    namespace,
-    data_volume_multi_storage_scope_class,
-    nodes_common_cpu_model,
-):
-    """Calls vm_instance_from_template contextmanager
-
-    Creates a VM from template and starts it (if requested).
-    """
-
-    with vm_instance_from_template(
-        request=request,
-        unprivileged_client=unprivileged_client,
-        namespace=namespace,
-        data_volume=data_volume_multi_storage_scope_class,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,

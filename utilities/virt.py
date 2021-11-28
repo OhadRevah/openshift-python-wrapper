@@ -1915,9 +1915,6 @@ def vm_instance_from_template(
     """Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
 
-    The call to this function is triggered by calling either
-    vm_instance_from_template_multi_storage_scope_function or vm_instance_from_template_multi_storage_scope_class.
-
     Prerequisite - a DV must be created prior to VM creation.
 
     Args:
