@@ -36,7 +36,10 @@ def git_diff_added_removed_lines():
         if line.startswith("-"):
             diff.setdefault("removed", []).append(line)
 
+    return diff
+
+
+def get_polarion_ids_from_diff(diff):
     added_ids = find_polarion_ids(data=diff.get("added", []))
     removed_ids = find_polarion_ids(data=diff.get("removed", []))
-
     return added_ids, removed_ids

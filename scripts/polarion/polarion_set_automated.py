@@ -1,9 +1,12 @@
 import logging
 
 from pylero.exceptions import PyleroLibException
-from pylero.work_item import TestCase
 
-from scripts.polarion.polarion_utils import PROJECT, git_diff_added_removed_lines
+from scripts.polarion.polarion_utils import (
+    PROJECT,
+    get_polarion_ids_from_diff,
+    git_diff_added_removed_lines,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +23,10 @@ def approve_tc(tc):
 
 
 def automate_and_approve_tc():
-    added_ids, removed_ids = git_diff_added_removed_lines()
+    git_diff = git_diff_added_removed_lines()
+    added_ids, removed_ids = get_polarion_ids_from_diff(diff=git_diff)
+    if added_ids or removed_ids:
+        from pylero.work_item import TestCase
 
     for _id in removed_ids:
         if _id in added_ids:
