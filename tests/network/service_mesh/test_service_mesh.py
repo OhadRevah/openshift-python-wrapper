@@ -1,6 +1,17 @@
 import pytest
 
 from tests.network.service_mesh.utils import assert_traffic_management_request
+from utilities.infra import BUG_STATUS_CLOSED
+
+
+pytestmark = [
+    pytest.mark.usefixtures(
+        "skip_if_service_mesh_not_installed",
+    ),
+    pytest.mark.bugzilla(
+        2026665, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    ),
+]
 
 
 class TestSMTrafficManagement:

@@ -12,6 +12,7 @@ from ocp_resources.service import Service
 from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_service import VirtualService
+from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.service_mesh.constants import (
     DEPLOYMENT_TYPE,
@@ -357,16 +358,22 @@ def wait_sm_components_convergence(vm, server, destination):
 
 
 @pytest.fixture(scope="module")
-def istio_system_namespace(admin_client):
-    for ns in Namespace.get(
-        name=ISTIO_SYSTEM_DEFAULT_NS,
-        dyn_client=admin_client,
-    ):
-        return ns
+def skip_if_service_mesh_not_installed(istio_system_namespace):
+    # Service mesh not installed if the cluster doesn't have ISTIO-SYSTEM ns
+    if not istio_system_namespace:
+        pytest.skip(msg="Cannot run the test. Service Mesh not installed")
 
-    pytest.skip(
-        msg=f"Couldn't get {ISTIO_SYSTEM_DEFAULT_NS}. Service Mesh is not installed"
-    )
+
+@pytest.fixture(scope="module")
+def istio_system_namespace(admin_client):
+    try:
+        for ns in Namespace.get(
+            name=ISTIO_SYSTEM_DEFAULT_NS,
+            dyn_client=admin_client,
+        ):
+            return ns
+    except NotFoundError:
+        return None
 
 
 @pytest.fixture(scope="module")
