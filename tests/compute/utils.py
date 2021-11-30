@@ -229,3 +229,19 @@ def verify_pods_priority_class_value(pods, expected_value):
     assert (
         not failed_pods_list
     ), f"priorityClassName not set correctly in pods: {failed_pods_list}, should be {expected_value}"
+
+
+def verify_no_listed_alerts_on_cluster(prometheus, alerts_list):
+    """
+    It gets a list of alerts and verifies that none of them are firing on a cluster.
+    """
+    fired_alerts = {}
+    for alert in alerts_list:
+        query = f'ALERTS{{alertname="{alert}"}}'
+        result = prometheus.query(query=query)["data"]["result"]
+        if result:
+            fired_alerts[alert] = result
+
+    assert (
+        not fired_alerts
+    ), f"Alerts should not be fired on healthy cluster.\n {fired_alerts}"
