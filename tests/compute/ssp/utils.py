@@ -1,4 +1,6 @@
 import logging
+import tarfile
+import urllib.request
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,3 +32,11 @@ def check_smbios_defaults(smbios_defaults, cm_values):
     assert (
         cm_values == smbios_defaults
     ), f"Configmap values {cm_values} do not match default values {smbios_defaults}"
+
+
+def download_and_extract_tar(tarfile_url, dest_path):
+    """Download and Extract the tar file."""
+
+    tar_data = urllib.request.urlopen(tarfile_url)
+    thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
+    thetarfile.extractall(path=dest_path)

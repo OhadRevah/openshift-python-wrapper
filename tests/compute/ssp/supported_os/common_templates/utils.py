@@ -4,8 +4,6 @@ import json
 import logging
 import re
 import shlex
-import tarfile
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree
 
@@ -311,14 +309,6 @@ def validate_memory(memory_test, template_memory_value, osinfo_memory_value):
         return bitmath.parse_string_unsafe(template_memory_value) < bitmath.Byte(
             osinfo_memory_value
         )
-
-
-def download_and_extract_tar(tarfile_url, dest_path):
-    """Download and Extract the tar file."""
-
-    tar_data = urllib.request.urlopen(tarfile_url)
-    thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
-    thetarfile.extractall(path=dest_path)
 
 
 def check_default_and_validation_memory(
