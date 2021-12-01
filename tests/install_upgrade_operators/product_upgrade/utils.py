@@ -8,7 +8,6 @@ import yaml
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
@@ -40,6 +39,7 @@ from utilities.infra import (
     collect_resources_for_test,
     get_clusterversion,
     get_csv_by_name,
+    get_deployments,
     get_subscription,
     write_to_extras_file,
 )
@@ -858,8 +858,10 @@ def upgrade_cnv(
     )
 
     LOGGER.info("Wait for number of replicas = number of updated replicas")
-    for deploy in Deployment.get(dyn_client, namespace=hco_namespace.name):
-        deploy.wait_for_replicas(timeout=utilities.constants.TIMEOUT_10MIN)
+    for deployment in get_deployments(
+        admin_client=dyn_client, namespace=hco_namespace.name
+    ):
+        deployment.wait_for_replicas(timeout=utilities.constants.TIMEOUT_10MIN)
 
     LOGGER.info("Wait for the HCO to be available.")
     for hco in HyperConverged.get(dyn_client=dyn_client, namespace=hco_namespace.name):

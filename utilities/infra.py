@@ -22,6 +22,7 @@ from kubernetes.client import ApiException
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.daemonset import DaemonSet
+from ocp_resources.deployment import Deployment
 from ocp_resources.namespace import Namespace
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
@@ -1092,3 +1093,7 @@ def get_log_dir(path):
         if os.path.isdir(new_path):
             return new_path
     raise FileNotFoundError(f"No log directory was created in '{path}'")
+
+
+def get_deployments(admin_client, namespace):
+    return list(Deployment.get(dyn_client=admin_client, namespace=namespace))

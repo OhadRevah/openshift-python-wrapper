@@ -1,7 +1,6 @@
 import logging
 
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
@@ -16,6 +15,7 @@ from utilities.constants import (
 )
 from utilities.infra import (
     get_csv_by_name,
+    get_deployments,
     get_subscription,
     wait_for_consistent_resource_conditions,
     wait_for_pods_running,
@@ -172,11 +172,11 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
         # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
         if not ds.name.startswith(StorageClass.Types.HOSTPATH):
             wait_for_ds(ds=ds)
-    for dp in Deployment.get(
-        dyn_client=admin_client,
+    for deployment in get_deployments(
+        admin_client=admin_client,
         namespace=hco_namespace.name,
     ):
-        wait_for_dp(dp=dp)
+        wait_for_dp(dp=deployment)
     wait_for_pods_running(
         admin_client=admin_client,
         namespace=hco_namespace,
