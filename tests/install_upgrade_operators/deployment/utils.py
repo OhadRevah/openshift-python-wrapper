@@ -1,6 +1,6 @@
 import re
 
-from utilities.infra import ResourceMismatch
+from utilities.infra import BUG_STATUS_CLOSED, ResourceMismatch, get_bug_status
 
 
 def validate_liveness_probe_fields(deployment):
@@ -84,3 +84,27 @@ def validate_request_fields(deployment, cpu_min_value):
             f"For deployment {deployment.name} mismatch in cpu values found: {invalid_cpus}, "
             f"expected cpu values < {cpu_min_value}"
         )
+
+
+def validate_cnv_deployments_priorty_class(cnv_deployments):
+    deployments_with_bug = {"node-maintenance-operator": 2008960}
+    cnv_deployment_names_with_open_bugs = [
+        deployment
+        for deployment, bug_id in deployments_with_bug.items()
+        if get_bug_status(
+            bug=bug_id,
+        )
+        not in BUG_STATUS_CLOSED
+    ]
+
+    cnv_deployments_with_missing_priority_class = [
+        deployment.name
+        for deployment in cnv_deployments
+        if not deployment.instance.spec.template.spec.priorityClassName
+        and not deployment.name.startswith(tuple(cnv_deployment_names_with_open_bugs))
+    ]
+
+    assert not cnv_deployments_with_missing_priority_class, (
+        "For the following cnv deployments, spec.template.spec.priorityClassName has not been set "
+        f"{cnv_deployments_with_missing_priority_class}"
+    )

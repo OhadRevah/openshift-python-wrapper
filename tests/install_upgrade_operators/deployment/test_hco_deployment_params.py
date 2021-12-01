@@ -1,6 +1,7 @@
 import pytest
 
 from tests.install_upgrade_operators.deployment.utils import (
+    validate_cnv_deployments_priorty_class,
     validate_liveness_probe_fields,
     validate_request_fields,
 )
@@ -51,3 +52,8 @@ def test_liveness_probe(deployment_by_name):
 def test_request_param(deployment_by_name, cpu_min_value):
     """Validates resources.requests fields keys and default cpu values for different deployment objects"""
     validate_request_fields(deployment=deployment_by_name, cpu_min_value=cpu_min_value)
+
+
+@pytest.mark.polarion("CNV-7675")
+def test_cnv_deployment_priority_class_name(cnv_deployments):
+    validate_cnv_deployments_priorty_class(cnv_deployments=cnv_deployments)
