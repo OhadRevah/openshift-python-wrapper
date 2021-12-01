@@ -5,13 +5,126 @@ import pytest
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from pytest_testconfig import config as py_config
 
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, TIMEOUT_5MIN
-from utilities.infra import get_pod_by_name_prefix
+from utilities.constants import (
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
+    KMP_VM_ASSIGNMENT_LABEL,
+    TIMEOUT_5MIN,
+    TIMEOUT_10MIN,
+)
+from utilities.infra import create_ns, get_pod_by_name_prefix, label_project
+from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
 NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
+DUPLICATE_MAC_STR = "duplicate-mac"
+
+
+@pytest.fixture()
+def vms_mac(mac_pool):
+    return mac_pool.get_mac_from_pool()
+
+
+@pytest.fixture()
+def kmp_disabled_namespace(kmp_vm_label):
+    kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = "ignore"
+    yield from create_ns(name="kmp-disabled", kmp_vm_label=kmp_vm_label)
+
+
+@pytest.fixture()
+def updated_namespace_with_kmp(admin_client, kmp_vm_label, kmp_disabled_namespace):
+    kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = None
+    label_project(
+        name=kmp_disabled_namespace.name, label=kmp_vm_label, admin_client=admin_client
+    )
+
+
+@pytest.fixture()
+def restarted_kmp_controller(admin_client, kmp_deployment):
+    get_pod_by_name_prefix(
+        dyn_client=admin_client,
+        pod_prefix="kubemacpool-mac-controller-manager",
+        namespace=py_config["hco_namespace"],
+    ).delete(wait=True)
+    kmp_deployment.wait_for_replicas()
+
+
+@pytest.fixture()
+def bridge_device_duplicate_mac(worker_node1, schedulable_nodes, utility_pods):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"{DUPLICATE_MAC_STR}-nncp",
+        interface_name="bridge-dup-mac",
+        node_selector=worker_node1.name,
+        network_utility_pods=utility_pods,
+        nodes=schedulable_nodes,
+    ) as dev:
+        yield dev
+
+
+@pytest.fixture()
+def duplicate_mac_nad_vm1(namespace, bridge_device_duplicate_mac):
+    with network_nad(
+        nad_type=bridge_device_duplicate_mac.bridge_type,
+        nad_name=f"{DUPLICATE_MAC_STR}-nad",
+        namespace=namespace,
+        interface_name=bridge_device_duplicate_mac.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture()
+def duplicate_mac_nad_vm2(kmp_disabled_namespace, bridge_device_duplicate_mac):
+    with network_nad(
+        nad_type=bridge_device_duplicate_mac.bridge_type,
+        nad_name=f"{DUPLICATE_MAC_STR}-nad",
+        namespace=kmp_disabled_namespace,
+        interface_name=bridge_device_duplicate_mac.bridge_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture()
+def duplicate_mac_vm1(
+    namespace, worker_node1, admin_client, vms_mac, duplicate_mac_nad_vm1
+):
+    networks = {duplicate_mac_nad_vm1.name: duplicate_mac_nad_vm1.name}
+    name = f"{DUPLICATE_MAC_STR}-vm1"
+    with VirtualMachineForTests(
+        client=admin_client,
+        namespace=namespace.name,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=worker_node1.hostname,
+        macs={duplicate_mac_nad_vm1.name: vms_mac},
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture()
+def duplicate_mac_vm2(
+    kmp_disabled_namespace, worker_node1, admin_client, vms_mac, duplicate_mac_nad_vm2
+):
+    networks = {duplicate_mac_nad_vm2.name: duplicate_mac_nad_vm2.name}
+    name = f"{DUPLICATE_MAC_STR}-vm2"
+    with VirtualMachineForTests(
+        client=admin_client,
+        namespace=kmp_disabled_namespace.name,
+        name=name,
+        body=fedora_vm_body(name=name),
+        networks=networks,
+        interfaces=networks.keys(),
+        node_selector=worker_node1.hostname,
+        macs={duplicate_mac_nad_vm2.name: vms_mac},
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
 
 
 @pytest.fixture()
@@ -81,7 +194,7 @@ def invalid_cnao_operator(
     linux_bridge_plugin_ds = DaemonSet(
         name=linux_bridge_plugin, namespace=hco_namespace.name
     )
-    linux_bridge_plugin_ds.wait_until_deployed()
+    linux_bridge_plugin_ds.wait_until_deployed(timeout=TIMEOUT_10MIN)
 
 
 @pytest.fixture()
@@ -119,3 +232,14 @@ def test_cnao_not_ready(cnao_ready, invalid_cnao_linux_bridge, prometheus):
 @pytest.mark.polarion("CNV-7275")
 def test_cnao_is_down(cnao_ready, invalid_cnao_operator, prometheus):
     prometheus.alert_sampler(alert="CnaoDown")
+
+
+@pytest.mark.polarion("CNV-7684")
+def test_duplicate_mac_alert(
+    prometheus,
+    duplicate_mac_vm1,
+    duplicate_mac_vm2,
+    updated_namespace_with_kmp,
+    restarted_kmp_controller,
+):
+    prometheus.alert_sampler(alert="KubeMacPoolDuplicateMacsFound")

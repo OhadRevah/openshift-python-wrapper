@@ -6,6 +6,7 @@ Pytest conftest file for CNV network tests
 
 import pytest
 from kubernetes.dynamic.exceptions import NotFoundError
+from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
 
 from utilities.constants import IPV4_STR, IPV6_STR
@@ -119,3 +120,10 @@ def dual_stack_network_data(dual_stack_cluster):
                 },
             },
         }
+
+
+@pytest.fixture(scope="module")
+def kmp_deployment(hco_namespace):
+    return Deployment(
+        namespace=hco_namespace.name, name="kubemacpool-mac-controller-manager"
+    )

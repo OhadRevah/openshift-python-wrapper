@@ -339,13 +339,6 @@ def cnao_deployment(hco_namespace):
     )
 
 
-@pytest.fixture(scope="module")
-def kmp_deployment(hco_namespace):
-    return Deployment(
-        namespace=hco_namespace.name, name="kubemacpool-mac-controller-manager"
-    )
-
-
 @pytest.fixture()
 def bad_kmp_containers(kmp_deployment):
     containers = kmp_deployment.instance.to_dict()["spec"]["template"]["spec"][
