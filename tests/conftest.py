@@ -2351,18 +2351,20 @@ def base_templates(admin_client):
 
 
 @pytest.fixture(scope="module")
-def must_gather_image_url(is_upstream_distribution, csv):
+def must_gather_image_url(is_upstream_distribution, csv_scope_session):
     if is_upstream_distribution:
         return "quay.io/kubevirt/must-gather"
-    LOGGER.info(f"Csv name is : {csv.name}")
+    LOGGER.info(f"Csv name is : {csv_scope_session.name}")
     must_gather_image = [
         image["image"]
-        for image in csv.instance.spec.relatedImages
+        for image in csv_scope_session.instance.spec.relatedImages
         if "must-gather" in image["name"]
     ]
-    assert (
-        must_gather_image
-    ), f"Csv: {csv.name}, related images: {csv.instance.spec.relatedImages} does not have must gather image."
+    assert must_gather_image, (
+        f"Csv: {csv_scope_session.name}, "
+        f"related images: {csv_scope_session.instance.spec.relatedImages} "
+        "does not have must gather image."
+    )
 
     return must_gather_image[0]
 
