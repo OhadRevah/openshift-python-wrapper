@@ -1150,7 +1150,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             # dataVolumeTemplates needs to be updated with the source accessModes,
             # volumeMode and storageClass
             # TODO: removed once supported in templates
-            dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["pvc"]
+            dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["storage"]
             source_dv_pvc_spec = self.data_volume.pvc.instance.spec
             dv_pvc_spec["storageClassName"] = source_dv_pvc_spec.storageClassName
             dv_pvc_spec["accessModes"] = source_dv_pvc_spec.accessModes
