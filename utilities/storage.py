@@ -607,14 +607,14 @@ def data_volume_template_dict(
     volume_mode=None,
     size=None,
 ):
-    source_dv_pvc = source_dv.instance.spec.pvc
+    source_dv_pvc_spec = source_dv.pvc.instance.spec
     return DataVolume(
         name=target_dv_name,
         namespace=target_dv_namespace,
         source="pvc",
-        storage_class=source_dv_pvc.storageClassName,
-        volume_mode=volume_mode or source_dv_pvc.volumeMode,
-        access_modes=",".join(source_dv_pvc.accessModes),
+        storage_class=source_dv_pvc_spec.storageClassName,
+        volume_mode=volume_mode or source_dv_pvc_spec.volumeMode,
+        access_modes=",".join(source_dv_pvc_spec.accessModes),
         size=size or source_dv.size,
         source_pvc=source_dv.name,
         source_namespace=source_dv.namespace,
@@ -686,7 +686,6 @@ def wait_for_default_sc_in_cdiconfig(cdi_config, sc):
     for sample in samples:
         if sample:
             return
-    return data_volume_template_dict
 
 
 def get_hyperconverged_cdi(admin_client):

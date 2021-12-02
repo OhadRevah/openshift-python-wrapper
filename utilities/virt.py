@@ -975,7 +975,7 @@ class VirtualMachineForTests(VirtualMachine):
             else self.data_volume_template["spec"]["pvc"]["storageClassName"]
         )
         access_mode = (
-            self.data_volume.instance.spec.pvc.accessModes
+            self.data_volume.pvc.instance.spec.accessModes
             if self.data_volume
             else self.pvc.instance.spec.accessModes
             if self.pvc
