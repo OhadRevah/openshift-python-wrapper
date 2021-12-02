@@ -9,7 +9,7 @@ import pytest
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import MTU_9000, SRIOV
-from utilities.infra import run_ssh_commands, update_custom_resource
+from utilities.infra import run_ssh_commands
 from utilities.network import cloud_init_network_data, network_nad, sriov_network_dict
 from utilities.virt import (
     VirtualMachineForTests,
@@ -286,20 +286,3 @@ def sriov_vm_migrate(index_number, unprivileged_client, namespace, sriov_network
 @pytest.fixture(scope="class")
 def running_sriov_vm_migrate(sriov_vm_migrate):
     return running_vm(vm=sriov_vm_migrate)
-
-
-@pytest.fixture(scope="class")
-def enabled_sriovlivemigration_fg(
-    hyperconverged_resource_scope_class,
-):
-    # TODO : Remove this fixture in 4.9.0 .SRIOVLiveMigration will be by default enabled there.
-    #  https://issues.redhat.com/browse/CNV-12276
-    with update_custom_resource(
-        patch={
-            hyperconverged_resource_scope_class: {
-                "spec": {"featureGates": {"sriovLiveMigration": True}}
-            }
-        },
-        action="replace",
-    ):
-        yield

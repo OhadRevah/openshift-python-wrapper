@@ -119,7 +119,6 @@ class TestSriovLiveMigration:
     def test_sriov_migration(
         self,
         sriov_network,
-        enabled_sriovlivemigration_fg,
         sriov_vm_migrate,
         sriov_vm2,
         running_sriov_vm_migrate,
