@@ -1056,6 +1056,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         vhostmd=False,
         machine_type=None,
         teardown=True,
+        use_full_storage_api=False,
     ):
         """
         VM creation using common templates.
@@ -1065,6 +1066,9 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             data_volume_template (dict): dataVolumeTemplates dict to replace template's default dataVolumeTemplates
             existing_data_volume (obj `DataVolume`): An existing DV object that will be used as the VM's volume. Cloning
                 will not be done and the template's dataVolumeTemplates will be removed.
+            use_full_storage_api (bool, default=False): Target PVC storage params are not explicitly set if True.
+                IF False, storage api will be used but target PVC storage name will be taken from self.dv. This is done
+                to avoid modifying cluster default SC.
 
         Returns:
             obj `VirtualMachine`: VM resource
@@ -1117,6 +1121,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.termination_grace_period = termination_grace_period
         self.cloud_init_data = cloud_init_data
         self.cloned_dv_size = cloned_dv_size
+        self.use_full_storage_api = use_full_storage_api
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1149,20 +1154,16 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             )
         # Otherwise clone self.data_volume
         else:
-            # dataVolumeTemplates needs to be updated with the source accessModes,
-            # volumeMode and storageClass
-            # TODO: removed once supported in templates
             dv_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"]["storage"]
             source_dv_pvc_spec = self.data_volume.pvc.instance.spec
-            dv_pvc_spec["storageClassName"] = source_dv_pvc_spec.storageClassName
-            dv_pvc_spec["accessModes"] = source_dv_pvc_spec.accessModes
-            dv_pvc_spec["volumeMode"] = source_dv_pvc_spec.volumeMode
             # dataVolumeTemplates needs to be updated with the needed storage size,
             # if the size of the golden_image is more than the Template's default storage size.
             # else use the source DV storage size.
             dv_pvc_spec.setdefault("resources", {}).setdefault("requests", {})[
                 "storage"
             ] = (self.cloned_dv_size or source_dv_pvc_spec.resources.requests.storage)
+            if not self.use_full_storage_api:
+                dv_pvc_spec["storageClassName"] = source_dv_pvc_spec.storageClassName
 
         return res
 

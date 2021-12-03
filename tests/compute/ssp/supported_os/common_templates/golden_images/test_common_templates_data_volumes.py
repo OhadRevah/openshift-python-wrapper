@@ -60,9 +60,9 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
         client,
         labels,
         data_volume,
-        delete_data_volume_sc_params=None,
         updated_storage_class_params=None,
         updated_dv_name=None,
+        use_full_storage_api=False,
     ):
         super().__init__(
             name=name,
@@ -70,35 +70,29 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
             client=client,
             labels=labels,
             data_volume=data_volume,
+            use_full_storage_api=use_full_storage_api,
         )
         self.data_volume = data_volume
-        self.delete_data_volume_sc_params = delete_data_volume_sc_params
         self.updated_storage_class_params = updated_storage_class_params
         self.updated_dv_name = updated_dv_name
 
     def to_dict(self):
         res = super().to_dict()
-        vm_datavolumetemplates_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"][
-            "pvc"
-        ]
-        if self.delete_data_volume_sc_params:
-            vm_datavolumetemplates_pvc_spec.pop("storageClassName")
-            vm_datavolumetemplates_pvc_spec.pop("volumeMode")
-            # accessModes is mandatory, set to the match the default storage class access mode
-            vm_datavolumetemplates_pvc_spec["accessModes"] = [
-                self.data_volume.access_modes
-            ]
+        vm_datavolumetemplates_storage_spec = res["spec"]["dataVolumeTemplates"][0][
+            "spec"
+        ]["storage"]
         if self.updated_storage_class_params:
             # Update SC params
-            vm_datavolumetemplates_pvc_spec[
+            vm_datavolumetemplates_storage_spec[
                 "storageClassName"
             ] = self.updated_storage_class_params["storage_class"]
-            vm_datavolumetemplates_pvc_spec[
-                "volumeMode"
-            ] = self.updated_storage_class_params["access_mode"]
-            vm_datavolumetemplates_pvc_spec[
+            vm_datavolumetemplates_storage_spec[
                 "volumeMode"
             ] = self.updated_storage_class_params["volume_mode"]
+            vm_datavolumetemplates_storage_spec["accessModes"] = [
+                self.updated_storage_class_params["access_mode"]
+            ]
+
         if self.updated_dv_name:
             res["spec"]["dataVolumeTemplates"][0]["spec"]["source"]["pvc"][
                 "name"
@@ -120,7 +114,7 @@ def vm_from_golden_image_multi_storage(
         client=unprivileged_client,
         labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
         data_volume=golden_image_data_volume_multi_storage_scope_function,
-        delete_data_volume_sc_params=request.param.get("delete_sc_params"),
+        use_full_storage_api=request.param.get("use_full_storage_api"),
     ) as vm:
         running_vm(vm=vm)
         yield vm
@@ -168,7 +162,7 @@ def vm_missing_golden_image(unprivileged_client, namespace):
                 "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
-                "delete_sc_params": True,
+                "use_full_storage_api": True,
             },
             marks=pytest.mark.polarion("CNV-5582"),
         ),
