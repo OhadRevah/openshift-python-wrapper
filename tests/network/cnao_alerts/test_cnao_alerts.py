@@ -97,10 +97,10 @@ def hco_ready(admin_client, hco_namespace):
 
 
 @pytest.mark.polarion("CNV-7274")
-def test_cnao_not_ready(self, hco_ready, invalid_cnao_linux_bridge, prometheus):
+def test_cnao_not_ready(hco_ready, invalid_cnao_linux_bridge, prometheus):
     prometheus.alert_sampler(alert="NetworkAddonsConfigNotReady")
 
 
 @pytest.mark.polarion("CNV-7275")
-def test_cnao_is_down(self, hco_ready, invalid_cnao_operator, prometheus):
+def test_cnao_is_down(hco_ready, invalid_cnao_operator, prometheus):
     prometheus.alert_sampler(alert="CnaoDown")
