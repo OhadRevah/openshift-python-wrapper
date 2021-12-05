@@ -167,6 +167,21 @@ def ovs_linux_br1vlan1002_nad(
         yield nad
 
 
+def compose_cloud_init_data(dual_stack_nd, end_ip_octet):
+    cloud_init_data_dict = {
+        "ethernets": {
+            "eth1": {"addresses": [f"10.200.0.{end_ip_octet}/24"]},
+            "eth2": {"addresses": [f"10.200.1.{end_ip_octet}/24"]},
+            "eth3": {"addresses": [f"10.200.2.{end_ip_octet}/24"]},
+        }
+    }
+
+    return compose_cloud_init_data_dict(
+        network_data=cloud_init_data_dict,
+        ipv6_network_data=dual_stack_nd,
+    )
+
+
 @pytest.fixture(scope="class")
 def ovs_linux_bridge_attached_vma(
     worker_node1,
@@ -182,17 +197,9 @@ def ovs_linux_bridge_attached_vma(
     networks[ovs_linux_nad.name] = ovs_linux_nad.name
     networks[ovs_linux_br1vlan1000_nad.name] = ovs_linux_br1vlan1000_nad.name
     networks[ovs_linux_br1vlan1001_nad.name] = ovs_linux_br1vlan1001_nad.name
-    network_data_data = {
-        "ethernets": {
-            "eth1": {"addresses": ["10.200.0.1/24"]},
-            "eth2": {"addresses": ["10.200.1.1/24"]},
-            "eth3": {"addresses": ["10.200.2.1/24"]},
-        }
-    }
 
-    cloud_init_data = compose_cloud_init_data_dict(
-        network_data=network_data_data,
-        ipv6_network_data=dual_stack_network_data,
+    cloud_init_data = compose_cloud_init_data(
+        dual_stack_nd=dual_stack_network_data, end_ip_octet=1
     )
 
     with VirtualMachineForTests(
@@ -224,17 +231,9 @@ def ovs_linux_bridge_attached_vmb(
     networks[ovs_linux_nad.name] = ovs_linux_nad.name
     networks[ovs_linux_br1vlan1000_nad.name] = ovs_linux_br1vlan1000_nad.name
     networks[ovs_linux_br1vlan1002_nad.name] = ovs_linux_br1vlan1002_nad.name
-    network_data_data = {
-        "ethernets": {
-            "eth1": {"addresses": ["10.200.0.2/24"]},
-            "eth2": {"addresses": ["10.200.1.2/24"]},
-            "eth3": {"addresses": ["10.200.2.2/24"]},
-        }
-    }
 
-    cloud_init_data = compose_cloud_init_data_dict(
-        network_data=network_data_data,
-        ipv6_network_data=dual_stack_network_data,
+    cloud_init_data = compose_cloud_init_data(
+        dual_stack_nd=dual_stack_network_data, end_ip_octet=2
     )
 
     with VirtualMachineForTests(
