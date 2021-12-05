@@ -52,6 +52,7 @@ from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
+from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
@@ -111,7 +112,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
-from utilities.storage import data_volume
+from utilities.storage import data_volume, get_storage_class_dict_from_matrix
 from utilities.virt import (
     Prometheus,
     generate_yaml_from_template,
@@ -2401,3 +2402,38 @@ def term_handler_scope_session():
     orig = signal(SIGTERM, getsignal(SIGINT))
     yield
     signal(SIGTERM, orig)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def updated_nfs_storage_profile(request, cluster_storage_classes):
+    nfs_sc_name = StorageClass.Types.NFS
+    nfs_sc = [sc for sc in cluster_storage_classes if sc.name == nfs_sc_name]
+    # Update NFS storage profile only if there's no known storage provisioner
+    if (
+        nfs_sc
+        and nfs_sc[0].instance.provisioner == nfs_sc[0].Provisioner.NO_PROVISIONER
+    ):
+        LOGGER.info(
+            f"Automatically executing {request.fixturename} fixture (autouse=True)."
+        )
+        nfs_storage_profile = StorageProfile(name=nfs_sc_name)
+        sc_params = get_storage_class_dict_from_matrix(storage_class=nfs_sc_name)[
+            nfs_sc_name
+        ]
+        with ResourceEditor(
+            patches={
+                nfs_storage_profile: {
+                    "spec": {
+                        "claimPropertySets": [
+                            {
+                                "accessModes": [sc_params["access_mode"]],
+                                "volumeMode": sc_params["volume_mode"],
+                            }
+                        ]
+                    }
+                }
+            }
+        ):
+            yield
+    else:
+        yield
