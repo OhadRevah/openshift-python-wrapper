@@ -9,6 +9,7 @@ from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
+from utilities.constants import NMSTATE_HANDLER
 from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
@@ -54,14 +55,14 @@ def nmstate_linux_bridge_device_worker(
 def nmstate_pod_on_worker_1(admin_client, hco_namespace, worker_node1):
     for pod in get_pod_by_name_prefix(
         dyn_client=admin_client,
-        pod_prefix="nmstate-handler",
+        pod_prefix=NMSTATE_HANDLER,
         namespace=hco_namespace.name,
         get_all=True,
     ):
         if pod.node.name == worker_node1.name:
             return pod
     raise NotFoundError(
-        f"No nmstate-handler Pod of worker node {worker_node1.name} found."
+        f"No {NMSTATE_HANDLER} Pod of worker node {worker_node1.name} found."
     )
 
 

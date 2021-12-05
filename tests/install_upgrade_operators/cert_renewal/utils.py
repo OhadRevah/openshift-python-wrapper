@@ -8,6 +8,9 @@ from ocp_resources.resource import NamespacedResource
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from tests.install_upgrade_operators.cert_renewal.constants import (
+    VIRT_TEMPLATE_VALIDATOR_CERTS,
+)
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN, TIMEOUT_20SEC
 from utilities.virt import run_command
 
@@ -19,7 +22,7 @@ SECRETS = [
     "kubemacpool-service",
     "nmstate-webhook",
     "ssp-operator-service-cert",
-    "virt-template-validator-certs",
+    VIRT_TEMPLATE_VALIDATOR_CERTS,
 ]
 API_SERVICES = [
     f"{NamespacedResource.ApiVersion.V1}.subresources.kubevirt.io",

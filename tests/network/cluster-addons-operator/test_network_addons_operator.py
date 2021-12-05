@@ -16,6 +16,7 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
 
 import utilities.network
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, NMSTATE_HANDLER
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -45,8 +46,8 @@ COMPONENTS_TO_IGNORE = [
 ]
 EXPECTED_CNAO_COMP_NAMES = [
     "multus",
-    "nmstate-handler",
-    "cluster-network-addons-operator",
+    NMSTATE_HANDLER,
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
     "kubemacpool",
     "bridge",
     "nmstate",
@@ -116,7 +117,7 @@ def filter_resources(resources, network_addons_config, is_post_cnv_upgrade_clust
                 ):
                     if MANAGED_BY in key:
                         if (
-                            "cluster-network-addons-operator" in resource_name
+                            CLUSTER_NETWORK_ADDONS_OPERATOR in resource_name
                             and resource.labels[label_key] == "olm"
                         ) or resource.labels[label_key] == "cnao-operator":
                             continue

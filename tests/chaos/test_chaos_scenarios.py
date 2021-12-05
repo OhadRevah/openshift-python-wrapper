@@ -2,6 +2,7 @@ import pytest
 from ocp_resources.chaos_engine import ChaosEngine
 
 from tests.chaos.utils import BackgroundLoop, ChaosScenario, LitmusScenario
+from utilities.constants import VIRT_API
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -39,7 +40,7 @@ def restart_loop_vm(namespace, unprivileged_client):
     [
         pytest.param("etcd", marks=pytest.mark.polarion("CNV-4407")),
         pytest.param("openshift-apiserver", marks=pytest.mark.polarion("CNV-4408")),
-        pytest.param("virt-api", marks=pytest.mark.polarion("CNV-4409")),
+        pytest.param(VIRT_API, marks=pytest.mark.polarion("CNV-4409")),
     ],
 )
 def test_chaos_scenario(scenario, admin_client, migrate_loop_vm, restart_loop_vm):

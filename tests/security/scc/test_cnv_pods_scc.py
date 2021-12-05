@@ -8,6 +8,7 @@ import logging
 
 import pytest
 
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 
 
@@ -50,7 +51,7 @@ def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
 @pytest.fixture()
 def components_with_non_closed_bugs():
     bugzilla_component_name_dict = {
-        "1834839": "cluster-network-addons-operator",
+        "1834839": CLUSTER_NETWORK_ADDONS_OPERATOR,
         "1995295": "ssp-operator",
     }
     return tuple(

@@ -8,6 +8,7 @@ import pytest
 from ocp_resources.pod import Pod
 
 from tests.compute.utils import verify_pods_priority_class_value
+from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -33,9 +34,9 @@ def virt_pods(request, admin_client, hco_namespace):
 @pytest.mark.parametrize(
     "virt_pods",
     [
-        pytest.param("virt-api", marks=(pytest.mark.polarion("CNV-788"))),
-        pytest.param("virt-controller", marks=(pytest.mark.polarion("CNV-788"))),
-        pytest.param("virt-handler", marks=(pytest.mark.polarion("CNV-788"))),
+        pytest.param(VIRT_API, marks=(pytest.mark.polarion("CNV-788"))),
+        pytest.param(VIRT_CONTROLLER, marks=(pytest.mark.polarion("CNV-788"))),
+        pytest.param(VIRT_HANDLER, marks=(pytest.mark.polarion("CNV-788"))),
     ],
     indirect=True,
 )

@@ -8,7 +8,15 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
 from tests.install_upgrade_operators.utils import wait_for_stabilize
-from utilities.constants import TIMEOUT_5MIN
+from utilities.constants import (
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
+    NMSTATE_HANDLER,
+    TIMEOUT_5MIN,
+    VIRT_CONTROLLER,
+    VIRT_HANDLER,
+    VIRT_OPERATOR,
+    VIRT_TEMPLATE_VALIDATOR,
+)
 from utilities.hco import wait_for_hco_post_update_stable_state
 
 
@@ -121,8 +129,8 @@ NODE_PLACEMENT_WORKLOADS = {
 
 # Below list consists of Infrastructure and Workloads pods based on Daemonset and Deployments.
 CNV_INFRA_PODS_COMPONENTS = [
-    "virt-controller",
-    "virt-template-validator",
+    VIRT_CONTROLLER,
+    VIRT_TEMPLATE_VALIDATOR,
     "kubemacpool-mac-controller-manager",
     "nmstate-webhook",
     "cdi-apiserver",
@@ -130,20 +138,20 @@ CNV_INFRA_PODS_COMPONENTS = [
     "cdi-uploadproxy",
 ]
 CNV_WORKLOADS_PODS_COMPONENTS = [
-    "virt-handler",
+    VIRT_HANDLER,
     "bridge-marker",
     "kube-cni-linux-bridge-plugin",
-    "nmstate-handler",
+    NMSTATE_HANDLER,
 ]
 
 CNV_OPERATOR_PODS_COMPONENTS = [
     "cdi-operator",
-    "cluster-network-addons-operator",
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
     "hco-operator",
     "hco-webhook",
     "ssp-operator",
     "node-maintenance-operator",
-    "virt-operator",
+    VIRT_OPERATOR,
 ]
 
 

@@ -4,6 +4,7 @@ from collections import OrderedDict
 import pytest
 
 from tests.network.utils import assert_ssh_alive, run_ssh_in_background
+from utilities.constants import NMSTATE_HANDLER
 from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
@@ -24,7 +25,7 @@ def restart_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
     LOGGER.info("Delete NMstate PODs")
     for pod in get_pod_by_name_prefix(
         dyn_client=admin_client,
-        pod_prefix="nmstate-handler",
+        pod_prefix=NMSTATE_HANDLER,
         namespace=hco_namespace.name,
         get_all=True,
     ):

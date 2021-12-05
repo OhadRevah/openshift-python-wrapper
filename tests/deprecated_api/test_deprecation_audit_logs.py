@@ -5,6 +5,7 @@ from collections import defaultdict
 
 import pytest
 
+from utilities.constants import VIRT_API
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 
 
@@ -115,7 +116,7 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
 
     # Remove components with open bugs
     components_bugs = {
-        "virt-api": 1972762,
+        VIRT_API: 1972762,
         "node-maintenance-operator": 1972784,
         "rook": 1975581,
     }

@@ -82,6 +82,8 @@ MTU_9000 = 9000
 IPV4_STR = "ipv4"
 IPV6_STR = "ipv6"
 CLUSTER_NETWORK_ADDONS_OPERATOR = "cluster-network-addons-operator"
+NMSTATE_HANDLER = "nmstate-handler"
+
 
 #  Time constants
 TIMEOUT_5SEC = 5
@@ -140,16 +142,29 @@ OS_LOGIN_PARAMS = {
     },
 }
 
+
+# OpenShift Virtualization components constants
+VIRT_OPERATOR = "virt-operator"
+VIRT_LAUNCHER = "virt-launcher"
+VIRT_API = "virt-api"
+VIRT_CONTROLLER = "virt-controller"
+VIRT_HANDLER = "virt-handler"
+VIRT_TEMPLATE_VALIDATOR = "virt-template-validator"
+
+# Miscellaneous constants
+UTILITY = "utility"
+
 PODS_TO_COLLECT_INFO = [
-    "virt-launcher",
-    "virt-api",
-    "virt-controller",
-    "virt-handler",
-    "virt-template-validator",
+    VIRT_LAUNCHER,
+    VIRT_API,
+    VIRT_CONTROLLER,
+    VIRT_HANDLER,
+    VIRT_TEMPLATE_VALIDATOR,
     "cdi-importer",
-    "utility",
-    "nmstate-handler",
+    UTILITY,
+    NMSTATE_HANDLER,
 ]
+
 
 # GPU constants
 # The GPU tests require GPU Device on the Worker Nodes.

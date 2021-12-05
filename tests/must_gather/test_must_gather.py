@@ -20,6 +20,7 @@ from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
 
 from tests.must_gather import utils
+from utilities.constants import NMSTATE_HANDLER
 from utilities.infra import BUG_STATUS_CLOSED
 
 
@@ -160,10 +161,10 @@ def test_no_upstream_only_namespaces(cnv_must_gather):
             id="kubemacpool-mac-controller-manager_pods",
         ),
         pytest.param(
-            "name=nmstate-handler",
+            f"name={NMSTATE_HANDLER}",
             py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2984")),
-            id="nmstate-handler_pods",
+            id=f"{NMSTATE_HANDLER}_pods",
         ),
         pytest.param(
             "name=cluster-network-addons-operator",

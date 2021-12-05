@@ -12,7 +12,15 @@ from tests.install_upgrade_operators.utils import (
     get_deployment_by_name,
     get_network_addon_config,
 )
-from utilities.constants import HCO_SUBSCRIPTION, TIMEOUT_5MIN
+from utilities.constants import (
+    HCO_SUBSCRIPTION,
+    NMSTATE_HANDLER,
+    TIMEOUT_5MIN,
+    VIRT_API,
+    VIRT_CONTROLLER,
+    VIRT_HANDLER,
+    VIRT_TEMPLATE_VALIDATOR,
+)
 from utilities.hco import add_labels_to_nodes, apply_np_changes
 from utilities.infra import get_daemonset_by_name, get_subscription
 from utilities.virt import (
@@ -98,7 +106,7 @@ def nodes_labeled(np_nodes_labels_dict):
 def virt_template_validator_spec_nodeselector(admin_client, hco_namespace):
     virt_template_validator_spec = get_deployment_by_name(
         admin_client=admin_client,
-        deployment_name="virt-template-validator",
+        deployment_name=VIRT_TEMPLATE_VALIDATOR,
         namespace_name=hco_namespace.name,
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_template_validator_spec.get("nodeSelector")
@@ -131,7 +139,7 @@ def network_daemonsets_placement_list(admin_client, hco_namespace):
     network_daemonsets = [
         "bridge-marker",
         "kube-cni-linux-bridge-plugin",
-        "nmstate-handler",
+        NMSTATE_HANDLER,
     ]
     for daemonset in network_daemonsets:
         nw_daemonset = get_daemonset_by_name(
@@ -147,7 +155,7 @@ def network_daemonsets_placement_list(admin_client, hco_namespace):
 def virt_daemonset_nodeselector_comp(admin_client, hco_namespace):
     virt_daemonset = get_daemonset_by_name(
         admin_client=admin_client,
-        daemonset_name="virt-handler",
+        daemonset_name=VIRT_HANDLER,
         namespace_name=hco_namespace.name,
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_daemonset.get("nodeSelector").get("work-comp")
@@ -156,7 +164,7 @@ def virt_daemonset_nodeselector_comp(admin_client, hco_namespace):
 @pytest.fixture()
 def virt_deployment_nodeselector_comp_list(admin_client, hco_namespace):
     nodeselector_lists = []
-    virt_deployments = ["virt-api", "virt-controller"]
+    virt_deployments = [VIRT_API, VIRT_CONTROLLER]
     for deployment in virt_deployments:
         virt_deployment = get_deployment_by_name(
             admin_client=admin_client,

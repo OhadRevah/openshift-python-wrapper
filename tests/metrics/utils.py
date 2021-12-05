@@ -15,6 +15,7 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     TIMEOUT_8MIN,
     TIMEOUT_10MIN,
+    VIRT_HANDLER,
 )
 from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.network import assert_ping_successful
@@ -26,7 +27,6 @@ KUBEVIRT_CR_ALERT_NAME = "KubevirtHyperconvergedClusterOperatorCRModification"
 CURL_QUERY = "curl -k https://localhost:8443/metrics"
 NUM_TEST_VMS = 3
 PING = "ping"
-VIRT_HANDLER_CONTAINER = "virt-handler"
 JOB_NAME = "kubevirt-prometheus-metrics"
 TOPK_VMS = 3
 SINGLE_VM = 1
@@ -331,7 +331,7 @@ def assert_vm_metric_virt_handler_pod(query, vm):
     )
     assert (
         output
-    ), f'No query output found from virt-handler pod "{pod.name}" for query: "{CURL_QUERY}"'
+    ), f'No query output found from {VIRT_HANDLER} pod "{pod.name}" for query: "{CURL_QUERY}"'
     metrics_list = []
     if query in output:
         metrics_list = [
@@ -340,8 +340,8 @@ def assert_vm_metric_virt_handler_pod(query, vm):
             if "labeldict" in result and vm.name in result["labeldict"]["name"]
         ]
     assert metrics_list, (
-        f'Virt-handler pod query:"{CURL_QUERY}" did not return any vm metric information for vm: {vm.name} '
-        f"from virt-handler pod: {pod.name}. "
+        f'{VIRT_HANDLER} pod query:"{CURL_QUERY}" did not return any vm metric information for vm: {vm.name} '
+        f"from {VIRT_HANDLER} pod: {pod.name}. "
     )
     assert_validate_vm_metric(vm=vm, metrics_list=metrics_list)
 
@@ -361,7 +361,7 @@ def assert_validate_vm_metric(vm, metrics_list):
         "node": vm.vmi.node.name,
     }
     LOGGER.info(
-        f"Virt-handler pod metrics associated with vm: {vm.name} are: {metrics_list}"
+        f"{VIRT_HANDLER} pod metrics associated with vm: {vm.name} are: {metrics_list}"
     )
     metric_data_mismatch = [
         entity
@@ -371,7 +371,7 @@ def assert_validate_vm_metric(vm, metrics_list):
     ]
 
     assert not metric_data_mismatch, (
-        f"Vm metric validation via virt-handler pod {vm.vmi.virt_handler_pod}"
+        f"Vm metric validation via {VIRT_HANDLER} pod {vm.vmi.virt_handler_pod}"
         f" failed: {metric_data_mismatch}"
     )
 
@@ -548,7 +548,7 @@ def assert_prometheus_metric_values(prometheus, query, vm, timeout=TIMEOUT_5MIN)
     expected_result = {
         "job": JOB_NAME,
         "service": JOB_NAME,
-        "container": VIRT_HANDLER_CONTAINER,
+        "container": VIRT_HANDLER,
         "kubernetes_vmi_label_kubevirt_io_vm": vm.name,
         "kubernetes_vmi_label_kubevirt_io_nodeName": vm.vmi.node.name,
         "namespace": vm.namespace,

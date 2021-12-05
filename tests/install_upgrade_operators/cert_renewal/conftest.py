@@ -3,6 +3,9 @@ import logging
 import pytest
 from ocp_resources.secret import Secret
 
+from tests.install_upgrade_operators.cert_renewal.constants import (
+    VIRT_TEMPLATE_VALIDATOR_CERTS,
+)
 from tests.install_upgrade_operators.cert_renewal.utils import (
     SECRETS,
     get_certificates_validity_period_and_checkend_result,
@@ -77,7 +80,7 @@ def initial_certificates_dates(
 def secrets_with_non_closed_bugs():
     bugzilla_component_name_dict = {
         2017415: "ssp-operator-service-cert",
-        2017442: "virt-template-validator-certs",
+        2017442: VIRT_TEMPLATE_VALIDATOR_CERTS,
     }
     return tuple(
         component_name

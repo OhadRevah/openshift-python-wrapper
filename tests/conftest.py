@@ -76,6 +76,7 @@ from utilities.constants import (
     TIMEOUT_6MIN,
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
+    UTILITY,
     WORKERS_TYPE,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
@@ -1019,7 +1020,7 @@ def utility_daemonset(admin_client):
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     For example to create linux bridge and other components related to the host configuration.
     """
-    with UtilityDaemonSet(name="utility", namespace="kube-system") as ds:
+    with UtilityDaemonSet(name=UTILITY, namespace="kube-system") as ds:
         ds.wait_until_deployed()
         yield ds
 
@@ -1210,7 +1211,7 @@ def leftovers(admin_client, identity_provider_config):
     secret = Secret(
         client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
     )
-    ds = UtilityDaemonSet(client=admin_client, name="utility", namespace="kube-system")
+    ds = UtilityDaemonSet(client=admin_client, name=UTILITY, namespace="kube-system")
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
         try:

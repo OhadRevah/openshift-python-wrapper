@@ -9,7 +9,7 @@ from kubernetes.dynamic.exceptions import NotFoundError
 from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
 
-from utilities.constants import IPV4_STR, IPV6_STR
+from utilities.constants import IPV4_STR, IPV6_STR, VIRT_HANDLER
 from utilities.infra import ClusterHosts, ExecCommandOnPod
 from utilities.network import (
     get_ip_from_vm_or_virt_handler_pod,
@@ -62,14 +62,13 @@ def vlan_tag_id(index_number):
 
 @pytest.fixture(scope="session")
 def virt_handler_pod(admin_client):
-    virt_handler = "virt-handler"
     for pod in Pod.get(
         dyn_client=admin_client,
-        label_selector=f"{Pod.ApiGroup.KUBEVIRT_IO}={virt_handler}",
+        label_selector=f"{Pod.ApiGroup.KUBEVIRT_IO}={VIRT_HANDLER}",
     ):
         return pod
 
-    raise NotFoundError(f"No {virt_handler} Pod found.")
+    raise NotFoundError(f"No {VIRT_HANDLER} Pod found.")
 
 
 @pytest.fixture(scope="session")

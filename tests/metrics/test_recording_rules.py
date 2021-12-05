@@ -2,16 +2,17 @@ import pytest
 from ocp_resources.resource import Resource
 
 from tests.metrics.utils import validate_virt_handler_data
+from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER, VIRT_OPERATOR
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 virt_label_dict = {
-    "virt-api": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-api",
-    "virt-handler": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-handler",
-    "virt-operator": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-operator",
-    "virt-controller": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-controller ",
+    VIRT_API: f"{Resource.ApiGroup.KUBEVIRT_IO}={VIRT_API}",
+    VIRT_HANDLER: f"{Resource.ApiGroup.KUBEVIRT_IO}={VIRT_HANDLER}",
+    VIRT_OPERATOR: f"{Resource.ApiGroup.KUBEVIRT_IO}={VIRT_OPERATOR}",
+    VIRT_CONTROLLER: f"{Resource.ApiGroup.KUBEVIRT_IO}={VIRT_CONTROLLER} ",
 }
 
 
@@ -20,25 +21,25 @@ virt_label_dict = {
     [
         pytest.param(
             "kubevirt_virt_controller_ready",
-            virt_label_dict["virt-controller"],
+            virt_label_dict[VIRT_CONTROLLER],
             marks=pytest.mark.polarion("CNV-7110"),
             id="kubevirt_virt_controller_ready",
         ),
         pytest.param(
             "kubevirt_virt_operator_ready",
-            virt_label_dict["virt-operator"],
+            virt_label_dict[VIRT_OPERATOR],
             marks=pytest.mark.polarion("CNV-7111"),
             id="kubevirt_virt_operator_ready",
         ),
         pytest.param(
             "kubevirt_virt_operator_leading",
-            virt_label_dict["virt-operator"],
+            virt_label_dict[VIRT_OPERATOR],
             marks=pytest.mark.polarion("CNV-7112"),
             id="kubevirt_virt_operator_leading",
         ),
         pytest.param(
             "kubevirt_virt_controller_leading",
-            virt_label_dict["virt-controller"],
+            virt_label_dict[VIRT_CONTROLLER],
             marks=pytest.mark.polarion("CNV-7113"),
             id="kubevirt_virt_controller_leading",
         ),
@@ -67,25 +68,25 @@ def test_virt_recording_rules(
     [
         pytest.param(
             "kubevirt_virt_api_up_total",
-            virt_label_dict["virt-api"],
+            virt_label_dict[VIRT_API],
             marks=pytest.mark.polarion("CNV-7106"),
             id="kubevirt_virt_api_up_total",
         ),
         pytest.param(
             "kubevirt_virt_operator_up_total",
-            virt_label_dict["virt-operator"],
+            virt_label_dict[VIRT_OPERATOR],
             marks=pytest.mark.polarion("CNV-7107"),
             id="kubevirt_virt_operator_up_total",
         ),
         pytest.param(
             "kubevirt_virt_handler_up_total",
-            virt_label_dict["virt-handler"],
+            virt_label_dict[VIRT_HANDLER],
             marks=pytest.mark.polarion("CNV-7108"),
             id="kubevirt_virt_handler_up_total",
         ),
         pytest.param(
             "kubevirt_virt_controller_up_total",
-            virt_label_dict["virt-controller"],
+            virt_label_dict[VIRT_CONTROLLER],
             marks=pytest.mark.polarion("CNV-7109"),
             id="kubevirt_virt_controller_up_total",
         ),

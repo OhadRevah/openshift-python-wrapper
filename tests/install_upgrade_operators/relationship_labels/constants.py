@@ -16,6 +16,8 @@ from ocp_resources.service import Service
 from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
 
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, VIRT_OPERATOR
+
 
 CLUSTER_SCOPE_RESOURCES = [
     "CDI",
@@ -100,13 +102,13 @@ EXPECTED_DEPLOYMENTS_LABELS_FOR_NETWORK[
 ] = COMPONENT_LABEL_NETWORK_VALUE
 DEPLOYMENTS = {
     "cdi-operator": EXPECTED_DEPLOYMENTS_LABELS_FOR_STORAGE,
-    "cluster-network-addons-operator": EXPECTED_DEPLOYMENTS_LABELS_FOR_NETWORK,
+    CLUSTER_NETWORK_ADDONS_OPERATOR: EXPECTED_DEPLOYMENTS_LABELS_FOR_NETWORK,
     "hco-operator": EXPECTED_DEPLOYMENTS_LABELS,
     "hco-webhook": EXPECTED_DEPLOYMENTS_LABELS,
     "hostpath-provisioner-operator": EXPECTED_DEPLOYMENTS_LABELS_FOR_STORAGE,
     "node-maintenance-operator": EXPECTED_DEPLOYMENTS_LABELS_FOR_NETWORK,
     "ssp-operator": EXPECTED_DEPLOYMENTS_LABELS_FOR_SCHEDULE,
-    "virt-operator": EXPECTED_DEPLOYMENTS_LABELS_FOR_COMPUTE,
+    VIRT_OPERATOR: EXPECTED_DEPLOYMENTS_LABELS_FOR_COMPUTE,
     "hyperconverged-cluster-cli-download": EXPECTED_DEPLOYMENTS_LABELS,
 }
 ALL_EXPECTED_LABELS_DICTS = [

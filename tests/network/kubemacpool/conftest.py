@@ -4,7 +4,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
-from utilities.constants import KMP_VM_ASSIGNMENT_LABEL
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, KMP_VM_ASSIGNMENT_LABEL
 from utilities.infra import create_ns, get_pods, name_prefix, wait_for_pods_deletion
 from utilities.network import LINUX_BRIDGE, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
@@ -335,7 +335,7 @@ def cnao_down(cnao_deployment):
 @pytest.fixture(scope="module")
 def cnao_deployment(hco_namespace):
     return Deployment(
-        namespace=hco_namespace.name, name="cluster-network-addons-operator"
+        namespace=hco_namespace.name, name=CLUSTER_NETWORK_ADDONS_OPERATOR
     )
 
 
