@@ -7,7 +7,6 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.network.utils import run_test_guest_performance
-from utilities.constants import IPV6_STR
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -90,18 +89,10 @@ def test_connectivity_over_pod_network(
     """
     Check connectivity
     """
-    if ip_stack_version_matrix__module__ == IPV6_STR:
-        dst_ip = get_ip_from_vm_or_virt_handler_pod(
-            family=IPV6_STR, vm=pod_net_running_vmb
-        )
-        assert (
-            dst_ip
-        ), f"Cannot get valid IPv6 address from {pod_net_running_vmb.vmi.name}."
-
-    else:
-        dst_ip = ip_interface(
-            address=pod_net_running_vmb.vmi.interfaces[0]["ipAddress"]
-        ).ip
+    dst_ip = get_ip_from_vm_or_virt_handler_pod(
+        family=ip_stack_version_matrix__module__, vm=pod_net_running_vmb
+    )
+    assert dst_ip, f"Cannot get valid IP address from {pod_net_running_vmb.vmi.name}."
 
     assert_ping_successful(
         src_vm=pod_net_running_vma,
