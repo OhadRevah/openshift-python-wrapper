@@ -10,7 +10,6 @@ from pytest_testconfig import config as py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_8MIN
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
@@ -31,13 +30,6 @@ def updated_default_storage_class(
     removed_default_storage_classes,
 ):
     sc_name = [*storage_class_matrix__function__][0]
-    if (
-        get_bug_status(bug=1918294) not in BUG_STATUS_CLOSED
-    ) and sc_name == StorageClass.Types.CEPH_RBD:
-        pytest.skip(
-            "when default SC is OSC, VM creation will fail as volumeMode is missing."
-        )
-
     sc = list(StorageClass.get(dyn_client=admin_client, name=sc_name))
     with ResourceEditor(
         patches={
