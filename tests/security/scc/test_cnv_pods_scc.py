@@ -19,6 +19,7 @@ LOGGER = logging.getLogger(__name__)
 POD_SCC_ALLOWLIST = [
     "restricted",
     "hostpath-provisioner",
+    "hostpath-provisioner-csi",
     "containerized-data-importer",
     "bridge-marker",
     "linux-bridge",
