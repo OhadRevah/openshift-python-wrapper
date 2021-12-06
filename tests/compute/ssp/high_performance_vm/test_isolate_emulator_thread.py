@@ -10,7 +10,7 @@ from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
-from utilities.infra import run_ssh_commands
+from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
 from utilities.virt import vm_instance_from_template
 
 
@@ -26,6 +26,11 @@ TEMPLATE_LABELS = {
     "os": RHEL_LATEST_OS,
     "workload": Template.Workload.SERVER,
 }
+
+
+pytestmark = pytest.mark.bugzilla(
+    2029343, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 
 
 @pytest.fixture()

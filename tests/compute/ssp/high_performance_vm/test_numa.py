@@ -5,16 +5,21 @@ import xmltodict
 from ocp_resources.sriov_network import SriovNetwork
 
 from utilities.constants import SRIOV
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import BUG_STATUS_CLOSED, ExecCommandOnPod
 from utilities.network import sriov_network_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
-pytestmark = pytest.mark.usefixtures(
-    "skip_if_workers_vms",
-    "skip_if_no_cpumanager_workers",
-    "skip_if_numa_not_configured_or_enabled",
-)
+pytestmark = [
+    pytest.mark.usefixtures(
+        "skip_if_workers_vms",
+        "skip_if_no_cpumanager_workers",
+        "skip_if_numa_not_configured_or_enabled",
+    ),
+    pytest.mark.bugzilla(
+        2029343, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    ),
+]
 
 
 @pytest.fixture(scope="module")
