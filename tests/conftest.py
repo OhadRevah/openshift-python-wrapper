@@ -1120,7 +1120,7 @@ def nodes_active_nics(
                 LOGGER.warning(f"{node.name} {iface_name} link is down")
                 continue
 
-            if node_iface["ipv4"].get("address") and node_iface["ipv4"]["dhcp"]:
+            if node_iface["ipv4"].get("address"):
                 nodes_nics[node.name]["occupied"].append(iface_name)
             else:
                 nodes_nics[node.name]["available"].append(iface_name)
@@ -1931,6 +1931,13 @@ def hyperconverged_resource_scope_module(admin_client, hco_namespace):
     )
 
 
+@pytest.fixture(scope="session")
+def hyperconverged_resource_scope_session(admin_client, hco_namespace):
+    return get_hyperconverged_resource(
+        client=admin_client, hco_ns_name=hco_namespace.name
+    )
+
+
 @pytest.fixture()
 def kubevirt_hyperconverged_spec_scope_function(admin_client, hco_namespace):
     return get_kubevirt_hyperconverged_spec(
@@ -1987,11 +1994,11 @@ def hyperconverged_ovs_annotations_fetched(hyperconverged_resource_scope_functio
     )
 
 
-@pytest.fixture(scope="module")
-def network_addons_config(admin_client):
+@pytest.fixture(scope="session")
+def network_addons_config_scope_session(admin_client):
     nac = list(NetworkAddonsConfig.get(dyn_client=admin_client))
     assert nac, "There should be one NetworkAddonsConfig CR."
-    yield nac[0]
+    return nac[0]
 
 
 @pytest.fixture(scope="session")
@@ -2013,22 +2020,24 @@ def skip_test_if_no_ocs_sc(ocs_storage_class):
         pytest.skip("Skipping test, OCS storage class is not deployed")
 
 
-@pytest.fixture()
-def hyperconverged_ovs_annotations_enabled(
+@pytest.fixture(scope="session")
+def hyperconverged_ovs_annotations_enabled_scope_session(
     admin_client,
     hco_namespace,
-    hyperconverged_resource_scope_function,
-    network_addons_config,
+    hyperconverged_resource_scope_session,
+    network_addons_config_scope_session,
 ):
     yield from enable_hyperconverged_ovs_annotations(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        hyperconverged_resource=hyperconverged_resource_scope_function,
-        network_addons_config=network_addons_config,
+        hyperconverged_resource=hyperconverged_resource_scope_session,
+        network_addons_config=network_addons_config_scope_session,
     )
 
     # Make sure all ovs pods are deleted:
-    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+    wait_for_ovs_status(
+        network_addons_config=network_addons_config_scope_session, status=False
+    )
     wait_for_pods_deletion(
         pods=get_pods(
             dyn_client=admin_client,

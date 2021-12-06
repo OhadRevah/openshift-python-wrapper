@@ -147,14 +147,14 @@ def verify_cnao_labels(
 
 
 @pytest.fixture(scope="module")
-def check_components(network_addons_config):
+def check_components(network_addons_config_scope_session):
     """
     Check that all CNAO components are accounted for.
     If a new cnao component is added, the test needs to be modified.
     It's name should be added to EXPECTED_CNAO_COMP and EXPECTED_CNAO_COMP_NAMES.
     """
     bad_components = []
-    for component in network_addons_config.instance.spec.keys():
+    for component in network_addons_config_scope_session.instance.spec.keys():
         if component == "selfSignConfiguration":
             continue
         if component not in EXPECTED_CNAO_COMP:
@@ -202,7 +202,7 @@ def net_add_op_bridge_attached_vm(namespace, net_add_op_br1test_nad):
 
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-2520")
-def test_component_installed_by_operator(network_addons_config):
+def test_component_installed_by_operator(network_addons_config_scope_session):
     """
     Verify that the network addons operator is supposed to install Linux-Bridge
     (a mandatory default component), by checking if the component appears in
@@ -210,7 +210,7 @@ def test_component_installed_by_operator(network_addons_config):
     """
     component_name_in_cr = "linuxBridge"
     assert (
-        component_name_in_cr in network_addons_config.instance.spec.keys()
+        component_name_in_cr in network_addons_config_scope_session.instance.spec.keys()
     ), f"{component_name_in_cr} is missing from the network operator CR."
 
 
@@ -228,7 +228,7 @@ def test_linux_bridge_functionality(net_add_op_bridge_attached_vm):
 @pytest.mark.polarion("CNV-6754")
 def test_cnao_labels(
     admin_client,
-    network_addons_config,
+    network_addons_config_scope_session,
     check_components,
     hco_namespace,
     is_post_cnv_upgrade_cluster,
@@ -240,6 +240,6 @@ def test_cnao_labels(
     verify_cnao_labels(
         admin_client=admin_client,
         namespace=hco_namespace.name,
-        network_addons_config=network_addons_config,
+        network_addons_config=network_addons_config_scope_session,
         is_post_cnv_upgrade_cluster=is_post_cnv_upgrade_cluster,
     )

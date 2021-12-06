@@ -91,7 +91,7 @@ def test_kubevirt_hyperconverged_spec(kubevirt_hyperconverged_spec_scope_functio
     return
 
 
-def test_network_addons_config(network_addons_config):
+def test_network_addons_config(network_addons_config_scope_session):
     return
 
 

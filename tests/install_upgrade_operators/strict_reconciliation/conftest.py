@@ -153,13 +153,13 @@ def cr_func_map(
     hco_spec,
     kubevirt_hyperconverged_spec_scope_function,
     cdi_spec,
-    network_addons_config,
+    network_addons_config_scope_session,
 ):
     yield {
         "hco": hco_spec,
         "kubevirt": kubevirt_hyperconverged_spec_scope_function,
         "cdi": cdi_spec,
-        "cnao": network_addons_config.instance.to_dict(),
+        "cnao": network_addons_config_scope_session.instance.to_dict(),
     }
 
 

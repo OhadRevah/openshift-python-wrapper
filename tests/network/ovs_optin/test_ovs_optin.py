@@ -31,7 +31,7 @@ def wait_for_ovs_removed(admin_client, ovs_daemonset, network_addons_config):
 @pytest.fixture()
 def hyperconverged_ovs_annotations_disabled(
     hyperconverged_resource_scope_function,
-    network_addons_config,
+    network_addons_config_scope_session,
     hyperconverged_ovs_annotations_enabled,
 ):
     with ResourceEditor(
@@ -47,7 +47,7 @@ def hyperconverged_ovs_annotations_disabled(
 @pytest.fixture()
 def hyperconverged_ovs_annotations_removed(
     hyperconverged_resource_scope_function,
-    network_addons_config,
+    network_addons_config_scope_session,
     hyperconverged_ovs_annotations_enabled,
 ):
     with ResourceEditor(
@@ -66,7 +66,7 @@ class TestOVSOptIn:
     def test_ovs_installed(
         self,
         admin_client,
-        network_addons_config,
+        network_addons_config_scope_session,
         hyperconverged_ovs_annotations_enabled,
         hyperconverged_ovs_annotations_fetched,
     ):
@@ -74,33 +74,33 @@ class TestOVSOptIn:
             admin_client=admin_client,
             ovs_daemonset=hyperconverged_ovs_annotations_enabled,
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
-            network_addons_config=network_addons_config,
+            network_addons_config=network_addons_config_scope_session,
         )
 
     @pytest.mark.polarion("CNV-5533")
     def test_ovs_not_installed_annotations_removed(
         self,
         admin_client,
-        network_addons_config,
+        network_addons_config_scope_session,
         hyperconverged_ovs_annotations_enabled,
         hyperconverged_ovs_annotations_removed,
     ):
         wait_for_ovs_removed(
             admin_client=admin_client,
             ovs_daemonset=hyperconverged_ovs_annotations_enabled,
-            network_addons_config=network_addons_config,
+            network_addons_config=network_addons_config_scope_session,
         )
 
     @pytest.mark.polarion("CNV-5531")
     def test_ovs_not_installed_annotations_disabled(
         self,
         admin_client,
-        network_addons_config,
+        network_addons_config_scope_session,
         hyperconverged_ovs_annotations_enabled,
         hyperconverged_ovs_annotations_disabled,
     ):
         wait_for_ovs_removed(
             admin_client=admin_client,
             ovs_daemonset=hyperconverged_ovs_annotations_enabled,
-            network_addons_config=network_addons_config,
+            network_addons_config=network_addons_config_scope_session,
         )

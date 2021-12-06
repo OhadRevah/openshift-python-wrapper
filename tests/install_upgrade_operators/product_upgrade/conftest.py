@@ -454,16 +454,18 @@ def hyperconverged_ovs_annotations_enabled_scope_class(
     admin_client,
     hco_namespace,
     hyperconverged_resource_scope_class,
-    network_addons_config,
+    network_addons_config_scope_session,
 ):
     yield from enable_hyperconverged_ovs_annotations(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
         hyperconverged_resource=hyperconverged_resource_scope_class,
-        network_addons_config=network_addons_config,
+        network_addons_config=network_addons_config_scope_session,
     )
 
-    wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
+    wait_for_ovs_status(
+        network_addons_config=network_addons_config_scope_session, status=False
+    )
 
 
 @pytest.fixture(scope="module")

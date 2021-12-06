@@ -137,6 +137,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         teardown=True,
         ipv6_enable=False,
         max_unavailable=None,
+        set_ipv4=True,
+        set_ipv6=True,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -162,6 +164,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
             max_unavailable=max_unavailable,
+            set_ipv4=set_ipv4,
+            set_ipv6=set_ipv6,
         )
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
@@ -247,6 +251,8 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         ipv4_enable=False,
         ipv4_dhcp=False,
         teardown=True,
+        set_dummy_ovs_iface=False,
+        set_port_mac=False,
     ):
         super().__init__(
             name=name,
@@ -260,30 +266,53 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
+            set_ipv4=False,
+            set_ipv6=False,
         )
+        self.set_dummy_ovs_iface = set_dummy_ovs_iface
+        self.set_port_mac = set_port_mac
 
     def to_dict(self):
         res = super().to_dict()
-
-        if not self.ports:
-            # If no ports were specified - should add:
-            # 1. an internal port entry
-            # 2. an interface entry (of type "ovs-interface")
-            ovs_iface_name = "ovs"
-            for idx, iface in enumerate(res["spec"]["desiredState"]["interfaces"]):
-                ovs_iface_name = f"{ovs_iface_name}{idx}"
+        if self.set_dummy_ovs_iface:
+            desired_state_interface = res["spec"]["desiredState"]["interfaces"]
+            for idx, iface in enumerate(desired_state_interface):
                 if iface["type"] == "ovs-bridge":
+                    ovs_iface_name = f"ovs-dummy{idx}"
+                    port_name = iface["bridge"]["port"][0]["name"]
                     iface["bridge"]["port"].append({"name": ovs_iface_name})
-                    self.ports = {"name": ovs_iface_name}
-                    break
 
-            ovs_iface = {
-                "name": ovs_iface_name,
-                "type": "ovs-interface",
-                "state": IFACE_UP_STATE,
-            }
-            res["spec"]["desiredState"]["interfaces"].append(ovs_iface)
-            self.ifaces.append(ovs_iface)
+                    port_iface = {
+                        "name": port_name,
+                        "type": "ethernet",
+                        "state": IFACE_UP_STATE,
+                        "ipv4": {"enabled": False},
+                    }
+                    desired_state_interface.append(port_iface)
+                    self.ifaces.append(port_iface)
+
+                    ovs_iface = {
+                        "name": ovs_iface_name,
+                        "type": "ovs-interface",
+                        "state": IFACE_UP_STATE,
+                        "ipv4": {"enabled": self.ipv4_enable, "dhcp": self.ipv4_dhcp},
+                    }
+                    if self.set_port_mac:
+                        if not self.node_selector:
+                            raise ValueError(
+                                "node_selector is required for set_port_mac"
+                            )
+
+                        nns = NodeNetworkState(name=self.node_selector)
+                        port_mac = [
+                            iface["mac-address"]
+                            for iface in nns.interfaces
+                            if iface["name"] == port_name
+                        ]
+                        ovs_iface["mac-address"] = port_mac[0]
+
+                    desired_state_interface.append(ovs_iface)
+                    self.ifaces.append(ovs_iface)
 
         return res
 

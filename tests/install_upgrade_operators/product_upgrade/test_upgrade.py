@@ -212,7 +212,7 @@ class TestUpgrade:
         admin_client,
         hco_namespace,
         hyperconverged_resource_scope_function,
-        network_addons_config,
+        network_addons_config_scope_session,
         hyperconverged_ovs_annotations_enabled_scope_class,
         hyperconverged_ovs_annotations_fetched,
     ):
@@ -592,14 +592,14 @@ class TestUpgrade:
         admin_client,
         ovs_daemonset,
         hyperconverged_ovs_annotations_fetched,
-        network_addons_config,
+        network_addons_config_scope_session,
     ):
         # Verify ovs opt-in still applies after upgrade
         verify_ovs_installed_with_annotations(
             admin_client=admin_client,
             ovs_daemonset=ovs_daemonset,
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
-            network_addons_config=network_addons_config,
+            network_addons_config=network_addons_config_scope_session,
         )
 
     @pytest.mark.polarion("CNV-5932")
