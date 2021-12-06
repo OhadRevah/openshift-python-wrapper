@@ -212,6 +212,7 @@ class TestCommonTemplatesCentos:
     @pytest.mark.polarion("CNV-5594")
     def test_vm_smbios_default(
         self,
+        centos_os_matrix__class__,
         smbios_from_kubevirt_config,
         namespace,
         golden_image_data_volume_multi_centos_multi_storage_scope_class,
