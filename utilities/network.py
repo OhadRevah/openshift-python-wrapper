@@ -136,6 +136,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ipv4_dhcp=False,
         teardown=True,
         ipv6_enable=False,
+        max_unavailable=None,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -160,6 +161,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
+            max_unavailable=max_unavailable,
         )
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
@@ -214,6 +216,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         ipv4_enable=False,
         ipv4_dhcp=False,
         teardown=True,
+        max_unavailable=None,
     ):
         super().__init__(
             name=name,
@@ -227,6 +230,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
+            max_unavailable=max_unavailable,
         )
 
 
