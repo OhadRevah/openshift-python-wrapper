@@ -26,7 +26,7 @@ pytestmark = pytest.mark.usefixtures(
 
 ERROR_MSG_VM_IS_RUNNING = (
     r".*virtualmachinerestore-validator.snapshot.kubevirt.io.*"
-    r"denied the request: VirtualMachine.*is running.*"
+    r"denied the request: VirtualMachine.*is not stopped.*"
 )
 
 VIRTUAL_MACHINES_SNAPSHOT_FORBIDDEN = (
