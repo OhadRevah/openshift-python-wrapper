@@ -14,7 +14,6 @@ from utilities.network import (
     get_ip_from_vm_or_virt_handler_pod,
     ip_version_data_from_matrix,
 )
-from utilities.virt import get_hyperconverged_ovs_annotations
 
 
 @pytest.fixture(scope="session")
@@ -101,15 +100,6 @@ def skip_ipv6_if_not_dual_stack_cluster(
         and not dual_stack_cluster
     ):
         pytest.skip(msg="IPv6 is not supported in this cluster")
-
-
-@pytest.fixture()
-def hyperconverged_ovs_annotations_disabled_by_default(
-    hyperconverged_resource_scope_function,
-):
-    assert not get_hyperconverged_ovs_annotations(
-        hyperconverged=hyperconverged_resource_scope_function
-    ), "deployOVS should be disabled by default"
 
 
 @pytest.fixture()

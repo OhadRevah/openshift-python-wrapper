@@ -14,10 +14,6 @@ from utilities.network import (
 
 LOGGER = logging.getLogger()
 
-pytestmark = pytest.mark.usefixtures(
-    "skip_if_ovn_cluster", "hyperconverged_ovs_annotations_disabled_by_default"
-)
-
 
 def wait_for_ovs_removed(admin_client, ovs_daemonset, network_addons_config):
     wait_for_ovs_status(network_addons_config=network_addons_config, status=False)
@@ -31,8 +27,7 @@ def wait_for_ovs_removed(admin_client, ovs_daemonset, network_addons_config):
 @pytest.fixture()
 def hyperconverged_ovs_annotations_disabled(
     hyperconverged_resource_scope_function,
-    network_addons_config_scope_session,
-    hyperconverged_ovs_annotations_enabled,
+    hyperconverged_ovs_annotations_enabled_scope_session,
 ):
     with ResourceEditor(
         patches={
@@ -47,8 +42,7 @@ def hyperconverged_ovs_annotations_disabled(
 @pytest.fixture()
 def hyperconverged_ovs_annotations_removed(
     hyperconverged_resource_scope_function,
-    network_addons_config_scope_session,
-    hyperconverged_ovs_annotations_enabled,
+    hyperconverged_ovs_annotations_enabled_scope_session,
 ):
     with ResourceEditor(
         patches={
@@ -67,12 +61,12 @@ class TestOVSOptIn:
         self,
         admin_client,
         network_addons_config_scope_session,
-        hyperconverged_ovs_annotations_enabled,
+        hyperconverged_ovs_annotations_enabled_scope_session,
         hyperconverged_ovs_annotations_fetched,
     ):
         verify_ovs_installed_with_annotations(
             admin_client=admin_client,
-            ovs_daemonset=hyperconverged_ovs_annotations_enabled,
+            ovs_daemonset=hyperconverged_ovs_annotations_enabled_scope_session,
             hyperconverged_ovs_annotations_fetched=hyperconverged_ovs_annotations_fetched,
             network_addons_config=network_addons_config_scope_session,
         )
@@ -82,12 +76,12 @@ class TestOVSOptIn:
         self,
         admin_client,
         network_addons_config_scope_session,
-        hyperconverged_ovs_annotations_enabled,
+        hyperconverged_ovs_annotations_enabled_scope_session,
         hyperconverged_ovs_annotations_removed,
     ):
         wait_for_ovs_removed(
             admin_client=admin_client,
-            ovs_daemonset=hyperconverged_ovs_annotations_enabled,
+            ovs_daemonset=hyperconverged_ovs_annotations_enabled_scope_session,
             network_addons_config=network_addons_config_scope_session,
         )
 
@@ -96,11 +90,11 @@ class TestOVSOptIn:
         self,
         admin_client,
         network_addons_config_scope_session,
-        hyperconverged_ovs_annotations_enabled,
+        hyperconverged_ovs_annotations_enabled_scope_session,
         hyperconverged_ovs_annotations_disabled,
     ):
         wait_for_ovs_removed(
             admin_client=admin_client,
-            ovs_daemonset=hyperconverged_ovs_annotations_enabled,
+            ovs_daemonset=hyperconverged_ovs_annotations_enabled_scope_session,
             network_addons_config=network_addons_config_scope_session,
         )
