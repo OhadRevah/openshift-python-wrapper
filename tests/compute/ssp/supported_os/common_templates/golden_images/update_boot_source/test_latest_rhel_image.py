@@ -11,12 +11,12 @@ from utilities.virt import VirtualMachineForTests, running_vm
 
 
 @pytest.fixture()
-def latest_rhel_8_vm(unprivileged_client, namespace):
+def rhel_vm(request, unprivileged_client, namespace):
     with VirtualMachineForTests(
-        name="latest-rhel-8-vm",
+        name=request.param["vm_name"],
         client=unprivileged_client,
         namespace=namespace.name,
-        image="registry.redhat.io/rhel8/rhel-guest-image",
+        image=request.param["image"],
         memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
     ) as vm:
         running_vm(vm=vm)
@@ -24,32 +24,54 @@ def latest_rhel_8_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def latest_rhel8_minor_ver_num(downloaded_latest_libosinfo_db):
+def libosinfo_rhel_minor_ver_num(request, downloaded_latest_libosinfo_db):
+    rhel_version = request.param
     osinfo_file_folder_path = os.path.join(
         f"{downloaded_latest_libosinfo_db}/os/redhat.com/"
     )
 
-    list_of_rhel8_os_files = list(
-        sorted(Path(osinfo_file_folder_path).glob("rhel-8.*.xml"))
+    list_of_rhel_os_files = list(
+        sorted(Path(osinfo_file_folder_path).glob(f"{rhel_version}.*.xml"))
     )
-    latest_rhel8_os_file = list_of_rhel8_os_files[-1]
+    latest_rhel_os_file = list_of_rhel_os_files[-1]
     return re.findall(
-        r"(?<=rhel-8\.)(\d+[\.]?[\d+]?)(?=\.xml)", latest_rhel8_os_file.name
+        rf"(?<={rhel_version}\.)(\d+[\.]?[\d+]?)(?=\.xml)", latest_rhel_os_file.name
     )[0]
 
 
 @pytest.fixture()
-def rhel8_vm_minor_ver_num(latest_rhel_8_vm):
-    rhel8_vm_os_ver = run_ssh_commands(
-        host=latest_rhel_8_vm.ssh_exec,
+def rhel_vm_minor_ver_num(rhel_vm):
+    rhel_vm_os_ver = run_ssh_commands(
+        host=rhel_vm.ssh_exec,
         commands=(shlex.split("cat /etc/redhat-release")),
     )[0]
-    return re.findall(r"(?<=\.)(\d+[\.]?[\d+]?)(?= )", rhel8_vm_os_ver)[0]
+    return re.findall(r"(?<=\.)(\d+[\.]?[\d+]?)(?= )", rhel_vm_os_ver)[0]
 
 
-@pytest.mark.polarion("CNV-7666")
-def test_latest_minor_ver_rhel(latest_rhel8_minor_ver_num, rhel8_vm_minor_ver_num):
-    assert latest_rhel8_minor_ver_num == rhel8_vm_minor_ver_num, (
-        f"os versions mismatch, VM minor version: {rhel8_vm_minor_ver_num}, "
-        f"osinfo DB latest minor version: {latest_rhel8_minor_ver_num}"
+@pytest.mark.parametrize(
+    "rhel_vm, libosinfo_rhel_minor_ver_num",
+    [
+        pytest.param(
+            {
+                "vm_name": "rhel8-vm",
+                "image": "registry.redhat.io/rhel8/rhel-guest-image",
+            },
+            "rhel-8",
+            marks=pytest.mark.polarion("CNV-7666"),
+        ),
+        pytest.param(
+            {
+                "vm_name": "rhel9-vm",
+                "image": "registry.redhat.io/rhel9-beta/rhel-guest-image",
+            },
+            "rhel-9",
+            marks=pytest.mark.polarion("CNV-7716"),
+        ),
+    ],
+    indirect=True,
+)
+def test_latest_minor_ver_rhel(libosinfo_rhel_minor_ver_num, rhel_vm_minor_ver_num):
+    assert libosinfo_rhel_minor_ver_num == rhel_vm_minor_ver_num, (
+        f"os versions mismatch, VM minor version: {rhel_vm_minor_ver_num}, "
+        f"osinfo DB latest minor version: {libosinfo_rhel_minor_ver_num}"
     )
