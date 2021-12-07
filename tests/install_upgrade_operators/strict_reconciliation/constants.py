@@ -351,6 +351,7 @@ EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "GPU",
     "HostDevices",
     "DownwardMetrics",
+    "NUMA",
     "WithHostModelCPU",
     "HypervStrictCheck",
     "SRIOVLiveMigration",
