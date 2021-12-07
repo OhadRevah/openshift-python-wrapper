@@ -75,7 +75,7 @@ def lbodi_bond(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        bond_ports=[primary_port, nodes_available_nics[worker_node1.name][0]],
+        bond_ports=[primary_port, nodes_available_nics[worker_node1.name][-1]],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,

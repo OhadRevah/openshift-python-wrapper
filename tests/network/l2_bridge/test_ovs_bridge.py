@@ -15,10 +15,6 @@ OVS_BR = "test-ovs-br"
 SEC_IFACE_SUBNET = "10.0.200"
 DST_IP_ADDR = SEC_IFACE_SUBNET + ".2"
 
-pytestmark = pytest.mark.usefixtures(
-    "skip_if_ovn_cluster", "hyperconverged_ovs_annotations_disabled_by_default"
-)
-
 
 @pytest.fixture()
 def ovs_bridge_on_worker1(worker_node1_pod_executor):

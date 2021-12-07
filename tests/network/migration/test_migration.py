@@ -71,7 +71,7 @@ def bridge_worker_1(
         interface_name=BR1TEST,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
-        ports=[nodes_available_nics[worker_node1.name][0]],
+        ports=[nodes_available_nics[worker_node1.name][-1]],
     ) as br:
         yield br
 
@@ -89,7 +89,7 @@ def bridge_worker_2(
         interface_name=BR1TEST,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
-        ports=[nodes_available_nics[worker_node2.name][0]],
+        ports=[nodes_available_nics[worker_node2.name][-1]],
     ) as br:
         yield br
 

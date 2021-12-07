@@ -41,7 +41,7 @@ def ovs_linux_bond1_worker_1(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp-worker-1",
         bond_name=f"bond{bond_idx}",
-        bond_ports=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         node_selector=worker_node1.name,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
@@ -65,7 +65,7 @@ def ovs_linux_bond1_worker_2(
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp-worker-2",
         bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
-        bond_ports=nodes_available_nics[worker_node2.name][0:2],
+        bond_ports=nodes_available_nics[worker_node2.name][-2:],
         worker_pods=utility_pods,
         node_selector=worker_node2.name,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,

@@ -269,7 +269,7 @@ def vlan_iface_bond_dhcp_client_1(
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-1-nncp",
         bond_name="bond4vlan",
-        bond_ports=hosts_common_available_ports[0:2],
+        bond_ports=hosts_common_available_ports[-2:],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,
@@ -300,7 +300,7 @@ def vlan_iface_bond_dhcp_client_2(
     with BondNodeNetworkConfigurationPolicy(
         name="bond-dhcp-client-2-nncp",
         bond_name="bond4vlan",
-        bond_ports=hosts_common_available_ports[0:2],
+        bond_ports=hosts_common_available_ports[-2:],
         worker_pods=utility_pods,
         mode="active-backup",
         mtu=1450,

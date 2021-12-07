@@ -118,7 +118,7 @@ def matrix_bond_modes_bond(
     """
     with create_bond(
         bond_idx=next(index_number),
-        bond_ports=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         mode=link_aggregation_mode_no_connectivity_matrix__class__,
         node_selector=worker_node1.name,
@@ -191,7 +191,7 @@ def active_backup_bond_with_fail_over_mac(
 ):
     with create_bond(
         bond_idx=next(index_number),
-        bond_ports=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         mode="active-backup",
         node_selector=worker_node1.name,
@@ -246,7 +246,7 @@ class TestBondWithFailOverMac:
     ):
         with create_bond(
             bond_idx=next(index_number),
-            bond_ports=nodes_available_nics[worker_node1.name][0:2],
+            bond_ports=nodes_available_nics[worker_node1.name][-2:],
             worker_pods=utility_pods,
             mode="active-backup",
             node_selector=worker_node1.name,
@@ -274,7 +274,7 @@ def test_bond_with_slaves(
     with BondNodeNetworkConfigurationPolicyWithSlaves(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
-        bond_ports=nodes_available_nics[worker_node1.name][0:2],
+        bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,

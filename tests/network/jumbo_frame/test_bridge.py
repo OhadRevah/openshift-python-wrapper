@@ -36,7 +36,7 @@ def jumbo_frame_bridge_device_worker_1(
         interface_name=jumbo_frame_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
-        ports=[nodes_available_nics[worker_node1.name][0]],
+        ports=[nodes_available_nics[worker_node1.name][-1]],
         mtu=MTU_9000,
     ) as br:
         yield br
@@ -56,7 +56,7 @@ def jumbo_frame_bridge_device_worker_2(
         interface_name=jumbo_frame_bridge_device_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.name,
-        ports=[nodes_available_nics[worker_node2.name][0]],
+        ports=[nodes_available_nics[worker_node2.name][-1]],
         mtu=MTU_9000,
     ) as br:
         yield br

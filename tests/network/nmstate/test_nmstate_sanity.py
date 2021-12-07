@@ -43,7 +43,7 @@ def nmstate_linux_bridge_device_worker(
         name=f"nmstate-{name_prefix(worker_node1.name)}",
         bridge_name=BRIDGE_NAME,
         node_selector=worker_node1.name,
-        ports=[nodes_available_nics[worker_node1.name][0]],
+        ports=[nodes_available_nics[worker_node1.name][-1]],
         worker_pods=utility_pods,
     )
     yield nmstate_br_dev
@@ -236,7 +236,7 @@ def test_no_ip(
         node_selector=worker_node1.name,
         ipv4_dhcp=False,
         worker_pods=utility_pods,
-        interfaces_name=[nodes_available_nics[worker_node1.name][0]],
+        interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
         node_active_nics=nodes_occupied_nics[worker_node1.name],
     ):
         LOGGER.info("NNCP: Test no IP")
@@ -258,7 +258,7 @@ def test_static_ip(
         ipv4_enable=True,
         ipv4_addresses=IP_LIST,
         worker_pods=utility_pods,
-        interfaces_name=[nodes_available_nics[worker_node1.name][0]],
+        interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
         node_active_nics=nodes_occupied_nics[worker_node1.name],
     ):
         LOGGER.info("NMstate: Test with IP")
@@ -278,7 +278,7 @@ def test_dynamic_ip(
         ipv4_dhcp=True,
         ipv4_enable=True,
         worker_pods=utility_pods,
-        interfaces_name=[nodes_available_nics[worker_node1.name][0]],
+        interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
         node_active_nics=nodes_occupied_nics[worker_node1.name],
     ):
         LOGGER.info("NMstate: Test with dynamic IP")
@@ -322,7 +322,7 @@ def test_static_route(
     nodes_occupied_nics,
     nodes_available_nics,
 ):
-    iface_name = nodes_available_nics[worker_node1.name][0]
+    iface_name = nodes_available_nics[worker_node1.name][-1]
     routes = {
         "config": [
             {
