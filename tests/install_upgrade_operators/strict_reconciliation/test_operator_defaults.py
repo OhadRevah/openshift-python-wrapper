@@ -170,7 +170,7 @@ class TestOperatorsDefaults:
                 },
                 "kubevirt",
                 ["configuration"],
-                marks=(pytest.mark.polarion("CNV-6124"),),
+                marks=(pytest.mark.polarion("CNV-6125"),),
                 id="verify_defaults_obsoleteCPUModels_kubevirt_cr",
             ),
         ],
