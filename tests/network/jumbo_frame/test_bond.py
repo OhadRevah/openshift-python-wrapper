@@ -20,7 +20,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond_name(index_number):
-    yield f"jumbo-frame-bond-{next(index_number)}"
+    yield f"jf-bond-{next(index_number)}"
 
 
 @pytest.fixture(scope="class")
