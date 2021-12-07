@@ -3,7 +3,6 @@ import logging
 import pytest
 from ocp_resources.node import Node
 from ocp_resources.ssp import SSP
-from ocp_resources.vm_import_config import VMImportConfig
 
 from tests.install_upgrade_operators.node_component.utils import (
     SELECTORS,
@@ -116,28 +115,6 @@ def virt_template_validator_spec_nodeselector(admin_client, hco_namespace):
         namespace_name=hco_namespace.name,
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_template_validator_spec.get("nodeSelector")
-
-
-@pytest.fixture()
-def vm_import_configs_spec(admin_client, hco_namespace):
-    vm_import_config = list(
-        VMImportConfig.get(
-            dyn_client=admin_client,
-            namespace=hco_namespace.name,
-            name="vmimport-kubevirt-hyperconverged",
-        )
-    )
-    return vm_import_config[0].instance.to_dict()["spec"]
-
-
-@pytest.fixture()
-def vm_import_controller_spec_nodeselector(admin_client, hco_namespace):
-    vm_import_controller_spec = get_deployment_by_name(
-        admin_client=admin_client,
-        deployment_name="vm-import-controller",
-        namespace_name=hco_namespace.name,
-    ).instance.to_dict()["spec"]["template"]["spec"]
-    return vm_import_controller_spec.get("nodeSelector")
 
 
 @pytest.fixture()

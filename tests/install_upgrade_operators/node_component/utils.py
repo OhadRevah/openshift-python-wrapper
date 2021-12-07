@@ -123,7 +123,6 @@ NODE_PLACEMENT_WORKLOADS = {
 CNV_INFRA_PODS_COMPONENTS = [
     "virt-controller",
     "virt-template-validator",
-    "vm-import-controller",
     "kubemacpool-mac-controller-manager",
     "nmstate-webhook",
     "cdi-apiserver",
@@ -145,7 +144,6 @@ CNV_OPERATOR_PODS_COMPONENTS = [
     "ssp-operator",
     "node-maintenance-operator",
     "virt-operator",
-    "vm-import-operator",
 ]
 
 

@@ -83,29 +83,6 @@ class TestCreateHCOWithNodePlacement:
             == NODE_PLACEMENT_INFRA["nodePlacement"]["nodeSelector"]
         )
 
-    @pytest.mark.polarion("CNV-5381")
-    @pytest.mark.dependency(depends=["test_hco_cr_with_node_placement"])
-    def test_node_placement_propagated_to_vm_import_cr(
-        self,
-        vm_import_configs_spec,
-        vm_import_controller_spec_nodeselector,
-    ):
-        """
-        In this test case, check the HCO CR node placement
-        propagated to VMImportConfig CR deployments 'VMImportConfig'.
-        """
-        # Verify VMImportConfig component spec
-        assert (
-            vm_import_configs_spec.get("infra") == NODE_PLACEMENT_INFRA["nodePlacement"]
-        )
-
-        # Verify that node placement configuration has been correctly
-        # propagated to 'vm-import-controller' deployment
-        assert (
-            vm_import_controller_spec_nodeselector
-            == NODE_PLACEMENT_INFRA["nodePlacement"]["nodeSelector"]
-        )
-
     @pytest.mark.polarion("CNV-5382")
     @pytest.mark.dependency(depends=["test_hco_cr_with_node_placement"])
     def test_node_placement_propagated_to_network_addons_cr(
