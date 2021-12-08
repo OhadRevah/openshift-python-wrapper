@@ -8,7 +8,7 @@ from pytest_testconfig import config as py_config
 
 from tests.network.utils import assert_no_ping, run_test_guest_performance
 from utilities.constants import IPV6_STR
-from utilities.infra import BUG_STATUS_CLOSED, name_prefix
+from utilities.infra import name_prefix
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,
@@ -328,8 +328,12 @@ class TestConnectivity:
             ),
         )
 
-    @pytest.mark.bugzilla(
-        1827257, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    @pytest.mark.xfail(
+        reason=(
+            "Currently this test will fail on BM clusters, the ping works due to CNV 294428 W/A - we send an empty "
+            "VLAN dictionary which causes no separation between VLANs and allow different VLANs to reach each other."
+            "This Xfail marker should be removed after BZ 2026621 is fixed"
+        )
     )
     @pytest.mark.polarion("CNV-2075")
     def test_negative_vlan(
