@@ -8,6 +8,7 @@ import os
 import os.path
 import re
 import shutil
+import tempfile
 from collections import Counter
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -770,7 +771,8 @@ def exported_kubeconfig(unprivileged_secret, kubeconfig_export_path):
     if not unprivileged_secret:
         yield
     else:
-        kubeconfig_path = "/tmp/cnv-tests-kubeconfig"
+        kubeconfig_path = tempfile.mkdtemp(suffix="-cnv-tests-kubeconfig")
+        LOGGER.info(f"Kubeconfig for this run is: {kubeconfig_path}")
         if not os.path.isdir(kubeconfig_path):
             os.mkdir(kubeconfig_path)
 
