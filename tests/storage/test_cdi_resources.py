@@ -67,7 +67,7 @@ def verify_cdi_app_label(cdi_resources, cnv_version):
             ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/part-of for {resource.name}"
             assert (
                 resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/version"]
-                == f"v{cnv_version}"
+                == cnv_version
             ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/version for {resource.name}"
             if resource.name.startswith(CDI_OPERATOR):
                 assert (
