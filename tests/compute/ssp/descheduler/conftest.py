@@ -17,13 +17,15 @@ from tests.compute.ssp.descheduler.constants import RUNNING_PROCESS_NAME_IN_VM
 from tests.compute.ssp.descheduler.utils import (
     VirtualMachineForDeschedulerTest,
     calculate_vm_deployment,
-    scale_descheduler_deployment,
     vm_nodes,
     vms_per_nodes,
     wait_pod_deploy,
     wait_vmi_failover,
 )
-from tests.compute.utils import start_and_fetch_processid_on_linux_vm
+from tests.compute.utils import (
+    scale_deployment_replicas,
+    start_and_fetch_processid_on_linux_vm,
+)
 from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN
 from utilities.infra import create_ns, get_pods
 from utilities.virt import (
@@ -102,27 +104,29 @@ def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_su
 
 
 @pytest.fixture(scope="class")
-def downscaled_descheduler_operator_deployment(admin_client, installed_descheduler):
+def downscaled_descheduler_operator_deployment(admin_client, descheduler_ns):
     deployment_name = "descheduler-operator"
     LOGGER.info(
         f"Scale {deployment_name} to 0 is a W/A to force descheduler to use threasholds from config map"
     )
-    scale_descheduler_deployment(
-        installed_descheduler=installed_descheduler,
+    with scale_deployment_replicas(
         deployment_name=deployment_name,
+        namespace=descheduler_ns.name,
         replica_count=0,
-    )
+    ):
+        yield
 
 
 @pytest.fixture()
-def downscaled_descheduler_cluster_deployment(admin_client, installed_descheduler):
+def downscaled_descheduler_cluster_deployment(admin_client, descheduler_ns):
     deployment_name = "cluster"
     LOGGER.info(f"Scale down descheduler {deployment_name} deployment to stop its work")
-    scale_descheduler_deployment(
-        installed_descheduler=installed_descheduler,
+    with scale_deployment_replicas(
         deployment_name=deployment_name,
+        namespace=descheduler_ns.name,
         replica_count=0,
-    )
+    ):
+        yield
 
 
 @pytest.fixture(scope="class")

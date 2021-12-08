@@ -2,7 +2,6 @@ import logging
 from bisect import bisect
 from collections import Counter
 
-from ocp_resources.deployment import Deployment
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.ssp.descheduler.constants import RUNNING_PROCESS_NAME_IN_VM
@@ -224,14 +223,3 @@ def verify_vms_consistent_virt_launcher_pods(running_vms):
 
     except TimeoutExpiredError:
         LOGGER.info("No VMs were migrated.")
-
-
-def scale_descheduler_deployment(installed_descheduler, deployment_name, replica_count):
-    """Scale descheduler deployment and wait until all replicas are updated"""
-    descheduler_deployment = Deployment(
-        name=deployment_name, namespace=installed_descheduler.namespace
-    )
-    descheduler_deployment.scale_replicas(replica_count=replica_count)
-    descheduler_deployment.wait_for_replicas(
-        deployed=True if replica_count > 0 else False
-    )

@@ -4,6 +4,7 @@ import shlex
 from contextlib import contextmanager
 
 from benedict import benedict
+from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -160,6 +161,20 @@ def update_hco_config(resource, path, value):
     editor.update(backup_resources=True)
     yield
     editor.restore()
+
+
+@contextmanager
+def scale_deployment_replicas(deployment_name, namespace, replica_count):
+    """
+    It scales deployments replicas. At the end of the test restores them back
+    """
+    deployment = Deployment(name=deployment_name, namespace=namespace)
+    initial_replicas = deployment.instance.spec.replicas
+    deployment.scale_replicas(replica_count=replica_count)
+    deployment.wait_for_replicas(deployed=replica_count > 0)
+    yield
+    deployment.scale_replicas(replica_count=initial_replicas)
+    deployment.wait_for_replicas(deployed=initial_replicas > 0)
 
 
 def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=15):
