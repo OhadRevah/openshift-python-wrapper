@@ -192,7 +192,7 @@ def vm_a(
     unprivileged_client,
 ):
     requested_network_config = kmp_utils.vm_network_config(
-        mac_pool=mac_pool, all_nads=all_nads, end_ip=1, mac_uid="1"
+        mac_pool=mac_pool, all_nads=all_nads, end_ip_octet=1, mac_uid="1"
     )
     yield from kmp_utils.create_vm(
         name="vm-fedora-a",
@@ -214,7 +214,7 @@ def vm_b(
     unprivileged_client,
 ):
     requested_network_config = kmp_utils.vm_network_config(
-        mac_pool=mac_pool, all_nads=all_nads, end_ip=2, mac_uid="2"
+        mac_pool=mac_pool, all_nads=all_nads, end_ip_octet=2, mac_uid="2"
     )
     yield from kmp_utils.create_vm(
         name="vm-fedora-b",

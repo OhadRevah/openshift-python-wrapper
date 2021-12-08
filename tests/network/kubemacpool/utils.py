@@ -20,25 +20,32 @@ KMP_PODS_LABEL = "control-plane=mac-controller-manager"
 IfaceTuple = namedtuple("iface_config", ["ip_address", "mac_address", "name"])
 
 
-def vm_network_config(mac_pool, all_nads, end_ip, mac_uid):
-    """end_ip - int in range [1,254]"""
-    """mac_uid - string in range ['0','f'] in hex"""
+def vm_network_config(mac_pool, all_nads, end_ip_octet, mac_uid):
+    """
+    Args:
+        end_ip_octet(int): int in range [1,254]
+        mac_uid(str): string in range ['0','f'] in hex
+
+    Returns:
+        dict: key - interface name.
+              value - IP address, MAC address, network name.
+    """
     return {
         "eth1": IfaceTuple(
-            ip_address=f"10.200.1.{end_ip}",
+            ip_address=f"10.200.1.{end_ip_octet}",
             mac_address=mac_pool.get_mac_from_pool(),
             name=all_nads[0],
         ),
         "eth2": IfaceTuple(
-            ip_address=f"10.200.2.{end_ip}", mac_address="auto", name=all_nads[1]
+            ip_address=f"10.200.2.{end_ip_octet}", mac_address="auto", name=all_nads[1]
         ),
         "eth3": IfaceTuple(
-            ip_address=f"10.200.3.{end_ip}",
+            ip_address=f"10.200.3.{end_ip_octet}",
             mac_address=f"02:0{mac_uid}:00:00:00:00",
             name=all_nads[2],
         ),
         "eth4": IfaceTuple(
-            ip_address=f"10.200.4.{end_ip}", mac_address="auto", name=all_nads[3]
+            ip_address=f"10.200.4.{end_ip_octet}", mac_address="auto", name=all_nads[3]
         ),
     }
 
