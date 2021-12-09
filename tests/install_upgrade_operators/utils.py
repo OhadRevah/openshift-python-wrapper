@@ -10,16 +10,16 @@ from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
-from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import ConflictError
+from openshift.dynamic.exceptions import ConflictError, NotFoundError
 
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
+    get_kubevirt_package_manifest,
     wait_for_consistent_resource_conditions,
 )
 from utilities.storage import DEFAULT_CDI_CONDITIONS
@@ -29,15 +29,13 @@ from utilities.virt import DEFAULT_KUBEVIRT_CONDITIONS
 LOGGER = logging.getLogger(__name__)
 
 
-def get_package_manifest_images(dyn_client, hco_namespace):
-    for package in PackageManifest.get(
-        dyn_client=dyn_client,
-        namespace=hco_namespace,
-        name="kubevirt-hyperconverged",
-    ):
-        for channel in package.instance.status.channels:
-            if channel.name == "stable":
-                return channel.currentCSVDesc["relatedImages"]
+def get_package_manifest_images(admin_client):
+    package = get_kubevirt_package_manifest(admin_client=admin_client)
+    for channel in package.status.channels:
+        if channel.name == "stable":
+            LOGGER.info("For kubevirt package manifest stable channel was found.")
+            return channel.currentCSVDesc["relatedImages"]
+    raise NotFoundError("For kubevirt package manifest, could not find stable channel")
 
 
 def cnv_target_version_channel(cnv_version):
