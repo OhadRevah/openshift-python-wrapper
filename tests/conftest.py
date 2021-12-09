@@ -204,6 +204,7 @@ def pytest_addoption(parser):
     log_collector_group = parser.getgroup(name="LogCollector")
     deprecate_api_test_group = parser.getgroup(name="DeprecateTestAPI")
     leftovers_collector = parser.getgroup(name="LeftoversCollector")
+    scale_group = parser.getgroup(name="Scale")
 
     # Upgrade addoption
     install_upgrade_group.addoption(
@@ -319,6 +320,13 @@ def pytest_addoption(parser):
         "--leftovers-collector",
         help="By default will not run, to run pass --leftovers-collector.",
         action="store_true",
+    )
+
+    # Scale group
+    scale_group.addoption(
+        "--scale-params-file",
+        help="Path to scale test params file, default is tests/scale/scale_params.yaml",
+        default="tests/scale/scale_params.yaml",
     )
 
 
