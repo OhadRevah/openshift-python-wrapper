@@ -18,6 +18,7 @@ from tests.metrics.utils import (
     run_vm_commands,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
+from utilities.hco import wait_for_hco_conditions
 from utilities.infra import create_ns
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
@@ -133,9 +134,19 @@ def updated_resource_multiple_times_with_invalid_label(
             component_name=comp_name,
             expected_count=increasing_value,
         )
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            consecutive_checks_count=3,
+        )
 
     yield resource_editor
     resource_editor.restore()
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        consecutive_checks_count=3,
+    )
 
 
 @pytest.fixture()
