@@ -24,6 +24,7 @@ from tests.install_upgrade_operators.utils import (
 )
 from utilities.constants import TIMEOUT_3MIN
 from utilities.hco import get_hco_spec, get_hyperconverged_resource
+from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -410,35 +411,56 @@ def validate_related_objects(
     Raises:
         AssertionError: if related objects are not reconciled, if resourceVersion is not updated for HCO
     """
+    kinds_with_bugzilla = {
+        "ImageStream": 2030660,
+    }
+    kinds_with_open_bz = [
+        kind.lower()
+        for kind, bug_id in kinds_with_bugzilla.items()
+        if get_bug_status(
+            bug=bug_id,
+        )
+        not in BUG_STATUS_CLOSED
+    ]
+    LOGGER.info(f"Followings are kinds with open bugs: {kinds_with_open_bz}")
     error_reconciliation = {}
     error_resource_version = {}
 
     for related_obj in related_objects:
-        pre_update_resource_version = related_obj["resourceVersion"]
-        component = get_resource_from_module_name(
-            related_obj=related_obj,
-            ocp_resources_submodule_list=ocp_resources_submodule_list,
-            admin_client=admin_client,
-        )
-        pre_update_label = component.instance.metadata.labels
-        update_resource_label(
-            component=component,
-        )
+        if related_obj["kind"].lower() not in kinds_with_open_bz:
+            pre_update_resource_version = related_obj["resourceVersion"]
+            component = get_resource_from_module_name(
+                related_obj=related_obj,
+                ocp_resources_submodule_list=ocp_resources_submodule_list,
+                admin_client=admin_client,
+            )
+            pre_update_label = component.instance.metadata.labels
+            update_resource_label(
+                component=component,
+            )
 
-        error_reconciliation[component.name] = validate_resource_reconciliation(
-            pre_update_resource_version=pre_update_resource_version,
-            component=component,
-            pre_update_label=pre_update_label,
-        )
+            LOGGER.info(
+                f"Checking: {related_obj['kind']}: {related_obj['name']} for reconciliation"
+            )
+            error_reconciliation[component.name] = validate_resource_reconciliation(
+                pre_update_resource_version=pre_update_resource_version,
+                component=component,
+                pre_update_label=pre_update_label,
+            )
 
-        error_resource_versionvalue = wait_for_resource_version_change(
-            admin_client=admin_client,
-            hco_namespace=hco_namespace,
-            component=component,
-            resource_kind=related_obj["kind"],
-        )
-        if error_resource_versionvalue:
-            error_resource_version[component.name] = error_resource_versionvalue
+            error_resource_version_value = wait_for_resource_version_change(
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+                component=component,
+                resource_kind=related_obj["kind"],
+            )
+            if error_resource_version_value:
+                error_resource_version[component.name] = error_resource_version_value
+        else:
+            LOGGER.warning(
+                f"RelatedObject kind: {related_obj['kind']} {related_obj['name']} has open bugzilla associated with it."
+                " Skipping."
+            )
 
     assert not any(error_reconciliation.values()), (
         f"Reconciliation failed for the following related "
