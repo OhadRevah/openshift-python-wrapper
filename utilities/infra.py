@@ -10,6 +10,7 @@ import shutil
 from configparser import ConfigParser
 from contextlib import contextmanager
 from pathlib import Path
+from subprocess import check_output
 
 import bugzilla
 import kubernetes
@@ -1130,3 +1131,13 @@ def get_related_images_name_and_version(dyn_client, hco_namespace, version):
             "version": version,
         }
     return related_images_name_and_versions
+
+
+def run_cnv_must_gather(image_url, dest_dir):
+    output_file = os.path.join(dest_dir, "output.txt")
+    must_gather_cmd = (
+        f"oc adm must-gather --image={image_url} --dest-dir={dest_dir} &> {output_file}"
+    )
+    LOGGER.info(f"Running: {must_gather_cmd}")
+    check_output(must_gather_cmd, shell=True)
+    return get_log_dir(path=dest_dir)

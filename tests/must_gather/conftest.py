@@ -5,9 +5,6 @@ must gather test
 """
 
 import logging
-import os
-import shutil
-from subprocess import check_output
 
 import pytest
 import yaml
@@ -21,7 +18,7 @@ from utilities.infra import (
     ExecCommandOnPod,
     MissingResourceException,
     create_ns,
-    get_log_dir,
+    run_cnv_must_gather,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -41,15 +38,7 @@ def cnv_must_gather(
     Run cnv-must-gather for data collection.
     """
     path = tmpdir_factory.mktemp("must_gather")
-    output_file = os.path.join(path, "output.txt")
-    try:
-        must_gather_cmd = f"oc adm must-gather --image={must_gather_image_url} --dest-dir={path} &> {output_file}"
-        LOGGER.info(f"Running: {must_gather_cmd}")
-        check_output(must_gather_cmd, shell=True)
-        must_gather_log_dir = get_log_dir(path=path)
-        yield must_gather_log_dir
-    finally:
-        shutil.rmtree(path)
+    return run_cnv_must_gather(image_url=must_gather_image_url, dest_dir=path)
 
 
 @pytest.fixture(scope="module")
