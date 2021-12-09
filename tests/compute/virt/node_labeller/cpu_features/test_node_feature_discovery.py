@@ -6,6 +6,7 @@ from xml.etree import ElementTree
 import pytest
 
 from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
+from tests.compute.virt.node_labeller.constants import CPU_MODEL_LABEL_PREFIX
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -31,7 +32,7 @@ def nodes_labels_dict(nodes):
         node_labels_dict[node.name]["cpu_models"] = [
             label.split("/")[1]
             for label in labels_dict
-            if label.startswith("cpu-model.node.kubevirt.io/")
+            if label.startswith(CPU_MODEL_LABEL_PREFIX)
         ]
         node_labels_dict[node.name]["cpu_features"] = [
             label.split("/")[1]

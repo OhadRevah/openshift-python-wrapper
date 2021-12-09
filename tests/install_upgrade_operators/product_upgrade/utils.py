@@ -65,10 +65,6 @@ BASE_EXCEPTIONS_DICT = {
 SRC_PVC_NAME = "SRC_PVC_NAME"
 
 
-class ResourceValueError(Exception):
-    pass
-
-
 class ResourceMissingFieldError(Exception):
     pass
 

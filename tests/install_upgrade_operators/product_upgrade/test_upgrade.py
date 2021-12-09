@@ -9,6 +9,7 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from utilities import console
 from utilities.constants import KMP_ENABLED_LABEL, KMP_VM_ASSIGNMENT_LABEL, LS_COMMAND
+from utilities.exceptions import ResourceValueError
 from utilities.infra import validate_nodes_ready, validate_nodes_schedulable
 from utilities.network import (
     assert_ping_successful,
@@ -717,7 +718,7 @@ class TestUpgrade:
         )
 
         if mismatching_templates:
-            raise upgrade_utils.ResourceValueError(
+            raise ResourceValueError(
                 f"Golden image default {upgrade_utils.SRC_PVC_NAME} "
                 f"mismatch after upgrade:\n{mismatching_templates}"
             )

@@ -29,3 +29,7 @@ class LeftoversFoundError(Exception):
 
     def __str__(self):
         return self.leftovers
+
+
+class ResourceValueError(Exception):
+    pass
