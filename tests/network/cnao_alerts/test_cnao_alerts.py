@@ -3,10 +3,10 @@ from copy import deepcopy
 
 import pytest
 from ocp_resources.daemonset import DaemonSet
+from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
-from utilities.hco import wait_for_hco_conditions
 from utilities.infra import get_pod_by_name_prefix
 
 
@@ -85,22 +85,25 @@ def invalid_cnao_operator(
 
 
 @pytest.fixture()
-def hco_ready(admin_client, hco_namespace):
+def cnao_ready(admin_client, hco_namespace):
     yield
     get_pod_by_name_prefix(
         dyn_client=admin_client,
         pod_prefix=CLUSTER_NETWORK_ADDONS_OPERATOR,
         namespace=hco_namespace.name,
     ).delete(wait=True)
-
-    wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
+    get_pod_by_name_prefix(
+        dyn_client=admin_client,
+        pod_prefix=CLUSTER_NETWORK_ADDONS_OPERATOR,
+        namespace=hco_namespace.name,
+    ).wait_for_status(status=Pod.Status.RUNNING)
 
 
 @pytest.mark.polarion("CNV-7274")
-def test_cnao_not_ready(hco_ready, invalid_cnao_linux_bridge, prometheus):
+def test_cnao_not_ready(cnao_ready, invalid_cnao_linux_bridge, prometheus):
     prometheus.alert_sampler(alert="NetworkAddonsConfigNotReady")
 
 
 @pytest.mark.polarion("CNV-7275")
-def test_cnao_is_down(hco_ready, invalid_cnao_operator, prometheus):
+def test_cnao_is_down(cnao_ready, invalid_cnao_operator, prometheus):
     prometheus.alert_sampler(alert="CnaoDown")
