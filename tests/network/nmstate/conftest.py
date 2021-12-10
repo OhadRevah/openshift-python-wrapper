@@ -128,7 +128,7 @@ def bridge_on_management_ifaces_node2(
     wait_for_address_on_iface(worker_pod=worker_pod, iface_name=management_iface)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def nmstate_ds(admin_client, hco_namespace):
     return get_daemonset_by_name(
         admin_client=admin_client,

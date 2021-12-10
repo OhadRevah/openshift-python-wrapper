@@ -3,7 +3,8 @@ from collections import OrderedDict
 
 import pytest
 
-from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
+from tests.network.utils import assert_ssh_alive, run_ssh_in_background
+from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
@@ -19,7 +20,19 @@ LOGGER = logging.getLogger(__name__)
 BRIDGE_NAME = "br1test"
 
 
-@pytest.fixture()
+def restart_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
+    LOGGER.info("Delete NMstate PODs")
+    for pod in get_pod_by_name_prefix(
+        dyn_client=admin_client,
+        pod_prefix="nmstate-handler",
+        namespace=hco_namespace.name,
+        get_all=True,
+    ):
+        pod.delete(wait=True)
+    nmstate_ds.wait_until_deployed()
+
+
+@pytest.fixture(scope="class")
 def nmstate_linux_bridge_device_worker_1(
     skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node1
 ):
@@ -28,13 +41,13 @@ def nmstate_linux_bridge_device_worker_1(
         nncp_name=f"restart-nmstate-{name_prefix(worker_node1.name)}",
         interface_name=BRIDGE_NAME,
         network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
+        node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][0]],
     ) as br_dev:
         yield br_dev
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def nmstate_linux_bridge_device_worker_2(
     skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node2
 ):
@@ -43,13 +56,13 @@ def nmstate_linux_bridge_device_worker_2(
         nncp_name=f"restart-nmstate-{name_prefix(worker_node2.name)}",
         interface_name=BRIDGE_NAME,
         network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
+        node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][0]],
     ) as br_dev:
         yield br_dev
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def nmstate_linux_nad(
     namespace,
     nmstate_linux_bridge_device_worker_1,
@@ -57,14 +70,14 @@ def nmstate_linux_nad(
 ):
     with network_nad(
         namespace=namespace,
-        nad_type=LINUX_BRIDGE,
+        nad_type=nmstate_linux_bridge_device_worker_1.bridge_type,
         nad_name="nmstate-br1test-nad",
-        interface_name=BRIDGE_NAME,
+        interface_name=nmstate_linux_bridge_device_worker_1.bridge_name,
     ) as nad:
         yield nad
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def nmstate_linux_bridge_attached_vma(
     worker_node1,
     namespace,
@@ -98,7 +111,7 @@ def nmstate_linux_bridge_attached_vma(
         yield vm
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def nmstate_linux_bridge_attached_vmb(
     worker_node2,
     namespace,
@@ -132,17 +145,17 @@ def nmstate_linux_bridge_attached_vmb(
         yield vm
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def nmstate_linux_bridge_attached_running_vma(nmstate_linux_bridge_attached_vma):
     return running_vm(vm=nmstate_linux_bridge_attached_vma)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def nmstate_linux_bridge_attached_running_vmb(nmstate_linux_bridge_attached_vmb):
     return running_vm(vm=nmstate_linux_bridge_attached_vmb)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def vmb_dst_ip(nmstate_linux_nad, nmstate_linux_bridge_attached_running_vmb):
     return get_vmi_ip_v4_by_name(
         vm=nmstate_linux_bridge_attached_running_vmb,
@@ -150,7 +163,7 @@ def vmb_dst_ip(nmstate_linux_nad, nmstate_linux_bridge_attached_running_vmb):
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def vmb_pinged(vmb_dst_ip, nmstate_linux_bridge_attached_running_vma):
     assert_ping_successful(
         src_vm=nmstate_linux_bridge_attached_running_vma,
@@ -158,44 +171,80 @@ def vmb_pinged(vmb_dst_ip, nmstate_linux_bridge_attached_running_vma):
     )
 
 
-@pytest.mark.bugzilla(
-    2000052, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-@pytest.mark.post_upgrade
-@pytest.mark.polarion("CNV-5780")
-def test_nmstate_restart_and_check_connectivity(
-    admin_client,
-    hco_namespace,
-    nmstate_ds,
+@pytest.fixture(scope="class")
+def ssh_in_vm_background(
     nmstate_linux_nad,
-    nmstate_linux_bridge_attached_vma,
-    nmstate_linux_bridge_attached_vmb,
     nmstate_linux_bridge_attached_running_vma,
     nmstate_linux_bridge_attached_running_vmb,
-    vmb_dst_ip,
-    vmb_pinged,
 ):
-    for idx in range(5):
-        LOGGER.info("Delete NMstate PODs")
-        for pod in get_pod_by_name_prefix(
-            dyn_client=admin_client,
-            pod_prefix="nmstate-handler",
-            namespace=hco_namespace.name,
-            get_all=True,
-        ):
-            pod.delete(wait=True)
+    run_ssh_in_background(
+        nad=nmstate_linux_nad,
+        src_vm=nmstate_linux_bridge_attached_running_vma,
+        dst_vm=nmstate_linux_bridge_attached_running_vmb,
+        dst_vm_user=nmstate_linux_bridge_attached_running_vmb.username,
+        dst_vm_password=nmstate_linux_bridge_attached_running_vmb.password,
+    )
 
-        nmstate_ds.wait_until_deployed()
-        LOGGER.info(
-            (
-                f"Check connectivity from {nmstate_linux_bridge_attached_running_vma.name} "
-                f"to {nmstate_linux_bridge_attached_running_vmb.name} "
-                f"IP {vmb_dst_ip}. Ping number: {idx + 1}"
+
+@pytest.fixture(scope="class")
+def restarted_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
+    restart_nmstate_handler(
+        admin_client=admin_client, hco_namespace=hco_namespace, nmstate_ds=nmstate_ds
+    )
+
+
+class TestNmstateHandlerRestart:
+    @pytest.mark.post_upgrade
+    @pytest.mark.polarion("CNV-5780")
+    def test_nmstate_restart_and_check_connectivity(
+        self,
+        admin_client,
+        hco_namespace,
+        nmstate_ds,
+        nmstate_linux_bridge_attached_vma,
+        nmstate_linux_bridge_attached_vmb,
+        nmstate_linux_bridge_attached_running_vma,
+        nmstate_linux_bridge_attached_running_vmb,
+        vmb_dst_ip,
+        vmb_pinged,
+    ):
+        # Running 5 nmstate restarts since we saw some failures after few restarts.
+        for idx in range(5):
+            restart_nmstate_handler(
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+                nmstate_ds=nmstate_ds,
+            )
+            LOGGER.info(
+                (
+                    f"Check connectivity from {nmstate_linux_bridge_attached_running_vma.name} "
+                    f"to {nmstate_linux_bridge_attached_running_vmb.name} "
+                    f"IP {vmb_dst_ip}. NMstate restart number: {idx + 1}"
+                )
+            )
+
+            assert_ping_successful(
+                src_vm=nmstate_linux_bridge_attached_running_vma,
+                dst_ip=vmb_dst_ip,
+                count="60",
+            )
+
+    @pytest.mark.polarion("CNV-7746")
+    def test_ssh_alive_after_restart_nmstate_handler(
+        self,
+        nmstate_linux_nad,
+        nmstate_linux_bridge_attached_vma,
+        nmstate_linux_bridge_attached_vmb,
+        nmstate_linux_bridge_attached_running_vma,
+        nmstate_linux_bridge_attached_running_vmb,
+        ssh_in_vm_background,
+        restarted_nmstate_handler,
+    ):
+        src_ip = str(
+            get_vmi_ip_v4_by_name(
+                vm=nmstate_linux_bridge_attached_vma, name=nmstate_linux_nad.name
             )
         )
-
-        assert_ping_successful(
-            src_vm=nmstate_linux_bridge_attached_running_vma,
-            dst_ip=vmb_dst_ip,
-            count="60",
+        assert_ssh_alive(
+            ssh_vm=nmstate_linux_bridge_attached_running_vma, src_ip=src_ip
         )
