@@ -470,6 +470,10 @@ def pytest_runtest_makereport(item, call):
         parent._previousfailed = item
 
 
+def pytest_fixture_setup(fixturedef, request):
+    LOGGER.info(f"Executing Fixture: {fixturedef.argname}")
+
+
 def pytest_runtest_setup(item):
     """
     Use incremental
