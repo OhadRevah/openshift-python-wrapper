@@ -61,6 +61,9 @@ def initial_certificates_dates(
     for secret in SECRETS:
         Secret(name=secret, namespace=hco_namespace.name).delete(wait=True)
 
+    for secret in SECRETS:
+        Secret(name=secret, namespace=hco_namespace.name).wait(timeout=TIMEOUT_1MIN)
+
     LOGGER.info("Retrieve the certificates dates")
     return get_certificates_validity_period_and_checkend_result(
         hco_namespace_name=hco_namespace.name,
