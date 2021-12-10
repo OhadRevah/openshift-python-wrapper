@@ -8,7 +8,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_2MIN
 from utilities.infra import run_ssh_commands
-from utilities.network import ping
+from utilities.network import get_vmi_ip_v4_by_name, ping
 
 
 LOGGER = logging.getLogger(__name__)
@@ -90,3 +90,53 @@ def run_test_guest_performance(server_vm, client_vm, listen_ip=None, target_ip=N
     sum_sent = iperf_json.get("end").get("sum_sent")
     bits_per_second = int(sum_sent.get("bits_per_second"))
     return float(bitmath.Byte(bits_per_second).GiB)
+
+
+def assert_ssh_alive(ssh_vm, src_ip):
+    """
+    Check the ssh process is alive
+
+    Args:
+        ssh_vm (VirtualMachine): VM to ssh, this is the dst VM of run_ssh_in_background().
+        src_ip (str): The IP of the src VM, this is the IP of the src VM of run_ssh_in_background().
+
+    Raises:
+        TimeoutExpiredError: When ssh process is not alive.
+    """
+    sampler = TimeoutSampler(
+        wait_timeout=30,
+        sleep=1,
+        func=run_ssh_commands,
+        host=ssh_vm.ssh_exec,
+        commands=[shlex.split("sudo netstat -tulpan | grep ssh")],
+    )
+    try:
+        for sample in sampler:
+            if sample:
+                for line in sample:
+                    if src_ip in line and "ESTABLISHED" in line:
+                        LOGGER.info(f"SSH connection from {src_ip} is alive")
+                        return
+    except TimeoutExpiredError:
+        LOGGER.error(f"SSH connection from {src_ip} is not alive")
+        raise
+
+
+def run_ssh_in_background(nad, src_vm, dst_vm, dst_vm_user, dst_vm_password):
+    """
+    Start ssh connection to the vm
+    """
+    dst_ip = get_vmi_ip_v4_by_name(vm=dst_vm, name=nad.name)
+    src_ip = str(get_vmi_ip_v4_by_name(vm=src_vm, name=nad.name))
+    LOGGER.info(f"Start ssh connection to {dst_vm.name} from {src_vm.name}")
+    run_ssh_commands(
+        host=src_vm.ssh_exec,
+        commands=[
+            shlex.split(
+                f"sshpass -p {dst_vm_password} ssh -o 'StrictHostKeyChecking no' "
+                f"{dst_vm_user}@{dst_ip} 'sleep 99999' &>1 &"
+            )
+        ],
+    )
+
+    assert_ssh_alive(ssh_vm=dst_vm, src_ip=src_ip)
