@@ -2,6 +2,7 @@ import logging
 from collections import OrderedDict
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 
 from tests.network.utils import assert_ssh_alive, run_ssh_in_background
 from utilities.constants import NMSTATE_HANDLER
@@ -13,6 +14,7 @@ from utilities.network import (
     get_vmi_ip_v4_by_name,
     network_device,
     network_nad,
+    ping,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -157,6 +159,15 @@ def nmstate_linux_bridge_attached_running_vmb(nmstate_linux_bridge_attached_vmb)
 
 
 @pytest.fixture(scope="class")
+def vma_src_ip(nmstate_linux_nad, nmstate_linux_bridge_attached_running_vma):
+    return str(
+        get_vmi_ip_v4_by_name(
+            vm=nmstate_linux_bridge_attached_running_vma, name=nmstate_linux_nad.name
+        )
+    )
+
+
+@pytest.fixture(scope="class")
 def vmb_dst_ip(nmstate_linux_nad, nmstate_linux_bridge_attached_running_vmb):
     return get_vmi_ip_v4_by_name(
         vm=nmstate_linux_bridge_attached_running_vmb,
@@ -194,11 +205,50 @@ def restarted_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
     )
 
 
-class TestNmstateHandlerRestart:
+@pytest.fixture()
+def nncp_ready(
+    nmstate_linux_bridge_device_worker_1, nmstate_linux_bridge_device_worker_2
+):
+    yield
+    for worker in (
+        nmstate_linux_bridge_device_worker_1,
+        nmstate_linux_bridge_device_worker_2,
+    ):
+        worker.wait_for_status_success()
+
+
+@pytest.fixture()
+def modified_nncp(
+    nodes_available_nics,
+    worker_node1,
+    worker_node2,
+    nmstate_linux_bridge_device_worker_1,
+    nmstate_linux_bridge_device_worker_2,
+):
+    nncps = [nmstate_linux_bridge_device_worker_1, nmstate_linux_bridge_device_worker_2]
+    for nncp, worker_node in zip(nncps, [worker_node1, worker_node2]):
+        interfaces = nncp.desired_state["interfaces"]
+        interfaces[0]["bridge"]["port"][0]["name"] = nodes_available_nics[
+            worker_node.name
+        ][
+            -2
+        ]  # NNCP was created with nodes_available_nics[-1]
+        ResourceEditor(
+            patches={
+                nncp: {
+                    "spec": {"desiredState": {"interfaces": interfaces}},
+                },
+            }
+        ).update()
+        nncp.wait_for_status_success()
+
+
+class TestConnectivityAfterNmstateChanged:
     @pytest.mark.post_upgrade
     @pytest.mark.polarion("CNV-5780")
     def test_nmstate_restart_and_check_connectivity(
         self,
+        nncp_ready,
         admin_client,
         hco_namespace,
         nmstate_ds,
@@ -233,7 +283,8 @@ class TestNmstateHandlerRestart:
     @pytest.mark.polarion("CNV-7746")
     def test_ssh_alive_after_restart_nmstate_handler(
         self,
-        nmstate_linux_nad,
+        nncp_ready,
+        vma_src_ip,
         nmstate_linux_bridge_attached_vma,
         nmstate_linux_bridge_attached_vmb,
         nmstate_linux_bridge_attached_running_vma,
@@ -241,11 +292,30 @@ class TestNmstateHandlerRestart:
         ssh_in_vm_background,
         restarted_nmstate_handler,
     ):
-        src_ip = str(
-            get_vmi_ip_v4_by_name(
-                vm=nmstate_linux_bridge_attached_vma, name=nmstate_linux_nad.name
-            )
-        )
         assert_ssh_alive(
-            ssh_vm=nmstate_linux_bridge_attached_running_vma, src_ip=src_ip
+            ssh_vm=nmstate_linux_bridge_attached_running_vma, src_ip=vma_src_ip
         )
+
+    @pytest.mark.polarion("CNV-5839")
+    def test_connectivity_after_nncp_change(
+        self,
+        nmstate_linux_bridge_attached_vma,
+        nmstate_linux_bridge_attached_vmb,
+        nmstate_linux_bridge_attached_running_vma,
+        nmstate_linux_bridge_attached_running_vmb,
+        vmb_dst_ip,
+        vmb_pinged,
+        modified_nncp,
+    ):
+        """
+        This test verifies that connectivity wasn't broken due to change of node network configuration.
+        """
+        ping_stat = ping(
+            src_vm=nmstate_linux_bridge_attached_running_vma,
+            dst_ip=vmb_dst_ip,
+            count=10,
+        )[0]
+        # We expect some packets lost due to change of node network configuration.
+        assert (
+            float(ping_stat) < 100
+        ), f"Ping from {nmstate_linux_bridge_attached_running_vma.name} to {vmb_dst_ip} failed after NNCP changed"

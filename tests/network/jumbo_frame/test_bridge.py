@@ -17,6 +17,11 @@ from utilities.network import (
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
+pytestmark = pytest.mark.usefixtures(
+    "hyperconverged_ovs_annotations_enabled_scope_session"
+)
+
+
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_device_name(index_number):
     yield f"br{next(index_number)}test"

@@ -7,13 +7,19 @@ from contextlib import contextmanager
 
 import pytest
 
-import utilities.network
 from utilities.infra import ExecCommandOnPod
-from utilities.network import BondNodeNetworkConfigurationPolicy, network_nad
+from utilities.network import (
+    BondNodeNetworkConfigurationPolicy,
+    network_device,
+    network_nad,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [
+    pytest.mark.sno,
+    pytest.mark.usefixtures("hyperconverged_ovs_annotations_enabled_scope_session"),
+]
 
 
 class BondNodeNetworkConfigurationPolicyWithSlaves(BondNodeNetworkConfigurationPolicy):
@@ -72,28 +78,6 @@ def create_vm(namespace, nad, node_selector, unprivileged_client):
         yield vm
 
 
-@contextmanager
-def bridge_on_bond(
-    interface_type,
-    utility_pods,
-    node_selector,
-    interface_name,
-    ports,
-):
-    """
-    Create bridge and attach the BOND to it
-    """
-    with utilities.network.network_device(
-        interface_type=interface_type,
-        nncp_name="bridge-on-bond",
-        interface_name=interface_name,
-        network_utility_pods=utility_pods,
-        ports=ports,
-        node_selector=node_selector,
-    ) as br:
-        yield br
-
-
 @pytest.fixture(scope="class")
 def bond_modes_nad(bridge_device_matrix__class__, namespace):
     with network_nad(
@@ -137,11 +121,12 @@ def matrix_bond_modes_bridge(
     """
     Create bridge and attach the BOND to it
     """
-    with bridge_on_bond(
+    with network_device(
         interface_type=bridge_device_matrix__class__,
-        utility_pods=utility_pods,
+        nncp_name="bridge-on-bond",
         node_selector=worker_node1.hostname,
         interface_name=bond_modes_nad.bridge_name,
+        network_utility_pods=utility_pods,
         ports=[matrix_bond_modes_bond.bond_name],
     ) as br:
         yield br
@@ -175,11 +160,12 @@ def bridge_on_bond_fail_over_mac(
     """
     Create bridge and attach the BOND to it
     """
-    with bridge_on_bond(
+    with network_device(
         interface_type=bridge_device_matrix__class__,
-        utility_pods=utility_pods,
+        nncp_name="bridge-on-bond-fail-over-mac",
         node_selector=worker_node1.hostname,
         interface_name=bond_modes_nad.bridge_name,
+        network_utility_pods=utility_pods,
         ports=[active_backup_bond_with_fail_over_mac.bond_name],
     ) as br:
         yield br
@@ -218,7 +204,7 @@ def vm_with_fail_over_mac_bond(
         yield vm
 
 
-@pytest.mark.usefixtures("skip_no_bond_support", "skip_if_workers_bms")
+@pytest.mark.usefixtures("skip_no_bond_support")
 class TestBondModes:
     @pytest.mark.polarion("CNV-4382")
     def test_bond_created(self, utility_pods, matrix_bond_modes_bond):
@@ -233,7 +219,6 @@ class TestBondModes:
 
 @pytest.mark.usefixtures(
     "skip_no_bond_support",
-    "skip_if_workers_bms",
 )
 class TestBondWithFailOverMac:
     @pytest.mark.polarion("CNV-6583")

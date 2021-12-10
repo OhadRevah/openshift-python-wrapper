@@ -3,7 +3,7 @@ from collections import OrderedDict
 import pytest
 
 from utilities.network import (
-    OVS,
+    OVS_BRIDGE,
     assert_ping_successful,
     compose_cloud_init_data_dict,
     network_nad,
@@ -28,7 +28,7 @@ def ovs_bridge_on_worker1(worker_node1_pod_executor):
 def ovs_bridge_nad(namespace, ovs_bridge_on_worker1):
     with network_nad(
         namespace=namespace,
-        nad_type=OVS,
+        nad_type=OVS_BRIDGE,
         nad_name="ovs-test-nad",
         interface_name=ovs_bridge_on_worker1,
     ) as nad:
@@ -111,7 +111,7 @@ def running_vmb_with_ovs_based_l2(vmb_with_ovs_based_l2):
 
 @pytest.mark.polarion("CNV-5636")
 def test_ovs_bridge_sanity(
-    hyperconverged_ovs_annotations_enabled,
+    hyperconverged_ovs_annotations_enabled_scope_session,
     vma_with_ovs_based_l2,
     vmb_with_ovs_based_l2,
     running_vma_with_ovs_based_l2,

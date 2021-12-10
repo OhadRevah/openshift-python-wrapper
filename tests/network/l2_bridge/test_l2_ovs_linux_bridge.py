@@ -6,11 +6,15 @@ from ocp_resources.utils import TimeoutSampler
 
 from tests.network.constants import DHCP_IP_RANGE_START
 from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
+from utilities.infra import run_ssh_commands
 from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 
 
 CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
+
+pytestmark = pytest.mark.usefixtures(
+    "hyperconverged_ovs_annotations_enabled_scope_session"
+)
 
 
 class TestL2LinuxBridge:
@@ -96,25 +100,3 @@ class TestL2LinuxBridge:
         Test multicast traffic(ICMP) via linux bridge
         """
         assert_ping_successful(src_vm=l2_bridge_running_vm_b, dst_ip="224.0.0.1")
-
-    @pytest.mark.bugzilla(
-        1936432, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
-    @pytest.mark.polarion("CNV-5839")
-    def test_connectivity_after_nncp_change(
-        self,
-        skip_if_no_multinic_nodes,
-        namespace,
-        configured_l2_bridge_vm_a,
-        l2_bridge_running_vm_b,
-        modified_nncp,
-        restarted_vms,
-    ):
-        """
-        This test verifies that connectivity wasn't broken due tot change of node network configuration.
-        It assumes that connectivity was already verified (in the previous tests in this module) before
-        changing NNCP.
-        """
-        assert_ping_successful(
-            src_vm=l2_bridge_running_vm_b, dst_ip=l2_bridge_running_vm_b.mpls_local_ip
-        )

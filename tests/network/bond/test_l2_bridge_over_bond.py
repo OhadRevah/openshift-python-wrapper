@@ -16,6 +16,11 @@ from utilities.network import (
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
+pytestmark = pytest.mark.usefixtures(
+    "hyperconverged_ovs_annotations_enabled_scope_session"
+)
+
+
 @pytest.fixture(scope="class")
 def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
     with network_nad(

@@ -11,6 +11,7 @@ import netaddr
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node_network_configuration_policy import (
+    NNCPConfigurationFailed,
     NodeNetworkConfigurationPolicy,
 )
 from ocp_resources.node_network_state import NodeNetworkState
@@ -31,7 +32,7 @@ LOGGER = logging.getLogger(__name__)
 IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
 IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
 LINUX_BRIDGE = "linux-bridge"
-OVS = "ovs"
+OVS_BRIDGE = "ovs-bridge"
 OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
 
@@ -167,29 +168,45 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             set_ipv4=set_ipv4,
             set_ipv6=set_ipv6,
         )
+        self.ovs_bridge_type = "ovs-bridge"
+        self.linux_bridge_type = "linux-bridge"
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
         self.stp_config = stp_config
 
     def to_dict(self):
-        # TODO: call "vlan": vlan_trunk in line 177 once BZ 2026621 fixed.
-        # vlan_trunk = {
-        #     "mode": "trunk",
-        #     "trunk-tags": [{"id-range": {"min": 1000, "max": 1019}}],
-        # }
         bridge_ports = [{"name": port} for port in self.ports]
+        stp = (
+            self.stp_config
+            if self.bridge_type == self.ovs_bridge_type
+            else {"enabled": self.stp_config}
+        )
         self.iface = {
             "name": self.bridge_name,
             "type": self.bridge_type,
             "state": IFACE_UP_STATE,
-            "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
+            "bridge": {
+                "options": {"stp": stp},
+                "port": bridge_ports,
+            },
         }
+
         for port in bridge_ports:
-            # TODO: Remove lines 187-188 after BZ 2026621 fixed
-            if os.environ.get(WORKERS_TYPE) == ClusterHosts.Type.PHYSICAL:
+            # ToDo: The following block (5 lines) should remain commented-out until BZ 2026621 is fixed.
+            # vlan_trunk = {
+            #     "mode": "trunk",
+            #     "trunk-tags": [{"id-range": {"min": 1000, "max": 1019}}],
+            # }
+            # set port["vlan"] = vlan_trunk
+            # TODO: Remove below if statement after BZ 2026621 fixed
+            if (
+                os.environ.get(WORKERS_TYPE) == ClusterHosts.Type.PHYSICAL
+                and self.bridge_type != self.ovs_bridge_type
+            ):
                 port["vlan"] = {}
 
-            if self.mtu:
+            # OVS MTU handled in OvsBridgeNodeNetworkConfigurationPolicy
+            if self.mtu and self.bridge_type != self.ovs_bridge_type:
                 nns = NodeNetworkState(
                     name=self.node_selector or self.worker_pods[0].node.name
                 )
@@ -234,7 +251,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             worker_pods=worker_pods,
             bridge_name=bridge_name,
             bridge_type="linux-bridge",
-            stp_config={"enabled": stp_config},
+            stp_config=stp_config,
             ports=ports,
             mtu=mtu,
             node_selector=node_selector,
@@ -252,7 +269,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         bridge_name,
         ports,
         worker_pods=None,
-        stp_config=True,
+        stp_config=False,
         mtu=None,
         node_selector=None,
         ipv4_enable=False,
@@ -281,47 +298,75 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 
     def to_dict(self):
         res = super().to_dict()
-        if self.set_dummy_ovs_iface:
+        if self.set_dummy_ovs_iface or self.mtu:
             desired_state_interface = res["spec"]["desiredState"]["interfaces"]
             for idx, iface in enumerate(desired_state_interface):
-                if iface["type"] == "ovs-bridge":
-                    ovs_iface_name = f"ovs-dummy{idx}"
+                if iface["type"] == self.ovs_bridge_type:
+                    ovs_dummy_interface_name = f"ovs-dummy{idx}"
                     port_name = iface["bridge"]["port"][0]["name"]
-                    iface["bridge"]["port"].append({"name": ovs_iface_name})
 
-                    port_iface = {
-                        "name": port_name,
-                        "type": "ethernet",
-                        "state": IFACE_UP_STATE,
-                        "ipv4": {"enabled": False},
-                    }
-                    desired_state_interface.append(port_iface)
-                    self.ifaces.append(port_iface)
+                    if self.mtu:
+                        nns = NodeNetworkState(
+                            name=self.node_selector or self.worker_pods[0].node.name
+                        )
+                        port_type = [
+                            _iface["type"]
+                            for _iface in nns.interfaces
+                            if _iface["name"] == port_name
+                        ][0]
+                        if port_type == "bond":
+                            continue
 
-                    ovs_iface = {
-                        "name": ovs_iface_name,
-                        "type": "ovs-interface",
-                        "state": IFACE_UP_STATE,
-                        "ipv4": {"enabled": self.ipv4_enable, "dhcp": self.ipv4_dhcp},
-                    }
-                    if self.set_port_mac:
-                        if not self.node_selector:
-                            raise ValueError(
-                                "node_selector is required for set_port_mac"
-                            )
+                        port_iface = {
+                            "name": port_name,
+                            "type": "ethernet",
+                            "state": IFACE_UP_STATE,
+                            "ipv4": {"enabled": False},
+                            "mtu": self.mtu,
+                        }
+                        desired_state_interface.append(port_iface)
+                        self.ifaces.append(port_iface)
 
-                        nns = NodeNetworkState(name=self.node_selector)
-                        port_mac = [
-                            iface["mac-address"]
-                            for iface in nns.interfaces
-                            if iface["name"] == port_name
-                        ]
-                        ovs_iface["mac-address"] = port_mac[0]
+                    if self.set_dummy_ovs_iface:
+                        iface["bridge"]["port"].append(
+                            {"name": ovs_dummy_interface_name}
+                        )
+                        ovs_iface = {
+                            "name": ovs_dummy_interface_name,
+                            "type": "ovs-interface",
+                            "state": IFACE_UP_STATE,
+                            "ipv4": {
+                                "enabled": self.ipv4_enable,
+                                "dhcp": self.ipv4_dhcp,
+                            },
+                            "mtu": self.mtu,
+                        }
+                        if self.set_port_mac:
+                            if not self.node_selector:
+                                raise ValueError(
+                                    "node_selector is required for set_port_mac"
+                                )
 
-                    desired_state_interface.append(ovs_iface)
-                    self.ifaces.append(ovs_iface)
+                            nns = NodeNetworkState(name=self.node_selector)
+                            port_mac = [
+                                iface["mac-address"]
+                                for iface in nns.interfaces
+                                if iface["name"] == port_name
+                            ]
+                            ovs_iface["mac-address"] = port_mac[0]
+
+                        desired_state_interface.append(ovs_iface)
+                        self.ifaces.append(ovs_iface)
 
         return res
+
+    def deploy(self):
+        try:
+            super().deploy()
+        except NNCPConfigurationFailed as exp:
+            if "failed to communicating with Open vSwitch database" in str(exp):
+                LOGGER.warning("W/A for ovs-bridge when OVS DB is locked")
+                super().deploy()
 
 
 class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
@@ -579,12 +624,12 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
 NETWORK_DEVICE_TYPE = {
     LINUX_BRIDGE: LinuxBridgeNodeNetworkConfigurationPolicy,
-    OVS: OvsBridgeNodeNetworkConfigurationPolicy,
+    OVS_BRIDGE: OvsBridgeNodeNetworkConfigurationPolicy,
     SRIOV: SriovNetworkNodePolicy,
 }
 NAD_TYPE = {
     LINUX_BRIDGE: LinuxBridgeNetworkAttachmentDefinition,
-    OVS: OvsBridgeNetworkAttachmentDefinition,
+    OVS_BRIDGE: OvsBridgeNetworkAttachmentDefinition,
     SRIOV: SriovNetwork,
 }
 
@@ -670,8 +715,9 @@ def network_nad(
         kwargs["resource_name"] = sriov_resource_name
         kwargs["ipam"] = ipam
 
-    if nad_type == OVS:
+    if nad_type == OVS_BRIDGE:
         kwargs["bridge_name"] = interface_name
+        kwargs["mtu"] = mtu
 
     with NAD_TYPE[nad_type](**kwargs) as nad:
         yield nad
@@ -831,7 +877,7 @@ def ping(src_vm, dst_ip, packet_size=None, count=None, quiet_output=True):
         quiet_output: Quiet output, Nothing is displayed except the summary lines at startup time and when finished.
 
     Returns:
-        int: The packet loss amount in a number (Range - 0 to 100).
+        tuple or None: The packet loss amount in a number (Range - 0 to 100).
     """
     ping_ipv6 = "-6" if get_valid_ip_address(dst_ip=dst_ip, family=IPV6_STR) else ""
 

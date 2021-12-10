@@ -77,7 +77,7 @@ nic_models_matrix = [
     "virtio",
     "e1000e",
 ]
-bridge_device_matrix = ["linux-bridge"]
+bridge_device_matrix = ["linux-bridge", "ovs-bridge"]
 storage_class_matrix = [
     {
         StorageClass.Types.HOSTPATH: {

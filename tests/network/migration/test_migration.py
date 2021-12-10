@@ -37,9 +37,12 @@ from utilities.virt import (
 )
 
 
-BR1TEST = "br1test"
 PING_LOG = "ping.log"
 LOGGER = logging.getLogger(__name__)
+
+pytestmark = pytest.mark.usefixtures(
+    "hyperconverged_ovs_annotations_enabled_scope_session"
+)
 
 
 def http_port_accessible(vm, server_ip, server_port):
@@ -68,7 +71,7 @@ def bridge_worker_1(
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-1",
-        interface_name=BR1TEST,
+        interface_name="migration-br",
         network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
@@ -82,11 +85,12 @@ def bridge_worker_2(
     utility_pods,
     worker_node2,
     nodes_available_nics,
+    bridge_worker_1,
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-2",
-        interface_name=BR1TEST,
+        interface_name=bridge_worker_1.bridge_name,
         network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
@@ -98,7 +102,7 @@ def bridge_worker_2(
 def br1test_nad(namespace, bridge_worker_1, bridge_worker_2):
     with network_nad(
         nad_type=bridge_worker_1.bridge_type,
-        nad_name=BR1TEST,
+        nad_name="network-migration-nad",
         interface_name=bridge_worker_1.bridge_name,
         namespace=namespace,
     ) as nad:
@@ -201,8 +205,8 @@ def http_service(namespace, running_vma, running_vmb):
 
 
 @pytest.fixture(scope="module")
-def ping_in_background(running_vma, running_vmb):
-    dst_ip = get_vmi_ip_v4_by_name(vm=running_vmb, name=BR1TEST)
+def ping_in_background(br1test_nad, running_vma, running_vmb):
+    dst_ip = get_vmi_ip_v4_by_name(vm=running_vmb, name=br1test_nad.name)
     assert_ping_successful(src_vm=running_vma, dst_ip=dst_ip)
     LOGGER.info(f"Ping {dst_ip} from {running_vma.name} to {running_vmb.name}")
     run_ssh_commands(
@@ -296,6 +300,7 @@ def test_ssh_vm_migration(
 def test_connectivity_after_migration_and_restart(
     skip_when_one_node,
     namespace,
+    br1test_nad,
     vma,
     vmb,
     running_vma,
@@ -304,7 +309,7 @@ def test_connectivity_after_migration_and_restart(
 ):
     assert_ping_successful(
         src_vm=running_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vm=restarted_vmb, name=BR1TEST),
+        dst_ip=get_vmi_ip_v4_by_name(vm=restarted_vmb, name=br1test_nad.name),
     )
 
 
