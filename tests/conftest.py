@@ -9,6 +9,7 @@ import os.path
 import re
 import shutil
 import tempfile
+import uuid
 from collections import Counter
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -306,6 +307,9 @@ def pytest_addoption(parser):
 
 
 def pytest_cmdline_main(config):
+    # Make pytest tmp dir unique for current session
+    config.option.basetemp = f"{config.option.basetemp}-{str(uuid.uuid4())}"
+
     deprecation_tests_dir_path = "tests/deprecated_api"
     if (
         not config.getoption("--skip-deprecated-api-test")
