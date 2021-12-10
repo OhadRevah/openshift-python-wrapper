@@ -11,6 +11,7 @@ import pytest
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutSampler
 
+from tests.network.utils import assert_ssh_alive, run_ssh_in_background
 from utilities.constants import (
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     IPV6_STR,
@@ -58,15 +59,62 @@ def http_port_accessible(vm, server_ip, server_port):
 
 
 @pytest.fixture(scope="module")
+def bridge_worker_1(
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    worker_node1,
+    nodes_available_nics,
+):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name="migration-worker-1",
+        interface_name=BR1TEST,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.hostname,
+        ports=[nodes_available_nics[worker_node1.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="module")
+def bridge_worker_2(
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    worker_node2,
+    nodes_available_nics,
+):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name="migration-worker-2",
+        interface_name=BR1TEST,
+        network_utility_pods=utility_pods,
+        node_selector=worker_node2.hostname,
+        ports=[nodes_available_nics[worker_node2.name][0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="module")
+def br1test_nad(namespace, bridge_worker_1, bridge_worker_2):
+    with network_nad(
+        nad_type=bridge_worker_1.bridge_type,
+        nad_name=BR1TEST,
+        interface_name=bridge_worker_1.bridge_name,
+        namespace=namespace,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="module")
 def vma(
     namespace,
     unprivileged_client,
     nodes_common_cpu_model,
     dual_stack_network_data,
-    bridge_worker_1,
+    br1test_nad,
 ):
     name = "vma"
-    networks = {BR1TEST: BR1TEST}
+    networks = {br1test_nad.name: br1test_nad.name}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
@@ -92,10 +140,10 @@ def vmb(
     unprivileged_client,
     nodes_common_cpu_model,
     dual_stack_network_data,
-    bridge_worker_2,
+    br1test_nad,
 ):
     name = "vmb"
-    networks = {BR1TEST: BR1TEST}
+    networks = {br1test_nad.name: br1test_nad.name}
     network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.2/24"]}}}
     cloud_init_data = compose_cloud_init_data_dict(
         network_data=network_data_data,
@@ -124,53 +172,6 @@ def running_vma(vma):
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
     return running_vm(vm=vmb)
-
-
-@pytest.fixture(scope="module")
-def bridge_worker_1(
-    skip_if_no_multinic_nodes,
-    utility_pods,
-    worker_node1,
-    nodes_available_nics,
-):
-    with network_device(
-        interface_type=LINUX_BRIDGE,
-        nncp_name="migration-worker-1",
-        interface_name=BR1TEST,
-        network_utility_pods=utility_pods,
-        node_selector=worker_node1.name,
-        ports=[nodes_available_nics[worker_node1.name][0]],
-    ) as br:
-        yield br
-
-
-@pytest.fixture(scope="module")
-def bridge_worker_2(
-    skip_if_no_multinic_nodes,
-    utility_pods,
-    worker_node2,
-    nodes_available_nics,
-):
-    with network_device(
-        interface_type=LINUX_BRIDGE,
-        nncp_name="migration-worker-2",
-        interface_name=BR1TEST,
-        network_utility_pods=utility_pods,
-        node_selector=worker_node2.name,
-        ports=[nodes_available_nics[worker_node2.name][0]],
-    ) as br:
-        yield br
-
-
-@pytest.fixture(scope="module", autouse=True)
-def br1test_nad(namespace):
-    with network_nad(
-        nad_type=LINUX_BRIDGE,
-        nad_name=BR1TEST,
-        interface_name=BR1TEST,
-        namespace=namespace,
-    ) as nad:
-        yield nad
 
 
 @pytest.fixture()
@@ -232,24 +233,19 @@ def assert_low_packet_loss(vm):
 
 
 @pytest.fixture(scope="module")
-def ssh_in_background(running_vma, running_vmb):
+def ssh_in_background(br1test_nad, running_vma, running_vmb):
     """
     Start ssh connection to the vm
     """
-    dst_ip = get_vmi_ip_v4_by_name(vm=running_vmb, name=BR1TEST)
     password = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["password"]
     username = OS_LOGIN_PARAMS[OS_FLAVOR_FEDORA]["username"]
-    LOGGER.info(f"Start ssh connection to {running_vmb.name} from {running_vma.name}")
-    run_ssh_commands(
-        host=running_vma.ssh_exec,
-        commands=[
-            shlex.split(
-                f"sshpass -p {password} ssh -o 'StrictHostKeyChecking no' {username}@{dst_ip} 'sleep 99999' &>1 &"
-            )
-        ],
+    run_ssh_in_background(
+        nad=br1test_nad,
+        src_vm=running_vma,
+        dst_vm=running_vmb,
+        dst_vm_user=username,
+        dst_vm_password=password,
     )
-
-    assert_ssh_alive(ssh_vm=running_vma)
 
 
 @pytest.fixture(scope="module")
@@ -257,26 +253,6 @@ def migrated_vmb(running_vmb, http_service):
     migrate_vm_and_verify(
         vm=running_vmb,
     )
-
-
-def assert_ssh_alive(ssh_vm):
-    """
-    Check the ssh process is alive
-    """
-    output = None
-    sampler = TimeoutSampler(
-        wait_timeout=30,
-        sleep=1,
-        func=run_ssh_commands,
-        host=ssh_vm.ssh_exec,
-        commands=[shlex.split("ps aux | grep 'sleep'")],
-    )
-    for sample in sampler:
-        if sample:
-            output = sample[0]
-            break
-
-    assert "sshpass -p" in output
 
 
 @pytest.mark.xfail(
@@ -303,6 +279,7 @@ def test_ping_vm_migration(
 def test_ssh_vm_migration(
     skip_when_one_node,
     namespace,
+    br1test_nad,
     vma,
     vmb,
     running_vma,
@@ -310,7 +287,8 @@ def test_ssh_vm_migration(
     ssh_in_background,
     migrated_vmb,
 ):
-    assert_ssh_alive(ssh_vm=running_vma)
+    src_ip = str(get_vmi_ip_v4_by_name(vm=running_vma, name=br1test_nad.name))
+    assert_ssh_alive(ssh_vm=running_vma, src_ip=src_ip)
 
 
 @pytest.mark.post_upgrade
