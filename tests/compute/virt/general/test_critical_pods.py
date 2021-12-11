@@ -7,7 +7,7 @@ import logging
 import pytest
 from ocp_resources.pod import Pod
 
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
+from tests.compute.utils import verify_pods_priority_class_value
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -43,21 +43,22 @@ def test_kubevirt_pods_are_critical(virt_pods):
     """
     Positive: ensure infra pods are critical
     """
-    for pod in virt_pods:
-        if get_bug_status(bug=2029317) in BUG_STATUS_CLOSED:
-            LOGGER.info(f"Check {pod.name} marked as critical-pod")
-            assert (
-                pod.instance.metadata.annotations.get(
-                    "scheduler.alpha.kubernetes.io/critical-pod"
-                )
-                == ""
-            ), f"Expected {pod.name} to be a critical pod"
+    verify_pods_priority_class_value(
+        pods=virt_pods, expected_value="kubevirt-cluster-critical"
+    )
 
+    failed_pods = {}
+    for pod in virt_pods:
         LOGGER.info(f"Check that {pod.name} has CriticalAddonsOnly tolerations")
         toleration_data = pod.instance.to_dict()["spec"].get("tolerations", [])
-        assert toleration_data, f"Expected {pod.name} to have tolerations assigned"
-        assert [
+        if not toleration_data:
+            failed_pods[pod.name] = "Pod does not have assigned tolerations"
+            continue
+        if not [
             entry
             for entry in toleration_data
             if entry == {"key": "CriticalAddonsOnly", "operator": "Exists"}
-        ], f"Expected {pod.name} to have CriticalAddonsOnly toleration"
+        ]:
+            failed_pods[pod.name] = "Pod does not have CriticalAddonsOnly toleration"
+
+    assert not failed_pods, f"Failed pods: {failed_pods}"

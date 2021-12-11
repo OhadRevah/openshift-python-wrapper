@@ -202,3 +202,14 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=
             f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
         )
         raise
+
+
+def verify_pods_priority_class_value(pods, expected_value):
+    failed_pods_list = [
+        pod.name
+        for pod in pods
+        if pod.instance.spec["priorityClassName"] != expected_value
+    ]
+    assert (
+        not failed_pods_list
+    ), f"priorityClassName not set correctly in pods: {failed_pods_list}, should be {expected_value}"

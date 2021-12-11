@@ -6,6 +6,7 @@ import pytest
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.ssp import SSP
 
+from tests.compute.utils import verify_pods_priority_class_value
 from utilities.infra import get_pod_by_name_prefix
 
 
@@ -75,12 +76,6 @@ def test_verify_ssp_crd_conditions(ssp_resource):
     indirect=True,
 )
 def test_priority_class_value(pods_list_with_given_prefix):
-    expected_priority_class_value = "system-cluster-critical"
-    failed_pods_list = [
-        pod.name
-        for pod in pods_list_with_given_prefix
-        if pod.instance.spec["priorityClassName"] != expected_priority_class_value
-    ]
-    assert (
-        not failed_pods_list
-    ), f"priorityClassName not set correctly in pods: {failed_pods_list}, should be {expected_priority_class_value}"
+    verify_pods_priority_class_value(
+        pods=pods_list_with_given_prefix, expected_value="system-cluster-critical"
+    )
