@@ -59,14 +59,29 @@ HPP_OPERATOR = "hostpath-provisioner-operator"
 pytestmark = pytest.mark.usefixtures("skip_if_hpp_not_in_sc_options")
 
 
+def skipped_hco_resources():
+    hpp_operator_service = f"{HPP_OPERATOR}-service"
+    return {
+        "ServiceAccount": [HPP_OPERATOR],
+        "ConfigMap": [f"{HPP_OPERATOR}-lock"],
+        "Role": [f"{hpp_operator_service}-cert"],
+        "Service": [hpp_operator_service],
+        "RoleBinding": [
+            f"{hpp_operator_service}-auth-reader",
+            f"{hpp_operator_service}-cert",
+        ],
+        "ClusterRoleBinding": [f"{hpp_operator_service}-system:auth-delegator"],
+    }
+
+
 def verify_hpp_app_label(hpp_resources, cnv_version):
+    hco_resources_to_skip = skipped_hco_resources()
     for resource in hpp_resources:
-        if resource.kind == "ServiceAccount" and resource.name == HPP_OPERATOR:
-            continue
-        elif (
-            resource.kind == "ConfigMap"
-            and resource.name == "hostpath-provisioner-operator-lock"
-        ):
+        if resource.name in hco_resources_to_skip.get(resource.kind, []):
+            LOGGER.info(
+                f"Test skipped: {resource.kind}:{resource.name}, "
+                "labels determined by HCO and do not contain the required labels"
+            )
             continue
         else:
             assert (
