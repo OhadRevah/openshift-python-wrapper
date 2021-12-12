@@ -59,7 +59,6 @@ class TestVmTemplateMetrics:
     @pytest.mark.dependency(
         depends=["test_vmi_phase_count_metric"],
     )
-    @pytest.mark.order(after="test_vmi_phase_count_metric")
     def test_vmi_phase_count_metric_after_stopped_vm(
         self,
         prometheus,

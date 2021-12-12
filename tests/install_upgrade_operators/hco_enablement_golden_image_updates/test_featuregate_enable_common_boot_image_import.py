@@ -23,6 +23,9 @@ class TestEnableCommonBootImageImport:
     @pytest.mark.dependency(
         name="test_set_featuregate_enable_common_boot_image_import_true_hco_cr"
     )
+    @pytest.mark.order(
+        before="test_set_featuregate_enable_common_boot_image_import_true_ssp_cr"
+    )
     def test_set_featuregate_enable_common_boot_image_import_true_hco_cr(
         self,
         hco_spec,
@@ -34,9 +37,6 @@ class TestEnableCommonBootImageImport:
     @pytest.mark.polarion("CNV-7626")
     @pytest.mark.dependency(
         depends=["test_set_featuregate_enable_common_boot_image_import_true_hco_cr"]
-    )
-    @pytest.mark.order(
-        after="test_set_featuregate_enable_common_boot_image_import_true_hco_cr"
     )
     def test_set_featuregate_enable_common_boot_image_import_true_ssp_cr(
         self,
