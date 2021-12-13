@@ -187,7 +187,8 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=
         func=lambda: benedict(
             get_kubevirt_hyperconverged_spec(
                 admin_client=admin_client, hco_namespace=hco_namespace
-            )
+            ),
+            keypath_separator=None,
         ).get(base_path),
     )
     try:
