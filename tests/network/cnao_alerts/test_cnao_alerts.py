@@ -3,10 +3,10 @@ from copy import deepcopy
 
 import pytest
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, TIMEOUT_5MIN
 from utilities.infra import get_pod_by_name_prefix
 
 
@@ -92,11 +92,23 @@ def cnao_ready(admin_client, hco_namespace):
         pod_prefix=CLUSTER_NETWORK_ADDONS_OPERATOR,
         namespace=hco_namespace.name,
     ).delete(wait=True)
-    get_pod_by_name_prefix(
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=1,
+        func=get_pod_by_name_prefix,
         dyn_client=admin_client,
         pod_prefix=CLUSTER_NETWORK_ADDONS_OPERATOR,
         namespace=hco_namespace.name,
-    ).wait_for_status(status=Pod.Status.RUNNING)
+    )
+    try:
+        for sample in samples:
+            if sample.status == sample.Status.RUNNING:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"{sample.name} status is {sample.status}. Expected status is: {sample.Status.RUNNING}"
+        )
+        raise
 
 
 @pytest.mark.polarion("CNV-7274")
