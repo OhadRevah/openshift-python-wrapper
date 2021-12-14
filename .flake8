@@ -64,6 +64,7 @@ fcfn_exclude_functions =
     getoption,
     tmp_path_factory,
     signal,
+    submit,
 
 
 nift_exclude_imports =
