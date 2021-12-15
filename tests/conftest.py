@@ -73,6 +73,7 @@ from utilities.constants import (
     MTU_9000,
     SRIOV,
     TIMEOUT_4MIN,
+    TIMEOUT_6MIN,
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
     WORKERS_TYPE,
@@ -1191,6 +1192,7 @@ def namespace(request, admin_client, unprivileged_client):
             file_path=request.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
         ),
         teardown=teardown,
+        delete_timeout=TIMEOUT_6MIN,
     )
 
 

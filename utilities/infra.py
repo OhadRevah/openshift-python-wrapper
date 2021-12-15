@@ -82,20 +82,34 @@ def label_project(name, label, admin_client):
 
 
 def create_ns(
-    name, unprivileged_client=None, kmp_vm_label=None, admin_client=None, teardown=True
+    name,
+    unprivileged_client=None,
+    kmp_vm_label=None,
+    admin_client=None,
+    teardown=True,
+    delete_timeout=None,
 ):
     """
     For kubemacpool labeling opt-modes, provide kmp_vm_label and admin_client as admin_client
     """
     if not unprivileged_client:
         with Namespace(
-            client=admin_client, name=name, label=kmp_vm_label, teardown=teardown
+            client=admin_client,
+            name=name,
+            label=kmp_vm_label,
+            teardown=teardown,
         ) as ns:
+            if delete_timeout:
+                ns.delete_timeout = delete_timeout
+
             ns.wait_for_status(status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN)
             yield ns
     else:
         with ProjectRequest(name=name, client=unprivileged_client, teardown=teardown):
             project = Project(name=name, client=unprivileged_client, teardown=teardown)
+            if delete_timeout:
+                project.delete_timeout = delete_timeout
+
             project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
             if kmp_vm_label:
                 label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
