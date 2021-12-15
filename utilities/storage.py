@@ -456,13 +456,14 @@ def check_upload_virtctl_result(
     assert_message=None,
 ):
     LOGGER.info("Check status and output of virtctl")
-    status, out, _ = result
-    assert_message = assert_message or out
+    status, out, err = result
+    assert_message = assert_message or err
     if expected_success:
         assert status, assert_message
+        assert expected_output in out, out
     else:
         assert not status, assert_message
-    assert expected_output in out, out
+        assert expected_output in err, err
 
 
 class HttpDeployment(Deployment):
