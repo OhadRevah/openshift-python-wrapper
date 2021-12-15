@@ -20,6 +20,7 @@ from tests.metrics.utils import (
     get_hco_cr_modification_alert_state,
     wait_for_summary_count_to_be_expected,
 )
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = pytest.mark.sno
@@ -302,7 +303,12 @@ def test_metric_invalid_change(
             COMPONENT_CONFIG["priority_class"]["resource_info"]["comp_name"],
             COMPONENT_CONFIG["priority_class"]["resource_info"]["count"],
             id="priority_class",
-            marks=(pytest.mark.polarion("CNV-6150")),
+            marks=(
+                pytest.mark.polarion("CNV-6150"),
+                pytest.mark.bugzilla(
+                    2032837, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
         pytest.param(
             COMPONENT_CONFIG["kubevirt"]["resource_info"]["comp_name"],
