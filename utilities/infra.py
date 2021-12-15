@@ -1106,3 +1106,25 @@ def get_log_dir(path):
 
 def get_deployments(admin_client, namespace):
     return list(Deployment.get(dyn_client=admin_client, namespace=namespace))
+
+
+def cnv_target_images(target_related_images_name_and_versions):
+    return [item["image"] for item in target_related_images_name_and_versions.values()]
+
+
+def get_related_images_name_and_version(dyn_client, hco_namespace, version):
+    related_images_name_and_versions = {}
+    csv = get_csv_by_name(
+        admin_client=dyn_client,
+        namespace=hco_namespace,
+        csv_name=version,
+    )
+    for item in csv.instance.spec.relatedImages:
+        # example of "name": 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
+        # sample output after parsing: name = 'node-maintenance-operator' and version = 'v2.6.3-1'
+        name, version = item["name"].rpartition("/")[-1].split(":", 1)
+        related_images_name_and_versions[name] = {
+            "image": item["image"],
+            "version": version,
+        }
+    return related_images_name_and_versions

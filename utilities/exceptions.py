@@ -33,3 +33,7 @@ class LeftoversFoundError(Exception):
 
 class ResourceValueError(Exception):
     pass
+
+
+class ResourceMissingFieldError(Exception):
+    pass

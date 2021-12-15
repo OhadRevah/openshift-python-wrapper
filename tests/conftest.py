@@ -16,6 +16,7 @@ from subprocess import PIPE, CalledProcessError, Popen, check_output
 
 import bcrypt
 import kubernetes
+import packaging.version
 import pytest
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cdi import CDI
@@ -109,20 +110,28 @@ from utilities.infra import (
 )
 from utilities.logger import setup_logging
 from utilities.network import (
+    LINUX_BRIDGE,
     EthernetNetworkConfigurationPolicy,
     MacPool,
+    cloud_init,
     enable_hyperconverged_ovs_annotations,
     network_device,
+    network_nad,
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
 from utilities.storage import (
     create_or_update_data_source,
     data_volume,
+    get_images_server_url,
     get_storage_class_dict_from_matrix,
+    sc_is_hpp_with_immediate_volume_binding,
+    wait_for_dvs_import_completed,
 )
 from utilities.virt import (
     Prometheus,
+    VirtualMachineForTests,
+    fedora_vm_body,
     generate_yaml_from_template,
     get_base_templates_list,
     get_hyperconverged_kubevirt,
@@ -130,6 +139,7 @@ from utilities.virt import (
     get_kubevirt_hyperconverged_spec,
     kubernetes_taint_exists,
     vm_instance_from_template,
+    wait_for_vm_interfaces,
     wait_for_windows_vm,
 )
 
@@ -2509,3 +2519,244 @@ def updated_nfs_storage_profile(request, cluster_storage_classes):
             yield
     else:
         yield
+
+
+@pytest.fixture(scope="session")
+def upgrade_bridge_on_all_nodes(
+    skip_if_no_multinic_nodes,
+    utility_pods,
+    hosts_common_available_ports,
+    schedulable_nodes,
+):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name="upgrade-bridge",
+        interface_name="br1upgrade",
+        network_utility_pods=utility_pods,
+        nodes=schedulable_nodes,
+        ports=[hosts_common_available_ports[0]],
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="session")
+def bridge_on_one_node(utility_pods, worker_node1):
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name="upgrade-br-marker",
+        interface_name="upg-br-mark",
+        network_utility_pods=utility_pods,
+        node_selector=worker_node1.name,
+    ) as br:
+        yield br
+
+
+@pytest.fixture(scope="session")
+def upgrade_bridge_marker_nad(bridge_on_one_node, kmp_enabled_namespace):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=bridge_on_one_node.bridge_name,
+        interface_name=bridge_on_one_node.bridge_name,
+        namespace=kmp_enabled_namespace,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="session")
+def vm_upgrade_a(
+    unprivileged_client,
+    upgrade_bridge_marker_nad,
+    kmp_enabled_namespace,
+    upgrade_br1test_nad,
+):
+    name = "vm-upgrade-a"
+    with VirtualMachineForTests(
+        name=name,
+        namespace=kmp_enabled_namespace.name,
+        networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
+        interfaces=[upgrade_bridge_marker_nad.name],
+        client=unprivileged_client,
+        cloud_init_data=cloud_init(ip_address="10.200.100.1"),
+        body=fedora_vm_body(name=name),
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="session")
+def vm_upgrade_b(
+    unprivileged_client,
+    upgrade_bridge_marker_nad,
+    kmp_enabled_namespace,
+    upgrade_br1test_nad,
+):
+    name = "vm-upgrade-b"
+    with VirtualMachineForTests(
+        name=name,
+        namespace=kmp_enabled_namespace.name,
+        networks={upgrade_bridge_marker_nad.name: upgrade_bridge_marker_nad.name},
+        interfaces=[upgrade_bridge_marker_nad.name],
+        client=unprivileged_client,
+        cloud_init_data=cloud_init(ip_address="10.200.100.2"),
+        body=fedora_vm_body(name=name),
+    ) as vm:
+        vm.start(wait=True)
+        yield vm
+
+
+@pytest.fixture(scope="session")
+def running_vm_upgrade_a(vm_upgrade_a):
+    vmi = vm_upgrade_a.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    return vm_upgrade_a
+
+
+@pytest.fixture(scope="session")
+def running_vm_upgrade_b(vm_upgrade_b):
+    vmi = vm_upgrade_b.vmi
+    vmi.wait_until_running()
+    wait_for_vm_interfaces(vmi=vmi)
+    return vm_upgrade_b
+
+
+@pytest.fixture(scope="session")
+def upgrade_br1test_nad(upgrade_namespace_scope_session, upgrade_bridge_on_all_nodes):
+    with network_nad(
+        nad_type=LINUX_BRIDGE,
+        nad_name=upgrade_bridge_on_all_nodes.bridge_name,
+        interface_name=upgrade_bridge_on_all_nodes.bridge_name,
+        namespace=upgrade_namespace_scope_session,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="session")
+def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
+    dvs_list = []
+    for sc in py_config["system_storage_class_matrix"]:
+        storage_class = [*sc][0]
+        dv = DataVolume(
+            client=admin_client,
+            name=f"dv-for-product-upgrade-{storage_class}",
+            namespace=py_config["golden_images_namespace"],
+            source="http",
+            storage_class=storage_class,
+            volume_mode=sc[storage_class]["volume_mode"],
+            access_modes=sc[storage_class]["access_mode"],
+            url=rhel_latest_os_params["rhel_image_path"],
+            size=rhel_latest_os_params["rhel_dv_size"],
+            bind_immediate_annotation=True,
+            hostpath_node=worker_node1.name
+            if sc_is_hpp_with_immediate_volume_binding(sc=storage_class)
+            else None,
+            privileged_client=admin_client,
+        )
+        dv.create()
+        dvs_list.append(dv)
+    wait_for_dvs_import_completed(dvs_list=dvs_list)
+
+    yield dvs_list
+
+    for dv in dvs_list:
+        dv.clean_up()
+
+
+@pytest.fixture(scope="session")
+def vm_bridge_networks(upgrade_bridge_on_all_nodes):
+    return {
+        upgrade_bridge_on_all_nodes.bridge_name: upgrade_bridge_on_all_nodes.bridge_name
+    }
+
+
+@pytest.fixture(scope="session")
+def cnv_upgrade_path(
+    request, admin_client, cnv_upgrade_scope_session, pytestconfig, cnv_current_version
+):
+    if cnv_upgrade_scope_session:
+        cnv_target_version = pytestconfig.option.cnv_version
+        current_version = packaging.version.parse(version=cnv_current_version)
+        target_version = packaging.version.parse(version=cnv_target_version)
+        # skip version check if --cnv-upgrade-skip-version-check is used.
+        # This allows upgrading to a newer build on the same Z stream (for dev purposes)
+        if (
+            not request.session.config.getoption("--cnv-upgrade-skip-version-check")
+            and target_version <= current_version
+        ):
+            # Upgrade only if a newer CNV version is requested
+            raise ValueError(
+                f"Cannot upgrade to older/identical versions,"
+                f"current: {cnv_current_version} target: {cnv_target_version}"
+            )
+
+        if current_version.major < target_version.major:
+            upgrade_stream = "x-stream"
+        elif current_version.minor < target_version.minor:
+            upgrade_stream = "y-stream"
+        elif current_version.micro < target_version.micro:
+            upgrade_stream = "z-stream"
+        elif current_version.release == target_version.release:
+            upgrade_stream = "dev-stream"
+        else:
+            raise ValueError(
+                f"unknown upgrade stream, current: {cnv_current_version} target: {cnv_target_version}"
+            )
+
+        cnv_upgrade_dict = {
+            "current_version": cnv_current_version,
+            "target_version": cnv_target_version,
+            "upgrade_stream": upgrade_stream,
+            "target_channel": f"{target_version.major}.{target_version.minor}",
+        }
+
+        return cnv_upgrade_dict
+
+
+@pytest.fixture(scope="session")
+def cnv_upgrade_scope_session(pytestconfig):
+    """Returns True if requested upgrade if for CNV else False"""
+    return pytestconfig.option.upgrade == "cnv"
+
+
+@pytest.fixture(scope="session")
+def upgrade_namespace_scope_session(admin_client, unprivileged_client):
+    yield from create_ns(
+        unprivileged_client=unprivileged_client,
+        admin_client=admin_client,
+        name="test-upgrade-namespace",
+    )
+
+
+@pytest.fixture(scope="session")
+def kmp_enabled_namespace(kmp_vm_label, unprivileged_client, admin_client):
+    # Enabling label "allocate" (or any other non-configured label) - Allocates.
+    kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = KMP_ENABLED_LABEL
+    yield from create_ns(
+        name="kmp-enabled-for-upgrade",
+        kmp_vm_label=kmp_vm_label,
+        unprivileged_client=unprivileged_client,
+        admin_client=admin_client,
+    )
+
+
+@pytest.fixture(scope="session")
+def rhel_latest_os_params():
+    """This fixture is needed as during collection pytest_testconfig is empty.
+    os_params or any globals using py_config in conftest cannot be used.
+    """
+    latest_rhel_dict = py_config["latest_rhel_os_dict"]
+    return {
+        "rhel_image_path": f"{get_images_server_url(schema='http')}{latest_rhel_dict['image_path']}",
+        "rhel_dv_size": latest_rhel_dict["dv_size"],
+        "rhel_template_labels": latest_rhel_dict["template_labels"],
+    }
+
+
+@pytest.fixture(scope="session")
+def hco_target_version(cnv_target_version):
+    return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
+
+
+@pytest.fixture(scope="session")
+def cnv_target_version(pytestconfig):
+    return pytestconfig.option.cnv_version

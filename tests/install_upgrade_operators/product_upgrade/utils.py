@@ -1,22 +1,18 @@
 import logging
 import os
 import re
-from contextlib import contextmanager
 from multiprocessing import Process
 
 import yaml
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_service_version import ClusterServiceVersion
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from openshift.dynamic.exceptions import (
     InternalServerError,
     NotFoundError,
@@ -32,23 +28,19 @@ from urllib3.exceptions import (
 
 import utilities.constants
 from tests.install_upgrade_operators import utils
-from utilities.constants import Images
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
+    cnv_target_images,
     collect_logs,
     collect_resources_for_test,
     get_clusterversion,
     get_csv_by_name,
     get_deployments,
+    get_related_images_name_and_version,
     get_subscription,
     write_to_extras_file,
 )
-from utilities.storage import get_images_server_url, write_file
-from utilities.virt import (
-    VirtualMachineForTests,
-    run_command,
-    wait_for_ssh_connectivity,
-)
+from utilities.virt import run_command
 
 
 LOGGER = logging.getLogger(__name__)
@@ -60,33 +52,6 @@ BASE_EXCEPTIONS_DICT = {
     MaxRetryError: [],
     InternalServerError: [],
 }
-
-
-SRC_PVC_NAME = "SRC_PVC_NAME"
-
-
-class ResourceMissingFieldError(Exception):
-    pass
-
-
-def wait_for_dvs_import_completed(dvs_list):
-    def _dvs_import_completed():
-        return all(map(lambda dv: dv.status == DataVolume.Status.SUCCEEDED, dvs_list))
-
-    LOGGER.info("Wait for DVs import to end.")
-    samples = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_60MIN,
-        sleep=10,
-        func=_dvs_import_completed,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                return
-    except TimeoutExpiredError:
-        dv_status = {dv.name: dv.status for dv in dvs_list}
-        LOGGER.error(f"dvs were not imported within timeout: status={dv_status}")
-        raise
 
 
 def wait_for_pods_removal(pods_list):
@@ -107,17 +72,6 @@ def wait_for_pods_removal(pods_list):
     except TimeoutExpiredError:
         LOGGER.error(f"Some old pods were not deleted: {sample}")
         raise
-
-
-def assert_bridge_and_vms_on_same_node(vm_a, vm_b, bridge):
-    for vm in [vm_a, vm_b]:
-        assert vm.vmi.node.name == bridge.node_selector
-
-
-def assert_node_is_marked_by_bridge(bridge_nad, vm):
-    for bridge_annotation in bridge_nad.instance.metadata.annotations.values():
-        assert bridge_annotation in vm.vmi.node.instance.status.capacity.keys()
-        assert bridge_annotation in vm.vmi.node.instance.status.allocatable.keys()
 
 
 def wait_for_operator_replacement(
@@ -293,24 +247,6 @@ def wait_for_operator_pod_replacements(
     ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
 
 
-def get_related_images_name_and_version(dyn_client, hco_namespace, version):
-    related_images_name_and_versions = {}
-    csv = get_csv_by_name(
-        admin_client=dyn_client,
-        namespace=hco_namespace,
-        csv_name=version,
-    )
-    for item in csv.instance.spec.relatedImages:
-        # example of "name": 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
-        # sample output after parsing: name = 'node-maintenance-operator' and version = 'v2.6.3-1'
-        name, version = item["name"].rpartition("/")[-1].split(":", 1)
-        related_images_name_and_versions[name] = {
-            "image": item["image"],
-            "version": version,
-        }
-    return related_images_name_and_versions
-
-
 def get_operators_names_and_info(csv):
     operators_info = {}
     for deploy in csv.instance.spec.install.spec.deployments:
@@ -412,10 +348,6 @@ def get_images_from_manifest(dyn_client, hco_namespace, target_version):
                 for channel in package.instance.status.channels
                 if channel.currentCSV == target_version
             ][0]
-
-
-def cnv_target_images(target_related_images_name_and_versions):
-    return [item["image"] for item in target_related_images_name_and_versions.values()]
 
 
 def check_tier2_pods_images(
@@ -1064,89 +996,3 @@ def upgrade_ocp(ocp_image, dyn_client, ocp_channel):
 
     wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)
     wait_for_mcp_update(dyn_client=dyn_client)
-
-
-def verify_vms_ssh_connectivity(vms_list):
-    ssh_timeout = utilities.constants.TIMEOUT_3MIN
-    for vm in vms_list:
-        wait_for_ssh_connectivity(vm=vm, timeout=ssh_timeout, tcp_timeout=ssh_timeout)
-
-
-@contextmanager
-def create_vm_for_snapshot_upgrade_tests(vm_name, namespace, client):
-    dv = DataVolume(
-        name=f"dv-{vm_name}",
-        namespace=namespace,
-        source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        storage_class=StorageClass.Types.CEPH_RBD,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        access_modes=DataVolume.AccessMode.RWX,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-    ).to_dict()
-    with VirtualMachineForTests(
-        client=client,
-        name=f"vm-{vm_name}",
-        namespace=dv["metadata"]["namespace"],
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv["metadata"], "spec": dv["spec"]},
-    ) as vm:
-        write_file(
-            vm=vm,
-            filename="first-file.txt",
-            content="first-file",
-        )
-        yield vm
-
-
-@contextmanager
-def create_snapshot_for_upgrade(vm, client):
-    """Creating a snapshot of vm and adding a text file to the vm"""
-    with VirtualMachineSnapshot(
-        name=f"snapshot-{vm.name}",
-        namespace=vm.namespace,
-        vm_name=vm.name,
-        client=client,
-    ) as vm_snapshot:
-        vm_snapshot.wait_ready_to_use()
-        write_file(
-            vm=vm,
-            filename="second-file.txt",
-            content="second-file",
-        )
-        yield vm_snapshot
-
-
-def get_src_pvc_default_name(template):
-    param_value_list = [
-        param["value"]
-        for param in template.instance.parameters
-        if param["name"] == SRC_PVC_NAME
-    ]
-
-    if param_value_list:
-        return param_value_list[0]
-
-    raise ResourceMissingFieldError(
-        f"Template {template.name} does not have a parameter {SRC_PVC_NAME}"
-    )
-
-
-def mismatching_src_pvc_names(pre_upgrade_templates, post_upgrade_templates):
-    mismatched_templates = {}
-    for template in post_upgrade_templates:
-        matching_template = [
-            temp for temp in pre_upgrade_templates if temp.name == template.name
-        ]
-
-        if matching_template:
-            expected = get_src_pvc_default_name(template=matching_template[0])
-            found = get_src_pvc_default_name(template=template)
-
-            if found != expected:
-                mismatched_templates[template.name] = {
-                    "expected": expected,
-                    "found": found,
-                }
-
-    return mismatched_templates

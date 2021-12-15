@@ -218,7 +218,13 @@ HCO_SUBSCRIPTION = "hco-operatorhub"
 # VM configuration
 LIVE_MIGRATE = "LiveMigrate"
 
-
 # W/A for BZ 2026621
 # TODO: Remove after BZ 2026621 fixed
 WORKERS_TYPE = "WORKERS_TYPE"
+
+# Upgrade tests configuration
+UPGRADE_TEST_ORDERING_NODE_ID = UPGRADE_TEST_DEPENDNCY_NODE_ID = (
+    "tests/install_upgrade_operators/product_upgrade/test_upgrade.py::TestUpgrade::"
+    "test_upgrade_process"
+)
+DEPENDENCY_SCOPE_SESSION = "session"

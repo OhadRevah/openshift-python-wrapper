@@ -1128,3 +1128,8 @@ def enable_hyperconverged_ovs_annotations(
         )
         ovs_daemonset.wait_until_deployed()
         yield ovs_daemonset
+
+
+def cloud_init(ip_address):
+    network_data_data = {"ethernets": {"eth1": {"addresses": [f"{ip_address}/24"]}}}
+    return cloud_init_network_data(data=network_data_data)
