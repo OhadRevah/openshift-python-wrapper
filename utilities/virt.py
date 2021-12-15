@@ -1549,9 +1549,7 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
         if sample:
             break
 
-    if get_bug_status(
-        bug=2005693,
-    ):
+    if get_bug_status(bug=2005693) not in BUG_STATUS_CLOSED:
         sampler = TimeoutSampler(
             wait_timeout=timeout,
             sleep=1,
