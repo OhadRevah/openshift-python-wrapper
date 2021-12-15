@@ -11,7 +11,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.storage import create_data_source
+from utilities.storage import create_or_update_data_source
 from utilities.virt import get_guest_os_info, vm_instance_from_template
 
 
@@ -57,7 +57,7 @@ def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
 def golden_image_dv_scope_class_data_source_scope_function(
     admin_client, golden_image_data_volume_scope_class
 ):
-    yield from create_data_source(
+    yield from create_or_update_data_source(
         admin_client=admin_client, dv=golden_image_data_volume_scope_class
     )
 

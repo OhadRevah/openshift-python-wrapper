@@ -17,7 +17,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
-from ocp_resources.resource import Resource
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
@@ -727,11 +727,37 @@ def generate_data_source_dict(dv):
     return {"pvc": {"name": dv.name, "namespace": dv.namespace}}
 
 
-def create_data_source(admin_client, dv):
-    with DataSource(
-        name=dv.name,
-        namespace=dv.namespace,
-        client=admin_client,
-        source=generate_data_source_dict(dv=dv),
-    ) as ds:
-        yield ds
+def create_or_update_data_source(admin_client, dv):
+    """
+    Create or updates a data source referencing a provided DV.
+
+    As dataSources are automatically created with CNV deployment for golden images support, they can be re-used.
+    If a dataSource already exists (with the same name as the target dv), it will be updated.
+    Otherwise a new dataSource will be created.
+
+    Args:
+        admin_client (client)
+        dv (DataVolume): which will be referenced in the data source
+
+    Yields:
+        DataSource object
+    """
+    target_name = dv.name
+    target_namespaces = dv.namespace
+    try:
+        for data_source in DataSource.get(
+            dyn_client=admin_client, name=target_name, namespace=target_namespaces
+        ):
+            LOGGER.info(f"Updating existing dataSource {data_source.name}")
+            with ResourceEditor(
+                patches={data_source: generate_data_source_dict(dv=dv)}
+            ):
+                yield data_source
+    except NotFoundError:
+        with DataSource(
+            name=target_name,
+            namespace=target_namespaces,
+            client=admin_client,
+            source=generate_data_source_dict(dv=dv),
+        ) as data_source:
+            yield data_source

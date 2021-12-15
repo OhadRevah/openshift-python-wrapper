@@ -10,7 +10,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
     start_and_fetch_processid_on_windows_vm,
 )
-from utilities.storage import create_data_source, data_volume
+from utilities.storage import create_or_update_data_source, data_volume
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
@@ -36,7 +36,7 @@ def golden_image_data_volume_multi_rhel_os_multi_storage_scope_class(
 def golden_image_data_source_multi_rhel_os_multi_storage_scope_class(
     admin_client, golden_image_data_volume_multi_rhel_os_multi_storage_scope_class
 ):
-    yield from create_data_source(
+    yield from create_or_update_data_source(
         admin_client=admin_client,
         dv=golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
     )
@@ -64,7 +64,7 @@ def golden_image_data_volume_multi_windows_os_multi_storage_scope_class(
 def golden_image_data_source_multi_windows_os_multi_storage_scope_class(
     admin_client, golden_image_data_volume_multi_windows_os_multi_storage_scope_class
 ):
-    yield from create_data_source(
+    yield from create_or_update_data_source(
         admin_client=admin_client,
         dv=golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
     )
@@ -92,7 +92,7 @@ def golden_image_data_volume_multi_fedora_os_multi_storage_scope_class(
 def golden_image_data_source_multi_fedora_os_multi_storage_scope_class(
     admin_client, golden_image_data_volume_multi_fedora_os_multi_storage_scope_class
 ):
-    yield from create_data_source(
+    yield from create_or_update_data_source(
         admin_client=admin_client,
         dv=golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
     )
@@ -120,7 +120,7 @@ def golden_image_data_volume_multi_centos_multi_storage_scope_class(
 def golden_image_data_source_multi_centos_multi_storage_scope_class(
     admin_client, golden_image_data_volume_multi_centos_multi_storage_scope_class
 ):
-    yield from create_data_source(
+    yield from create_or_update_data_source(
         admin_client=admin_client,
         dv=golden_image_data_volume_multi_centos_multi_storage_scope_class,
     )
