@@ -39,6 +39,10 @@ RESOURCE_TYPES = [
     ServiceAccount,
     ValidatingWebhookConfiguration,
 ]
+COMPONENTS_TO_IGNORE = [
+    "selfSignConfiguration",
+    "placementConfiguration",
+]
 EXPECTED_CNAO_COMP_NAMES = [
     "multus",
     "nmstate-handler",
@@ -57,9 +61,8 @@ EXPECTED_CNAO_COMP = [
     "nmstate",
     "ovs",
 ]
-COMP_LABELS = ["component", "version", "part-of", "managed-by"]
 MANAGED_BY = "managed-by"
-OLM = "olm"
+COMP_LABELS = ["component", "version", "part-of", MANAGED_BY]
 IGNORE_LIST = [
     "token",
     "metrics",
@@ -79,7 +82,7 @@ class UnaccountedComponents(Exception):
         self.components = components
 
     def __str__(self):
-        return f"{self.components} are unaccounted CNAO components. Check if relevent. if so, modify test"
+        return f"{self.components} are unaccounted CNAO components. Check if relevant. if so, modify test"
 
 
 def get_all_network_resources(dyn_client, namespace):
@@ -95,38 +98,32 @@ def get_all_network_resources(dyn_client, namespace):
 def filter_resources(resources, network_addons_config, is_post_cnv_upgrade_cluster):
     bad_rcs = []
     for resource in resources:
-        if KNOWN_BUG in f"{resource.kind}/{resource.name}" and (
-            get_bug_status(bug=1995606) not in BUG_STATUS_CLOSED
+        resource_name = f"{resource.kind}/{resource.name}"
+        if (
+            KNOWN_BUG in resource_name
+            and (get_bug_status(bug=1995606) not in BUG_STATUS_CLOSED)
+            or any(ignore in resource_name.lower() for ignore in IGNORE_LIST)
+            or ("Secret" in resource.kind and is_post_cnv_upgrade_cluster)
         ):
             continue
-        if any(
-            ignore in f"{resource.kind}/{resource.name}".lower()
-            for ignore in IGNORE_LIST
-        ) or ("Secret" in resource.kind and is_post_cnv_upgrade_cluster):
-            continue
+
         try:
             for key in COMP_LABELS:
+                label_key = f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
                 if (
-                    network_addons_config.labels[
-                        f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
-                    ]
-                    not in resource.labels[
-                        f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
-                    ]
+                    network_addons_config.labels[label_key]
+                    not in resource.labels[label_key]
                 ):
-                    if (
-                        MANAGED_BY in key
-                        and "cluster-network-addons-operator" in resource.name
-                        and resource.labels[
-                            f"{resource.ApiGroup.APP_KUBERNETES_IO}/{key}"
-                        ]
-                        == OLM
-                    ):
-                        continue
+                    if MANAGED_BY in key:
+                        if (
+                            "cluster-network-addons-operator" in resource_name
+                            and resource.labels[label_key] == "olm"
+                        ) or resource.labels[label_key] == "cnao-operator":
+                            continue
 
-                    bad_rcs.append(f"{resource.kind}/{resource.name}")
+                    bad_rcs.append(resource_name)
         except (KeyError, TypeError):
-            bad_rcs.append(f"{resource.kind}/{resource.name}")
+            bad_rcs.append(resource_name)
 
     return bad_rcs
 
@@ -155,7 +152,7 @@ def check_components(network_addons_config_scope_session):
     """
     bad_components = []
     for component in network_addons_config_scope_session.instance.spec.keys():
-        if component == "selfSignConfiguration":
+        if component in COMPONENTS_TO_IGNORE:
             continue
         if component not in EXPECTED_CNAO_COMP:
             bad_components.append(component)
