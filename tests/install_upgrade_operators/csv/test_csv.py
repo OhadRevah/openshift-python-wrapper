@@ -3,8 +3,7 @@ from base64 import b64decode
 import pytest
 
 
-pytestmark = pytest.mark.sno
-
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 # Check CSV properties like keywords, title, provided by, links etc.
 
@@ -24,9 +23,6 @@ EXPECTED_LINK_MAP = {
     "OpenShift Virtualization": "https://www.openshift.com/learn/topics/virtualization/",
     "KubeVirt Project": "https://kubevirt.io",
 }
-
-
-pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.mark.polarion("CNV-4456")

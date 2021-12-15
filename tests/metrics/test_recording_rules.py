@@ -4,7 +4,7 @@ from ocp_resources.resource import Resource
 from tests.metrics.utils import validate_virt_handler_data
 
 
-pytestmark = pytest.mark.sno
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 virt_label_dict = {
@@ -13,9 +13,6 @@ virt_label_dict = {
     "virt-operator": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-operator",
     "virt-controller": f"{Resource.ApiGroup.KUBEVIRT_IO}=virt-controller ",
 }
-
-
-pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.mark.parametrize(
