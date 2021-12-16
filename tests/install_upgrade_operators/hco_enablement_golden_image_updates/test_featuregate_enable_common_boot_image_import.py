@@ -10,6 +10,9 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constan
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
 )
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    HCO_CR_FEATURE_GATES_KEY,
+)
 from utilities.constants import TIMEOUT_1MIN
 
 
@@ -78,3 +81,35 @@ class TestEnableCommonBootImageImport:
             "SSP CR commonTemplates is not as expected: "
             f"expect={expected_ssp_cr_common_templates_with_schedule} ssp_cr_spec={ssp_cr_data_import_cron_templates}"
         )
+
+
+@pytest.mark.parametrize(
+    "updated_hco_cr",
+    [
+        pytest.param(
+            {
+                "patch": {
+                    "spec": {
+                        HCO_CR_FEATURE_GATES_KEY: {
+                            FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: False
+                        }
+                    }
+                },
+            },
+            marks=pytest.mark.polarion("CNV-7778"),
+            id="test_enable_and_delete_featuregate_enable_common_boot_image_import_hco_cr",
+        )
+    ],
+    indirect=True,
+)
+def test_enable_and_delete_featuregate_enable_common_boot_image_import_hco_cr(
+    enabled_hco_featuregate_enable_common_boot_image_import,
+    updated_hco_cr,
+    hco_spec,
+):
+    boot_image_feature_gate = hco_spec["featureGates"][
+        FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME
+    ]
+    assert (
+        not boot_image_feature_gate
+    ), f"FeatureGate was not disabled after deletion: hco_featuregates={hco_spec[HCO_CR_FEATURE_GATES_KEY]}"
