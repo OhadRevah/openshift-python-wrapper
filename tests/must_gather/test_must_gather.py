@@ -229,9 +229,6 @@ def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
     assert len(template_resource) == data.count(f"kind: {template_resource[0].kind}")
 
 
-@pytest.mark.bugzilla(
-    1952033, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-2809")
 def test_node_nftables(skip_no_rhcos, cnv_must_gather, utility_pods):
     for pod in utility_pods:

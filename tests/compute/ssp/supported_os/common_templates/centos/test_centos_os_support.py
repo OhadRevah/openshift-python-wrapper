@@ -17,7 +17,6 @@ from tests.compute.utils import (
     validate_pause_optional_migrate_unpause_linux_vm,
 )
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
@@ -128,9 +127,6 @@ class TestCommonTemplatesCentos:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5346")
     def test_vmi_guest_agent_info(
@@ -144,9 +140,6 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5347")
     def test_virtctl_guest_agent_os_info(
@@ -176,9 +169,6 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5349")
     def test_virtctl_guest_agent_user_info(

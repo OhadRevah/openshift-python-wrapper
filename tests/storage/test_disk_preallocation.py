@@ -86,9 +86,6 @@ def test_preallocation_dv(
     assert_preallocation_annotation(pvc=pvc, res="true")
 
 
-@pytest.mark.bugzilla(
-    1927746, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_module",
     [
@@ -118,9 +115,6 @@ def test_preallocation_globally_dv_spec_without_preallocation(
     assert_preallocation_requested_annotation(pvc=pvc, status="true")
 
 
-@pytest.mark.bugzilla(
-    1927746, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [

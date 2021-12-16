@@ -22,7 +22,6 @@ from tests.storage import utils as storage_utils
 from tests.storage.constants import CDI_SECRETS
 from utilities import storage as utils
 from utilities.constants import TIMEOUT_10MIN, Images
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import get_images_server_url
 
 
@@ -264,9 +263,6 @@ def test_cloner_pods_cdi_label(
         )
 
 
-@pytest.mark.bugzilla(
-    1994389, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "cdi_resources",
     [

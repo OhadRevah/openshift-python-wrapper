@@ -184,9 +184,6 @@ def verify_reconciled_secret_resource(resource, resource_dict):
         )
 
 
-@pytest.mark.bugzilla(
-    1868099, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     ("resource_type", "managed_resource_name"),
     [

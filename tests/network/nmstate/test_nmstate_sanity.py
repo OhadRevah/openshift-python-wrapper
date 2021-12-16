@@ -362,9 +362,6 @@ class TestNmstatePodDeletion:
             f"{NNCP_CONFIGURING_STATUS} after nmstate pod has been deleted."
         )
 
-    @pytest.mark.bugzilla(
-        2000052, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.order(after="test_delete_nmstate_pod_during_nncp_configuration")
     @pytest.mark.polarion("CNV-6743")
     def test_nncp_configured_successfully_after_pod_deletion(

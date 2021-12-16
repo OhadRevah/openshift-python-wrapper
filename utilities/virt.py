@@ -104,12 +104,7 @@ def wait_for_guest_agent(vmi, timeout=TIMEOUT_12MIN):
 
     except TimeoutExpiredError:
         LOGGER.error(f"Guest agent is not installed or not active on {vmi.name}")
-        if get_bug_status(bug=1945703) not in BUG_STATUS_CLOSED:
-            LOGGER.error(
-                "Due to bug 1945703 guest agent may not report its status and VM interfaces may not be available."
-            )
-        else:
-            raise
+        raise
 
 
 def wait_for_vm_interfaces(vmi, timeout=TIMEOUT_12MIN):

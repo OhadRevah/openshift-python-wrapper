@@ -15,7 +15,6 @@ from openshift.dynamic.exceptions import NotFoundError
 import utilities.storage
 from tests.storage import utils as storage_utils
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN, TIMEOUT_5MIN, Images
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import downloaded_image
 
 
@@ -70,9 +69,6 @@ def scratch_pvc_bound(scratch_pvc):
             return True
 
 
-@pytest.mark.bugzilla(
-    1878499, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "dv_name",
     [

@@ -16,7 +16,6 @@ from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
 from utilities.constants import OS_FLAVOR_CIRROS, Images
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import (
     ErrorMsg,
     check_upload_virtctl_result,
@@ -290,9 +289,6 @@ def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
         yield pvc
 
 
-@pytest.mark.bugzilla(
-    1941811, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-3727")
 def test_virtctl_image_upload_with_exist_pvc(
     empty_pvc,

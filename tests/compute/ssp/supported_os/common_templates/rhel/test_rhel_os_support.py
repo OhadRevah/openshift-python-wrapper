@@ -18,7 +18,6 @@ from tests.compute.utils import (
     validate_pause_optional_migrate_unpause_linux_vm,
 )
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
@@ -162,9 +161,6 @@ class TestCommonTemplatesRhel:
             ssh_exec=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec
         ), "qemu guest agent package is not installed"
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vmi_guest_agent"])
     @pytest.mark.polarion("CNV-3513")
     def test_vmi_guest_agent_info(
@@ -176,9 +172,6 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4195")
     def test_virtctl_guest_agent_os_info(
@@ -194,9 +187,6 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.bugzilla(
-        1945703, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-    )
     @pytest.mark.dependency(depends=["vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4550")
     def test_virtctl_guest_agent_user_info(
