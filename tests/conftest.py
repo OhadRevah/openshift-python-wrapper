@@ -54,6 +54,7 @@ from ocp_resources.secret import Secret
 from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
+from ocp_resources.ssp import SSP
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
@@ -2749,3 +2750,20 @@ def hco_target_version(cnv_target_version, cnv_upgrade):
 def cnv_target_version(pytestconfig, cnv_upgrade):
     if cnv_upgrade:
         return pytestconfig.option.cnv_version
+
+
+@pytest.fixture()
+def ssp_cr(admin_client, hco_namespace):
+    ssp_name = "ssp-kubevirt-hyperconverged"
+    try:
+        for ssp in SSP.get(
+            dyn_client=admin_client,
+            name=ssp_name,
+            namespace=hco_namespace.name,
+        ):
+            return ssp
+    except NotFoundError:
+        LOGGER.error(
+            f"SSP CR {ssp_name} was not found in namespace {hco_namespace.name}"
+        )
+        raise

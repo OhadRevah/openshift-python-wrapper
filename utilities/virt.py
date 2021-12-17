@@ -1507,17 +1507,19 @@ class Prometheus(object):
     def query(self, query):
         return self._get_response(query=f"{self.api_v1}/query?query={query}")
 
-    def alert_sampler(self, alert):
+    def get_alert(self, alert):
         query = f'ALERTS{{alertname="{alert}"}}'
+        return self.query(query=query)["data"]["result"]
+
+    def alert_sampler(self, alert):
         sampler = TimeoutSampler(
             wait_timeout=TIMEOUT_10MIN,
             sleep=1,
-            func=self.query,
-            query=query,
+            func=self.get_alert,
+            alert=alert,
         )
         for sample in sampler:
-            result = sample["data"]["result"]
-            if result and result[0]["value"][-1] == "1":
+            if sample and sample[0]["value"][-1] == "1":
                 return
 
     def query_sampler(self, query, timeout=TIMEOUT_10MIN):

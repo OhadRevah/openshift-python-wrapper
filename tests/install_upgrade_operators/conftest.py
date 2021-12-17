@@ -1,6 +1,4 @@
 import pytest
-from ocp_resources.ssp import SSP
-from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.utils import (
@@ -90,19 +88,6 @@ def updated_kubevirt_cr(request, kubevirt_resource, admin_client, hco_namespace)
     ):
         yield
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
-
-
-@pytest.fixture()
-def ssp_cr(admin_client, hco_namespace):
-    try:
-        for ssp in SSP.get(
-            dyn_client=admin_client,
-            name="ssp-kubevirt-hyperconverged",
-            namespace=hco_namespace.name,
-        ):
-            return ssp
-    except NotFoundError:
-        raise NotFoundError("SSP CR was not found")
 
 
 @pytest.fixture()

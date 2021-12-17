@@ -245,10 +245,9 @@ def verify_no_listed_alerts_on_cluster(prometheus, alerts_list):
     """
     fired_alerts = {}
     for alert in alerts_list:
-        query = f'ALERTS{{alertname="{alert}"}}'
-        result = prometheus.query(query=query)["data"]["result"]
-        if result:
-            fired_alerts[alert] = result
+        alert_state = prometheus.get_alert(alert=alert)
+        if alert_state and alert_state[0]["metric"]["alertstate"] == "firing":
+            fired_alerts[alert] = alert_state
 
     assert (
         not fired_alerts
