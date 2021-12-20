@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 IP_LIST = [{"ip": "1.1.1.1", "prefix-length": 24}]
 BRIDGE_NAME = "br1test"
 NNCP_CONFIGURING_STATUS = (
-    LinuxBridgeNodeNetworkConfigurationPolicy.Conditions.Reason.CONFIGURING
+    LinuxBridgeNodeNetworkConfigurationPolicy.Conditions.Reason.CONFIGURATION_PROGRESSING
 )
 
 pytestmark = pytest.mark.sno
