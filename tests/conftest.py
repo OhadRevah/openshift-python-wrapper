@@ -1466,7 +1466,7 @@ def vm_instance_from_template_multi_storage_scope_function(
     request,
     unprivileged_client,
     namespace,
-    data_source_multi_storage_scope_function,
+    data_volume_multi_storage_scope_function,
     nodes_common_cpu_model,
 ):
     """Calls vm_instance_from_template contextmanager
@@ -1478,7 +1478,7 @@ def vm_instance_from_template_multi_storage_scope_function(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_source=data_source_multi_storage_scope_function,
+        existing_data_volume=data_volume_multi_storage_scope_function,
         vm_cpu_model=nodes_common_cpu_model
         if request.param.get("set_vm_common_cpu")
         else None,
