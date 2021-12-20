@@ -17,7 +17,7 @@ repos:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: "21.8b0"
+    rev: "21.12b0"
     hooks:
     - id: black
 
@@ -32,7 +32,7 @@ repos:
     - id: check-builtin-literals
 
   - repo: https://github.com/PyCQA/flake8
-    rev: "3.9.2"
+    rev: "4.0.1"
     hooks:
       - id: flake8
         additional_dependencies: [
@@ -41,6 +41,6 @@ repos:
         ]
 
   - repo: https://github.com/jorisroovers/gitlint
-    rev:  "v0.15.1"
+    rev:  "v0.17.0"
     hooks:
       - id: gitlint
