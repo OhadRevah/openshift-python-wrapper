@@ -20,7 +20,6 @@ LOGGER = logging.getLogger(__name__)
 @pytest.mark.usefixtures(
     "skip_when_no_sriov",
     "skip_insufficient_sriov_workers",
-    "labeled_sriov_nodes",
 )
 class TestPingConnectivity:
     @pytest.mark.post_upgrade
@@ -89,7 +88,11 @@ class TestPingConnectivity:
     @pytest.mark.post_upgrade
     @pytest.mark.polarion("CNV-4768")
     def test_sriov_interfaces_post_reboot(
-        self, sriov_vm4, running_sriov_vm4, vm4_interfaces, rebooted_sriov_vm4
+        self,
+        sriov_vm4,
+        running_sriov_vm4,
+        vm4_interfaces,
+        rebooted_sriov_vm4,
     ):
         # Check only the second interface (SR-IOV interface).
         assert rebooted_sriov_vm4.vmi.interfaces[1] == vm4_interfaces[1]

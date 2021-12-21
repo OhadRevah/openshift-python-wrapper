@@ -225,14 +225,10 @@ def vm4_interfaces(running_sriov_vm4):
 @pytest.fixture(params=list(range(1, 6)))
 def rebooted_sriov_vm4(request, running_sriov_vm4):
     LOGGER.info(f"Reboot number {request.param}")
-    # Reboot the VM
-    run_ssh_commands(
-        host=running_sriov_vm4.ssh_exec, commands=[shlex.split("sudo reboot")]
-    )
-    # Make sure the VM is up, otherwise we will get an old VM interfaces data.
-    running_sriov_vm4.ssh_exec.executor().is_connective(tcp_timeout=60)
-    restart_guest_agent(vm=running_sriov_vm4)
-    return running_sriov_vm4
+    running_sriov_vm4.restart(wait=True)
+
+    # Calling running_vm() ensures the VM is up, which is crucial to avoid getting old VM interfaces data.
+    return running_vm(vm=running_sriov_vm4)
 
 
 def get_vm_sriov_network_mtu(vm):
