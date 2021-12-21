@@ -49,6 +49,8 @@ check:
 pipenv:
 	-pipenv --rm # '-' for ignore error when pipenv venv is not exists
 	pipenv install --skip-lock
+	pipenv run pip freeze
+
 
 tests: virtctl pipenv
 	pipenv run pytest $(PYTEST_ARGS)
