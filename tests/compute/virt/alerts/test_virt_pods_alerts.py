@@ -8,6 +8,7 @@ from tests.compute.utils import (
     scale_deployment_replicas,
     verify_no_listed_alerts_on_cluster,
 )
+from utilities.infra import get_daemonset_by_name, update_custom_resource
 
 
 VIRT_ALERTS_LIST = [
@@ -44,6 +45,35 @@ def disabled_virt_operator(hco_namespace):
         deployment_name="virt-operator",
         namespace=hco_namespace.name,
         replica_count=0,
+    ):
+        yield
+
+
+@pytest.fixture()
+def virt_handler_daemonset(hco_namespace, admin_client):
+    return get_daemonset_by_name(
+        admin_client=admin_client,
+        daemonset_name="virt-handler",
+        namespace_name=hco_namespace.name,
+    )
+
+
+@pytest.fixture()
+def virt_handler_daemonset_with_bad_image(virt_handler_daemonset):
+    with update_custom_resource(
+        patch={
+            virt_handler_daemonset: {
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "containers": [
+                                {"name": "virt-handler", "image": "bad_image"}
+                            ]
+                        }
+                    }
+                }
+            }
+        }
     ):
         yield
 
@@ -121,3 +151,13 @@ class TestVirtAlerts:
         alert,
     ):
         prometheus.alert_sampler(alert=alert)
+
+    @pytest.mark.order(after="test_no_virt_alerts_on_healthy_cluster")
+    @pytest.mark.polarion("CNV-3814")
+    def test_alert_virt_handler(
+        self,
+        prometheus,
+        disabled_virt_operator,
+        virt_handler_daemonset_with_bad_image,
+    ):
+        prometheus.alert_sampler(alert="VirtHandlerDaemonSetRolloutFailing")
