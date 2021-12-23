@@ -18,9 +18,8 @@ from utilities.network import (
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-@pytest.fixture(scope="class")
-def jumbo_frame_bond_name(index_number):
-    yield f"jf-bond-{next(index_number)}"
+BOND_NAME = "jfbond1"
+BRIDGE_NAME = "brbond1"
 
 
 @pytest.fixture(scope="class")
@@ -28,16 +27,15 @@ def jumbo_frame_bond1_worker_1(
     skip_no_bond_support,
     utility_pods,
     worker_node1,
-    jumbo_frame_bond_name,
     nodes_available_nics,
 ):
     """
     Create BOND if setup support BOND
     """
     with BondNodeNetworkConfigurationPolicy(
-        name=f"{jumbo_frame_bond_name}-nncp",
-        bond_name=jumbo_frame_bond_name,
-        bond_ports=nodes_available_nics[worker_node1.name][0:2],
+        name="bond-1-nncp",
+        bond_name=BOND_NAME,
+        bond_ports=nodes_available_nics[worker_node1.name][-2:],
         worker_pods=utility_pods,
         node_selector=worker_node1.name,
         mode="active-backup",
@@ -51,16 +49,15 @@ def jumbo_frame_bond1_worker_2(
     skip_no_bond_support,
     utility_pods,
     worker_node2,
-    jumbo_frame_bond_name,
     nodes_available_nics,
 ):
     """
     Create BOND if setup support BOND
     """
     with BondNodeNetworkConfigurationPolicy(
-        name=f"{jumbo_frame_bond_name}-nncp",
-        bond_name=jumbo_frame_bond_name,
-        bond_ports=nodes_available_nics[worker_node2.name][0:2],
+        name="bond-2-nncp",
+        bond_name=BOND_NAME,
+        bond_ports=nodes_available_nics[worker_node2.name][-2:],
         worker_pods=utility_pods,
         node_selector=worker_node2.name,
         mode="active-backup",
@@ -70,15 +67,9 @@ def jumbo_frame_bond1_worker_2(
 
 
 @pytest.fixture(scope="class")
-def jumbo_frame_bond_device_name(index_number):
-    yield f"brbond{next(index_number)}test"
-
-
-@pytest.fixture(scope="class")
 def jumbo_frame_bridge_on_bond_worker_1(
     bridge_device_matrix__class__,
     jumbo_frame_bond1_worker_1,
-    jumbo_frame_bond_device_name,
     utility_pods,
 ):
     """
@@ -87,7 +78,7 @@ def jumbo_frame_bridge_on_bond_worker_1(
     with network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="jumbo-frame-bridge-on-bond-1",
-        interface_name=jumbo_frame_bond_device_name,
+        interface_name=BRIDGE_NAME,
         network_utility_pods=utility_pods,
         node_selector=jumbo_frame_bond1_worker_1.node_selector,
         ports=[jumbo_frame_bond1_worker_1.bond_name],
@@ -100,7 +91,6 @@ def jumbo_frame_bridge_on_bond_worker_1(
 def jumbo_frame_bridge_on_bond_worker_2(
     bridge_device_matrix__class__,
     jumbo_frame_bond1_worker_2,
-    jumbo_frame_bond_device_name,
     utility_pods,
 ):
     """
@@ -109,7 +99,7 @@ def jumbo_frame_bridge_on_bond_worker_2(
     with network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="jumbo-frame-bridge-on-bond-2",
-        interface_name=jumbo_frame_bond_device_name,
+        interface_name=BRIDGE_NAME,
         network_utility_pods=utility_pods,
         node_selector=jumbo_frame_bond1_worker_2.node_selector,
         ports=[jumbo_frame_bond1_worker_2.bond_name],
@@ -125,13 +115,12 @@ def br1bond_nad(
     namespace,
     jumbo_frame_bridge_on_bond_worker_1,
     jumbo_frame_bridge_on_bond_worker_2,
-    jumbo_frame_bond_device_name,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name=f"{jumbo_frame_bond_device_name}-bond-nad",
-        interface_name=f"{jumbo_frame_bond_device_name}-bond",
+        nad_name=f"{BRIDGE_NAME}-bond-nad",
+        interface_name=jumbo_frame_bridge_on_bond_worker_1.bridge_name,
         mtu=MTU_9000,
     ) as nad:
         yield nad

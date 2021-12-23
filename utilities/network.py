@@ -172,36 +172,43 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.stp_config = stp_config
 
     def to_dict(self):
-        # At the first time, it creates the dict.
-        # When calling update, the caller updates the dict and this function
-        # will not init it anymore
-        if not self.iface:
-            # TODO: call "vlan": vlan_trunk in line 177 once BZ 2026621 fixed.
-            # vlan_trunk = {
-            #     "mode": "trunk",
-            #     "trunk-tags": [{"id-range": {"min": 1000, "max": 1019}}],
-            # }
-            bridge_ports = [{"name": port} for port in self.ports]
-            self.iface = {
-                "name": self.bridge_name,
-                "type": self.bridge_type,
-                "state": IFACE_UP_STATE,
-                "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
-            }
-            for port in bridge_ports:
-                # TODO: Remove lines 187-188 after BZ 2026621 fixed
-                if os.environ.get(WORKERS_TYPE) == ClusterHosts.Type.PHYSICAL:
-                    port["vlan"] = {}
+        # TODO: call "vlan": vlan_trunk in line 177 once BZ 2026621 fixed.
+        # vlan_trunk = {
+        #     "mode": "trunk",
+        #     "trunk-tags": [{"id-range": {"min": 1000, "max": 1019}}],
+        # }
+        bridge_ports = [{"name": port} for port in self.ports]
+        self.iface = {
+            "name": self.bridge_name,
+            "type": self.bridge_type,
+            "state": IFACE_UP_STATE,
+            "bridge": {"options": {"stp": self.stp_config}, "port": bridge_ports},
+        }
+        for port in bridge_ports:
+            # TODO: Remove lines 187-188 after BZ 2026621 fixed
+            if os.environ.get(WORKERS_TYPE) == ClusterHosts.Type.PHYSICAL:
+                port["vlan"] = {}
 
-                if self.mtu:
-                    self.iface["mtu"] = self.mtu
-                    _port = {
-                        "name": port["name"],
-                        "type": "ethernet",
-                        "state": IFACE_UP_STATE,
-                        "mtu": self.mtu,
-                    }
-                    self.set_interface(interface=_port)
+            if self.mtu:
+                nns = NodeNetworkState(
+                    name=self.node_selector or self.worker_pods[0].node.name
+                )
+                port_type = [
+                    _iface["type"]
+                    for _iface in nns.interfaces
+                    if _iface["name"] == port["name"]
+                ][0]
+                if port_type == "bond":
+                    continue
+
+                self.iface["mtu"] = self.mtu
+                _port = {
+                    "name": port["name"],
+                    "type": "ethernet",
+                    "state": IFACE_UP_STATE,
+                    "mtu": self.mtu,
+                }
+                self.set_interface(interface=_port)
 
         res = super().to_dict()
         return res
@@ -351,12 +358,11 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         self.iface = None
 
     def to_dict(self):
-        if not self.iface:
-            self.iface = {
-                "name": self.iface_name,
-                "type": "vlan",
-                "state": self.iface_state,
-            }
+        self.iface = {
+            "name": self.iface_name,
+            "type": "vlan",
+            "state": self.iface_state,
+        }
         vlan_spec = {"vlan": {"base-iface": self.base_iface, "id": self.tag}}
         self.iface.update(vlan_spec)
         res = super().to_dict()
