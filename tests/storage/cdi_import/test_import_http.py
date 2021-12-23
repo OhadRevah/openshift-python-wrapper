@@ -13,6 +13,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
+from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
@@ -31,7 +32,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import NON_EXIST_URL
+from utilities.infra import BUG_STATUS_CLOSED, NON_EXIST_URL, get_bug_status
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -64,6 +65,18 @@ def wait_for_pvc_recreate(pvc, pvc_original_timestamp):
     ):
         if sample:
             break
+
+
+@pytest.fixture()
+def skip_if_hpp_sc_and_disk_img_bug_not_closed(storage_class_matrix__module__):
+    bug_id = 2034544
+    storage_class = [*storage_class_matrix__module__][0]
+    hpp_storage_classes = [StorageClass.Types.HOSTPATH, StorageClass.Types.HOSTPATH_CSI]
+    if (
+        storage_class in hpp_storage_classes
+        and get_bug_status(bug=bug_id) not in BUG_STATUS_CLOSED
+    ):
+        pytest.skip(f"Skip the test due to bug {bug_id}")
 
 
 @pytest.fixture()
@@ -689,19 +702,18 @@ def test_vmi_image_size(
 
 @pytest.mark.polarion("CNV-3065")
 def test_disk_falloc(
+    skip_if_hpp_sc_and_disk_img_bug_not_closed,
     namespace,
     storage_class_matrix__module__,
     images_internal_http_server,
     internal_http_configmap,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
     with create_dv(
         source="http",
         dv_name="cnv-3065",
         namespace=namespace.name,
         size="100Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
         url=get_file_url(
             url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
         ),
