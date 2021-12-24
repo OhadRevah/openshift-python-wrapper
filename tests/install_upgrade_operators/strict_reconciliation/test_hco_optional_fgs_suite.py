@@ -17,23 +17,23 @@ from utilities.constants import ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
 from utilities.hco import get_hco_spec
 
 
-pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
+pytestmark = [pytest.mark.post_upgrade]
 
 LOGGER = logging.getLogger(__name__)
 
 
 class TestHCOOptionalFeatureGatesSuite:
     @pytest.mark.parametrize(
-        ("feature_gate_under_test"),
+        "feature_gate_under_test",
         [
             pytest.param(
                 constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
                 marks=(pytest.mark.polarion("CNV-6267")),
-                id="sriov_live_migration_not_exist_in_kubevirt_cr",
+                id="sriov_live_migration_exists_in_kubevirt_cr",
             ),
             pytest.param(
                 constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
-                marks=(pytest.mark.polarion("CNV-6268")),
+                marks=(pytest.mark.polarion("CNV-6268"), pytest.mark.sno()),
                 id="with_host_passthrough_cpu_not_exist_in_kubevirt_cr",
             ),
         ],
@@ -65,7 +65,7 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 [constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
                 [constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
-                marks=(pytest.mark.polarion("CNV-6270")),
+                marks=(pytest.mark.polarion("CNV-6270"), pytest.mark.sno()),
                 id="optional_featuregates_withhostpassthroughcpu_removed_from_kubevirt_cr",
             ),
             pytest.param(
@@ -77,13 +77,13 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 ["fakeGate", "Sidecar"],
                 ["fakeGate", "Sidecar"],
-                marks=(pytest.mark.polarion("CNV-6272")),
+                marks=(pytest.mark.polarion("CNV-6272"), pytest.mark.sno()),
                 id="optional_featuregates_fake_removed_from_kubevirt_cr",
             ),
             pytest.param(
                 ["Sidecar"],
                 ["Sidecar"],
-                marks=(pytest.mark.polarion("CNV-6275")),
+                marks=(pytest.mark.polarion("CNV-6275"), pytest.mark.sno()),
                 id="optional_featuregates_unsupported_removed_from_kubevirt_cr",
             ),
         ],
@@ -120,7 +120,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     "fakeGate": False,
                     "Sidecar": False,
                 },
-                marks=(pytest.mark.polarion("CNV-6273")),
+                marks=(pytest.mark.polarion("CNV-6273"), pytest.mark.sno()),
                 id="optional_featuregates_fake_removed_from_hco_cr",
             ),
             pytest.param(
@@ -142,7 +142,7 @@ class TestHCOOptionalFeatureGatesSuite:
                 {
                     "Sidecar": False,
                 },
-                marks=(pytest.mark.polarion("CNV-6276")),
+                marks=(pytest.mark.polarion("CNV-6276"), pytest.mark.sno()),
                 id="optional_featuregates_unsupported_removed_from_hco_cr",
             ),
             pytest.param(
@@ -151,7 +151,7 @@ class TestHCOOptionalFeatureGatesSuite:
                 },
                 constants.EXPCT_FG_DEFAULTS,
                 None,
-                marks=(pytest.mark.polarion("CNV-6278")),
+                marks=(pytest.mark.polarion("CNV-6278"), pytest.mark.sno()),
                 id="optional_featuregates_hardcoded_cdi_feature_gates_is_removed_from_hco_cr",
             ),
             pytest.param(
@@ -249,6 +249,7 @@ class TestHCOOptionalFeatureGatesSuite:
                 validate_func=validate_featuregates_not_in_kv_cr,
             )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-6277")
     @pytest.mark.parametrize(
         "updated_cdi_with_feature_gates",
