@@ -17,11 +17,7 @@ from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_VM_YAML
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import Images
-from utilities.infra import (
-    JIRA_STATUS_CLOSED,
-    get_jira_connection_params,
-    get_jira_status,
-)
+from utilities.infra import JIRA_STATUS_CLOSED, get_jira_status
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -151,12 +147,7 @@ def templates_provider_support_dict():
 
 
 def update_rhel9_support_dict(template_support_dict):
-    if (
-        get_jira_status(
-            jira_connection_params=get_jira_connection_params(), jira="CNV-11658"
-        )
-        not in JIRA_STATUS_CLOSED
-    ):
+    if get_jira_status(jira="CNV-11658") not in JIRA_STATUS_CLOSED:
         template_support_dict[Template.Annotations.PROVIDER_SUPPORT_LEVEL] = "Limited"
 
     return template_support_dict

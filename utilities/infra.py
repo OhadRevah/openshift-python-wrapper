@@ -449,16 +449,10 @@ def get_bug_status(bug):
     return bzapi.getbug(objid=bug).status
 
 
-def get_jira_connection_params():
-    return get_connection_params(conf_file_name="jira.cfg")
-
-
-def get_jira_status(jira_connection_params, jira):
+def get_jira_status(jira):
+    jira_connection_params = get_connection_params(conf_file_name="jira.cfg")
     jira_connection = JIRA(
-        basic_auth=(
-            jira_connection_params["username"],
-            jira_connection_params["password"],
-        ),
+        token_auth=jira_connection_params["token"],
         options={"server": jira_connection_params["url"]},
     )
     return jira_connection.issue(id=jira).fields.status.name
