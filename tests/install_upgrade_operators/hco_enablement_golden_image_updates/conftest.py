@@ -7,7 +7,11 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils i
     get_random_minutes_hours_fields_from_data_import_schedule,
 )
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
-from utilities.constants import HCO_OPERATOR
+from utilities.constants import (
+    COMMON_TEMPLATES_KEY_NAME,
+    HCO_OPERATOR,
+    SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
+)
 
 
 @pytest.fixture()
@@ -39,3 +43,8 @@ def deleted_hco_operator_pod(
             HCO_CR_DATA_IMPORT_SCHEDULE_KEY
         )
     )
+
+
+@pytest.fixture(scope="session")
+def common_templates_from_ssp_cr(ssp_cr_spec):
+    return ssp_cr_spec[COMMON_TEMPLATES_KEY_NAME][SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME]
