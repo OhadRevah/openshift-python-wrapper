@@ -1,9 +1,12 @@
-import re
-
 import pytest
-import xmltodict
 from ocp_resources.sriov_network import SriovNetwork
 
+from tests.compute.ssp.high_performance_vm.utils import (
+    get_numa_cpu_allocation,
+    get_numa_node_cpu_dict,
+    get_numa_sriov_allocation,
+    get_vm_cpu_list,
+)
 from utilities.constants import SRIOV
 from utilities.infra import BUG_STATUS_CLOSED, ExecCommandOnPod
 from utilities.network import sriov_network_dict
@@ -41,16 +44,6 @@ def check_numa_config_on_node(cmd, schedulable_nodes, utility_pods):
         if not out:
             return False
     return True
-
-
-@pytest.fixture(scope="module")
-def skip_if_no_cpumanager_workers(schedulable_nodes):
-    cpumanager_status = [
-        True if node.labels.cpumanager == "true" else False
-        for node in schedulable_nodes
-    ]
-    if not any(cpumanager_status):
-        pytest.skip(msg="Test should run on cluster with CPU Manager")
 
 
 @pytest.fixture(scope="module")
@@ -100,69 +93,6 @@ def vm_numa_sriov(namespace, unprivileged_client, sriov_net):
         vm.start(wait=True)
         vm.vmi.wait_until_running()
         yield vm
-
-
-def get_vm_cpu_list(vm):
-    vcpuinfo = vm.vmi.virt_launcher_pod.execute(
-        command=["virsh", "vcpuinfo", f"{vm.namespace}_{vm.name}"]
-    )
-
-    return [cpu.split()[1] for cpu in vcpuinfo.split("\n") if re.search(r"^CPU:", cpu)]
-
-
-def get_numa_node_cpu_dict(vm):
-    """
-    Get NUMA nodes CPU lists.
-    Return dict:
-        {'<numa_node_id>': [cpu_list]}
-    """
-    out = vm.vmi.virt_launcher_pod.execute(command=["virsh", "capabilities"])
-    numa = xmltodict.parse(out)["capabilities"]["host"]["cache"]["bank"]
-
-    return {elem["@id"]: elem["@cpus"].split(",") for elem in numa}
-
-
-def get_numa_cpu_allocation(vm_cpus, numa_nodes):
-    """
-    Find NUMA node # where VM CPUs are allocated.
-    """
-
-    def _parse_ranges_to_list(ranges):
-        cpus = []
-        for elem in ranges:
-            if "-" in elem:
-                start, end = elem.split("-")
-                cpus.extend([str(x) for x in range(int(start), int(end) + 1)])
-            else:
-                cpus.append(elem)
-        return cpus
-
-    for node in numa_nodes.keys():
-        if all(cpu in _parse_ranges_to_list(numa_nodes[node]) for cpu in vm_cpus):
-            return node
-
-
-def get_sriov_pci_address(vm):
-    """
-    Get PCI address of SRIOV device in virsh.
-    Return str:
-        'a:b:c.d' (for e.g. '0000:3b:0a.2')
-    """
-    addr = vm.vmi.xml_dict["domain"]["devices"]["hostdev"]["source"]["address"]
-
-    return f'{addr["@domain"][2:]}:{addr["@bus"][2:]}:{addr["@slot"][2:]}.{addr["@function"][2:]}'
-
-
-def get_numa_sriov_allocation(vm, utility_pods):
-    """
-    Find NUMA node # where SR-IOV device is allocated.
-    """
-    sriov_addr = get_sriov_pci_address(vm=vm)
-    out = ExecCommandOnPod(utility_pods=utility_pods, node=vm.vmi.node).exec(
-        command=f"cat /sys/bus/pci/devices/{sriov_addr}/numa_node"
-    )
-
-    return out.strip()
 
 
 @pytest.mark.polarion("CNV-4216")

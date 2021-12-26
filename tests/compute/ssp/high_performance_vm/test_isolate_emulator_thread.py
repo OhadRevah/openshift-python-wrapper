@@ -3,14 +3,16 @@ Test isolateEmulatorThread feature.
 """
 
 import logging
-import shlex
 
 import pytest
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
+from tests.compute.ssp.high_performance_vm.utils import (
+    validate_dedicated_emulatorthread,
+)
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
-from utilities.infra import BUG_STATUS_CLOSED, run_ssh_commands
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import vm_instance_from_template
 
 
@@ -47,40 +49,6 @@ def isolated_emulatorthread_vm(
         data_source=golden_image_data_source_scope_class,
     ) as isolated_emulatorthread_vm:
         yield isolated_emulatorthread_vm
-
-
-def assert_msg(emulatorpin, vcpupin):
-    return (
-        f"If isolateEmulatorThread=True, KubeVirt shouldn't allocate same pcpu "
-        f"for both vcpupin {vcpupin} and emulatorpin {emulatorpin}"
-    )
-
-
-def validate_dedicated_emulatorthread(vm):
-    cpu = vm.instance.spec.template.spec.domain.cpu
-    template_flavor_expected_cpu_count = cpu.threads * cpu.cores * cpu.sockets
-    run_ssh_commands(
-        host=vm.ssh_exec,
-        commands=[
-            shlex.split(f"nproc | grep '^{template_flavor_expected_cpu_count}$'"),
-        ],
-    )
-    LOGGER.info("Verify VM XML - Isolate Emulator Thread.")
-    cputune = vm.vmi.xml_dict["domain"]["cputune"]
-    emulatorpin_cpuset = cputune["emulatorpin"]["@cpuset"]
-    if template_flavor_expected_cpu_count == 1:
-        vcpupin_cpuset = cputune["vcpupin"]["@cpuset"]
-        # When isolateEmulatorThread is set to True,
-        # Ensure that KubeVirt will allocate one additional dedicated CPU,
-        # exclusively for the emulator thread.
-        assert emulatorpin_cpuset != vcpupin_cpuset, assert_msg(
-            emulatorpin=emulatorpin_cpuset, vcpupin=vcpupin_cpuset
-        )
-    else:
-        vcpupin_cpuset = [pcpu_id["@cpuset"] for pcpu_id in cputune["vcpupin"]]
-        assert emulatorpin_cpuset not in vcpupin_cpuset, assert_msg(
-            emulatorpin=emulatorpin_cpuset, vcpupin=vcpupin_cpuset
-        )
 
 
 @pytest.mark.parametrize(

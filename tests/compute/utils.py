@@ -6,13 +6,21 @@ from contextlib import contextmanager
 from benedict import benedict
 from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
+from utilities.constants import RHSM_PASSWD, RHSM_USER
 from utilities.hco import get_hyperconverged_resource
-from utilities.infra import hco_cr_jsonpatch_annotations_dict, run_ssh_commands
+from utilities.infra import (
+    base64_encode_str,
+    hco_cr_jsonpatch_annotations_dict,
+    run_ssh_commands,
+)
 from utilities.virt import (
     get_kubevirt_hyperconverged_spec,
     migrate_vm_and_verify,
+    prepare_cloud_init_user_data,
     wait_for_ssh_connectivity,
 )
 
@@ -245,3 +253,41 @@ def verify_no_listed_alerts_on_cluster(prometheus, alerts_list):
     assert (
         not fired_alerts
     ), f"Alerts should not be fired on healthy cluster.\n {fired_alerts}"
+
+
+def generate_rhsm_cloud_init_data():
+    bootcmds = [
+        f"mkdir /mnt/{RHSM_SECRET_NAME}",
+        f'mount /dev/$(lsblk --nodeps -no name,serial | grep {DISK_SERIAL} | cut -f1 -d" ") /mnt/{RHSM_SECRET_NAME}',
+        "subscription-manager config --rhsm.auto_enable_yum_plugins=0",
+    ]
+
+    return prepare_cloud_init_user_data(section="bootcmd", data=bootcmds)
+
+
+def generate_rhsm_secret(namespace):
+    with Secret(
+        name=RHSM_SECRET_NAME,
+        namespace=namespace.name,
+        data_dict={
+            "username": base64_encode_str(text=RHSM_USER),
+            "password": base64_encode_str(text=RHSM_PASSWD),
+        },
+    ) as secret:
+        yield secret
+
+
+def register_vm_to_rhsm(vm):
+    LOGGER.info("Register the VM with RedHat Subscription Manager")
+
+    run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=shlex.split(
+            "sudo subscription-manager register "
+            "--serverurl=subscription.rhsm.stage.redhat.com:443/subscription "
+            "--baseurl=https://cdn.stage.redhat.com "
+            f"--username=`sudo cat /mnt/{RHSM_SECRET_NAME}/username` "
+            f"--password=`sudo cat /mnt/{RHSM_SECRET_NAME}/password` "
+            "--auto-attach"
+        ),
+    )

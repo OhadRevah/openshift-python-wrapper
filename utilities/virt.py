@@ -1232,7 +1232,9 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 "password"
             ]
 
-        template_instance = self.get_template_by_labels()
+        template_instance = get_template_by_labels(
+            admin_client=self.client, template_labels=self.template_labels
+        )
         resources_list = template_instance.process(
             client=get_admin_client(), **template_kwargs
         )
@@ -1244,25 +1246,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 return resource
 
         raise ValueError(f"Template not found for {self.name}")
-
-    def get_template_by_labels(self):
-        template = list(
-            Template.get(
-                dyn_client=self.client,
-                singular_name=Template.singular_name,
-                namespace="openshift",
-                label_selector=",".join(
-                    [f"{label}=true" for label in self.template_labels]
-                ),
-            ),
-        )
-
-        matched_templates = len(template)
-        assert (
-            matched_templates == 1
-        ), f"{matched_templates} templates found which match {self.template_labels} labels"
-
-        return template[0]
 
 
 def vm_console_run_commands(
@@ -2103,3 +2086,21 @@ def assert_pod_status_completed(source_pod):
         source_pod.instance.status.containerStatuses[0].state.terminated.reason
         == Pod.Status.COMPLETED
     )
+
+
+def get_template_by_labels(admin_client, template_labels):
+    template = list(
+        Template.get(
+            dyn_client=admin_client,
+            singular_name=Template.singular_name,
+            namespace="openshift",
+            label_selector=",".join([f"{label}=true" for label in template_labels]),
+        ),
+    )
+
+    matched_templates = len(template)
+    assert (
+        matched_templates == 1
+    ), f"{matched_templates} templates found which match {template_labels} labels"
+
+    return template[0]

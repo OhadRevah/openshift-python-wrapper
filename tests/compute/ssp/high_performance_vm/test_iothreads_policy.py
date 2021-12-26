@@ -7,6 +7,9 @@ import pytest
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
+from tests.compute.ssp.high_performance_vm.utils import (
+    validate_iothreads_emulatorthread_on_same_pcpu,
+)
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
 from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import vm_instance_from_template
@@ -34,22 +37,6 @@ def iothreads_policy_vm(
         data_source=golden_image_data_source_scope_class,
     ) as iothreads_policy_vm:
         yield iothreads_policy_vm
-
-
-def validate_iothreads_emulatorthread_on_same_pcpu(vm):
-    LOGGER.info(f"Verify IO Thread Policy in VM {vm.name} domain XML.")
-    cputune = vm.vmi.xml_dict["domain"]["cputune"]
-    emulatorpin_cpuset = cputune["emulatorpin"]["@cpuset"]
-    iothreadpin_cpuset = cputune["iothreadpin"]["@cpuset"]
-    # When dedicatedCPUPlacement is True, isolateEmulatorThread is True,
-    # dedicatedIOThread is True and ioThreadsPolicy is set "auto".
-    # Ensure that KubeVirt will allocate ioThreads to the same
-    # physical cpu of the QEMU Emulator Thread.
-    assert iothreadpin_cpuset == emulatorpin_cpuset, (
-        f"If isolateEmulatorThread=True and also ioThreadsPolicy is 'auto',"
-        f"KubeVirt should allocate same physical cpu."
-        f"Expected: iothreadspin cpuset {iothreadpin_cpuset} equals emulatorpin cpuset {emulatorpin_cpuset}."
-    )
 
 
 @pytest.mark.parametrize(
