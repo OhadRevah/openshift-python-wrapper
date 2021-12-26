@@ -163,6 +163,7 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
     "tier3",
     "install",
     "benchmark",
+    "sap_hana",
 ]
 
 TEAM_MARKERS = {

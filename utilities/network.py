@@ -624,11 +624,13 @@ def network_nad(
     sriov_resource_name=None,
     sriov_network_namespace=None,
     add_resource_name=True,
+    teardown=True,
 ):
     kwargs = {
         "name": nad_name,
         "vlan": vlan,
         "namespace": namespace.name,
+        "teardown": teardown,
     }
     if nad_type == LINUX_BRIDGE:
         kwargs["cni_type"] = py_config["linux_bridge_cni"]
@@ -642,6 +644,7 @@ def network_nad(
         kwargs["network_namespace"] = sriov_network_namespace
         kwargs["resource_name"] = sriov_resource_name
         kwargs["ipam"] = ipam
+        kwargs["macspoofchk"] = macspoofchk
 
     if nad_type == OVS_BRIDGE:
         kwargs["bridge_name"] = interface_name

@@ -1226,6 +1226,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             else "mock-data-source-ns",
         }
 
+        # TARGET_NODE_NAME is SAP HANA template's mandatory parameter.
+        # TODO: Use node label (https://bugzilla.redhat.com/show_bug.cgi?id=2039691)
+        if any([Template.Workload.SAPHANA in label for label in self.template_labels]):
+            template_kwargs["TARGET_NODE_NAME"] = self.node_selector
+
         # Set password for non-Windows VMs; for Windows VM, the password is already set in the image
         if OS_FLAVOR_WINDOWS not in self.os_flavor:
             template_kwargs["CLOUD_USER_PASSWORD"] = OS_LOGIN_PARAMS[self.os_flavor][
