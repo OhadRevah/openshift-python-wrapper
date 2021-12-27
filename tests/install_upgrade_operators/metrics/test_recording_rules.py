@@ -1,13 +1,14 @@
 import pytest
 from ocp_resources.resource import Resource
 
-from tests.install_upgrade_operators.metrics.utils import validate_virt_handler_data
+from tests.install_upgrade_operators.metrics.utils import (
+    validate_metric_num_virt_handler_result,
+)
 from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER, VIRT_OPERATOR
 from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
-
 
 virt_label_dict = {
     VIRT_API: f"{Resource.ApiGroup.KUBEVIRT_IO}={VIRT_API}",
@@ -115,26 +116,18 @@ def test_virt_up_recording_rules(
     ), f"Actual pod count {virt_pod_names_by_label} not matching with expected pod count {virt_up_metrics_values}"
 
 
-@pytest.mark.bugzilla(
-    2052556, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-@pytest.mark.parametrize(
-    "virt_handler_pod_and_node_names_with_value_from_prometheus",
-    [
-        pytest.param(
-            "kubevirt_num_virt_handlers_by_node_running_virt_launcher",
-            marks=pytest.mark.polarion("CNV-7238"),
-        ),
-    ],
-    indirect=True,
-)
-def test_num_virt_handlers_by_node_running_virt_launcher(
-    prometheus,
-    single_metric_vm,
-    virt_handler_pod_and_node_names_with_value_from_prometheus,
-):
-    """This test will check count of virt-handlers pod on respective nodes."""
-    validate_virt_handler_data(
-        virt_handler_pod_and_node_names=virt_handler_pod_and_node_names_with_value_from_prometheus,
-        vm=single_metric_vm,
+class TestRecordingRuleMetrics:
+    @pytest.mark.polarion("CNV-7238")
+    @pytest.mark.bugzilla(
+        2052556,
+        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
     )
+    def test_num_virt_handlers_by_node_running_virt_launcher(
+        self, prometheus, single_metric_vm
+    ):
+        """This test will check nodes running virtual machine with metrics output with values."""
+        validate_metric_num_virt_handler_result(
+            prometheus=prometheus,
+            vm=single_metric_vm,
+            expected_value=1,
+        )

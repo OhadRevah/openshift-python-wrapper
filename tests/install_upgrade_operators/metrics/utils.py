@@ -697,45 +697,29 @@ def validate_vm_vcpu_cpu_affinity_with_prometheus(prometheus, nodes, query, vm):
     )
 
 
-def validate_virt_handler_data(virt_handler_pod_and_node_names, vm):
-    """Verify node and virt_handler pod information from running VM with metrics output.
-    This will also check the metrics value which is 1.
+def validate_metric_num_virt_handler_result(prometheus, vm, expected_value):
+    """Verify node information from running VM with metrics output.
+    This will also check the metrics value.
 
     Args:
-        virt_handler_pod_and_node_names (dict): virt-handler pod name as key and a tuple of the node and metric as value
+        prometheus (:obj:`Prometheus`): Prometheus object.
         vm (VirtualMachine): VM object
-
-    Raises:
-        AssertionError: if there were mismatches between data from virt-handler pod prometheus.
-        Also when value doesn't match.
+        expected_value (Int): Integer value to be expected from metrics value.
     """
-    virt_handler_pod_names_from_vm = [vm.vmi.virt_handler_pod.name]
-    node_name_from_vm = [vm.vmi.node.name]
-    virt_handler_pod_names_prometheus = list(virt_handler_pod_and_node_names)
-    virt_handler_node_and_metric_prometheus = list(
-        virt_handler_pod_and_node_names.values()
-    )
+    vm_node_name = vm.vmi.node.name
+    query = "kubevirt_num_virt_handlers_by_node_running_virt_launcher"
 
-    assert virt_handler_pod_names_from_vm == virt_handler_pod_names_prometheus, (
-        f"Actual 'virt-handler' pod {virt_handler_pod_names_from_vm} not matching with "
-        f"expected 'virt-handler' from prometheus {virt_handler_pod_names_prometheus}"
-    )
+    def _query_result():
+        query_output = prometheus.query(query=query)["data"]["result"]
+        LOGGER.info(f"Query {query} Output: {query_output}")
+        for query_result in query_output:
+            if query_result["metric"]["node"] == vm_node_name:
+                return int(query_result["value"][1])
 
-    node_name_from_metrics = [
-        node_name[0] for node_name in virt_handler_node_and_metric_prometheus
-    ]
-
-    assert node_name_from_vm == node_name_from_metrics, (
-        f"Actual node name {node_name_from_vm} not matching with "
-        f"expected node name from prometheus {virt_handler_node_and_metric_prometheus}"
-    )
-
-    assert all(
-        [
-            metric_value[1] == 1
-            for metric_value in virt_handler_node_and_metric_prometheus
-        ]
-    ), (
-        f"Actual 'virt-handler' pods count {virt_handler_pod_names_from_vm} not "
-        f"matching with expected 'virt-handler' pods {virt_handler_node_and_metric_prometheus}"
-    )
+    for metric_value in TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=5,
+        func=_query_result,
+    ):
+        if metric_value == expected_value:
+            return

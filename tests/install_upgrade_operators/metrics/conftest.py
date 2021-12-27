@@ -355,7 +355,7 @@ def virt_pod_names_by_label(request, admin_client, hco_namespace):
     ]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def single_metric_vm(namespace):
     """Returns the first vm from the list of created vms"""
     vm = create_vms(
@@ -376,32 +376,3 @@ def virt_up_metrics_values(request, prometheus):
         query=request.param,
     )
     return int(query_response[0]["value"][1])
-
-
-@pytest.fixture()
-def virt_handler_pod_and_node_names_with_value_from_prometheus(request, prometheus):
-    """Return dictionary which contains 'virt-handler' Pod name as key and tuple of 'node, metric value' as value."""
-
-    query = request.param
-
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN,
-        sleep=5,
-        func=prometheus.query_sampler,
-        query=query,
-    )
-    sample = None
-    try:
-        for sample in samples:
-            if sample:
-                return {
-                    sample[0]["metric"]["pod"]: (
-                        sample[0]["metric"]["node"],
-                        int(sample[0]["value"][1]),
-                    )
-                }
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Failed to get data from query '{query}'. Current data:  {sample}"
-        )
-        raise
