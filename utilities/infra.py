@@ -207,15 +207,17 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
     raise NotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
 
 
-def run_ssh_commands(host, commands):
+def run_ssh_commands(host, commands, get_pty=False):
     """
     Run commands via SSH
 
     Args:
         host (Host): rrmngmnt host to execute the commands from.
         commands (list): List of multiple command lists [[cmd1, cmd2, cmd3]] or a list with a single command [cmd]
-        Examples:
-             ["sudo", "reboot"], [["sleep", "5"], ["date"]]
+            Examples:
+                 ["sudo", "reboot"], [["sleep", "5"], ["date"]]
+
+        get_pty (bool): get_pty parameter for remote session (equivalent to -t argument for ssh)
 
     Returns:
         list: List of commands output.
@@ -227,7 +229,7 @@ def run_ssh_commands(host, commands):
     commands = commands if isinstance(commands[0], list) else [commands]
     with host.executor().session() as ssh_session:
         for cmd in commands:
-            rc, out, err = ssh_session.run_cmd(cmd=cmd)
+            rc, out, err = ssh_session.run_cmd(cmd=cmd, get_pty=get_pty)
             LOGGER.info(f"[SSH][{host.fqdn}] Executed: {' '.join(cmd)}")
             if rc:
                 raise CommandExecFailed(name=cmd, err=err)
