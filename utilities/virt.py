@@ -1155,7 +1155,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             spec = self._update_vm_storage_config(
                 spec=spec, name=self.data_volume_template["metadata"]["name"]
             )
-            self.access_modes = self.data_volume_template["spec"]["pvc"]["accessModes"]
+            self.access_modes = self.data_volume_template["spec"].get("pvc", {}).get(
+                "accessModes", []
+            ) or self.data_volume_template["spec"].get("storage", {}).get(
+                "accessModes", []
+            )
         # Otherwise clone PVC referenced in self.data_source
         else:
             pvc_from_data_source = self.data_source.instance.spec.source.pvc
@@ -1180,6 +1184,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 ] = source_dv_pvc_spec.storageClassName
 
         # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
+        # To apply this logic, self.access_modes should be available.
         if not self.diskless_vm and DataVolume.AccessMode.RWX not in self.access_modes:
             spec.pop("evictionStrategy", None)
 
