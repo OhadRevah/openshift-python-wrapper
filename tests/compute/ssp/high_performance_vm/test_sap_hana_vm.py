@@ -1,15 +1,26 @@
 import logging
 import re
+import shlex
 from copy import deepcopy
 
+import bitmath
 import pytest
+import xmltodict
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from tests.compute.ssp.constants import VIRTIO
-from tests.compute.utils import generate_rhsm_cloud_init_data, generate_rhsm_secret
+from tests.compute.ssp.high_performance_vm.utils import (
+    validate_dedicated_emulatorthread,
+    validate_iothreads_emulatorthread_on_same_pcpu,
+)
+from tests.compute.utils import (
+    generate_rhsm_cloud_init_data,
+    generate_rhsm_secret,
+    register_vm_to_rhsm,
+)
 from utilities import console
 from utilities.constants import SRIOV
 from utilities.infra import (
@@ -196,6 +207,104 @@ def assert_vm_cpu_matches_node_cpu(node_lscpu_configuration, guest_cpu_config):
     assert (
         node_cpu_model == guest_cpu_model
     ), f"Guest CPU model {guest_cpu_model} does not match host CPU model {node_cpu_model}"
+
+
+def verify_libvirt_huge_pages_configuration(template, vmi_xml_dict):
+    template_huge_pages_param_subset_str = "HUGEPAGES_PAGE_SIZE"
+    expected_huge_pages = get_parameters_from_template(
+        template=template, parameter_subset=template_huge_pages_param_subset_str
+    )[template_huge_pages_param_subset_str]
+    libvirt_huge_pages = vmi_xml_dict["memoryBacking"]["hugepages"]["page"]
+    libvirt_hugepages_size = bitmath.parse_string(
+        f"{libvirt_huge_pages['@size']}{libvirt_huge_pages['@unit']}"
+    ).to_GiB()
+    assert libvirt_hugepages_size == bitmath.parse_string_unsafe(
+        expected_huge_pages
+    ), f"Wrong huge pages configuration. Expected: {expected_huge_pages}, actual: {libvirt_hugepages_size}"
+
+
+def verify_libvirt_memory_configuration(expected_memory, vmi_xml_dict):
+    libvirt_expected_memory = vmi_xml_dict["memory"]
+    calculated_libvirt_memory = bitmath.parse_string(
+        f"{libvirt_expected_memory['#text']}{libvirt_expected_memory['@unit']}"
+    ).to_GiB()
+    assert calculated_libvirt_memory == bitmath.parse_string_unsafe(
+        expected_memory
+    ), f"Wrong memory configuration. Expected: {expected_memory}, actual: {libvirt_expected_memory}"
+
+
+def assert_node_huge_pages_size(utility_pods, sap_hana_node, vm):
+    node_huge_pages = ExecCommandOnPod(
+        utility_pods=utility_pods, node=sap_hana_node
+    ).exec(command="grep HugePages_ /proc/meminfo")
+    node_huge_pages_dict = re.search(
+        r"HugePages_Total:\s+(?P<total_huge_pages>\d+).*HugePages_Free:\s+(?P<free_huge_pages>\d+).*",
+        node_huge_pages,
+        re.DOTALL,
+    ).groupdict()
+    node_allocated_huge_pages = int(node_huge_pages_dict["total_huge_pages"]) - int(
+        node_huge_pages_dict["free_huge_pages"]
+    )
+
+    vm_memory_size = vm.instance.spec.template.spec.domain.memory.guest
+    formatted_vm_memory_size = int(re.match(r"(\d+).*", vm_memory_size).group(1))
+    assert (
+        node_allocated_huge_pages == formatted_vm_memory_size
+    ), f"Node huge pages allocation  {node_allocated_huge_pages} does not match VM's memory {formatted_vm_memory_size}"
+
+
+def get_num_cores_from_domain_xml(vmi_xml_dict):
+    return int(vmi_xml_dict["cpu"]["topology"]["@cores"])
+
+
+def assert_vm_devices_queues(vm, vmi_xml_dict):
+    vm_cores = get_num_cores_from_domain_xml(vmi_xml_dict=vmi_xml_dict)
+    vm_boot_disk = [
+        disk
+        for disk in vmi_xml_dict["devices"]["disk"]
+        if disk["alias"]["@name"].strip("ua-") in vm.name
+    ][0]
+    boot_disk_queues = int(vm_boot_disk["driver"]["@queues"])
+    assert (
+        vm_cores == boot_disk_queues
+    ), f"VM disks number of queues {boot_disk_queues} does not match its number of cores {vm_cores}"
+
+
+def assert_vm_spec_memory_configuration(expected_memory_configuration, vm):
+    vm_memory = vm.instance.spec.template.spec.domain.memory.guest
+    expected_memory = expected_memory_configuration["MEMORY"]
+    assert (
+        vm_memory == expected_memory
+    ), f"VM memory {vm_memory} does not match 'MEMORY' template parameter value {expected_memory}"
+
+
+def assert_vm_memory_dump_metrics(metrics_dict, vmi_xml_dict):
+    vm_allocated_memory = {
+        name: value
+        for metric in metrics_dict
+        for name, value in metric.items()
+        if metric["name"] == "PhysicalMemoryAllocatedToVirtualSystem"
+    }["value"]
+    libvirt_expected_memory = vmi_xml_dict["memory"]["#text"]
+    assert vm_allocated_memory == libvirt_expected_memory, (
+        f"VM metrics memeory {vm_allocated_memory} does not match "
+        f"expected value {libvirt_expected_memory}"
+    )
+
+
+def assert_vm_cpu_dump_metrics(metrics_dict, vmi_xml_dict):
+    vm_allocated_cpus = {
+        name: value
+        for metric in metrics_dict
+        for name, value in metric.items()
+        if metric["name"] == "NumberOfPhysicalCPUs"
+    }["value"]
+    libvirt_expected_num_cores = get_num_cores_from_domain_xml(
+        vmi_xml_dict=vmi_xml_dict
+    )
+    assert (
+        int(vm_allocated_cpus) == libvirt_expected_num_cores
+    ), f"VM metrics cpu count {vm_allocated_cpus} does not match expected count {libvirt_expected_num_cores}"
 
 
 @pytest.fixture(scope="class")
@@ -397,6 +506,33 @@ def guest_lscpu_configuration(sap_hana_vm):
     return extract_lscpu_info(lscpu_output=guest_lscpu_output)
 
 
+@pytest.fixture()
+def registered_hana_vm_rhsm(sap_hana_vm):
+    return register_vm_to_rhsm(vm=sap_hana_vm)
+
+
+@pytest.fixture()
+def installed_vm_dump_metrics(registered_hana_vm_rhsm, sap_hana_vm):
+    run_ssh_commands(
+        host=sap_hana_vm.ssh_exec,
+        commands=shlex.split("sudo dnf install -y vm-dump-metrics"),
+    )
+
+
+@pytest.fixture()
+def vm_dump_metrics(sap_hana_vm):
+    metrics = run_ssh_commands(
+        host=sap_hana_vm.ssh_exec, commands=["sudo", "vm-dump-metrics"]
+    )
+    assert metrics, "No metrics are extracted using vm_dump_metrics"
+    return metrics
+
+
+@pytest.fixture(scope="class")
+def vm_virt_launcher_pod_instance(sap_hana_vm):
+    return sap_hana_vm.vmi.virt_launcher_pod.instance
+
+
 class TestSAPHANATemplate:
     @pytest.mark.polarion("CNV-7623")
     def test_sap_hana_template_validation_rules(self, sap_hana_template):
@@ -520,3 +656,107 @@ class TestSAPHANAVirtualMachine:
             f"wrong {INVTSC} policy in libvirt: policy name: {invtsc_libvirt_name}, value: {invtsc_libvirt_policy}, "
             f"expected: {expected_policy}"
         )
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7773")
+    def test_sap_hana_vm_virt_launcher_qos(
+        self, sap_hana_vm, vm_virt_launcher_pod_instance
+    ):
+        guaranteed = "Guaranteed"
+        LOGGER.info(f"Verify {sap_hana_vm.name} virt-launcher pod QoS is {guaranteed}")
+        virt_launcher_pod_qos = vm_virt_launcher_pod_instance.status.qosClass
+        assert (
+            virt_launcher_pod_qos == guaranteed
+        ), f"Virt-launcher QoS is {virt_launcher_pod_qos}, expected: {guaranteed}"
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7761")
+    def test_sap_hana_vm_isolate_emulator_thread(self, sap_hana_vm):
+        vm_isolated_emulator_thread = (
+            sap_hana_vm.instance.spec.template.spec.domain.cpu.isolateEmulatorThread
+        )
+        assert (
+            vm_isolated_emulator_thread
+        ), f"VM isolateEmulatorThread is not enabled, value: {vm_isolated_emulator_thread}"
+        validate_iothreads_emulatorthread_on_same_pcpu(vm=sap_hana_vm)
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7762")
+    def test_sap_hana_vm_dedicated_cpu_placement(self, sap_hana_vm):
+        vm_dedicate_cpu_placement = (
+            sap_hana_vm.instance.spec.template.spec.domain.cpu.dedicatedCpuPlacement
+        )
+        assert (
+            vm_dedicate_cpu_placement
+        ), f"VM isolateEmulatorThread is not enabled, value: {vm_dedicate_cpu_placement}"
+        validate_dedicated_emulatorthread(vm=sap_hana_vm)
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7765")
+    def test_sap_hana_vm_block_multiqueue(self, sap_hana_vm, vmi_domxml):
+        vm_block_multiqueue = (
+            sap_hana_vm.instance.spec.template.spec.domain.devices.blockMultiQueue
+        )
+        assert (
+            vm_block_multiqueue
+        ), f"VM blockMultiQueue is not enabled, value: {vm_block_multiqueue}"
+        assert_vm_devices_queues(vm=sap_hana_vm, vmi_xml_dict=vmi_domxml)
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7874")
+    def test_sap_hana_vm_huge_pages(
+        self,
+        sap_hana_vm,
+        sap_hana_template,
+        vmi_domxml,
+        utility_pods,
+        sap_hana_node,
+    ):
+        verify_libvirt_huge_pages_configuration(
+            template=sap_hana_template, vmi_xml_dict=vmi_domxml
+        )
+        assert_node_huge_pages_size(
+            utility_pods=utility_pods,
+            sap_hana_node=sap_hana_node,
+            vm=sap_hana_vm,
+        )
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7771")
+    def test_sap_hana_vm_io_thread_policy(self, sap_hana_vm):
+        LOGGER.info(f"Verify {sap_hana_vm.name} VM ioThreadsPolicy is enabled.")
+        vm_io_thread_policy = (
+            sap_hana_vm.instance.spec.template.spec.domain.ioThreadsPolicy
+        )
+        assert (
+            vm_io_thread_policy == "auto"
+        ), f"VM ioThreadsPolicy is not enabled; current value: {vm_io_thread_policy}"
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7768")
+    def test_sap_hana_vm_memory(self, sap_hana_vm, sap_hana_template, vmi_domxml):
+        template_memory_param_subset_str = "MEMORY"
+        template_memory_params = get_parameters_from_template(
+            template=sap_hana_template,
+            parameter_subset=template_memory_param_subset_str,
+        )
+        assert_vm_spec_memory_configuration(
+            expected_memory_configuration=template_memory_params, vm=sap_hana_vm
+        )
+        verify_libvirt_memory_configuration(
+            expected_memory=template_memory_params[template_memory_param_subset_str],
+            vmi_xml_dict=vmi_domxml,
+        )
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7770")
+    def test_sap_hana_vm_downwards_metrics(
+        self, sap_hana_vm, installed_vm_dump_metrics, vm_dump_metrics, vmi_domxml
+    ):
+        metrics_dict = xmltodict.parse(
+            xml_input=vm_dump_metrics[0], process_namespaces=True
+        )["metrics"]["metric"]
+        assert_vm_memory_dump_metrics(
+            metrics_dict=metrics_dict, vmi_xml_dict=vmi_domxml
+        )
+        assert_vm_cpu_dump_metrics(metrics_dict=metrics_dict, vmi_xml_dict=vmi_domxml)
