@@ -1,15 +1,18 @@
 """
-GPU PCI Passthrough VM
+GPU PCI Passthrough and vGPU Testing
 """
 
 import random
-import shlex
 
 import pytest
 
-from utilities.constants import GPU_DEVICE_ID, OS_FLAVOR_WINDOWS
-from utilities.infra import ExecCommandOnPod, run_ssh_commands
-from utilities.virt import vm_instance_from_template
+from tests.compute.virt.gpu.utils import (
+    fetch_device_name_from_vm,
+    install_nvidia_drivers_on_windows_vm,
+)
+from utilities.constants import GPU_DEVICE_ID, OS_FLAVOR_WINDOWS, VGPU_DEVICE_NAME
+from utilities.infra import ExecCommandOnPod
+from utilities.virt import running_vm, vm_instance_from_template
 
 
 @pytest.fixture(scope="session")
@@ -35,26 +38,26 @@ def skip_if_no_gpu_node(gpu_nodes):
 
 
 @pytest.fixture(scope="class")
-def pci_passthrough_vm(
+def gpu_vm(
     request,
     unprivileged_client,
     namespace,
     golden_image_dv_scope_module_data_source_scope_class,
     gpu_nodes,
 ):
+    """
+    VM Fixture for both GPU Passthrough and vGPU based Tests.
+    """
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_source=golden_image_dv_scope_module_data_source_scope_class,
         node_selector=random.choice([*gpu_nodes]).name,
-    ) as pci_passthrough_vm:
-        if pci_passthrough_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
-            # Install NVIDIA Drivers placed on the Windows-10 or win2k19 Images.
-            run_ssh_commands(
-                host=pci_passthrough_vm.ssh_exec,
-                commands=[
-                    shlex.split("C:\\\\NVIDIA\\\\gpu\\\\International\\\\setup.exe -s")
-                ],
-            )
-        yield pci_passthrough_vm
+    ) as gpu_vm:
+        if gpu_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
+            install_nvidia_drivers_on_windows_vm(vm=gpu_vm)
+            # Wait for Running VM, as the VM Reboots after installing NVIDIA GRID Drivers.
+            if fetch_device_name_from_vm(vm=gpu_vm) == VGPU_DEVICE_NAME:
+                running_vm(vm=gpu_vm)
+        yield gpu_vm

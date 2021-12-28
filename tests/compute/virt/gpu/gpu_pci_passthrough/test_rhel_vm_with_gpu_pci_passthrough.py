@@ -9,12 +9,14 @@ import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from tests.compute import utils as compute_utils
-from tests.compute.virt import utils as virt_utils
+from tests.compute.utils import pause_optional_migrate_unpause_and_check_connectivity
 from tests.compute.virt.gpu.utils import (
-    restart_and_check_device_exists,
-    verify_gpu_device_exists,
+    restart_and_check_gpu_exists,
+    verify_gpu_device_exists_in_vm,
+    verify_gpu_device_exists_on_node,
+    verify_gpu_expected_count_updated_on_node,
 )
+from tests.compute.virt.utils import running_sleep_in_linux
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import GPU_DEVICE_NAME
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
@@ -42,34 +44,8 @@ DATA_VOLUME_DICT = {
 LOGGER = logging.getLogger(__name__)
 
 
-def resources_device_checks(gpu_node, status_type):
-    if status_type == ALLOCATABLE:
-        resources = gpu_node.instance.status.allocatable
-    elif status_type == CAPACITY:
-        resources = gpu_node.instance.status.capacity
-
-    if GPU_DEVICE_NAME not in resources.keys():
-        return {
-            gpu_node.name: {
-                f"device_{status_type}": {
-                    "expected": GPU_DEVICE_NAME,
-                    "actual": resources.keys(),
-                }
-            }
-        }
-    if resources[GPU_DEVICE_NAME] != "1":
-        return {
-            gpu_node.name: {
-                f"device_{status_type}_count": {
-                    "expected": "1",
-                    "actual": resources[GPU_DEVICE_NAME],
-                }
-            }
-        }
-
-
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_module, pci_passthrough_vm",
+    "golden_image_data_volume_scope_module, gpu_vm",
     [
         pytest.param(
             DATA_VOLUME_DICT,
@@ -91,57 +67,54 @@ class TestPCIPassthroughRHELHostDevicesSpec:
     """
 
     @pytest.mark.polarion("CNV-5638")
-    def test_permitted_hostdevices_visible(self, pci_passthrough_vm, gpu_nodes):
+    def test_permitted_hostdevices_visible(self, gpu_vm, gpu_nodes):
         """
         Test Permitted HostDevice is visible and count updated under Capacity/Allocatable
         section of the GPU Node.
         """
-        failed_checks = []
-        for gpu_node in gpu_nodes:
-            for status_type in [ALLOCATABLE, CAPACITY]:
-                failed_check = resources_device_checks(
-                    gpu_node=gpu_node, status_type=status_type
-                )
-                if failed_check:
-                    failed_checks.append(failed_check)
-        assert not failed_checks, f"Failed checks: {failed_checks}"
+        verify_gpu_device_exists_on_node(
+            gpu_nodes=gpu_nodes, device_name=GPU_DEVICE_NAME
+        )
+        verify_gpu_expected_count_updated_on_node(
+            gpu_nodes=gpu_nodes,
+            device_name=GPU_DEVICE_NAME,
+            expected_count="1",
+        )
 
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"
     )
     @pytest.mark.polarion("CNV-5639")
-    def test_access_hostdevices_rhel_vm(self, pci_passthrough_vm):
+    def test_access_hostdevices_rhel_vm(self, gpu_vm):
         """
         Test Device is accessible in VM with hostdevices spec.
         """
-        verify_gpu_device_exists(vm=pci_passthrough_vm)
+        verify_gpu_device_exists_in_vm(vm=gpu_vm)
 
     @pytest.mark.dependency(
         depends=[f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"]
     )
     @pytest.mark.polarion("CNV-5643")
-    def test_pause_unpause_hostdevices_rhel_vm(self, pci_passthrough_vm):
+    def test_pause_unpause_hostdevices_rhel_vm(self, gpu_vm):
         """
         Test VM with Device using hostdevices spec, can be paused and unpaused successfully.
         """
-        with virt_utils.running_sleep_in_linux(vm=pci_passthrough_vm):
-            compute_utils.pause_optional_migrate_unpause_and_check_connectivity(
-                vm=pci_passthrough_vm
-            )
+        with running_sleep_in_linux(vm=gpu_vm):
+            pause_optional_migrate_unpause_and_check_connectivity(vm=gpu_vm)
 
     @pytest.mark.dependency(
         depends=[f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"]
     )
     @pytest.mark.polarion("CNV-5641")
-    def test_restart_hostdevices_rhel_vm(self, pci_passthrough_vm):
+    def test_restart_hostdevices_rhel_vm(self, gpu_vm):
         """
         Test VM with Device using hostdevices spec, can be restarted successfully.
         """
-        restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_gpu_exists(vm=gpu_vm)
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_module, pci_passthrough_vm",
+    "golden_image_data_volume_scope_module, gpu_vm",
     [
         pytest.param(
             DATA_VOLUME_DICT,
@@ -164,34 +137,32 @@ class TestPCIPassthroughRHELGPUSSpec:
 
     @pytest.mark.dependency(name=f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm")
     @pytest.mark.polarion("CNV-5640")
-    def test_access_gpus_rhel_vm(self, pci_passthrough_vm):
+    def test_access_gpus_rhel_vm(self, gpu_vm):
         """
         Test Device is accessible in VM with GPUS spec.
         """
-        verify_gpu_device_exists(vm=pci_passthrough_vm)
+        verify_gpu_device_exists_in_vm(vm=gpu_vm)
 
     @pytest.mark.dependency(
         depends=[f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm"]
     )
     @pytest.mark.polarion("CNV-5644")
-    def test_pause_unpause_gpus_rhel_vm(self, pci_passthrough_vm):
+    def test_pause_unpause_gpus_rhel_vm(self, gpu_vm):
         """
         Test VM with Device using GPUS spec, can be paused and unpaused successfully.
         """
-        with virt_utils.running_sleep_in_linux(vm=pci_passthrough_vm):
-            compute_utils.pause_optional_migrate_unpause_and_check_connectivity(
-                vm=pci_passthrough_vm
-            )
+        with running_sleep_in_linux(vm=gpu_vm):
+            pause_optional_migrate_unpause_and_check_connectivity(vm=gpu_vm)
 
     @pytest.mark.dependency(
         depends=[f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm"]
     )
     @pytest.mark.polarion("CNV-5642")
-    def test_restart_gpus_rhel_vm(self, pci_passthrough_vm):
+    def test_restart_gpus_rhel_vm(self, gpu_vm):
         """
         Test VM with Device using GPUS spec, can be restarted successfully.
         """
-        restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_gpu_exists(vm=gpu_vm)
 
 
 @pytest.mark.polarion("CNV-5645")

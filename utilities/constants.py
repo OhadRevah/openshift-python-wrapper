@@ -188,11 +188,20 @@ PODS_TO_COLLECT_INFO = [
 ]
 
 
-# GPU constants
+# GPU/vGPU Common constants
 # The GPU tests require GPU Device on the Worker Nodes.
 # ~]$ lspci -nnv | grep -i NVIDIA  , should display the GPU_DEVICE_ID
-GPU_DEVICE_NAME = "nvidia.com/TU104GL_Tesla_T4"
+GPU_DEVICE_MANUFACTURER = "nvidia.com"
 GPU_DEVICE_ID = "10de:1eb8"
+
+# GPU Passthrough constants
+GPU_DEVICE_NAME = f"{GPU_DEVICE_MANUFACTURER}/TU104GL_Tesla_T4"
+
+# vGPU constants
+VGPU_DEVICE_NAME = f"{GPU_DEVICE_MANUFACTURER}/GRID_T4_2Q"
+MDEV_NAME = "GRID T4-2Q"
+MDEV_AVAILABLE_INSTANCES = "8"
+MDEV_TYPE = "nvidia-231"
 
 # Kernel Device Driver
 # Compute: GPU Devices are bound to this Kernel Driver for GPU Passthrough.

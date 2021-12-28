@@ -8,10 +8,10 @@ import os
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.compute import utils as compute_utils
+from tests.compute.utils import validate_pause_optional_migrate_unpause_windows_vm
 from tests.compute.virt.gpu.utils import (
-    restart_and_check_device_exists,
-    verify_gpu_device_exists,
+    restart_and_check_gpu_exists,
+    verify_gpu_device_exists_in_vm,
 )
 from utilities.constants import GPU_DEVICE_NAME, Images
 from utilities.virt import get_windows_os_dict
@@ -34,9 +34,8 @@ DV_SIZE = Images.Windows.NVIDIA_DV_SIZE
 TESTS_CLASS_NAME = "TestPCIPassthroughWinHostDevicesSpec"
 
 
-@pytest.mark.tier3
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_module, pci_passthrough_vm",
+    "golden_image_data_volume_scope_module, gpu_vm",
     [
         pytest.param(
             {
@@ -85,52 +84,48 @@ class TestPCIPassthroughWinHostDevicesSpec:
 
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::access_hostdevices_win_vm")
     @pytest.mark.polarion("CNV-5646")
-    def test_access_hostdevices_win_vm(self, pci_passthrough_vm):
+    def test_access_hostdevices_win_vm(self, gpu_vm):
         """
         Test Device is accessible in Windows VM with hostdevices spec.
         """
-        verify_gpu_device_exists(vm=pci_passthrough_vm)
+        verify_gpu_device_exists_in_vm(vm=gpu_vm)
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_hostdevices_win_vm"])
     @pytest.mark.polarion("CNV-5647")
-    def test_pause_unpause_hostdevices_win_vm(self, pci_passthrough_vm):
+    def test_pause_unpause_hostdevices_win_vm(self, gpu_vm):
         """
         Test Windows VM with Device using hostdevices spec, can be paused and unpaused successfully.
         """
-        compute_utils.validate_pause_optional_migrate_unpause_windows_vm(
-            vm=pci_passthrough_vm
-        )
+        validate_pause_optional_migrate_unpause_windows_vm(vm=gpu_vm)
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_hostdevices_win_vm"])
     @pytest.mark.polarion("CNV-5648")
-    def test_restart_hostdevices_win_vm(self, pci_passthrough_vm):
+    def test_restart_hostdevices_win_vm(self, gpu_vm):
         """
         Test Windows VM with Device using hostdevices spec, can be restarted successfully.
         """
-        restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_gpu_exists(vm=gpu_vm)
 
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::access_gpus_win_vm")
     @pytest.mark.polarion("CNV-5742")
-    def test_access_gpus_win_vm(self, pci_passthrough_vm, updated_vm_gpus_spec):
+    def test_access_gpus_win_vm(self, gpu_vm, updated_vm_gpus_spec):
         """
         Test Device is accessible in Windows VM with gpus spec.
         """
-        restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_gpu_exists(vm=gpu_vm)
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_gpus_win_vm"])
     @pytest.mark.polarion("CNV-5743")
-    def test_pause_unpause_gpus_win_vm(self, pci_passthrough_vm):
+    def test_pause_unpause_gpus_win_vm(self, gpu_vm):
         """
         Test Windows VM with Device using gpus spec, can be paused and unpaused successfully.
         """
-        compute_utils.validate_pause_optional_migrate_unpause_windows_vm(
-            vm=pci_passthrough_vm
-        )
+        validate_pause_optional_migrate_unpause_windows_vm(vm=gpu_vm)
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_gpus_win_vm"])
     @pytest.mark.polarion("CNV-5744")
-    def test_restart_gpus_win_vm(self, pci_passthrough_vm):
+    def test_restart_gpus_win_vm(self, gpu_vm):
         """
         Test Windows VM with Device using gpus spec, can be restarted successfully.
         """
-        restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_gpu_exists(vm=gpu_vm)
