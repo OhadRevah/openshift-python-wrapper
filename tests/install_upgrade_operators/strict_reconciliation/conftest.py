@@ -7,6 +7,7 @@ from ocp_resources.configmap import ConfigMap
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
+    EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
     KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
@@ -15,6 +16,7 @@ from utilities.infra import update_custom_resource
 
 
 LOGGER = logging.getLogger(__name__)
+DISABLED_KUBEVIRT_FEATUREGATES_IN_SNO = ["LiveMigration", "SRIOVLiveMigration"]
 
 
 @pytest.fixture()
@@ -168,6 +170,7 @@ def updated_delete_resource(
     request,
     admin_client,
     hco_namespace,
+    expected_kubevirt_hardcoded_feature_gates,
 ):
     cr = request.param["resource_func"](
         admin_client=admin_client, hco_namespace=hco_namespace
@@ -207,3 +210,13 @@ def related_objects(hyperconverged_resource_scope_module):
     Gets HCO.status.relatedObjects list
     """
     return hyperconverged_resource_scope_module.instance.status.relatedObjects
+
+
+@pytest.fixture(scope="session")
+def expected_kubevirt_hardcoded_feature_gates(sno_cluster):
+    hardcoded_featuregates = set(EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES)
+    if sno_cluster:
+        hardcoded_featuregates = set(hardcoded_featuregates) - set(
+            DISABLED_KUBEVIRT_FEATUREGATES_IN_SNO
+        )
+    return hardcoded_featuregates

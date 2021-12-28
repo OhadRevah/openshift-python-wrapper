@@ -15,7 +15,6 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CERTC_DEFAULT_12H,
     CERTC_DEFAULT_24H,
     CERTC_DEFAULT_48H,
-    EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
     KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
 from tests.install_upgrade_operators.utils import (
@@ -147,27 +146,6 @@ def expected_certconfig_stanza():
             HCO_CR_CERT_CONFIG_DURATION_KEY: CERTC_DEFAULT_24H,
             HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY: CERTC_DEFAULT_12H,
         },
-    }
-
-
-def remove_items_from_hardcoded_feature_gates(hardcoded_featuregate_to_remove):
-    return list(
-        set(EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES)
-        - set(hardcoded_featuregate_to_remove)
-    )
-
-
-def create_rpatch_dict(subset_feature_gates_list_to_remove):
-    return {
-        "spec": {
-            "configuration": {
-                "developerConfiguration": {
-                    "featureGates": remove_items_from_hardcoded_feature_gates(
-                        hardcoded_featuregate_to_remove=subset_feature_gates_list_to_remove
-                    ),
-                }
-            }
-        }
     }
 
 

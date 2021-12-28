@@ -30,6 +30,7 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
+from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
@@ -2833,4 +2834,14 @@ def golden_images_data_import_crons_scope_function(
 ):
     return get_data_import_crons(
         admin_client=admin_client, namespace=golden_images_namespace
+    )
+
+
+@pytest.fixture(scope="session")
+def sno_cluster(admin_client):
+    return (
+        Infrastructure(
+            client=admin_client, name="cluster"
+        ).instance.status.infrastructureTopology
+        == "SingleReplica"
     )

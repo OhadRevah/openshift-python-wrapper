@@ -3,9 +3,9 @@ import pytest
 from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     assert_expected_hardcoded_feature_gates,
-    create_rpatch_dict,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -15,7 +15,7 @@ pytestmark = pytest.mark.sno
 
 class TestHardcodedFeatureGates:
     @pytest.mark.parametrize(
-        ("updated_delete_resource", "expected"),
+        "updated_delete_resource",
         [
             pytest.param(
                 {
@@ -29,201 +29,14 @@ class TestHardcodedFeatureGates:
                     "related_object_name": "kubevirt-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_kubevirt,
                 },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6427")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_featuregates_none",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {
-                            "configuration": {
-                                "developerConfiguration": {"featureGates": []}
-                            }
-                        }
-                    },
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6428")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_featuregates_empty_list",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {"configuration": {"developerConfiguration": None}}
-                    },
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6429")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_developerConfiguration_none",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {"configuration": {"developerConfiguration": {}}}
-                    },
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6430")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_developerConfiguration_empty_dict",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {"spec": {"configuration": None}},
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6431")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_configuration_none",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {"spec": {"configuration": {}}},
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6435")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_configuration_empty_dict",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {"spec": {}},
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6639")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_spec_empty_dict",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["DataVolumes"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6436")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_datavolumes",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["SRIOV"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6437")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_sriov",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["LiveMigration"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6438")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_livemigration",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["CPUManager"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6439")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_cpumanager",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["CPUNodeDiscovery"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6440")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_cpunodediscovery",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["Snapshot"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6441")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_snapshot",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["HotplugVolumes"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6442")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_hotplugvolumes",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["GPU"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6443")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_gpu",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["HostDevices"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6444")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_hostdevices",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["WithHostModelCPU"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6445")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_withhostmodelcpu",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(["HypervStrictCheck"]),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6446")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_hyperstrictcheck",
-            ),
-            pytest.param(
-                {
-                    "rpatch": create_rpatch_dict(
-                        ["DataVolumes", "Snapshot", "HypervStrictCheck"]
+                marks=(
+                    pytest.mark.polarion("CNV-6427"),
+                    pytest.mark.bugzilla(
+                        2062227,
+                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
                     ),
-                    "related_object_name": "kubevirt-kubevirt-hyperconverged",
-                    "resource_func": get_hyperconverged_kubevirt,
-                },
-                constants.EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                marks=(pytest.mark.polarion("CNV-6447")),
-                id="delete_hardcoded_featuregates_kubevirt_cr_remove_datavolumes_snapshot_hypervstrictcheck",
+                ),
+                id="delete_hardcoded_featuregates_kubevirt_cr_featuregates_none",
             ),
         ],
         indirect=["updated_delete_resource"],
@@ -233,7 +46,7 @@ class TestHardcodedFeatureGates:
         admin_client,
         hco_namespace,
         updated_delete_resource,
-        expected,
+        expected_kubevirt_hardcoded_feature_gates,
         kubevirt_hyperconverged_spec_scope_function,
         hco_spec,
     ):
@@ -241,7 +54,9 @@ class TestHardcodedFeatureGates:
             "developerConfiguration"
         ]["featureGates"]
         assert_expected_hardcoded_feature_gates(
-            actual=actual_fgs, expected=expected, hco_spec=hco_spec
+            actual=actual_fgs,
+            expected=expected_kubevirt_hardcoded_feature_gates,
+            hco_spec=hco_spec,
         )
 
     @pytest.mark.polarion("CNV-6277")
