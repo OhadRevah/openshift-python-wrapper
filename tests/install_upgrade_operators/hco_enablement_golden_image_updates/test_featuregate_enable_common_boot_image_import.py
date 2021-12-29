@@ -16,23 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TestEnableCommonBootImageImport:
-    @pytest.mark.polarion("CNV-7625")
-    @pytest.mark.dependency(
-        name="test_set_featuregate_enable_common_boot_image_import_true_hco_cr"
-    )
-    def test_set_featuregate_enable_common_boot_image_import_true_hco_cr(
-        self,
-        hco_spec,
-    ):
-        assert hco_spec["featureGates"][ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE], (
-            f"FeatureGate was not enabled: featuregate={ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE} "
-            f"hco_spec={hco_spec}"
-        )
-
     @pytest.mark.polarion("CNV-7626")
-    @pytest.mark.dependency(
-        depends=["test_set_featuregate_enable_common_boot_image_import_true_hco_cr"]
-    )
     def test_set_featuregate_enable_common_boot_image_import_true_ssp_cr(
         self,
         admin_client,
