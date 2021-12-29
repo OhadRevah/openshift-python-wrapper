@@ -39,6 +39,7 @@ colorlog="*"
 dictdiffer="*"
 python-benedict="*"
 bs4="*"
+paramiko="==2.8.1" # https://github.com/paramiko/paramiko/issues/1961
 
 [requires]
 python_version = "3"
