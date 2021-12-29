@@ -64,10 +64,6 @@ def updated_hco_cr(
 ):
     """
     This fixture updates HCO CR with values specified via request.param
-
-    Args:
-        hyperconverged_resource_scope_function (HyperConverged): HCO CR
-
     """
     with update_custom_resource(
         patch={hyperconverged_resource_scope_function: request.param["patch"]},
