@@ -154,7 +154,6 @@ def dns_nncp(
     nodes_occupied_nics,
     generated_common_nncp,
 ):
-    LOGGER.info(f"Current node IPv4 configurations: {generated_common_nncp}")
     with EthernetNetworkConfigurationPolicy(
         name=f"dns-{name_prefix(worker_node1.name)}",
         **generated_common_nncp,
