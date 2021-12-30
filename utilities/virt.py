@@ -682,9 +682,15 @@ class VirtualMachineForTests(VirtualMachine):
         if self.cloud_init_data:
             cloud_init_volume = vm_cloud_init_volume(vm_spec=template_spec)
             cloud_init_volume_type = self.cloud_init_type or CLOUD_INIT_NO_CLOUD
-            cloud_init_volume[cloud_init_volume_type] = generate_cloud_init_data(
-                data=self.cloud_init_data
-            )
+            generated_cloud_init = generate_cloud_init_data(data=self.cloud_init_data)
+            existing_cloud_init_data = cloud_init_volume.get(cloud_init_volume_type)
+            # If spec already contains cloud init data
+            if existing_cloud_init_data:
+                cloud_init_volume[cloud_init_volume_type][
+                    "userData"
+                ] += generated_cloud_init["userData"].strip("#cloud-config")
+            else:
+                cloud_init_volume[cloud_init_volume_type] = generated_cloud_init
 
             template_spec = vm_cloud_init_disk(vm_spec=template_spec)
 
