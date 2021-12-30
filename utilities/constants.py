@@ -2,6 +2,8 @@ import os
 
 
 # Images
+
+
 BASE_IMAGES_DIR = "cnv-tests"
 
 
@@ -271,3 +273,5 @@ ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE = "enableCommonBootImageImport"
 # Common templates constants
 DATA_SOURCE_NAME = "DATA_SOURCE_NAME"
 DATA_SOURCE_NAMESPACE = "DATA_SOURCE_NAMESPACE"
+SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME = "dataImportCronTemplates"
+COMMON_TEMPLATES_KEY_NAME = "commonTemplates"

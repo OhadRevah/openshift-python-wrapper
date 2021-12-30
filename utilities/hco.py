@@ -5,10 +5,11 @@ from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from pytest_testconfig import config as py_config
 
 from utilities.constants import (
+    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
     HCO_SUBSCRIPTION,
+    TIMEOUT_2MIN,
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
     TIMEOUT_15MIN,
@@ -16,9 +17,14 @@ from utilities.constants import (
 from utilities.infra import (
     get_csv_by_name,
     get_deployments,
+    get_hyperconverged_resource,
     get_subscription,
     wait_for_consistent_resource_conditions,
     wait_for_pods_running,
+)
+from utilities.ssp import (
+    wait_for_at_least_one_auto_update_data_import_cron,
+    wait_for_deleted_data_import_crons,
 )
 
 
@@ -33,15 +39,6 @@ DEFAULT_HCO_PROGRESSING_CONDITIONS = {
     Resource.Condition.PROGRESSING: Resource.Condition.Status.TRUE,
 }
 LOGGER = logging.getLogger(__name__)
-
-
-def get_hyperconverged_resource(client, hco_ns_name):
-    for hco in HyperConverged.get(
-        dyn_client=client,
-        namespace=hco_ns_name,
-        name=py_config["hco_cr_name"],
-    ):
-        return hco
 
 
 def wait_for_hco_conditions(
@@ -287,3 +284,82 @@ def wait_for_hco_version(client, hco_ns_name, cnv_version):
             f"Expected HCO version: {cnv_version}, actual hco version: {sample}"
         )
         raise
+
+
+def disable_common_boot_image_import_feature_gate(
+    admin_client,
+    hco_resource,
+    golden_images_namespace,
+    golden_images_data_import_crons,
+):
+    if hco_resource.instance.spec.featureGates[
+        ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
+    ]:
+        update_common_boot_image_import_feature_gate(
+            hco_resource=hco_resource,
+            enable_feature_gate=False,
+        )
+        wait_for_deleted_data_import_crons(
+            data_import_crons=golden_images_data_import_crons
+        )
+        yield
+        # Always enable enableCommonBootImageImport feature gate after test execution
+        enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
+            hco_resource=hco_resource,
+            admin_client=admin_client,
+            namespace=golden_images_namespace,
+        )
+    else:
+        yield
+
+
+def enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
+    hco_resource, admin_client, namespace
+):
+    update_common_boot_image_import_feature_gate(
+        hco_resource=hco_resource,
+        enable_feature_gate=True,
+    )
+    wait_for_at_least_one_auto_update_data_import_cron(
+        admin_client=admin_client, namespace=namespace
+    )
+
+
+def update_common_boot_image_import_feature_gate(hco_resource, enable_feature_gate):
+    def _wait_for_feature_gate_update(_hco_resource, _enable_feature_gate):
+        LOGGER.info(
+            f"Wait for HCO {ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE} "
+            f"feature gate to be set to {_enable_feature_gate}."
+        )
+        try:
+            for sample in TimeoutSampler(
+                wait_timeout=TIMEOUT_2MIN,
+                sleep=5,
+                func=lambda: _hco_resource.instance.spec.featureGates[
+                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
+                ]
+                == _enable_feature_gate,
+            ):
+                if sample:
+                    return
+        except TimeoutExpiredError:
+            LOGGER.error(
+                f"{ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE} was not updated to {_enable_feature_gate}"
+            )
+            raise
+
+    editor = ResourceEditor(
+        patches={
+            hco_resource: {
+                "spec": {
+                    "featureGates": {
+                        ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: enable_feature_gate
+                    }
+                }
+            }
+        }
+    )
+    editor.update(backup_resources=True)
+    _wait_for_feature_gate_update(
+        _hco_resource=hco_resource, _enable_feature_gate=enable_feature_gate
+    )

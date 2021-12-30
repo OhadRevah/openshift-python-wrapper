@@ -17,7 +17,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
+from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
@@ -44,6 +44,10 @@ from utilities.infra import (
 
 
 HOTPLUG_VOLUME = "hotplugVolume"
+DATA_IMPORT_CRON_SUFFIX = "-image-cron"
+RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL = (
+    f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/dataImportCron"
+)
 
 
 LOGGER = logging.getLogger(__name__)

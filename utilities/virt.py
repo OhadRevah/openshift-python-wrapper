@@ -61,13 +61,13 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import CommandExecFailed
-from utilities.hco import get_hyperconverged_resource
 from utilities.infra import (
     ClusterHosts,
     authorized_key,
     camelcase_to_mixedcase,
     collect_logs,
     get_admin_client,
+    get_hyperconverged_resource,
     is_bug_open,
     run_ssh_commands,
 )

@@ -88,7 +88,7 @@ from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
 from utilities.hco import (
     DEFAULT_HCO_CONDITIONS,
     apply_np_changes,
-    get_hyperconverged_resource,
+    disable_common_boot_image_import_feature_gate,
     get_installed_hco_csv,
 )
 from utilities.infra import (
@@ -104,6 +104,7 @@ from utilities.infra import (
     get_admin_client,
     get_cluster_resources,
     get_clusterversion,
+    get_hyperconverged_resource,
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
@@ -125,6 +126,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
+from utilities.ssp import get_data_import_crons
 from utilities.storage import (
     create_or_update_data_source,
     data_volume,
@@ -2795,3 +2797,27 @@ def ipv6_supported_cluster(cluster_service_network):
         return any(
             [ipaddress.ip_network(ip).version == 6 for ip in cluster_service_network]
         )
+
+
+@pytest.fixture()
+def disabled_common_boot_image_import_feature_gate_scope_function(
+    admin_client,
+    hyperconverged_resource_scope_function,
+    golden_images_namespace,
+    golden_images_data_import_crons_scope_function,
+):
+    yield from disable_common_boot_image_import_feature_gate(
+        admin_client=admin_client,
+        hco_resource=hyperconverged_resource_scope_function,
+        golden_images_namespace=golden_images_namespace,
+        golden_images_data_import_crons=golden_images_data_import_crons_scope_function,
+    )
+
+
+@pytest.fixture()
+def golden_images_data_import_crons_scope_function(
+    admin_client, golden_images_namespace
+):
+    return get_data_import_crons(
+        admin_client=admin_client, namespace=golden_images_namespace
+    )

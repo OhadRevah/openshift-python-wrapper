@@ -23,8 +23,8 @@ from tests.install_upgrade_operators.utils import (
     get_network_addon_config,
 )
 from utilities.constants import TIMEOUT_3MIN
-from utilities.hco import get_hco_spec, get_hyperconverged_resource
-from utilities.infra import is_bug_open
+from utilities.hco import get_hco_spec
+from utilities.infra import get_hyperconverged_resource, is_bug_open
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 

@@ -6,7 +6,8 @@ from tests.install_upgrade_operators.resource_params.utils import (
     assert_observed_generation,
     assert_status_condition,
 )
-from utilities.hco import get_hyperconverged_resource, wait_for_hco_conditions
+from utilities.hco import wait_for_hco_conditions
+from utilities.infra import get_hyperconverged_resource
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]

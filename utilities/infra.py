@@ -24,6 +24,7 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
+from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.namespace import Namespace
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
@@ -1231,3 +1232,12 @@ def validate_hco_status_conditions(hco_status_conditions, expected_hco_status):
 
 def is_jira_open(jira_id):
     return get_jira_status(jira=jira_id) not in JIRA_STATUS_CLOSED
+
+
+def get_hyperconverged_resource(client, hco_ns_name):
+    for hco in HyperConverged.get(
+        dyn_client=client,
+        namespace=hco_ns_name,
+        name=py_config["hco_cr_name"],
+    ):
+        return hco

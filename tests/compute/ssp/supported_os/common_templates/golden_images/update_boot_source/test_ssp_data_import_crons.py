@@ -12,20 +12,18 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
     CUSTOM_DATA_IMPORT_CRON_NAME,
     CUSTOM_DATA_SOURCE_NAME,
-    DATA_IMPORT_CRON_SUFFIX,
     DEFAULT_FEDORA_REGISTRY_URL,
 )
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
     generate_data_import_cron_dict,
-    get_data_import_crons,
     matrix_auto_boot_sources,
     template_labels,
     vm_with_data_source,
     wait_for_condition_message_value,
-    wait_for_deleted_data_import_crons,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
-from utilities.storage import wait_for_dvs_import_completed
+from utilities.ssp import get_data_import_crons, wait_for_deleted_data_import_crons
+from utilities.storage import DATA_IMPORT_CRON_SUFFIX, wait_for_dvs_import_completed
 from utilities.virt import running_vm
 
 
