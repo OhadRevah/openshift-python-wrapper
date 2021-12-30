@@ -120,6 +120,7 @@ def create_dv(
     consume_wffc=True,
     bind_immediate=None,
     preallocation=None,
+    api_name="pvc",
 ):
     if source in ("http", "https"):
         if not url_excluded_from_validation(url):
@@ -147,6 +148,7 @@ def create_dv(
         teardown=teardown,
         preallocation=preallocation,
         privileged_client=get_admin_client(),
+        api_name=api_name,
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
             create_dummy_first_consumer_pod(dv=dv)
