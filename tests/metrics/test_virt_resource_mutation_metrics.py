@@ -155,7 +155,12 @@ COMPONENT_CONFIG = {
             COMPONENT_CONFIG["priority_class"]["resource_info"],
             COMPONENT_CONFIG["priority_class"]["resource_info"]["comp_name"],
             id="priority_class",
-            marks=(pytest.mark.polarion("CNV-6131")),
+            marks=(
+                pytest.mark.polarion("CNV-6131"),
+                pytest.mark.bugzilla(
+                    2032837, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
         pytest.param(
             COMPONENT_CONFIG["kubevirt"]["resource_info"]["comp_name"],
