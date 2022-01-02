@@ -24,8 +24,11 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 LOGGER = logging.getLogger(__name__)
 
+# SAPHANA has a specific template, needs to be excluded from the collected workloads
 LINUX_WORKLOADS_LIST = [
-    value for key, value in vars(Template.Workload).items() if not key.startswith("_")
+    value
+    for key, value in vars(Template.Workload).items()
+    if not key.startswith("_") and value != Template.Workload.SAPHANA
 ]
 LINUX_FLAVORS_LIST = [
     value for key, value in vars(Template.Flavor).items() if not key.startswith("_")
