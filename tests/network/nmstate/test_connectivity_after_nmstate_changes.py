@@ -14,11 +14,11 @@ from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     LINUX_BRIDGE,
     assert_ping_successful,
+    assert_pingable_vm,
     compose_cloud_init_data_dict,
     get_vmi_ip_v4_by_name,
     network_device,
     network_nad,
-    ping,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -312,12 +312,10 @@ class TestConnectivityAfterNmstateChanged:
         """
         This test verifies that connectivity wasn't broken due to change of node network configuration.
         """
-        ping_stat = ping(
+        # We expect some packets lost due to change of node network configuration.
+        assert_pingable_vm(
             src_vm=nmstate_linux_bridge_attached_running_vma,
             dst_ip=vmb_dst_ip,
             count=10,
-        )[0]
-        # We expect some packets lost due to change of node network configuration.
-        assert (
-            float(ping_stat) < 100
-        ), f"Ping from {nmstate_linux_bridge_attached_running_vma.name} to {vmb_dst_ip} failed after NNCP changed"
+            assert_message="after NNCP changed",
+        )

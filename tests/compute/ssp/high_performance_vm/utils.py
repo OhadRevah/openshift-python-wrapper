@@ -66,25 +66,35 @@ def get_sriov_pci_address(vm):
         vm (VirtualMachine): VM object
 
     Returns:
-        str: PCI address of SRIOV device
+        list: PCI address(es) of SRIOV device
         Example:
-            '0000:3b:0a.2'
+            ['0000:3b:0a.2']
     """
-    addr = vm.vmi.xml_dict["domain"]["devices"]["hostdev"]["source"]["address"]
+    sriov_pci_addresses = []
+    hostdev_devices = vm.vmi.xml_dict["domain"]["devices"]["hostdev"]
+    for device in hostdev_devices:
+        addr = device["source"]["address"]
+        sriov_pci_addresses.append(
+            f'{addr["@domain"][2:]}:{addr["@bus"][2:]}:{addr["@slot"][2:]}.{addr["@function"][2:]}'
+        )
 
-    return f'{addr["@domain"][2:]}:{addr["@bus"][2:]}:{addr["@slot"][2:]}.{addr["@function"][2:]}'
+    return sriov_pci_addresses
 
 
 def get_numa_sriov_allocation(vm, utility_pods):
     """
     Find NUMA node number where SR-IOV device is allocated.
     """
-    sriov_addr = get_sriov_pci_address(vm=vm)
-    out = ExecCommandOnPod(utility_pods=utility_pods, node=vm.vmi.node).exec(
-        command=f"cat /sys/bus/pci/devices/{sriov_addr}/numa_node"
-    )
+    sriov_alocation_list = []
+    sriov_addresses = get_sriov_pci_address(vm=vm)
+    for address in sriov_addresses:
+        sriov_alocation_list.append(
+            ExecCommandOnPod(utility_pods=utility_pods, node=vm.vmi.node)
+            .exec(command=f"cat /sys/bus/pci/devices/{address}/numa_node")
+            .strip()
+        )
 
-    return out.strip()
+    return sriov_alocation_list
 
 
 def validate_dedicated_emulatorthread(vm):
@@ -141,3 +151,27 @@ def assert_msg(emulatorpin, vcpupin):
         f"If isolateEmulatorThread=True, KubeVirt shouldn't allocate same pcpu "
         f"for both vcpupin {vcpupin} and emulatorpin {emulatorpin}"
     )
+
+
+def assert_virt_launcher_pod_cpu_manager_node_selector(virt_launcher_pod):
+    assert (
+        virt_launcher_pod.spec.nodeSelector.cpumanager
+    ), "NUMA Pod doesn't have cpumanager node selector"
+
+
+def assert_numa_cpu_allocation(vm_cpus, numa_nodes):
+    assert get_numa_cpu_allocation(
+        vm_cpus=vm_cpus, numa_nodes=numa_nodes
+    ), f"Not all vCPUs are pinned in one numa node! VM vCPUS {vm_cpus}, NUMA node CPU lists {numa_nodes}"
+
+
+def assert_cpus_and_sriov_on_same_node(vm, utility_pods):
+    cpu_alloc = get_numa_cpu_allocation(
+        vm_cpus=get_vm_cpu_list(vm=vm),
+        numa_nodes=get_numa_node_cpu_dict(vm=vm),
+    )
+    sriov_alloc = get_numa_sriov_allocation(vm=vm, utility_pods=utility_pods)
+
+    assert set(cpu_alloc) == set(
+        sriov_alloc
+    ), f"SR-IOV and CPUs are on different NUMA nodes! CPUs allocated to node {cpu_alloc}, SR-IOV to node {sriov_alloc}"

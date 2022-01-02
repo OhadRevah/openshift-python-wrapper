@@ -827,7 +827,9 @@ def cloud_init_network_data(data):
     return network_data
 
 
-def ping(src_vm, dst_ip, packet_size=None, count=None, quiet_output=True):
+def ping(
+    src_vm, dst_ip, packet_size=None, count=None, quiet_output=True, interface=None
+):
     """
     Ping from source VM to destination IP.
 
@@ -837,6 +839,7 @@ def ping(src_vm, dst_ip, packet_size=None, count=None, quiet_output=True):
         packet_size: Number of data bytes to send.
         count: Amount of packets.
         quiet_output: Quiet output, Nothing is displayed except the summary lines at startup time and when finished.
+        interface: interface (ping -I option)
 
     Returns:
         tuple or None: The packet loss amount in a number (Range - 0 to 100).
@@ -846,6 +849,8 @@ def ping(src_vm, dst_ip, packet_size=None, count=None, quiet_output=True):
     ping_cmd = f"ping {'-q' if quiet_output else ''} {ping_ipv6} -c {count if count else '3'} {dst_ip}"
     if packet_size:
         ping_cmd += f" -s {packet_size} -M do"
+    if interface:
+        ping_cmd += f" -I {interface}"
 
     rc, out, err = src_vm.ssh_exec.run_command(command=shlex.split(ping_cmd))
     out_to_process = err or out
@@ -1127,3 +1132,22 @@ def enable_hyperconverged_ovs_annotations(
 def cloud_init(ip_address):
     network_data_data = {"ethernets": {"eth1": {"addresses": [f"{ip_address}/24"]}}}
     return cloud_init_network_data(data=network_data_data)
+
+
+def assert_pingable_vm(
+    src_vm,
+    dst_ip,
+    count,
+    assert_message=None,
+    interface=None,
+):
+    """Assert if there's 100% packet loss in ping"""
+    ping_stat = ping(
+        src_vm=src_vm,
+        dst_ip=dst_ip,
+        count=count,
+        interface=interface,
+    )[0]
+    assert (
+        float(ping_stat) < 100
+    ), f"Ping from {src_vm.name} to {dst_ip} failed {assert_message}"

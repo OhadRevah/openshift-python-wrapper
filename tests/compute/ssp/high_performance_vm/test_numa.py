@@ -2,9 +2,10 @@ import pytest
 from ocp_resources.sriov_network import SriovNetwork
 
 from tests.compute.ssp.high_performance_vm.utils import (
-    get_numa_cpu_allocation,
+    assert_cpus_and_sriov_on_same_node,
+    assert_numa_cpu_allocation,
+    assert_virt_launcher_pod_cpu_manager_node_selector,
     get_numa_node_cpu_dict,
-    get_numa_sriov_allocation,
     get_vm_cpu_list,
 )
 from utilities.constants import SRIOV
@@ -109,12 +110,8 @@ def test_numa(vm_numa):
     assert (
         numa_pod.status.qosClass == "Guaranteed"
     ), f"QOS Class in not Guaranteed. NUMA pod QOS Class {numa_pod.status.qosClass}"
-    assert (
-        numa_pod.spec.nodeSelector.cpumanager
-    ), "NUMA Pod doesn't have cpumanager node selector"
-    assert get_numa_cpu_allocation(
-        vm_cpus=vm_cpu_list, numa_nodes=numa_node_dict
-    ), f"Not all vCPUs are pinned in one numa node! VM vCPUS {vm_cpu_list}, NUMA node CPU lists {numa_node_dict}"
+    assert_virt_launcher_pod_cpu_manager_node_selector(virt_launcher_pod=numa_pod)
+    assert_numa_cpu_allocation(vm_cpus=vm_cpu_list, numa_nodes=numa_node_dict)
 
 
 @pytest.mark.polarion("CNV-4309")
@@ -123,12 +120,4 @@ def test_numa_with_sriov(
     vm_numa_sriov,
     utility_pods,
 ):
-    cpu_alloc = get_numa_cpu_allocation(
-        vm_cpus=get_vm_cpu_list(vm=vm_numa_sriov),
-        numa_nodes=get_numa_node_cpu_dict(vm=vm_numa_sriov),
-    )
-    sriov_alloc = get_numa_sriov_allocation(vm=vm_numa_sriov, utility_pods=utility_pods)
-
-    assert (
-        cpu_alloc == sriov_alloc
-    ), f"SR-IOV and CPUs are on different NUMA nodes! CPUs allocated to node {cpu_alloc}, SR-IOV to node {sriov_alloc}"
+    assert_cpus_and_sriov_on_same_node(vm=vm_numa_sriov, utility_pods=utility_pods)

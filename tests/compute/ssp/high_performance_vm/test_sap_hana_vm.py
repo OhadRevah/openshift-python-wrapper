@@ -14,6 +14,11 @@ from ocp_resources.template import Template
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.high_performance_vm.utils import (
+    assert_cpus_and_sriov_on_same_node,
+    assert_numa_cpu_allocation,
+    assert_virt_launcher_pod_cpu_manager_node_selector,
+    get_numa_node_cpu_dict,
+    get_vm_cpu_list,
     validate_dedicated_emulatorthread,
     validate_iothreads_emulatorthread_on_same_pcpu,
 )
@@ -25,7 +30,7 @@ from tests.compute.utils import (
 from utilities import console
 from utilities.constants import SRIOV
 from utilities.infra import ExecCommandOnPod, run_ssh_commands
-from utilities.network import network_nad
+from utilities.network import assert_pingable_vm, network_nad
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_template_by_labels,
@@ -241,12 +246,10 @@ def get_num_cores_from_domain_xml(vmi_xml_dict):
     return int(vmi_xml_dict["cpu"]["topology"]["@cores"])
 
 
-def assert_vm_devices_queues(vm, vmi_xml_dict):
+def assert_vm_devices_queues(vm, vmi_xml_dict, libvirt_disks):
     vm_cores = get_num_cores_from_domain_xml(vmi_xml_dict=vmi_xml_dict)
     vm_boot_disk = [
-        disk
-        for disk in vmi_xml_dict["devices"]["disk"]
-        if disk["alias"]["@name"].strip("ua-") in vm.name
+        disk for disk in libvirt_disks if disk["alias"]["@name"].strip("ua-") in vm.name
     ][0]
     boot_disk_queues = int(vm_boot_disk["driver"]["@queues"])
     assert (
@@ -302,6 +305,20 @@ def get_template_params_dict(sriov_nads):
         )
 
     return template_params_dict
+
+
+def assert_vm_disks_virtio_bus(libvirt_disks):
+    libvirt_disks_bus_type = [disk["target"]["@bus"] for disk in libvirt_disks]
+    assert set(libvirt_disks_bus_type) == {
+        VIRTIO
+    }, f"Some disks bus type is not {VIRTIO}, disks: {libvirt_disks}"
+
+
+def assert_vm_downwardapi_disk(libvirt_disks):
+    downwardapi = "downwardapi"
+    assert any(
+        [f"{downwardapi}-disks" in disk["source"]["@file"] for disk in libvirt_disks]
+    ), f"Missing {downwardapi} disk, disks: {libvirt_disks}"
 
 
 @pytest.fixture(scope="class")
@@ -541,6 +558,26 @@ def vm_virt_launcher_pod_instance(sap_hana_vm):
     return sap_hana_vm.vmi.virt_launcher_pod.instance
 
 
+@pytest.fixture()
+def vm_cpu_list(sap_hana_vm):
+    return get_vm_cpu_list(vm=sap_hana_vm)
+
+
+@pytest.fixture()
+def numa_node_dict(sap_hana_vm):
+    return get_numa_node_cpu_dict(vm=sap_hana_vm)
+
+
+@pytest.fixture()
+def libvirt_disks(vmi_domxml):
+    return [disk for disk in vmi_domxml["devices"]["disk"]]
+
+
+@pytest.fixture()
+def vm_interfaces_names(sap_hana_vm):
+    return [interface["interfaceName"] for interface in sap_hana_vm.vmi.interfaces]
+
+
 class TestSAPHANATemplate:
     @pytest.mark.polarion("CNV-7623")
     def test_sap_hana_template_validation_rules(self, sap_hana_template):
@@ -701,14 +738,16 @@ class TestSAPHANAVirtualMachine:
 
     @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
     @pytest.mark.polarion("CNV-7765")
-    def test_sap_hana_vm_block_multiqueue(self, sap_hana_vm, vmi_domxml):
+    def test_sap_hana_vm_block_multiqueue(self, sap_hana_vm, vmi_domxml, libvirt_disks):
         vm_block_multiqueue = (
             sap_hana_vm.instance.spec.template.spec.domain.devices.blockMultiQueue
         )
         assert (
             vm_block_multiqueue
         ), f"VM blockMultiQueue is not enabled, value: {vm_block_multiqueue}"
-        assert_vm_devices_queues(vm=sap_hana_vm, vmi_xml_dict=vmi_domxml)
+        assert_vm_devices_queues(
+            vm=sap_hana_vm, vmi_xml_dict=vmi_domxml, libvirt_disks=libvirt_disks
+        )
 
     @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
     @pytest.mark.polarion("CNV-7874")
@@ -768,3 +807,43 @@ class TestSAPHANAVirtualMachine:
             metrics_dict=metrics_dict, vmi_xml_dict=vmi_domxml
         )
         assert_vm_cpu_dump_metrics(metrics_dict=metrics_dict, vmi_xml_dict=vmi_domxml)
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7764")
+    def test_sap_hana_vm_numa_topology(
+        self,
+        sap_hana_vm,
+        vm_virt_launcher_pod_instance,
+        utility_pods,
+        vm_cpu_list,
+        numa_node_dict,
+    ):
+        LOGGER.info(f"Verify {sap_hana_vm.name} NUMA configuration")
+        assert_virt_launcher_pod_cpu_manager_node_selector(
+            virt_launcher_pod=vm_virt_launcher_pod_instance
+        )
+        assert_numa_cpu_allocation(vm_cpus=vm_cpu_list, numa_nodes=numa_node_dict)
+
+        assert_cpus_and_sriov_on_same_node(vm=sap_hana_vm, utility_pods=utility_pods)
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7766")
+    def test_sap_hana_vm_disks(self, sap_hana_vm, vmi_domxml, libvirt_disks):
+        LOGGER.info(f"Verify {sap_hana_vm.name} disks configuration")
+        assert_vm_disks_virtio_bus(libvirt_disks=libvirt_disks)
+        assert_vm_downwardapi_disk(libvirt_disks=libvirt_disks)
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7767")
+    def test_sap_hana_vm_interfaces(self, sap_hana_vm, vm_interfaces_names):
+        for interface in vm_interfaces_names:
+            LOGGER.info(
+                f"Verify {sap_hana_vm.name} network connectivity via interface {interface}."
+            )
+            assert_pingable_vm(
+                src_vm=sap_hana_vm,
+                dst_ip="8.8.8.8",
+                count=10,
+                assert_message=f"on interface {interface}",
+                interface=interface,
+            )
