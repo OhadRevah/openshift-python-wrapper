@@ -54,6 +54,10 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         max_unavailable=None,
         set_ipv4=True,
         set_ipv6=True,
+        capture=None,
+        routes=None,
+        dns_resolver=None,
+        bridge_state=IFACE_UP_STATE,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -79,6 +83,10 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             max_unavailable=max_unavailable,
             set_ipv4=set_ipv4,
             set_ipv6=set_ipv6,
+            capture=capture,
+            routes=routes,
+            dns_resolver=dns_resolver,
+            state=bridge_state,
         )
         self.ovs_bridge_type = "ovs-bridge"
         self.linux_bridge_type = "linux-bridge"
@@ -96,7 +104,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.iface = {
             "name": self.bridge_name,
             "type": self.bridge_type,
-            "state": IFACE_UP_STATE,
+            "state": self.state,
             "bridge": {
                 "options": {"stp": stp},
                 "port": bridge_ports,
@@ -153,7 +161,13 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         ipv4_enable=False,
         ipv4_dhcp=False,
         teardown=True,
+        set_ipv4=True,
+        set_ipv6=True,
         max_unavailable=None,
+        capture=None,
+        bridge_state=IFACE_UP_STATE,
+        routes=None,
+        dns_resolver=None,
     ):
         super().__init__(
             name=name,
@@ -161,12 +175,18 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             bridge_type="linux-bridge",
             stp_config=stp_config,
             ports=ports,
+            set_ipv4=set_ipv4,
+            set_ipv6=set_ipv6,
             mtu=mtu,
             node_selector=node_selector,
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
             max_unavailable=max_unavailable,
+            capture=capture,
+            routes=routes,
+            dns_resolver=dns_resolver,
+            bridge_state=bridge_state,
         )
 
 
@@ -643,21 +663,29 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ipv4_dhcp=False,
         ipv4_auto_dns=True,
         ipv4_addresses=None,
+        ipv6_dhcp=False,
+        ipv6_auto_dns=True,
+        ipv6_enable=False,
+        ipv6_addresses=None,
         dns_resolver=None,
         routes=None,
     ):
         super().__init__(
             name=name,
             node_selector=node_selector,
+            state=iface_state,
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
-            teardown=teardown,
             ipv4_addresses=ipv4_addresses,
+            ipv6_dhcp=ipv6_dhcp,
+            ipv6_auto_dns=ipv6_auto_dns,
+            ipv6_enable=ipv6_enable,
+            ipv6_addresses=ipv6_addresses,
+            teardown=teardown,
             dns_resolver=dns_resolver,
             routes=routes,
         )
         self.interfaces_name = interfaces_name
-        self.iface_state = iface_state
         self.ipv4_auto_dns = ipv4_auto_dns
 
     def to_dict(self):
@@ -667,7 +695,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 self.iface = {
                     "name": nic,
                     "type": "ethernet",
-                    "state": self.iface_state,
+                    "state": self.state,
                     "ipv4": {
                         "auto-dns": self.ipv4_auto_dns,
                     },
