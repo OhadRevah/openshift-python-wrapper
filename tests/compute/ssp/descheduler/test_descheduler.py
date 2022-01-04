@@ -35,15 +35,15 @@ class TestDeschedulerEvictsVMAfterDrainUncordon:
         drain_uncordon_node,
         schedulable_nodes,
     ):
-        verify_running_process_after_failover(
-            vms_list=deployed_vms, process_dict=vms_started_process
-        )
         verify_vms_distribution_after_failover(
             vms=deployed_vms, nodes=schedulable_nodes
         )
 
     @pytest.mark.dependency(
-        depends=[f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_after_drain_uncordon"]
+        name=f"{TESTS_CLASS_NAME}::test_no_migrations_storm",
+        depends=[
+            f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_after_drain_uncordon"
+        ],
     )
     @pytest.mark.polarion("CNV-7316")
     def test_no_migrations_storm(
@@ -56,3 +56,14 @@ class TestDeschedulerEvictsVMAfterDrainUncordon:
             "Verify no migration storm after triggered migrations by the descheduler."
         )
         verify_vms_consistent_virt_launcher_pods(running_vms=deployed_vms)
+
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::test_no_migrations_storm"])
+    @pytest.mark.polarion("CNV-8288")
+    def test_running_process_after_migrations_complete(
+        self,
+        deployed_vms,
+        vms_started_process,
+    ):
+        verify_running_process_after_failover(
+            vms_list=deployed_vms, process_dict=vms_started_process
+        )
