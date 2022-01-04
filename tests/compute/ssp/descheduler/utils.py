@@ -173,30 +173,30 @@ def verify_vms_consistent_virt_launcher_pods(running_vms):
         running_vms (list): list of VMs
     """
 
-    def _vms_launcher_pods():
+    def _vms_launcher_pod_names():
         return {
-            vm.name: vm.vmi.virt_launcher_pod
+            vm.name: vm.vmi.virt_launcher_pod.name
             for vm in running_vms
             if vm.vmi.virt_launcher_pod.status
             == vm.vmi.virt_launcher_pod.Status.RUNNING
         }
 
-    orig_virt_launcher_pods = _vms_launcher_pods()
+    orig_virt_launcher_pod_names = _vms_launcher_pod_names()
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=TIMEOUT_1MIN,
-        func=_vms_launcher_pods,
+        func=_vms_launcher_pod_names,
     )
     try:
         for sample in samples:
             if any(
                 [
-                    pod.name != orig_virt_launcher_pods[vm].name
-                    for vm, pod in sample.items()
+                    pod_name != orig_virt_launcher_pod_names[vm_name]
+                    for vm_name, pod_name in sample.items()
                 ]
             ):
                 raise UnexpectedBehaviorError(
-                    error_msg=f"Some VMs were migrated: {sample}"
+                    error_msg=f"Some VMs were migrated: {sample} from {orig_virt_launcher_pod_names}"
                 )
 
     except TimeoutExpiredError:
