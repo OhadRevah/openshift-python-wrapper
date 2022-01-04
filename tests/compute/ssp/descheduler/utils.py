@@ -4,12 +4,14 @@ from collections import Counter
 
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.compute.ssp.descheduler.constants import RUNNING_PROCESS_NAME_IN_VM
+from tests.compute.ssp.descheduler.constants import (
+    DESCHEDULING_INTERVAL_120SEC,
+    RUNNING_PROCESS_NAME_IN_VM,
+)
 from tests.compute.utils import fetch_processid_from_linux_vm
 from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_3MIN,
-    TIMEOUT_5MIN,
     TIMEOUT_5SEC,
     TIMEOUT_10MIN,
     TIMEOUT_15MIN,
@@ -124,9 +126,15 @@ def verify_vms_distribution_after_failover(vms, nodes):
         return vms_per_nodes(vms=vm_nodes(vms=vms))
 
     LOGGER.info("Verify that each node has at least one VM running on it.")
+
+    # Allow the descheduler to cycle multiple times before returning.
+    # The value can be affected by high pod counts or load within
+    # the cluster which increases the descheduler runtime.
+    descheduling_failover_timeout = DESCHEDULING_INTERVAL_120SEC * 3
+
     sample = None
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
+        wait_timeout=descheduling_failover_timeout,
         sleep=TIMEOUT_5SEC,
         func=_get_vms_per_nodes,
     )

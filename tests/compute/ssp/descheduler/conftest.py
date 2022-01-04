@@ -13,7 +13,10 @@ from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import py_config
 
-from tests.compute.ssp.descheduler.constants import RUNNING_PROCESS_NAME_IN_VM
+from tests.compute.ssp.descheduler.constants import (
+    DESCHEDULING_INTERVAL_120SEC,
+    RUNNING_PROCESS_NAME_IN_VM,
+)
 from tests.compute.ssp.descheduler.utils import (
     VirtualMachineForDeschedulerTest,
     calculate_vm_deployment,
@@ -26,7 +29,7 @@ from tests.compute.utils import (
     scale_deployment_replicas,
     start_and_fetch_processid_on_linux_vm,
 )
-from utilities.constants import TIMEOUT_3MIN, TIMEOUT_5MIN
+from utilities.constants import TIMEOUT_5MIN
 from utilities.infra import create_ns, get_pods
 from utilities.virt import (
     node_mgmt_console,
@@ -95,7 +98,7 @@ def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_su
         name="cluster",
         namespace=descheduler_ns.name,
         profiles=["LifecycleAndUtilization"],
-        descheduling_interval=TIMEOUT_3MIN,
+        descheduling_interval=DESCHEDULING_INTERVAL_120SEC,
     ) as kd:
         wait_pod_deploy(
             client=admin_client, namespace=descheduler_ns, label=DESCHEDULER_POD_LABEL
