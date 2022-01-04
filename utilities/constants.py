@@ -82,8 +82,14 @@ MTU_9000 = 9000
 IPV4_STR = "ipv4"
 IPV6_STR = "ipv6"
 CLUSTER_NETWORK_ADDONS_OPERATOR = "cluster-network-addons-operator"
+BRIDGE_MARKER = "bridge-marker"
+KUBE_CNI_LINUX_BRIDGE_PLUGIN = "kube-cni-linux-bridge-plugin"
+KUBEMACPOOL_CERT_MANAGER = "kubemacpool-cert-manager"
+KUBEMACPOOL_MAC_CONTROLLER_MANAGER = "kubemacpool-mac-controller-manager"
+NMSTATE_CERT_MANAGER = "nmstate-cert-manager"
 NMSTATE_HANDLER = "nmstate-handler"
-
+NMSTATE_WEBHOOK = "nmstate-webhook"
+NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator-controller-manager"
 
 #  Time constants
 TIMEOUT_5SEC = 5
@@ -150,6 +156,17 @@ VIRT_API = "virt-api"
 VIRT_CONTROLLER = "virt-controller"
 VIRT_HANDLER = "virt-handler"
 VIRT_TEMPLATE_VALIDATOR = "virt-template-validator"
+SSP_OPERATOR = "ssp-operator"
+CDI_OPERATOR = "cdi-operator"
+CDI_APISERVER = "cdi-apiserver"
+CDI_DEPLOYMENT = "cdi-deployment"
+CDI_UPLOADPROXY = "cdi-uploadproxy"
+HCO_OPERATOR = "hco-operator"
+HCO_WEBHOOK = "hco-webhook"
+HOSTPATH_PROVISIONER_CSI = "hostpath-provisioner-csi"
+HOSTPATH_PROVISIONER = "hostpath-provisioner"
+HOSTPATH_PROVISIONER_OPERATOR = "hostpath-provisioner-operator"
+HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD = "hyperconverged-cluster-cli-download"
 
 # Miscellaneous constants
 UTILITY = "utility"
