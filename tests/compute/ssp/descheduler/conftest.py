@@ -4,6 +4,7 @@ import re
 import bitmath
 import pytest
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.operator_group import OperatorGroup
 from ocp_resources.package_manifest import PackageManifest
@@ -22,7 +23,6 @@ from tests.compute.ssp.descheduler.utils import (
     calculate_vm_deployment,
     vm_nodes,
     vms_per_nodes,
-    wait_pod_deploy,
     wait_vmi_failover,
 )
 from tests.compute.utils import (
@@ -84,25 +84,24 @@ def installed_descheduler_sub(admin_client, descheduler_ns, installed_deschedule
             name=descheduler_sub_name, namespace=marketplace_ns
         ).instance.status.defaultChannel,
     ):
-        wait_pod_deploy(
-            client=admin_client,
-            namespace=descheduler_ns,
-            label="name=descheduler-operator",
-        )
+        Deployment(
+            name="descheduler-operator", namespace=descheduler_ns.name
+        ).wait_for_replicas()
         yield
 
 
 @pytest.fixture(scope="class")
 def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_sub):
+    kube_descheduler_name = "cluster"
     with KubeDescheduler(
-        name="cluster",
+        name=kube_descheduler_name,
         namespace=descheduler_ns.name,
         profiles=["LifecycleAndUtilization"],
         descheduling_interval=DESCHEDULING_INTERVAL_120SEC,
     ) as kd:
-        wait_pod_deploy(
-            client=admin_client, namespace=descheduler_ns, label=DESCHEDULER_POD_LABEL
-        )
+        Deployment(
+            name=kube_descheduler_name, namespace=descheduler_ns.name
+        ).wait_for_replicas()
         yield kd
 
 

@@ -9,14 +9,7 @@ from tests.compute.ssp.descheduler.constants import (
     RUNNING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.utils import fetch_processid_from_linux_vm
-from utilities.constants import (
-    TIMEOUT_1MIN,
-    TIMEOUT_3MIN,
-    TIMEOUT_5SEC,
-    TIMEOUT_10MIN,
-    TIMEOUT_15MIN,
-)
-from utilities.infra import get_pods
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -146,29 +139,6 @@ def verify_vms_distribution_after_failover(vms, nodes):
                 return
     except TimeoutExpiredError:
         LOGGER.error(f"Some nodes do not have running VMs: {sample}")
-        raise
-
-
-def wait_pod_deploy(client, namespace, label):
-    """
-    Waits the pod to be created and running.
-    """
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_3MIN,
-        sleep=TIMEOUT_5SEC,
-        func=get_pods,
-        dyn_client=client,
-        namespace=namespace,
-        label=label,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                pod = sample[0]
-                pod.wait_for_status(status=pod.Status.RUNNING)
-                return
-    except TimeoutExpiredError:
-        LOGGER.error("Descheduler operator deployment failed")
         raise
 
 
