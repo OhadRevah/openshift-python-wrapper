@@ -3,6 +3,7 @@ import logging
 import pytest
 from pytest_testconfig import py_config
 
+from tests.compute.ssp.constants import VIRTIO
 from tests.os_params import RHEL_6_10, RHEL_6_10_TEMPLATE_LABELS
 from utilities.virt import vm_instance_from_template
 
@@ -10,7 +11,6 @@ from utilities.virt import vm_instance_from_template
 LOGGER = logging.getLogger(__name__)
 
 VIRTIO_TRANSITIONAL = "virtio-transitional"
-VIRTIO = "virtio"
 
 
 @pytest.fixture(scope="class")

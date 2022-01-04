@@ -7,6 +7,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
 from pytest_testconfig import py_config
 
+from tests.compute.ssp.constants import VIRTIO
 from tests.os_params import (
     RHEL_LATEST,
     RHEL_LATEST_OS,
@@ -183,7 +184,7 @@ class TestLatestRHEL:
             {
                 "vm_name": WINDOWS_LATEST_OS,
                 "template_labels": WINDOWS_LATEST_LABELS,
-                "network_model": "virtio",
+                "network_model": VIRTIO,
                 "network_multiqueue": True,
             },
         )

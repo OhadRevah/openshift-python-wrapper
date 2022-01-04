@@ -13,6 +13,7 @@ import shlex
 import pytest
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
+from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import Images
@@ -61,7 +62,7 @@ class TestRHELTabletDevice:
                     "start_vm": True,
                     "template_labels": RHEL_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
-                        {"bus": "virtio", "name": "tablet", "type": "tablet"}
+                        {"bus": VIRTIO, "name": "tablet", "type": "tablet"}
                     ),
                 },
                 marks=pytest.mark.polarion("CNV-3072"),

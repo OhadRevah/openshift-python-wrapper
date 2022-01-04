@@ -21,6 +21,8 @@ HYPERV_FEATURES_LABELS_VM_YAML[
     HYPERV_FEATURES_LABELS_VM_YAML.index("stimer")
 ] = "synictimer"
 
+VIRTIO = "virtio"
+
 
 class MachineTypesNames:
     pc_q35 = "pc-q35"

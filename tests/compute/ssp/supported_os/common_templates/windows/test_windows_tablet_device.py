@@ -13,6 +13,7 @@ import shlex
 import pytest
 from pytest_testconfig import config as py_config
 
+from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
 from utilities.infra import run_ssh_commands
@@ -106,7 +107,7 @@ class TestWindowsTabletDevice:
                     "vm_name": "windows-virtio-tablet-device-vm",
                     "template_labels": WINDOWS_LATEST_LABELS,
                     "vm_dict": utils.set_vm_tablet_device_dict(
-                        {"name": "win_tablet", "type": "tablet", "bus": "virtio"}
+                        {"name": "win_tablet", "type": "tablet", "bus": VIRTIO}
                     ),
                 },
                 marks=pytest.mark.polarion("CNV-3444"),
