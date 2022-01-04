@@ -14,16 +14,9 @@ VALID_PRIORITY_CLASS = [
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO: remove this function when all the pod related bugs for missing spec.priorityClassName/resources.requests has
-# been addressed
+# TODO: remove when all the pod related bugs for missing resources.requests has been addressed
 def get_cnv_pod_names_with_open_bugs(field_name):
-    if field_name == "priorityClass":
-        pods_with_bugs = {
-            "hostpath-provisioner": 2028209,
-            "hostpath-provisioner-csi": 2028209,
-            "node-maintenance-operator-controller-manager": 2008960,
-        }
-    elif field_name == "resources":
+    if field_name == "resources":
         pods_with_bugs = {
             "hostpath-provisioner": 2015327,
         }
@@ -39,30 +32,20 @@ def get_cnv_pod_names_with_open_bugs(field_name):
     ]
 
 
-def validate_cnv_pods_priority_class_name_exists(cnv_pods):
-    cnv_pod_names_with_open_bugs = get_cnv_pod_names_with_open_bugs(
-        field_name="priorityClass"
-    )
-    LOGGER.info(
-        f"Following pods has associated bugzilla open: {cnv_pod_names_with_open_bugs}"
-    )
+def validate_cnv_pods_priority_class_name_exists(pod_list):
     pods_no_priority_class = [
-        pod.name
-        for pod in cnv_pods
-        if not pod.instance.spec.priorityClassName
-        and not pod.name.startswith(tuple(cnv_pod_names_with_open_bugs))
+        pod.name for pod in pod_list if not pod.instance.spec.priorityClassName
     ]
-
     assert not pods_no_priority_class, (
         f"For the following cnv pods, spec.priorityClassName is missing "
         f"{pods_no_priority_class}"
     )
 
 
-def validate_priority_class_value(cnv_pods):
+def validate_priority_class_value(pod_list):
     pods_invalid_priority_class = {
         pod.name: pod.instance.spec.priorityClassName
-        for pod in cnv_pods
+        for pod in pod_list
         if pod.instance.spec.priorityClassName
         and pod.instance.spec.priorityClassName not in VALID_PRIORITY_CLASS
     }
