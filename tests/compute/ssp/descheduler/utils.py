@@ -201,3 +201,12 @@ def verify_vms_consistent_virt_launcher_pods(running_vms):
 
     except TimeoutExpiredError:
         LOGGER.info("No VMs were migrated.")
+
+
+def has_kubevirt_owner(resource):
+    return any(
+        [
+            owner_reference.apiVersion.startswith(f"{resource.ApiGroup.KUBEVIRT_IO}/")
+            for owner_reference in resource.instance.metadata.get("ownerReferences", [])
+        ]
+    )

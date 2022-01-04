@@ -25,6 +25,7 @@ from tests.compute.ssp.descheduler.constants import (
 from tests.compute.ssp.descheduler.utils import (
     VirtualMachineForDeschedulerTest,
     calculate_vm_deployment,
+    has_kubevirt_owner,
     vm_nodes,
     vms_per_nodes,
     wait_vmi_failover,
@@ -318,10 +319,12 @@ def completed_migrations(admin_client, namespace):
     try:
         for sample in samples:
             pdbs_desired_states = {
-                pdb.name: pdb.instance.spec.minAvailable
-                for pdb in sample
-                if pdb.instance.spec.minAvailable > 1
+                pod_disruption_budget.name: pod_disruption_budget.instance.spec.minAvailable
+                for pod_disruption_budget in sample
+                if has_kubevirt_owner(resource=pod_disruption_budget)
+                and pod_disruption_budget.instance.spec.minAvailable > 1
             }
+
             # Return if there are no more required migrations
             if not pdbs_desired_states:
                 return
