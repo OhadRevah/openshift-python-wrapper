@@ -219,7 +219,6 @@ def wait_for_spec_change(expected, get_spec_func, base_path):
     samplers = TimeoutSampler(
         wait_timeout=60,
         sleep=5,
-        exceptions_dict={AssertionError: []},
         func=_compare_spec_values,
     )
     try:
