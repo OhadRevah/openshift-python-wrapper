@@ -321,6 +321,13 @@ def assert_vm_downwardapi_disk(libvirt_disks):
     ), f"Missing {downwardapi} disk, disks: {libvirt_disks}"
 
 
+def verify_vm_reserved_cpus_on_node(vm_cpu_list, crio_cpuset):
+    # node_cpuset contains a CPU dedicated for emulator thread along with VM's dedicated CPUs
+    assert set(vm_cpu_list).issubset(
+        crio_cpuset
+    ), f"VM CPUs {vm_cpu_list} are not reserved, CPUs on the node: {crio_cpuset}"
+
+
 @pytest.fixture(scope="class")
 def sap_hana_data_volume_templates(sap_hana_template):
     data_volume_templates = deepcopy(
@@ -558,7 +565,7 @@ def vm_virt_launcher_pod_instance(sap_hana_vm):
     return sap_hana_vm.vmi.virt_launcher_pod.instance
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def vm_cpu_list(sap_hana_vm):
     return get_vm_cpu_list(vm=sap_hana_vm)
 
@@ -576,6 +583,58 @@ def libvirt_disks(vmi_domxml):
 @pytest.fixture()
 def vm_interfaces_names(sap_hana_vm):
     return [interface["interfaceName"] for interface in sap_hana_vm.vmi.interfaces]
+
+
+@pytest.fixture()
+def vm_crio_id_path(utility_pods, sap_hana_node, sap_hana_vm):
+    output_file = "/tmp/systemd_cgls_output.txt"
+
+    def _extract_crio_id():
+        # Get crio item, located right before the VM entry
+        # systemd_cgls output example:
+        #   │ └─crio-889593b9d5d49ae95be2f8233647bd053dd89dc4b67a6e151f47c5caf35b03be.scope
+        #   │   ├─954896 /usr/bin/virt-launcher --qemu-timeout 265s --name sap-hana-vm-...
+        #   │   ├─955121 /usr/bin/virt-launcher --qemu-timeout 265s --name sap-hana-vm-...
+        crio_systemd_cgls = (
+            ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node)
+            .exec(command=f"cat {output_file} | grep -B1 {sap_hana_vm.name[:10]}")
+            .split("\n")
+        )
+        return re.match(r".*(crio-.*)", crio_systemd_cgls[0]).group(1)
+
+    def _extract_kubepods_id(crio_id):
+        # Get kubepods-pod, item parent of crio
+        # systemd_cgls output example:
+        #   ├─kubepods-pod464bcc52_1e91_411c_9190_34f510249bc1.slice
+        #   │ ├─crio-conmon-889593b9d5d49ae95be2f8233647bd053dd89dc4b67a6e151f47c5caf35b03be.scope
+        #   │ │ └─954852 /usr/bin/conmon -b /run/containers/storage/overlay-containers/...
+        #   │ └─crio-889593b9d5d49ae95be2f8233647bd053dd89dc4b67a6e151f47c5caf35b03be.scope
+        kubepods_systemd_cgls = (
+            ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node)
+            .exec(command=f"cat {output_file} | grep -B3 {crio_id}")
+            .split("\n")
+        )
+        for entry in kubepods_systemd_cgls:
+            kubepods_item = re.match(r".*(kubepods-pod.*)", entry)
+            if kubepods_item:
+                return kubepods_item.group(1)
+
+    # Dump systemd-cgls for data extraction
+    ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node).exec(
+        command=f"systemd-cgls > {output_file}"
+    )
+
+    crio_id = _extract_crio_id()
+    return f"/sys/fs/cgroup/cpuset/kubepods.slice/{_extract_kubepods_id(crio_id=crio_id)}/{crio_id}"
+
+
+@pytest.fixture()
+def crio_cpuset(utility_pods, sap_hana_node, vm_crio_id_path):
+    return (
+        ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node)
+        .exec(command=f"cat {vm_crio_id_path}/cpuset.cpus")
+        .split(",")
+    )
 
 
 class TestSAPHANATemplate:
@@ -847,3 +906,10 @@ class TestSAPHANAVirtualMachine:
                 assert_message=f"on interface {interface}",
                 interface=interface,
             )
+
+    @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
+    @pytest.mark.polarion("CNV-7869")
+    def test_vm_dedicated_cpus_on_node(self, sap_hana_vm, crio_cpuset, vm_cpu_list):
+        verify_vm_reserved_cpus_on_node(
+            vm_cpu_list=vm_cpu_list, crio_cpuset=crio_cpuset
+        )
