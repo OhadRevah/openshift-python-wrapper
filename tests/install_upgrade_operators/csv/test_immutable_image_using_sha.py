@@ -1,6 +1,6 @@
 import pytest
 
-from tests.install_upgrade_operators.utils import get_package_manifest_images
+from tests.install_upgrade_operators.csv.utils import get_package_manifest_images
 
 
 pytestmark = pytest.mark.sno

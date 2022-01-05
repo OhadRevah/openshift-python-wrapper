@@ -12,14 +12,13 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import ConflictError, NotFoundError
+from openshift.dynamic.exceptions import ConflictError
 
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
-    get_kubevirt_package_manifest,
     wait_for_consistent_resource_conditions,
 )
 from utilities.storage import DEFAULT_CDI_CONDITIONS
@@ -27,15 +26,6 @@ from utilities.virt import DEFAULT_KUBEVIRT_CONDITIONS
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_package_manifest_images(admin_client):
-    package = get_kubevirt_package_manifest(admin_client=admin_client)
-    for channel in package.status.channels:
-        if channel.name == "stable":
-            LOGGER.info("For kubevirt package manifest stable channel was found.")
-            return channel.currentCSVDesc["relatedImages"]
-    raise NotFoundError("For kubevirt package manifest, could not find stable channel")
 
 
 def cnv_target_version_channel(cnv_version):
