@@ -5,11 +5,13 @@ from collections import Counter
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.ssp.descheduler.constants import (
+    DESCHEDULER_POD_LABEL,
     DESCHEDULING_INTERVAL_120SEC,
     RUNNING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.utils import fetch_processid_from_linux_vm
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
+from utilities.infra import get_pods
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -221,3 +223,16 @@ def has_kubevirt_owner(resource):
             for owner_reference in resource.instance.metadata.get("ownerReferences", [])
         ]
     )
+
+
+def get_descheduler_pod(admin_client, namespace):
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=1,
+        func=get_pods,
+        dyn_client=admin_client,
+        namespace=namespace,
+        label=DESCHEDULER_POD_LABEL,
+    ):
+        if sample:
+            return sample[0]

@@ -6,6 +6,7 @@ import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
+from ocp_resources.namespace import Namespace
 from ocp_resources.operator_group import OperatorGroup
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
@@ -19,12 +20,14 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.descheduler.constants import (
+    DESCHEDULER_POD_LABEL,
     DESCHEDULING_INTERVAL_120SEC,
     RUNNING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.ssp.descheduler.utils import (
     VirtualMachineForDeschedulerTest,
     calculate_vm_deployment,
+    get_descheduler_pod,
     has_kubevirt_owner,
     vm_nodes,
     vms_per_nodes,
@@ -44,7 +47,6 @@ from utilities.virt import (
 
 
 LOGGER = logging.getLogger(__name__)
-DESCHEDULER_POD_LABEL = "app=descheduler"
 
 
 @pytest.fixture(scope="class")
@@ -267,26 +269,30 @@ def descheduler_pod(admin_client, descheduler_ns):
     )[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def node_to_drain(
+    admin_client,
     schedulable_nodes,
+    installed_descheduler,
     vms_orig_nodes_before_node_drain,
-    descheduler_pod,
-    workers_free_memory,
 ):
     """
     Find most suitable node to drain. Search criteria:
-      - should be smallest node (RAM wise)
       - should not host descheduler operator pod
       - should host at least 1 VM
     """
 
-    schedulable_nodes_dict = {node.name: node for node in schedulable_nodes}
     vm_per_node_counters = vms_per_nodes(vms=vms_orig_nodes_before_node_drain)
-
-    for node in workers_free_memory:
-        if node != descheduler_pod.node.name and vm_per_node_counters[node] >= 1:
-            return schedulable_nodes_dict[node]
+    descheduler_pod = get_descheduler_pod(
+        admin_client=admin_client,
+        namespace=Namespace(name=installed_descheduler.namespace),
+    )
+    for node in schedulable_nodes:
+        if (
+            node.name != descheduler_pod.node.name
+            and vm_per_node_counters[node.name] > 0
+        ):
+            return node
 
     raise ValueError("No suitable node to drain")
 
