@@ -217,9 +217,6 @@ def pytest_addoption(parser):
     install_upgrade_group.addoption("--cnv-source", help="CNV source lane")
 
     # OCP addoption
-    install_upgrade_group.addoption(
-        "--ocp-channel", help="OCP channel to use for upgrade"
-    )
     install_upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
     install_upgrade_group.addoption(
         "--upgrade_resilience",

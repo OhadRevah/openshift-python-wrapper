@@ -257,15 +257,6 @@ def get_operators_names_and_info(csv):
     return operators_info
 
 
-def update_clusterversion_channel(dyn_client, ocp_channel):
-    cvo = get_clusterversion(dyn_client=dyn_client)
-    LOGGER.info(f"patching cluster to use new OCP channel {ocp_channel}")
-    ResourceEditor(patches={cvo: {"spec": {"channel": ocp_channel}}}).update()
-    cvo.wait_for_condition(
-        condition=cvo.Condition.AVAILABLE, timeout=utilities.constants.TIMEOUT_15MIN
-    )
-
-
 def get_clusterversion_state_version_conditions(dyn_client):
     cvo = get_clusterversion(dyn_client=dyn_client)
     return (
@@ -941,9 +932,6 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
             if sample:
                 state, version, actual_conditions = sample
 
-                # TODO: if the ocp_channel is being used and --force is not, fail fast on VersionNotFound?
-                # (condition.type == "RetrievedUpdates" and condition.reason == "VersionNotFound")
-
                 actual_upgrade_conditions = {
                     condition.type: condition.status
                     for condition in actual_conditions
@@ -966,21 +954,14 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
         raise
 
 
-def upgrade_ocp(ocp_image, dyn_client, ocp_channel):
-    if ocp_channel:
-        # if the user is setting a channel then we modify the channel in the current cluster.
-        # otherwise the channel is whatever is already set in the cluster.
-        # NOTE: the command used below uses "force=true" so the channel is not necessarily required
-        # but this behaviour may change in the future. And is mostly relevant when switching between prod/stage/osbs
-        update_clusterversion_channel(dyn_client=dyn_client, ocp_channel=ocp_channel)
-
+def upgrade_ocp(ocp_image, dyn_client):
     LOGGER.info(f"Executing OCP upgrade command to image {ocp_image}")
     rc, out, err = run_command(
         command=[
             "oc",
             "adm",
             "upgrade",
-            "--force=true",  # TODO: if the ocp_channel is being set then --force may not be required
+            "--force=true",
             "--allow-explicit-upgrade",
             "--allow-upgrade-with-warnings",
             "--to-image",

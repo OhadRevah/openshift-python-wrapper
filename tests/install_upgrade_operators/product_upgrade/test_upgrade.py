@@ -43,7 +43,6 @@ class TestUpgrade:
             upgrade_utils.upgrade_ocp(
                 ocp_image=pytestconfig.option.ocp_image,
                 dyn_client=admin_client,
-                ocp_channel=pytestconfig.option.ocp_channel,
             )
 
         if pytestconfig.option.upgrade == "cnv":
