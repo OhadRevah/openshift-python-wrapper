@@ -10,7 +10,7 @@ from tests.compute.ssp.descheduler.utils import (
 
 
 LOGGER = logging.getLogger(__name__)
-TESTS_CLASS_NAME = "TestDescheduler"
+TESTS_CLASS_NAME = "TestDeschedulerEvictsVMAfterDrainUncordon"
 
 
 pytestmark = [pytest.mark.tier3]
@@ -20,10 +20,12 @@ pytestmark = [pytest.mark.tier3]
     "skip_if_1tb_memory_or_more_node",
     "skip_when_one_node",
 )
-class TestDescheduler:
-    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::test_descheduler")
+class TestDeschedulerEvictsVMAfterDrainUncordon:
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_after_drain_uncordon"
+    )
     @pytest.mark.polarion("CNV-5922")
-    def test_descheduler(
+    def test_descheduler_evicts_vm_after_drain_uncordon(
         self,
         updated_descheduler,
         descheduler_pod,
@@ -40,7 +42,9 @@ class TestDescheduler:
             vms=deployed_vms, nodes=schedulable_nodes
         )
 
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::test_descheduler"])
+    @pytest.mark.dependency(
+        depends=[f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_after_drain_uncordon"]
+    )
     @pytest.mark.polarion("CNV-7316")
     def test_no_migrations_storm(
         self,
