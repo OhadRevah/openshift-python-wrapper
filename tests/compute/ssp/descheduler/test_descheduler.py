@@ -30,7 +30,7 @@ class TestDescheduler:
         deployed_vms,
         vms_started_process,
         node_to_drain,
-        drain_node,
+        drain_uncordon_node,
         schedulable_nodes,
     ):
         verify_running_process_after_failover(

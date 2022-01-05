@@ -245,8 +245,8 @@ def deployed_vms(
                 )
 
 
-@pytest.fixture()
-def vms_orig_nodes(deployed_vms):
+@pytest.fixture(scope="class")
+def vms_orig_nodes_before_node_drain(deployed_vms):
     return vm_nodes(vms=deployed_vms)
 
 
@@ -270,7 +270,10 @@ def descheduler_pod(admin_client, descheduler_ns):
 
 @pytest.fixture()
 def node_to_drain(
-    schedulable_nodes, vms_orig_nodes, descheduler_pod, workers_free_memory
+    schedulable_nodes,
+    vms_orig_nodes_before_node_drain,
+    descheduler_pod,
+    workers_free_memory,
 ):
     """
     Find most suitable node to drain. Search criteria:
@@ -280,7 +283,7 @@ def node_to_drain(
     """
 
     schedulable_nodes_dict = {node.name: node for node in schedulable_nodes}
-    vm_per_node_counters = vms_per_nodes(vms=vms_orig_nodes)
+    vm_per_node_counters = vms_per_nodes(vms=vms_orig_nodes_before_node_drain)
 
     for node in workers_free_memory:
         if node != descheduler_pod.node.name and vm_per_node_counters[node] >= 1:
@@ -290,12 +293,19 @@ def node_to_drain(
 
 
 @pytest.fixture()
-def drain_node(deployed_vms, vms_orig_nodes, node_to_drain):
+def drain_uncordon_node(
+    deployed_vms,
+    vms_orig_nodes_before_node_drain,
+    node_to_drain,
+):
+    """Return when node is schedulable again after uncordon"""
     with node_mgmt_console(node=node_to_drain, node_mgmt="drain"):
         wait_for_node_schedulable_status(node=node_to_drain, status=False)
         for vm in deployed_vms:
-            if vms_orig_nodes[vm.name].name == node_to_drain.name:
-                wait_vmi_failover(vm=vm, orig_node=vms_orig_nodes[vm.name])
+            if vms_orig_nodes_before_node_drain[vm.name].name == node_to_drain.name:
+                wait_vmi_failover(
+                    vm=vm, orig_node=vms_orig_nodes_before_node_drain[vm.name]
+                )
 
 
 @pytest.fixture()
