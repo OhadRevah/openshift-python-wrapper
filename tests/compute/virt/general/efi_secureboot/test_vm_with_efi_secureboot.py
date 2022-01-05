@@ -194,7 +194,6 @@ class TestEFISecureBootRHEL:
             ],
         )
 
-    @pytest.mark.order(after="test_secureboot_efi")
     @pytest.mark.polarion("CNV-1790")
     def test_efi_secureboot_is_default(
         self, data_volume_scope_class, rhel_efi_secureboot_vm

@@ -4,7 +4,10 @@ from http import HTTPStatus
 import pytest
 from kubernetes.client.rest import ApiException
 
-from utilities.constants import TIMEOUT_10MIN
+from tests.install_upgrade_operators.product_uninstall.constants import (
+    BLOCK_REMOVAL_TEST_NODE_ID,
+)
+from utilities.constants import DEPENDENCY_SCOPE_SESSION, TIMEOUT_10MIN
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,7 +64,9 @@ class TestRemoveNamespace:
         ), "deletionTimestamp is set on HCO namespace"
 
     @pytest.mark.polarion("CNV-5847")
-    @pytest.mark.order(after="test_block_removal")
+    @pytest.mark.dependency(
+        depends=[BLOCK_REMOVAL_TEST_NODE_ID], scope=DEPENDENCY_SCOPE_SESSION
+    )
     def test_unblock_namespace_removal(
         self,
         remove_hyperconverged_resource,

@@ -6,6 +6,9 @@ from ocp_resources.event import Event
 from ocp_resources.hyperconverged import HyperConverged
 from pytest_testconfig import config as py_config
 
+from tests.install_upgrade_operators.product_uninstall.constants import (
+    BLOCK_REMOVAL_TEST_NODE_ID,
+)
 from utilities.constants import TIMEOUT_5MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -66,6 +69,7 @@ def start_time():
 )
 class TestRemoveHCO:
     @pytest.mark.polarion("CNV-3916")
+    @pytest.mark.dependency(name=BLOCK_REMOVAL_TEST_NODE_ID)
     def test_block_removal(
         self,
         admin_client,
@@ -115,7 +119,7 @@ class TestRemoveHCO:
         )
         assert ok, msg
 
-    @pytest.mark.order(after="test_block_removal")
+    @pytest.mark.dependency(depends=[BLOCK_REMOVAL_TEST_NODE_ID])
     @pytest.mark.polarion("CNV-4044")
     def test_remove_vm(
         self,

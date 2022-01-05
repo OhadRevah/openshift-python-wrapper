@@ -41,7 +41,6 @@ SUM_QUERY = f"sum({METRIC_QUERY})"
 class TestVmTemplateMetrics:
     @pytest.mark.polarion("CNV-6504")
     @pytest.mark.dependency(name="test_vmi_phase_count_metric")
-    @pytest.mark.order(before="test_vmi_phase_count_metric_after_stopped_vm")
     def test_vmi_phase_count_metric(
         self,
         prometheus,
