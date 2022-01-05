@@ -613,7 +613,8 @@ class VirtualMachineForTests(VirtualMachine):
 
     def _is_vm_from_template(self, res):
         return (
-            "vm.kubevirt.io/template" in res["metadata"].setdefault("labels", {}).keys()
+            f"{self.ApiGroup.VM_KUBEVIRT_IO}/template"
+            in res["metadata"].setdefault("labels", {}).keys()
         )
 
     def generate_body(self, res):
@@ -1025,7 +1026,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         name,
         namespace,
         client,
-        labels,
+        labels=None,
         data_source=None,
         data_volume_template=None,
         existing_data_volume=None,
@@ -1066,6 +1067,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         use_full_storage_api=False,
         dry_run=None,
         template_params=None,
+        template_object=None,
     ):
         """
         VM creation using common templates.
@@ -1081,7 +1083,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 to avoid modifying cluster default SC.
             dry_run (str, default=None): If "All", the VM will be created using the dry_run flag
             template_params (dict, optional): dict with template parameters as keys and values
-
+            template_object (Template, optional): Template object to create the VM from
         Returns:
             obj `VirtualMachine`: VM resource
         """
@@ -1136,6 +1138,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.use_full_storage_api = use_full_storage_api
         self.access_modes = None  # required for evictionStrategy policy
         self.template_params = template_params
+        self.template_object = template_object
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1216,10 +1219,15 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         return spec
 
     def _extract_os_from_template(self):
-        return re.search(
-            r".*/([a-z]+)",
-            [label for label in self.template_labels if Template.Labels.OS in label][0],
-        ).group(1)
+        os_name = (
+            [label for label in self.template_labels if Template.Labels.OS in label][0]
+            if self.template_labels is not None
+            else self.template_object.instance.objects[
+                0
+            ].spec.template.metadata.annotations[f"{self.ApiGroup.VM_KUBEVIRT_IO}/os"]
+        )
+        # Extract only from strings such as: "fedora35", "os.template.kubevirt.io/fedora35" will return "fedora"
+        return re.search(r"(.*/)?(?P<os>[a-z]+)", os_name)["os"]
 
     def process_template(self):
         # Common templates use golden image clone as a default for VM DV
@@ -1246,10 +1254,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         if self.template_params:
             template_kwargs.update(self.template_params)
 
-        template_instance = get_template_by_labels(
+        template_object = self.template_object or get_template_by_labels(
             admin_client=self.client, template_labels=self.template_labels
         )
-        resources_list = template_instance.process(
+        resources_list = template_object.process(
             client=get_admin_client(), **template_kwargs
         )
         for resource in resources_list:
@@ -1790,7 +1798,9 @@ def running_vm(
     if vm.is_vm_from_template:
         # Windows 10 takes longer to start
         start_vm_timeout = (
-            2600 if "windows10" in vm.labels["vm.kubevirt.io/template"] else 2100
+            2600
+            if "windows10" in vm.labels[f"{Resource.ApiGroup.VM_KUBEVIRT_IO}/template"]
+            else 2100
         )
 
     # To support all use cases of: 'running'/'runStrategy', container/VM from template, VM started outside this function
