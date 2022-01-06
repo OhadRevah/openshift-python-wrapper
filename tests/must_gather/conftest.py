@@ -78,13 +78,11 @@ def must_gather_nad(hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def nodenetworkstate_with_bridge(utility_pods, schedulable_nodes):
+def nodenetworkstate_with_bridge():
     with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="must-gather-br",
         interface_name="mgbr",
-        network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
     ) as br:
         yield br
 

@@ -22,14 +22,12 @@ def kubemacpool_bridge_device_worker_1(
     skip_if_no_multinic_nodes,
     worker_node1,
     kubemacpool_bridge_device_name,
-    utility_pods,
     nodes_available_nics,
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"kubemacpool-{name_prefix(worker_node1.name)}",
         interface_name=kubemacpool_bridge_device_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
     ) as dev:
@@ -41,14 +39,12 @@ def kubemacpool_bridge_device_worker_2(
     skip_if_no_multinic_nodes,
     worker_node2,
     kubemacpool_bridge_device_name,
-    utility_pods,
     nodes_available_nics,
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"kubemacpool-{name_prefix(worker_node2.name)}",
         interface_name=kubemacpool_bridge_device_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
     ) as dev:

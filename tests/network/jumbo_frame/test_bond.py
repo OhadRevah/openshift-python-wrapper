@@ -70,7 +70,6 @@ def jumbo_frame_bond1_worker_2(
 def jumbo_frame_bridge_on_bond_worker_1(
     bridge_device_matrix__class__,
     jumbo_frame_bond1_worker_1,
-    utility_pods,
 ):
     """
     Create bridge and attach the BOND to it
@@ -79,7 +78,6 @@ def jumbo_frame_bridge_on_bond_worker_1(
         interface_type=bridge_device_matrix__class__,
         nncp_name="jumbo-frame-bridge-on-bond-1",
         interface_name=BRIDGE_NAME,
-        network_utility_pods=utility_pods,
         node_selector=jumbo_frame_bond1_worker_1.node_selector,
         ports=[jumbo_frame_bond1_worker_1.bond_name],
         mtu=MTU_9000,
@@ -91,7 +89,6 @@ def jumbo_frame_bridge_on_bond_worker_1(
 def jumbo_frame_bridge_on_bond_worker_2(
     bridge_device_matrix__class__,
     jumbo_frame_bond1_worker_2,
-    utility_pods,
 ):
     """
     Create bridge and attach the BOND to it
@@ -100,7 +97,6 @@ def jumbo_frame_bridge_on_bond_worker_2(
         interface_type=bridge_device_matrix__class__,
         nncp_name="jumbo-frame-bridge-on-bond-2",
         interface_name=BRIDGE_NAME,
-        network_utility_pods=utility_pods,
         node_selector=jumbo_frame_bond1_worker_2.node_selector,
         ports=[jumbo_frame_bond1_worker_2.bond_name],
         mtu=MTU_9000,

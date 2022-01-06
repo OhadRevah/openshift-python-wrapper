@@ -45,12 +45,11 @@ def assert_bond_validation(utility_pods, bond):
 
 
 @contextmanager
-def create_bond(bond_idx, bond_ports, worker_pods, mode, node_selector, options=None):
+def create_bond(bond_idx, bond_ports, mode, node_selector, options=None):
     with BondNodeNetworkConfigurationPolicy(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         bond_ports=bond_ports,
-        worker_pods=worker_pods,
         mode=mode,
         mtu=1450,
         node_selector=node_selector,
@@ -78,22 +77,10 @@ def create_vm(namespace, nad, node_selector, unprivileged_client):
         yield vm
 
 
-@pytest.fixture(scope="class")
-def bond_modes_nad(bridge_device_matrix__class__, namespace):
-    with network_nad(
-        namespace=namespace,
-        nad_type=bridge_device_matrix__class__,
-        nad_name="bond-nad",
-        interface_name="brbond",
-    ) as nad:
-        yield nad
-
-
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def matrix_bond_modes_bond(
     index_number,
-    link_aggregation_mode_no_connectivity_matrix__class__,
-    utility_pods,
+    link_aggregation_mode_no_connectivity_matrix__function__,
     nodes_available_nics,
     worker_node1,
 ):
@@ -103,17 +90,26 @@ def matrix_bond_modes_bond(
     with create_bond(
         bond_idx=next(index_number),
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        worker_pods=utility_pods,
-        mode=link_aggregation_mode_no_connectivity_matrix__class__,
+        mode=link_aggregation_mode_no_connectivity_matrix__function__,
         node_selector=worker_node1.hostname,
     ) as bond:
         yield bond
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
+def bond_modes_nad(bridge_device_matrix__function__, namespace, matrix_bond_modes_bond):
+    with network_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix__function__,
+        nad_name=f"bond-nad-{matrix_bond_modes_bond.bond_name}",
+        interface_name=f"br{matrix_bond_modes_bond.bond_name}",
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture()
 def matrix_bond_modes_bridge(
-    bridge_device_matrix__class__,
-    utility_pods,
+    bridge_device_matrix__function__,
     worker_node1,
     bond_modes_nad,
     matrix_bond_modes_bond,
@@ -122,17 +118,16 @@ def matrix_bond_modes_bridge(
     Create bridge and attach the BOND to it
     """
     with network_device(
-        interface_type=bridge_device_matrix__class__,
-        nncp_name="bridge-on-bond",
+        interface_type=bridge_device_matrix__function__,
+        nncp_name=f"bridge-on-bond-{matrix_bond_modes_bond.bond_name}",
         node_selector=worker_node1.hostname,
         interface_name=bond_modes_nad.bridge_name,
-        network_utility_pods=utility_pods,
         ports=[matrix_bond_modes_bond.bond_name],
     ) as br:
         yield br
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def bond_modes_vm(
     worker_node1,
     namespace,
@@ -149,10 +144,9 @@ def bond_modes_vm(
         yield vm
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def bridge_on_bond_fail_over_mac(
-    bridge_device_matrix__class__,
-    utility_pods,
+    bridge_device_matrix__function__,
     worker_node1,
     bond_modes_nad,
     active_backup_bond_with_fail_over_mac,
@@ -161,24 +155,22 @@ def bridge_on_bond_fail_over_mac(
     Create bridge and attach the BOND to it
     """
     with network_device(
-        interface_type=bridge_device_matrix__class__,
+        interface_type=bridge_device_matrix__function__,
         nncp_name="bridge-on-bond-fail-over-mac",
         node_selector=worker_node1.hostname,
         interface_name=bond_modes_nad.bridge_name,
-        network_utility_pods=utility_pods,
         ports=[active_backup_bond_with_fail_over_mac.bond_name],
     ) as br:
         yield br
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def active_backup_bond_with_fail_over_mac(
-    index_number, worker_node1, utility_pods, nodes_available_nics
+    index_number, worker_node1, nodes_available_nics
 ):
     with create_bond(
         bond_idx=next(index_number),
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        worker_pods=utility_pods,
         mode="active-backup",
         node_selector=worker_node1.hostname,
         options={"fail_over_mac": "active"},
@@ -186,7 +178,7 @@ def active_backup_bond_with_fail_over_mac(
         yield bond
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def vm_with_fail_over_mac_bond(
     worker_node1,
     namespace,
@@ -204,63 +196,55 @@ def vm_with_fail_over_mac_bond(
         yield vm
 
 
-@pytest.mark.usefixtures("skip_no_bond_support")
-class TestBondModes:
-    @pytest.mark.polarion("CNV-4382")
-    def test_bond_created(self, utility_pods, matrix_bond_modes_bond):
-        assert_bond_validation(utility_pods=utility_pods, bond=matrix_bond_modes_bond)
-
-    @pytest.mark.polarion("CNV-4383")
-    def test_vm_started(self, bond_modes_vm):
-        running_vm(
-            vm=bond_modes_vm, check_ssh_connectivity=False, wait_for_interfaces=False
-        )
+@pytest.mark.polarion("CNV-4382")
+def test_bond_created(skip_no_bond_support, utility_pods, matrix_bond_modes_bond):
+    assert_bond_validation(utility_pods=utility_pods, bond=matrix_bond_modes_bond)
 
 
-@pytest.mark.usefixtures(
-    "skip_no_bond_support",
-)
-class TestBondWithFailOverMac:
-    @pytest.mark.polarion("CNV-6583")
-    def test_active_backup_bond_with_fail_over_mac(
-        self,
-        index_number,
-        worker_node1,
-        nodes_available_nics,
-        utility_pods,
-    ):
-        with create_bond(
-            bond_idx=next(index_number),
-            bond_ports=nodes_available_nics[worker_node1.name][-2:],
-            worker_pods=utility_pods,
-            mode="active-backup",
-            node_selector=worker_node1.hostname,
-            options={"fail_over_mac": "active"},
-        ) as bond:
-            assert_bond_validation(utility_pods=utility_pods, bond=bond)
+@pytest.mark.polarion("CNV-4383")
+def test_vm_started(skip_no_bond_support, bond_modes_vm):
+    running_vm(
+        vm=bond_modes_vm, check_ssh_connectivity=False, wait_for_interfaces=False
+    )
 
-    @pytest.mark.polarion("CNV-6584")
-    def test_vm_bond_with_fail_over_mac_started(
-        self,
-        vm_with_fail_over_mac_bond,
-    ):
-        running_vm(
-            vm=vm_with_fail_over_mac_bond,
-            check_ssh_connectivity=False,
-            wait_for_interfaces=False,
-        )
+
+@pytest.mark.polarion("CNV-6583")
+def test_active_backup_bond_with_fail_over_mac(
+    skip_no_bond_support,
+    index_number,
+    worker_node1,
+    nodes_available_nics,
+    utility_pods,
+):
+    with create_bond(
+        bond_idx=next(index_number),
+        bond_ports=nodes_available_nics[worker_node1.name][-2:],
+        mode="active-backup",
+        node_selector=worker_node1.hostname,
+        options={"fail_over_mac": "active"},
+    ) as bond:
+        assert_bond_validation(utility_pods=utility_pods, bond=bond)
+
+
+@pytest.mark.polarion("CNV-6584")
+def test_vm_bond_with_fail_over_mac_started(
+    skip_no_bond_support,
+    vm_with_fail_over_mac_bond,
+):
+    running_vm(
+        vm=vm_with_fail_over_mac_bond,
+        check_ssh_connectivity=False,
+        wait_for_interfaces=False,
+    )
 
 
 @pytest.mark.polarion("CNV-7263")
-def test_bond_with_slaves(
-    index_number, worker_node1, nodes_available_nics, utility_pods
-):
+def test_bond_with_slaves(index_number, worker_node1, nodes_available_nics):
     bond_idx = next(index_number)
     with BondNodeNetworkConfigurationPolicyWithSlaves(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        worker_pods=utility_pods,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
         node_selector=worker_node1.hostname,

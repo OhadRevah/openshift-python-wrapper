@@ -2504,28 +2504,23 @@ def updated_nfs_storage_profile(request, cluster_storage_classes):
 @pytest.fixture(scope="session")
 def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
-    utility_pods,
     hosts_common_available_ports,
-    schedulable_nodes,
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         interface_name="br1upgrade",
-        network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
         ports=[hosts_common_available_ports[0]],
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="session")
-def bridge_on_one_node(utility_pods, worker_node1):
+def bridge_on_one_node(worker_node1):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-br-marker",
         interface_name="upg-br-mark",
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.name,
     ) as br:
         yield br

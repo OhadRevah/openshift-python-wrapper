@@ -120,16 +120,12 @@ def initialize_and_format_windows_drive(
 
 @pytest.fixture(scope="class")
 def windows_custom_bridge(
-    schedulable_nodes,
     hosts_common_available_ports,
-    utility_pods,
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="br1-win-custom-nnc",
         interface_name="br1-win-custom",
-        network_utility_pods=utility_pods,
-        nodes=schedulable_nodes,
     ) as br:
         yield br
 

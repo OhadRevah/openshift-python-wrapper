@@ -56,14 +56,11 @@ def remove_veth_br1test_nad(namespace):
 
 
 @pytest.fixture()
-def remove_veth_bridge_device(
-    utility_pods, schedulable_nodes, worker_node1, remove_veth_br1test_nad
-):
+def remove_veth_bridge_device(worker_node1, remove_veth_br1test_nad):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="veth-removed",
         interface_name=remove_veth_br1test_nad.bridge_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
     ) as dev:
         yield dev

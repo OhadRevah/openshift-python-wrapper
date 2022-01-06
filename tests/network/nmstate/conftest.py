@@ -71,9 +71,9 @@ def running_nmstate_vmb(nmstate_vmb):
 
 @pytest.fixture(scope="module")
 def bridge_on_management_ifaces_node1(
-    utility_pods,
     worker_nodes_management_iface_stats,
     worker_node1,
+    utility_pods,
 ):
     # Assuming for now all nodes have the same management interface name
     management_iface = worker_nodes_management_iface_stats[worker_node1.name][
@@ -84,9 +84,7 @@ def bridge_on_management_ifaces_node1(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{name_prefix(worker_node1.name)}",
         interface_name="brext1",
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
-        nodes=[worker_node1],
         ports=[management_iface],
         ipv4_enable=True,
         ipv4_dhcp=True,
@@ -114,9 +112,7 @@ def bridge_on_management_ifaces_node2(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"brext-default-net-{name_prefix(worker_node2.name)}",
         interface_name="brext2",
-        network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
-        nodes=[worker_node2],
         ports=[management_iface],
         ipv4_enable=True,
         ipv4_dhcp=True,

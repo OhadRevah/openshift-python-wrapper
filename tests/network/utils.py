@@ -6,7 +6,7 @@ import bitmath
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_2MIN
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN
 from utilities.infra import run_ssh_commands
 from utilities.network import get_vmi_ip_v4_by_name, ping
 
@@ -140,3 +140,20 @@ def run_ssh_in_background(nad, src_vm, dst_vm, dst_vm_user, dst_vm_password):
     )
 
     assert_ssh_alive(ssh_vm=dst_vm, src_ip=src_ip)
+
+
+def assert_nncp_successfully_configured(nncp):
+    successfully_configured = nncp.Conditions.Reason.SUCCESSFULLY_CONFIGURED
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=1,
+        func=nncp.status,
+    )
+    try:
+        for sample in sampler:
+            if sample == successfully_configured:
+                return
+
+    except TimeoutExpiredError:
+        LOGGER.error(f"{nncp.name} is not {successfully_configured}.")
+        raise

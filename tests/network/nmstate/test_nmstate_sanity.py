@@ -9,6 +9,7 @@ from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
+from tests.network.utils import assert_nncp_successfully_configured
 from utilities.constants import NMSTATE_HANDLER
 from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
@@ -36,15 +37,12 @@ class MoreThanTwoDNSError(Exception):
 
 
 @pytest.fixture(scope="class")
-def nmstate_linux_bridge_device_worker(
-    nodes_available_nics, utility_pods, worker_node1
-):
+def nmstate_linux_bridge_device_worker(nodes_available_nics, worker_node1):
     nmstate_br_dev = LinuxBridgeNodeNetworkConfigurationPolicy(
         name=f"nmstate-{name_prefix(worker_node1.name)}",
         bridge_name=BRIDGE_NAME,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
-        worker_pods=utility_pods,
     )
     yield nmstate_br_dev
 
@@ -97,9 +95,7 @@ def dns_gathered_current_nameservers(worker_node1_pod_executor):
 
 @pytest.fixture()
 def dns_new_resolver(
-    utility_pods,
     worker_node1,
-    worker_node1_pod_executor,
     dns_gathered_current_nameservers,
 ):
     """
@@ -130,7 +126,6 @@ def worker1_saved_original_interface_configurations(worker_node1, nodes_occupied
 def generated_common_nncp(
     nodes_occupied_nics,
     worker_node1,
-    utility_pods,
     worker1_saved_original_interface_configurations,
 ):
     node_nics = nodes_occupied_nics[worker_node1.name]
@@ -140,9 +135,7 @@ def generated_common_nncp(
         "ipv4_dhcp": ipv4_data["dhcp"],
         "ipv4_enable": ipv4_data["enabled"],
         "ipv4_auto_dns": ipv4_data["auto-dns"],
-        "worker_pods": utility_pods,
         "interfaces_name": node_nics,
-        "node_active_nics": node_nics,
     }
     return common_nncp_dict
 
@@ -150,8 +143,6 @@ def generated_common_nncp(
 @pytest.fixture()
 def dns_nncp(
     worker_node1,
-    utility_pods,
-    nodes_occupied_nics,
     generated_common_nncp,
 ):
     with EthernetNetworkConfigurationPolicy(
@@ -165,8 +156,6 @@ def dns_nncp(
 @pytest.fixture()
 def dns_nncp_restored(
     worker_node1,
-    utility_pods,
-    nodes_occupied_nics,
     generated_common_nncp,
 ):
     yield
@@ -181,9 +170,7 @@ def dns_nncp_restored(
 
 @pytest.fixture()
 def dns_nncp_configured(
-    worker_node1,
     dns_new_resolver,
-    utility_pods,
     dns_nncp,
     worker1_saved_original_interface_configurations,
 ):
@@ -226,17 +213,13 @@ def assured_two_or_less_dns_nameservers(request, dns_gathered_current_nameserver
 def test_no_ip(
     skip_if_no_multinic_nodes,
     worker_node1,
-    utility_pods,
-    nodes_occupied_nics,
     nodes_available_nics,
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"no-ip-{name_prefix(worker_node1.name)}",
         node_selector=worker_node1.hostname,
         ipv4_dhcp=False,
-        worker_pods=utility_pods,
         interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
-        node_active_nics=nodes_occupied_nics[worker_node1.name],
     ):
         LOGGER.info("NNCP: Test no IP")
 
@@ -246,8 +229,6 @@ def test_no_ip(
 def test_static_ip(
     skip_if_no_multinic_nodes,
     worker_node1,
-    utility_pods,
-    nodes_occupied_nics,
     nodes_available_nics,
 ):
     with EthernetNetworkConfigurationPolicy(
@@ -256,9 +237,7 @@ def test_static_ip(
         ipv4_dhcp=False,
         ipv4_enable=True,
         ipv4_addresses=IP_LIST,
-        worker_pods=utility_pods,
         interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
-        node_active_nics=nodes_occupied_nics[worker_node1.name],
     ):
         LOGGER.info("NMstate: Test with IP")
 
@@ -267,8 +246,6 @@ def test_static_ip(
 def test_dynamic_ip(
     skip_if_no_multinic_nodes,
     worker_node1,
-    utility_pods,
-    nodes_occupied_nics,
     nodes_available_nics,
 ):
     with EthernetNetworkConfigurationPolicy(
@@ -276,9 +253,7 @@ def test_dynamic_ip(
         node_selector=worker_node1.hostname,
         ipv4_dhcp=True,
         ipv4_enable=True,
-        worker_pods=utility_pods,
         interfaces_name=[nodes_available_nics[worker_node1.name][-1]],
-        node_active_nics=nodes_occupied_nics[worker_node1.name],
     ):
         LOGGER.info("NMstate: Test with dynamic IP")
 
@@ -294,7 +269,6 @@ def test_dynamic_ip(
 def test_dns(
     assured_two_or_less_dns_nameservers,
     worker_node1,
-    utility_pods,
     dns_new_resolver,
     worker_node1_pod_executor,
     dns_nncp_configured,
@@ -317,8 +291,6 @@ def test_dns(
 def test_static_route(
     skip_if_no_multinic_nodes,
     worker_node1,
-    utility_pods,
-    nodes_occupied_nics,
     nodes_available_nics,
 ):
     iface_name = nodes_available_nics[worker_node1.name][-1]
@@ -338,9 +310,7 @@ def test_static_route(
         ipv4_dhcp=False,
         ipv4_enable=True,
         ipv4_addresses=IP_LIST,
-        worker_pods=utility_pods,
         interfaces_name=[iface_name],
-        node_active_nics=nodes_occupied_nics[worker_node1.name],
         routes=routes,
     ):
         LOGGER.info("NMstate: Test static route")
@@ -371,4 +341,4 @@ class TestNmstatePodDeletion:
         """
         Test that NNCP has been configured Successfully. (The nmstate-handler pod released the lock).
         """
-        nmstate_linux_bridge_device_worker.wait_for_status_success()
+        assert_nncp_successfully_configured(nncp=nmstate_linux_bridge_device_worker)

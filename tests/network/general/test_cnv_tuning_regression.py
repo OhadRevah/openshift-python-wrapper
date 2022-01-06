@@ -17,14 +17,11 @@ def linux_bridge_nad(namespace):
 
 
 @pytest.fixture()
-def linux_bridge_device(
-    utility_pods, schedulable_nodes, worker_node1, linux_bridge_nad
-):
+def linux_bridge_device(worker_node1, linux_bridge_nad):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="cnv-tuning-nncp",
         interface_name=linux_bridge_nad.bridge_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
     ) as dev:
         yield dev

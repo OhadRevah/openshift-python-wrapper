@@ -10,6 +10,7 @@ import shlex
 import netaddr
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.node import Node
 from ocp_resources.node_network_configuration_policy import (
     NNCPConfigurationFailed,
     NodeNetworkConfigurationPolicy,
@@ -20,7 +21,6 @@ from ocp_resources.resource import ResourceEditor, sub_resource_level
 from ocp_resources.sriov_network import SriovNetwork
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import IPV4_STR, IPV6_STR, SRIOV, TIMEOUT_2MIN, WORKERS_TYPE
@@ -37,91 +37,6 @@ OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
 
 
-class VXLANTunnelNNCP(NodeNetworkConfigurationPolicy):
-    def __init__(
-        self,
-        name,
-        vxlan_name,
-        vxlan_id,
-        base_interface,
-        worker_pods,
-        dst_port=4790,
-        remote="226.100.100.100",
-        node_selector=None,
-        teardown=True,
-    ):
-        super().__init__(
-            name=name,
-            worker_pods=worker_pods,
-            node_selector=node_selector,
-            teardown=teardown,
-        )
-        self.vxlan_name = vxlan_name
-        self.vxlan_id = vxlan_id
-        self.base_interface = base_interface
-        self.dst_port = dst_port
-        self.remote = remote
-
-    def deploy(self):
-        super().deploy()
-        try:
-            self.validate_create()
-            return self
-        except Exception as e:
-            LOGGER.error(e)
-            self.clean_up()
-            raise
-
-    def to_dict(self):
-        res = super().to_dict()
-        res["spec"]["desiredState"]["interfaces"] = [
-            {
-                "name": self.vxlan_name,
-                "type": "vxlan",
-                "state": IFACE_UP_STATE,
-                "vxlan": {
-                    "id": self.vxlan_id,
-                    "base-iface": self.base_interface,
-                    "remote": self.remote,
-                    "destination-port": self.dst_port,
-                },
-            }
-        ]
-        return res
-
-    def clean_up(self):
-        try:
-            self._absent_vxlan()
-            self.wait_for_vxlan_deleted()
-        except TimeoutExpiredError as e:
-            LOGGER.error(e)
-
-        self.delete()
-
-    def validate_create(self):
-        for pod in self.worker_pods:
-            node_network_state = NodeNetworkState(name=pod.node.name)
-            node_network_state.wait_until_up(name=self.vxlan_name)
-
-    def _absent_vxlan(self):
-        res = self.to_dict()
-        res["spec"]["desiredState"]["interfaces"][0]["state"] = IFACE_ABSENT_STATE
-        samples = TimeoutSampler(
-            wait_timeout=3,
-            sleep=1,
-            exceptions_dict={ConflictError: []},
-            func=self.update,
-            resource_dict=res,
-        )
-        for _ in samples:
-            return
-
-    def wait_for_vxlan_deleted(self):
-        for pod in self.worker_pods:
-            node_network_state = NodeNetworkState(name=pod.node.name)
-            node_network_state.wait_until_deleted(name=self.vxlan_name)
-
-
 class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,
@@ -129,7 +44,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         bridge_name,
         bridge_type,
         stp_config,
-        worker_pods=None,
         ports=None,
         mtu=None,
         node_selector=None,
@@ -156,7 +70,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         """
         super().__init__(
             name=name,
-            worker_pods=worker_pods,
             node_selector=node_selector,
             teardown=teardown,
             mtu=mtu,
@@ -207,15 +120,13 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
             # OVS MTU handled in OvsBridgeNodeNetworkConfigurationPolicy
             if self.mtu and self.bridge_type != self.ovs_bridge_type:
-                nns = NodeNetworkState(
-                    name=self.node_selector or self.worker_pods[0].node.name
-                )
+                nns = NodeNetworkState(name=self.node_selector or self.nodes[0].name)
                 port_type = [
                     _iface["type"]
                     for _iface in nns.interfaces
                     if _iface["name"] == port["name"]
-                ][0]
-                if port_type == "bond":
+                ]
+                if port_type and port_type[0] == "bond":
                     continue
 
                 self.iface["mtu"] = self.mtu
@@ -236,7 +147,6 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         self,
         name,
         bridge_name,
-        worker_pods=None,
         stp_config=False,
         ports=None,
         mtu=None,
@@ -248,7 +158,6 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
     ):
         super().__init__(
             name=name,
-            worker_pods=worker_pods,
             bridge_name=bridge_name,
             bridge_type="linux-bridge",
             stp_config=stp_config,
@@ -268,7 +177,6 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         name,
         bridge_name,
         ports,
-        worker_pods=None,
         stp_config=False,
         mtu=None,
         node_selector=None,
@@ -280,7 +188,6 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
     ):
         super().__init__(
             name=name,
-            worker_pods=worker_pods,
             bridge_name=bridge_name,
             bridge_type="ovs-bridge",
             stp_config=stp_config,
@@ -296,6 +203,13 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         self.set_dummy_ovs_iface = set_dummy_ovs_iface
         self.set_port_mac = set_port_mac
 
+    @property
+    def _nns_node(self):
+        if self.node_selector:
+            return list(Node.get(dyn_client=self.client, name=self.node_selector))[0]
+        else:
+            return list(Node.get(dyn_client=self.client))[0]
+
     def to_dict(self):
         res = super().to_dict()
         if self.set_dummy_ovs_iface or self.mtu:
@@ -306,9 +220,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
                     port_name = iface["bridge"]["port"][0]["name"]
 
                     if self.mtu:
-                        nns = NodeNetworkState(
-                            name=self.node_selector or self.worker_pods[0].node.name
-                        )
+                        nns = NodeNetworkState(name=self._nns_node.name)
                         port_type = [
                             _iface["type"]
                             for _iface in nns.interfaces
@@ -325,7 +237,6 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
                             "mtu": self.mtu,
                         }
                         desired_state_interface.append(port_iface)
-                        self.ifaces.append(port_iface)
 
                     if self.set_dummy_ovs_iface:
                         iface["bridge"]["port"].append(
@@ -356,8 +267,8 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
                             ovs_iface["mac-address"] = port_mac[0]
 
                         desired_state_interface.append(ovs_iface)
-                        self.ifaces.append(ovs_iface)
 
+            res["spec"]["desiredState"]["interfaces"] = desired_state_interface
         return res
 
     def deploy(self):
@@ -372,7 +283,6 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,
-        worker_pods,
         iface_state,
         base_iface,
         tag,
@@ -390,7 +300,6 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         super().__init__(
             name=name,
             node_selector=node_selector,
-            worker_pods=worker_pods,
             teardown=teardown,
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
@@ -562,7 +471,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         name,
         bond_name,
         bond_ports,
-        worker_pods,
         mode,
         primary_bond_port=None,
         node_selector=None,
@@ -575,7 +483,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     ):
         super().__init__(
             name=name,
-            worker_pods=worker_pods,
             node_selector=node_selector,
             teardown=teardown,
             mtu=mtu,
@@ -591,6 +498,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.options = options
 
     def to_dict(self):
+        res = super().to_dict()
         if not self.iface:
             options_dic = self.options or {}
             options_dic.update({"miimon": "120"})
@@ -607,6 +515,8 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     "options": options_dic,
                 },
             }
+            self.set_interface(interface=self.iface)
+
             if self.mtu:
                 self.iface["mtu"] = self.mtu
                 for port in self.ports:
@@ -618,7 +528,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     }
                     self.set_interface(interface=_port)
 
-        res = super().to_dict()
         return res
 
 
@@ -728,26 +637,22 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self,
         name,
         interfaces_name=None,
-        worker_pods=None,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         node_selector=None,
         teardown=True,
         ipv4_enable=False,
         ipv4_dhcp=False,
         ipv4_auto_dns=True,
-        node_active_nics=None,
         ipv4_addresses=None,
         dns_resolver=None,
         routes=None,
     ):
         super().__init__(
             name=name,
-            worker_pods=worker_pods,
             node_selector=node_selector,
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
-            node_active_nics=node_active_nics,
             ipv4_addresses=ipv4_addresses,
             dns_resolver=dns_resolver,
             routes=routes,
@@ -1106,8 +1011,6 @@ def wait_for_ovs_daemonset_resource(admin_client, hco_namespace):
 def network_device(
     interface_type,
     nncp_name,
-    network_utility_pods=None,
-    nodes=None,
     interface_name=None,
     ports=None,
     mtu=None,
@@ -1119,15 +1022,6 @@ def network_device(
     sriov_iface=None,
     sriov_resource_name=None,
 ):
-    worker_pods = None
-    nodes_names = (
-        [node_selector] if node_selector else [node.name for node in nodes or []]
-    )
-    if network_utility_pods:
-        worker_pods = [
-            pod for pod in network_utility_pods if pod.node.name in nodes_names
-        ]
-
     kwargs = {
         "name": nncp_name,
         "mtu": mtu,
@@ -1145,9 +1039,6 @@ def network_device(
 
     else:
         kwargs["bridge_name"] = interface_name
-        if worker_pods:
-            kwargs["worker_pods"] = worker_pods
-
         kwargs["ports"] = ports
         kwargs["node_selector"] = node_selector
         kwargs["ipv4_enable"] = ipv4_enable

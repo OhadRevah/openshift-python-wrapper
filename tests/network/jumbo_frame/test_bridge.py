@@ -32,14 +32,12 @@ def jumbo_frame_bridge_device_worker_1(
     bridge_device_matrix__class__,
     worker_node1,
     nodes_available_nics,
-    utility_pods,
     jumbo_frame_bridge_device_name,
 ):
     with network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="jumbo-frame-bridge-nncp-1",
         interface_name=jumbo_frame_bridge_device_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
         mtu=MTU_9000,
@@ -52,14 +50,12 @@ def jumbo_frame_bridge_device_worker_2(
     bridge_device_matrix__class__,
     worker_node2,
     nodes_available_nics,
-    utility_pods,
     jumbo_frame_bridge_device_name,
 ):
     with network_device(
         interface_type=bridge_device_matrix__class__,
         nncp_name="jumbo-frame-bridge-nncp-2",
         interface_name=jumbo_frame_bridge_device_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
         mtu=MTU_9000,

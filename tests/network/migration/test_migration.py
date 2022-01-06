@@ -64,7 +64,6 @@ def http_port_accessible(vm, server_ip, server_port):
 @pytest.fixture(scope="module")
 def bridge_worker_1(
     skip_if_no_multinic_nodes,
-    utility_pods,
     worker_node1,
     nodes_available_nics,
 ):
@@ -72,7 +71,6 @@ def bridge_worker_1(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-1",
         interface_name="migration-br",
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
     ) as br:
@@ -82,7 +80,6 @@ def bridge_worker_1(
 @pytest.fixture(scope="module")
 def bridge_worker_2(
     skip_if_no_multinic_nodes,
-    utility_pods,
     worker_node2,
     nodes_available_nics,
     bridge_worker_1,
@@ -91,7 +88,6 @@ def bridge_worker_2(
         interface_type=LINUX_BRIDGE,
         nncp_name="migration-worker-2",
         interface_name=bridge_worker_1.bridge_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
     ) as br:

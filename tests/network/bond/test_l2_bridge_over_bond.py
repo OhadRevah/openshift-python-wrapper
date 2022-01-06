@@ -35,7 +35,6 @@ def ovs_linux_br1bond_nad(bridge_device_matrix__class__, namespace):
 @pytest.fixture(scope="class")
 def ovs_linux_bond1_worker_1(
     index_number,
-    utility_pods,
     worker_node1,
     nodes_available_nics,
 ):
@@ -47,7 +46,6 @@ def ovs_linux_bond1_worker_1(
         name=f"bond{bond_idx}nncp-worker-1",
         bond_name=f"bond{bond_idx}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        worker_pods=utility_pods,
         node_selector=worker_node1.hostname,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
@@ -58,7 +56,6 @@ def ovs_linux_bond1_worker_1(
 @pytest.fixture(scope="class")
 def ovs_linux_bond1_worker_2(
     index_number,
-    utility_pods,
     worker_node2,
     nodes_available_nics,
     ovs_linux_bond1_worker_1,
@@ -71,7 +68,6 @@ def ovs_linux_bond1_worker_2(
         name=f"bond{bond_idx}nncp-worker-2",
         bond_name=ovs_linux_bond1_worker_1.bond_name,  # Use the same BOND name for each test.
         bond_ports=nodes_available_nics[worker_node2.name][-2:],
-        worker_pods=utility_pods,
         node_selector=worker_node2.hostname,
         mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
         mtu=1450,
@@ -82,7 +78,6 @@ def ovs_linux_bond1_worker_2(
 @pytest.fixture(scope="class")
 def ovs_linux_bridge_on_bond_worker_1(
     bridge_device_matrix__class__,
-    utility_pods,
     worker_node1,
     ovs_linux_br1bond_nad,
     ovs_linux_bond1_worker_1,
@@ -94,7 +89,6 @@ def ovs_linux_bridge_on_bond_worker_1(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond-worker-1",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
         ports=[ovs_linux_bond1_worker_1.bond_name],
     ) as br:
@@ -104,7 +98,6 @@ def ovs_linux_bridge_on_bond_worker_1(
 @pytest.fixture(scope="class")
 def ovs_linux_bridge_on_bond_worker_2(
     bridge_device_matrix__class__,
-    utility_pods,
     worker_node2,
     ovs_linux_br1bond_nad,
     ovs_linux_bond1_worker_2,
@@ -116,7 +109,6 @@ def ovs_linux_bridge_on_bond_worker_2(
         interface_type=bridge_device_matrix__class__,
         nncp_name="bridge-on-bond-worker-2",
         interface_name=ovs_linux_br1bond_nad.bridge_name,
-        network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
         ports=[ovs_linux_bond1_worker_2.bond_name],
     ) as br:

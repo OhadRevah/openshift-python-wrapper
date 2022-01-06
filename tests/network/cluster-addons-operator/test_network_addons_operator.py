@@ -162,12 +162,11 @@ def check_components(network_addons_config_scope_session):
 
 
 @pytest.fixture(scope="module")
-def net_add_op_bridge_device(utility_pods, worker_node1):
+def net_add_op_bridge_device(worker_node1):
     with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="test-network-operator",
         interface_name="br1test",
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
     ) as br_dev:
         yield br_dev

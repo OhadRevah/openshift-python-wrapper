@@ -4,7 +4,11 @@ from collections import OrderedDict
 import pytest
 from ocp_resources.resource import ResourceEditor
 
-from tests.network.utils import assert_ssh_alive, run_ssh_in_background
+from tests.network.utils import (
+    assert_nncp_successfully_configured,
+    assert_ssh_alive,
+    run_ssh_in_background,
+)
 from utilities.constants import NMSTATE_HANDLER
 from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
@@ -37,13 +41,12 @@ def restart_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
 
 @pytest.fixture(scope="class")
 def nmstate_linux_bridge_device_worker_1(
-    skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node1
+    skip_if_no_multinic_nodes, nodes_available_nics, worker_node1
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"restart-nmstate-{name_prefix(worker_node1.name)}",
         interface_name=BRIDGE_NAME,
-        network_utility_pods=utility_pods,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
     ) as br_dev:
@@ -52,13 +55,12 @@ def nmstate_linux_bridge_device_worker_1(
 
 @pytest.fixture(scope="class")
 def nmstate_linux_bridge_device_worker_2(
-    skip_if_no_multinic_nodes, nodes_available_nics, utility_pods, worker_node2
+    skip_if_no_multinic_nodes, nodes_available_nics, worker_node2
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"restart-nmstate-{name_prefix(worker_node2.name)}",
         interface_name=BRIDGE_NAME,
-        network_utility_pods=utility_pods,
         node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
     ) as br_dev:
@@ -210,11 +212,11 @@ def nncp_ready(
     nmstate_linux_bridge_device_worker_1, nmstate_linux_bridge_device_worker_2
 ):
     yield
-    for worker in (
+    for nncp in (
         nmstate_linux_bridge_device_worker_1,
         nmstate_linux_bridge_device_worker_2,
     ):
-        worker.wait_for_status_success()
+        assert_nncp_successfully_configured(nncp=nncp)
 
 
 @pytest.fixture()
