@@ -22,7 +22,7 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
-from utilities.constants import Images
+from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, Images
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     INTERNAL_HTTP_SERVER_ADDRESS,
@@ -117,7 +117,7 @@ def upload_proxy_route(admin_client):
     routes = Route.get(admin_client)
     upload_route = None
     for route in routes:
-        if route.exposed_service == "cdi-uploadproxy":
+        if route.exposed_service == CDI_UPLOADPROXY:
             upload_route = route
     assert upload_route is not None
     yield upload_route
@@ -163,16 +163,16 @@ def uploadproxy_route_deleted(hco_namespace):
     Once the cdi-operator is terminated, route is deleted to perform the test.
     """
     ns = hco_namespace.name
-    deployment = Deployment(name="cdi-operator", namespace=ns)
+    deployment = Deployment(name=CDI_OPERATOR, namespace=ns)
     try:
         deployment.scale_replicas(replica_count=0)
         deployment.wait_for_replicas(deployed=False)
-        Route(name="cdi-uploadproxy", namespace=ns).delete(wait=True)
+        Route(name=CDI_UPLOADPROXY, namespace=ns).delete(wait=True)
         yield
     finally:
         deployment.scale_replicas(replica_count=1)
         deployment.wait_for_replicas()
-        Route(name="cdi-uploadproxy", namespace=ns).wait()
+        Route(name=CDI_UPLOADPROXY, namespace=ns).wait()
 
 
 @pytest.fixture()
@@ -198,12 +198,12 @@ def cdi_config_upload_proxy_overridden(
 
 @pytest.fixture()
 def new_route_created(hco_namespace):
-    existing_route = Route(name="cdi-uploadproxy", namespace=hco_namespace.name)
+    existing_route = Route(name=CDI_UPLOADPROXY, namespace=hco_namespace.name)
     route = Route(
         name="newuploadroute-cdi",
         namespace=hco_namespace.name,
         destination_ca_cert=existing_route.ca_cert,
-        service="cdi-uploadproxy",
+        service=CDI_UPLOADPROXY,
     )
     route.create(wait=True)
     yield

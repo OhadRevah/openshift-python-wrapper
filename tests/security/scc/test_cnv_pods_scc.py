@@ -8,7 +8,13 @@ import logging
 
 import pytest
 
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
+from utilities.constants import (
+    BRIDGE_MARKER,
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
+    HOSTPATH_PROVISIONER,
+    HOSTPATH_PROVISIONER_CSI,
+    SSP_OPERATOR,
+)
 from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
 
 
@@ -19,10 +25,10 @@ LOGGER = logging.getLogger(__name__)
 
 POD_SCC_ALLOWLIST = [
     "restricted",
-    "hostpath-provisioner",
-    "hostpath-provisioner-csi",
+    HOSTPATH_PROVISIONER,
+    HOSTPATH_PROVISIONER_CSI,
     "containerized-data-importer",
-    "bridge-marker",
+    BRIDGE_MARKER,
     "linux-bridge",
     "nmstate",
     "ovs-cni-marker",
@@ -52,7 +58,7 @@ def test_openshiftio_scc_exists_bz1847594(skip_not_openshift, cnv_pods):
 def components_with_non_closed_bugs():
     bugzilla_component_name_dict = {
         "1834839": CLUSTER_NETWORK_ADDONS_OPERATOR,
-        "1995295": "ssp-operator",
+        "1995295": SSP_OPERATOR,
     }
     return tuple(
         component_name

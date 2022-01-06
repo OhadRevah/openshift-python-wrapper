@@ -8,6 +8,7 @@ from ocp_resources.route import Route
 from tests.install_upgrade_operators.console_cli_download.utils import (
     download_and_extract_virtctl_from_cluster,
 )
+from utilities.constants import HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD
 from utilities.virt import run_command
 
 
@@ -47,7 +48,7 @@ def internal_fqdn(admin_client, hco_namespace):
     served from within the cluster
     """
     cluster_route = Route(
-        name="hyperconverged-cluster-cli-download", namespace=hco_namespace.name
+        name=HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD, namespace=hco_namespace.name
     )
     assert cluster_route.exists
     return cluster_route.instance.spec.host

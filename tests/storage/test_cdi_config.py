@@ -14,7 +14,7 @@ from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
-from utilities.constants import Images
+from utilities.constants import CDI_UPLOADPROXY, Images
 from utilities.infra import get_cert
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
@@ -204,7 +204,7 @@ def test_different_route_for_upload_proxy(
     with Route(
         namespace=hco_namespace.name,
         name="new-route-uploadproxy",
-        service="cdi-uploadproxy",
+        service=CDI_UPLOADPROXY,
     ) as new_route:
         cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_route.host)
 
@@ -225,7 +225,7 @@ def test_upload_proxy_url_overridden(
     skip_not_openshift, cdi_config, namespace, cdi_config_upload_proxy_overridden
 ):
     with Route(
-        namespace=namespace.name, name="my-route", service="cdi-uploadproxy"
+        namespace=namespace.name, name="my-route", service=CDI_UPLOADPROXY
     ) as new_route:
         assert cdi_config.upload_proxy_url != new_route.host
 

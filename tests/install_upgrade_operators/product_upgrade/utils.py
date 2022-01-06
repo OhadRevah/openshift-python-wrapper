@@ -777,7 +777,7 @@ def upgrade_cnv(
     hco_operator_pod = get_operator_by_name(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        operator_name="hco-operator",
+        operator_name=utilities.constants.HCO_OPERATOR,
     )
     hco_operator_pod.wait_for_condition(
         condition=Pod.Condition.READY,

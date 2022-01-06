@@ -1,6 +1,7 @@
 import re
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
+from utilities.constants import HCO_OPERATOR
 
 
 FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME = "enableCommonBootImageImport"
@@ -44,5 +45,5 @@ def delete_hco_operator_pod(admin_client, hco_namespace):
     get_operator_by_name(
         dyn_client=admin_client,
         hco_namespace=hco_namespace.name,
-        operator_name="hco-operator",
+        operator_name=HCO_OPERATOR,
     ).delete(wait=True)

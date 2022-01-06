@@ -5,6 +5,7 @@ from tests.install_upgrade_operators.deployment.utils import (
     validate_liveness_probe_fields,
     validate_request_fields,
 )
+from utilities.constants import HCO_OPERATOR, HCO_WEBHOOK
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -14,12 +15,12 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
     "deployment_by_name",
     [
         pytest.param(
-            {"deployment_name": "hco-webhook"},
+            {"deployment_name": HCO_WEBHOOK},
             marks=(pytest.mark.polarion("CNV-6500")),
             id="test-hco-webhook-liveness-probe",
         ),
         pytest.param(
-            {"deployment_name": "hco-operator"},
+            {"deployment_name": HCO_OPERATOR},
             marks=(pytest.mark.polarion("CNV-6499")),
             id="test-hco-operator-liveness-probe",
         ),
@@ -35,13 +36,13 @@ def test_liveness_probe(deployment_by_name):
     "deployment_by_name, cpu_min_value",
     [
         pytest.param(
-            {"deployment_name": "hco-webhook"},
+            {"deployment_name": HCO_WEBHOOK},
             5,
             marks=(pytest.mark.polarion("CNV-7187")),
             id="test-hco-webhook-req-param",
         ),
         pytest.param(
-            {"deployment_name": "hco-operator"},
+            {"deployment_name": HCO_OPERATOR},
             5,
             marks=(pytest.mark.polarion("CNV-7188")),
             id="test-hco-operator-req-param",

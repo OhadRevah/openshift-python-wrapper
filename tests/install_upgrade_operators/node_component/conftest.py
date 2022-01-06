@@ -13,8 +13,15 @@ from tests.install_upgrade_operators.utils import (
     get_network_addon_config,
 )
 from utilities.constants import (
+    BRIDGE_MARKER,
+    CDI_APISERVER,
+    CDI_DEPLOYMENT,
+    CDI_UPLOADPROXY,
     HCO_SUBSCRIPTION,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     NMSTATE_HANDLER,
+    NMSTATE_WEBHOOK,
     TIMEOUT_5MIN,
     VIRT_API,
     VIRT_CONTROLLER,
@@ -122,7 +129,7 @@ def network_addon_config_spec_placement(admin_client):
 @pytest.fixture()
 def network_deployment_placement_list(admin_client, hco_namespace):
     nodeselector_lists = []
-    network_deployments = ["kubemacpool-mac-controller-manager", "nmstate-webhook"]
+    network_deployments = [KUBEMACPOOL_MAC_CONTROLLER_MANAGER, NMSTATE_WEBHOOK]
     for deployment in network_deployments:
         nw_deployment = get_deployment_by_name(
             admin_client=admin_client,
@@ -137,8 +144,8 @@ def network_deployment_placement_list(admin_client, hco_namespace):
 def network_daemonsets_placement_list(admin_client, hco_namespace):
     nodeselector_lists = []
     network_daemonsets = [
-        "bridge-marker",
-        "kube-cni-linux-bridge-plugin",
+        BRIDGE_MARKER,
+        KUBE_CNI_LINUX_BRIDGE_PLUGIN,
         NMSTATE_HANDLER,
     ]
     for daemonset in network_daemonsets:
@@ -178,7 +185,7 @@ def virt_deployment_nodeselector_comp_list(admin_client, hco_namespace):
 @pytest.fixture()
 def cdi_deployment_nodeselector_list(admin_client, hco_namespace):
     nodeselector_lists = []
-    cdi_deployments = ["cdi-apiserver", "cdi-deployment", "cdi-uploadproxy"]
+    cdi_deployments = [CDI_APISERVER, CDI_DEPLOYMENT, CDI_UPLOADPROXY]
     for deployment in cdi_deployments:
         cdi_deployment = get_deployment_by_name(
             admin_client=admin_client,

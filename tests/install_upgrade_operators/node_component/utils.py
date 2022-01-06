@@ -9,8 +9,20 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import (
+    BRIDGE_MARKER,
+    CDI_APISERVER,
+    CDI_DEPLOYMENT,
+    CDI_OPERATOR,
+    CDI_UPLOADPROXY,
     CLUSTER_NETWORK_ADDONS_OPERATOR,
+    HCO_OPERATOR,
+    HCO_WEBHOOK,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     NMSTATE_HANDLER,
+    NMSTATE_WEBHOOK,
+    NODE_MAINTENANCE_OPERATOR,
+    SSP_OPERATOR,
     TIMEOUT_5MIN,
     VIRT_CONTROLLER,
     VIRT_HANDLER,
@@ -131,26 +143,26 @@ NODE_PLACEMENT_WORKLOADS = {
 CNV_INFRA_PODS_COMPONENTS = [
     VIRT_CONTROLLER,
     VIRT_TEMPLATE_VALIDATOR,
-    "kubemacpool-mac-controller-manager",
-    "nmstate-webhook",
-    "cdi-apiserver",
-    "cdi-deployment",
-    "cdi-uploadproxy",
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    NMSTATE_WEBHOOK,
+    CDI_APISERVER,
+    CDI_DEPLOYMENT,
+    CDI_UPLOADPROXY,
 ]
 CNV_WORKLOADS_PODS_COMPONENTS = [
     VIRT_HANDLER,
-    "bridge-marker",
-    "kube-cni-linux-bridge-plugin",
+    BRIDGE_MARKER,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     NMSTATE_HANDLER,
 ]
 
 CNV_OPERATOR_PODS_COMPONENTS = [
-    "cdi-operator",
+    CDI_OPERATOR,
     CLUSTER_NETWORK_ADDONS_OPERATOR,
-    "hco-operator",
-    "hco-webhook",
-    "ssp-operator",
-    "node-maintenance-operator",
+    HCO_OPERATOR,
+    HCO_WEBHOOK,
+    SSP_OPERATOR,
+    NODE_MAINTENANCE_OPERATOR,
     VIRT_OPERATOR,
 ]
 

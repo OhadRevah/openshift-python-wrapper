@@ -19,7 +19,13 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
 from pytest_testconfig import config as py_config
 
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_30MIN, Images
+from utilities.constants import (
+    CDI_UPLOADPROXY,
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_2MIN,
+    TIMEOUT_30MIN,
+    Images,
+)
 from utilities.infra import get_cert, get_pod_by_name_prefix, run_ssh_commands
 from utilities.storage import create_dv
 from utilities.virt import (
@@ -149,7 +155,7 @@ def create_windows_vm_validate_guest_agent_info(
 
 def upload_image(token, data, asynchronous=False):
     headers = {"Authorization": f"Bearer {token}"}
-    uploadproxy = Route(name="cdi-uploadproxy", namespace=py_config["hco_namespace"])
+    uploadproxy = Route(name=CDI_UPLOADPROXY, namespace=py_config["hco_namespace"])
     uploadproxy_url = f"https://{uploadproxy.host}/v1alpha1/upload"
     if asynchronous:
         uploadproxy_url = f"{uploadproxy_url}-async"

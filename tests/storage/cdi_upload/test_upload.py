@@ -21,7 +21,13 @@ from string_utils import shuffle
 
 import tests.storage.utils as storage_utils
 import utilities.storage
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_3MIN, TIMEOUT_5MIN, Images
+from utilities.constants import (
+    CDI_UPLOADPROXY,
+    TIMEOUT_1MIN,
+    TIMEOUT_3MIN,
+    TIMEOUT_5MIN,
+    Images,
+)
 from utilities.storage import downloaded_image
 
 
@@ -48,7 +54,7 @@ def wait_for_upload_response_code(token, data, response_code, asynchronous=False
 
 @pytest.mark.polarion("CNV-2318")
 def test_cdi_uploadproxy_route_owner_references(skip_not_openshift, hco_namespace):
-    route = Route(name="cdi-uploadproxy", namespace=hco_namespace.name)
+    route = Route(name=CDI_UPLOADPROXY, namespace=hco_namespace.name)
     assert route.instance
     assert route.instance["metadata"]["ownerReferences"][0]["name"] == "cdi-deployment"
     assert route.instance["metadata"]["ownerReferences"][0]["kind"] == "Deployment"

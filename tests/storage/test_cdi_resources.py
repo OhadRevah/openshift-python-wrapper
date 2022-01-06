@@ -21,7 +21,7 @@ from pytest_testconfig import config as py_config
 from tests.storage import utils as storage_utils
 from tests.storage.constants import CDI_SECRETS
 from utilities import storage as utils
-from utilities.constants import TIMEOUT_10MIN, Images
+from utilities.constants import CDI_APISERVER, CDI_OPERATOR, TIMEOUT_10MIN, Images
 from utilities.storage import get_images_server_url
 
 
@@ -30,7 +30,6 @@ pytestmark = pytest.mark.post_upgrade
 
 LOGGER = logging.getLogger(__name__)
 CDI_LABEL = Resource.ApiGroup.CDI_KUBEVIRT_IO
-CDI_OPERATOR = "cdi-operator"
 CDI_CONTROLLER = "cdi-controller"
 
 
@@ -81,7 +80,7 @@ def verify_cdi_app_label(cdi_resources, cnv_version):
             elif resource.kind == "Secret" and resource.name == "cdi-api-signing-key":
                 assert (
                     resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
-                    == "cdi-apiserver"
+                    == CDI_APISERVER
                 ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
             else:
                 assert (

@@ -7,7 +7,7 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.ssp import SSP
 
 from tests.compute.utils import verify_pods_priority_class_value
-from utilities.constants import VIRT_TEMPLATE_VALIDATOR
+from utilities.constants import SSP_OPERATOR, VIRT_TEMPLATE_VALIDATOR
 from utilities.infra import get_pod_by_name_prefix
 
 
@@ -67,7 +67,7 @@ def test_verify_ssp_crd_conditions(ssp_resource):
     "pods_list_with_given_prefix",
     [
         pytest.param(
-            {"pods_prefix_name": "ssp-operator"}, marks=pytest.mark.polarion("CNV-7002")
+            {"pods_prefix_name": SSP_OPERATOR}, marks=pytest.mark.polarion("CNV-7002")
         ),
         pytest.param(
             {"pods_prefix_name": VIRT_TEMPLATE_VALIDATOR},

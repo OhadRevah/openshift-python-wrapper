@@ -9,7 +9,12 @@ from kubernetes.dynamic.exceptions import NotFoundError
 from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
 
-from utilities.constants import IPV4_STR, IPV6_STR, VIRT_HANDLER
+from utilities.constants import (
+    IPV4_STR,
+    IPV6_STR,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    VIRT_HANDLER,
+)
 from utilities.infra import ClusterHosts, ExecCommandOnPod
 from utilities.network import (
     get_ip_from_vm_or_virt_handler_pod,
@@ -124,5 +129,5 @@ def dual_stack_network_data(dual_stack_cluster):
 @pytest.fixture(scope="module")
 def kmp_deployment(hco_namespace):
     return Deployment(
-        namespace=hco_namespace.name, name="kubemacpool-mac-controller-manager"
+        namespace=hco_namespace.name, name=KUBEMACPOOL_MAC_CONTROLLER_MANAGER
     )

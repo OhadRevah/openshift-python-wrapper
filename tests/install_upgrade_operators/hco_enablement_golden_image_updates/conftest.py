@@ -12,6 +12,7 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils i
 )
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from tests.install_upgrade_operators.utils import wait_for_stabilize
+from utilities.constants import HCO_OPERATOR
 from utilities.infra import update_custom_resource
 
 
@@ -189,7 +190,7 @@ def deleted_hco_operator_pod(
     get_operator_by_name(
         dyn_client=admin_client,
         hco_namespace=hco_namespace.name,
-        operator_name="hco-operator",
+        operator_name=HCO_OPERATOR,
     ).wait_for_status(status=Pod.Status.RUNNING)
     return get_random_minutes_hours_fields_from_data_import_schedule(
         target_string=hyperconverged_resource_scope_function.instance.status.get(

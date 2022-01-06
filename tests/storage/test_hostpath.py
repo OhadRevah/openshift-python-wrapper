@@ -30,6 +30,7 @@ from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
 from utilities.constants import (
+    HOSTPATH_PROVISIONER_OPERATOR,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
@@ -54,16 +55,15 @@ from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
-HPP_OPERATOR = "hostpath-provisioner-operator"
 
 pytestmark = pytest.mark.usefixtures("skip_if_hpp_not_in_sc_options")
 
 
 def skipped_hco_resources():
-    hpp_operator_service = f"{HPP_OPERATOR}-service"
+    hpp_operator_service = f"{HOSTPATH_PROVISIONER_OPERATOR}-service"
     return {
-        "ServiceAccount": [HPP_OPERATOR],
-        "ConfigMap": [f"{HPP_OPERATOR}-lock"],
+        "ServiceAccount": [HOSTPATH_PROVISIONER_OPERATOR],
+        "ConfigMap": [f"{HOSTPATH_PROVISIONER_OPERATOR}-lock"],
         "Role": [f"{hpp_operator_service}-cert"],
         "Service": [hpp_operator_service],
         "RoleBinding": [
@@ -96,7 +96,7 @@ def verify_hpp_app_label(hpp_resources, cnv_version):
                 resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/version"]
                 == cnv_version
             ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/version for {resource.name}"
-            if resource.name.startswith(HPP_OPERATOR):
+            if resource.name.startswith(HOSTPATH_PROVISIONER_OPERATOR):
                 assert (
                     resource.labels[f"{resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
                     == "olm"
@@ -104,7 +104,7 @@ def verify_hpp_app_label(hpp_resources, cnv_version):
             else:
                 assert (
                     resource.labels[f"{resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
-                    == HPP_OPERATOR
+                    == HOSTPATH_PROVISIONER_OPERATOR
                 ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
 
 
@@ -120,7 +120,7 @@ def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
 @pytest.fixture(scope="module")
 def hpp_operator_deployment(hco_namespace):
     hpp_operator_deployment = Deployment(
-        name=HPP_OPERATOR, namespace=hco_namespace.name
+        name=HOSTPATH_PROVISIONER_OPERATOR, namespace=hco_namespace.name
     )
     assert hpp_operator_deployment.exists
     return hpp_operator_deployment
@@ -161,7 +161,7 @@ def hpp_clusterrolebinding():
 def hpp_operator_pod(admin_client, hco_namespace):
     yield get_pod_by_name_prefix(
         dyn_client=admin_client,
-        pod_prefix=HPP_OPERATOR,
+        pod_prefix=HOSTPATH_PROVISIONER_OPERATOR,
         namespace=hco_namespace.name,
     )
 

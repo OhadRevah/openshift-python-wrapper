@@ -20,7 +20,11 @@ from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
 
 from tests.must_gather import utils
-from utilities.constants import NMSTATE_HANDLER
+from utilities.constants import (
+    BRIDGE_MARKER,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    NMSTATE_HANDLER,
+)
 from utilities.infra import BUG_STATUS_CLOSED
 
 
@@ -143,13 +147,13 @@ def test_no_upstream_only_namespaces(cnv_must_gather):
     "label_selector, resource_namespace",
     [
         pytest.param(
-            "app=bridge-marker",
+            f"app={BRIDGE_MARKER}",
             py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2721")),
             id="test_bridge_marker_pods",
         ),
         pytest.param(
-            "name=kube-cni-linux-bridge-plugin",
+            f"name={KUBE_CNI_LINUX_BRIDGE_PLUGIN}",
             py_config["hco_namespace"],
             marks=(pytest.mark.polarion("CNV-2705")),
             id="test_kube_cni_pods",

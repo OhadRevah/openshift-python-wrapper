@@ -10,6 +10,8 @@ from pytest_testconfig import config as py_config
 from utilities.constants import (
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     KMP_VM_ASSIGNMENT_LABEL,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
 )
@@ -46,7 +48,7 @@ def updated_namespace_with_kmp(admin_client, kmp_vm_label, kmp_disabled_namespac
 def restarted_kmp_controller(admin_client, kmp_deployment):
     get_pod_by_name_prefix(
         dyn_client=admin_client,
-        pod_prefix="kubemacpool-mac-controller-manager",
+        pod_prefix=KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
         namespace=py_config["hco_namespace"],
     ).delete(wait=True)
     kmp_deployment.wait_for_replicas()
@@ -180,10 +182,9 @@ def invalid_cnao_operator(
     with ResourceEditor(patches={csv_scope_session: bad_cnao_operator}):
         yield
 
-    linux_bridge_plugin = "kube-cni-linux-bridge-plugin"
     linux_bridge_pods = get_pod_by_name_prefix(
         dyn_client=admin_client,
-        pod_prefix=linux_bridge_plugin,
+        pod_prefix=KUBE_CNI_LINUX_BRIDGE_PLUGIN,
         namespace=hco_namespace.name,
         get_all=True,
     )
@@ -192,7 +193,7 @@ def invalid_cnao_operator(
     [pod.wait_deleted() for pod in linux_bridge_pods]
 
     linux_bridge_plugin_ds = DaemonSet(
-        name=linux_bridge_plugin, namespace=hco_namespace.name
+        name=KUBE_CNI_LINUX_BRIDGE_PLUGIN, namespace=hco_namespace.name
     )
     linux_bridge_plugin_ds.wait_until_deployed(timeout=TIMEOUT_10MIN)
 

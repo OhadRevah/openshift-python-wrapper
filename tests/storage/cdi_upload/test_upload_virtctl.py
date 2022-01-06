@@ -15,7 +15,7 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import OS_FLAVOR_CIRROS, Images
+from utilities.constants import CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
 from utilities.storage import (
     ErrorMsg,
     check_upload_virtctl_result,
@@ -70,7 +70,7 @@ def test_successful_virtctl_upload_no_route(
     tmpdir,
     uploadproxy_route_deleted,
 ):
-    route = Route(name="cdi-uploadproxy", namespace=hco_namespace.name)
+    route = Route(name=CDI_UPLOADPROXY, namespace=hco_namespace.name)
     with pytest.raises(NotFoundError):
         route.instance
 
