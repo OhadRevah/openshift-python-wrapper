@@ -16,12 +16,14 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
+from ocp_resources.prometheus_rule import PrometheusRule
 from ocp_resources.resource import Resource
 from ocp_resources.role import Role
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.security_context_constraints import SecurityContextConstraints
 from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
+from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
@@ -132,6 +134,18 @@ def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
         == StorageClass.Types.HOSTPATH
     ):
         pytest.skip(msg="scratchSpaceStorageClass of cdiconfig is not HPP")
+
+
+@pytest.fixture(scope="module")
+def hpp_prometheus_resources(hco_namespace):
+    rbac_name = "hostpath-provisioner-monitoring"
+    yield [
+        PrometheusRule(name="prometheus-hpp-rules", namespace=hco_namespace.name),
+        ServiceMonitor(name="service-monitor-hpp", namespace=hco_namespace.name),
+        Service(name="hpp-prometheus-metrics", namespace=hco_namespace.name),
+        Role(name=rbac_name, namespace=hco_namespace.name),
+        RoleBinding(name=rbac_name, namespace=hco_namespace.name),
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -707,6 +721,22 @@ def test_hostpath_clone_dv_with_annotation(
 def test_hpp_cr(skip_test_if_no_hpp_sc, hostpath_provisioner):
     assert hostpath_provisioner.exists
     assert hostpath_provisioner.volume_path == "/var/hpvolumes"
+    hostpath_provisioner.wait_for_condition(
+        condition=hostpath_provisioner.Condition.AVAILABLE,
+        status=hostpath_provisioner.Condition.Status.TRUE,
+        timeout=TIMEOUT_1MIN,
+    )
+
+
+@pytest.mark.polarion("CNV-7969")
+def test_hpp_prometheus_resources(skip_test_if_no_hpp_sc, hpp_prometheus_resources):
+    non_existing_resources = []
+    for rsc in hpp_prometheus_resources:
+        if not rsc.exists:
+            non_existing_resources.append(rsc)
+    assert (
+        not non_existing_resources
+    ), f"Non existing prometheus resources - {non_existing_resources}"
 
 
 @pytest.mark.polarion("CNV-3279")
