@@ -900,20 +900,16 @@ def approve_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
 
 def extract_ocp_version(ocp_image):
     # Extract the OCP version from the OCP URL input.
-    ocp_version = re.search(r":(\d+\.\d+\.\d+)-(rc\.\d+)?", ocp_image)
+    ocp_version = None
+    if "nightly" in ocp_image:
+        ocp_version = re.search(r"release:(.*)", ocp_image).groups()[0]
+    else:
+        ocp_version = re.search(r":(\d+\.\d+\.\d+)-(rc\.\d+)?", ocp_image).groups()[0]
+    LOGGER.info(f"OCP version extracted from ocp image: {ocp_version}")
     assert (
         ocp_version
     ), f"Cannot extract OCP version. OCP image url: {ocp_image} is invalid"
-    return "-".join(filter(None, ocp_version.groups()))
-
-
-def extract_clusterversion_version(clusterversion_version):
-    # Extract the OCP version from the clusterversion version.
-    ocp_version = re.search(r"(\d+\.\d+\.\d+)-?(rc\.\d+)?", clusterversion_version)
-    assert (
-        ocp_version
-    ), f"Cannot extract OCP version. clusterversion version: {clusterversion_version} is invalid"
-    return "-".join(filter(None, ocp_version.groups()))
+    return ocp_version
 
 
 def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
@@ -956,7 +952,7 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
 
                 if (
                     actual_upgrade_conditions == upgrade_conditions
-                    and extract_clusterversion_version(version) == ocp_version
+                    and version == ocp_version
                     and state == "Completed"
                 ):
                     return
