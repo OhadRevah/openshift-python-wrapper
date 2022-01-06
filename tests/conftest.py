@@ -132,7 +132,6 @@ from utilities.virt import (
     Prometheus,
     VirtualMachineForTests,
     fedora_vm_body,
-    generate_yaml_from_template,
     get_base_templates_list,
     get_hyperconverged_kubevirt,
     get_hyperconverged_ovs_annotations,
@@ -1031,14 +1030,18 @@ def masters(nodes):
 
 
 @pytest.fixture(scope="session")
-def utility_daemonset(admin_client):
+def utility_daemonset(admin_client, is_upstream_distribution):
     """
     Deploy utility daemonset into the kube-system namespace.
 
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     For example to create linux bridge and other components related to the host configuration.
     """
-    with UtilityDaemonSet(name=UTILITY, namespace="kube-system") as ds:
+    ds_yaml_file = os.path.abspath(
+        f"utilities/manifests/utility-daemonset"
+        f"{'_upstream' if is_upstream_distribution else ''}.yaml"
+    )
+    with DaemonSet(yaml_file=ds_yaml_file) as ds:
         ds.wait_until_deployed()
         yield ds
 
@@ -1181,18 +1184,6 @@ def skip_if_no_multinic_nodes(multi_nics_nodes):
         pytest.skip("Only run on multi NICs node")
 
 
-class UtilityDaemonSet(DaemonSet):
-    def to_dict(self):
-        from pkg_resources import resource_stream
-
-        yaml_file = resource_stream(
-            "utilities", "manifests/utility-daemonset.yaml"
-        ).name
-        res = super().to_dict()
-        res.update(generate_yaml_from_template(file_=yaml_file))
-        return res
-
-
 @pytest.fixture(scope="module")
 def namespace(request, admin_client, unprivileged_client):
     """
@@ -1229,7 +1220,7 @@ def leftovers(admin_client, identity_provider_config):
     secret = Secret(
         client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
     )
-    ds = UtilityDaemonSet(client=admin_client, name=UTILITY, namespace="kube-system")
+    ds = DaemonSet(client=admin_client, name=UTILITY, namespace="kube-system")
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
         try:
