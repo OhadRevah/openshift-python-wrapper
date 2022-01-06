@@ -27,7 +27,7 @@ def bond_supported(hosts_common_available_ports):
     """
     Check if setup support BOND (have more then 2 NICs up)
     """
-    return len(hosts_common_available_ports) >= 3
+    return len(hosts_common_available_ports) > 2
 
 
 @pytest.fixture(scope="class")

@@ -1174,7 +1174,7 @@ def multi_nics_nodes(hosts_common_available_ports):
     """
     Check if nodes has any available NICs
     """
-    return bool(hosts_common_available_ports)
+    return len(hosts_common_available_ports) > 1
 
 
 @pytest.fixture(scope="session")
