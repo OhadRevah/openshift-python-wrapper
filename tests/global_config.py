@@ -5,7 +5,36 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
-from utilities.constants import INTEL, OPENSHIFT_CNV_NAMESPACE, Images
+from utilities.constants import (
+    BRIDGE_MARKER,
+    CDI_APISERVER,
+    CDI_DEPLOYMENT,
+    CDI_OPERATOR,
+    CDI_UPLOADPROXY,
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
+    HCO_OPERATOR,
+    HCO_WEBHOOK,
+    HOSTPATH_PROVISIONER,
+    HOSTPATH_PROVISIONER_CSI,
+    HOSTPATH_PROVISIONER_OPERATOR,
+    HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
+    INTEL,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_CERT_MANAGER,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    NMSTATE_CERT_MANAGER,
+    NMSTATE_HANDLER,
+    NMSTATE_WEBHOOK,
+    NODE_MAINTENANCE_OPERATOR,
+    OPENSHIFT_CNV_NAMESPACE,
+    SSP_OPERATOR,
+    VIRT_API,
+    VIRT_CONTROLLER,
+    VIRT_HANDLER,
+    VIRT_OPERATOR,
+    VIRT_TEMPLATE_VALIDATOR,
+    Images,
+)
 from utilities.infra import get_latest_os_dict_list
 
 
@@ -427,6 +456,35 @@ ip_stack_version_matrix = [
     "ipv4",
     "ipv6",
 ]
+cnv_pod_matrix = [
+    BRIDGE_MARKER,
+    CDI_APISERVER,
+    CDI_DEPLOYMENT,
+    CDI_OPERATOR,
+    CDI_UPLOADPROXY,
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
+    HCO_OPERATOR,
+    HCO_WEBHOOK,
+    HOSTPATH_PROVISIONER,
+    HOSTPATH_PROVISIONER_CSI,
+    HOSTPATH_PROVISIONER_OPERATOR,
+    HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
+    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_CERT_MANAGER,
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    NMSTATE_CERT_MANAGER,
+    NMSTATE_HANDLER,
+    NMSTATE_WEBHOOK,
+    NODE_MAINTENANCE_OPERATOR,
+    SSP_OPERATOR,
+    VIRT_API,
+    VIRT_CONTROLLER,
+    VIRT_HANDLER,
+    VIRT_OPERATOR,
+    VIRT_TEMPLATE_VALIDATOR,
+]
+
+pod_resource_validation_matrix = [{"cpu": 5}, {"memory": None}]
 
 for _dir in dir():
     val = locals()[_dir]

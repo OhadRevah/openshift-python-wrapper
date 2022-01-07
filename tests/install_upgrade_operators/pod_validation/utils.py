@@ -1,8 +1,6 @@
 import logging
 import re
 
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
-
 
 VALID_PRIORITY_CLASS = [
     "openshift-user-critical",
@@ -12,24 +10,6 @@ VALID_PRIORITY_CLASS = [
 ]
 
 LOGGER = logging.getLogger(__name__)
-
-
-# TODO: remove when all the pod related bugs for missing resources.requests has been addressed
-def get_cnv_pod_names_with_open_bugs(field_name):
-    if field_name == "resources":
-        pods_with_bugs = {
-            "hostpath-provisioner": 2015327,
-        }
-    else:
-        raise AssertionError(f"Invalid field_name {field_name}")
-    return [
-        pod_type
-        for pod_type, bug_id in pods_with_bugs.items()
-        if get_bug_status(
-            bug=bug_id,
-        )
-        not in BUG_STATUS_CLOSED
-    ]
 
 
 def validate_cnv_pods_priority_class_name_exists(pod_list):
@@ -83,23 +63,31 @@ def validate_cnv_pod_cpu_min_value(cnv_pod, cpu_min_value):
     return invalid_cpus
 
 
-def validate_cnv_pods_resource_request(cnv_pods, request_field):
-    cnv_pod_names_with_open_bugs = get_cnv_pod_names_with_open_bugs(
-        field_name="resources"
-    )
-    errors = {}
-    for pod in cnv_pods:
-        value = validate_cnv_pod_resource_request(
-            cnv_pod=pod, request_field=request_field
-        )
-        if value:
-            LOGGER.error(
-                f"For {pod.name}, resources.requests.{request_field} is missing."
+def validate_cnv_pods_resource_request(cnv_pods, resource):
+    resource_to_check = [*resource][0]
+    if resource_to_check == "memory":
+        pod_errors = [
+            f"For {pod.name}, resources.requests.{resource_to_check} is missing."
+            for pod in cnv_pods
+            if validate_cnv_pod_resource_request(
+                cnv_pod=pod, request_field=resource_to_check
             )
-            if not pod.name.startswith(tuple(cnv_pod_names_with_open_bugs)):
-                LOGGER.info(f"For pod {pod.name}, missing {request_field}")
-                errors[pod.name] = value
-
-    assert (
-        not errors
-    ), f"For following pods resource.requests fields were missing: {errors}"
+        ]
+        assert not pod_errors, "\n".join(pod_errors)
+    elif resource_to_check == "cpu":
+        invalid_cpus = {
+            pod.name: validate_cnv_pod_cpu_min_value(
+                cnv_pod=pod, cpu_min_value=resource[resource_to_check]
+            )
+            for pod in cnv_pods
+        }
+        cpu_error = {
+            pod_name: invalid_cpu
+            for pod_name, invalid_cpu in invalid_cpus.items()
+            if invalid_cpu
+        }
+        assert (
+            not cpu_error
+        ), f"For following pods invalid cpu values found: {cpu_error}"
+    else:
+        raise AssertionError(f"Invalid resource: {resource}")
