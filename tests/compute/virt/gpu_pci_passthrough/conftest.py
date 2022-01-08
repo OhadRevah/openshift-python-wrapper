@@ -63,14 +63,14 @@ def pci_passthrough_vm(
     request,
     unprivileged_client,
     namespace,
-    golden_image_data_source_scope_class,
+    golden_image_dv_scope_module_data_source_scope_class,
     gpu_nodes,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_source=golden_image_data_source_scope_class,
+        data_source=golden_image_dv_scope_module_data_source_scope_class,
         node_selector=random.choice([*gpu_nodes]).name,
     ) as pci_passthrough_vm:
         if pci_passthrough_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):

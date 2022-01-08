@@ -26,7 +26,14 @@ pytestmark = [
 
 ALLOCATABLE = "allocatable"
 CAPACITY = "capacity"
-TESTS_CLASS_NAME = "TestPCIPassthroughRHELHostDevicesSpec"
+TESTS_CLASS_RHEL_HOSTDEVICES_NAME = "TestPCIPassthroughRHELHostDevicesSpec"
+TESTS_CLASS_RHEL_GPUS_NAME = "TestPCIPassthroughRHELGPUSSpec"
+DATA_VOLUME_DICT = {
+    "dv_name": RHEL_LATEST_OS,
+    "image": RHEL_LATEST["image_path"],
+    "storage_class": py_config["default_storage_class"],
+    "dv_size": RHEL_LATEST["dv_size"],
+}
 
 
 LOGGER = logging.getLogger(__name__)
@@ -59,17 +66,12 @@ def resources_device_checks(gpu_node, status_type):
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_class, pci_passthrough_vm",
+    "golden_image_data_volume_scope_module, pci_passthrough_vm",
     [
         pytest.param(
+            DATA_VOLUME_DICT,
             {
-                "dv_name": RHEL_LATEST_OS,
-                "image": RHEL_LATEST["image_path"],
-                "storage_class": py_config["default_storage_class"],
-                "dv_size": RHEL_LATEST["dv_size"],
-            },
-            {
-                "vm_name": "rhel-passthrough-vm",
+                "vm_name": "rhel-passthrough-hostdevices-spec-vm",
                 "template_labels": RHEL_LATEST_LABELS,
                 "host_device_name": GPU_DEVICE_NAME,
             },
@@ -79,7 +81,6 @@ def resources_device_checks(gpu_node, status_type):
 )
 @pytest.mark.usefixtures(
     "hco_cr_with_permitted_hostdevices",
-    "golden_image_data_volume_scope_class",
 )
 class TestPCIPassthroughRHELHostDevicesSpec:
     """
@@ -102,7 +103,9 @@ class TestPCIPassthroughRHELHostDevicesSpec:
                     failed_checks.append(failed_check)
         assert not failed_checks, f"Failed checks: {failed_checks}"
 
-    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::access_hostdevices_rhel_vm")
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"
+    )
     @pytest.mark.polarion("CNV-5639")
     def test_access_hostdevices_rhel_vm(self, pci_passthrough_vm):
         """
@@ -110,7 +113,9 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         """
         passthrough_utils.verify_gpu_device_exists(vm=pci_passthrough_vm)
 
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_hostdevices_rhel_vm"])
+    @pytest.mark.dependency(
+        depends=[f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"]
+    )
     @pytest.mark.polarion("CNV-5643")
     def test_pause_unpause_hostdevices_rhel_vm(self, pci_passthrough_vm):
         """
@@ -121,7 +126,9 @@ class TestPCIPassthroughRHELHostDevicesSpec:
                 vm=pci_passthrough_vm
             )
 
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_hostdevices_rhel_vm"])
+    @pytest.mark.dependency(
+        depends=[f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"]
+    )
     @pytest.mark.polarion("CNV-5641")
     def test_restart_hostdevices_rhel_vm(self, pci_passthrough_vm):
         """
@@ -129,30 +136,57 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         """
         passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
 
-    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::access_gpus_rhel_vm")
-    @pytest.mark.polarion("CNV-5640")
-    def test_access_gpus_rhel_vm(self, pci_passthrough_vm, updated_vm_gpus_spec):
-        """
-        Test Device is accessible in VM with GPUs spec.
-        """
-        passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
 
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_gpus_rhel_vm"])
+@pytest.mark.parametrize(
+    "golden_image_data_volume_scope_module, pci_passthrough_vm",
+    [
+        pytest.param(
+            DATA_VOLUME_DICT,
+            {
+                "vm_name": "rhel-passthrough-gpus-spec-vm",
+                "template_labels": RHEL_LATEST_LABELS,
+                "gpu_name": GPU_DEVICE_NAME,
+            },
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.usefixtures(
+    "hco_cr_with_permitted_hostdevices",
+)
+class TestPCIPassthroughRHELGPUSSpec:
+    """
+    Test PCI Passthrough with RHEL VM using GPUS Spec.
+    """
+
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm")
+    @pytest.mark.polarion("CNV-5640")
+    def test_access_gpus_rhel_vm(self, pci_passthrough_vm):
+        """
+        Test Device is accessible in VM with GPUS spec.
+        """
+        passthrough_utils.verify_gpu_device_exists(vm=pci_passthrough_vm)
+
+    @pytest.mark.dependency(
+        depends=[f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm"]
+    )
     @pytest.mark.polarion("CNV-5644")
     def test_pause_unpause_gpus_rhel_vm(self, pci_passthrough_vm):
         """
-        Test VM with Device using GPUs spec, can be paused and unpaused successfully.
+        Test VM with Device using GPUS spec, can be paused and unpaused successfully.
         """
         with virt_utils.running_sleep_in_linux(vm=pci_passthrough_vm):
             compute_utils.pause_optional_migrate_unpause_and_check_connectivity(
                 vm=pci_passthrough_vm
             )
 
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_gpus_rhel_vm"])
+    @pytest.mark.dependency(
+        depends=[f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm"]
+    )
     @pytest.mark.polarion("CNV-5642")
     def test_restart_gpus_rhel_vm(self, pci_passthrough_vm):
         """
-        Test VM with Device using GPUs spec, can be restarted successfully.
+        Test VM with Device using GPUS spec, can be restarted successfully.
         """
         passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
 

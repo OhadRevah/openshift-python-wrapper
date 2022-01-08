@@ -7,7 +7,6 @@ from pytest_testconfig import config as py_config
 from tests.compute.utils import validate_pause_optional_migrate_unpause_linux_vm
 from tests.compute.virt.utils import append_feature_gate_to_hco
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.storage import create_or_update_data_source
 from utilities.virt import (
     get_kubevirt_hyperconverged_spec,
     migrate_vm_and_verify,
@@ -95,15 +94,6 @@ def kubevirt_config_scope_class(kubevirt_hyperconverged_spec_scope_class):
 @pytest.fixture(scope="class")
 def kubevirt_feature_gates_scope_class(kubevirt_config_scope_class):
     return kubevirt_config_scope_class["developerConfiguration"]["featureGates"]
-
-
-@pytest.fixture(scope="class")
-def golden_image_dv_scope_module_data_source_scope_class(
-    admin_client, golden_image_data_volume_scope_module
-):
-    yield from create_or_update_data_source(
-        admin_client=admin_client, dv=golden_image_data_volume_scope_module
-    )
 
 
 @pytest.fixture(scope="class")

@@ -1,6 +1,6 @@
 import shlex
 
-from utilities.constants import OS_FLAVOR_WINDOWS
+from utilities.constants import OS_FLAVOR_WINDOWS, TIMEOUT_3MIN
 from utilities.infra import run_ssh_commands
 from utilities.virt import wait_for_ssh_connectivity, wait_for_vm_interfaces
 
@@ -29,5 +29,5 @@ def restart_and_check_device_exists(vm):
     vm.restart()
     vm.vmi.wait_until_running()
     wait_for_vm_interfaces(vmi=vm.vmi)
-    wait_for_ssh_connectivity(vm=vm)
+    wait_for_ssh_connectivity(vm=vm, timeout=TIMEOUT_3MIN)
     verify_gpu_device_exists(vm=vm)

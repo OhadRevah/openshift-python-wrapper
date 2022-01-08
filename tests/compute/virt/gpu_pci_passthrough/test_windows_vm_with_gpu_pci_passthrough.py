@@ -33,7 +33,7 @@ TESTS_CLASS_NAME = "TestPCIPassthroughWinHostDevicesSpec"
 
 @pytest.mark.tier3
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_class, pci_passthrough_vm",
+    "golden_image_data_volume_scope_module, pci_passthrough_vm",
     [
         pytest.param(
             {
