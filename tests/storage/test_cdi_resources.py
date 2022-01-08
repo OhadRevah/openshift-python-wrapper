@@ -286,11 +286,6 @@ def test_cloner_pods_cdi_label(
             id="cdi-deployment",
         ),
         pytest.param(
-            ReplicaSet,
-            marks=(pytest.mark.polarion("CNV-7133")),
-            id="cdi-replicatset",
-        ),
-        pytest.param(
             CustomResourceDefinition,
             marks=(pytest.mark.polarion("CNV-7134")),
             id="cdi-crd",

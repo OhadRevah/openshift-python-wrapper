@@ -16,7 +16,6 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
-from ocp_resources.replicaset import ReplicaSet
 from ocp_resources.resource import Resource
 from ocp_resources.role import Role
 from ocp_resources.role_binding import RoleBinding
@@ -811,11 +810,6 @@ def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
             Deployment,
             marks=(pytest.mark.polarion("CNV-7213")),
             id="hpp-deployment",
-        ),
-        pytest.param(
-            ReplicaSet,
-            marks=(pytest.mark.polarion("CNV-7214")),
-            id="hpp-replicatset",
         ),
         pytest.param(
             CustomResourceDefinition,
