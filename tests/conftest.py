@@ -2733,10 +2733,18 @@ def rhel_latest_os_params():
 
 
 @pytest.fixture(scope="session")
-def hco_target_version(cnv_target_version):
-    return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
+def cnv_upgrade(pytestconfig):
+    """Returns True if requested upgrade if for CNV else False"""
+    return pytestconfig.option.upgrade == "cnv"
 
 
 @pytest.fixture(scope="session")
-def cnv_target_version(pytestconfig):
-    return pytestconfig.option.cnv_version
+def hco_target_version(cnv_target_version, cnv_upgrade):
+    if cnv_upgrade:
+        return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
+
+
+@pytest.fixture(scope="session")
+def cnv_target_version(pytestconfig, cnv_upgrade):
+    if cnv_upgrade:
+        return pytestconfig.option.cnv_version
