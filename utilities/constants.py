@@ -51,7 +51,7 @@ class Images:
         DIR = f"{BASE_IMAGES_DIR}/windows-images"
         RAW_DIR = f"{DIR}/raw_images"
         DEFAULT_DV_SIZE = "60Gi"
-        NVIDIA_DV_SIZE = "70Gi"
+        NVIDIA_DV_SIZE = "75Gi"
         WSL2_DV_SIZE = "40Gi"
         DEFAULT_MEMORY_SIZE = "8Gi"
         DEFAULT_CPU_THREADS = 2

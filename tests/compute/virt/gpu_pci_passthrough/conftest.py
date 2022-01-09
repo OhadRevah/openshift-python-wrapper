@@ -77,7 +77,9 @@ def pci_passthrough_vm(
             # Install NVIDIA Drivers placed on the Windows-10 or win2k19 Images.
             run_ssh_commands(
                 host=pci_passthrough_vm.ssh_exec,
-                commands=[shlex.split("C:\\\\NVIDIA\\\\International\\\\setup.exe -s")],
+                commands=[
+                    shlex.split("C:\\\\NVIDIA\\\\gpu\\\\International\\\\setup.exe -s")
+                ],
             )
         yield pci_passthrough_vm
 
