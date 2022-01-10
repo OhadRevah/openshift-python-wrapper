@@ -143,7 +143,7 @@ def create_windows_vm_validate_guest_agent_info(
 ):
     with vm_instance_from_template(
         request=vm_params,
-        data_volume=dv,
+        existing_data_volume=dv,
         namespace=namespace,
         unprivileged_client=unprivileged_client,
     ) as vm_dv:

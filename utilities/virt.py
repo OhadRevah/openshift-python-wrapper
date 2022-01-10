@@ -1928,7 +1928,7 @@ def vm_instance_from_template(
     Prerequisite - a DV must be created prior to VM creation.
 
     Args:
-        data_volume (obj `DataVolume`: DV resource): existing DV that will be cloned (for example: golden image)
+        data_source (obj `DataSource`): DS object points to a golden image PVC.
         data_volume_template (dict): dataVolumeTemplates dict; will replace dataVolumeTemplates in VM yaml
         existing_data_volume (obj `DataVolume`: DV resource): existing DV to be consumed directly (not cloned)
 
