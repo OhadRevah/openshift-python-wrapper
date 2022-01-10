@@ -252,6 +252,7 @@ class VirtualMachineForTests(VirtualMachine):
         vhostmd=False,
         vm_debug_logs=False,
         priority_class_name=None,
+        dry_run=None,
     ):
         """
         Virtual machine creation
@@ -314,6 +315,7 @@ class VirtualMachineForTests(VirtualMachine):
                 enable libvirt debug logs in the virt-launcher pod.
                 Is set to True if py_config["log_collector"] is True.
             priority_class_name (str, optional): The name of the priority class used for the VM
+            dry_run (str, default=None): If "All", the resource will be created using the dry_run flag
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -323,6 +325,7 @@ class VirtualMachineForTests(VirtualMachine):
             client=client,
             teardown=teardown,
             privileged_client=get_admin_client(),
+            dry_run=dry_run,
         )
         self.body = body
         self.interfaces = interfaces or []
@@ -1059,6 +1062,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         machine_type=None,
         teardown=True,
         use_full_storage_api=False,
+        dry_run=None,
     ):
         """
         VM creation using common templates.
@@ -1072,6 +1076,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             use_full_storage_api (bool, default=False): Target PVC storage params are not explicitly set if True.
                 IF False, storage api will be used but target PVC storage name will be taken from self.dv. This is done
                 to avoid modifying cluster default SC.
+            dry_run (str, default=None): If "All", the VM will be created using the dry_run flag
 
         Returns:
             obj `VirtualMachine`: VM resource
@@ -1112,6 +1117,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             vhostmd=vhostmd,
             machine_type=machine_type,
             teardown=teardown,
+            dry_run=dry_run,
         )
         self.template_labels = labels
         self.data_source = data_source
@@ -1370,8 +1376,14 @@ class ServiceForVirtualMachineForTests(Service):
         ip_family_policy=IP_FAMILY_POLICY_PREFER_DUAL_STACK,
         ip_families=None,
         teardown=True,
+        dry_run=None,
     ):
-        super().__init__(name=name, namespace=namespace, teardown=teardown)
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            teardown=teardown,
+            dry_run=dry_run,
+        )
         self.vm = vm
         self.vmi = vm.vmi
         self.port = port

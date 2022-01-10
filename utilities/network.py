@@ -54,6 +54,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         max_unavailable=None,
         set_ipv4=True,
         set_ipv6=True,
+        dry_run=None,
         capture=None,
         routes=None,
         dns_resolver=None,
@@ -70,6 +71,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ports (list): The bridge's port(s).
             mtu (int): MTU size
             ipv4_dhcp: determines if ipv4_dhcp should be used
+            dry_run (str, default=None): If "All", the bridge will be created using the dry_run flag
         """
         super().__init__(
             name=name,
@@ -83,6 +85,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             max_unavailable=max_unavailable,
             set_ipv4=set_ipv4,
             set_ipv6=set_ipv6,
+            dry_run=dry_run,
             capture=capture,
             routes=routes,
             dns_resolver=dns_resolver,
@@ -164,6 +167,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         set_ipv4=True,
         set_ipv6=True,
         max_unavailable=None,
+        dry_run=None,
         capture=None,
         bridge_state=IFACE_UP_STATE,
         routes=None,
@@ -183,6 +187,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
             max_unavailable=max_unavailable,
+            dry_run=dry_run,
             capture=capture,
             routes=routes,
             dns_resolver=dns_resolver,
@@ -204,6 +209,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         teardown=True,
         set_dummy_ovs_iface=False,
         set_port_mac=False,
+        dry_run=None,
     ):
         super().__init__(
             name=name,
@@ -218,6 +224,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             teardown=teardown,
             set_ipv4=False,
             set_ipv6=False,
+            dry_run=dry_run,
         )
         self.set_dummy_ovs_iface = set_dummy_ovs_iface
         self.set_port_mac = set_port_mac
@@ -312,6 +319,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         ipv4_dhcp=False,
         teardown=True,
         ipv6_enable=False,
+        dry_run=None,
     ):
         iface_name = f"{base_iface}.{tag}"
         if not name:
@@ -324,6 +332,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
+            dry_run=dry_run,
         )
         self.iface_state = iface_state
         self.base_iface = base_iface
@@ -358,9 +367,14 @@ class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         teardown=True,
         old_nad_format=False,
         add_resource_name=True,
+        dry_run=None,
     ):
         super().__init__(
-            name=name, namespace=namespace, client=client, teardown=teardown
+            name=name,
+            namespace=namespace,
+            client=client,
+            teardown=teardown,
+            dry_run=dry_run,
         )
         self.old_nad_format = old_nad_format
 
@@ -417,6 +431,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         teardown=True,
         macspoofchk=None,
         add_resource_name=True,
+        dry_run=None,
     ):
         super().__init__(
             name=name,
@@ -429,6 +444,7 @@ class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
             teardown=teardown,
             macspoofchk=macspoofchk,
             add_resource_name=add_resource_name,
+            dry_run=dry_run,
         )
         self.tuning_type = tuning_type
 
@@ -460,6 +476,7 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
         client=None,
         mtu=None,
         teardown=True,
+        dry_run=None,
     ):
         super().__init__(
             name=name,
@@ -470,6 +487,7 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
             client=client,
             mtu=mtu,
             teardown=teardown,
+            dry_run=dry_run,
         )
 
     def to_dict(self):
@@ -500,6 +518,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ipv4_dhcp=False,
         ipv6_enable=False,
         options=None,
+        dry_run=None,
     ):
         super().__init__(
             name=name,
@@ -509,6 +528,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
+            dry_run=dry_run,
         )
         self.bond_name = bond_name
         self.bond_ports = bond_ports
@@ -673,6 +693,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ipv6_addresses=None,
         dns_resolver=None,
         routes=None,
+        dry_run=None,
     ):
         super().__init__(
             name=name,
@@ -688,6 +709,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             teardown=teardown,
             dns_resolver=dns_resolver,
             routes=routes,
+            dry_run=dry_run,
         )
         self.interfaces_name = interfaces_name
         self.ipv4_auto_dns = ipv4_auto_dns
