@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 class Console(object):
     USERNAME = PASSWORD = None
 
-    def __init__(self, vm, username=None, password=None, timeout=30):
+    def __init__(self, vm, username=None, password=None, timeout=30, prompt=None):
         """
         Connect to VM console
 
@@ -41,7 +41,7 @@ class Console(object):
         self.timeout = timeout
         self.child = None
         self.login_prompt = "login:"
-        self.prompt = "#" if self.username == "root" else [r"\$"]
+        self.prompt = prompt if prompt else "#" if self.username == "root" else [r"\$"]
         self.cmd = self._generate_cmd()
 
     def connect(self):
@@ -56,13 +56,14 @@ class Console(object):
 
     def _connect(self):
         self.child.send("\n\n")
-        self.child.expect(self.login_prompt, timeout=TIMEOUT_5MIN)
-        LOGGER.info(f"{self.vm.name}: Using username {self.username}")
-        self.child.sendline(self.username)
-        if self.password:
-            self.child.expect("Password:")
-            LOGGER.info(f"{self.vm.name}: Using password {self.password}")
-            self.child.sendline(self.password)
+        if self.username:
+            self.child.expect(self.login_prompt, timeout=TIMEOUT_5MIN)
+            LOGGER.info(f"{self.vm.name}: Using username {self.username}")
+            self.child.sendline(self.username)
+            if self.password:
+                self.child.expect("Password:")
+                LOGGER.info(f"{self.vm.name}: Using password {self.password}")
+                self.child.sendline(self.password)
 
         self.child.expect(self.prompt, timeout=150)
         LOGGER.info(f"{self.vm.name}: Got prompt.")
@@ -75,9 +76,10 @@ class Console(object):
 
         self.child.send("\n\n")
         self.child.expect(self.prompt)
-        self.child.send("exit")
-        self.child.send("\n\n")
-        self.child.expect("login:")
+        if self.username:
+            self.child.send("exit")
+            self.child.send("\n\n")
+            self.child.expect("login:")
         self.child.close()
 
     def force_disconnect(self):
