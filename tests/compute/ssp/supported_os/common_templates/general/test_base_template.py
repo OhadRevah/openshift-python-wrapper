@@ -99,7 +99,7 @@ def get_windows_templates_list():
 
 
 def get_centos_templates_list():
-    centos_releases_list = ["7", "8"]
+    centos_releases_list = ["7", "-stream8", "-stream9"]
     return [
         f"centos{release}-{workload}-{flavor}"
         for release in centos_releases_list

@@ -56,6 +56,7 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
+from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
@@ -2415,7 +2416,16 @@ def junitxml_plugin(request, record_testsuite_property):
 
 @pytest.fixture(scope="module")
 def base_templates(admin_client):
-    return get_base_templates_list(client=admin_client)
+    # Exclude SAP HANA template (template's content is currently different from base templates)
+    # TODO: re-add template when all open issues are resolved.
+    base_templates = get_base_templates_list(client=admin_client)
+    base_templates = [
+        template
+        for template in base_templates
+        if Template.Workload.SAPHANA not in template.name
+    ]
+
+    return base_templates
 
 
 @pytest.fixture(scope="module")
