@@ -384,13 +384,29 @@ centos_os_matrix = [
         }
     },
     {
-        "centos-8": {
-            "image_name": Images.CentOS.CENTOS8_IMG,
-            "image_path": os.path.join(Images.CentOS.DIR, Images.CentOS.CENTOS8_IMG),
+        "centos-stream-8": {
+            "image_name": Images.CentOS.CENTOS_STREAM_8_IMG,
+            "image_path": os.path.join(
+                Images.CentOS.DIR, Images.CentOS.CENTOS_STREAM_8_IMG
+            ),
+            "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
+            "template_labels": {
+                "os": "centos-stream8",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "centos-stream-9": {
+            "image_name": Images.CentOS.CENTOS_STREAM_9_IMG,
+            "image_path": os.path.join(
+                Images.CentOS.DIR, Images.CentOS.CENTOS_STREAM_9_IMG
+            ),
             "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
             "latest": True,
             "template_labels": {
-                "os": "centos8",
+                "os": "centos-stream9",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },

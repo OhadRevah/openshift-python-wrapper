@@ -66,7 +66,8 @@ class Images:
 
     class CentOS:
         CENTOS7_IMG = "CentOS-7-x86_64-GenericCloud-2009.qcow2"
-        CENTOS8_IMG = "CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2"
+        CENTOS_STREAM_8_IMG = "CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"
+        CENTOS_STREAM_9_IMG = "CentOS-Stream-GenericCloud-9-20220107.0.x86_64.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/centos-images"
         DEFAULT_DV_SIZE = "15Gi"
 
