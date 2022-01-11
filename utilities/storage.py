@@ -102,7 +102,7 @@ def create_dv(
     dv_name,
     namespace,
     storage_class,
-    volume_mode,
+    volume_mode=None,
     url=None,
     source="http",
     content_type=DataVolume.ContentType.KUBEVIRT,
@@ -110,7 +110,7 @@ def create_dv(
     secret=None,
     cert_configmap=None,
     hostpath_node=None,
-    access_modes=DataVolume.AccessMode.RWO,
+    access_modes=None,
     client=None,
     source_pvc=None,
     source_namespace=None,
@@ -119,7 +119,7 @@ def create_dv(
     consume_wffc=True,
     bind_immediate=None,
     preallocation=None,
-    api_name="pvc",
+    api_name="storage",
 ):
     if source in ("http", "https"):
         if not url_excluded_from_validation(url):
@@ -824,3 +824,17 @@ class HppCsiStorageClass(StorageClass):
                 }
             )
         return res
+
+
+def default_storage_class(client):
+    default_sc_list = [
+        sc
+        for sc in StorageClass.get(dyn_client=client)
+        if sc.instance.metadata.get("annotations", {}).get(
+            StorageClass.Annotations.IS_DEFAULT_CLASS
+        )
+        == "true"
+    ]
+    if default_sc_list:
+        return default_sc_list[0]
+    raise ValueError("No default storage class defined")

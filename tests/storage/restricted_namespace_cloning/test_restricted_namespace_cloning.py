@@ -24,7 +24,7 @@ from tests.storage.restricted_namespace_cloning.constants import (
     VERBS_DST,
     VERBS_SRC,
 )
-from tests.storage.utils import storage_params, verify_snapshot_used_namespace_transfer
+from tests.storage.utils import verify_snapshot_used_namespace_transfer
 from utilities.storage import ErrorMsg, create_dv
 
 
@@ -53,7 +53,7 @@ def create_dv_negative(
             source_pvc=source_pvc,
             source_namespace=source_namespace,
             client=unprivileged_client,
-            **storage_params(storage_class_matrix=storage_class_dict),
+            storage_class=[*storage_class_dict][0],
         ):
             LOGGER.error("Target dv was created, but shouldn't have been")
 
@@ -112,7 +112,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
         source_pvc=data_volume_multi_storage_scope_module.pvc.name,
         source_namespace=namespace.name,
         client=unprivileged_client,
-        **storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as cdv:
         cdv.wait()
         with utils.create_vm_from_dv(dv=cdv):
@@ -213,7 +213,7 @@ def test_user_permissions_positive(
         source_pvc=data_volume_multi_storage_scope_module.pvc.name,
         source_namespace=namespace.name,
         client=unprivileged_client,
-        **storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as cdv:
         cdv.wait()
         verify_snapshot_used_namespace_transfer(

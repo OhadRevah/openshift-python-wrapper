@@ -261,7 +261,6 @@ def test_wffc_import_registry_dv(
         namespace=namespace.name,
         url=f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
         consume_wffc=True,
     ) as dv:
         dv.wait()
@@ -287,7 +286,6 @@ def test_wffc_upload_dv_via_token(
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
         storage_ns_name=namespace.name,
         client=unprivileged_client,
         consume_wffc=True,
@@ -323,8 +321,6 @@ def test_wffc_clone_dv(
         size=data_volume_scope_function.size,
         source_pvc=data_volume_scope_function.name,
         storage_class=data_volume_scope_function.storage_class,
-        volume_mode=data_volume_scope_function.volume_mode,
-        access_modes=data_volume_scope_function.access_modes,
         consume_wffc=True,
     ) as cdv:
         cdv.wait(timeout=TIMEOUT_10MIN)

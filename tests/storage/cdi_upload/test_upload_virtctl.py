@@ -249,7 +249,6 @@ def test_virtctl_image_upload_with_exist_dv(
         namespace=namespace.name,
         size="1Gi",
         storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=120)
         with virtctl_upload_dv(

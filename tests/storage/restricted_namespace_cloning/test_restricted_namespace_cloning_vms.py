@@ -29,7 +29,6 @@ from tests.storage.utils import (
     create_role_binding,
     create_vm_and_verify_image_permission,
     set_permissions,
-    storage_params,
     verify_snapshot_used_namespace_transfer,
 )
 from utilities.constants import OS_FLAVOR_CIRROS, Images
@@ -84,6 +83,7 @@ def data_volume_clone_settings(
         volume_mode=data_volume_multi_storage_scope_module.volume_mode,
         access_modes=data_volume_multi_storage_scope_module.access_modes,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
+        api_name="storage",
         size=data_volume_multi_storage_scope_module.size,
         hostpath_node=data_volume_multi_storage_scope_module.pvc.selected_node
         if sc_is_hpp_with_immediate_volume_binding(
@@ -357,7 +357,7 @@ def test_disk_image_after_create_vm_with_restricted_clone(
         source_pvc=data_volume_multi_storage_scope_module.pvc.name,
         source_namespace=namespace.name,
         client=unprivileged_client,
-        **storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as cdv:
         cdv.wait()
         create_vm_and_verify_image_permission(dv=cdv)

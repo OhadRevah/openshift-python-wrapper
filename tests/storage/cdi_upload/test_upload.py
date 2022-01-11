@@ -170,7 +170,6 @@ def test_successful_upload_with_supported_formats(
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
         storage_class=py_config["default_storage_class"],
-        volume_mode=py_config["default_volume_mode"],
         storage_ns_name=namespace.name,
         client=unprivileged_client,
     ) as dv:
@@ -275,9 +274,7 @@ def test_successful_upload_token_expiry(
         )
 
 
-def _upload_image(
-    dv_name, namespace, storage_class, volume_mode, local_name, size=None
-):
+def _upload_image(dv_name, namespace, storage_class, local_name, size=None):
     """
     Upload image function for the use of other tests
     """
@@ -288,7 +285,6 @@ def _upload_image(
         namespace=namespace.name,
         size=size,
         storage_class=storage_class,
-        volume_mode=volume_mode,
     ) as dv:
         LOGGER.info("Wait for DV to be UploadReady")
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_5MIN)
@@ -314,12 +310,11 @@ def test_successful_concurrent_uploads(
 ):
     dvs_processes = []
     storage_class = [*storage_class_matrix__module__][0]
-    volume_mode = storage_class_matrix__module__[storage_class]["volume_mode"]
     available_pv = PersistentVolume(name=namespace).max_available_pvs
     for dv in range(available_pv):
         dv_process = multiprocessing.Process(
             target=_upload_image,
-            args=(f"dv-{dv}", namespace, storage_class, volume_mode, upload_file_path),
+            args=(f"dv-{dv}", namespace, storage_class, upload_file_path),
         )
         dv_process.start()
         dvs_processes.append(dv_process)
@@ -348,14 +343,13 @@ def test_successful_upload_missing_file_in_transit(
 ):
     dv_name = "cnv-2017"
     storage_class = [*storage_class_matrix__class__][0]
-    volume_mode = storage_class_matrix__class__[storage_class]["volume_mode"]
     downloaded_image(
         remote_name=f"{Images.Rhel.DIR}/{Images.Rhel.RHEL8_0_IMG}",
         local_name=upload_file_path,
     )
     upload_process = multiprocessing.Process(
         target=_upload_image,
-        args=(dv_name, namespace, storage_class, volume_mode, upload_file_path, "10Gi"),
+        args=(dv_name, namespace, storage_class, upload_file_path, "10Gi"),
     )
 
     # Run process in parallel

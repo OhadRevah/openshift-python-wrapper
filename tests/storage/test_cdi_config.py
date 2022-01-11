@@ -5,12 +5,10 @@ import logging
 
 import pytest
 from ocp_resources.configmap import ConfigMap
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
@@ -46,8 +44,6 @@ def cdiconfig_update(
     storage_ns_name,
     dv_name,
     client,
-    volume_mode=py_config["default_volume_mode"],
-    access_mode=py_config["default_access_mode"],
     images_https_server_name="",
     run_vm=False,
     tmpdir=None,
@@ -67,8 +63,6 @@ def cdiconfig_update(
                 with utils.import_image_to_dv(
                     dv_name=dv_name,
                     images_https_server_name=images_https_server_name,
-                    volume_mode=volume_mode,
-                    access_mode=access_mode,
                     storage_ns_name=storage_ns_name,
                 ) as dv:
                     _create_vm_check_disk_count(dv=dv)
@@ -78,7 +72,6 @@ def cdiconfig_update(
                 downloaded_image(remote_name=remote_name, local_name=local_name)
                 with utils.upload_image_to_dv(
                     dv_name=dv_name,
-                    volume_mode=volume_mode,
                     storage_ns_name=storage_ns_name,
                     storage_class=storage_class_type,
                     client=client,
@@ -106,8 +99,6 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         storage_class_type=StorageClass.Types.HOSTPATH,
         images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
-        volume_mode=DataVolume.VolumeMode.FILE,
-        access_mode=DataVolume.AccessMode.RWO,
         run_vm=True,
         tmpdir=tmpdir,
         client=unprivileged_client,
@@ -129,8 +120,6 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         dv_name="cnv-2478",
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=namespace.name,
-        volume_mode=DataVolume.VolumeMode.FILE,
-        access_mode=DataVolume.AccessMode.RWO,
         images_https_server_name=get_images_server_url(schema="https"),
         run_vm=True,
         client=unprivileged_client,
@@ -152,8 +141,6 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
         dv_name="cnv-2214",
         storage_class_type=StorageClass.Types.HOSTPATH,
         storage_ns_name=namespace.name,
-        volume_mode=DataVolume.VolumeMode.FILE,
-        access_mode=DataVolume.AccessMode.RWO,
         client=unprivileged_client,
     )
 
@@ -175,8 +162,6 @@ def test_cdiconfig_scratch_space_not_default(
         images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
         run_vm=True,
-        volume_mode=DataVolume.VolumeMode.FILE,
-        access_mode=DataVolume.AccessMode.RWO,
         client=unprivileged_client,
     )
 
@@ -279,7 +264,6 @@ def test_cdiconfig_changing_storage_class_default(
                     namespace=configmap.namespace,
                     url=url,
                     storage_class=StorageClass.Types.CEPH_RBD,
-                    volume_mode=DataVolume.VolumeMode.BLOCK,
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()

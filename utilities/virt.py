@@ -27,6 +27,7 @@ from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
+from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine import VirtualMachine
@@ -71,6 +72,7 @@ from utilities.infra import (
     is_bug_open,
     run_ssh_commands,
 )
+from utilities.storage import default_storage_class
 
 
 LOGGER = logging.getLogger(__name__)
@@ -849,7 +851,7 @@ class VirtualMachineForTests(VirtualMachine):
         if (
             self.data_volume_template or self.data_volume or self.pvc
         ) and not self.is_vm_from_template:
-            storage_class, access_mode = self.get_storage_configuration()
+            access_mode = self.get_storage_configuration()
 
             # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
             # (Except when evictionStrategy is explicitly set)
@@ -971,22 +973,27 @@ class VirtualMachineForTests(VirtualMachine):
         self.custom_service.create(wait=True)
 
     def get_storage_configuration(self):
-        storage_class = (
-            self.data_volume.storage_class
-            if self.data_volume
-            else self.pvc.instance.spec.storageClassName
-            if self.pvc
-            else self.data_volume_template["spec"]["pvc"]["storageClassName"]
+        def _sc_name_for_storage_api():
+            return self.data_volume_template["spec"]["storage"].get(
+                "storageClassName", default_storage_class(client=self.client).name
+            )
+
+        api_name = (
+            "pvc"
+            if self.data_volume_template
+            and self.data_volume_template["spec"].get("pvc")
+            else "storage"
         )
-        access_mode = (
+        return (
             self.data_volume.pvc.instance.spec.accessModes
             if self.data_volume
             else self.pvc.instance.spec.accessModes
             if self.pvc
-            else self.data_volume_template["spec"]["pvc"]["accessModes"]
+            else self.data_volume_template["spec"][api_name].get("accessModes")
+            or StorageProfile(name=_sc_name_for_storage_api()).instance.status[
+                "claimPropertySets"
+            ]["accessModes"]
         )
-
-        return storage_class, access_mode
 
     @property
     def ssh_exec(self):

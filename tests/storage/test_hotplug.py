@@ -6,7 +6,6 @@ import shlex
 import pytest
 
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS
-from tests.storage.utils import storage_params
 from utilities.constants import HOTPLUG_DISK_SERIAL
 from utilities.storage import (
     assert_disk_serial,
@@ -28,7 +27,7 @@ def blank_disk_dv(namespace, storage_class_matrix__function__):
         dv_name="blank-dv",
         namespace=namespace.name,
         size="1Gi",
-        **storage_params(storage_class_matrix=storage_class_matrix__function__),
+        storage_class=[*storage_class_matrix__function__][0],
         consume_wffc=False,
     ) as dv:
         yield dv

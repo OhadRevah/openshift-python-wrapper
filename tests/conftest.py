@@ -130,6 +130,7 @@ from utilities.ssp import get_data_import_crons
 from utilities.storage import (
     create_or_update_data_source,
     data_volume,
+    default_storage_class,
     get_images_server_url,
     get_storage_class_dict_from_matrix,
     sc_is_hpp_with_immediate_volume_binding,
@@ -1934,17 +1935,9 @@ def default_sc(admin_client):
     """
     Get default Storage Class defined
     """
-    default_sc_list = [
-        sc
-        for sc in StorageClass.get(dyn_client=admin_client)
-        if sc.instance.metadata.get("annotations", {}).get(
-            StorageClass.Annotations.IS_DEFAULT_CLASS
-        )
-        == "true"
-    ]
-    if default_sc_list:
-        yield default_sc_list[0]
-    else:
+    try:
+        yield default_storage_class(client=admin_client)
+    except ValueError:
         yield
 
 

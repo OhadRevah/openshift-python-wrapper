@@ -74,8 +74,8 @@ def ceph_rbd_data_volume(request, namespace):
         content_type=DataVolume.ContentType.KUBEVIRT,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=StorageClass.Types.CEPH_RBD,
-        volume_mode=request.param["volume_mode"],
         access_modes=DataVolume.AccessMode.RWO,
+        volume_mode=request.param["volume_mode"],
     ) as dv:
         yield dv
 
@@ -121,8 +121,6 @@ def test_successful_clone_of_large_image(
         size=data_volume_multi_storage_scope_function.size,
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
-        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         if utils.smart_clone_supported_by_sc(sc=cdv.storage_class, client=admin_client):
             # Smart clone via snapshots does not hit this condition; no workers are spawned
@@ -165,8 +163,6 @@ def test_successful_vm_restart_with_cloned_dv(
         size=data_volume_multi_storage_scope_function.size,
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
-        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait(timeout=TIMEOUT_10MIN)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
@@ -215,8 +211,6 @@ def test_successful_vm_from_cloned_dv_windows(
         size=data_volume_multi_storage_scope_function.size,
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
-        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait(timeout=WINDOWS_CLONE_TIMEOUT)
         assert cdv.pvc.bound()
@@ -256,8 +250,6 @@ def test_disk_image_after_clone(
         source_pvc=data_volume_multi_storage_scope_function.name,
         client=unprivileged_client,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
-        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait()
         utils.create_vm_and_verify_image_permission(dv=cdv)
@@ -298,8 +290,6 @@ def test_successful_snapshot_clone(
         size=data_volume_multi_storage_scope_function.size,
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
-        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,

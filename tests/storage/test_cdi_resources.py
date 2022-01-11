@@ -16,7 +16,6 @@ from ocp_resources.secret import Secret
 from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
-from pytest_testconfig import config as py_config
 
 from tests.storage import utils as storage_utils
 from tests.storage.constants import CDI_SECRETS
@@ -170,8 +169,6 @@ def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
     with storage_utils.import_image_to_dv(
         dv_name="cnv-3475",
         images_https_server_name=get_images_server_url(schema="https"),
-        volume_mode=py_config["default_volume_mode"],
-        access_mode=py_config["default_access_mode"],
         storage_ns_name=namespace.name,
     ):
         is_cdi_worker_pod(
@@ -188,11 +185,9 @@ def test_uploader_pod_cdi_label(
     """
     Verify "cdi.kubevirt.io" label is included in uploader pod
     """
-    storage_class = [*storage_class_matrix__module__][0]
     with storage_utils.upload_image_to_dv(
         dv_name="cnv-3474",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=[*storage_class_matrix__module__][0],
         storage_ns_name=namespace.name,
         client=unprivileged_client,
     ):
@@ -238,8 +233,6 @@ def test_cloner_pods_cdi_label(
         size=data_volume_multi_storage_scope_function.size,
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
-        access_modes=data_volume_multi_storage_scope_function.access_modes,
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=TIMEOUT_10MIN

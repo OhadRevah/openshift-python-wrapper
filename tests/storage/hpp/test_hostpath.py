@@ -194,7 +194,6 @@ def dv_kwargs(request, namespace, worker_node1):
         ),
         "size": request.param.get("size", Images.Fedora.DEFAULT_DV_SIZE),
         "storage_class": storage_class,
-        "volume_mode": storage_class_dict[storage_class]["volume_mode"],
         "hostpath_node": worker_node1.name,
     }
 
@@ -327,7 +326,6 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="35Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(
             status=dv.Status.PENDING,
@@ -353,7 +351,6 @@ def test_hpp_specify_node_immediate(
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="35Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=worker_node1.name,
     ) as dv:
         dv.wait(timeout=TIMEOUT_10MIN)
@@ -392,7 +389,6 @@ def test_hostpath_http_import_dv(
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{image_name}",
         size="500Mi",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=worker_node1.name,
     ) as dv:
         verify_image_location_via_dv_virt_launcher_pod(
@@ -530,7 +526,6 @@ def test_hostpath_upload_dv_with_token(
         namespace=namespace.name,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
         storage_utils.upload_token_request(
@@ -574,7 +569,6 @@ def test_hostpath_registry_import_dv(
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
@@ -629,7 +623,6 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         source_pvc=data_volume_scope_function.pvc.name,
         size=data_volume_scope_function.size,
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
     ) as target_dv:
         upload_target_pod = None
         for sample in TimeoutSampler(
@@ -687,7 +680,6 @@ def test_hostpath_clone_dv_with_annotation(
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="1Gi",
         storage_class=StorageClass.Types.HOSTPATH,
-        volume_mode=DataVolume.VolumeMode.FILE,
         hostpath_node=worker_node1.name,
     ) as source_dv:
         source_dv.wait_for_status(
@@ -703,7 +695,6 @@ def test_hostpath_clone_dv_with_annotation(
             size=source_dv.size,
             storage_class=StorageClass.Types.HOSTPATH,
             hostpath_node=worker_node1.name,
-            volume_mode=DataVolume.VolumeMode.FILE,
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
         ) as target_dv:

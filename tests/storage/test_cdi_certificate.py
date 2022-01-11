@@ -272,8 +272,6 @@ def test_import_clone_after_certs_renewal(
         size=data_volume_multi_storage_scope_module.size,
         source_pvc=data_volume_multi_storage_scope_module.name,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
-        volume_mode=data_volume_multi_storage_scope_module.volume_mode,
-        access_modes=data_volume_multi_storage_scope_module.access_modes,
     ) as cdv:
         cdv.wait(timeout=TIMEOUT_3MIN)
         with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:

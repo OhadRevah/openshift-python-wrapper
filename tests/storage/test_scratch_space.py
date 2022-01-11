@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import threading
 from multiprocessing.pool import ThreadPool
 
 import pytest
@@ -10,7 +9,6 @@ from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.secret import Secret
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutSampler
-from openshift.dynamic.exceptions import NotFoundError
 
 import utilities.storage
 from tests.storage import utils as storage_utils
@@ -90,14 +88,12 @@ def test_upload_https_scratch_space_delete_pvc(
     local_name = f"{tmpdir}/{Images.Cirros.QCOW2_IMG}"
     remote_name = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
     downloaded_image(remote_name=remote_name, local_name=local_name)
-    storage_class = [*storage_class_matrix__module__][0]
     with utilities.storage.create_dv(
         source="upload",
         dv_name=dv_name,
         namespace=namespace.name,
         size="3Gi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         # Blocks test until we get the return value indicating that scratch pvc reached 'Bound'
         scratch_bound_reached.get()
@@ -123,38 +119,3 @@ def test_upload_https_scratch_space_delete_pvc(
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True
-
-
-def create_dv_and_vm_no_scratch_space(
-    dv_name,
-    namespace,
-    storage_class,
-    volume_mode,
-    url,
-    content_type,
-    size,
-    cert_configmap=None,
-    secret=None,
-):
-    with utilities.storage.create_dv(
-        source="http",
-        dv_name=dv_name,
-        namespace=namespace,
-        content_type=content_type,
-        url=url,
-        cert_configmap=cert_configmap,
-        size=size,
-        secret=secret,
-        storage_class=storage_class,
-        volume_mode=volume_mode,
-    ) as dv:
-        thread = threading.Thread(target=dv.wait)
-        thread.daemon = True
-        thread.start()
-        try:
-            assert dv.scratch_pvc.instance()
-        except NotFoundError:
-            pass
-        thread.join()
-        with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
-            storage_utils.check_disk_count_in_vm(vm=vm_dv)

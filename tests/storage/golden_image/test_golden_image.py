@@ -7,7 +7,6 @@ from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
-from tests.storage import utils
 from utilities.constants import TIMEOUT_20MIN
 from utilities.storage import ErrorMsg, create_dv, get_images_server_url
 from utilities.virt import wait_for_ssh_connectivity
@@ -49,7 +48,6 @@ def test_regular_user_cant_create_dv_in_ns(
             url=f"{get_images_server_url(schema='http')}{LATEST_RHEL_IMAGE}",
             size=RHEL_IMAGE_SIZE,
             storage_class=py_config["default_storage_class"],
-            volume_mode=py_config["default_volume_mode"],
         ):
             return
 
@@ -161,7 +159,6 @@ def test_regular_user_cant_clone_dv_in_ns(
             source_namespace=golden_image_data_volume_scope_module.namespace,
             client=unprivileged_client,
             storage_class=golden_image_data_volume_scope_module.storage_class,
-            volume_mode=golden_image_data_volume_scope_module.volume_mode,
         ):
             return
 
@@ -183,6 +180,6 @@ def test_regular_user_can_create_dv_in_ns_given_proper_rolebinding(
         namespace=golden_images_namespace.name,
         url=f"{get_images_server_url(schema='http')}{LATEST_RHEL_IMAGE}",
         size=RHEL_IMAGE_SIZE,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__function__),
+        storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_20MIN)

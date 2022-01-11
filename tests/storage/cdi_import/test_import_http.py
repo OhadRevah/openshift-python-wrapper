@@ -13,6 +13,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
+from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
@@ -31,7 +32,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import NON_EXIST_URL
+from utilities.infra import NON_EXIST_URL, is_bug_open
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -67,13 +68,25 @@ def wait_for_pvc_recreate(pvc, pvc_original_timestamp):
 
 
 @pytest.fixture()
+def skip_if_ocs_and_bz_2054778_open(storage_class_matrix__module__):
+
+    bug_id = 2054778
+    if (
+        is_bug_open(bug_id=bug_id)
+        and [*storage_class_matrix__module__][0] == StorageClass.Types.CEPH_RBD
+    ):
+        pytest.skip(
+            f"{StorageClass.Types.CEPH_RBD} created with Filesystem instead of Block volume mode - bug {bug_id}"
+        )
+
+
+@pytest.fixture()
 def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
     with create_dv(
         source="http",
         dv_name="dv-annotation",
         namespace=namespace.name,
         url=f"{get_images_server_url(schema='http')}{FEDORA_LATEST['image_path']}",
-        volume_mode=py_config["default_volume_mode"],
         storage_class=py_config["default_storage_class"],
         multus_annotation=linux_nad.name,
     ) as dv:
@@ -127,15 +140,13 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
 @pytest.mark.polarion("CNV-876")
 def test_invalid_url(namespace, storage_class_matrix__module__):
     # negative flow - invalid url
-    storage_class = [*storage_class_matrix__module__][0]
     with create_dv(
         source="http",
         dv_name="import-http-dv-negative",
         namespace=namespace.name,
         url=NON_EXIST_URL,
         size="500Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
@@ -156,7 +167,6 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
 
 @pytest.mark.polarion("CNV-674")
 def test_empty_url(namespace, storage_class_matrix__module__):
-    storage_class = [*storage_class_matrix__module__][0]
     with pytest.raises(UnprocessibleEntityError):
         with create_dv(
             source="http",
@@ -164,8 +174,7 @@ def test_empty_url(namespace, storage_class_matrix__module__):
             namespace=namespace.name,
             url="",
             size="500Mi",
-            storage_class=storage_class,
-            volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+            storage_class=[*storage_class_matrix__module__][0],
         ):
             pass
 
@@ -188,7 +197,7 @@ def test_successful_import_archive(
         url=url,
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -224,7 +233,6 @@ def test_successful_import_image(
         url=url,
         size="500Mi",
         storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -259,7 +267,7 @@ def test_successful_import_secure_archive(
         cert_configmap=internal_http_configmap.name,
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
@@ -293,7 +301,6 @@ def test_successful_import_secure_image(
         cert_configmap=internal_http_configmap.name,
         size="500Mi",
         storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
@@ -350,7 +357,6 @@ def test_successful_import_basic_auth(
         size="500Mi",
         secret=internal_http_secret,
         storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
     ) as dv:
         dv.wait()
         pvc = dv.pvc
@@ -365,12 +371,12 @@ def test_successful_import_basic_auth(
 
 @pytest.mark.polarion("CNV-2144")
 def test_wrong_content_type(
+    skip_if_ocs_and_bz_2054778_open,
     admin_client,
     namespace,
     storage_class_matrix__module__,
     images_internal_http_server,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
     with create_dv(
         source="http",
         dv_name="import-http-dv",
@@ -380,8 +386,7 @@ def test_wrong_content_type(
         ),
         content_type=DataVolume.ContentType.ARCHIVE,
         size="500Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -413,6 +418,7 @@ def test_wrong_content_type(
 )
 # TODO: It's now a negative test but once https://jira.coreos.com/browse/CNV-1553 implement, here needs to be changed.
 def test_unpack_compressed(
+    skip_if_ocs_and_bz_2054778_open,
     admin_client,
     namespace,
     storage_class_matrix__module__,
@@ -420,7 +426,7 @@ def test_unpack_compressed(
     file_name,
     content_type,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
+
     with create_dv(
         source="http",
         dv_name="unpack-compressed-dv",
@@ -428,8 +434,7 @@ def test_unpack_compressed(
         url=get_file_url(url=images_internal_http_server["http"], file_name=file_name),
         content_type=content_type,
         size="200Mi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -456,7 +461,6 @@ def test_certconfigmap(
         namespace=namespace.name,
         size="1Gi",
         storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         url=get_file_url(
             url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
         ),
@@ -496,7 +500,6 @@ def test_certconfigmap_incorrect_cert(
     name,
     https_config_map,
 ):
-    storage_class = [*storage_class_matrix__module__][0]
     with create_dv(
         source="http",
         dv_name=name,
@@ -506,8 +509,7 @@ def test_certconfigmap_incorrect_cert(
         ),
         cert_configmap=https_config_map.name,
         size="1Gi",
-        storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
@@ -562,7 +564,7 @@ def blank_disk_import(namespace, storage_params, dv_name):
         dv_name=dv_name,
         namespace=namespace.name,
         size="100Mi",
-        **utils.storage_params(storage_class_matrix=storage_params),
+        storage_class=[*storage_params][0],
     ) as dv:
         dv.wait_for_condition(
             condition=DataVolume.Condition.Type.BOUND,
@@ -650,7 +652,6 @@ def test_vmi_image_size(
         namespace=namespace.name,
         size=f"{size}{unit}i",
         storage_class=storage_class,
-        volume_mode=storage_class_matrix__module__[storage_class]["volume_mode"],
         url=get_file_url(
             url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
         ),
@@ -699,7 +700,7 @@ def test_disk_falloc(
         dv_name="cnv-3065",
         namespace=namespace.name,
         size="100Mi",
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
         url=get_file_url(
             url=images_internal_http_server["https"], file_name=Images.Cdi.QCOW2_IMG
         ),
@@ -826,7 +827,7 @@ def test_disk_image_after_import(
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size="2Gi",
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         utils.create_vm_and_verify_image_permission(dv=dv)
 
@@ -844,7 +845,7 @@ def test_dv_api_version_after_import(
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         size=Images.Cirros.DEFAULT_DV_SIZE,
         client=unprivileged_client,
-        **utils.storage_params(storage_class_matrix=storage_class_matrix__module__),
+        storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
         assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
 
