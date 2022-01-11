@@ -52,7 +52,7 @@ class TestCommonTemplatesRhel:
 
     @pytest.mark.smoke
     @pytest.mark.dependency(
-        f"{TESTS_CLASS_NAME}::start_vm", depends=[f"{TESTS_CLASS_NAME}::create_vm"]
+        name=f"{TESTS_CLASS_NAME}::start_vm", depends=[f"{TESTS_CLASS_NAME}::create_vm"]
     )
     @pytest.mark.polarion("CNV-3266")
     def test_start_vm(
