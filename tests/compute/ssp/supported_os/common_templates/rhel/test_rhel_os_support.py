@@ -25,11 +25,12 @@ pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)
+TESTS_CLASS_NAME = "TestCommonTemplatesRhel"
 
 
 class TestCommonTemplatesRhel:
     @pytest.mark.smoke
-    @pytest.mark.dependency(name="create_vm")
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::create_vm")
     @pytest.mark.polarion("CNV-3802")
     def test_create_vm(
         self,
@@ -50,7 +51,9 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.smoke
-    @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
+    @pytest.mark.dependency(
+        f"{TESTS_CLASS_NAME}::start_vm", depends=[f"{TESTS_CLASS_NAME}::create_vm"]
+    )
     @pytest.mark.polarion("CNV-3266")
     def test_start_vm(
         self,
@@ -71,7 +74,7 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.smoke
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3259")
     def test_vm_console(
         self,
@@ -90,7 +93,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3318")
     def test_os_version(
         self,
@@ -107,7 +110,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         )
 
-    @pytest.mark.dependency(depends=["create_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3306")
     def test_domain_label(
         self,
@@ -131,7 +134,10 @@ class TestCommonTemplatesRhel:
         ), f"Wrong domain label: {label}"
 
     @pytest.mark.smoke
-    @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::vm_expose_ssh",
+        depends=[f"{TESTS_CLASS_NAME}::start_vm"],
+    )
     @pytest.mark.polarion("CNV-3320")
     def test_expose_ssh(
         self,
@@ -148,7 +154,10 @@ class TestCommonTemplatesRhel:
         ), "Failed to login via SSH"
 
     @pytest.mark.smoke
-    @pytest.mark.dependency(name="vmi_guest_agent", depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::vmi_guest_agent",
+        depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"],
+    )
     @pytest.mark.polarion("CNV-6688")
     def test_vmi_guest_agent_exists(
         self,
@@ -161,7 +170,7 @@ class TestCommonTemplatesRhel:
             ssh_exec=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec
         ), "qemu guest agent package is not installed"
 
-    @pytest.mark.dependency(depends=["vmi_guest_agent"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-3513")
     def test_vmi_guest_agent_info(
         self,
@@ -172,7 +181,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["vmi_guest_agent"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4195")
     def test_virtctl_guest_agent_os_info(
         self,
@@ -187,7 +196,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["vmi_guest_agent"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4550")
     def test_virtctl_guest_agent_user_info(
         self,
@@ -201,7 +210,7 @@ class TestCommonTemplatesRhel:
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
             )
 
-    @pytest.mark.dependency(depends=["vmi_guest_agent"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-6531")
     def test_virtctl_guest_agent_fs_info(
         self,
@@ -213,7 +222,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3671")
     def test_vm_machine_type(
         self,
@@ -228,7 +237,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-4201")
     def test_vm_smbios_default(
         self,
@@ -245,7 +254,7 @@ class TestCommonTemplatesRhel:
             cm_values=smbios_from_kubevirt_config,
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5916")
     def test_pause_unpause_vm(
         self,
@@ -262,7 +271,10 @@ class TestCommonTemplatesRhel:
 
     @pytest.mark.smoke
     @pytest.mark.polarion("CNV-3038")
-    @pytest.mark.dependency(name="migrate_vm_and_verify", depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::migrate_vm_and_verify",
+        depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"],
+    )
     def test_migrate_vm(
         self,
         skip_upstream,
@@ -284,7 +296,7 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.polarion("CNV-5902")
-    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::migrate_vm_and_verify"])
     def test_pause_unpause_after_migrate(
         self,
         skip_upstream,
@@ -302,7 +314,12 @@ class TestCommonTemplatesRhel:
         )
 
     @pytest.mark.polarion("CNV-6007")
-    @pytest.mark.dependency(depends=["vmi_guest_agent", "migrate_vm_and_verify"])
+    @pytest.mark.dependency(
+        depends=[
+            f"{TESTS_CLASS_NAME}::vmi_guest_agent",
+            f"{TESTS_CLASS_NAME}::migrate_vm_and_verify",
+        ]
+    )
     def test_verify_virtctl_guest_agent_data_after_migrate(
         self,
         skip_upstream,
@@ -316,7 +333,7 @@ class TestCommonTemplatesRhel:
         ), "Guest agent stopped responding"
 
     @pytest.mark.smoke
-    @pytest.mark.dependency(depends=["create_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3269")
     def test_vm_deletion(
         self,

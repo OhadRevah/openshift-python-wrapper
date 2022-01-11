@@ -19,6 +19,9 @@ from utilities.constants import TIMEOUT_2MIN
 from utilities.virt import vm_instance_from_template, wait_for_vm_interfaces
 
 
+RHEL_TESTS_CLASS_NAME = "TestLatestRHEL"
+WINDOWS_TESTS_CLASS_NAME = "TestLatestWindows"
+
 pytestmark = pytest.mark.post_upgrade
 
 
@@ -116,7 +119,7 @@ class TestLatestRHEL:
     Test networkInterfaceMultiqueue on latest RHEL with different cpu core/socket/thread combinations.
     """
 
-    @pytest.mark.dependency(name="rhel_default_cpu_values")
+    @pytest.mark.dependency(name=f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values")
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
         self,
@@ -126,8 +129,9 @@ class TestLatestRHEL:
             tcp_timeout=TIMEOUT_2MIN
         )
 
-    @pytest.mark.order(after="TestLatestRHEL::test_default_cpu_values")
-    @pytest.mark.dependency(depends=["rhel_default_cpu_values"])
+    @pytest.mark.dependency(
+        depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_feature_disabled(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
@@ -135,14 +139,16 @@ class TestLatestRHEL:
             network_multiqueue=False,
         )
 
-    @pytest.mark.order(after="TestLatestRHEL::test_default_cpu_values")
-    @pytest.mark.dependency(depends=["rhel_default_cpu_values"])
+    @pytest.mark.dependency(
+        depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_four_cores(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(vm=network_interface_multiqueue_vm, cores=4)
 
-    @pytest.mark.order(after="TestLatestRHEL::test_default_cpu_values")
-    @pytest.mark.dependency(depends=["rhel_default_cpu_values"])
+    @pytest.mark.dependency(
+        depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_four_sockets(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
@@ -150,8 +156,9 @@ class TestLatestRHEL:
             sockets=4,
         )
 
-    @pytest.mark.order(after="TestLatestRHEL::test_default_cpu_values")
-    @pytest.mark.dependency(depends=["rhel_default_cpu_values"])
+    @pytest.mark.dependency(
+        depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_four_threads(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
@@ -159,8 +166,9 @@ class TestLatestRHEL:
             threads=4,
         )
 
-    @pytest.mark.order(after="TestLatestRHEL::test_default_cpu_values")
-    @pytest.mark.dependency(depends=["rhel_default_cpu_values"])
+    @pytest.mark.dependency(
+        depends=[f"{RHEL_TESTS_CLASS_NAME}::rhel_default_cpu_values"]
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_two_cores_two_sockets_two_threads(self, network_interface_multiqueue_vm):
         update_validate_cpu_in_vm(
@@ -197,7 +205,9 @@ class TestLatestWindows:
     Test networkInterfaceMultiqueue on latest Windows with different cpu core/socket/thread combinations.
     """
 
-    @pytest.mark.dependency(name="windows_default_cpu_values")
+    @pytest.mark.dependency(
+        name=f"{WINDOWS_TESTS_CLASS_NAME}::windows_default_cpu_values"
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_default_cpu_values(
         self,
@@ -207,8 +217,9 @@ class TestLatestWindows:
             tcp_timeout=TIMEOUT_2MIN
         )
 
-    @pytest.mark.order(after="TestLatestWindows::test_default_cpu_values")
-    @pytest.mark.dependency(depends=["windows_default_cpu_values"])
+    @pytest.mark.dependency(
+        depends=[f"{WINDOWS_TESTS_CLASS_NAME}::windows_default_cpu_values"]
+    )
     @pytest.mark.polarion("CNV-3221")
     def test_four_cores_two_sockets_two_threads(
         self,

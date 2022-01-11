@@ -14,6 +14,7 @@ LOGGER = logging.getLogger(__name__)
 DISABLED_CPU_LABEL_VALUE = "false"
 ENABLED_CPU_LABEL_VALUE = "true"
 RECONCILE_TIMEOUT = TIMEOUT_10MIN
+TESTS_CLASS_NAME = "TestNodeLabellerSkipAnnotation"
 
 
 @pytest.fixture()
@@ -62,7 +63,9 @@ def labelled_worker_node1(worker1_supported_cpu_models_labels, worker_node1):
 
 class TestNodeLabellerSkipAnnotation:
     @pytest.mark.polarion("CNV-7744")
-    @pytest.mark.dependency(name="test_node_labeller_added_skip_node_annotation")
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::test_node_labeller_added_skip_node_annotation"
+    )
     def test_node_labeller_added_skip_node_annotation(
         self, worker1_skip_node_annotated, labelled_worker_node1
     ):
@@ -84,7 +87,9 @@ class TestNodeLabellerSkipAnnotation:
             return
 
     @pytest.mark.polarion("CNV-7745")
-    @pytest.mark.dependency(depends=["test_node_labeller_added_skip_node_annotation"])
+    @pytest.mark.dependency(
+        depends=[f"{TESTS_CLASS_NAME}::test_node_labeller_added_skip_node_annotation"]
+    )
     def test_node_labeller_removed_skip_node_annotation(self, labelled_worker_node1):
         ((node, label),) = labelled_worker_node1.items()
         LOGGER.info(f"Verify {label} on {node.name} is reconciled")

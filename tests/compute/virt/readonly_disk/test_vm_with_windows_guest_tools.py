@@ -17,6 +17,7 @@ pytestmark = pytest.mark.usefixtures("skip_upstream")
 
 
 LOGGER = logging.getLogger(__name__)
+TESTS_CLASS_NAME = "TestWindowsGuestTools"
 
 
 class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
@@ -110,7 +111,7 @@ def verify_cdrom_in_xml(vm):
 )
 class TestWindowsGuestTools:
     @pytest.mark.polarion("CNV-6517")
-    @pytest.mark.dependency(name="vm_with_guest_tools")
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::vm_with_guest_tools")
     def test_vm_with_windows_guest_tools(
         self,
         vm_with_guest_tools,
@@ -122,7 +123,7 @@ class TestWindowsGuestTools:
         2014438, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
     )
     @pytest.mark.polarion("CNV-6518")
-    @pytest.mark.dependency(depends=["vm_with_guest_tools"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_with_guest_tools"])
     def test_migrate_vm_with_windows_guest_tools(
         self,
         skip_rwo_default_access_mode,

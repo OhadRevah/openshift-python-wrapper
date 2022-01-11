@@ -21,10 +21,11 @@ from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
 LOGGER = logging.getLogger(__name__)
+TESTS_CLASS_NAME = "TestCommonTemplatesCentos"
 
 
 class TestCommonTemplatesCentos:
-    @pytest.mark.dependency(name="create_vm")
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::create_vm")
     @pytest.mark.polarion("CNV-5337")
     def test_create_vm(
         self,
@@ -44,7 +45,9 @@ class TestCommonTemplatesCentos:
             wait=True
         )
 
-    @pytest.mark.dependency(name="start_vm", depends=["create_vm"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::start_vm", depends=[f"{TESTS_CLASS_NAME}::create_vm"]
+    )
     @pytest.mark.polarion("CNV-5338")
     def test_start_vm(
         self,
@@ -60,7 +63,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5341")
     def test_vm_console(
         self,
@@ -78,7 +81,7 @@ class TestCommonTemplatesCentos:
             console_impl=console.Centos,
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5342")
     def test_os_version(
         self,
@@ -94,7 +97,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
         )
 
-    @pytest.mark.dependency(depends=["create_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-5344")
     def test_domain_label(
         self,
@@ -111,7 +114,10 @@ class TestCommonTemplatesCentos:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
-    @pytest.mark.dependency(name="vm_expose_ssh", depends=["start_vm"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::vm_expose_ssh",
+        depends=[f"{TESTS_CLASS_NAME}::start_vm"],
+    )
     @pytest.mark.polarion("CNV-5345")
     def test_expose_ssh(
         self,
@@ -127,7 +133,7 @@ class TestCommonTemplatesCentos:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5346")
     def test_vmi_guest_agent_info(
         self,
@@ -140,7 +146,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5347")
     def test_virtctl_guest_agent_os_info(
         self,
@@ -156,7 +162,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5348")
     def test_virtctl_guest_agent_fs_info(
         self,
@@ -169,7 +175,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-5349")
     def test_virtctl_guest_agent_user_info(
         self,
@@ -184,7 +190,7 @@ class TestCommonTemplatesCentos:
                 vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
             )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5350")
     def test_vm_machine_type(
         self,
@@ -198,7 +204,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5594")
     def test_vm_smbios_default(
         self,
@@ -213,7 +219,7 @@ class TestCommonTemplatesCentos:
             cm_values=smbios_from_kubevirt_config,
         )
 
-    @pytest.mark.dependency(depends=["start_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5918")
     def test_pause_unpause_vm(
         self,
@@ -229,7 +235,10 @@ class TestCommonTemplatesCentos:
         )
 
     @pytest.mark.polarion("CNV-5841")
-    @pytest.mark.dependency(name="migrate_vm_and_verify", depends=["vm_expose_ssh"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::migrate_vm_and_verify",
+        depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"],
+    )
     def test_migrate_vm(
         self,
         centos_os_matrix__class__,
@@ -250,7 +259,7 @@ class TestCommonTemplatesCentos:
         )
 
     @pytest.mark.polarion("CNV-5904")
-    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::migrate_vm_and_verify"])
     def test_pause_unpause_after_migrate(
         self,
         centos_os_matrix__class__,
@@ -267,7 +276,7 @@ class TestCommonTemplatesCentos:
         )
 
     @pytest.mark.polarion("CNV-6008")
-    @pytest.mark.dependency(depends=["migrate_vm_and_verify"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::migrate_vm_and_verify"])
     def test_verify_virtctl_guest_agent_data_after_migrate(
         self,
         centos_os_matrix__class__,
@@ -279,7 +288,7 @@ class TestCommonTemplatesCentos:
             vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
         ), "Guest agent stopped responding"
 
-    @pytest.mark.dependency(depends=["create_vm"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-5351")
     def test_vm_deletion(
         self,

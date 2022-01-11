@@ -17,6 +17,8 @@ from utilities.virt import running_vm, vm_instance_from_template
 
 LOGGER = logging.getLogger(__name__)
 CPUTUNE = "cputune"
+RHEL_TESTS_CLASS_NAME = "TestHighPerformanceTemplatesRHEL"
+WINDOWS_TESTS_CLASS_NAME = "TestHighPerformanceTemplatesWindows"
 
 
 pytestmark = pytest.mark.bugzilla(
@@ -118,32 +120,32 @@ def increased_high_performance_vm_core_count_by_one(high_performance_vm):
 )
 @pytest.mark.usefixtures("high_performance_vm", "cputune_is_in_dumpxml")
 class TestHighPerformanceTemplatesRHEL:
-    @pytest.mark.dependency(name="rhel_cpu_request")
+    @pytest.mark.dependency(name=f"{RHEL_TESTS_CLASS_NAME}::rhel_cpu_request")
     @pytest.mark.polarion("CNV-6756")
     def test_rhel_cpu_request(self, high_performance_vm):
         assert key_is_in_cputune(high_performance_vm, "vcpupin")
 
-    @pytest.mark.dependency(name="rhel_emulator_thread")
+    @pytest.mark.dependency(name=f"{RHEL_TESTS_CLASS_NAME}::rhel_emulator_thread")
     @pytest.mark.polarion("CNV-6757")
     def test_rhel_emulator_thread(self, high_performance_vm):
         assert key_is_in_cputune(high_performance_vm, "emulatorpin")
 
-    @pytest.mark.dependency(name="rhel_iothread_policy")
+    @pytest.mark.dependency(name=f"{RHEL_TESTS_CLASS_NAME}::rhel_iothread_policy")
     @pytest.mark.polarion("CNV-6822")
     def test_rhel_iothread_policy(self, high_performance_vm):
         assert vm_has_io_thread_policy(high_performance_vm, "shared")
 
-    @pytest.mark.dependency(name="rhel_iothread_pin")
+    @pytest.mark.dependency(name=f"{RHEL_TESTS_CLASS_NAME}::rhel_iothread_pin")
     @pytest.mark.polarion("CNV-6810")
     def test_rhel_iothread_pin(self, high_performance_vm):
         assert key_is_in_cputune(high_performance_vm, "iothreadpin")
 
     @pytest.mark.dependency(
         depends=[
-            "rhel_cpu_request",
-            "rhel_emulator_thread",
-            "rhel_iothread_policy",
-            "rhel_iothread_pin",
+            f"{RHEL_TESTS_CLASS_NAME}::rhel_cpu_request",
+            f"{RHEL_TESTS_CLASS_NAME}::rhel_emulator_thread",
+            f"{RHEL_TESTS_CLASS_NAME}::rhel_iothread_policy",
+            f"{RHEL_TESTS_CLASS_NAME}::rhel_iothread_pin",
         ]
     )
     @pytest.mark.polarion("CNV-6758")
@@ -177,17 +179,22 @@ class TestHighPerformanceTemplatesRHEL:
 )
 @pytest.mark.usefixtures("high_performance_vm", "cputune_is_in_dumpxml")
 class TestHighPerformanceTemplatesWindows:
-    @pytest.mark.dependency(name="win_cpu_request")
+    @pytest.mark.dependency(name=f"{WINDOWS_TESTS_CLASS_NAME}::win_cpu_request")
     @pytest.mark.polarion("CNV-6771")
     def test_win_cpu_request(self, high_performance_vm):
         assert key_is_in_cputune(high_performance_vm, "vcpupin")
 
-    @pytest.mark.dependency(name="win_emulator_thread")
+    @pytest.mark.dependency(name=f"{WINDOWS_TESTS_CLASS_NAME}::win_emulator_thread")
     @pytest.mark.polarion("CNV-6772")
     def test_win_emulator_thread(self, high_performance_vm):
         assert key_is_in_cputune(high_performance_vm, "emulatorpin")
 
-    @pytest.mark.dependency(depends=["win_cpu_request", "win_emulator_thread"])
+    @pytest.mark.dependency(
+        depends=[
+            f"{WINDOWS_TESTS_CLASS_NAME}::win_cpu_request",
+            f"{WINDOWS_TESTS_CLASS_NAME}::win_emulator_thread",
+        ]
+    )
     @pytest.mark.polarion("CNV-6773")
     def test_win_change_cpu_core_count(
         self, high_performance_vm, increased_high_performance_vm_core_count_by_one

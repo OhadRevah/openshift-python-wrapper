@@ -10,6 +10,8 @@ from tests.compute.ssp.descheduler.utils import (
 
 
 LOGGER = logging.getLogger(__name__)
+TESTS_CLASS_NAME = "TestDescheduler"
+
 
 pytestmark = [pytest.mark.tier3]
 
@@ -19,7 +21,7 @@ pytestmark = [pytest.mark.tier3]
     "skip_when_one_node",
 )
 class TestDescheduler:
-    @pytest.mark.dependency(name="test_descheduler")
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::test_descheduler")
     @pytest.mark.polarion("CNV-5922")
     def test_descheduler(
         self,
@@ -38,7 +40,7 @@ class TestDescheduler:
             vms=deployed_vms, nodes=schedulable_nodes
         )
 
-    @pytest.mark.dependency(depends=["test_descheduler"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::test_descheduler"])
     @pytest.mark.polarion("CNV-7316")
     def test_no_migrations_storm(
         self,

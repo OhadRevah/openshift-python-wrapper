@@ -29,6 +29,7 @@ pytestmark = [
 
 LOGGER = logging.getLogger(__name__)
 RESOURCE_USAGES = 70.0
+TESTS_CLASS_NAME = "TestWSL2"
 
 
 def get_wsl_pid(vm):
@@ -136,7 +137,7 @@ class TestWSL2:
             float(resource_usage) < RESOURCE_USAGES
         ), f"{resource_type} usage on the Windows VM is higher then {RESOURCE_USAGES}"
 
-    @pytest.mark.dependency(name="wsl2_guest")
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::wsl2_guest")
     @pytest.mark.polarion("CNV-6023")
     def test_wsl2_guest(
         self,
@@ -150,7 +151,7 @@ class TestWSL2:
         self._check_usage(resource_usage=resource_usage[0], resource_type="CPU")
         self._check_usage(resource_usage=resource_usage[1], resource_type="Memory")
 
-    @pytest.mark.dependency(depends=["wsl2_guest"])
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::wsl2_guest"])
     @pytest.mark.polarion("CNV-5462")
     def test_migration_with_wsl2_guest(
         self,

@@ -23,6 +23,7 @@ from utilities.virt import (
 WINDOWS_19 = get_windows_os_dict(windows_version="win-19")
 
 FIRMWARE_UUID = "A6074E4A-13ED-5222-9CC5-4DC445BE1EC5"
+TESTS_CLASS_NAME = "TestCustomWindowsOptions"
 
 
 class CustomWindowsVM(VirtualMachineForTestsFromTemplate):
@@ -200,17 +201,22 @@ def custom_windows_vm(
 )
 class TestCustomWindowsOptions:
     @pytest.mark.polarion("CNV-7496")
-    @pytest.mark.dependency(name="boot")
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::boot")
     def test_windows_custom_options_boot_and_domxml(self, custom_windows_vm):
         running_vm(vm=custom_windows_vm)
 
     @pytest.mark.polarion("CNV-7960")
-    @pytest.mark.dependency(name="domxml", depends=["boot"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::domxml", depends=[f"{TESTS_CLASS_NAME}::boot"]
+    )
     def test_windows_custom_options_fw_uuid_in_domxml(self, custom_windows_vm):
         assert_firmware_uuid_in_domxml(vm=custom_windows_vm, uuid=FIRMWARE_UUID)
 
     @pytest.mark.polarion("CNV-7956")
-    @pytest.mark.dependency(name="initialize disk", depends=["boot"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::initialize disk",
+        depends=[f"{TESTS_CLASS_NAME}::boot"],
+    )
     def test_windows_custom_options_initialize_disk(
         self, custom_windows_vm, windows_custom_drive_d
     ):
@@ -219,7 +225,9 @@ class TestCustomWindowsOptions:
         )
 
     @pytest.mark.polarion("CNV-7886")
-    @pytest.mark.dependency(name="migration", depends=["boot"])
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::migration", depends=[f"{TESTS_CLASS_NAME}::boot"]
+    )
     def test_windows_custom_options_migration(self, custom_windows_vm):
         with VirtualMachineInstanceMigration(
             name="custom-windows-vm-migration",
