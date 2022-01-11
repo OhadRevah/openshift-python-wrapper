@@ -41,38 +41,10 @@ SWAP_ENABLE_COMMANDS = [
 VALIDATE_SWAP_ON = "swapon -s"
 
 
-def prometheus_query(prometheus, query):
-    """
-    Perform a Prometheus query and retrieves associated results.
-
-    Args:
-        prometheus (Fixture): Prometheus fixture returns it's object.
-        query (String): Prometheus query string (for strings with special characters
-        they need to be parsed by the caller)
-
-    Returns:
-        Dictionary: Query response.
-    """
-    query_response = prometheus.query(query=query)
-    assert (
-        query_response["status"] == "success"
-    ), f"Prometheus qpi query: {query} failed: {query_response}"
-    return query_response
-
-
-def get_metric_by_prometheus_query(prometheus, query):
-
-    response = prometheus_query(prometheus=prometheus, query=query)
-    LOGGER.info(f"Prometheus query: {query}, response: {response}")
-    return response
-
-
 def get_all_mutation_values_from_prometheus(prometheus):
-    query_response = get_metric_by_prometheus_query(
-        prometheus=prometheus,
-        query="kubevirt_hco_out_of_band_modifications_count",
+    metric_results = prometheus.query_sampler(
+        query="kubevirt_hco_out_of_band_modifications_count"
     )
-    metric_results = query_response["data"].get("result", [])
     component_dict = defaultdict(int)
     for result in metric_results:
         component_dict[result["metric"]["component_name"]] += int(result["value"][1])
@@ -125,20 +97,19 @@ def get_vm_metrics(prometheus, query, vm_name, timeout=TIMEOUT_5MIN):
     sampler = TimeoutSampler(
         wait_timeout=timeout,
         sleep=5,
-        func=get_metric_by_prometheus_query,
-        prometheus=prometheus,
+        func=prometheus.query_sampler,
         query=query,
     )
+    sample = None
     try:
         for sample in sampler:
-            data_result = sample["data"]["result"]
-            if data_result and vm_name in [
-                name.get("metric").get("name") for name in data_result
+            if sample and vm_name in [
+                name.get("metric").get("name") for name in sample
             ]:
-                return data_result
+                return sample
     except TimeoutExpiredError:
         LOGGER.error(
-            f'vm {vm_name} not found via prometheus query: "{query}" result: {data_result}'
+            f'vm {vm_name} not found via prometheus query: "{query}" result: {sample}'
         )
         raise
 
@@ -447,22 +418,20 @@ def assert_topk_vms(prometheus, query, vm_list, timeout=TIMEOUT_8MIN):
     sampler = TimeoutSampler(
         wait_timeout=timeout,
         sleep=5,
-        func=get_metric_by_prometheus_query,
-        prometheus=prometheus,
+        func=prometheus.query_sampler,
         query=urllib.parse.quote_plus(query),
     )
     sample = None
     try:
         for sample in sampler:
-            data_sample = sample["data"]["result"]
-            if len(data_sample) == len(vm_list):
+            if len(sample) == len(vm_list):
                 vms_found = [
                     entry["metric"]["name"]
-                    for entry in data_sample
+                    for entry in sample
                     if entry.get("metric", {}).get("name") in vm_list
                 ]
                 if Counter(vms_found) == Counter(vm_list):
-                    return data_sample
+                    return sample
     except TimeoutExpiredError:
         LOGGER.error(
             f'Expected vms: "{vm_list}" for prometheus query:'
@@ -598,12 +567,11 @@ def get_vmi_phase_count(prometheus, os_name, flavor, workload, query):
     """
     query = query.format(os_name=os_name, flavor=flavor, workload=workload)
     LOGGER.debug(f"query for prometheus: query={query}")
-    response = get_metric_by_prometheus_query(prometheus=prometheus, query=query)
-
-    if not response["data"]["result"]:
+    response = prometheus.query_sampler(query=query)
+    if not response:
         return 0
 
-    return int(response["data"]["result"][0]["value"][1])
+    return int(response[0]["value"][1])
 
 
 def wait_until_kubevirt_vmi_phase_count_is_expected(
@@ -698,18 +666,16 @@ def get_vm_vcpu_cpu_info_from_prometheus(prometheus, query):
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_1MIN,
         sleep=2,
-        func=get_metric_by_prometheus_query,
-        prometheus=prometheus,
+        func=prometheus.query_sampler,
         query=query,
     )
     sample = None
     try:
         for sample in samples:
-            result = sample["data"].get("result")
-            if result:
+            if sample:
                 return [
                     vcpu_keys
-                    for vcpu_keys, vcpu_values in result[0].get("metric").items()
+                    for vcpu_keys, vcpu_values in sample[0].get("metric").items()
                     if vcpu_keys.startswith("vcpu") and vcpu_values == "true"
                 ]
     except TimeoutExpiredError:

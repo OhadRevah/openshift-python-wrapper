@@ -10,7 +10,6 @@ from tests.metrics.utils import (
     SINGLE_VM,
     create_vms,
     enable_swap_fedora_vm,
-    get_metric_by_prometheus_query,
     get_mutation_component_value_from_prometheus,
     get_not_running_prometheus_pods,
     get_vmi_phase_count,
@@ -339,11 +338,10 @@ def virt_pod_info_from_prometheus(request, prometheus):
     Returns:
         set: It contains Pod names from the prometheus query result.
     """
-    query_response = get_metric_by_prometheus_query(
-        prometheus=prometheus,
+    query_response = prometheus.query_sampler(
         query=request.param,
     )
-    return {result["metric"]["pod"] for result in query_response["data"].get("result")}
+    return {result["metric"]["pod"] for result in query_response}
 
 
 @pytest.fixture()
@@ -376,11 +374,10 @@ def single_metric_vm(namespace):
 @pytest.fixture()
 def virt_up_metrics_values(request, prometheus):
     """Get value(int) from the 'up' recording rules(metrics)."""
-    query_response = get_metric_by_prometheus_query(
-        prometheus=prometheus,
+    query_response = prometheus.query_sampler(
         query=request.param,
     )
-    return int(query_response["data"]["result"][0]["value"][1])
+    return int(query_response[0]["value"][1])
 
 
 @pytest.fixture()
@@ -392,19 +389,17 @@ def virt_handler_pod_and_node_names_with_value_from_prometheus(request, promethe
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_2MIN,
         sleep=5,
-        func=get_metric_by_prometheus_query,
-        prometheus=prometheus,
+        func=prometheus.query_sampler,
         query=query,
     )
     sample = None
     try:
         for sample in samples:
-            result = sample["data"].get("result", [])
-            if result:
+            if sample:
                 return {
-                    result[0]["metric"]["pod"]: (
-                        result[0]["metric"]["node"],
-                        int(result[0]["value"][1]),
+                    sample[0]["metric"]["pod"]: (
+                        sample[0]["metric"]["node"],
+                        int(sample[0]["value"][1]),
                     )
                 }
     except TimeoutExpiredError:
