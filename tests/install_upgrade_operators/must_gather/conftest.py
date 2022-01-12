@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-
-"""
-must gather test
-"""
-
 import logging
 
 import pytest
@@ -13,7 +7,6 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
 
 import utilities.network
-from tests.install_upgrade_operators.must_gather import utils as mg_utils
 from utilities.infra import (
     ExecCommandOnPod,
     MissingResourceException,
@@ -118,11 +111,9 @@ def resource_type(request, admin_client):
 
 
 @pytest.fixture(scope="module")
-def running_sriov_network_operator_containers(admin_client):
+def running_sriov_network_operator_containers(admin_client, sriov_namespace):
     pods_and_containers = []
-    for pod in Pod.get(
-        admin_client, namespace=mg_utils.SRIOV_NETWORK_OPERATOR_NAMESPACE
-    ):
+    for pod in Pod.get(admin_client, namespace=sriov_namespace.name):
         for container in pod.instance["status"].get("containerStatuses", []):
             if container["ready"]:
                 pods_and_containers.append((pod, container))

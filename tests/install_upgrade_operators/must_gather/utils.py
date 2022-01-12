@@ -12,7 +12,6 @@ from utilities.infra import ResourceMismatch
 
 
 DEFAULT_NAMESPACE = "default"
-SRIOV_NETWORK_OPERATOR_NAMESPACE = "sriov-network-operator"
 
 
 # TODO: this is a workaround for an openshift bug

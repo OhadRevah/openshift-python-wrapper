@@ -386,6 +386,7 @@ def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector)
 )
 def test_sriov_logs_gathering(
     skip_when_no_sriov,
+    sriov_namespace,
     cnv_must_gather,
     running_sriov_network_operator_containers,
     label_selector,
@@ -394,7 +395,7 @@ def test_sriov_logs_gathering(
         cnv_must_gather=cnv_must_gather,
         running_hco_containers=running_sriov_network_operator_containers,
         label_selector=label_selector,
-        namespace=utils.SRIOV_NETWORK_OPERATOR_NAMESPACE,
+        namespace=sriov_namespace.name,
     )
 
 
