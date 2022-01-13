@@ -7,13 +7,13 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constants import (
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
 )
-from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
-    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
-)
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     HCO_CR_FEATURE_GATES_KEY,
 )
-from utilities.constants import TIMEOUT_1MIN
+from utilities.constants import (
+    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
+    TIMEOUT_1MIN,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,9 +30,10 @@ class TestEnableCommonBootImageImport:
         self,
         hco_spec,
     ):
-        assert hco_spec["featureGates"][
-            FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME
-        ], f"FeatureGate was not enabled: featuregate={FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME} hco_spec={hco_spec}"
+        assert hco_spec["featureGates"][ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE], (
+            f"FeatureGate was not enabled: featuregate={ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE} "
+            f"hco_spec={hco_spec}"
+        )
 
     @pytest.mark.polarion("CNV-7626")
     @pytest.mark.dependency(
@@ -88,7 +89,7 @@ class TestEnableCommonBootImageImport:
                 "patch": {
                     "spec": {
                         HCO_CR_FEATURE_GATES_KEY: {
-                            FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: False
+                            ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: False
                         }
                     }
                 },
@@ -105,7 +106,7 @@ def test_enable_and_delete_featuregate_enable_common_boot_image_import_hco_cr(
     hco_spec,
 ):
     boot_image_feature_gate = hco_spec["featureGates"][
-        FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME
+        ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
     ]
     assert (
         not boot_image_feature_gate

@@ -5,7 +5,6 @@ import pytest
 from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     validate_featuregates_in_kv_cr,
@@ -14,6 +13,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
     verify_spec,
     wait_for_fg_update,
 )
+from utilities.constants import ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
 from utilities.hco import get_hco_spec
 
 
@@ -162,7 +162,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     ],
                 },
                 {
-                    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
+                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
                     constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
                 },
@@ -178,7 +178,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     "fgs": [constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
                 },
                 {
-                    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
+                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
                     constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
                 },
@@ -194,7 +194,7 @@ class TestHCOOptionalFeatureGatesSuite:
                     "fgs": [constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
                 },
                 {
-                    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
+                    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: False,
                     constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
                 },

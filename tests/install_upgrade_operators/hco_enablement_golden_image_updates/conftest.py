@@ -5,14 +5,16 @@ from tests.install_upgrade_operators.hco_enablement_golden_image_updates.constan
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
 )
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
-    FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME,
     HCO_CR_DATA_IMPORT_SCHEDULE_KEY,
     delete_hco_operator_pod,
     get_random_minutes_hours_fields_from_data_import_schedule,
 )
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from tests.install_upgrade_operators.utils import wait_for_stabilize
-from utilities.constants import HCO_OPERATOR
+from utilities.constants import (
+    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
+    HCO_OPERATOR,
+)
 from utilities.infra import update_custom_resource
 
 
@@ -38,7 +40,7 @@ def enabled_hco_featuregate_enable_common_boot_image_import(
         patch={
             hyperconverged_resource_scope_class: {
                 "spec": {
-                    "featureGates": {FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME: True}
+                    "featureGates": {ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: True}
                 }
             }
         }

@@ -1,15 +1,9 @@
 import re
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
-from utilities.constants import (
-    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
-    HCO_OPERATOR,
-)
+from utilities.constants import HCO_OPERATOR
 
 
-FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_KEY_NAME = (
-    ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
-)
 HCO_CR_DATA_IMPORT_SCHEDULE_KEY = "dataImportSchedule"
 RE_NAMED_GROUP_MINUTES = "minutes"
 RE_NAMED_GROUP_HOURS = "hours"
