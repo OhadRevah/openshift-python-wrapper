@@ -18,7 +18,7 @@ from tests.compute.utils import (
 from utilities.virt import migrate_vm_and_verify, running_vm
 
 
-pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
+pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ TESTS_CLASS_NAME = "TestCommonTemplatesWindows"
     indirect=True,
 )
 class TestCommonTemplatesWindows:
+    @pytest.mark.sno
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::create_vm")
     @pytest.mark.polarion("CNV-2196")
     def test_create_vm(
@@ -57,6 +58,7 @@ class TestCommonTemplatesWindows:
             wait=True
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::start_vm", depends=[f"{TESTS_CLASS_NAME}::create_vm"]
     )
@@ -74,6 +76,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3512")
     def test_vmi_guest_agent_info(
@@ -86,6 +89,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-4196")
     def test_virtctl_guest_agent_os_info(
@@ -98,6 +102,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-4197")
     def test_virtctl_guest_agent_fs_info(
@@ -110,6 +115,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-4552")
     def test_virtctl_guest_agent_user_info(
@@ -122,6 +128,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3303")
     def test_domain_label(
@@ -140,6 +147,7 @@ class TestCommonTemplatesWindows:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-2776")
     def test_hyperv(
@@ -163,6 +171,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-2177")
     @pytest.mark.jira("CNV-3771", run=False)
@@ -189,6 +198,7 @@ class TestCommonTemplatesWindows:
             reset_action="stop_start",
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3415")
     @pytest.mark.jira("CNV-3771", run=False)
@@ -215,6 +225,7 @@ class TestCommonTemplatesWindows:
             reset_action="reboot",
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3674")
     def test_vm_machine_type(
@@ -230,6 +241,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3087")
     def test_pause_unpause_vm(
@@ -246,6 +258,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-4203")
     def test_vm_smbios_default(
@@ -322,6 +335,7 @@ class TestCommonTemplatesWindows:
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
         ), "Guest agent stopped responding"
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3289")
     def test_vm_deletion(

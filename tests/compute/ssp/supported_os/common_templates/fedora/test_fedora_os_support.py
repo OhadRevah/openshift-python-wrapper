@@ -23,9 +23,6 @@ LOGGER = logging.getLogger(__name__)
 TESTS_CLASS_NAME = "TestCommonTemplatesFedora"
 
 
-pytestmark = pytest.mark.sno
-
-
 HYPERV_DICT = {
     "spec": {
         "template": {
@@ -77,6 +74,7 @@ HYPERV_DICT = {
     indirect=True,
 )
 class TestCommonTemplatesFedora:
+    @pytest.mark.sno
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::create_vm")
@@ -99,6 +97,7 @@ class TestCommonTemplatesFedora:
             wait=True
         )
 
+    @pytest.mark.sno
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(
@@ -119,6 +118,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-2651")
     def test_vm_hyperv(
@@ -137,6 +137,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
@@ -157,6 +158,7 @@ class TestCommonTemplatesFedora:
             console_impl=console.Fedora,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3348")
     def test_os_version(
@@ -173,6 +175,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3347")
     def test_domain_label(
@@ -190,6 +193,7 @@ class TestCommonTemplatesFedora:
         ]
         assert domain_label == vm.name, f"Wrong domain label: {domain_label}"
 
+    @pytest.mark.sno
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(
@@ -211,6 +215,7 @@ class TestCommonTemplatesFedora:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3937")
     def test_vmi_guest_agent_info(
@@ -223,6 +228,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3573")
     def test_virtctl_guest_agent_os_info(
@@ -238,6 +244,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-3574")
     def test_virtctl_guest_agent_fs_info(
@@ -249,6 +256,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_expose_ssh"])
     @pytest.mark.polarion("CNV-4549")
     def test_virtctl_guest_agent_user_info(
@@ -263,6 +271,7 @@ class TestCommonTemplatesFedora:
                 vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
             )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3668")
     def test_vm_machine_type(
@@ -277,6 +286,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5917")
     def test_pause_unpause_vm(
@@ -349,6 +359,7 @@ class TestCommonTemplatesFedora:
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
         ), "Guest agent stopped responding"
 
+    @pytest.mark.sno
     @pytest.mark.ibm_bare_metal
     @pytest.mark.ocp_interop
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])

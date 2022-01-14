@@ -29,6 +29,7 @@ TESTS_CLASS_NAME = "TestCommonTemplatesRhel"
 
 
 class TestCommonTemplatesRhel:
+    @pytest.mark.sno
     @pytest.mark.smoke
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::create_vm")
     @pytest.mark.polarion("CNV-3802")
@@ -50,6 +51,7 @@ class TestCommonTemplatesRhel:
             wait=True
         )
 
+    @pytest.mark.sno
     @pytest.mark.smoke
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::start_vm", depends=[f"{TESTS_CLASS_NAME}::create_vm"]
@@ -73,6 +75,7 @@ class TestCommonTemplatesRhel:
             wait_for_interfaces=guest_agent_support,
         )
 
+    @pytest.mark.sno
     @pytest.mark.smoke
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3259")
@@ -93,6 +96,7 @@ class TestCommonTemplatesRhel:
             console_impl=console.RHEL,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3318")
     def test_os_version(
@@ -110,6 +114,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3306")
     def test_domain_label(
@@ -133,6 +138,7 @@ class TestCommonTemplatesRhel:
             == golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.name
         ), f"Wrong domain label: {label}"
 
+    @pytest.mark.sno
     @pytest.mark.smoke
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::vm_expose_ssh",
@@ -153,6 +159,7 @@ class TestCommonTemplatesRhel:
             tcp_timeout=120
         ), "Failed to login via SSH"
 
+    @pytest.mark.sno
     @pytest.mark.smoke
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::vmi_guest_agent",
@@ -170,6 +177,7 @@ class TestCommonTemplatesRhel:
             ssh_exec=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class.ssh_exec
         ), "qemu guest agent package is not installed"
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-3513")
     def test_vmi_guest_agent_info(
@@ -181,6 +189,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4195")
     def test_virtctl_guest_agent_os_info(
@@ -196,6 +205,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-4550")
     def test_virtctl_guest_agent_user_info(
@@ -210,6 +220,7 @@ class TestCommonTemplatesRhel:
                 vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
             )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vmi_guest_agent"])
     @pytest.mark.polarion("CNV-6531")
     def test_virtctl_guest_agent_fs_info(
@@ -222,6 +233,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3671")
     def test_vm_machine_type(
@@ -237,6 +249,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-4201")
     def test_vm_smbios_default(
@@ -254,6 +267,7 @@ class TestCommonTemplatesRhel:
             cm_values=smbios_from_kubevirt_config,
         )
 
+    @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-5916")
     def test_pause_unpause_vm(
@@ -332,6 +346,7 @@ class TestCommonTemplatesRhel:
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         ), "Guest agent stopped responding"
 
+    @pytest.mark.sno
     @pytest.mark.smoke
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
     @pytest.mark.polarion("CNV-3269")
