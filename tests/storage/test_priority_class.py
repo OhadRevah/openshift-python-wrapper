@@ -39,6 +39,7 @@ def dv_dict(namespace, priority_class):
         size=RHEL_LATEST["dv_size"],
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
+        access_modes=py_config["default_access_mode"],
     ).to_dict()
     dv_priority_class = priority_class["dv_priority_class"]
     if dv_priority_class:

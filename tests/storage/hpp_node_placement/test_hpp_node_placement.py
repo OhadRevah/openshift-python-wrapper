@@ -131,6 +131,7 @@ def cirros_vm_on_hpp(
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
         storage_class=StorageClass.Types.HOSTPATH,
         size=Images.Cirros.DEFAULT_DV_SIZE,
+        access_modes=DataVolume.AccessMode.RWO,
     ).to_dict()
     dv_metadata = dv["metadata"]
     with VirtualMachineForTests(
