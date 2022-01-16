@@ -5,9 +5,8 @@ import pytest
 from ocp_resources.node_network_configuration_enactment import (  # noqa: N813
     NodeNetworkConfigurationEnactment as nnce,
 )
-from ocp_resources.resource import ResourceEditor
 
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, label_nodes
 
 
 LOGGER = logging.getLogger(__name__)
@@ -50,17 +49,8 @@ def skip_if_not_three_nodes(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def label_nodes(schedulable_nodes):
-    updates = [
-        ResourceEditor({node: {"metadata": {"labels": MAXUNAVAILABLE_NODES_LABEL}}})
-        for node in schedulable_nodes
-    ]
-
-    for update in updates:
-        update.update(backup_resources=True)
-    yield
-    for update in updates:
-        update.restore()
+def label_max_unavailable_nodes(schedulable_nodes):
+    yield from label_nodes(nodes=schedulable_nodes, labels=MAXUNAVAILABLE_NODES_LABEL)
 
 
 @pytest.fixture()
@@ -108,7 +98,7 @@ def maxunavailable_input_for_bridge_creation(
 def test_create_policy_get_status(
     skip_if_not_three_nodes,
     schedulable_nodes,
-    label_nodes,
+    label_max_unavailable_nodes,
     maxunavailable_input_for_bridge_creation,
     expected_state,
 ):

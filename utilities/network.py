@@ -47,9 +47,11 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         ports=None,
         mtu=None,
         node_selector=None,
+        node_selector_labels=None,
         ipv4_enable=False,
         ipv4_dhcp=False,
         teardown=True,
+        teardown_absent_ifaces=True,
         ipv6_enable=False,
         max_unavailable=None,
         set_ipv4=True,
@@ -59,7 +61,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         routes=None,
         dns_resolver=None,
         bridge_state=IFACE_UP_STATE,
-        node_selector_labels=None,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -77,7 +78,9 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         super().__init__(
             name=name,
             node_selector=node_selector,
+            node_selector_labels=node_selector_labels,
             teardown=teardown,
+            teardown_absent_ifaces=teardown_absent_ifaces,
             mtu=mtu,
             ports=ports,
             ipv4_enable=ipv4_enable,
@@ -91,7 +94,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             routes=routes,
             dns_resolver=dns_resolver,
             state=bridge_state,
-            node_selector_labels=node_selector_labels,
         )
         self.ovs_bridge_type = "ovs-bridge"
         self.linux_bridge_type = "linux-bridge"
@@ -163,9 +165,11 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         ports=None,
         mtu=None,
         node_selector=None,
+        node_selector_labels=None,
         ipv4_enable=False,
         ipv4_dhcp=False,
         teardown=True,
+        teardown_absent_ifaces=True,
         set_ipv4=True,
         set_ipv6=True,
         max_unavailable=None,
@@ -174,7 +178,6 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         bridge_state=IFACE_UP_STATE,
         routes=None,
         dns_resolver=None,
-        node_selector_labels=None,
     ):
         super().__init__(
             name=name,
@@ -186,16 +189,17 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             set_ipv6=set_ipv6,
             mtu=mtu,
             node_selector=node_selector,
+            node_selector_labels=node_selector_labels,
             ipv4_enable=ipv4_enable,
             ipv4_dhcp=ipv4_dhcp,
             teardown=teardown,
+            teardown_absent_ifaces=teardown_absent_ifaces,
             max_unavailable=max_unavailable,
             dry_run=dry_run,
             capture=capture,
             routes=routes,
             dns_resolver=dns_resolver,
             bridge_state=bridge_state,
-            node_selector_labels=node_selector_labels,
         )
 
 
@@ -687,6 +691,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         node_selector=None,
         teardown=True,
+        teardown_absent_ifaces=True,
         ipv4_enable=False,
         ipv4_dhcp=False,
         ipv4_auto_dns=True,
@@ -711,6 +716,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv6_enable=ipv6_enable,
             ipv6_addresses=ipv6_addresses,
             teardown=teardown,
+            teardown_absent_ifaces=teardown_absent_ifaces,
             dns_resolver=dns_resolver,
             routes=routes,
             dry_run=dry_run,
@@ -1151,3 +1157,15 @@ def assert_pingable_vm(
     assert (
         float(ping_stat) < 100
     ), f"Ping from {src_vm.name} to {dst_ip} failed {assert_message}"
+
+
+def label_nodes(nodes, labels):
+    updates = [
+        ResourceEditor({node: {"metadata": {"labels": labels}}}) for node in nodes
+    ]
+
+    for update in updates:
+        update.update(backup_resources=True)
+    yield nodes
+    for update in updates:
+        update.restore()
