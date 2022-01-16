@@ -18,7 +18,11 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 pytestmark = [
     pytest.mark.sno,
-    pytest.mark.usefixtures("hyperconverged_ovs_annotations_enabled_scope_session"),
+    pytest.mark.usefixtures(
+        "hyperconverged_ovs_annotations_enabled_scope_session",
+        "skip_no_bond_support",
+        "skip_if_no_multinic_nodes",
+    ),
 ]
 
 
@@ -197,12 +201,12 @@ def vm_with_fail_over_mac_bond(
 
 
 @pytest.mark.polarion("CNV-4382")
-def test_bond_created(skip_no_bond_support, utility_pods, matrix_bond_modes_bond):
+def test_bond_created(utility_pods, matrix_bond_modes_bond):
     assert_bond_validation(utility_pods=utility_pods, bond=matrix_bond_modes_bond)
 
 
 @pytest.mark.polarion("CNV-4383")
-def test_vm_started(skip_no_bond_support, bond_modes_vm):
+def test_vm_started(bond_modes_vm):
     running_vm(
         vm=bond_modes_vm, check_ssh_connectivity=False, wait_for_interfaces=False
     )
@@ -210,7 +214,6 @@ def test_vm_started(skip_no_bond_support, bond_modes_vm):
 
 @pytest.mark.polarion("CNV-6583")
 def test_active_backup_bond_with_fail_over_mac(
-    skip_no_bond_support,
     index_number,
     worker_node1,
     nodes_available_nics,
@@ -228,7 +231,6 @@ def test_active_backup_bond_with_fail_over_mac(
 
 @pytest.mark.polarion("CNV-6584")
 def test_vm_bond_with_fail_over_mac_started(
-    skip_no_bond_support,
     vm_with_fail_over_mac_bond,
 ):
     running_vm(
