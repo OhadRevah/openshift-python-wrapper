@@ -17,11 +17,11 @@ from openshift.dynamic.exceptions import ConflictError
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
+    DEFAULT_RESOURCE_CONDITIONS,
     collect_logs,
     collect_resources_for_test,
     wait_for_consistent_resource_conditions,
 )
-from utilities.storage import DEFAULT_CDI_CONDITIONS
 
 
 DEFAULT_KUBEVIRT_CONDITIONS = {
@@ -180,7 +180,7 @@ def wait_for_stabilize(
     wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         hco_namespace=hco_namespace,
-        expected_conditions=DEFAULT_CDI_CONDITIONS,
+        expected_conditions=DEFAULT_RESOURCE_CONDITIONS,
         resource_kind=CDI,
         condition_key1=condition_key1,
         condition_key2=condition_key2,

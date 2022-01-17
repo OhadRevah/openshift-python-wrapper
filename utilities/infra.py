@@ -64,6 +64,13 @@ HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
 }
 
 
+DEFAULT_RESOURCE_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
+
+
 LOGGER = logging.getLogger(__name__)
 
 
