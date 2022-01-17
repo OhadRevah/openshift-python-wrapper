@@ -86,14 +86,19 @@ def start_and_fetch_processid_on_linux_vm(vm, process_name, args=""):
         host=vm.ssh_exec,
         commands=shlex.split(f"{process_name} {args} </dev/null &>/dev/null &"),
     )
-    return fetch_processid_from_linux_vm(vm=vm, process_name=process_name)
+    return fetch_processid_from_linux_vm(
+        vm=vm, process_name=process_name, fail_if_process_not_found=True
+    )
 
 
-def fetch_processid_from_linux_vm(vm, process_name):
-    return run_ssh_commands(
+def fetch_processid_from_linux_vm(vm, process_name, fail_if_process_not_found=False):
+    cmd_res = run_ssh_commands(
         host=vm.ssh_exec,
         commands=["bash", "-c", f"`which pidof` '{process_name}' || true"],
     )[0]
+    if fail_if_process_not_found:
+        assert cmd_res, f"VM {vm.name}, '{process_name}' process not found"
+    return cmd_res
 
 
 def pause_optional_migrate_unpause_and_check_connectivity(vm, migrate=False):
@@ -115,7 +120,9 @@ def validate_pause_optional_migrate_unpause_linux_vm(
             vm=vm, process_name=proc_name, args="localhost"
         )
     pause_optional_migrate_unpause_and_check_connectivity(vm=vm, migrate=migrate)
-    post_pause_pid = fetch_processid_from_linux_vm(vm=vm, process_name=proc_name)
+    post_pause_pid = fetch_processid_from_linux_vm(
+        vm=vm, process_name=proc_name, fail_if_process_not_found=True
+    )
     kill_processes_by_name_linux(vm=vm, process_name=proc_name)
     assert (
         post_pause_pid == pre_pause_pid
