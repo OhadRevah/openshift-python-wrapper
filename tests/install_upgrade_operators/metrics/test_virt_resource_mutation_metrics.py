@@ -14,7 +14,7 @@ from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.metrics.utils import (
+from tests.install_upgrade_operators.metrics.utils import (
     get_all_hco_cr_modification_alert,
     get_changed_mutation_component_value,
     get_hco_cr_modification_alert_state,

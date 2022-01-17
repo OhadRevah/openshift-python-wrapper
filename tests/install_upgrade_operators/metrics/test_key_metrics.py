@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from tests.metrics import utils
+from tests.install_upgrade_operators.metrics import utils
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]

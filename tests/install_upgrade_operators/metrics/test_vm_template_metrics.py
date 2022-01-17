@@ -3,7 +3,7 @@ import os
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.metrics import utils
+from tests.install_upgrade_operators.metrics import utils
 from tests.os_params import RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import Images
 

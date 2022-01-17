@@ -1,7 +1,7 @@
 import pytest
 from ocp_resources.resource import Resource
 
-from tests.metrics.utils import validate_virt_handler_data
+from tests.install_upgrade_operators.metrics.utils import validate_virt_handler_data
 from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER, VIRT_OPERATOR
 
 

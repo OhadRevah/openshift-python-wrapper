@@ -13,7 +13,7 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
 
 import utilities.network
-from tests.must_gather import utils as mg_utils
+from tests.install_upgrade_operators.must_gather import utils as mg_utils
 from utilities.infra import (
     ExecCommandOnPod,
     MissingResourceException,

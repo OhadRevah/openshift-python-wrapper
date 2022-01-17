@@ -6,7 +6,7 @@ from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from tests.metrics.utils import (
+from tests.install_upgrade_operators.metrics.utils import (
     SINGLE_VM,
     create_vms,
     enable_swap_fedora_vm,

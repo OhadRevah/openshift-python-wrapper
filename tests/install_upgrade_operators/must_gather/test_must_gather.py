@@ -19,7 +19,7 @@ from ocp_resources.validating_webhook_config import ValidatingWebhookConfigurati
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
 
-from tests.must_gather import utils
+from tests.install_upgrade_operators.must_gather import utils
 from utilities.constants import (
     BRIDGE_MARKER,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
