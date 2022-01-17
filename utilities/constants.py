@@ -87,6 +87,7 @@ BRIDGE_MARKER = "bridge-marker"
 KUBE_CNI_LINUX_BRIDGE_PLUGIN = "kube-cni-linux-bridge-plugin"
 KUBEMACPOOL_CERT_MANAGER = "kubemacpool-cert-manager"
 KUBEMACPOOL_MAC_CONTROLLER_MANAGER = "kubemacpool-mac-controller-manager"
+KUBEMACPOOL_MAC_RANGE_CONFIG = "kubemacpool-mac-range-config"
 NMSTATE_CERT_MANAGER = "nmstate-cert-manager"
 NMSTATE_HANDLER = "nmstate-handler"
 NMSTATE_WEBHOOK = "nmstate-webhook"
@@ -168,6 +169,9 @@ HOSTPATH_PROVISIONER_CSI = "hostpath-provisioner-csi"
 HOSTPATH_PROVISIONER = "hostpath-provisioner"
 HOSTPATH_PROVISIONER_OPERATOR = "hostpath-provisioner-operator"
 HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD = "hyperconverged-cluster-cli-download"
+
+# Namespace constants
+OPENSHIFT_CNV_NAMESPACE = "openshift-cnv"
 
 # Miscellaneous constants
 UTILITY = "utility"

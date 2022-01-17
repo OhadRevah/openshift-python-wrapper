@@ -15,6 +15,7 @@ from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
+from utilities.constants import OPENSHIFT_CNV_NAMESPACE
 from utilities.infra import BUG_STATUS_CLOSED
 
 
@@ -23,7 +24,7 @@ MANAGED_RESOURCE_NAME1 = "kubevirt-apiserver"
 MANAGED_RESOURCE_NAME2 = "kubevirt-ca"
 
 ROLE_BINDING_SUBJECT = [
-    {"kind": "ServiceAccount", "name": "default", "namespace": "openshift-cnv"}
+    {"kind": "ServiceAccount", "name": "default", "namespace": OPENSHIFT_CNV_NAMESPACE}
 ]
 
 CM_DATA = {"ca-bundle": "No CA Bundle"}

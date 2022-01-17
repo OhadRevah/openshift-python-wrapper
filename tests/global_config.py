@@ -5,7 +5,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
-from utilities.constants import INTEL, Images
+from utilities.constants import INTEL, OPENSHIFT_CNV_NAMESPACE, Images
 from utilities.infra import get_latest_os_dict_list
 
 
@@ -30,7 +30,7 @@ def _get_default_storage_class(sc_list):
 no_unprivileged_client = False
 distribution = "downstream"
 hco_cr_name = "kubevirt-hyperconverged"
-hco_namespace = "openshift-cnv"
+hco_namespace = OPENSHIFT_CNV_NAMESPACE
 sriov_namespace = "openshift-sriov-network-operator"
 marketplace_namespace = "openshift-marketplace"
 machine_api_namespace = "openshift-machine-api"

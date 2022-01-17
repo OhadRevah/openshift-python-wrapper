@@ -73,6 +73,7 @@ from utilities.constants import (
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
     KUBECONFIG,
+    KUBEMACPOOL_MAC_RANGE_CONFIG,
     MTU_9000,
     SRIOV,
     TIMEOUT_4MIN,
@@ -1753,7 +1754,7 @@ def sriov_node_policy(sriov_nodes_states, sriov_iface, sriov_namespace):
 def mac_pool(hco_namespace):
     return MacPool(
         kmp_range=ConfigMap(
-            namespace=hco_namespace.name, name="kubemacpool-mac-range-config"
+            namespace=hco_namespace.name, name=KUBEMACPOOL_MAC_RANGE_CONFIG
         ).instance["data"]
     )
 

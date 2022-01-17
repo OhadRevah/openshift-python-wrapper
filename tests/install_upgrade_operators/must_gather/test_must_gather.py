@@ -23,6 +23,7 @@ from tests.install_upgrade_operators.must_gather import utils
 from utilities.constants import (
     BRIDGE_MARKER,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
+    KUBEMACPOOL_MAC_RANGE_CONFIG,
     NMSTATE_HANDLER,
 )
 from utilities.infra import BUG_STATUS_CLOSED
@@ -503,7 +504,7 @@ def test_data_collected_from_virt_launcher(
     "config_map_by_name, has_owner",
     [
         pytest.param(
-            ["kubemacpool-mac-range-config", py_config["hco_namespace"]],
+            [KUBEMACPOOL_MAC_RANGE_CONFIG, py_config["hco_namespace"]],
             True,
             marks=(pytest.mark.polarion("CNV-2718")),
             id="test_config_map_kubemacpool-mac-range-config",
