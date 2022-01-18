@@ -296,6 +296,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         except NNCPConfigurationFailed as exp:
             if "failed to communicating with Open vSwitch database" in str(exp):
                 LOGGER.warning("W/A for ovs-bridge when OVS DB is locked")
+                self.res = self.to_dict()
                 super().deploy()
 
 
