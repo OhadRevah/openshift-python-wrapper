@@ -11,7 +11,10 @@ from pytest_testconfig import config as py_config
 
 from tests.compute import utils as compute_utils
 from tests.compute.virt import utils as virt_utils
-from tests.compute.virt.gpu_pci_passthrough import utils as passthrough_utils
+from tests.compute.virt.gpu.utils import (
+    restart_and_check_device_exists,
+    verify_gpu_device_exists,
+)
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import GPU_DEVICE_NAME
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
@@ -111,7 +114,7 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         """
         Test Device is accessible in VM with hostdevices spec.
         """
-        passthrough_utils.verify_gpu_device_exists(vm=pci_passthrough_vm)
+        verify_gpu_device_exists(vm=pci_passthrough_vm)
 
     @pytest.mark.dependency(
         depends=[f"{TESTS_CLASS_RHEL_HOSTDEVICES_NAME}::access_hostdevices_rhel_vm"]
@@ -134,7 +137,7 @@ class TestPCIPassthroughRHELHostDevicesSpec:
         """
         Test VM with Device using hostdevices spec, can be restarted successfully.
         """
-        passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_device_exists(vm=pci_passthrough_vm)
 
 
 @pytest.mark.parametrize(
@@ -165,7 +168,7 @@ class TestPCIPassthroughRHELGPUSSpec:
         """
         Test Device is accessible in VM with GPUS spec.
         """
-        passthrough_utils.verify_gpu_device_exists(vm=pci_passthrough_vm)
+        verify_gpu_device_exists(vm=pci_passthrough_vm)
 
     @pytest.mark.dependency(
         depends=[f"{TESTS_CLASS_RHEL_GPUS_NAME}::access_gpus_rhel_vm"]
@@ -188,7 +191,7 @@ class TestPCIPassthroughRHELGPUSSpec:
         """
         Test VM with Device using GPUS spec, can be restarted successfully.
         """
-        passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_device_exists(vm=pci_passthrough_vm)
 
 
 @pytest.mark.polarion("CNV-5645")

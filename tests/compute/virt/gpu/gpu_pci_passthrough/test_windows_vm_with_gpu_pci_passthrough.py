@@ -9,7 +9,10 @@ import pytest
 from pytest_testconfig import config as py_config
 
 from tests.compute import utils as compute_utils
-from tests.compute.virt.gpu_pci_passthrough import utils as passthrough_utils
+from tests.compute.virt.gpu.utils import (
+    restart_and_check_device_exists,
+    verify_gpu_device_exists,
+)
 from utilities.constants import GPU_DEVICE_NAME, Images
 from utilities.virt import get_windows_os_dict
 
@@ -86,7 +89,7 @@ class TestPCIPassthroughWinHostDevicesSpec:
         """
         Test Device is accessible in Windows VM with hostdevices spec.
         """
-        passthrough_utils.verify_gpu_device_exists(vm=pci_passthrough_vm)
+        verify_gpu_device_exists(vm=pci_passthrough_vm)
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_hostdevices_win_vm"])
     @pytest.mark.polarion("CNV-5647")
@@ -104,7 +107,7 @@ class TestPCIPassthroughWinHostDevicesSpec:
         """
         Test Windows VM with Device using hostdevices spec, can be restarted successfully.
         """
-        passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_device_exists(vm=pci_passthrough_vm)
 
     @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::access_gpus_win_vm")
     @pytest.mark.polarion("CNV-5742")
@@ -112,7 +115,7 @@ class TestPCIPassthroughWinHostDevicesSpec:
         """
         Test Device is accessible in Windows VM with gpus spec.
         """
-        passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_device_exists(vm=pci_passthrough_vm)
 
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::access_gpus_win_vm"])
     @pytest.mark.polarion("CNV-5743")
@@ -130,4 +133,4 @@ class TestPCIPassthroughWinHostDevicesSpec:
         """
         Test Windows VM with Device using gpus spec, can be restarted successfully.
         """
-        passthrough_utils.restart_and_check_device_exists(vm=pci_passthrough_vm)
+        restart_and_check_device_exists(vm=pci_passthrough_vm)
