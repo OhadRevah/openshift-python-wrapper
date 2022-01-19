@@ -171,14 +171,7 @@ TEAM_MARKERS = {
     "compute": ["compute", "deprecated_api"],
     "network": ["network", "deprecated_api"],
     "storage": ["storage", "deprecated_api"],
-    "iuo": [
-        "csv",
-        "install_upgrade_operators",
-        "security",
-        "must_gather",
-        "deprecated_api",
-        "metrics",
-    ],
+    "iuo": ["install_upgrade_operators", "deprecated_api"],
 }
 
 RESOURCES_TO_COLLECT_INFO = [
