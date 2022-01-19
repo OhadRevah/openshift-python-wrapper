@@ -6,6 +6,7 @@ from copy import deepcopy
 import bitmath
 import pytest
 import xmltodict
+from ocp_resources.node import Node
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
@@ -23,12 +24,7 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.constants import SRIOV
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    ExecCommandOnPod,
-    get_bug_status,
-    run_ssh_commands,
-)
+from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.network import network_nad
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
@@ -45,7 +41,8 @@ INVTSC = "invtsc"
 CPU_TIMER_LABEL_PREFIX = "cpu-timer.node.kubevirt.io"
 LSCPU_CMD = "lscpu"
 REQUIRED_NUMBER_OF_NETWORKS = 3
-HANA_NODE_ROLE = "node-role.kubernetes.io/sap"
+WORKLOAD_NODE_LABEL_NAME = f"{Node.ApiGroup.KUBEVIRT_IO}/workload"
+WORKLOAD_NODE_LABEL_VALUE = "hana"
 
 
 class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
@@ -57,17 +54,15 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
         namespace,
         client,
         labels,
-        node_selector,
         cloud_init_data,
         data_volume_template,
-        sriov_nads,
+        template_params,
     ):
         super().__init__(
             name=name,
             namespace=namespace,
             client=client,
             labels=labels,
-            node_selector=node_selector,
             cloud_init_data=cloud_init_data,
             data_volume_template=data_volume_template,
             attached_secret={
@@ -75,8 +70,8 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
                 "serial": DISK_SERIAL,
                 "secret_name": RHSM_SECRET_NAME,
             },
+            template_params=template_params,
         )
-        self.sriov_nads = sriov_nads
 
     def to_dict(self):
         res = super().to_dict()
@@ -86,17 +81,6 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
             disk for disk in disks if disk["name"] == SAPHANAVirtaulMachine.volume_name
         ][0]
         secret_disk["disk"]["bus"] = VIRTIO
-
-        # TODO: Provide SRIOV_NETWORK_NAME parameters once bug is closed
-        if get_bug_status(bug=2039683) not in BUG_STATUS_CLOSED:
-            networks = spec_template["networks"]
-            multus_networks = [
-                network["multus"] for network in networks if network.get("multus")
-            ]
-            for network_index, multus_network in enumerate(multus_networks):
-                multus_network[
-                    "networkName"
-                ] = f"{self.namespace}/{self.sriov_nads[network_index].name}"
 
         return res
 
@@ -307,6 +291,19 @@ def assert_vm_cpu_dump_metrics(metrics_dict, vmi_xml_dict):
     ), f"VM metrics cpu count {vm_allocated_cpus} does not match expected count {libvirt_expected_num_cores}"
 
 
+def get_template_params_dict(sriov_nads):
+    template_params_dict = {"WORKLOAD_NODE_LABEL_VALUE": WORKLOAD_NODE_LABEL_VALUE}
+    vm_network_sriov_name_prefix = "SRIOV_NETWORK_NAME"
+    for nad_index, nad in enumerate(sriov_nads):
+        template_params_dict.update(
+            {
+                f"{vm_network_sriov_name_prefix}{nad_index + 1}": f"{nad.instance.spec.networkNamespace}/{nad.name}"
+            }
+        )
+
+    return template_params_dict
+
+
 @pytest.fixture(scope="class")
 def sap_hana_data_volume_templates(sap_hana_template):
     data_volume_templates = deepcopy(
@@ -320,10 +317,15 @@ def sap_hana_data_volume_templates(sap_hana_template):
         "storageClassName"
     ] = StorageClass.Types.NFS
 
-    if get_bug_status(bug=2039686) not in BUG_STATUS_CLOSED:
-        data_volume_templates["spec"]["source"]["registry"][
-            "url"
-        ] = "docker://registry.redhat.io/rhel8/rhel-guest-image:8.4.0"
+    src_containerdisk_str = "SRC_CONTAINERDISK"
+    data_volume_templates["spec"]["source"]["registry"][
+        "url"
+    ] = get_parameters_from_template(
+        template=sap_hana_template, parameter_subset=src_containerdisk_str
+    )[
+        src_containerdisk_str
+    ]
+
     return data_volume_templates
 
 
@@ -390,15 +392,15 @@ def sap_hana_vm(
     sap_hana_node,
     sap_hana_cloud_init,
 ):
+    template_params = get_template_params_dict(sriov_nads=sriov_nads)
     with SAPHANAVirtaulMachine(
         name=SAP_HANA_VM_NAME,
         namespace=namespace.name,
         client=unprivileged_client,
         labels=sap_hana_template_labels,
         data_volume_template=sap_hana_data_volume_templates,
-        node_selector=sap_hana_node.hostname,  # TODO: Use label (https://bugzilla.redhat.com/show_bug.cgi?id=2039691)
         cloud_init_data=sap_hana_cloud_init,
-        sriov_nads=sriov_nads,
+        template_params=template_params,
     ) as vm:
         running_vm(vm=vm)
         yield vm
@@ -407,7 +409,11 @@ def sap_hana_vm(
 @pytest.fixture(scope="class")
 def sap_hana_node(schedulable_nodes):
     hana_nodes = [
-        node for node in schedulable_nodes if HANA_NODE_ROLE in node.labels.keys()
+        node
+        for node in schedulable_nodes
+        for label_name, label_value in node.labels.items()
+        if WORKLOAD_NODE_LABEL_NAME in label_name
+        and label_value == WORKLOAD_NODE_LABEL_VALUE
     ]
     if hana_nodes:
         return hana_nodes[0]
@@ -416,7 +422,9 @@ def sap_hana_node(schedulable_nodes):
 @pytest.fixture(scope="class")
 def skip_if_not_hana_cluster(skip_if_no_cpumanager_workers, sap_hana_node):
     if not sap_hana_node:
-        pytest.skip(f"No node is marked with sap role {HANA_NODE_ROLE}")
+        pytest.skip(
+            f"No node is marked with sap label {WORKLOAD_NODE_LABEL_NAME} = {WORKLOAD_NODE_LABEL_VALUE}"
+        )
 
 
 @pytest.fixture(scope="class")
