@@ -59,6 +59,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         routes=None,
         dns_resolver=None,
         bridge_state=IFACE_UP_STATE,
+        node_selector_labels=None,
     ):
         """
         Create bridge on nodes (according node_selector, all if no selector presents)
@@ -90,6 +91,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             routes=routes,
             dns_resolver=dns_resolver,
             state=bridge_state,
+            node_selector_labels=node_selector_labels,
         )
         self.ovs_bridge_type = "ovs-bridge"
         self.linux_bridge_type = "linux-bridge"
@@ -172,6 +174,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         bridge_state=IFACE_UP_STATE,
         routes=None,
         dns_resolver=None,
+        node_selector_labels=None,
     ):
         super().__init__(
             name=name,
@@ -192,6 +195,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
             routes=routes,
             dns_resolver=dns_resolver,
             bridge_state=bridge_state,
+            node_selector_labels=node_selector_labels,
         )
 
 

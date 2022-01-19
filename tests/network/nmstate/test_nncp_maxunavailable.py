@@ -5,8 +5,8 @@ import pytest
 from ocp_resources.node_network_configuration_enactment import (  # noqa: N813
     NodeNetworkConfigurationEnactment as nnce,
 )
+from ocp_resources.resource import ResourceEditor
 
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 
 
@@ -15,12 +15,7 @@ LOGGER = logging.getLogger(__name__)
 PROGRESSING = nnce.Conditions.Type.PROGRESSING
 PENDING = nnce.Conditions.Type.PENDING
 NUM_OF_DESIRED_WORKERS = 3
-
-
-@pytest.fixture()
-def skip_if_not_three_nodes(schedulable_nodes):
-    if len(schedulable_nodes) != NUM_OF_DESIRED_WORKERS:
-        pytest.skip(f"Only run on {NUM_OF_DESIRED_WORKERS} worker nodes")
+MAXUNAVAILABLE_NODES_LABEL = {"maxunavailable_node": "true"}
 
 
 def nnce_status_for_worker(nncp_policy, worker):
@@ -38,24 +33,6 @@ def nnce_status_for_worker(nncp_policy, worker):
             return worker_state
 
 
-@pytest.fixture()
-def maxunavailable_input_for_bridge_creation(
-    request, hosts_common_available_ports, unprivileged_client, utility_pods
-):
-    nncp_policy = LinuxBridgeNodeNetworkConfigurationPolicy(
-        name="maxunavailable-policy",
-        bridge_name="brmaxunavail",
-        ports=[hosts_common_available_ports[0]],
-        worker_pods=utility_pods,
-        max_unavailable=request.param,
-    )
-    yield nncp_policy
-    # we need to wait for final status because policy can't be deleted until it reaches a final state.
-    # Webhook returns 403 forbidden if abort/delete operation is performed.
-    nncp_policy.wait_for_status_success()
-    nncp_policy.clean_up()
-
-
 def enable_threading_get_intermediate_nnce_nodes(policy, workers):
     actual_state = []
     with ThreadPoolExecutor(max_workers=NUM_OF_DESIRED_WORKERS) as executor:
@@ -64,6 +41,44 @@ def enable_threading_get_intermediate_nnce_nodes(policy, workers):
             actual_state += [nnce_state.result()]
         LOGGER.info(f"Combined Status of threads: {actual_state}")
         return actual_state
+
+
+@pytest.fixture()
+def skip_if_not_three_nodes(schedulable_nodes):
+    if len(schedulable_nodes) != NUM_OF_DESIRED_WORKERS:
+        pytest.skip(f"Only run on {NUM_OF_DESIRED_WORKERS} worker nodes")
+
+
+@pytest.fixture(scope="session")
+def label_nodes(schedulable_nodes):
+    updates = [
+        ResourceEditor({node: {"metadata": {"labels": MAXUNAVAILABLE_NODES_LABEL}}})
+        for node in schedulable_nodes
+    ]
+
+    for update in updates:
+        update.update(backup_resources=True)
+    yield
+    for update in updates:
+        update.restore()
+
+
+@pytest.fixture()
+def maxunavailable_input_for_bridge_creation(
+    request, hosts_common_available_ports, unprivileged_client, utility_pods
+):
+    nncp_policy = LinuxBridgeNodeNetworkConfigurationPolicy(
+        name="maxunavailable-policy",
+        bridge_name="brmaxunavail",
+        ports=[hosts_common_available_ports[0]],
+        max_unavailable=request.param,
+        node_selector_labels=MAXUNAVAILABLE_NODES_LABEL,
+    )
+    yield nncp_policy
+    # we need to wait for final status because policy can't be deleted until it reaches a final state.
+    # Webhook returns 403 forbidden if abort/delete operation is performed.
+    nncp_policy.wait_for_status_success()
+    nncp_policy.clean_up()
 
 
 @pytest.mark.parametrize(
@@ -79,23 +94,13 @@ def enable_threading_get_intermediate_nnce_nodes(policy, workers):
             "100%",
             [PROGRESSING, PROGRESSING, PROGRESSING],
             id="maxunavailable_input_for_bridge_creation_100%",
-            marks=(
-                pytest.mark.polarion("CNV-7541"),
-                pytest.mark.bugzilla(
-                    2029767, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-7541"),),
         ),
         pytest.param(
             "ab%vn",
-            [PROGRESSING, PROGRESSING, PROGRESSING],
+            [PROGRESSING, PROGRESSING, PENDING],
             id="maxunavailable_input_for_bridge_creation_randomdata",
-            marks=(
-                pytest.mark.polarion("CNV-7546"),
-                pytest.mark.bugzilla(
-                    2024526, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-7546"),),
         ),
     ],
     indirect=["maxunavailable_input_for_bridge_creation"],
@@ -103,6 +108,7 @@ def enable_threading_get_intermediate_nnce_nodes(policy, workers):
 def test_create_policy_get_status(
     skip_if_not_three_nodes,
     schedulable_nodes,
+    label_nodes,
     maxunavailable_input_for_bridge_creation,
     expected_state,
 ):
