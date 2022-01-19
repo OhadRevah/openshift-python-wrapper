@@ -30,11 +30,12 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.constants import SRIOV
-from utilities.infra import ExecCommandOnPod, run_ssh_commands
+from utilities.infra import ExecCommandOnPod, is_bug_open, run_ssh_commands
 from utilities.network import assert_pingable_vm, network_nad
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_template_by_labels,
+    prepare_cloud_init_user_data,
     running_vm,
     wait_for_console,
 )
@@ -51,6 +52,9 @@ WORKLOAD_NODE_LABEL_NAME = f"{Node.ApiGroup.KUBEVIRT_IO}/workload"
 WORKLOAD_NODE_LABEL_VALUE = "hana"
 
 
+pytestmark = [pytest.mark.usefixtures("skip_if_not_hana_cluster"), pytest.mark.sap_hana]
+
+
 class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
     volume_name = "rhsm-secret-vol"
 
@@ -63,6 +67,9 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
         cloud_init_data,
         data_volume_template,
         template_params,
+        cpu_cores=None,
+        attached_rhsm_secret=False,
+        network_multiqueue=True,
     ):
         super().__init__(
             name=name,
@@ -71,22 +78,24 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
             labels=labels,
             cloud_init_data=cloud_init_data,
             data_volume_template=data_volume_template,
-            attached_secret={
-                "volume_name": SAPHANAVirtaulMachine.volume_name,
-                "serial": DISK_SERIAL,
-                "secret_name": RHSM_SECRET_NAME,
-            },
+            attached_secret=attached_rhsm_secret,
             template_params=template_params,
+            cpu_cores=cpu_cores,
+            network_multiqueue=network_multiqueue,
         )
+        self.attached_rhsm_secret = attached_rhsm_secret
 
     def to_dict(self):
         res = super().to_dict()
-        spec_template = res["spec"]["template"]["spec"]
-        disks = spec_template["domain"]["devices"]["disks"]
-        secret_disk = [
-            disk for disk in disks if disk["name"] == SAPHANAVirtaulMachine.volume_name
-        ][0]
-        secret_disk["disk"]["bus"] = VIRTIO
+        if self.attached_rhsm_secret:
+            spec_template = res["spec"]["template"]["spec"]
+            disks = spec_template["domain"]["devices"]["disks"]
+            secret_disk = [
+                disk
+                for disk in disks
+                if disk["name"] == SAPHANAVirtaulMachine.volume_name
+            ][0]
+            secret_disk["disk"]["bus"] = VIRTIO
 
         return res
 
@@ -312,6 +321,20 @@ def verify_vm_reserved_cpus_on_node(vm_cpu_list, crio_cpuset):
     ), f"VM CPUs {vm_cpu_list} are not reserved, CPUs on the node: {crio_cpuset}"
 
 
+def calculate_first_numa_num_cpus(utility_pods, node):
+    lscpu_ouput = get_node_lscpu(utility_pods=utility_pods, node=node)
+    first_numa_num_cpus = re.search(
+        r"NUMA node0 CPU\(s\):\s+(?P<numa_cpu>.*)\n.*", lscpu_ouput
+    )["numa_cpu"]
+    return len(first_numa_num_cpus.split(","))
+
+
+def get_node_lscpu(utility_pods, node):
+    return ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
+        command=LSCPU_CMD
+    )
+
+
 @pytest.fixture(scope="class")
 def sap_hana_data_volume_templates(sap_hana_template):
     data_volume_templates = deepcopy(
@@ -335,16 +358,6 @@ def sap_hana_data_volume_templates(sap_hana_template):
     ]
 
     return data_volume_templates
-
-
-@pytest.fixture(scope="class")
-def sap_hana_cloud_init():
-    rhsm_clout_init = generate_rhsm_cloud_init_data()
-    # Allow connectivity on all interfaces
-    rhsm_clout_init["userData"]["bootcmd"].append(
-        "sysctl -w net.ipv4.conf.all.rp_filter=0"
-    )
-    return rhsm_clout_init
 
 
 @pytest.fixture(scope="class")
@@ -392,24 +405,54 @@ def sriov_nads(namespace, sriov_network_node_policy, sriov_namespace):
 
 @pytest.fixture(scope="class")
 def sap_hana_vm(
+    request,
     unprivileged_client,
     namespace,
     sriov_nads,
     sap_hana_template_labels,
     sap_hana_data_volume_templates,
     sap_hana_node,
-    sap_hana_cloud_init,
+    utility_pods,
 ):
     template_params = get_template_params_dict(sriov_nads=sriov_nads)
-    with SAPHANAVirtaulMachine(
-        name=SAP_HANA_VM_NAME,
-        namespace=namespace.name,
-        client=unprivileged_client,
-        labels=sap_hana_template_labels,
-        data_volume_template=sap_hana_data_volume_templates,
-        cloud_init_data=sap_hana_cloud_init,
-        template_params=template_params,
-    ) as vm:
+    vm_kwargs = {
+        "name": SAP_HANA_VM_NAME,
+        "namespace": namespace.name,
+        "client": unprivileged_client,
+        "labels": sap_hana_template_labels,
+        "data_volume_template": sap_hana_data_volume_templates,
+        "template_params": template_params,
+    }
+
+    # Allow connectivity on all interfaces
+    cloud_init_data = prepare_cloud_init_user_data(
+        section="bootcmd", data=["sysctl -w net.ipv4.conf.all.rp_filter=0"]
+    )
+    if request.param.get("add_rhsm_secret"):
+        rhsm_clout_init = generate_rhsm_cloud_init_data()
+        cloud_init_data["userData"]["bootcmd"].extend(
+            rhsm_clout_init["userData"]["bootcmd"]
+        )
+        vm_kwargs["attached_rhsm_secret"] = {
+            "volume_name": SAPHANAVirtaulMachine.volume_name,
+            "serial": DISK_SERIAL,
+            "secret_name": RHSM_SECRET_NAME,
+        }
+    vm_kwargs["cloud_init_data"] = cloud_init_data
+
+    if request.param.get("set_cpus"):
+        numa_node_num_cpus = calculate_first_numa_num_cpus(
+            utility_pods=utility_pods, node=sap_hana_node
+        )
+        # Add an even number of CPUs
+        cpu_cores = numa_node_num_cpus + (2 if numa_node_num_cpus % 2 == 0 else 1)
+        vm_kwargs["cpu_cores"] = cpu_cores
+
+        # A VM with more than 14 CPUs will not have connectivity if NetworkMultiqueue is enabled
+        if is_bug_open(bug_id=2048556) and cpu_cores > 14:
+            vm_kwargs["network_multiqueue"] = False
+
+    with SAPHANAVirtaulMachine(**vm_kwargs) as vm:
         running_vm(vm=vm)
         yield vm
 
@@ -437,9 +480,7 @@ def skip_if_not_hana_cluster(skip_if_no_cpumanager_workers, sap_hana_node):
 
 @pytest.fixture(scope="class")
 def sap_hana_node_lscpu_configuration(utility_pods, sap_hana_node):
-    lscpu_output = ExecCommandOnPod(utility_pods=utility_pods, node=sap_hana_node).exec(
-        command=LSCPU_CMD
-    )
+    lscpu_output = get_node_lscpu(utility_pods=utility_pods, node=sap_hana_node)
     return extract_lscpu_info(lscpu_output=lscpu_output)
 
 
@@ -676,10 +717,17 @@ class TestSAPHANATemplate:
         )
 
 
-@pytest.mark.sap_hana
 @pytest.mark.usefixtures(
-    "skip_if_not_hana_cluster",
     "rhsm_created_secret_scope_class",
+)
+@pytest.mark.parametrize(
+    "sap_hana_vm",
+    [
+        pytest.param(
+            {"add_rhsm_secret": True},
+        )
+    ],
+    indirect=True,
 )
 class TestSAPHANAVirtualMachine:
     @pytest.mark.dependency(name=SAP_HANA_VM_TEST_NAME)
@@ -897,3 +945,23 @@ class TestSAPHANAVirtualMachine:
         verify_vm_reserved_cpus_on_node(
             vm_cpu_list=vm_cpu_list, crio_cpuset=crio_cpuset
         )
+
+
+class TestSAPHANAVirtualMachineMultipleNUMANodes:
+    @pytest.mark.parametrize(
+        "sap_hana_vm",
+        [
+            pytest.param(
+                {
+                    "set_cpus": True,
+                },
+                marks=pytest.mark.polarion("CNV-8050"),
+            )
+        ],
+        indirect=True,
+    )
+    def test_hana_vm_cpus_on_multiple_numa_nodes(self, sap_hana_vm, vm_cpu_list):
+        expected_num_cores = sap_hana_vm.instance.spec.template.spec.domain.cpu.cores
+        assert (
+            len(vm_cpu_list) == expected_num_cores
+        ), f"VM number of CPUs {vm_cpu_list} is not as expected {expected_num_cores}"
