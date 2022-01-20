@@ -58,6 +58,7 @@ from utilities.constants import (
     TIMEOUT_10MIN,
     TIMEOUT_12MIN,
     TIMEOUT_25MIN,
+    TIMEOUT_30MIN,
     Images,
 )
 from utilities.exceptions import CommandExecFailed
@@ -1840,19 +1841,39 @@ def migrate_vm_and_verify(
     node_before = vm.vmi.node
     vmi_source_pod = vm.vmi.virt_launcher_pod
 
-    LOGGER.info(f"VMI is running on {node_before.name} before migration.")
+    LOGGER.info(f"VMI {vm.vmi.name} is running on {node_before.name} before migration.")
     with VirtualMachineInstanceMigration(
         name=vm.name,
         namespace=vm.namespace,
         vmi=vm.vmi,
         teardown=wait_for_migration_success,
-    ) as mig:
+    ) as migration:
         if not wait_for_migration_success:
-            return mig
-        mig.wait_for_status(status=mig.Status.SUCCEEDED, timeout=timeout)
-        if vm.instance.spec.template.spec.evictionStrategy == LIVE_MIGRATE:
-            verify_one_pdb_per_vm(vm=vm)
+            return migration
+        wait_for_migration_finished(vm=vm, migration=migration, timeout=timeout)
 
+    verify_vm_migrated(
+        vm=vm,
+        node_before=node_before,
+        vmi_source_pod=vmi_source_pod,
+        wait_for_interfaces=wait_for_interfaces,
+        check_ssh_connectivity=check_ssh_connectivity,
+    )
+
+
+def wait_for_migration_finished(vm, migration, timeout=TIMEOUT_12MIN):
+    migration.wait_for_status(status=migration.Status.SUCCEEDED, timeout=timeout)
+    if vm.instance.spec.template.spec.evictionStrategy == LIVE_MIGRATE:
+        verify_one_pdb_per_vm(vm=vm)
+
+
+def verify_vm_migrated(
+    vm,
+    node_before,
+    vmi_source_pod,
+    wait_for_interfaces=True,
+    check_ssh_connectivity=False,
+):
     assert vm.vmi.node != node_before
 
     assert vm.vmi.instance.status.migrationState.completed
@@ -2161,3 +2182,29 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=
             f"KV CR is not updated, path: {path}, expected value: {value}, HCO annotations: {hco_annotations}"
         )
         raise
+
+
+def check_migration_process_after_node_drain(dyn_client, source_pod, vm):
+    """
+    Wait for migration process to succeed and verify that VM indeed moved to new node.
+    """
+    source_node = source_pod.node
+    LOGGER.info(f"The VMI was running on {source_node.name}")
+    wait_for_node_schedulable_status(node=source_node, status=False)
+    for migration_job in VirtualMachineInstanceMigration.get(
+        dyn_client=dyn_client, namespace=vm.namespace
+    ):
+        if migration_job.instance.spec.vmiName == vm.name:
+            migration_job.wait_for_status(
+                status=migration_job.Status.SUCCEEDED, timeout=TIMEOUT_30MIN
+            )
+
+    assert_pod_status_completed(source_pod=source_pod)
+    target_pod = vm.vmi.virt_launcher_pod
+    target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
+    verify_one_pdb_per_vm(vm=vm)
+    target_node = target_pod.node
+    LOGGER.info(f"The VMI is currently running on {target_node.name}")
+    assert (
+        target_node != source_node
+    ), f"Target node is same as source node: {source_node.name}"

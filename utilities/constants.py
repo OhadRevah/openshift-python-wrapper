@@ -95,6 +95,7 @@ NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator-controller-manager"
 
 #  Time constants
 TIMEOUT_5SEC = 5
+TIMEOUT_10SEC = 10
 TIMEOUT_20SEC = 20
 TIMEOUT_30SEC = 30
 TIMEOUT_90SEC = 90

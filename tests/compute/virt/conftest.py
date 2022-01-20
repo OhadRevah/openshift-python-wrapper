@@ -42,8 +42,8 @@ def golden_image_dv_scope_module_data_source_scope_class(
     )
 
 
-@pytest.fixture()
-def virt_handler_daemonset(hco_namespace, admin_client):
+@pytest.fixture(scope="module")
+def virt_handler_daemonset_scope_module(hco_namespace, admin_client):
     return get_daemonset_by_name(
         admin_client=admin_client,
         daemonset_name="virt-handler",

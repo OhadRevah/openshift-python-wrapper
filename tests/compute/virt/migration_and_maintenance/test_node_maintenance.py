@@ -7,7 +7,6 @@ import random
 
 import pytest
 from ocp_resources.node_maintenance import NodeMaintenance
-from ocp_resources.pod import Pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
@@ -23,20 +22,13 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.constants import (
-    TIMEOUT_3MIN,
-    TIMEOUT_6MIN,
-    TIMEOUT_10MIN,
-    TIMEOUT_30MIN,
-    TIMEOUT_30SEC,
-)
+from utilities.constants import TIMEOUT_6MIN, TIMEOUT_10MIN, TIMEOUT_30SEC
 from utilities.virt import (
     VirtualMachineForTests,
-    assert_pod_status_completed,
+    check_migration_process_after_node_drain,
     fedora_vm_body,
     node_mgmt_console,
     running_vm,
-    verify_one_pdb_per_vm,
     wait_for_node_schedulable_status,
 )
 
@@ -50,7 +42,9 @@ LOGGER = logging.getLogger(__name__)
 def drain_using_console(dyn_client, source_node, source_pod, vm):
     with virt_utils.running_sleep_in_linux(vm=vm):
         with node_mgmt_console(node=source_node, node_mgmt="drain"):
-            check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
+            check_migration_process_after_node_drain(
+                dyn_client=dyn_client, source_pod=source_pod, vm=vm
+            )
 
 
 def drain_using_console_windows(
@@ -65,7 +59,9 @@ def drain_using_console_windows(
         process_name=process_name,
     )
     with node_mgmt_console(node=source_node, node_mgmt="drain"):
-        check_draining_process(dyn_client=dyn_client, source_pod=source_pod, vm=vm)
+        check_migration_process_after_node_drain(
+            dyn_client=dyn_client, source_pod=source_pod, vm=vm
+        )
         post_migrate_processid = compute_utils.fetch_processid_from_windows_vm(
             vm=vm,
             process_name=process_name,
@@ -102,28 +98,6 @@ def vm_container_disk_fedora(
     ) as vm:
         running_vm(vm=vm)
         yield vm
-
-
-def check_draining_process(dyn_client, source_pod, vm):
-    source_node = source_pod.node
-    LOGGER.info(f"The VMI was running on {source_node.name}")
-    wait_for_node_schedulable_status(node=source_node, status=False)
-    for migration_job in VirtualMachineInstanceMigration.get(
-        dyn_client=dyn_client, namespace=vm.namespace
-    ):
-        if migration_job.instance.spec.vmiName == vm.name:
-            migration_job.wait_for_status(
-                status=migration_job.Status.SUCCEEDED, timeout=TIMEOUT_30MIN
-            )
-    assert_pod_status_completed(source_pod=source_pod)
-    target_pod = vm.vmi.virt_launcher_pod
-    target_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_3MIN)
-    verify_one_pdb_per_vm(vm=vm)
-    target_node = target_pod.node
-    LOGGER.info(f"The VMI is currently running on {target_node.name}")
-    assert (
-        target_node != source_node
-    ), f"Source Node: {source_node.name} and Target Node: {target_node.name} should be different"
 
 
 def get_migration_job(dyn_client, namespace):
@@ -218,7 +192,7 @@ class TestNodeMaintenanceRHEL:
                 name="node-maintenance-job", node=source_node, timeout=TIMEOUT_10MIN
             ) as nm:
                 nm.wait_for_status(status=nm.Status.RUNNING)
-                check_draining_process(
+                check_migration_process_after_node_drain(
                     dyn_client=admin_client,
                     source_pod=source_pod,
                     vm=golden_image_vm_instance_from_template_multi_storage_scope_class,

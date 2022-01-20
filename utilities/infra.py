@@ -806,8 +806,8 @@ class ExecCommandOnPod:
         if not self.pod:
             raise UtilityPodNotFoundError
 
-    def exec(self, command, ignore_rc=False):
-        _command = shlex.split("chroot /host bash -c")
+    def exec(self, command, chroot_host=True, ignore_rc=False):
+        _command = shlex.split(f"{'chroot /host' if chroot_host else ''} bash -c")
         _command.append(command)
         return self.pod.execute(command=_command, ignore_rc=ignore_rc).strip()
 

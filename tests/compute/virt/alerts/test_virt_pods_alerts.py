@@ -50,10 +50,10 @@ def disabled_virt_operator(hco_namespace):
 
 
 @pytest.fixture()
-def virt_handler_daemonset_with_bad_image(virt_handler_daemonset):
+def virt_handler_daemonset_with_bad_image(virt_handler_daemonset_scope_module):
     with update_custom_resource(
         patch={
-            virt_handler_daemonset: {
+            virt_handler_daemonset_scope_module: {
                 "spec": {
                     "template": {
                         "spec": {
