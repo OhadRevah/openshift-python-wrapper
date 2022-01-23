@@ -6,7 +6,7 @@ import logging
 import random
 
 import pytest
-from openshift.dynamic.exceptions import UnprocessibleEntityError
+from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import pause_optional_migrate_unpause_and_check_connectivity
@@ -18,7 +18,7 @@ from tests.compute.virt.gpu.utils import (
 )
 from tests.compute.virt.utils import running_sleep_in_linux
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.constants import GPU_DEVICE_NAME
+from utilities.constants import GPU_DEVICE_NAME, TIMEOUT_5SEC, VGPU_DEVICE_NAME
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
 
 
@@ -42,6 +42,42 @@ DATA_VOLUME_DICT = {
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def wait_for_failed_boot_without_permitted_hostdevices(vm):
+    """A VM without permitted hostdevices attached should not be able to start."""
+    expected_error = (
+        f"failed to render launch manifest: HostDevice {VGPU_DEVICE_NAME} "
+        "is not permitted in permittedHostDevices configuration"
+    )
+    LOGGER.info(f"Starting VM {vm.name} without permitted hostdevices")
+    vm.start(wait=False)
+    LOGGER.info("Waiting for error condition to appear")
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_5SEC,
+        sleep=1,
+        func=lambda: vm.vmi.instance.status.conditions,
+    ):
+        if sample and any(
+            [expected_error in condition.get("message", "") for condition in sample]
+        ):
+            return True
+
+
+@pytest.fixture()
+def non_permitted_hostdevices_vm(
+    gpu_nodes, hco_cr_with_permitted_hostdevices, unprivileged_client, namespace
+):
+    with VirtualMachineForTests(
+        client=unprivileged_client,
+        name="passthrough-non-permitted-hostdevices-vm",
+        namespace=namespace.name,
+        image=CIRROS_IMAGE,
+        node_selector=random.choice([*gpu_nodes]).name,
+        host_device_name=VGPU_DEVICE_NAME,
+        memory_requests="1Gi",
+    ) as vm:
+        yield vm
 
 
 @pytest.mark.parametrize(
@@ -166,22 +202,14 @@ class TestPCIPassthroughRHELGPUSSpec:
 
 
 @pytest.mark.polarion("CNV-5645")
-def test_only_permitted_hostdevices_allowed(
-    namespace,
-    unprivileged_client,
-    gpu_nodes,
-):
-    """Test that VM cannot be created without Permitted Hostdevices"""
-    with pytest.raises(
-        UnprocessibleEntityError,
-        match=f"admission webhook .* denied the request: HostDevice {GPU_DEVICE_NAME} is not permitted .*",
-    ):
-        with VirtualMachineForTests(
-            name="passthrough-non-permitted-hostdevices-vm",
-            namespace=namespace.name,
-            client=unprivileged_client,
-            image=CIRROS_IMAGE,
-            node_selector=random.choice([*gpu_nodes]).name,
-            host_device_name=GPU_DEVICE_NAME,
-        ):
-            pytest.fail("VM should get created only with allowed Permitted Hostdevices")
+def test_only_permitted_hostdevices_allowed(non_permitted_hostdevices_vm):
+    """
+    Test that virt-launcher Pod creation is not allowed,
+    for devices which are not in Permitted Hostdevices section of HCO CR.
+
+    Permitting GPU_DEVICE_NAME in HCO CR and assigning VGPU_DEVICE_NAME as host_device.
+    """
+    assert wait_for_failed_boot_without_permitted_hostdevices(
+        vm=non_permitted_hostdevices_vm
+    ), f"VM started and Virt-launcher Pod creation of VM: {non_permitted_hostdevices_vm.name} is not allowed, "
+    "for gpus which are not in Permitted Hostdevices section of HCO CR."
