@@ -250,3 +250,6 @@ UPGRADE_TEST_ORDERING_NODE_ID = UPGRADE_TEST_DEPENDNCY_NODE_ID = (
     "test_upgrade_process"
 )
 DEPENDENCY_SCOPE_SESSION = "session"
+
+# Feature gates
+ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE = "enableCommonBootImageImport"

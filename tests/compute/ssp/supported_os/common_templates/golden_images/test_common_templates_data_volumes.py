@@ -3,13 +3,13 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
-from ocp_resources.utils import TimeoutSampler
-from ocp_resources.virtual_machine import VirtualMachine
-from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+from tests.compute.ssp.supported_os.common_templates.golden_images.utils import (
+    assert_missing_golden_image_pvc,
+)
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
-from utilities.constants import TIMEOUT_2MIN, TIMEOUT_8MIN
+from utilities.constants import TIMEOUT_8MIN
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
@@ -21,27 +21,6 @@ pytestmark = pytest.mark.post_upgrade
 
 
 NON_EXISTING_DV_NAME = "non-existing-dv"
-
-
-@pytest.fixture()
-def updated_default_storage_class(
-    admin_client,
-    storage_class_matrix__function__,
-    removed_default_storage_classes,
-):
-    sc_name = [*storage_class_matrix__function__][0]
-    sc = list(StorageClass.get(dyn_client=admin_client, name=sc_name))
-    with ResourceEditor(
-        patches={
-            sc[0]: {
-                "metadata": {
-                    "annotations": {StorageClass.Annotations.IS_DEFAULT_CLASS: "true"},
-                    "name": sc_name,
-                }
-            }
-        }
-    ):
-        yield sc
 
 
 class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
@@ -157,7 +136,7 @@ def vm_from_golden_image(
     indirect=True,
 )
 def test_vm_from_golden_image_cluster_default_storage_class(
-    updated_default_storage_class,
+    updated_default_storage_class_scope_function,
     golden_image_data_volume_multi_storage_scope_function,
     vm_from_golden_image_multi_storage,
 ):
@@ -247,32 +226,10 @@ def test_missing_golden_image_pvc(
     vm_from_golden_image,
 ):
     vm_from_golden_image.start()
-
-    # Verify VM error on missing source PVC
-    for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN,
-        sleep=5,
-        func=lambda: list(
-            VirtualMachine.get(
-                dyn_client=admin_client,
-                namespace=namespace.name,
-                name=vm_from_golden_image.name,
-            )
-        ),
-        exceptions_dict={NotFoundError: []},
-    ):
-        if (
-            sample
-            and sample[0].instance.status.conditions
-            and any(
-                [
-                    f"Source PVC {py_config['golden_images_namespace']}/{NON_EXISTING_DV_NAME} not found"
-                    in condition["message"]
-                    for condition in sample[0].instance.status.conditions
-                ]
-            )
-        ):
-            break
+    assert_missing_golden_image_pvc(
+        vm=vm_from_golden_image,
+        pvc_name=NON_EXISTING_DV_NAME,
+    )
 
     # Update dataSource spec with the correct name
     ResourceEditor(

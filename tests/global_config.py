@@ -161,6 +161,14 @@ run_strategy_matrix = [
 
 sysprep_source_matrix = ["ConfigMap", "Secret"]
 
+auto_update_boot_sources_matrix = [
+    {"centos-stream8": {"template_os": "centos-stream8"}},
+    {"centos-stream9": {"template_os": "centos-stream9"}},
+    {"fedora": {"template_os": "fedora35"}},
+    {"rhel8": {"template_os": "rhel8.4"}},
+    {"rhel9": {"template_os": "rhel9.0"}},
+]
+
 rhel_os_matrix = [
     {
         "rhel-6-10": {

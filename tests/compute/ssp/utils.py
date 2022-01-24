@@ -40,3 +40,20 @@ def download_and_extract_tar(tarfile_url, dest_path):
     tar_data = urllib.request.urlopen(tarfile_url)
     thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
     thetarfile.extractall(path=dest_path)
+
+
+def get_parameters_from_template(template, parameter_subset):
+    """Retruns a dict with matching template parameters.
+
+    Args:
+        template (Template): Template
+        parameter_subset (str): Parameter name subset; may apply to a number of parameters
+
+    Returns:
+        dict: {parameter name: parameter value}
+    """
+    return {
+        parameter["name"]: parameter["value"]
+        for parameter in template.instance.parameters
+        if parameter_subset in parameter["name"]
+    }

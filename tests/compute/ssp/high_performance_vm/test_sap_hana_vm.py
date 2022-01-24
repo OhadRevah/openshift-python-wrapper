@@ -22,6 +22,7 @@ from tests.compute.ssp.high_performance_vm.utils import (
     validate_dedicated_emulatorthread,
     validate_iothreads_emulatorthread_on_same_pcpu,
 )
+from tests.compute.ssp.utils import get_parameters_from_template
 from tests.compute.utils import (
     generate_rhsm_cloud_init_data,
     generate_rhsm_secret,
@@ -100,23 +101,6 @@ def get_node_labels_by_name_subset(node, label_name_subset):
 
 def assert_node_label_exists(node, label_name):
     assert label_name, f"Node {node.name} does not have {label_name} label."
-
-
-def get_parameters_from_template(template, parameter_subset):
-    """Retruns a dict with matching template parameters.
-
-    Args:
-        template (Template): Template
-        parameter_subset (str): Parameter name subset; may apply to a number of parameters
-
-    Returns:
-        dict: {parameter name: parameter value}
-    """
-    return {
-        parameter["name"]: parameter["value"]
-        for parameter in template.instance.parameters
-        if parameter_subset in parameter["name"]
-    }
 
 
 def verify_vm_cpu_topology(vm, vmi_xml_dict, guest_cpu_config, template):
