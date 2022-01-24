@@ -71,6 +71,7 @@ def installed_descheduler_og(descheduler_ns):
         yield
 
 
+# TODO: Use "redhat-operators" source once the operator is available in 4.10.0
 @pytest.fixture(scope="class")
 def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
     descheduler_sub_name = "cluster-kube-descheduler-operator"
@@ -78,7 +79,7 @@ def installed_descheduler_sub(admin_client, descheduler_ns, installed_deschedule
     with Subscription(
         name=descheduler_sub_name,
         namespace=descheduler_ns.name,
-        source="redhat-operators",
+        source="redhat-operators-v49",
         source_namespace=marketplace_ns,
         channel=PackageManifest(
             name=descheduler_sub_name, namespace=marketplace_ns
@@ -189,7 +190,10 @@ def workers_free_memory(schedulable_nodes, utility_pods):
 
 @pytest.fixture(scope="class")
 def deployed_vms(
-    namespace, unprivileged_client, workers_free_memory, nodes_common_cpu_model
+    namespace,
+    unprivileged_client,
+    workers_free_memory,
+    nodes_common_cpu_model,
 ):
     vms = []
     vm_amount, vm_memory = calculate_vm_deployment(
