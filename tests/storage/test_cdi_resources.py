@@ -30,7 +30,6 @@ pytestmark = pytest.mark.post_upgrade
 
 LOGGER = logging.getLogger(__name__)
 CDI_LABEL = Resource.ApiGroup.CDI_KUBEVIRT_IO
-CDI_CONTROLLER = "cdi-controller"
 
 
 def verify_label(cdi_resources):
@@ -71,11 +70,6 @@ def verify_cdi_app_label(cdi_resources, cnv_version):
                 assert (
                     resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
                     == "olm"
-                ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
-            elif resource.name.startswith(CDI_CONTROLLER):
-                assert (
-                    resource.labels[f"{Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by"]
-                    == CDI_CONTROLLER
                 ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
             elif resource.kind == "Secret" and resource.name == "cdi-api-signing-key":
                 assert (
