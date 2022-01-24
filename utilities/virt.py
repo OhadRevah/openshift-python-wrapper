@@ -1061,6 +1061,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         dry_run=None,
         template_params=None,
         template_object=None,
+        non_existing_pvc=False,
     ):
         """
         VM creation using common templates.
@@ -1077,6 +1078,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             dry_run (str, default=None): If "All", the VM will be created using the dry_run flag
             template_params (dict, optional): dict with template parameters as keys and values
             template_object (Template, optional): Template object to create the VM from
+            non_existing_pvc(bool, default=False): If True, referenced PVC in DataSource is missing
         Returns:
             obj `VirtualMachine`: VM resource
         """
@@ -1132,6 +1134,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.access_modes = None  # required for evictionStrategy policy
         self.template_params = template_params
         self.template_object = template_object
+        self.non_existing_pvc = non_existing_pvc
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1147,8 +1150,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         # If termination_grace_period is not provided, terminationGracePeriodSeconds will be set to 180
         spec["terminationGracePeriodSeconds"] = self.termination_grace_period
 
+        # Nothing to do if source PVC (referenced in DataSource) does not exist
+        if self.non_existing_pvc:
+            LOGGER.info("Referenced PVC does not exist")
         # For diskless_vm, volumes are removed so dataVolumeTemplates (referencing volumes) should be removed as well
-        if self.diskless_vm:
+        elif self.diskless_vm:
             del res["spec"]["dataVolumeTemplates"]
         # Existing DV will be used as the VM's DV; dataVolumeTemplates is not needed
         elif self.existing_data_volume:
@@ -1193,7 +1199,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
         # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
         # To apply this logic, self.access_modes should be available.
-        if not self.diskless_vm and DataVolume.AccessMode.RWX not in self.access_modes:
+        if (
+            not (self.diskless_vm or self.non_existing_pvc)
+            and DataVolume.AccessMode.RWX not in self.access_modes
+        ):
             spec.pop("evictionStrategy", None)
 
         return res
