@@ -4,7 +4,7 @@ import pytest
 
 from tests.compute.utils import (
     scale_deployment_replicas,
-    update_hco_config,
+    update_hco_annotations,
     wait_for_updated_kv_value,
 )
 from utilities.virt import vm_instance_from_template
@@ -12,7 +12,7 @@ from utilities.virt import vm_instance_from_template
 
 @contextmanager
 def update_cluster_cpu_model(admin_client, hco_namespace, hco_resource, cpu_model):
-    with update_hco_config(
+    with update_hco_annotations(
         resource=hco_resource,
         path="cpuModel",
         value=cpu_model,

@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 
 import pytest
 
-from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
+from tests.compute.utils import update_hco_annotations, wait_for_updated_kv_value
 from tests.compute.virt.node_labeller.constants import CPU_MODEL_LABEL_PREFIX
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -87,7 +87,7 @@ def updated_kubevirt_cpus(
     kv_path = [MIN_CPU] if is_min_cpu else [OBSOLETE_CPU, nodes_common_cpu_model]
     kv_value = nodes_common_cpu_model if is_min_cpu else True
 
-    with update_hco_config(
+    with update_hco_annotations(
         resource=hyperconverged_resource_scope_function, path=hco_path, value=hco_value
     ):
         wait_for_updated_kv_value(

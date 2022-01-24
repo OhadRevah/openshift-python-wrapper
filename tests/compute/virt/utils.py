@@ -3,7 +3,7 @@ from contextlib import contextmanager
 
 from tests.compute.utils import (
     fetch_processid_from_linux_vm,
-    update_hco_config,
+    update_hco_annotations,
     wait_for_updated_kv_value,
 )
 from utilities.infra import run_ssh_commands
@@ -59,7 +59,7 @@ def running_sleep_in_linux(vm):
 
 @contextmanager
 def append_feature_gate_to_hco(feature_gate, resource, client, namespace):
-    with update_hco_config(
+    with update_hco_annotations(
         resource=resource,
         path="developerConfiguration/featureGates",
         value=feature_gate,

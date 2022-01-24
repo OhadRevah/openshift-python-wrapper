@@ -140,7 +140,17 @@ def kill_processes_by_name_windows(vm, process_name):
 
 
 @contextmanager
-def update_hco_config(resource, path, value):
+def update_hco_annotations(resource, path, value, overwrite_patches=False):
+    """
+    Update jsonpatch annotation in HCO CR.
+
+    Args:
+        resource (HyperConverged): HCO resource object
+        path (str): key path in KubeVirt CR
+        value (any): key value
+        overwrite_patches (bool): if True - overwrites existing jsonpatch annotation/s
+
+    """
     jsonpatch_key = "kubevirt.kubevirt.io/jsonpatch"
     resource_existing_jsonpatch_annotation = resource.instance.metadata.get(
         "annotations", {}
@@ -155,7 +165,7 @@ def update_hco_config(resource, path, value):
     # example:
     # '[{"op": "add", "path": "/spec/configuration/machineType", "value": "pc-q35-rhel8.4.0"},
     # {"op": "add", "path": "/spec/configuration/cpuModel", "value": "Haswell-noTSX"}]]'
-    if resource_existing_jsonpatch_annotation:
+    if resource_existing_jsonpatch_annotation and not overwrite_patches:
         hco_annotations_dict = hco_config_jsonpath_dict["metadata"]["annotations"]
         hco_annotations_dict[
             jsonpatch_key

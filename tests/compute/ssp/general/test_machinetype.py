@@ -8,7 +8,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import MachineTypesNames
-from tests.compute.utils import update_hco_config, wait_for_updated_kv_value
+from tests.compute.utils import update_hco_annotations, wait_for_updated_kv_value
 from tests.os_params import (
     RHEL_6_10_TEMPLATE_LABELS,
     RHEL_7_6,
@@ -89,7 +89,7 @@ def updated_configmap_machine_type(
     hco_namespace,
 ):
     machine_type = request.param["machine_type"]
-    with update_hco_config(
+    with update_hco_annotations(
         resource=hyperconverged_resource_scope_function,
         path="machineType",
         value=machine_type,
@@ -110,7 +110,7 @@ def updated_hco_emulated_machine_i440fx(
     hco_namespace,
 ):
     annotations_path = "emulatedMachines"
-    with update_hco_config(
+    with update_hco_annotations(
         resource=hyperconverged_resource_scope_function,
         path=annotations_path,
         value=[MachineTypesNames.pc_i440fx],
