@@ -12,6 +12,10 @@ from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
+from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.descheduler.constants import (
@@ -30,7 +34,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
 )
 from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import create_ns, get_pods
+from utilities.infra import BUG_STATUS_CLOSED, create_ns, get_bug_status, get_pods
 from utilities.virt import (
     node_mgmt_console,
     running_vm,
@@ -190,6 +194,7 @@ def workers_free_memory(schedulable_nodes, utility_pods):
 
 @pytest.fixture(scope="class")
 def deployed_vms(
+    admin_client,
     namespace,
     unprivileged_client,
     workers_free_memory,
@@ -219,6 +224,24 @@ def deployed_vms(
 
     for vm in vms:
         vm.clean_up()
+
+    # TODO: Remove finzalizer from VMIM to unblock deletion
+    if get_bug_status(bug=2040377) not in BUG_STATUS_CLOSED:
+        for migration_job in VirtualMachineInstanceMigration.get(
+            dyn_client=admin_client, namespace=namespace.name
+        ):
+            try:
+                migration_job_dict = migration_job.instance.to_dict()
+                migration_job_dict["metadata"].pop("finalizers", None)
+                ResourceEditor(
+                    patches={migration_job: migration_job_dict},
+                    action="replace",
+                ).update()
+                migration_job.wait_deleted()
+            except NotFoundError:
+                LOGGER.info(
+                    f"VirtualMachineInstanceMigration {migration_job.name} is already deleted."
+                )
 
 
 @pytest.fixture()
