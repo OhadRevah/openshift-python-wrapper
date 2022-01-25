@@ -170,9 +170,6 @@ HOSTPATH_PROVISIONER = "hostpath-provisioner"
 HOSTPATH_PROVISIONER_OPERATOR = "hostpath-provisioner-operator"
 HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD = "hyperconverged-cluster-cli-download"
 
-# Namespace constants
-OPENSHIFT_CNV_NAMESPACE = "openshift-cnv"
-
 # Miscellaneous constants
 UTILITY = "utility"
 

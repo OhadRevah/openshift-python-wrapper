@@ -26,7 +26,6 @@ from utilities.constants import (
     NMSTATE_HANDLER,
     NMSTATE_WEBHOOK,
     NODE_MAINTENANCE_OPERATOR,
-    OPENSHIFT_CNV_NAMESPACE,
     SSP_OPERATOR,
     VIRT_API,
     VIRT_CONTROLLER,
@@ -59,7 +58,7 @@ def _get_default_storage_class(sc_list):
 no_unprivileged_client = False
 distribution = "downstream"
 hco_cr_name = "kubevirt-hyperconverged"
-hco_namespace = OPENSHIFT_CNV_NAMESPACE
+hco_namespace = "openshift-cnv"
 sriov_namespace = "openshift-sriov-network-operator"
 marketplace_namespace = "openshift-marketplace"
 machine_api_namespace = "openshift-machine-api"
