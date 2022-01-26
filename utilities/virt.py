@@ -1070,6 +1070,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         template_object=None,
         non_existing_pvc=False,
         disable_sha2_algorithms=False,
+        data_volume_template_from_vm_spec=False,
     ):
         """
         VM creation using common templates.
@@ -1089,6 +1090,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             non_existing_pvc(bool, default=False): If True, referenced PVC in DataSource is missing
             disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
                 when creating a ssh connection
+            data_volume_template_from_vm_spec (bool, default=False): Use (and don't manipulate) VM's DataVolumeTemplates
         Returns:
             obj `VirtualMachine`: VM resource
         """
@@ -1146,6 +1148,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.template_params = template_params
         self.template_object = template_object
         self.non_existing_pvc = non_existing_pvc
+        self.data_volume_template_from_vm_spec = data_volume_template_from_vm_spec
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1164,6 +1167,14 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         # Nothing to do if source PVC (referenced in DataSource) does not exist
         if self.non_existing_pvc:
             LOGGER.info("Referenced PVC does not exist")
+        # Nothing to do if consuming dataVolumeTemplates already set in the VM spec
+        elif self.data_volume_template_from_vm_spec:
+            LOGGER.info(
+                "VM spec includes DataVolume, which will be used for storing the VM image."
+            )
+            self.access_modes = res["spec"]["dataVolumeTemplates"][0]["spec"][
+                "storage"
+            ].get("accessModes", [])
         # For diskless_vm, volumes are removed so dataVolumeTemplates (referencing volumes) should be removed as well
         elif self.diskless_vm:
             del res["spec"]["dataVolumeTemplates"]

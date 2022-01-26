@@ -17,8 +17,10 @@ from utilities.virt import migrate_vm_and_verify
 LOGGER = logging.getLogger(__name__)
 
 
+pytestmark = pytest.mark.usefixtures("skip_when_no_sriov")
+
+
 @pytest.mark.usefixtures(
-    "skip_when_no_sriov",
     "skip_insufficient_sriov_workers",
 )
 class TestPingConnectivity:
@@ -134,3 +136,18 @@ class TestSriovLiveMigration:
                 vm=running_sriov_vm_migrate, name=sriov_network.name
             ),
         )
+
+
+@pytest.mark.usefixtures("skip_if_no_allocatable_1gi_huge_pages_in_sriov_workers")
+@pytest.mark.sno
+class TestSriovDpdk:
+    @pytest.mark.polarion("CNV-7887")
+    def test_sriov_dpdk_testpmd(
+        self,
+        sriov_network,
+        sriov_dpdk_vm1,
+        testpmd_output,
+    ):
+        assert (
+            int(testpmd_output) > 0
+        ), f"testpmd should produce valid, non-zero statistics (actual result {testpmd_output})."

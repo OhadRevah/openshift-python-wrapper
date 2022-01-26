@@ -3,16 +3,21 @@ SR-IOV Tests
 """
 
 import logging
+import os
+import re
 import shlex
+import urllib.request
 
 import pytest
+from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import MTU_9000, SRIOV
+from utilities.constants import MTU_9000, SRIOV, TIMEOUT_10MIN, TIMEOUT_20SEC
 from utilities.infra import run_ssh_commands
 from utilities.network import cloud_init_network_data, network_nad, sriov_network_dict
 from utilities.virt import (
     VirtualMachineForTests,
+    VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
     restart_guest_agent,
     running_vm,
@@ -21,10 +26,15 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 VM_SRIOV_IFACE_NAME = "sriov1"
+NODE_HUGE_PAGES_1GI_KEY = "hugepages-1Gi"
+
+
+def vm_sriov_mac(mac_suffix_index):
+    return f"02:00:b5:b5:b5:{mac_suffix_index:02x}"
 
 
 def sriov_vm(
-    _index_number,
+    mac_suffix_index,
     unprivileged_client,
     name,
     namespace,
@@ -32,7 +42,7 @@ def sriov_vm(
     sriov_network,
     worker=None,
 ):
-    sriov_mac = "02:00:b5:b5:b5:%02x" % _index_number
+    sriov_mac = vm_sriov_mac(mac_suffix_index=mac_suffix_index)
     network_data_data = {
         "ethernets": {
             "1": {
@@ -74,7 +84,7 @@ def skip_insufficient_sriov_workers(sriov_workers):
         pytest.skip(msg="Test requires at least 2 SR-IOV worker nodes")
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def sriov_workers_node1(sriov_workers):
     """
     Get first worker nodes with SR-IOV capabilities
@@ -90,7 +100,7 @@ def sriov_workers_node2(sriov_workers):
     return sriov_workers[1]
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def sriov_network(sriov_node_policy, namespace, sriov_namespace):
     """
     Create a SR-IOV network linked to SR-IOV policy.
@@ -126,7 +136,7 @@ def sriov_vm1(
     index_number, sriov_workers_node1, namespace, unprivileged_client, sriov_network
 ):
     yield from sriov_vm(
-        _index_number=next(index_number),
+        mac_suffix_index=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm1",
         namespace=namespace,
@@ -146,7 +156,7 @@ def sriov_vm2(
     index_number, unprivileged_client, sriov_workers_node2, namespace, sriov_network
 ):
     yield from sriov_vm(
-        _index_number=next(index_number),
+        mac_suffix_index=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm2",
         namespace=namespace,
@@ -170,7 +180,7 @@ def sriov_vm3(
     sriov_network_vlan,
 ):
     yield from sriov_vm(
-        _index_number=next(index_number),
+        mac_suffix_index=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm3",
         namespace=namespace,
@@ -194,7 +204,7 @@ def sriov_vm4(
     sriov_network_vlan,
 ):
     yield from sriov_vm(
-        _index_number=next(index_number),
+        mac_suffix_index=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm4",
         namespace=namespace,
@@ -270,7 +280,7 @@ def sriov_network_mtu_9000(sriov_vm1, sriov_vm2, running_sriov_vm1, running_srio
 @pytest.fixture(scope="class")
 def sriov_vm_migrate(index_number, unprivileged_client, namespace, sriov_network):
     yield from sriov_vm(
-        _index_number=next(index_number),
+        mac_suffix_index=next(index_number),
         unprivileged_client=unprivileged_client,
         name="sriov-vm-migrate",
         namespace=namespace,
@@ -282,3 +292,122 @@ def sriov_vm_migrate(index_number, unprivileged_client, namespace, sriov_network
 @pytest.fixture(scope="class")
 def running_sriov_vm_migrate(sriov_vm_migrate):
     return running_vm(vm=sriov_vm_migrate)
+
+
+@pytest.fixture(scope="class")
+def dpdk_template(namespace, tmpdir_factory):
+    template_dir = tmpdir_factory.mktemp("dpdk_template")
+    template_filepath = os.path.join(template_dir, "dpdk_vm_template.yaml")
+
+    # TODO: Change the URL to "https://github.com/RHsyseng/cnv-supplemental-templates/blob/main/templates/testpmd/
+    # resource-specs/sriov-vm1.yaml" once https://github.com/RHsyseng/cnv-supplemental-templates/pull/7
+    # is merged.
+    urllib.request.urlretrieve(
+        url="https://raw.githubusercontent.com/yossisegev/cnv-supplemental-templates/template-and-additions/"
+        "templates/testpmd/resource-specs/sriov-vm1-template.yaml",
+        filename=template_filepath,
+    )
+    with Template(
+        yaml_file=template_filepath,
+        namespace=namespace.name,
+    ) as template:
+        yield template
+
+
+@pytest.fixture(scope="class")
+def sriov_dpdk_vm1(
+    dpdk_template,
+    index_number,
+    sriov_worker_with_allocatable_1gi_huge_pages,
+    unprivileged_client,
+    sriov_network,
+):
+    # No need to pass cloud_init_data, networks, interfaces and interfaces_types.
+    # The template already contains these definitions
+    with VirtualMachineForTestsFromTemplate(
+        name="sriov-dpdk-vm1",
+        namespace=dpdk_template.namespace,
+        client=unprivileged_client,
+        node_selector=sriov_worker_with_allocatable_1gi_huge_pages.hostname,
+        template_object=dpdk_template,
+        labels=Template.generate_template_labels(
+            os="rhel8.4",
+            workload=Template.Workload.SERVER,
+            flavor=Template.Flavor.MEDIUM,
+        ),
+        template_params={
+            "IMAGE_URL": "docker://quay.io/openshift-cnv/qe-cnv-tests-rhel:8.4-dpdk",
+            "SECONDARY_MAC": vm_sriov_mac(mac_suffix_index=next(index_number)),
+            "NAMESPACE": dpdk_template.namespace,
+        },
+        data_volume_template_from_vm_spec=True,
+    ) as vm:
+        running_vm(vm=vm)
+        yield vm
+
+
+@pytest.fixture()
+def vm_dpdk_pci_slot(sriov_dpdk_vm1):
+    # Retrieve the PCI ID of the de-activated SR-IOV NIC.
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=TIMEOUT_20SEC,
+        func=run_ssh_commands,
+        host=sriov_dpdk_vm1.ssh_exec,
+        commands=shlex.split("dpdk-devbind.py --status"),
+    ):
+        dpdk_result = re.search(
+            r".*?Network devices using DPDK-compatible driver.*?(\d{4}(:\d{2}){2}.\d)",
+            sample[0],
+            re.DOTALL,
+        )
+        if dpdk_result:
+            return dpdk_result[1]
+
+
+@pytest.fixture()
+def vm_dpdk_numa_cpu(sriov_dpdk_vm1):
+    # Get the CPU list to send to testpmd.
+    lscpu_output = run_ssh_commands(
+        host=sriov_dpdk_vm1.ssh_exec,
+        commands=["lscpu"],
+    )[0]
+
+    return re.search(r"NUMA node(\d) CPU\(s\):\s+(?P<numa_cpu>.*)\n.*", lscpu_output)[
+        "numa_cpu"
+    ]
+
+
+@pytest.fixture()
+def testpmd_output(vm_dpdk_pci_slot, vm_dpdk_numa_cpu, sriov_dpdk_vm1):
+    # testpmd starts tracing traffic and waits for <Enter> to exit and output the statistics.
+    # A timeout is provided to have enough runtime for traffic to be collected before sending <Enter>
+    test_output = run_ssh_commands(
+        host=sriov_dpdk_vm1.ssh_exec,
+        commands=[
+            shlex.split(
+                f"(sleep 30; echo -ne '\n') | sudo dpdk-testpmd  -l {vm_dpdk_numa_cpu} -w {vm_dpdk_pci_slot}"
+            )
+        ],
+    )[0]
+
+    return re.search(r".*?[RX|TX]-total: (\d+).*?", test_output, re.DOTALL).group(1)
+
+
+@pytest.fixture(scope="session")
+def sriov_worker_with_allocatable_1gi_huge_pages(sriov_workers):
+    for node in sriov_workers:
+        if (
+            node.instance.to_dict()["status"]["allocatable"]
+            .get(NODE_HUGE_PAGES_1GI_KEY, "")
+            .endswith("Gi")
+        ):
+            return node
+
+
+@pytest.fixture(scope="session")
+def skip_if_no_allocatable_1gi_huge_pages_in_sriov_workers(
+    sriov_worker_with_allocatable_1gi_huge_pages,
+):
+    if not sriov_worker_with_allocatable_1gi_huge_pages:
+        pytest.skip(f"Worker nodes are not configured with {NODE_HUGE_PAGES_1GI_KEY}.")
