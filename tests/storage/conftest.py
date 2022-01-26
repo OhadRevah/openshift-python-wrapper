@@ -11,6 +11,7 @@ import os
 import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.daemonset import DaemonSet
+from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.resource import ResourceEditor
@@ -22,7 +23,7 @@ from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
-from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, Images
+from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
 from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
     ResourceEditorValidateHCOReconcile,
@@ -32,8 +33,10 @@ from utilities.infra import (
 from utilities.storage import (
     HttpDeployment,
     downloaded_image,
+    get_images_server_url,
     sc_volume_binding_mode_is_wffc,
 )
+from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -384,3 +387,51 @@ def skip_if_sc_volume_binding_mode_is_wffc(storage_class_matrix__module__):
         pytest.skip(
             "Test does not support storage class with WaitForFirstConsumer binding mode"
         )
+
+
+@pytest.fixture()
+def cirros_vm_name(request):
+    return request.param["vm_name"]
+
+
+@pytest.fixture()
+def cirros_dv(
+    namespace,
+    cirros_vm_name,
+):
+    """
+    Define a DV that resides on OCS for use by a VM
+    """
+    dv = DataVolume(
+        name=f"dv-{cirros_vm_name}",
+        namespace=namespace.name,
+        source="http",
+        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
+        storage_class=StorageClass.Types.CEPH_RBD,
+        volume_mode=DataVolume.VolumeMode.BLOCK,
+        access_modes=DataVolume.AccessMode.RWX,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+    )
+    yield dv
+
+
+@pytest.fixture()
+def cirros_vm(
+    admin_client,
+    cirros_dv,
+    namespace,
+    cirros_vm_name,
+):
+    """
+    Create a VM with a DV from the cirros_dv fixture
+    """
+    dv_dict = cirros_dv.to_dict()
+    with VirtualMachineForTests(
+        client=admin_client,
+        name=cirros_vm_name,
+        namespace=dv_dict["metadata"]["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+    ) as vm:
+        yield vm

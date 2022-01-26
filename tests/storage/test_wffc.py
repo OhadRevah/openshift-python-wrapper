@@ -8,7 +8,6 @@ import logging
 
 import pytest
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
@@ -83,47 +82,6 @@ def get_dv_template_dict(dv_name):
             },
         },
     }
-
-
-def add_dv_to_vm(vm, dv_name=None, template_dv=None):
-    """
-    Add another DV to a VM
-
-    Can also be used to add a dataVolumeTemplate DV, just pass in template_dv param
-    """
-    if not (dv_name or template_dv):
-        raise ValueError(
-            "Either a dv_name (of an existing DV) or template_dv (dataVolumeTemplate spec) must be passed"
-        )
-    vm_instance = vm.instance.to_dict()
-    template_spec = vm_instance["spec"]["template"]["spec"]
-    dv_name = dv_name or template_dv["metadata"]["name"]
-    patch = {
-        "spec": {
-            "template": {
-                "spec": {
-                    "domain": {
-                        "devices": {
-                            "disks": [
-                                *template_spec["domain"]["devices"]["disks"],
-                                {"disk": {"bus": "virtio"}, "name": dv_name},
-                            ]
-                        }
-                    },
-                    "volumes": [
-                        *template_spec["volumes"],
-                        {"name": dv_name, "dataVolume": {"name": dv_name}},
-                    ],
-                },
-            },
-        }
-    }
-    if template_dv:
-        patch["spec"]["dataVolumeTemplates"] = [
-            *vm_instance["spec"].setdefault("dataVolumeTemplates", []),
-            template_dv,
-        ]
-    ResourceEditor(patches={vm: patch}).update()
 
 
 def _valid_vm_and_disk_count(vm):
@@ -359,7 +317,7 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
         _valid_vm_and_disk_count(vm=vm)
         # Add DV
         vm.stop(wait=True)
-        add_dv_to_vm(vm=vm, dv_name=data_volume_scope_function.name)
+        storage_utils.add_dv_to_vm(vm=vm, dv_name=data_volume_scope_function.name)
         # Check DV was added
         _valid_vm_and_disk_count(vm=vm)
 
@@ -379,5 +337,7 @@ def test_wffc_vm_with_two_data_volume_templates(
         data_volume_template=get_dv_template_dict(dv_name="template-dv-1"),
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
     ) as vm:
-        add_dv_to_vm(vm=vm, template_dv=get_dv_template_dict(dv_name="template-dv-2"))
+        storage_utils.add_dv_to_vm(
+            vm=vm, template_dv=get_dv_template_dict(dv_name="template-dv-2")
+        )
         _valid_vm_and_disk_count(vm=vm)

@@ -9,7 +9,7 @@ from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.pod import Pod
-from ocp_resources.resource import NamespacedResource
+from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
@@ -110,6 +110,47 @@ def check_disk_count_in_vm(vm):
     ), "Failed to verify actual disk count against VMI"
 
 
+def add_dv_to_vm(vm, dv_name=None, template_dv=None):
+    """
+    Add another DV to a VM
+
+    Can also be used to add a dataVolumeTemplate DV, just pass in template_dv param
+    """
+    if not (dv_name or template_dv):
+        raise ValueError(
+            "Either a dv_name (of an existing DV) or template_dv (dataVolumeTemplate spec) must be passed"
+        )
+    vm_instance = vm.instance.to_dict()
+    template_spec = vm_instance["spec"]["template"]["spec"]
+    dv_name = dv_name or template_dv["metadata"]["name"]
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "domain": {
+                        "devices": {
+                            "disks": [
+                                *template_spec["domain"]["devices"]["disks"],
+                                {"disk": {"bus": "virtio"}, "name": dv_name},
+                            ]
+                        }
+                    },
+                    "volumes": [
+                        *template_spec["volumes"],
+                        {"name": dv_name, "dataVolume": {"name": dv_name}},
+                    ],
+                },
+            },
+        }
+    }
+    if template_dv:
+        patch["spec"]["dataVolumeTemplates"] = [
+            *vm_instance["spec"].setdefault("dataVolumeTemplates", []),
+            template_dv,
+        ]
+    ResourceEditor(patches={vm: patch}).update()
+
+
 @contextmanager
 def create_vm_from_dv(
     dv,
@@ -118,6 +159,7 @@ def create_vm_from_dv(
     start=True,
     os_flavor=OS_FLAVOR_CIRROS,
     node_selector=None,
+    cpu_model=None,
     memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
 ):
     with VirtualMachineForTests(
@@ -126,6 +168,7 @@ def create_vm_from_dv(
         data_volume=dv,
         image=image,
         node_selector=node_selector,
+        cpu_model=cpu_model,
         memory_requests=memory_requests,
         os_flavor=os_flavor,
     ) as vm:

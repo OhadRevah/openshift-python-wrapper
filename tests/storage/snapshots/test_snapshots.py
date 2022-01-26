@@ -103,7 +103,7 @@ def test_snapshot_feature_gate_present(kubevirt_feature_gates):
 
 class TestRestoreSnapshots:
     @pytest.mark.parametrize(
-        "cirros_vm, snapshots_with_content, expected_results, snapshots_to_restore_idx",
+        "cirros_vm_name, snapshots_with_content, expected_results, snapshots_to_restore_idx",
         [
             pytest.param(
                 {"vm_name": "vm-cnv-4789"},
@@ -162,7 +162,7 @@ class TestRestoreSnapshots:
                 id="test_restore_all_snapshots",
             ),
         ],
-        indirect=["cirros_vm", "snapshots_with_content"],
+        indirect=["cirros_vm_name", "snapshots_with_content"],
     )
     def test_restore_snapshots(
         self,
@@ -189,7 +189,7 @@ class TestRestoreSnapshots:
                 cirros_vm.stop(wait=True)
 
     @pytest.mark.parametrize(
-        "cirros_vm, snapshots_with_content",
+        "cirros_vm_name, snapshots_with_content",
         [
             pytest.param(
                 {"vm_name": "vm-cnv-5048"},
@@ -218,7 +218,7 @@ class TestRestoreSnapshots:
                 return
 
     @pytest.mark.parametrize(
-        "cirros_vm, snapshots_with_content, namespace",
+        "cirros_vm_name, snapshots_with_content, namespace",
         [
             pytest.param(
                 {"vm_name": "vm-cnv-5049"},
@@ -250,7 +250,7 @@ class TestRestoreSnapshots:
 
     @pytest.mark.sno
     @pytest.mark.parametrize(
-        "cirros_vm, snapshots_with_content",
+        "cirros_vm_name, snapshots_with_content",
         [
             pytest.param(
                 {"vm_name": "vm-cnv-5084"},
@@ -289,7 +289,7 @@ class TestRestoreSnapshots:
 
 
 @pytest.mark.parametrize(
-    "cirros_vm, snapshots_with_content",
+    "cirros_vm_name, snapshots_with_content",
     [
         pytest.param(
             {"vm_name": "vm-cnv-4866"},
@@ -309,7 +309,7 @@ def test_remove_vm_with_snapshots(
 
 
 @pytest.mark.parametrize(
-    "cirros_vm, snapshots_with_content, expected_result",
+    "cirros_vm_name, snapshots_with_content, expected_result",
     [
         pytest.param(
             {"vm_name": "vm-cnv-4870"},
@@ -318,7 +318,7 @@ def test_remove_vm_with_snapshots(
             marks=pytest.mark.polarion("CNV-4870"),
         ),
     ],
-    indirect=["cirros_vm", "snapshots_with_content"],
+    indirect=["cirros_vm_name", "snapshots_with_content"],
 )
 def test_remove_snapshots_while_vm_is_running(
     cirros_vm,
@@ -367,7 +367,7 @@ def test_unprivileged_client_fails_to_list_resources(
 
 
 @pytest.mark.parametrize(
-    "cirros_vm, namespace",
+    "cirros_vm_name, namespace",
     [
         pytest.param(
             {"vm_name": "vm-cnv-4867"},
@@ -390,7 +390,7 @@ def test_fail_to_snapshot_with_unprivileged_client_no_permissions(
 
 
 @pytest.mark.parametrize(
-    "cirros_vm, namespace",
+    "cirros_vm_name, namespace",
     [
         pytest.param(
             {"vm_name": "vm-cnv-4868"},

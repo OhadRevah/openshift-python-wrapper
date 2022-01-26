@@ -6,49 +6,15 @@ Pytest conftest file for CNV Storage snapshots tests
 import logging
 
 import pytest
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.role_binding import RoleBinding
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.storage.utils import set_permissions
-from utilities.constants import OS_FLAVOR_CIRROS, UNPRIVILEGED_USER, Images
-from utilities.storage import get_images_server_url, write_file
-from utilities.virt import VirtualMachineForTests
+from utilities.constants import UNPRIVILEGED_USER
+from utilities.storage import write_file
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def cirros_vm(
-    request,
-    admin_client,
-    namespace,
-):
-    """
-    Create a VM with a DV that resides on OCS
-    """
-    dv = DataVolume(
-        name=f"dv-{request.param['vm_name']}",
-        namespace=namespace.name,
-        source="http",
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        storage_class=StorageClass.Types.CEPH_RBD,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        access_modes=DataVolume.AccessMode.RWX,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-    ).to_dict()
-    dv_metadata = dv["metadata"]
-    with VirtualMachineForTests(
-        client=admin_client,
-        name=request.param["vm_name"],
-        namespace=dv_metadata["namespace"],
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_metadata, "spec": dv["spec"]},
-    ) as vm:
-        yield vm
 
 
 def check_snapshot_indication(snapshot, is_online):

@@ -514,6 +514,9 @@ class ErrorMsg:
         "Failed to read registry image: Failed to find VM disk image file in the container image"
     )
     LARGER_PVC_REQUIRED = "A larger PVC is required"
+    LARGER_PVC_REQUIRED_CLONE = (
+        "target resources requests storage size is smaller than the source"
+    )
     INVALID_FORMAT_FOR_QCOW = "Unable to process data: Invalid format qcow for image "
     COULD_NOT_OPEN_SIZE_TOO_BIG = "Unable to process data: qemu-img: Could not open '/data/disk.img': L1 size too big"
     REQUESTED_RANGE_NOT_SATISFIABLE = (
