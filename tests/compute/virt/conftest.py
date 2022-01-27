@@ -1,8 +1,10 @@
 import pytest
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
+from ocp_resources.pod import Pod
 from pytest_testconfig import py_config
 
 from tests.compute.virt.utils import append_feature_gate_to_hco
+from utilities.infra import get_daemonset_by_name
 from utilities.storage import create_or_update_data_source
 
 
@@ -38,3 +40,26 @@ def golden_image_dv_scope_module_data_source_scope_class(
     yield from create_or_update_data_source(
         admin_client=admin_client, dv=golden_image_data_volume_scope_module
     )
+
+
+@pytest.fixture()
+def virt_handler_daemonset(hco_namespace, admin_client):
+    return get_daemonset_by_name(
+        admin_client=admin_client,
+        daemonset_name="virt-handler",
+        namespace_name=hco_namespace.name,
+    )
+
+
+@pytest.fixture(scope="module")
+def virt_pods(request, admin_client, hco_namespace):
+    podprefix = request.param
+    pods_list = list(
+        Pod.get(
+            admin_client,
+            namespace=hco_namespace.name,
+            label_selector=f"kubevirt.io={podprefix}",
+        )
+    )
+    assert pods_list, f"No pods found for {podprefix}"
+    yield pods_list

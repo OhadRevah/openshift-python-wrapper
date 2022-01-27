@@ -5,7 +5,6 @@ Check that KubeVirt infra pods are critical
 import logging
 
 import pytest
-from ocp_resources.pod import Pod
 
 from tests.compute.utils import verify_pods_priority_class_value
 from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER
@@ -15,20 +14,6 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="module")
-def virt_pods(request, admin_client, hco_namespace):
-    podprefix = request.param
-    pods_list = list(
-        Pod.get(
-            admin_client,
-            namespace=hco_namespace.name,
-            label_selector=f"kubevirt.io={podprefix}",
-        )
-    )
-    assert pods_list, f"No pods found for {podprefix}"
-    yield pods_list
 
 
 @pytest.mark.parametrize(

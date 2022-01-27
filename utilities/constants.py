@@ -169,6 +169,9 @@ HOSTPATH_PROVISIONER_CSI = "hostpath-provisioner-csi"
 HOSTPATH_PROVISIONER = "hostpath-provisioner"
 HOSTPATH_PROVISIONER_OPERATOR = "hostpath-provisioner-operator"
 HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD = "hyperconverged-cluster-cli-download"
+KUBEVIRT_HCO_NAME = "kubevirt-kubevirt-hyperconverged"
+HCO_PART_OF_LABEL_VALUE = "hyperconverged-cluster"
+MANAGED_BY_LABEL_VALUE_OLM = "olm"
 
 # Namespace constants
 OPENSHIFT_NAMESPACE = "openshift"

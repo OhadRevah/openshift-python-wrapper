@@ -4,7 +4,6 @@ from ocp_resources.pod import Pod
 from tests.install_upgrade_operators.relationship_labels.constants import (
     ALL_EXPECTED_LABELS_DICTS,
     MANAGED_BY_LABEL_KEY,
-    MANAGED_BY_LABEL_VALUE_OLM,
     VERSION_LABEL_KEY,
 )
 from tests.install_upgrade_operators.relationship_labels.utils import (
@@ -12,6 +11,7 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
     verify_labels_values_in_olm_deployments,
     verify_no_missing_labels_in_olm_deployments,
 )
+from utilities.constants import MANAGED_BY_LABEL_VALUE_OLM
 from utilities.hco import get_hco_version
 
 

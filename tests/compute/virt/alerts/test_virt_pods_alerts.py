@@ -8,7 +8,7 @@ from tests.compute.utils import (
     scale_deployment_replicas,
     verify_no_listed_alerts_on_cluster,
 )
-from utilities.infra import get_daemonset_by_name, update_custom_resource
+from utilities.infra import update_custom_resource
 
 
 VIRT_ALERTS_LIST = [
@@ -47,15 +47,6 @@ def disabled_virt_operator(hco_namespace):
         replica_count=0,
     ):
         yield
-
-
-@pytest.fixture()
-def virt_handler_daemonset(hco_namespace, admin_client):
-    return get_daemonset_by_name(
-        admin_client=admin_client,
-        daemonset_name="virt-handler",
-        namespace_name=hco_namespace.name,
-    )
 
 
 @pytest.fixture()
