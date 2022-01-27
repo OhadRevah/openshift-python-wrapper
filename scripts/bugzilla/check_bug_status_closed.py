@@ -6,7 +6,7 @@ from pathlib import Path
 import bugzilla
 
 
-BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
+BUG_STATUS_CLOSED = ("VERIFIED", "CLOSED", "RELEASE_PENDING")
 
 
 # TODO: Reuse the code from infra.py once we move bugzilla
