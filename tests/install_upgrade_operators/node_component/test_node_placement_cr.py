@@ -90,14 +90,16 @@ class TestCreateHCOWithNodePlacement:
     def test_node_placement_propagated_to_network_addons_cr(
         self,
         network_addon_config_spec_placement,
-        network_daemonsets_placement_list,
-        network_deployment_placement_list,
+        network_daemonsets_placement,
+        network_deployment_placement,
     ):
         """
         In this test case, check the HCO CR node placement
         propagated to NetworkAddonsConfig CR and it's Daemonsets and Deployments.
         """
         # Verify NetworkAddonsConfig component spec for Infra and Workloads.
+        LOGGER.info(f"Network daemonsets placement: {network_daemonsets_placement}")
+        LOGGER.info(f"Network deployment placement: {network_deployment_placement}")
         assert (
             network_addon_config_spec_placement.get("infra")
             == NODE_PLACEMENT_INFRA["nodePlacement"]
@@ -109,19 +111,29 @@ class TestCreateHCOWithNodePlacement:
 
         # Verify that node placement configuration has been correctly
         # propagated to network related daemonsets
-        for network_daemonsets_placement in network_daemonsets_placement_list:
-            assert (
-                network_daemonsets_placement
-                == NODE_PLACEMENT_WORKLOADS["nodePlacement"]["nodeSelector"]
-            )
+        daemonsets_mismatch = {
+            daemonset: node_placement_value
+            for daemonset, node_placement_value in network_daemonsets_placement.items()
+            if node_placement_value
+            != NODE_PLACEMENT_WORKLOADS["nodePlacement"]["nodeSelector"]["work-comp"]
+        }
+
+        assert (
+            not daemonsets_mismatch
+        ), f"For following daemonsets workload change did not get propagated: {daemonsets_mismatch}"
 
         # Verify that node placement configuration has been correctly
         # propagated to network related deployments
-        for network_deployment_placement in network_deployment_placement_list:
-            assert (
-                network_deployment_placement
-                == NODE_PLACEMENT_INFRA["nodePlacement"]["nodeSelector"]
-            )
+        deployment_mismatch = {
+            deployment: node_placement_value
+            for deployment, node_placement_value in network_deployment_placement.items()
+            if node_placement_value
+            != NODE_PLACEMENT_INFRA["nodePlacement"]["nodeSelector"]["infra-comp"]
+        }
+
+        assert (
+            not deployment_mismatch
+        ), f"For following deployment workload change did not get propagated: {daemonsets_mismatch}"
 
     @pytest.mark.polarion("CNV-5383")
     @pytest.mark.dependency(depends=["test_hco_cr_with_node_placement"])
