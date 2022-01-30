@@ -5,13 +5,13 @@ import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
-from tests.compute.upgrade.constants import SRC_PVC_NAME
 from tests.compute.upgrade.utils import (
     mismatching_src_pvc_names,
     verify_vms_ssh_connectivity,
 )
 from utilities import console
 from utilities.constants import (
+    DATA_SOURCE_NAME,
     DEPENDENCY_SCOPE_SESSION,
     UPGRADE_TEST_DEPENDNCY_NODE_ID,
     UPGRADE_TEST_ORDERING_NODE_ID,
@@ -272,7 +272,7 @@ class TestUpgradeCompute:
         self, base_templates, base_templates_after_upgrade
     ):
         LOGGER.info(
-            f"Comparing default value for parameter {SRC_PVC_NAME} "
+            f"Comparing default value for parameter {DATA_SOURCE_NAME} "
             f"in base templates before and after upgrade"
         )
         mismatching_templates = mismatching_src_pvc_names(
@@ -282,6 +282,6 @@ class TestUpgradeCompute:
 
         if mismatching_templates:
             raise ResourceValueError(
-                f"Golden image default {SRC_PVC_NAME} "
+                f"Golden image default {DATA_SOURCE_NAME} "
                 f"mismatch after upgrade:\n{mismatching_templates}"
             )

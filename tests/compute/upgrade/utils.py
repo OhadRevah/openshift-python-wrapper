@@ -1,7 +1,6 @@
 import logging
 
-from tests.compute.upgrade.constants import SRC_PVC_NAME
-from utilities.constants import TIMEOUT_3MIN
+from utilities.constants import DATA_SOURCE_NAME, TIMEOUT_3MIN
 from utilities.exceptions import ResourceMissingFieldError
 from utilities.virt import wait_for_ssh_connectivity
 
@@ -39,12 +38,12 @@ def get_src_pvc_default_name(template):
     param_value_list = [
         param["value"]
         for param in template.instance.parameters
-        if param["name"] == SRC_PVC_NAME
+        if param["name"] == DATA_SOURCE_NAME
     ]
 
     if param_value_list:
         return param_value_list[0]
 
     raise ResourceMissingFieldError(
-        f"Template {template.name} does not have a parameter {SRC_PVC_NAME}"
+        f"Template {template.name} does not have a parameter {DATA_SOURCE_NAME}"
     )

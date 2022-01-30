@@ -42,6 +42,8 @@ from utilities.constants import (
     CLOUD_INIT_NO_CLOUD,
     CLOUND_INIT_CONFIG_DRIVE,
     CNV_SSH_KEY_PATH,
+    DATA_SOURCE_NAME,
+    DATA_SOURCE_NAMESPACE,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     LIVE_MIGRATE,
     OS_FLAVOR_CIRROS,
@@ -1221,16 +1223,16 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
     def process_template(self):
         # Common templates use golden image clone as a default for VM DV
-        # SRC_PVC_NAME - to support minor releases, this value needs to be passed. Currently
+        # DATA_SOURCE_NAME - to support minor releases, this value needs to be passed. Currently
         # the templates only have one name per major OS.
-        # SRC_PVC_NAMESPACE parameters is not passed so the default value will be used.
+        # DATA_SOURCE_NAMESPACE parameters is not passed so the default value will be used.
         # If existing DV or custom dataVolumeTemplates are used, use mock source PVC name and namespace
         template_kwargs = {
             "NAME": self.name,
-            "SRC_PVC_NAME": self.data_source.name  # TODO: Change to DATA_SOURCE_NAME
+            DATA_SOURCE_NAME: self.data_source.name
             if self.data_source
             else "mock-data-source",
-            "SRC_PVC_NAMESPACE": self.data_source.namespace  # TODO: Change to DATA_SOURCE_NAMESPACE
+            DATA_SOURCE_NAMESPACE: self.data_source.namespace
             if self.data_source
             else "mock-data-source-ns",
         }

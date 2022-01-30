@@ -16,8 +16,8 @@ from pytest_testconfig import config as py_config
 from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_VM_YAML
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import FEDORA_LATEST_LABELS
-from utilities.constants import Images
-from utilities.infra import JIRA_STATUS_CLOSED, get_jira_status
+from utilities.constants import DATA_SOURCE_NAME, DATA_SOURCE_NAMESPACE, Images
+from utilities.infra import BUG_STATUS_CLOSED, JIRA_STATUS_CLOSED, get_jira_status
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -377,6 +377,9 @@ def test_common_templates_machine_type(
     ), f"Templates with machine-type that do not match kubevirt cm: {unmatched_templates}"
 
 
+@pytest.mark.bugzilla(
+    2048227, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-5002")
 def test_common_templates_golden_images_params(base_templates):
     unmatched_templates = {}
@@ -386,32 +389,34 @@ def test_common_templates_golden_images_params(base_templates):
         golden_images_params = [
             gi_params
             for gi_params in template_parameters_dict
-            if gi_params["name"] in ["SRC_PVC_NAME", "SRC_PVC_NAMESPACE"]
+            if gi_params["name"] in [DATA_SOURCE_NAME, DATA_SOURCE_NAMESPACE]
         ]
         if not len(golden_images_params) == 2:
             unmatched_templates.update(
                 {template.name: "Missing golden images parameters"}
             )
         for gi_params in golden_images_params:
-            # SRC_PVC_NAME contains either:
+            # DATA_SOURCE_NAME contains either:
             # fedora OS ("fedora")
             # rhel latest major release (e.g rhel7)
             # Windows relevant OS (e.g win2k19)
             if (
-                gi_params["name"] == "SRC_PVC_NAME"
+                gi_params["name"] == DATA_SOURCE_NAME
                 and re.match(r"^([a-z]+).*", template.name).group(1)[:3]
                 not in gi_params["value"]
             ):
                 unmatched_templates.update(
-                    {template.name: f"SRC_PVC_NAME wrong value {gi_params['value']}"}
+                    {
+                        template.name: f"{DATA_SOURCE_NAME} wrong value {gi_params['value']}"
+                    }
                 )
             if (
-                gi_params["name"] == "SRC_PVC_NAMESPACE"
+                gi_params["name"] == DATA_SOURCE_NAMESPACE
                 and gi_params["value"] != py_config["golden_images_namespace"]
             ):
                 unmatched_templates.update(
                     {
-                        template.name: f"SRC_PVC_NAMESPACE wrong namespace {gi_params['value']}"
+                        template.name: f"{DATA_SOURCE_NAMESPACE} wrong namespace {gi_params['value']}"
                     }
                 )
     assert (
