@@ -517,11 +517,14 @@ class ErrorMsg:
     error messages that might show in pod containers
     """
 
-    EXIT_STATUS_2 = "Unable to process data: exit status 2"
+    EXIT_STATUS_2 = (
+        "Unable to process data: "
+        "Unable to transfer source data to target directory: unable to untar files from endpoint: exit status 2"
+    )
     CERTIFICATE_SIGNED_UNKNOWN_AUTHORITY = "certificate signed by unknown authority"
     DISK_IMAGE_IN_CONTAINER_NOT_FOUND = (
-        "Unable to process data: Failed to find VM disk image file in the container "
-        "image"
+        "Unable to process data: Unable to transfer source data to scratch space: "
+        "Failed to read registry image: Failed to find VM disk image file in the container image"
     )
     LARGER_PVC_REQUIRED = "A larger PVC is required"
     INVALID_FORMAT_FOR_QCOW = "Unable to process data: Invalid format qcow for image "
