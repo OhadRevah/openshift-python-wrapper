@@ -64,13 +64,12 @@ from utilities.constants import (
 from utilities.exceptions import CommandExecFailed
 from utilities.hco import get_hyperconverged_resource
 from utilities.infra import (
-    BUG_STATUS_CLOSED,
     ClusterHosts,
     authorized_key,
     camelcase_to_mixedcase,
     collect_logs,
     get_admin_client,
-    get_bug_status,
+    is_bug_open,
     run_ssh_commands,
 )
 
@@ -1575,7 +1574,7 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
         if sample:
             break
 
-    if get_bug_status(bug=2005693) not in BUG_STATUS_CLOSED:
+    if is_bug_open(bug_id=2005693):
         sampler = TimeoutSampler(
             wait_timeout=timeout,
             sleep=1,
@@ -1886,7 +1885,7 @@ def migrate_vm_and_verify(
         wait_for_vm_interfaces(vmi=vm.vmi)
 
     # Bug 2005693 - trying to SSH to a VM may fail if the source virt-launcher pod is terminating
-    if get_bug_status(bug=2005693) not in BUG_STATUS_CLOSED:
+    if is_bug_open(bug_id=2005693):
         assert_pod_status_completed(source_pod=vmi_source_pod)
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
@@ -1896,7 +1895,7 @@ def migrate_vm_and_verify(
 def restart_guest_agent(vm):
     bug_num = 1907707
     restart = "restart qemu-guest-agent"
-    if get_bug_status(bug=bug_num) not in BUG_STATUS_CLOSED:
+    if is_bug_open(bug_id=bug_num):
         LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
         run_ssh_commands(
             host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]

@@ -34,7 +34,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
 )
 from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import BUG_STATUS_CLOSED, create_ns, get_bug_status, get_pods
+from utilities.infra import create_ns, get_pods, is_bug_open
 from utilities.virt import (
     node_mgmt_console,
     running_vm,
@@ -226,7 +226,7 @@ def deployed_vms(
         vm.clean_up()
 
     # TODO: Remove finzalizer from VMIM to unblock deletion
-    if get_bug_status(bug=2040377) not in BUG_STATUS_CLOSED:
+    if is_bug_open(bug_id=2040377):
         for migration_job in VirtualMachineInstanceMigration.get(
             dyn_client=admin_client, namespace=namespace.name
         ):

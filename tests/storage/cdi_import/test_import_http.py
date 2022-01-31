@@ -32,7 +32,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import BUG_STATUS_CLOSED, NON_EXIST_URL, get_bug_status
+from utilities.infra import NON_EXIST_URL, is_bug_open
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -72,10 +72,7 @@ def skip_if_hpp_sc_and_disk_img_bug_not_closed(storage_class_matrix__module__):
     bug_id = 2034544
     storage_class = [*storage_class_matrix__module__][0]
     hpp_storage_classes = [StorageClass.Types.HOSTPATH, StorageClass.Types.HOSTPATH_CSI]
-    if (
-        storage_class in hpp_storage_classes
-        and get_bug_status(bug=bug_id) not in BUG_STATUS_CLOSED
-    ):
+    if storage_class in hpp_storage_classes and is_bug_open(bug_id=bug_id):
         pytest.skip(f"Skip the test due to bug {bug_id}")
 
 

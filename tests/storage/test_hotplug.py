@@ -9,7 +9,7 @@ from ocp_resources.storage_class import StorageClass
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS
 from tests.storage.utils import storage_params
 from utilities.constants import HOTPLUG_DISK_SERIAL
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
+from utilities.infra import is_bug_open
 from utilities.storage import (
     assert_disk_serial,
     assert_hotplugvolume_nonexist_optional_restart,
@@ -28,9 +28,7 @@ def skip_if_hpp_sc(storage_class_matrix__function__):
     bug_id = 1955129
     if [*storage_class_matrix__function__][
         0
-    ] == StorageClass.Types.HOSTPATH and get_bug_status(
-        bug=bug_id
-    ) not in BUG_STATUS_CLOSED:
+    ] == StorageClass.Types.HOSTPATH and is_bug_open(bug_id=bug_id):
         pytest.skip(f"Skip the test due to bug {bug_id}")
 
 

@@ -17,7 +17,7 @@ from ocp_resources.validating_webhook_config import ValidatingWebhookConfigurati
 
 import utilities.network
 from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, NMSTATE_HANDLER
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
+from utilities.infra import is_bug_open
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -102,7 +102,7 @@ def filter_resources(resources, network_addons_config, is_post_cnv_upgrade_clust
         resource_name = f"{resource.kind}/{resource.name}"
         if (
             KNOWN_BUG in resource_name
-            and (get_bug_status(bug=1995606) not in BUG_STATUS_CLOSED)
+            and is_bug_open(bug_id=1995606)
             or any(ignore in resource_name.lower() for ignore in IGNORE_LIST)
             or ("Secret" in resource.kind and is_post_cnv_upgrade_cluster)
         ):

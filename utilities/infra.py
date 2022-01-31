@@ -1141,3 +1141,7 @@ def run_cnv_must_gather(image_url, dest_dir):
     LOGGER.info(f"Running: {must_gather_cmd}")
     check_output(must_gather_cmd, shell=True)
     return get_log_dir(path=dest_dir)
+
+
+def is_bug_open(bug_id):
+    return get_bug_status(bug=bug_id) not in BUG_STATUS_CLOSED

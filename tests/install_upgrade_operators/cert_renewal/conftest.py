@@ -17,7 +17,7 @@ from tests.install_upgrade_operators.constants import (
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_11MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status, update_custom_resource
+from utilities.infra import is_bug_open, update_custom_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -85,8 +85,7 @@ def secrets_with_non_closed_bugs():
     return tuple(
         component_name
         for bug_id, component_name in bugzilla_component_name_dict.items()
-        if get_bug_status(
-            bug=bug_id,
+        if is_bug_open(
+            bug_id=bug_id,
         )
-        not in BUG_STATUS_CLOSED
     )

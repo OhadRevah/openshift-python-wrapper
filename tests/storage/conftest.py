@@ -24,11 +24,10 @@ from pytest_testconfig import config as py_config
 from tests.storage.utils import HttpService, smart_clone_supported_by_sc
 from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, Images
 from utilities.infra import (
-    BUG_STATUS_CLOSED,
     INTERNAL_HTTP_SERVER_ADDRESS,
-    get_bug_status,
     get_cert,
     hco_cr_jsonpatch_annotations_dict,
+    is_bug_open,
 )
 from utilities.storage import (
     HttpDeployment,
@@ -383,9 +382,7 @@ def hpp_daemonset(hco_namespace):
 def skip_if_post_cnv_upgrade_cluster_and_labels_bug_not_closed(
     is_post_cnv_upgrade_cluster,
 ):
-    if (
-        get_bug_status(bug=2017478) not in BUG_STATUS_CLOSED
-    ) and is_post_cnv_upgrade_cluster:
+    if (is_bug_open(bug_id=2017478)) and is_post_cnv_upgrade_cluster:
         pytest.skip("Skip labels test on post cnv upgrade cluster")
 
 

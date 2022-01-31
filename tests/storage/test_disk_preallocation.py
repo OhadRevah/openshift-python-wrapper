@@ -9,11 +9,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import NamespacedResource, ResourceEditor
 
 from utilities.constants import Images
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_bug_status,
-    hco_cr_jsonpatch_annotations_dict,
-)
+from utilities.infra import hco_cr_jsonpatch_annotations_dict, is_bug_open
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -37,7 +33,7 @@ def assert_preallocation_requested_annotation(pvc, status):
     # TODO: Once bug 1926119 fixed, we will automatically stop sending the typo
     preallocation_requested = (
         "storage.preallocacation.requested"
-        if get_bug_status(bug=1926119) not in BUG_STATUS_CLOSED
+        if is_bug_open(bug_id=1926119)
         else "storage.preallocation.requested"
     )
     preallocation_requested_annotation = (

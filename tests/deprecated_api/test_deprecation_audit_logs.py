@@ -6,7 +6,7 @@ from collections import defaultdict
 import pytest
 
 from utilities.constants import VIRT_API
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
+from utilities.infra import is_bug_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -124,7 +124,7 @@ def test_deprecated_apis_in_audit_logs(audit_logs):
         if [
             True
             for comp, bug in components_bugs.items()
-            if comp in component and get_bug_status(bug=bug) not in BUG_STATUS_CLOSED
+            if comp in component and is_bug_open(bug_id=bug)
         ]:
             deprecated_calls.pop(component)
 

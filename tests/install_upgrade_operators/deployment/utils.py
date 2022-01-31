@@ -1,6 +1,6 @@
 import re
 
-from utilities.infra import BUG_STATUS_CLOSED, ResourceMismatch, get_bug_status
+from utilities.infra import ResourceMismatch, is_bug_open
 
 
 def validate_liveness_probe_fields(deployment):
@@ -91,10 +91,7 @@ def validate_cnv_deployments_priorty_class(cnv_deployments):
     cnv_deployment_names_with_open_bugs = [
         deployment
         for deployment, bug_id in deployments_with_bug.items()
-        if get_bug_status(
-            bug=bug_id,
-        )
-        not in BUG_STATUS_CLOSED
+        if is_bug_open(bug_id=bug_id)
     ]
 
     cnv_deployments_with_missing_priority_class = [

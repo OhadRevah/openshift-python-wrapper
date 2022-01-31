@@ -15,7 +15,7 @@ from utilities.constants import (
     HOSTPATH_PROVISIONER_CSI,
     SSP_OPERATOR,
 )
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
+from utilities.infra import is_bug_open
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -63,10 +63,9 @@ def components_with_non_closed_bugs():
     return tuple(
         component_name
         for bug_id, component_name in bugzilla_component_name_dict.items()
-        if get_bug_status(
-            bug=bug_id,
+        if is_bug_open(
+            bug_id=bug_id,
         )
-        not in BUG_STATUS_CLOSED
     )
 
 

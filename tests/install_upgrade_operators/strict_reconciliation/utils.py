@@ -24,7 +24,7 @@ from tests.install_upgrade_operators.utils import (
 )
 from utilities.constants import TIMEOUT_3MIN
 from utilities.hco import get_hco_spec, get_hyperconverged_resource
-from utilities.infra import BUG_STATUS_CLOSED, get_bug_status
+from utilities.infra import is_bug_open
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -417,10 +417,7 @@ def validate_related_objects(
     kinds_with_open_bz = [
         kind.lower()
         for kind, bug_id in kinds_with_bugzilla.items()
-        if get_bug_status(
-            bug=bug_id,
-        )
-        not in BUG_STATUS_CLOSED
+        if is_bug_open(bug_id=bug_id)
     ]
     LOGGER.info(f"Followings are kinds with open bugs: {kinds_with_open_bz}")
     error_reconciliation = {}
