@@ -48,6 +48,8 @@ DATA_IMPORT_CRON_SUFFIX = "-image-cron"
 RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL = (
     f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/dataImportCron"
 )
+HOSTPATH_CSI = "hostpath-csi"
+HPP_CSI = "hpp-csi"
 
 
 LOGGER = logging.getLogger(__name__)
@@ -783,3 +785,42 @@ def wait_for_dvs_import_completed(dvs_list):
         dv_status = {dv.name: dv.status for dv in dvs_list}
         LOGGER.error(f"dvs were not imported within timeout: status={dv_status}")
         raise
+
+
+class HppCsiStorageClass(StorageClass):
+    class Name:
+        # Without explicit storage pool, used with the Legacy HPP CR
+        HOSTPATH_CSI = HOSTPATH_CSI
+        HOSTPATH_CSI_BASIC = f"{HOSTPATH_CSI}-basic"  # Part of fresh deployment
+        HOSTPATH_CSI_PVC_BLOCK = f"{HOSTPATH_CSI}-pvc-block"  # Part of fresh deployment
+        HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK = f"{HOSTPATH_CSI}-pvc-template-ocs-block"
+        HOSTPATH_CSI_PVC_TEMPLATE_OCS_FS = f"{HOSTPATH_CSI}-pvc-template-ocs-fs"
+        HOSTPATH_CSI_PVC_TEMPLATE_LSO = f"{HOSTPATH_CSI}-pvc-template-lso"
+
+    class StoragePool:
+        HOSTPATH_CSI_BASIC = f"{HPP_CSI}-local-basic"
+        HOSTPATH_CSI_PVC_BLOCK = f"{HPP_CSI}-pvc-block"
+        HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK = f"{HPP_CSI}-pvc-template-ocs-block"
+        HOSTPATH_CSI_PVC_TEMPLATE_OCS_FS = f"{HPP_CSI}-pvc-template-ocs-fs"
+        HOSTPATH_CSI_PVC_TEMPLATE_LSO = f"{HPP_CSI}-pvc-template-lso"
+
+    def __init__(self, name, storage_pool=None, teardown=True):
+        super().__init__(name=name, teardown=teardown)
+        self._storage_pool = storage_pool
+
+    def to_dict(self):
+        res = super().to_dict()
+        res.update(
+            {
+                "provisioner": StorageClass.Provisioner.HOSTPATH_CSI,
+                "reclaimPolicy": "Delete",
+                "volumeBindingMode": StorageClass.VolumeBindingMode.WaitForFirstConsumer,
+            }
+        )
+        if self._storage_pool:
+            res.update(
+                {
+                    "parameters": {"storagePool": self._storage_pool},
+                }
+            )
+        return res
