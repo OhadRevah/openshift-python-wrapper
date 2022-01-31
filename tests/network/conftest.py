@@ -10,16 +10,12 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
 
 from utilities.constants import (
-    IPV4_STR,
     IPV6_STR,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     VIRT_HANDLER,
 )
 from utilities.infra import ClusterHosts, ExecCommandOnPod
-from utilities.network import (
-    get_ip_from_vm_or_virt_handler_pod,
-    ip_version_data_from_matrix,
-)
+from utilities.network import ip_version_data_from_matrix
 
 
 @pytest.fixture(scope="session")
@@ -74,20 +70,6 @@ def virt_handler_pod(admin_client):
         return pod
 
     raise NotFoundError(f"No {VIRT_HANDLER} Pod found.")
-
-
-@pytest.fixture(scope="session")
-def ipv4_supported_cluster(virt_handler_pod):
-    return get_ip_from_vm_or_virt_handler_pod(
-        family=IPV4_STR, virt_handler_pod=virt_handler_pod
-    )
-
-
-@pytest.fixture(scope="session")
-def ipv6_supported_cluster(virt_handler_pod):
-    return get_ip_from_vm_or_virt_handler_pod(
-        family=IPV6_STR, virt_handler_pod=virt_handler_pod
-    )
 
 
 @pytest.fixture(scope="session")

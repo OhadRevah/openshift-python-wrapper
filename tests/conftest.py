@@ -3,6 +3,7 @@
 """
 Pytest conftest file for CNV tests
 """
+import ipaddress
 import logging
 import os
 import os.path
@@ -2323,11 +2324,14 @@ def cluster_info(
     hco_image,
     ocs_current_version,
     kubevirt_resource_scope_session,
+    ipv6_supported_cluster,
+    ipv4_supported_cluster,
 ):
     if is_downstream_distribution:
         LOGGER.info(
             f"Openshift version: {openshift_current_version}, CNV version: {cnv_current_version}, "
-            f"HCO image: {hco_image}, OCS version: {ocs_current_version}"
+            f"HCO image: {hco_image}, OCS version: {ocs_current_version}\n"
+            f"IPv4 cluster: {ipv4_supported_cluster}, IPv6 cluster: {ipv6_supported_cluster}"
         )
     elif is_upstream_distribution:
         LOGGER.info(
@@ -2762,3 +2766,27 @@ def ssp_cr(admin_client, hco_namespace):
             f"SSP CR {ssp_name} was not found in namespace {hco_namespace.name}"
         )
         raise
+
+
+@pytest.fixture(scope="session")
+def cluster_service_network(is_downstream_distribution, admin_client):
+    if is_downstream_distribution:
+        return Network(
+            client=admin_client, name="cluster"
+        ).instance.status.serviceNetwork
+
+
+@pytest.fixture(scope="session")
+def ipv4_supported_cluster(cluster_service_network):
+    if cluster_service_network:
+        return any(
+            [ipaddress.ip_network(ip).version == 4 for ip in cluster_service_network]
+        )
+
+
+@pytest.fixture(scope="session")
+def ipv6_supported_cluster(cluster_service_network):
+    if cluster_service_network:
+        return any(
+            [ipaddress.ip_network(ip).version == 6 for ip in cluster_service_network]
+        )
