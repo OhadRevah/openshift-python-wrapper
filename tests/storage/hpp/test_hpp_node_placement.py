@@ -12,18 +12,12 @@ from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from openshift.dynamic.exceptions import NotFoundError
 
+from tests.storage.hpp.utils import wait_for_desired_hpp_pods_running
 from tests.storage.utils import check_disk_count_in_vm
-from utilities.constants import (
-    OS_FLAVOR_CIRROS,
-    TIMEOUT_1MIN,
-    TIMEOUT_2MIN,
-    TIMEOUT_5MIN,
-    Images,
-)
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN, TIMEOUT_5MIN, Images
 from utilities.hco import add_labels_to_nodes
 from utilities.storage import get_images_server_url
 from utilities.virt import VirtualMachineForTests, running_vm
@@ -89,19 +83,6 @@ HPP_NODE_PLACEMENT_DICT = {
         }
     },
 }
-
-
-def wait_for_desired_hpp_pods_running(hpp_daemonset, number_of_pods):
-    LOGGER.info(f"Wait for {number_of_pods} hpp pods to be running")
-    for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN,
-        sleep=1,
-        func=lambda: hpp_daemonset.instance.status.desiredNumberScheduled
-        == number_of_pods,
-    ):
-        if sample:
-            hpp_daemonset.wait_until_deployed()
-            break
 
 
 @contextmanager
