@@ -388,13 +388,13 @@ windows_os_matrix = [
 
 fedora_os_matrix = [
     {
-        "fedora-34": {
-            "image_name": Images.Fedora.FEDORA34_IMG,
-            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA34_IMG),
+        "fedora-35": {
+            "image_name": Images.Fedora.FEDORA35_IMG,
+            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA35_IMG),
             "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
             "latest": True,
             "template_labels": {
-                "os": "fedora34",
+                "os": "fedora35",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },

@@ -22,7 +22,7 @@ from utilities.storage import (
 pytestmark = pytest.mark.post_upgrade
 
 
-FEDORA_IMAGE = Images.Fedora.FEDORA33_IMG
+FEDORA_IMAGE = "Fedora-Cloud-Base-33-1.2.x86_64.qcow2"
 LOCAL_NAME = f"/tmp/{FEDORA_IMAGE}"
 FEDORA_IMAGE_SIZE_GI = 4
 
