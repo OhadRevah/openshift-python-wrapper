@@ -17,7 +17,7 @@ from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_VM_YAML
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import DATA_SOURCE_NAME, DATA_SOURCE_NAMESPACE, Images
-from utilities.infra import BUG_STATUS_CLOSED, JIRA_STATUS_CLOSED, get_jira_status
+from utilities.infra import JIRA_STATUS_CLOSED, get_jira_status
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -377,9 +377,6 @@ def test_common_templates_machine_type(
     ), f"Templates with machine-type that do not match kubevirt cm: {unmatched_templates}"
 
 
-@pytest.mark.bugzilla(
-    2048227, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-5002")
 def test_common_templates_golden_images_params(base_templates):
     unmatched_templates = {}
