@@ -172,6 +172,7 @@ HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD = "hyperconverged-cluster-cli-download"
 KUBEVIRT_HCO_NAME = "kubevirt-kubevirt-hyperconverged"
 HCO_PART_OF_LABEL_VALUE = "hyperconverged-cluster"
 MANAGED_BY_LABEL_VALUE_OLM = "olm"
+HPP_POOL = "hpp-pool"
 
 # Namespace constants
 OPENSHIFT_NAMESPACE = "openshift"
