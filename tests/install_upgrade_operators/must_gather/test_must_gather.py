@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import os
 import re
 
@@ -19,512 +20,542 @@ from ocp_resources.validating_webhook_config import ValidatingWebhookConfigurati
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
 
-from tests.install_upgrade_operators.must_gather import utils
+from tests.install_upgrade_operators.must_gather.utils import (
+    check_list_of_resources,
+    check_logs,
+    check_node_resource,
+    check_resource,
+    compare_resource_contents,
+    compare_webhook_svc_contents,
+    get_must_gather_output_file,
+)
 from utilities.constants import (
     BRIDGE_MARKER,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     NMSTATE_HANDLER,
+    OPENSHIFT_NAMESPACE,
 )
 from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = pytest.mark.sno
+LOGGER = logging.getLogger(__name__)
+VALIDATE_UID_NAME = (("metadata", "uid"), ("metadata", "name"))
+VALIDATE_FIELDS = (("spec",),) + VALIDATE_UID_NAME
 
 
-@pytest.mark.parametrize(
-    ("resource_type", "resource_path", "checks"),
-    [
-        pytest.param(
-            NodeNetworkState,
-            "cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
-            (("metadata", "uid"), ("metadata", "name")),
-            marks=(pytest.mark.polarion("CNV-2707")),
-            id="test_nodenetworkstate_resources",
-        ),
-        pytest.param(
-            NetworkAddonsConfig,
-            "cluster-scoped-resources/networkaddonsoperator.network"
-            ".kubevirt.io/networkaddonsconfigs/{name}.yaml",
-            (("spec",), ("metadata", "uid"), ("metadata", "name")),
-            marks=(pytest.mark.polarion("CNV-3042")),
-            id="test_networkaddonsoperator_resources",
-        ),
-        pytest.param(
-            NetworkAttachmentDefinition,
-            "namespaces/{namespace}/k8s.cni.cncf.io/"
-            "network-attachment-definitions/{name}.yaml",
-            (("spec",), ("metadata", "uid"), ("metadata", "name")),
-            marks=(pytest.mark.polarion("CNV-2720")),
-            id="test_network_attachment_definitions_resources",
-        ),
-        pytest.param(
-            VirtualMachine,
-            "namespaces/{namespace}/kubevirt.io/virtualmachines/custom/{name}.yaml",
-            (("spec",), ("metadata", "uid"), ("metadata", "name")),
-            marks=(pytest.mark.polarion("CNV-3043")),
-            id="test_virtualmachine_resources",
-        ),
-        pytest.param(
-            CDIConfig,
-            "cluster-scoped-resources/cdiconfigs.cdi.kubevirt.io/{name}.yaml",
-            (
-                ("spec",),
-                ("metadata", "uid"),
-                ("metadata", "name"),
+@pytest.mark.usefixtures("collected_cluster_must_gather")
+class TestMustGatherCluster:
+    @pytest.mark.parametrize(
+        ("resource_type", "resource_path", "checks"),
+        [
+            pytest.param(
+                NodeNetworkState,
+                f"cluster-scoped-resources/{NodeNetworkState.ApiGroup.NMSTATE_IO}/"
+                "nodenetworkstates/{name}.yaml",
+                VALIDATE_UID_NAME,
+                marks=(pytest.mark.polarion("CNV-2707")),
+                id="test_nodenetworkstate_resources",
             ),
-            marks=(pytest.mark.polarion("CNV-3373")),
-            id="test_cdi_config_resources",
-        ),
-    ],
-    indirect=["resource_type"],
-)
-def test_resource_type(
-    cnv_must_gather, admin_client, resource_type, resource_path, checks
-):
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=resource_type,
-        temp_dir=cnv_must_gather,
-        resource_path=resource_path,
-        checks=checks,
-    )
-
-
-@pytest.mark.parametrize(
-    "namespace",
-    [
-        pytest.param(
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2982")),
-            id="test_hco_namespace",
-        )
-    ],
-)
-def test_namespace(cnv_must_gather, namespace):
-    utils.check_resource(
-        resource=Namespace,
-        resource_name=namespace,
-        temp_dir=cnv_must_gather,
-        resource_path="namespaces/{name}/{name}.yaml",
-        checks=(("spec",), ("metadata", "name"), ("metadata", "uid")),
-    )
-
-
-@pytest.mark.polarion("CNV-5885")
-def test_no_upstream_only_namespaces(cnv_must_gather):
-    """
-    After running must-gather command on the cluster, there are some upstream-only namespaces
-    present. We counter "POD Error from server (NotFound)" in the logs as there no upstream-only
-    namespaces present. This test case will ensure that there is no logs showing "POD Error from
-    server (NotFound)" in the must-gather command execution.
-    """
-    upstream_namespaces = [
-        "kubevirt-hyperconverged",
-        "cluster-network-addons",
-        "sriov-network-operator",
-        "kubevirt-web-ui",
-        "cdi",
-    ]
-    ns_errors = {"upstream": [], "unexpected": []}
-    with open(utils.get_must_gather_output_file(cnv_must_gather)) as cmd_output:
-        for line in cmd_output.readlines():
-            match_output = re.search(
-                r"POD Error from server \(NotFound\): namespaces \"(\S+)\" not found",
-                line,
-            )
-            if match_output:
-                found_ns = match_output.group(1)
-                if found_ns in upstream_namespaces:
-                    ns_errors["upstream"].append(found_ns)
-                else:
-                    ns_errors["unexpected"].append(found_ns)
-    assert not any(
-        ns_errors.values()
-    ), f"Found namespace errors in must-gather. {ns_errors}"
-
-
-@pytest.mark.parametrize(
-    "label_selector, resource_namespace",
-    [
-        pytest.param(
-            f"app={BRIDGE_MARKER}",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2721")),
-            id="test_bridge_marker_pods",
-        ),
-        pytest.param(
-            f"name={KUBE_CNI_LINUX_BRIDGE_PLUGIN}",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2705")),
-            id="test_kube_cni_pods",
-        ),
-        pytest.param(
-            "kubemacpool-leader=true",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2983")),
-            id="kubemacpool-mac-controller-manager_pods",
-        ),
-        pytest.param(
-            f"name={NMSTATE_HANDLER}",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2984")),
-            id=f"{NMSTATE_HANDLER}_pods",
-        ),
-        pytest.param(
-            "name=cluster-network-addons-operator",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2985")),
-            id="cluster-network-addons-operator_pods",
-        ),
-        pytest.param(
-            "app=ovs-cni",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2986")),
-            id="ovs-cni_pods",
-        ),
-        pytest.param(
-            "app=kubemacpool",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-2718")),
-            id="kubemacpool_pods",
-        ),
-        pytest.param(
-            "app=sriov-device-plugin",
-            "sriov-network-operator",
-            marks=(pytest.mark.polarion("CNV-2710")),
-            id="test_sriov_device_plugin_pods",
-        ),
-        pytest.param(
-            "app=sriov-cni",
-            "sriov-network-operator",
-            marks=(pytest.mark.polarion("CNV-2709")),
-            id="test_sriov_cni_pods",
-        ),
-        pytest.param(
-            "app=containerized-data-importer",
-            py_config["hco_namespace"],
-            marks=(pytest.mark.polarion("CNV-3369")),
-            id="test_cdi_deployment_pods",
-        ),
-    ],
-)
-def test_pods(cnv_must_gather, admin_client, label_selector, resource_namespace):
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=Pod,
-        temp_dir=cnv_must_gather,
-        resource_path="namespaces/{namespace}/pods/{name}/{name}.yaml",
-        checks=(("metadata", "uid"), ("metadata", "name")),
-        namespace=resource_namespace,
-        label_selector=label_selector,
-    )
-
-
-@pytest.mark.polarion("CNV-2727")
-def test_template_in_openshift_ns_data(cnv_must_gather, admin_client):
-    template_resource = list(
-        Template.get(admin_client, singular_name="template", namespace="openshift")
-    )
-    template_log = os.path.join(
-        cnv_must_gather, "namespaces/openshift/templates/openshift.yaml"
-    )
-    with open(template_log, "r") as fd:
-        data = fd.read()
-    assert len(template_resource) == data.count(f"kind: {template_resource[0].kind}")
-
-
-@pytest.mark.polarion("CNV-2809")
-def test_node_nftables(skip_no_rhcos, cnv_must_gather, utility_pods):
-    for pod in utility_pods:
-        node_name = pod.node.name
-        nft_files = [
-            file
-            for file in os.listdir(f"{cnv_must_gather}/nodes/{node_name}")
-            if file.startswith("nft")
-        ]
-        nftables = pod.execute(
-            command=["bash", "-c", "nft list tables 2>/dev/null"]
-        ).splitlines()
-        utils.assert_nft_collection(
-            nft_files=nft_files, nftables=nftables, node_name=node_name
-        )
-        for table in nftables:
-            # table is a string of the form: "table {family} {name}"
-            family, name = table.split()[1:3]
-            utils.check_node_resource(
-                temp_dir=cnv_must_gather,
-                cmd=["bash", "-c", f"nft list {table} 2>/dev/null"],
-                utility_pod=pod,
-                results_file=f"nft-{family}-{name}",
-                compare_method="nft_compare",
-            )
-
-
-@pytest.mark.parametrize(
-    "cmd, results_file, compare_method",
-    [
-        pytest.param(
-            ["ip", "-o", "link", "show", "type", "bridge"],
-            "bridge",
-            "simple_compare",
-            marks=(
-                pytest.mark.polarion("CNV-2730"),
-                pytest.mark.bugzilla(
-                    1952036, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
+            pytest.param(
+                NetworkAddonsConfig,
+                f"cluster-scoped-resources/"
+                f"networkaddonsconfigs.{NetworkAddonsConfig.ApiGroup.NETWORKADDONSOPERATOR_NETWORK_KUBEVIRT_IO}/"
+                "{name}.yaml",
+                VALIDATE_UID_NAME,
+                marks=(pytest.mark.polarion("CNV-3042")),
+                id="test_networkaddonsoperator_resources",
             ),
-            id="test_nodes_bridge_data",
-        ),
-        pytest.param(
-            ["/bin/bash", "-c", "ls -l /host/var/lib/cni/bin"],
-            "var-lib-cni-bin",
-            "simple_compare",
-            marks=(
-                pytest.mark.polarion("CNV-2810"),
-                pytest.mark.bugzilla(
-                    1952041, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
+            pytest.param(
+                NetworkAttachmentDefinition,
+                "namespaces/{namespace}/"
+                f"{NetworkAttachmentDefinition.ApiGroup.K8S_CNI_CNCF_IO}/"
+                "network-attachment-definitions/{name}.yaml",
+                VALIDATE_FIELDS,
+                marks=(pytest.mark.polarion("CNV-2720")),
+                id="test_network_attachment_definitions_resources",
             ),
-            id="test_nodes_cni_bin_data",
-        ),
-        pytest.param(
-            ["ip", "a"],
-            "ip.txt",
-            "ip_compare",
-            marks=(
-                pytest.mark.polarion("CNV-2732"),
-                pytest.mark.bugzilla(
-                    1952052, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
+            pytest.param(
+                VirtualMachine,
+                "namespaces/{namespace}/"
+                f"{VirtualMachine.ApiGroup.KUBEVIRT_IO}/virtualmachines/custom"
+                "/{name}.yaml",
+                VALIDATE_FIELDS,
+                marks=(pytest.mark.polarion("CNV-3043")),
+                id="test_virtualmachine_resources",
             ),
-            id="test_nodes_ip_data",
-        ),
-    ],
-)
-def test_node_resource(
-    cnv_must_gather, utility_pods, cmd, results_file, compare_method
-):
-    for pod in utility_pods:
-        utils.check_node_resource(
-            temp_dir=cnv_must_gather,
-            cmd=cmd,
-            utility_pod=pod,
-            results_file=results_file,
-            compare_method=compare_method,
-        )
-
-
-@pytest.mark.parametrize(
-    "command, results_file, compare_method",
-    [
-        pytest.param(
-            ["ls", "-al", "/host/dev/vfio"],
-            "dev_vfio",
-            "simple_compare",
-            marks=(pytest.mark.polarion("CNV-3045")),
-            id="test_dev_vfio_on_node",
-        ),
-    ],
-)
-def test_node_sriov_resource(
-    skip_when_no_sriov,
-    cnv_must_gather,
-    utility_pods,
-    command,
-    results_file,
-    compare_method,
-):
-    for pod in utility_pods:
-        utils.check_node_resource(
-            temp_dir=cnv_must_gather,
-            cmd=command,
-            utility_pod=pod,
-            results_file=results_file,
-            compare_method=compare_method,
-        )
-
-
-@pytest.mark.polarion("CNV-2801")
-def test_nmstate_config_data(cnv_must_gather, admin_client):
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=NodeNetworkState,
-        temp_dir=cnv_must_gather,
-        resource_path="cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.yaml",
-        checks=(("metadata", "name"), ("metadata", "uid")),
+            pytest.param(
+                CDIConfig,
+                f"cluster-scoped-resources/cdiconfigs.{CDIConfig.ApiGroup.CDI_KUBEVIRT_IO}/"
+                "{name}.yaml",
+                VALIDATE_FIELDS,
+                marks=(pytest.mark.polarion("CNV-3373")),
+                id="test_cdi_config_resources",
+            ),
+        ],
+        indirect=["resource_type"],
     )
-
-
-@pytest.mark.parametrize(
-    "label_selector",
-    [pytest.param({"app": "cni-plugins"}, marks=(pytest.mark.polarion("CNV-2715")))],
-)
-def test_logs_gathering(cnv_must_gather, running_hco_containers, label_selector):
-    utils.check_logs(
-        cnv_must_gather=cnv_must_gather,
-        running_hco_containers=running_hco_containers,
-        label_selector=label_selector,
-        namespace=py_config["hco_namespace"],
-    )
-
-
-@pytest.mark.parametrize(
-    "label_selector",
-    [
-        pytest.param(
-            {"app": "sriov-device-plugin"},
-            marks=(pytest.mark.polarion("CNV-5355")),
-            id="test_sriov_device_plugin_logs",
-        ),
-        pytest.param(
-            {"app": "sriov-cni"},
-            marks=(pytest.mark.polarion("CNV-5354")),
-            id="test_sriov_cni_logs",
-        ),
-    ],
-)
-def test_sriov_logs_gathering(
-    skip_when_no_sriov,
-    sriov_namespace,
-    cnv_must_gather,
-    running_sriov_network_operator_containers,
-    label_selector,
-):
-    utils.check_logs(
-        cnv_must_gather=cnv_must_gather,
-        running_hco_containers=running_sriov_network_operator_containers,
-        label_selector=label_selector,
-        namespace=sriov_namespace.name,
-    )
-
-
-@pytest.mark.parametrize(
-    "config_map_by_name, has_owner",
-    [
-        pytest.param(
-            [KUBEMACPOOL_MAC_RANGE_CONFIG, py_config["hco_namespace"]],
-            True,
-            marks=(pytest.mark.polarion("CNV-2718")),
-            id="test_config_map_kubemacpool-mac-range-config",
-        ),
-    ],
-    indirect=["config_map_by_name"],
-)
-def test_gathered_config_maps(
-    cnv_must_gather, config_maps_file, config_map_by_name, has_owner
-):
-    checks = [("metadata", "name"), ("metadata", "uid")]
-    if has_owner:
-        checks.append(("metadata", "ownerReferences"))
-    utils.compare_resource_contents(
-        resource=config_map_by_name,
-        file_content=next(
-            filter(
-                lambda resource: resource["metadata"]["name"]
-                == config_map_by_name.name,
-                config_maps_file["items"],
-            )
-        ),
-        checks=checks,
-    )
-
-
-@pytest.mark.polarion("CNV-2723")
-def test_apiservice_resources(cnv_must_gather, admin_client):
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=APIService,
-        temp_dir=cnv_must_gather,
-        resource_path="apiservices/{name}.yaml",
-        checks=(("spec",), ("metadata", "name"), ("metadata", "uid")),
-        filter_resource="kubevirt",
-    )
-
-
-@pytest.mark.polarion("CNV-2726")
-def test_webhookconfig_resources(cnv_must_gather, admin_client):
-    checks = (("metadata", "name"), ("metadata", "uid"))
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=ValidatingWebhookConfiguration,
-        temp_dir=cnv_must_gather,
-        resource_path="webhooks/validating/{name}/validatingwebhookconfiguration.yaml",
-        checks=checks,
-    )
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=MutatingWebhookConfiguration,
-        temp_dir=cnv_must_gather,
-        resource_path="webhooks/mutating/{name}/mutatingwebhookconfiguration.yaml",
-        checks=checks,
-    )
-
-    for webhook_resources in [
-        list(ValidatingWebhookConfiguration.get(admin_client)),
-        list(MutatingWebhookConfiguration.get(admin_client)),
-    ]:
-        utils.compare_webhook_svc_contents(
-            webhook_resources=webhook_resources,
-            cnv_must_gather=cnv_must_gather,
+    def test_resource_type(
+        self,
+        admin_client,
+        collected_cluster_must_gather,
+        resource_type,
+        resource_path,
+        checks,
+    ):
+        check_list_of_resources(
             dyn_client=admin_client,
+            resource_type=resource_type,
+            temp_dir=collected_cluster_must_gather,
+            resource_path=resource_path,
             checks=checks,
         )
 
+    @pytest.mark.polarion("CNV-2982")
+    def test_namespace(self, hco_namespace, collected_cluster_must_gather):
+        namespace_name = hco_namespace.name
+        check_resource(
+            resource=Namespace,
+            resource_name=namespace_name,
+            temp_dir=collected_cluster_must_gather,
+            resource_path=f"namespaces/{namespace_name}/{namespace_name}.yaml",
+            checks=VALIDATE_FIELDS,
+        )
 
-@pytest.mark.polarion("CNV-2724")
-def test_crd_resources(admin_client, cnv_must_gather, kubevirt_crd_resources):
-    for kubevirt_crd_resource in kubevirt_crd_resources:
-        crd_name = kubevirt_crd_resource.name
-        for version in kubevirt_crd_resource.instance.spec.versions:
-            resource_objs = admin_client.resources.get(
-                api_version=version.name,
-                kind=kubevirt_crd_resource.instance.spec.names.kind,
+    @pytest.mark.polarion("CNV-5885")
+    @pytest.mark.bugzilla(
+        2049990,
+        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+    )
+    def test_no_upstream_only_namespaces(
+        self, collected_cluster_must_gather, sriov_namespace
+    ):
+        """
+        After running must-gather command on the cluster, there are some upstream-only namespaces
+        present. We counter "POD Error from server (NotFound)" in the logs as there no upstream-only
+        namespaces present. This test case will ensure that there is no logs showing "POD Error from
+        server (NotFound)" in the must-gather command execution.
+        """
+        upstream_namespaces = [
+            "kubevirt-hyperconverged",
+            "cluster-network-addons",
+            sriov_namespace.name,
+            "kubevirt-web-ui",
+            "cdi",
+        ]
+        with open(
+            get_must_gather_output_file(collected_cluster_must_gather)
+        ) as file_content:
+            must_gather_output = file_content.read()
+        match_output = re.findall(
+            r"Error from server \(NotFound\): namespaces \"(\S+)\" not found",
+            must_gather_output,
+        )
+        LOGGER.info(f"Matching: {match_output}")
+        matching_upstream_namespaces = [
+            namespace for namespace in match_output if namespace in upstream_namespaces
+        ]
+        assert (
+            not matching_upstream_namespaces
+        ), f"Found namespace errors in must-gather for the following namespaces {matching_upstream_namespaces}"
+
+    @pytest.mark.parametrize(
+        "label_selector, resource_namespace",
+        [
+            pytest.param(
+                f"app={BRIDGE_MARKER}",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2721")),
+                id="test_bridge_marker_pods",
+            ),
+            pytest.param(
+                f"name={KUBE_CNI_LINUX_BRIDGE_PLUGIN}",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2705")),
+                id="test_kube_cni_pods",
+            ),
+            pytest.param(
+                "kubemacpool-leader=true",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2983")),
+                id="kubemacpool-mac-controller-manager_pods",
+            ),
+            pytest.param(
+                f"name={NMSTATE_HANDLER}",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2984")),
+                id=f"{NMSTATE_HANDLER}_pods",
+            ),
+            pytest.param(
+                "name=cluster-network-addons-operator",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2985")),
+                id="cluster-network-addons-operator_pods",
+            ),
+            pytest.param(
+                "app=ovs-cni",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2986")),
+                id="ovs-cni_pods",
+            ),
+            pytest.param(
+                "app=kubemacpool",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-2718")),
+                id="kubemacpool_pods",
+            ),
+            pytest.param(
+                "app=sriov-device-plugin",
+                py_config["sriov_namespace"],
+                marks=(pytest.mark.polarion("CNV-2710")),
+                id="test_sriov_device_plugin_pods",
+            ),
+            pytest.param(
+                "app=sriov-cni",
+                py_config["sriov_namespace"],
+                marks=(pytest.mark.polarion("CNV-2709")),
+                id="test_sriov_cni_pods",
+            ),
+            pytest.param(
+                "app=containerized-data-importer",
+                py_config["hco_namespace"],
+                marks=(pytest.mark.polarion("CNV-3369")),
+                id="test_cdi_deployment_pods",
+            ),
+        ],
+    )
+    def test_pods(
+        self,
+        admin_client,
+        collected_cluster_must_gather,
+        label_selector,
+        resource_namespace,
+    ):
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=Pod,
+            temp_dir=collected_cluster_must_gather,
+            resource_path="namespaces/{namespace}/pods/{name}/{name}.yaml",
+            checks=VALIDATE_UID_NAME,
+            namespace=resource_namespace,
+            label_selector=label_selector,
+        )
+
+    @pytest.mark.polarion("CNV-2727")
+    def test_template_in_openshift_ns_data(
+        self, admin_client, collected_cluster_must_gather
+    ):
+        template_resources = list(
+            Template.get(admin_client, singular_name="template", namespace="openshift")
+        )
+        template_log = os.path.join(
+            collected_cluster_must_gather,
+            "namespaces/openshift/templates/openshift.yaml",
+        )
+        with open(template_log, "r") as _file:
+            data = _file.read()
+        count_templates = data.count(f"kind: {template_resources[0].kind}")
+        assert len(template_resources) == count_templates, (
+            f"Expected templates: {[template.name for template in template_resources]}, actual number of templates"
+            f"{count_templates}"
+        )
+
+    @pytest.mark.polarion("CNV-2809")
+    def test_node_nftables(
+        self, skip_no_rhcos, collected_nft_files_must_gather, nftables_from_utility_pods
+    ):
+        table_not_found_errors = []
+        for node_name in collected_nft_files_must_gather:
+            nftables = nftables_from_utility_pods[node_name]
+            file_name = collected_nft_files_must_gather[node_name]
+            with open(file_name) as _file:
+                gathered_data = _file.read()
+                not_found_tables = [
+                    table for table in nftables if table not in gathered_data
+                ]
+                if not_found_tables:
+                    table_not_found_errors.append(
+                        f"File:{file_name} - does not contain follwowing nftables:"
+                        f"{not_found_tables}"
+                    )
+
+        assert (
+            not table_not_found_errors
+        ), f"Following nftables were not collected: {table_not_found_errors}"
+
+    @pytest.mark.parametrize(
+        "cmd, results_file, compare_method",
+        [
+            pytest.param(
+                ["ip", "-o", "link", "show", "type", "bridge"],
+                "bridge",
+                "simple_compare",
+                marks=(
+                    pytest.mark.polarion("CNV-2730"),
+                    pytest.mark.bugzilla(
+                        1952036,
+                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+                    ),
+                ),
+                id="test_nodes_bridge_data",
+            ),
+            pytest.param(
+                ["/bin/bash", "-c", "ls -l /host/var/lib/cni/bin"],
+                "var-lib-cni-bin",
+                "simple_compare",
+                marks=(
+                    pytest.mark.polarion("CNV-2810"),
+                    pytest.mark.bugzilla(
+                        1952041,
+                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+                    ),
+                ),
+                id="test_nodes_cni_bin_data",
+            ),
+            pytest.param(
+                ["ip", "a"],
+                "ip.txt",
+                "ip_compare",
+                marks=(
+                    pytest.mark.polarion("CNV-2732"),
+                    pytest.mark.bugzilla(
+                        1952052,
+                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
+                    ),
+                ),
+                id="test_nodes_ip_data",
+            ),
+        ],
+    )
+    def test_node_resource(
+        self,
+        collected_cluster_must_gather,
+        utility_pods,
+        cmd,
+        results_file,
+        compare_method,
+    ):
+        for pod in utility_pods:
+            check_node_resource(
+                temp_dir=collected_cluster_must_gather,
+                cmd=cmd,
+                utility_pod=pod,
+                results_file=results_file,
+                compare_method=compare_method,
             )
 
-            for resource_item in resource_objs.get().to_dict()["items"]:
-                metadata = resource_item["metadata"]
-                name = metadata["name"]
-                if "namespace" in metadata:
-                    resource_file = os.path.join(
-                        cnv_must_gather,
-                        f"namespaces/{metadata['namespace']}/crs/{crd_name}/{name}.yaml",
-                    )
-                else:
-                    resource_file = os.path.join(
-                        cnv_must_gather,
-                        f"cluster-scoped-resources/{crd_name}/{name}.yaml",
-                    )
+    @pytest.mark.polarion("CNV-3045")
+    def test_node_sriov_resource(
+        self,
+        skip_when_no_sriov,
+        collected_cluster_must_gather,
+        utility_pods,
+    ):
+        for pod in utility_pods:
+            check_node_resource(
+                temp_dir=collected_cluster_must_gather,
+                cmd=["ls", "-al", "/host/dev/vfio"],
+                utility_pod=pod,
+                results_file="dev_vfio",
+                compare_method="simple_compare",
+            )
 
-                with open(resource_file) as resource_file:
-                    file_content = yaml.safe_load(
-                        resource_file.read(),
-                    )
-                assert name == file_content["metadata"]["name"]
-                assert (
-                    resource_item["metadata"]["uid"] == file_content["metadata"]["uid"]
+    @pytest.mark.polarion("CNV-2801")
+    def test_nmstate_config_data(self, admin_client, collected_cluster_must_gather):
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=NodeNetworkState,
+            temp_dir=collected_cluster_must_gather,
+            resource_path=f"cluster-scoped-resources/{NodeNetworkState.ApiGroup.NMSTATE_IO}/"
+            "nodenetworkstates/{name}.yaml",
+            checks=(("metadata", "name"), ("metadata", "uid")),
+        )
+
+    @pytest.mark.parametrize(
+        "label_selector",
+        [
+            pytest.param(
+                {"app": "cni-plugins"}, marks=(pytest.mark.polarion("CNV-2715"))
+            )
+        ],
+    )
+    def test_logs_gathering(
+        self, collected_cluster_must_gather, running_hco_containers, label_selector
+    ):
+        check_logs(
+            cnv_must_gather=collected_cluster_must_gather,
+            running_hco_containers=running_hco_containers,
+            label_selector=label_selector,
+            namespace=py_config["hco_namespace"],
+        )
+
+    @pytest.mark.parametrize(
+        "label_selector",
+        [
+            pytest.param(
+                {"app": "sriov-device-plugin"},
+                marks=(pytest.mark.polarion("CNV-5355")),
+                id="test_sriov_device_plugin_logs",
+            ),
+            pytest.param(
+                {"app": "sriov-cni"},
+                marks=(pytest.mark.polarion("CNV-5354")),
+                id="test_sriov_cni_logs",
+            ),
+        ],
+    )
+    def test_sriov_logs_gathering(
+        self,
+        skip_when_no_sriov,
+        sriov_namespace,
+        collected_cluster_must_gather,
+        running_sriov_network_operator_containers,
+        label_selector,
+    ):
+        check_logs(
+            cnv_must_gather=collected_cluster_must_gather,
+            running_hco_containers=running_sriov_network_operator_containers,
+            label_selector=label_selector,
+            namespace=sriov_namespace.name,
+        )
+
+    @pytest.mark.parametrize(
+        "config_map_by_name, has_owner",
+        [
+            pytest.param(
+                [KUBEMACPOOL_MAC_RANGE_CONFIG, py_config["hco_namespace"]],
+                True,
+                marks=(pytest.mark.polarion("CNV-2718")),
+                id="test_config_map_kubemacpool-mac-range-config",
+            ),
+        ],
+        indirect=["config_map_by_name"],
+    )
+    def test_gathered_config_maps(
+        self,
+        collected_cluster_must_gather,
+        config_maps_file,
+        config_map_by_name,
+        has_owner,
+    ):
+
+        compare_resource_contents(
+            resource=config_map_by_name,
+            file_content=next(
+                filter(
+                    lambda resource: resource["metadata"]["name"]
+                    == config_map_by_name.name,
+                    config_maps_file["items"],
+                )
+            ),
+            checks=VALIDATE_UID_NAME + (("metadata", "ownerReferences"),),
+        )
+
+    @pytest.mark.polarion("CNV-2723")
+    def test_apiservice_resources(self, admin_client, collected_cluster_must_gather):
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=APIService,
+            temp_dir=collected_cluster_must_gather,
+            resource_path="apiservices/{name}.yaml",
+            checks=VALIDATE_FIELDS,
+            filter_resource="kubevirt",
+        )
+
+    @pytest.mark.polarion("CNV-2726")
+    def test_webhookconfig_resources(self, admin_client, collected_cluster_must_gather):
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=ValidatingWebhookConfiguration,
+            temp_dir=collected_cluster_must_gather,
+            resource_path="webhooks/validating/{name}/validatingwebhookconfiguration.yaml",
+            checks=VALIDATE_UID_NAME,
+        )
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=MutatingWebhookConfiguration,
+            temp_dir=collected_cluster_must_gather,
+            resource_path="webhooks/mutating/{name}/mutatingwebhookconfiguration.yaml",
+            checks=VALIDATE_UID_NAME,
+        )
+
+        for webhook_resources in [
+            list(ValidatingWebhookConfiguration.get(admin_client)),
+            list(MutatingWebhookConfiguration.get(admin_client)),
+        ]:
+            compare_webhook_svc_contents(
+                webhook_resources=webhook_resources,
+                cnv_must_gather=collected_cluster_must_gather,
+                dyn_client=admin_client,
+                checks=VALIDATE_UID_NAME,
+            )
+
+    @pytest.mark.polarion("CNV-2724")
+    def test_crd_resources(
+        self, admin_client, collected_cluster_must_gather, kubevirt_crd_resources
+    ):
+        error_crds = []
+        for kubevirt_crd_resource in kubevirt_crd_resources:
+            crd_name = kubevirt_crd_resource.name
+            for version in kubevirt_crd_resource.instance.spec.versions:
+                resource_objs = admin_client.resources.get(
+                    api_version=version.name,
+                    kind=kubevirt_crd_resource.instance.spec.names.kind,
                 )
 
+                for resource_item in resource_objs.get().to_dict()["items"]:
+                    metadata = resource_item["metadata"]
+                    name = metadata["name"]
+                    if "namespace" in metadata:
+                        resource_file = os.path.join(
+                            collected_cluster_must_gather,
+                            f"namespaces/{metadata['namespace']}/crs/{crd_name}/{name}.yaml",
+                        )
+                    else:
+                        resource_file = os.path.join(
+                            collected_cluster_must_gather,
+                            f"cluster-scoped-resources/{crd_name}/{name}.yaml",
+                        )
 
-@pytest.mark.polarion("CNV-2939")
-def test_imagestreamtag_resources(admin_client, cnv_must_gather):
-    namespace = "openshift"
-    istag_dir = os.path.join(
-        cnv_must_gather,
-        f"namespaces/{namespace}/image.openshift.io/imagestreamtags/",
-    )
+                    with open(resource_file) as resource_file:
+                        file_content = yaml.safe_load(
+                            resource_file.read(),
+                        )
+                    resource_name_from_file = file_content["metadata"]["name"]
+                    resource_uid_from_file = file_content["metadata"]["uid"]
+                    actual_resource_uid = resource_item["metadata"]["uid"]
+                    if name != resource_name_from_file:
+                        error_crds.append(
+                            f"Actual resource name: {name}, must-gather collected resource name"
+                            f" {resource_name_from_file}"
+                        )
+                    if actual_resource_uid != resource_uid_from_file:
+                        error_crds.append(
+                            f"Resource uid: {actual_resource_uid} does not match with must-gather data:"
+                            f"{resource_uid_from_file}"
+                        )
+        assert not error_crds, f"{error_crds}"
 
-    assert len(os.listdir(istag_dir)) == len(
-        list(ImageStreamTag.get(admin_client, namespace=namespace))
-    )
-    checks = (("metadata", "name"), ("metadata", "uid"))
+    @pytest.mark.polarion("CNV-2939")
+    def test_image_stream_tag_resources(
+        self, admin_client, collected_cluster_must_gather
+    ):
+        resource_path = f"namespaces/{OPENSHIFT_NAMESPACE}/{ImageStreamTag.ApiGroup.IMAGE_OPENSHIFT_IO}/imagestreamtags"
+        istag_dir = os.path.join(
+            collected_cluster_must_gather,
+            resource_path,
+        )
 
-    utils.check_list_of_resources(
-        dyn_client=admin_client,
-        resource_type=ImageStreamTag,
-        temp_dir=cnv_must_gather,
-        resource_path="namespaces/{namespace}/image.openshift.io/imagestreamtags/{name}.yaml",
-        checks=checks,
-        namespace=namespace,
-        filter_resource="redhat",
-    )
+        assert len(os.listdir(istag_dir)) == len(
+            list(ImageStreamTag.get(admin_client, namespace=OPENSHIFT_NAMESPACE))
+        )
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=ImageStreamTag,
+            temp_dir=collected_cluster_must_gather,
+            resource_path=f"{resource_path}/" "{name}.yaml",
+            checks=VALIDATE_UID_NAME,
+            namespace=OPENSHIFT_NAMESPACE,
+            filter_resource="redhat",
+        )
