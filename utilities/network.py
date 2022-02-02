@@ -23,7 +23,15 @@ from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.constants import IPV4_STR, IPV6_STR, SRIOV, TIMEOUT_2MIN, WORKERS_TYPE
+from utilities.constants import (
+    IPV4_STR,
+    IPV6_STR,
+    LINUX_BRIDGE,
+    OVS_BRIDGE,
+    SRIOV,
+    TIMEOUT_2MIN,
+    WORKERS_TYPE,
+)
 from utilities.infra import ClusterHosts, get_pod_by_name_prefix
 from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
 
@@ -31,8 +39,6 @@ from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
 LOGGER = logging.getLogger(__name__)
 IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
 IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
-LINUX_BRIDGE = "linux-bridge"
-OVS_BRIDGE = "ovs-bridge"
 OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
 
@@ -95,8 +101,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             dns_resolver=dns_resolver,
             state=bridge_state,
         )
-        self.ovs_bridge_type = "ovs-bridge"
-        self.linux_bridge_type = "linux-bridge"
+        self.ovs_bridge_type = OVS_BRIDGE
+        self.linux_bridge_type = LINUX_BRIDGE
         self.bridge_name = bridge_name
         self.bridge_type = bridge_type
         self.stp_config = stp_config
@@ -182,7 +188,7 @@ class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPo
         super().__init__(
             name=name,
             bridge_name=bridge_name,
-            bridge_type="linux-bridge",
+            bridge_type=LINUX_BRIDGE,
             stp_config=stp_config,
             ports=ports,
             set_ipv4=set_ipv4,
@@ -222,7 +228,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         super().__init__(
             name=name,
             bridge_name=bridge_name,
-            bridge_type="ovs-bridge",
+            bridge_type=OVS_BRIDGE,
             stp_config=stp_config,
             ports=ports,
             mtu=mtu,

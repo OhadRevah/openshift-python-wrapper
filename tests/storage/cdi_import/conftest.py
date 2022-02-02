@@ -7,7 +7,8 @@ import logging
 import pytest
 from ocp_resources.storage_class import StorageClass
 
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.constants import LINUX_BRIDGE
+from utilities.network import network_device, network_nad
 
 
 LOGGER = logging.getLogger(__name__)

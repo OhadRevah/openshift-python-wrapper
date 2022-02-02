@@ -12,11 +12,12 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    LINUX_BRIDGE,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
 )
 from utilities.infra import create_ns, get_pod_by_name_prefix, label_project
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

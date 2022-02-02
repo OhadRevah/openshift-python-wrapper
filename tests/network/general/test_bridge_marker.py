@@ -3,8 +3,8 @@
 import pytest
 from ocp_resources.utils import TimeoutExpiredError
 
-from utilities.constants import TIMEOUT_2MIN, TIMEOUT_30SEC
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.constants import LINUX_BRIDGE, TIMEOUT_2MIN, TIMEOUT_30SEC
+from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

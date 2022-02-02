@@ -1,11 +1,7 @@
 import pytest
 
-from utilities.network import (
-    LINUX_BRIDGE,
-    compose_cloud_init_data_dict,
-    network_device,
-    network_nad,
-)
+from utilities.constants import LINUX_BRIDGE
+from utilities.network import compose_cloud_init_data_dict, network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

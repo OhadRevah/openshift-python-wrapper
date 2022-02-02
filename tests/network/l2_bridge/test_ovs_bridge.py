@@ -2,8 +2,8 @@ from collections import OrderedDict
 
 import pytest
 
+from utilities.constants import OVS_BRIDGE
 from utilities.network import (
-    OVS_BRIDGE,
     assert_ping_successful,
     compose_cloud_init_data_dict,
     network_nad,

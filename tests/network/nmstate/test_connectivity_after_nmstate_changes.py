@@ -9,10 +9,9 @@ from tests.network.utils import (
     assert_ssh_alive,
     run_ssh_in_background,
 )
-from utilities.constants import NMSTATE_HANDLER
+from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
 from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
-    LINUX_BRIDGE,
     assert_ping_successful,
     assert_pingable_vm,
     compose_cloud_init_data_dict,

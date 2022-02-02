@@ -11,6 +11,7 @@ from ocp_resources.pod import Pod
 
 import utilities.network
 from tests.install_upgrade_operators.must_gather.utils import collect_must_gather
+from utilities.constants import LINUX_BRIDGE
 from utilities.infra import ExecCommandOnPod, MissingResourceException, create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -76,7 +77,7 @@ def must_gather_nad(nodenetworkstate_with_bridge, node_gather_unprivileged_names
 @pytest.fixture(scope="package")
 def nodenetworkstate_with_bridge():
     with utilities.network.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+        interface_type=LINUX_BRIDGE,
         nncp_name="must-gather-br",
         interface_name="mg-br1",
     ) as br:

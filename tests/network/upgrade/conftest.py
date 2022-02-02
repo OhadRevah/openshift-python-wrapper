@@ -15,7 +15,8 @@ from tests.network.utils import (
     ServiceMeshDeploymentService,
     ServiceMeshMemberRollForTests,
 )
-from utilities.network import LINUX_BRIDGE, cloud_init, network_nad
+from utilities.constants import LINUX_BRIDGE
+from utilities.network import cloud_init, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

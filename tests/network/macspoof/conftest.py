@@ -7,10 +7,9 @@ import pytest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import TIMEOUT_30SEC
+from utilities.constants import LINUX_BRIDGE, TIMEOUT_30SEC
 from utilities.infra import name_prefix, run_ssh_commands
 from utilities.network import (
-    LINUX_BRIDGE,
     assert_ping_successful,
     compose_cloud_init_data_dict,
     get_vmi_ip_v4_by_name,

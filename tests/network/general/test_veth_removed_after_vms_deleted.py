@@ -9,8 +9,8 @@ import logging
 import pytest
 from ocp_resources.utils import TimeoutSampler
 
-from utilities.constants import TIMEOUT_3MIN
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.constants import LINUX_BRIDGE, TIMEOUT_3MIN
+from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

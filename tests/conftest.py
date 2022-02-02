@@ -75,7 +75,9 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     KUBECONFIG,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
+    LINUX_BRIDGE,
     MTU_9000,
+    OVS_BRIDGE,
     SRIOV,
     TIMEOUT_4MIN,
     TIMEOUT_6MIN,
@@ -116,7 +118,6 @@ from utilities.infra import (
 )
 from utilities.logger import setup_logging
 from utilities.network import (
-    LINUX_BRIDGE,
     EthernetNetworkConfigurationPolicy,
     MacPool,
     cloud_init,
@@ -1102,7 +1103,7 @@ def nodes_active_nics(
 ):
     def _bridge_ports(node_interface):
         ports = set()
-        if node_interface["type"] in ("ovs-bridge", "linux-bridge") and node_interface[
+        if node_interface["type"] in (OVS_BRIDGE, LINUX_BRIDGE) and node_interface[
             "bridge"
         ].get("port"):
             for bridge_port in node_interface["bridge"]["port"]:

@@ -17,7 +17,7 @@ from ocp_resources.validating_webhook_config import ValidatingWebhookConfigurati
 
 import utilities.network
 from tests.network.constants import EXPECTED_CNAO_COMP_NAMES
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, LINUX_BRIDGE
 from utilities.infra import is_bug_open
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -163,7 +163,7 @@ def check_components(network_addons_config_scope_session):
 @pytest.fixture(scope="module")
 def net_add_op_bridge_device(worker_node1):
     with utilities.network.network_device(
-        interface_type=utilities.network.LINUX_BRIDGE,
+        interface_type=LINUX_BRIDGE,
         nncp_name="test-network-operator",
         interface_name="br1test",
         node_selector=worker_node1.hostname,
@@ -174,7 +174,7 @@ def net_add_op_bridge_device(worker_node1):
 @pytest.fixture(scope="module")
 def net_add_op_br1test_nad(namespace, net_add_op_bridge_device):
     with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
+        nad_type=LINUX_BRIDGE,
         nad_name=net_add_op_bridge_device.bridge_name,
         interface_name=net_add_op_bridge_device.bridge_name,
         namespace=namespace,

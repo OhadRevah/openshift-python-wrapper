@@ -9,9 +9,9 @@ from ocp_resources.virtual_machine_instance_migration import (
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import VIRTIO
-from utilities.constants import TIMEOUT_12MIN
+from utilities.constants import LINUX_BRIDGE, TIMEOUT_12MIN
 from utilities.infra import run_ssh_commands
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.network import network_device, network_nad
 from utilities.storage import get_storage_class_dict_from_matrix
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,

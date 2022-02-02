@@ -13,6 +13,7 @@ from utilities.constants import (
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     HOSTPATH_PROVISIONER,
     HOSTPATH_PROVISIONER_CSI,
+    LINUX_BRIDGE,
     SSP_OPERATOR,
 )
 from utilities.infra import is_bug_open
@@ -29,7 +30,7 @@ POD_SCC_ALLOWLIST = [
     HOSTPATH_PROVISIONER_CSI,
     "containerized-data-importer",
     BRIDGE_MARKER,
-    "linux-bridge",
+    LINUX_BRIDGE,
     "nmstate",
     "ovs-cni-marker",
     "kubevirt-handler",

@@ -15,13 +15,13 @@ from tests.network.utils import assert_ssh_alive, run_ssh_in_background
 from utilities.constants import (
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     IPV6_STR,
+    LINUX_BRIDGE,
     OS_FLAVOR_FEDORA,
     OS_LOGIN_PARAMS,
     TIMEOUT_2MIN,
 )
 from utilities.infra import run_ssh_commands
 from utilities.network import (
-    LINUX_BRIDGE,
     assert_ping_successful,
     compose_cloud_init_data_dict,
     get_valid_ip_address,

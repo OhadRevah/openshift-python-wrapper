@@ -22,10 +22,12 @@ from utilities.constants import (
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_CERT_MANAGER,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    LINUX_BRIDGE,
     NMSTATE_CERT_MANAGER,
     NMSTATE_HANDLER,
     NMSTATE_WEBHOOK,
     NODE_MAINTENANCE_OPERATOR,
+    OVS_BRIDGE,
     SSP_OPERATOR,
     VIRT_API,
     VIRT_CONTROLLER,
@@ -106,7 +108,7 @@ nic_models_matrix = [
     "virtio",
     "e1000e",
 ]
-bridge_device_matrix = ["linux-bridge", "ovs-bridge"]
+bridge_device_matrix = [LINUX_BRIDGE, OVS_BRIDGE]
 
 HPP_VOLUME_MODE_ACCESS_MODE = {
     "volume_mode": DataVolume.VolumeMode.FILE,

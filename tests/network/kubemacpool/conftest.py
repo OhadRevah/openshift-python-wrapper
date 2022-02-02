@@ -4,9 +4,13 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, KMP_VM_ASSIGNMENT_LABEL
+from utilities.constants import (
+    CLUSTER_NETWORK_ADDONS_OPERATOR,
+    KMP_VM_ASSIGNMENT_LABEL,
+    LINUX_BRIDGE,
+)
 from utilities.infra import create_ns, get_pods, name_prefix, wait_for_pods_deletion
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 from . import utils as kmp_utils

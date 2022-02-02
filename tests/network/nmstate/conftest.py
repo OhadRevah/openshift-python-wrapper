@@ -5,9 +5,9 @@ import logging
 import pytest
 
 from tests.network.utils import wait_for_address_on_iface
-from utilities.constants import NMSTATE_HANDLER
+from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
 from utilities.infra import get_daemonset_by_name, get_worker_pod, name_prefix
-from utilities.network import LINUX_BRIDGE, network_device
+from utilities.network import network_device
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

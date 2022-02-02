@@ -15,9 +15,9 @@ from tests.network.host_network.vlan.utils import (
     enable_ipv4_dhcp_client,
 )
 from tests.network.utils import DHCP_SERVICE_RESTART
+from utilities.constants import LINUX_BRIDGE
 from utilities.infra import is_bug_open, run_ssh_commands
 from utilities.network import (
-    LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
     EthernetNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
