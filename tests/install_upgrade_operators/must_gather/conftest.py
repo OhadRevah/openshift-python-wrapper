@@ -1,4 +1,7 @@
 import logging
+import os
+import re
+import shlex
 
 import pytest
 import yaml
@@ -7,31 +10,42 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
 
 import utilities.network
-from utilities.infra import (
-    ExecCommandOnPod,
-    MissingResourceException,
-    create_ns,
-    run_cnv_must_gather,
-)
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from tests.install_upgrade_operators.must_gather.utils import collect_must_gather
+from utilities.infra import ExecCommandOnPod, MissingResourceException, create_ns
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module")
-def cnv_must_gather(
-    tmpdir_factory,
+@pytest.fixture(scope="package")
+def must_gather_tmpdir(tmpdir_factory):
+    return tmpdir_factory.mktemp("must_gather")
+
+
+@pytest.fixture(scope="class")
+def collected_cluster_must_gather(
+    must_gather_tmpdir,
     must_gather_image_url,
-    must_gather_nad,
-    nodenetworkstate_with_bridge,
-    running_vm,
+    must_gather_vm,
 ):
-    """
-    Run cnv-must-gather for data collection.
-    """
-    path = tmpdir_factory.mktemp("must_gather")
-    return run_cnv_must_gather(image_url=must_gather_image_url, dest_dir=path)
+    yield collect_must_gather(
+        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_image_url=must_gather_image_url,
+    )
+
+
+@pytest.fixture(scope="class")
+def collected_vm_details_must_gather(
+    must_gather_tmpdir,
+    must_gather_image_url,
+    must_gather_vm,
+):
+    yield collect_must_gather(
+        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_image_url=must_gather_image_url,
+        script_name="gather_vms_details",
+    )
 
 
 @pytest.fixture(scope="module")
@@ -48,23 +62,23 @@ def kubevirt_crd_resources(admin_client, custom_resource_definitions):
     return kubevirt_resources
 
 
-@pytest.fixture(scope="module")
-def must_gather_nad(hco_namespace):
+@pytest.fixture(scope="package")
+def must_gather_nad(nodenetworkstate_with_bridge, node_gather_unprivileged_namespace):
     with utilities.network.network_nad(
-        nad_type=utilities.network.LINUX_BRIDGE,
-        nad_name="mgnad",
-        interface_name="mgbr",
-        namespace=hco_namespace,
+        nad_type=nodenetworkstate_with_bridge.bridge_type,
+        nad_name=nodenetworkstate_with_bridge.bridge_name,
+        interface_name=nodenetworkstate_with_bridge.bridge_name,
+        namespace=node_gather_unprivileged_namespace,
     ) as must_gather_nad:
         yield must_gather_nad
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def nodenetworkstate_with_bridge():
     with utilities.network.network_device(
         interface_type=utilities.network.LINUX_BRIDGE,
         nncp_name="must-gather-br",
-        interface_name="mgbr",
+        interface_name="mg-br1",
     ) as br:
         yield br
 
@@ -80,7 +94,7 @@ def running_hco_containers(admin_client, hco_namespace):
     return pods
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def node_gather_unprivileged_namespace(unprivileged_client):
     yield from create_ns(
         unprivileged_client=unprivileged_client,
@@ -88,17 +102,27 @@ def node_gather_unprivileged_namespace(unprivileged_client):
     )
 
 
-@pytest.fixture(scope="module")
-def running_vm(node_gather_unprivileged_namespace, unprivileged_client):
-    name = "vm"
+@pytest.fixture(scope="package")
+def must_gather_vm(
+    node_gather_unprivileged_namespace,
+    nodenetworkstate_with_bridge,
+    must_gather_nad,
+    unprivileged_client,
+):
+    name = "must-gather-vm"
+    networks = {
+        nodenetworkstate_with_bridge.bridge_name: nodenetworkstate_with_bridge.bridge_name
+    }
+
     with VirtualMachineForTests(
         client=unprivileged_client,
         namespace=node_gather_unprivileged_namespace.name,
         name=name,
+        networks=networks,
+        interfaces=sorted(networks.keys()),
         body=fedora_vm_body(name=name),
     ) as vm:
-        vm.start(wait=True)
-        vm.vmi.wait_until_running()
+        running_vm(vm=vm)
         yield vm
 
 
@@ -127,10 +151,10 @@ def config_map_by_name(request, admin_client):
     return ConfigMap(name=cm_name, namespace=cm_namespace)
 
 
-@pytest.fixture(scope="module")
-def config_maps_file(hco_namespace, cnv_must_gather):
+@pytest.fixture(scope="class")
+def config_maps_file(hco_namespace, collected_cluster_must_gather):
     with open(
-        f"{cnv_must_gather}/namespaces/{hco_namespace.name}/core/configmaps.yaml",
+        f"{collected_cluster_must_gather}/namespaces/{hco_namespace.name}/core/configmaps.yaml",
         "r",
     ) as config_map_file:
         return yaml.safe_load(config_map_file)
@@ -150,3 +174,90 @@ def rhcos_workers(worker_node1, utility_pods):
 def skip_no_rhcos(rhcos_workers):
     if not rhcos_workers:
         pytest.skip("test should run only on rhcos workers")
+
+
+@pytest.fixture(scope="package")
+def nad_mac_address(must_gather_nad, must_gather_vm):
+    return [
+        interface["macAddress"]
+        for interface in must_gather_vm.get_interfaces()
+        if interface["name"] == must_gather_nad.name
+    ][0]
+
+
+@pytest.fixture(scope="package")
+def vm_interface_name(nad_mac_address, must_gather_vm):
+    bridge_command = f"bridge fdb show | grep {nad_mac_address}"
+    output = (
+        must_gather_vm.vmi.virt_launcher_pod.execute(
+            command=shlex.split(f"bash -c {shlex.quote(bridge_command)}"),
+            container="compute",
+        )
+        .splitlines()[0]
+        .strip()
+    )
+    return output.split(" ")[-1]
+
+
+@pytest.fixture()
+def extracted_data_from_must_gather_file(
+    request, collected_vm_details_must_gather, must_gather_vm
+):
+    virt_launcher = must_gather_vm.vmi.virt_launcher_pod
+    file_suffix = request.param["file_suffix"]
+    section_title = request.param["section_title"]
+    gathered_data_path = (
+        f"{collected_vm_details_must_gather}/namespaces/{virt_launcher.namespace}/vms/{must_gather_vm.name}/"
+        f"{virt_launcher.name}.{file_suffix}"
+    )
+    assert os.path.exists(
+        gathered_data_path
+    ), f"Have not found gathered data file on given path {gathered_data_path}"
+
+    with open(gathered_data_path) as _file:
+        gathered_data = _file.read()
+        # If the gathered data file consists of multiple sections, extract the one
+        # we are interested in.
+        if section_title:
+            # if section_title is present in the file getting checked out, we would then collect
+            # only the sample section, for further checking:
+            # bridge fdb show:
+            # ###################################
+            # 33:33:00:00:00:01 dev eth0 self permanent
+            # 01:00:5e:00:00:01 dev eth0 self permanent
+            matches = re.findall(
+                f"^{section_title}\n" "^#+\n" "(.*?)" "(?:^#+\n|\\Z)",
+                gathered_data,
+                re.MULTILINE | re.DOTALL,
+            )
+            assert matches, (
+                "Section has not been found in gathered data.\n"
+                f"Section title: {section_title}\n"
+                f"Gathered data: {gathered_data}"
+            )
+            gathered_data = matches[0]
+        return gathered_data
+
+
+@pytest.fixture()
+def collected_nft_files_must_gather(utility_pods, collected_cluster_must_gather):
+    expected_files_dict = {
+        pod.node.name: f"{collected_cluster_must_gather}/nodes/{pod.node.name}/nftables"
+        for pod in utility_pods
+    }
+    files_not_found = [
+        file for file in expected_files_dict.values() if not os.path.exists(file)
+    ]
+    assert not files_not_found, f"Missing nftable files: {files_not_found}"
+    return expected_files_dict
+
+
+@pytest.fixture()
+def nftables_from_utility_pods(utility_pods):
+    nft_command = "nft list tables 2>/dev/null"
+    return {
+        pod.node.name: pod.execute(
+            command=shlex.split(f"bash -c {shlex.quote(nft_command)}")
+        ).splitlines()
+        for pod in utility_pods
+    }

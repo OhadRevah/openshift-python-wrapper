@@ -11,7 +11,6 @@ import subprocess
 from configparser import ConfigParser
 from contextlib import contextmanager
 from pathlib import Path
-from subprocess import check_output
 
 import bugzilla
 import kubernetes
@@ -1141,16 +1140,6 @@ def get_related_images_name_and_version(dyn_client, hco_namespace, version):
     return related_images_name_and_versions
 
 
-def run_cnv_must_gather(image_url, dest_dir):
-    output_file = os.path.join(dest_dir, "output.txt")
-    must_gather_cmd = (
-        f"oc adm must-gather --image={image_url} --dest-dir={dest_dir} &> {output_file}"
-    )
-    LOGGER.info(f"Running: {must_gather_cmd}")
-    check_output(must_gather_cmd, shell=True)
-    return get_log_dir(path=dest_dir)
-
-
 def is_bug_open(bug_id):
     return get_bug_status(bug=bug_id) not in BUG_STATUS_CLOSED
 
@@ -1187,3 +1176,13 @@ def run_command(command, verify_stderr=True, shell=False):
         return False, out_decoded, err_decoded
 
     return True, out_decoded, err_decoded
+
+
+def run_cnv_must_gather(must_gather_cmd):
+    LOGGER.info(f"Running: {must_gather_cmd}")
+    return run_command(command=shlex.split(must_gather_cmd))[1]
+
+
+def create_must_gather_command(dest_dir, image_url, script_name=None):
+    base_command = f"oc adm must-gather --image={image_url} --dest-dir={dest_dir}"
+    return f"{base_command} -- {script_name}" if script_name else base_command

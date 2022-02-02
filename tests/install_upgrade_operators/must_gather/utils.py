@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import difflib
 import os
 import re
@@ -8,7 +7,12 @@ import yaml
 from ocp_resources.service import Service
 from openshift.dynamic.client import ResourceField
 
-from utilities.infra import ResourceMismatch
+from utilities.infra import (
+    ResourceMismatch,
+    create_must_gather_command,
+    get_log_dir,
+    run_cnv_must_gather,
+)
 
 
 DEFAULT_NAMESPACE = "default"
@@ -284,13 +288,16 @@ def compare_webhook_svc_contents(
 
 
 def get_must_gather_output_file(path):
-    return f"{path}/../output.txt"
+    return f"{path}/../output.log"
 
 
-def assert_nft_collection(nft_files, nftables, node_name):
-    assert len(nft_files) == len(nftables), (
-        "difference in number of collected nftables\n"
-        f"node: {node_name}\n"
-        f"must-gather collected nftables: {nft_files}\n"
-        f"utility-pod collected nftables: {nftables}"
+def collect_must_gather(must_gather_tmpdir, must_gather_image_url, script_name=None):
+    must_gather_command = create_must_gather_command(
+        dest_dir=must_gather_tmpdir,
+        script_name=script_name,
+        image_url=must_gather_image_url,
     )
+    output = run_cnv_must_gather(must_gather_cmd=must_gather_command)
+    with open(os.path.join(must_gather_tmpdir, "output.log"), "w") as _file:
+        _file.write(output)
+    return get_log_dir(path=must_gather_tmpdir)
