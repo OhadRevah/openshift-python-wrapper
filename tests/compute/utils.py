@@ -12,6 +12,7 @@ from utilities.constants import RHSM_PASSWD, RHSM_USER
 from utilities.infra import (
     base64_encode_str,
     hco_cr_jsonpatch_annotations_dict,
+    is_bug_open,
     run_ssh_commands,
 )
 from utilities.virt import (
@@ -79,7 +80,7 @@ def validate_pause_optional_migrate_unpause_windows_vm(
 def start_and_fetch_processid_on_linux_vm(vm, process_name, args=""):
     wait_for_ssh_connectivity(vm=vm)
     run_ssh_commands(
-        host=vm.ssh_exec,
+        host=get_vm_host_with_optional_sudo(vm=vm),
         commands=shlex.split(f"{process_name} {args} </dev/null &>/dev/null &"),
     )
     return fetch_processid_from_linux_vm(
@@ -90,7 +91,7 @@ def start_and_fetch_processid_on_linux_vm(vm, process_name, args=""):
 def fetch_processid_from_linux_vm(vm, process_name, fail_if_process_not_found=False):
     cmd_res = run_ssh_commands(
         host=vm.ssh_exec,
-        commands=["bash", "-c", f"`which pidof` '{process_name}' || true"],
+        commands=shlex.split(f"pgrep {process_name} || true"),
     )[0]
     if fail_if_process_not_found:
         assert cmd_res, f"VM {vm.name}, '{process_name}' process not found"
@@ -134,7 +135,7 @@ def validate_libvirt_persistent_domain(vm):
 
 def kill_processes_by_name_linux(vm, process_name):
     cmd = shlex.split(f"pkill {process_name}")
-    run_ssh_commands(host=vm.ssh_exec, commands=cmd)
+    run_ssh_commands(host=get_vm_host_with_optional_sudo(vm=vm), commands=cmd)
 
 
 def kill_processes_by_name_windows(vm, process_name):
@@ -260,3 +261,10 @@ def register_vm_to_rhsm(vm):
             "--auto-attach"
         ),
     )
+
+
+def get_vm_host_with_optional_sudo(vm):
+    # TODO remove function when bug is closed
+    ssh_exec = vm.ssh_exec
+    ssh_exec.sudo = is_bug_open(bug_id=2037807)
+    return ssh_exec
