@@ -542,11 +542,21 @@ def validate_user_info_virtctl_vs_windows_os(vm):
         # For example: 'Pacific Standard Time, -28800' -> return 28800
         return int(re.search(r".*, -(\d+)", vm_timezone_diff).group(1))
 
-    virtctl_info = get_virtctl_user_info(vm=vm)
-    cnv_info = get_cnv_user_info(vm=vm)
-    libvirt_info = get_libvirt_user_info(vm=vm)
-    windows_info = run_ssh_commands(host=vm.ssh_exec, commands=["quser"])[0]
+    def _get_user_info_win(_vm):
+        virtctl_info = get_virtctl_user_info(vm=vm)
+        cnv_info = get_cnv_user_info(vm=vm)
+        libvirt_info = get_libvirt_user_info(vm=vm)
+        return virtctl_info, cnv_info, libvirt_info
 
+    def _user_info_sampler_win(_vm):
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_90SEC, sleep=10, func=_get_user_info_win, _vm=vm
+        ):
+            if all(sample):
+                return sample
+
+    virtctl_info, cnv_info, libvirt_info = _user_info_sampler_win(_vm=vm)
+    windows_info = run_ssh_commands(host=vm.ssh_exec, commands=["quser"])[0]
     # Match timezone to VM's timezone and not use UTC
     virtctl_time = virtctl_info["loginTime"] - _get_vm_timezone_diff()
     data_mismatch = []
