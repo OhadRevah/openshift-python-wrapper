@@ -17,7 +17,7 @@ from utilities.constants import (
     TIMEOUT_10MIN,
     TIMEOUT_20SEC,
 )
-from utilities.virt import run_command
+from utilities.infra import run_command
 
 
 LOGGER = logging.getLogger(__name__)

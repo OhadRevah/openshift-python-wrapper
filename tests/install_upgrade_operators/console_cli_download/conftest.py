@@ -9,7 +9,7 @@ from tests.install_upgrade_operators.console_cli_download.utils import (
     download_and_extract_virtctl_from_cluster,
 )
 from utilities.constants import HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD
-from utilities.virt import run_command
+from utilities.infra import run_command
 
 
 LOGGER = logging.getLogger(__name__)

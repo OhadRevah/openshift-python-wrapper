@@ -38,9 +38,9 @@ from utilities.infra import (
     get_deployments,
     get_related_images_name_and_version,
     get_subscription,
+    run_command,
     write_to_extras_file,
 )
-from utilities.virt import run_command
 
 
 LOGGER = logging.getLogger(__name__)

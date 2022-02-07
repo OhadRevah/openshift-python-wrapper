@@ -2,7 +2,7 @@ import shlex
 
 import pytest
 
-from utilities.virt import run_command
+from utilities.infra import run_command
 
 
 pytestmark = pytest.mark.sno

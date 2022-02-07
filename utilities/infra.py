@@ -7,6 +7,7 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 from configparser import ConfigParser
 from contextlib import contextmanager
 from pathlib import Path
@@ -1145,3 +1146,37 @@ def run_cnv_must_gather(image_url, dest_dir):
 
 def is_bug_open(bug_id):
     return get_bug_status(bug=bug_id) not in BUG_STATUS_CLOSED
+
+
+def run_command(command, verify_stderr=True, shell=False):
+    """
+    Run command locally.
+
+    Args:
+        command (list): Command to run
+        verify_stderr (bool, default True): Check command stderr
+        shell (bool, default False): run subprocess with shell toggle
+
+    Returns:
+        tuple: True, out if command succeeded, False, err otherwise.
+    """
+    sub_process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=shell,
+    )
+    out, err = sub_process.communicate()
+    out_decoded = out.decode("utf-8")
+    err_decoded = err.decode("utf-8")
+
+    if sub_process.returncode != 0:
+        LOGGER.error(f"Failed to run {command}. rc: {sub_process.returncode}")
+        return False, out_decoded, err_decoded
+
+    # From this point and onwards we are guaranteed that sub_process.returncode == 0
+    if err_decoded and verify_stderr:
+        LOGGER.error(f"Failed to run {command}. error: {err_decoded}")
+        return False, out_decoded, err_decoded
+
+    return True, out_decoded, err_decoded
