@@ -12,9 +12,6 @@ from utilities.constants import TIMEOUT_12MIN
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-pytestmark = pytest.mark.sno
-
-
 def assert_ip_mismatch(vm):
     sampler = TimeoutSampler(
         wait_timeout=10,
@@ -39,6 +36,7 @@ def report_masquerade_ip_vmi(unprivileged_client, namespace):
         yield vm.vmi
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4455")
 def test_report_masquerade_ip(report_masquerade_ip_vmi):
     assert_ip_mismatch(vm=report_masquerade_ip_vmi)
