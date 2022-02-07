@@ -5,12 +5,13 @@ import re
 import pytest
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.resource import ResourceEditor
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from tests.network.utils import assert_nncp_successfully_configured
-from utilities.constants import NMSTATE_HANDLER
+from utilities.constants import NMSTATE_HANDLER, TIMEOUT_5MIN
+from utilities.exceptions import ResourceValueError
 from utilities.infra import (
     BUG_STATUS_CLOSED,
     get_pod_by_name_prefix,
@@ -221,6 +222,17 @@ def assured_two_or_less_dns_nameservers(request, dns_gathered_current_nameserver
         raise MoreThanTwoDNSError
 
 
+@pytest.fixture()
+def nncp_with_worker_hostname(nodes_available_nics, worker_node1):
+    with LinuxBridgeNodeNetworkConfigurationPolicy(
+        name=worker_node1.hostname,
+        bridge_name=BRIDGE_NAME,
+        node_selector=worker_node1.hostname,
+        ports=[nodes_available_nics[worker_node1.name][-1]],
+    ) as nncp:
+        yield nncp
+
+
 @pytest.mark.polarion("CNV-5721")
 def test_no_ip(
     skip_if_no_multinic_nodes,
@@ -355,3 +367,18 @@ class TestNmstatePodDeletion:
         Test that NNCP has been configured Successfully. (The nmstate-handler pod released the lock).
         """
         assert_nncp_successfully_configured(nncp=nmstate_linux_bridge_device_worker)
+
+
+@pytest.mark.polarion("CNV-8232")
+def test_nncp_named_as_worker_hostname(
+    skip_if_no_multinic_nodes, nncp_with_worker_hostname
+):
+    with pytest.raises(TimeoutExpiredError):
+        nncp_conditions = nncp_with_worker_hostname.wait_for_configuration_conditions_unknown_or_progressing(
+            wait_timeout=TIMEOUT_5MIN
+        )
+        if nncp_conditions:
+            raise ResourceValueError(
+                f"nncp {nncp_with_worker_hostname.name} {nncp_with_worker_hostname.Conditions.Type.AVAILABLE} condition"
+                f" was changed, conditions: {nncp_conditions}."
+            )
