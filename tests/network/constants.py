@@ -12,3 +12,7 @@ EXPECTED_CNAO_COMP_NAMES = [
     "nmstate",
     "ovs-cni",
 ]
+HTTPBIN_IMAGE = "quay.io/verygoodsecurity/httpbin"
+HTTPBIN_COMMAND = "gunicorn -b 0.0.0.0:8000 httpbin:app -k gevent"
+PORT_8080 = 8080
+SERVICE_MESH_PORT = 8000

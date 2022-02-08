@@ -1,5 +1,20 @@
-import pytest
+import shlex
 
+import pytest
+from ocp_resources.service_account import ServiceAccount
+
+from tests.network.constants import (
+    HTTPBIN_COMMAND,
+    HTTPBIN_IMAGE,
+    PORT_8080,
+    SERVICE_MESH_PORT,
+)
+from tests.network.utils import (
+    CirrosVirtualMachineForServiceMesh,
+    ServiceMeshDeployments,
+    ServiceMeshDeploymentService,
+    ServiceMeshMemberRollForTests,
+)
 from utilities.network import LINUX_BRIDGE, cloud_init, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -73,3 +88,70 @@ def running_vma_upgrade_mac_spoof(vma_upgrade_mac_spoof):
 @pytest.fixture(scope="session")
 def running_vmb_upgrade_mac_spoof(vmb_upgrade_mac_spoof):
     return running_vm(vm=vmb_upgrade_mac_spoof)
+
+
+@pytest.fixture(scope="session")
+def httpbin_service_mesh_deployment_for_upgrade(upgrade_namespace_scope_session):
+    with ServiceMeshDeployments(
+        name="httpbin",
+        namespace=upgrade_namespace_scope_session.name,
+        version=ServiceMeshDeployments.ApiVersion.V1,
+        image=HTTPBIN_IMAGE,
+        command=shlex.split(HTTPBIN_COMMAND),
+        port=PORT_8080,
+        service_port=SERVICE_MESH_PORT,
+        service_account=True,
+    ) as dp:
+        yield dp
+
+
+@pytest.fixture(scope="session")
+def httpbin_service_mesh_service_account_for_upgrade(
+    httpbin_service_mesh_deployment_for_upgrade,
+):
+    with ServiceAccount(
+        name=httpbin_service_mesh_deployment_for_upgrade.app_name,
+        namespace=httpbin_service_mesh_deployment_for_upgrade.namespace,
+    ) as sa:
+        yield sa
+
+
+@pytest.fixture(scope="session")
+def httpbin_service_mesh_service_for_upgrade(
+    httpbin_service_mesh_deployment_for_upgrade,
+    httpbin_service_mesh_service_account_for_upgrade,
+):
+    with ServiceMeshDeploymentService(
+        namespace=httpbin_service_mesh_deployment_for_upgrade.namespace,
+        app_name=httpbin_service_mesh_deployment_for_upgrade.app_name,
+        port=httpbin_service_mesh_deployment_for_upgrade.service_port,
+    ) as sv:
+        yield sv
+
+
+@pytest.fixture(scope="session")
+def service_mesh_member_roll_for_upgrade(upgrade_namespace_scope_session):
+    with ServiceMeshMemberRollForTests(
+        members=[upgrade_namespace_scope_session.name]
+    ) as smmr:
+        yield smmr
+
+
+@pytest.fixture(scope="session")
+def vm_cirros_with_service_mesh_annotation_for_upgrade(
+    unprivileged_client,
+    upgrade_namespace_scope_session,
+    service_mesh_member_roll_for_upgrade,
+):
+    vm_name = "service-mesh-vm"
+    with CirrosVirtualMachineForServiceMesh(
+        client=unprivileged_client,
+        name=vm_name,
+        namespace=upgrade_namespace_scope_session.name,
+    ) as vm:
+        vm.custom_service_enable(
+            service_name=vm_name,
+            port=SERVICE_MESH_PORT,
+        )
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
+        yield vm

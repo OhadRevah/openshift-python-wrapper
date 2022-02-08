@@ -1,6 +1,7 @@
 import logging
 import shlex
 
+from tests.network.utils import authentication_request
 from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
 
@@ -25,13 +26,6 @@ def assert_traffic_management_request(vm, server, destination):
     assert (
         output == server.version
     ), f"Desired response - {server.version}, actual response - {output}"
-
-
-def authentication_request(vm, **kwargs):
-    return run_ssh_commands(
-        host=vm.ssh_exec,
-        commands=shlex.split(f"curl http://{kwargs['service']}:8000/ip"),
-    )
 
 
 def assert_authentication_request(vm, service):

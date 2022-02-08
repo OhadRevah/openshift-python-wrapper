@@ -3,12 +3,22 @@ import logging
 import shlex
 
 import bitmath
+from ocp_resources.deployment import Deployment
 from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.service import Service
+from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN
+from tests.network.constants import SERVICE_MESH_PORT
+from utilities.constants import (
+    ISTIO_SYSTEM_DEFAULT_NS,
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_1MIN,
+    TIMEOUT_2MIN,
+)
 from utilities.infra import run_ssh_commands
 from utilities.network import get_vmi_ip_v4_by_name, ping
+from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,6 +34,156 @@ range {DHCP_IP_RANGE_START} {DHCP_IP_RANGE_END};
 }}
 EOF
 """
+SERVICE_MESH_VM_MEMORY_REQ = "128M"
+SERVICE_MESH_INJECT_ANNOTATION = "sidecar.istio.io/inject"
+
+
+class ServiceMeshDeploymentService(Service):
+    def __init__(self, app_name, namespace, port, port_name=None):
+        super().__init__(
+            name=app_name,
+            namespace=namespace,
+        )
+        self.port = port
+        self.app_name = app_name
+        self.port_name = port_name
+
+    def to_dict(self):
+        res = super().to_dict()
+        res.setdefault("spec", {})
+        res["spec"]["selector"] = {"app": self.app_name}
+        res["spec"]["ports"] = [
+            {
+                "port": self.port,
+                "protocol": "TCP",
+            },
+        ]
+        if self.port_name:
+            res["spec"]["ports"][0]["name"] = self.port_name
+        return res
+
+
+class ServiceMeshMemberRollForTests(ServiceMeshMemberRoll):
+    def __init__(
+        self,
+        members,
+    ):
+        """
+        Service Mesh Member Roll creation
+        Args:
+            members (list): Namespaces to be added to Service Mesh
+        """
+        super().__init__(
+            name="default",
+            namespace=ISTIO_SYSTEM_DEFAULT_NS,
+        )
+        self.members = members
+
+    def to_dict(self):
+        res = super().to_dict()
+        res["spec"] = {"members": self.members}
+        return res
+
+
+class CirrosVirtualMachineForServiceMesh(VirtualMachineForTests):
+    def __init__(
+        self,
+        name,
+        namespace,
+        client,
+    ):
+        """
+        Cirros VM Creation. Used for Service Mesh tests
+        """
+
+        super().__init__(
+            name=name,
+            namespace=namespace,
+            client=client,
+            os_flavor=OS_FLAVOR_CIRROS,
+            memory_requests=SERVICE_MESH_VM_MEMORY_REQ,
+            image=CIRROS_IMAGE,
+        )
+
+    def to_dict(self):
+        res = super().to_dict()
+        res["spec"]["template"]["metadata"].setdefault("annotations", {})
+        res["spec"]["template"]["metadata"]["annotations"] = {
+            SERVICE_MESH_INJECT_ANNOTATION: "true",
+        }
+
+        return res
+
+
+class ServiceMeshDeployments(Deployment):
+    def __init__(
+        self,
+        name,
+        namespace,
+        version,
+        image,
+        replicas=1,
+        command=None,
+        strategy=None,
+        service_account=False,
+        policy="Always",
+        service_port=None,
+        host=None,
+        port=None,
+    ):
+        self.name = f"{name}-{version}-dp"
+        super().__init__(name=self.name, namespace=namespace)
+        self.version = version
+        self.replicas = replicas
+        self.image = image
+        self.strategy = strategy
+        self.service_account = service_account
+        self.policy = policy
+        self.port = port
+        self.app_name = name
+        self.command = command
+        self.service_port = service_port
+        self.host = host
+
+    def to_dict(self):
+        res = super().to_dict()
+        res.setdefault("spec", {})
+        res["spec"]["replicas"] = self.replicas
+        res["spec"]["selector"] = {
+            "matchLabels": {
+                "app": self.app_name,
+                "version": self.version,
+            },
+        }
+        res["spec"].setdefault("template", {})
+        res["spec"]["template"].setdefault("metadata", {})
+        res["spec"]["template"]["metadata"]["annotations"] = {
+            SERVICE_MESH_INJECT_ANNOTATION: "true"
+        }
+        res["spec"]["template"]["metadata"]["labels"] = {
+            "app": self.app_name,
+            "version": self.version,
+        }
+        res["spec"]["template"].setdefault("spec", {})
+        res["spec"]["template"]["spec"]["containers"] = [
+            {
+                "image": self.image,
+                "imagePullPolicy": self.policy,
+                "name": self.name,
+            }
+        ]
+        res["spec"]["template"]["spec"]["restartPolicy"] = "Always"
+        if self.strategy:
+            res["spec"]["strategy"] = self.strategy
+        if self.service_account:
+            res["spec"]["template"]["spec"]["serviceAccountName"] = self.app_name
+        if self.command:
+            res["spec"]["template"]["spec"]["containers"][0]["command"] = self.command
+        if self.port:
+            res["spec"]["template"]["spec"]["containers"][0]["ports"] = [
+                {"containerPort": self.port}
+            ]
+        return res
 
 
 def assert_no_ping(src_vm, dst_ip, packet_size=None, count=None):
@@ -159,3 +319,10 @@ def assert_nncp_successfully_configured(nncp):
     except TimeoutExpiredError:
         LOGGER.error(f"{nncp.name} is not {successfully_configured}.")
         raise
+
+
+def authentication_request(vm, **kwargs):
+    return run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=shlex.split(f"curl http://{kwargs['service']}:{SERVICE_MESH_PORT}/ip"),
+    )

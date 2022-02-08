@@ -92,6 +92,7 @@ NMSTATE_CERT_MANAGER = "nmstate-cert-manager"
 NMSTATE_HANDLER = "nmstate-handler"
 NMSTATE_WEBHOOK = "nmstate-webhook"
 NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator-controller-manager"
+ISTIO_SYSTEM_DEFAULT_NS = "istio-system"
 
 #  Time constants
 TIMEOUT_5SEC = 5

@@ -8,6 +8,7 @@ from tests.network.upgrade.utils import (
     assert_bridge_and_vms_on_same_node,
     assert_node_is_marked_by_bridge,
 )
+from tests.network.utils import authentication_request
 from utilities.constants import (
     DEPENDENCY_SCOPE_SESSION,
     KMP_ENABLED_LABEL,
@@ -158,6 +159,21 @@ class TestUpgradeNetwork:
                 vm=vmb_upgrade_mac_spoof,
                 name=vmb_upgrade_mac_spoof.interfaces[0],
             ),
+        )
+
+    @pytest.mark.polarion("CNV-5915")
+    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.dependency(
+        name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_to_mesh_before_upgrade"
+    )
+    def test_vm_connectivity_to_mesh_before_upgrade(
+        self,
+        vm_cirros_with_service_mesh_annotation_for_upgrade,
+        httpbin_service_mesh_service_for_upgrade,
+    ):
+        authentication_request(
+            vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
+            service=httpbin_service_mesh_service_for_upgrade.app_name,
         )
 
     """ Post-upgrade tests """
@@ -314,4 +330,23 @@ class TestUpgradeNetwork:
                 vm=vmb_upgrade_mac_spoof,
                 name=vmb_upgrade_mac_spoof.interfaces[0],
             ),
+        )
+
+    @pytest.mark.polarion("CNV-7346")
+    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.dependency(
+        depends=[
+            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_to_mesh_before_upgrade",
+        ],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_vm_connectivity_to_mesh_after_upgrade(
+        self,
+        vm_cirros_with_service_mesh_annotation_for_upgrade,
+        httpbin_service_mesh_service_for_upgrade,
+    ):
+        authentication_request(
+            vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
+            service=httpbin_service_mesh_service_for_upgrade.app_name,
         )

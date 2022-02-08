@@ -15,30 +15,30 @@ class TestSMTrafficManagement:
     @pytest.mark.polarion("CNV-5782")
     def test_service_mesh_traffic_management(
         self,
-        traffic_management_sm_convergence,
+        traffic_management_service_mesh_convergence,
         server_deployment_v1,
-        vm_cirros_with_sm_annotation,
-        sm_ingress_service_addr,
+        vm_cirros_with_service_mesh_annotation,
+        service_mesh_ingress_service_addr,
     ):
         assert_traffic_management_request(
-            vm=vm_cirros_with_sm_annotation,
+            vm=vm_cirros_with_service_mesh_annotation,
             server=server_deployment_v1,
-            destination=sm_ingress_service_addr,
+            destination=service_mesh_ingress_service_addr,
         )
 
     @pytest.mark.polarion("CNV-7304")
     def test_service_mesh_traffic_management_manipulated_rule(
         self,
-        traffic_management_sm_convergence,
+        traffic_management_service_mesh_convergence,
         change_routing_to_v2,
         server_deployment_v2,
-        vm_cirros_with_sm_annotation,
-        sm_ingress_service_addr,
+        vm_cirros_with_service_mesh_annotation,
+        service_mesh_ingress_service_addr,
     ):
         assert_traffic_management_request(
-            vm=vm_cirros_with_sm_annotation,
+            vm=vm_cirros_with_service_mesh_annotation,
             server=server_deployment_v2,
-            destination=sm_ingress_service_addr,
+            destination=service_mesh_ingress_service_addr,
         )
 
 
@@ -46,41 +46,42 @@ class TestSMPeerAuthentication:
     @pytest.mark.polarion("CNV-5784")
     def test_authentication_policy_from_mesh(
         self,
-        peer_authentication_sm_deployment,
-        vm_cirros_with_sm_annotation,
-        httpbin_service_sm,
+        peer_authentication_service_mesh_deployment,
+        vm_cirros_with_service_mesh_annotation,
+        httpbin_service_service_mesh,
     ):
         assert_authentication_request(
-            vm=vm_cirros_with_sm_annotation, service=httpbin_service_sm.app_name
+            vm=vm_cirros_with_service_mesh_annotation,
+            service=httpbin_service_service_mesh.app_name,
         )
 
     @pytest.mark.polarion("CNV-7305")
     def test_authentication_policy_outside_mesh(
         self,
-        peer_authentication_sm_deployment,
-        httpbin_service_sm,
-        outside_mesh_vm_cirros_with_sm_annotation,
+        peer_authentication_service_mesh_deployment,
+        httpbin_service_service_mesh,
+        outside_mesh_vm_cirros_with_service_mesh_annotation,
     ):
         with pytest.raises(CommandExecFailed):
             assert_authentication_request(
-                vm=outside_mesh_vm_cirros_with_sm_annotation,
-                service=httpbin_service_sm.app_name,
+                vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
+                service=httpbin_service_service_mesh.app_name,
             )
 
     @pytest.mark.polarion("CNV-7128")
     def test_service_mesh_inbound_traffic_blocked(
         self,
-        peer_authentication_sm_deployment,
-        vm_cirros_with_sm_annotation,
-        outside_mesh_vm_cirros_with_sm_annotation,
+        peer_authentication_service_mesh_deployment,
+        vm_cirros_with_service_mesh_annotation,
+        outside_mesh_vm_cirros_with_service_mesh_annotation,
         vmi_http_server,
     ):
         destionation_service_spec = (
-            vm_cirros_with_sm_annotation.custom_service.instance.spec
+            vm_cirros_with_service_mesh_annotation.custom_service.instance.spec
         )
         with pytest.raises(CommandExecFailed):
             inbound_request(
-                vm=outside_mesh_vm_cirros_with_sm_annotation,
+                vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
                 destination_address=destionation_service_spec.clusterIPs[0],
                 destination_port=destionation_service_spec.ports[0].port,
             )
