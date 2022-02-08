@@ -1,3 +1,4 @@
+import time
 from contextlib import contextmanager
 from copy import deepcopy
 
@@ -257,3 +258,58 @@ def run_strategy_golden_image_rwx_data_source(
         source=generate_data_source_dict(dv=run_strategy_golden_image_rwx_dv),
     ) as ds:
         yield ds
+
+
+def vm_start_time(
+    unprivileged_client,
+    namespace,
+    data_source,
+    rhel_template_labels,
+):
+    begin_time = time.time()
+    total_seconds = None
+
+    with VirtualMachineForTestsFromTemplate(
+        name="rhel-vm-for-start-time",
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(
+            **rhel_template_labels,
+        ),
+        data_source=data_source,
+    ) as vm:
+        running_vm(vm=vm, check_ssh_connectivity=False)
+        total_seconds = time.time() - begin_time
+
+    assert total_seconds, "Failed to get vm start time"
+    return total_seconds
+
+
+@pytest.fixture(scope="session")
+def vm_start_time_before_upgrade(
+    unprivileged_client,
+    upgrade_namespace_scope_session,
+    run_strategy_golden_image_rwx_data_source,
+    rhel_latest_os_params,
+):
+    return vm_start_time(
+        unprivileged_client=unprivileged_client,
+        namespace=upgrade_namespace_scope_session,
+        data_source=run_strategy_golden_image_rwx_data_source,
+        rhel_template_labels=rhel_latest_os_params["rhel_template_labels"],
+    )
+
+
+@pytest.fixture(scope="function")
+def vm_start_time_after_upgrade(
+    unprivileged_client,
+    upgrade_namespace_scope_session,
+    run_strategy_golden_image_rwx_data_source,
+    rhel_latest_os_params,
+):
+    return vm_start_time(
+        unprivileged_client=unprivileged_client,
+        namespace=upgrade_namespace_scope_session,
+        data_source=run_strategy_golden_image_rwx_data_source,
+        rhel_template_labels=rhel_latest_os_params["rhel_template_labels"],
+    )
