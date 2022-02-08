@@ -162,10 +162,10 @@ def template_labels(os):
     )
 
 
-def enable_common_boot_image_import_faeture_gate_wait_for_data_import_cron(
+def enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
     hco_resource, admin_client, namespace
 ):
-    update_common_boot_image_import_faeture_gate(
+    update_common_boot_image_import_feature_gate(
         hco_resource=hco_resource,
         enable_feature_gate=True,
     )
@@ -174,7 +174,7 @@ def enable_common_boot_image_import_faeture_gate_wait_for_data_import_cron(
     )
 
 
-def update_common_boot_image_import_faeture_gate(hco_resource, enable_feature_gate):
+def update_common_boot_image_import_feature_gate(hco_resource, enable_feature_gate):
     def _wait_for_feature_gate_update(_hco_resource, _enable_feature_gate):
         LOGGER.info(
             f"Wait for HCO {ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE} "

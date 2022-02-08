@@ -11,10 +11,10 @@ from openshift.dynamic.exceptions import NotFoundError
 
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
     RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL,
-    enable_common_boot_image_import_faeture_gate_wait_for_data_import_cron,
+    enable_common_boot_image_import_feature_gate_wait_for_data_import_cron,
     generate_data_import_cron_dict,
     get_data_import_crons,
-    update_common_boot_image_import_faeture_gate,
+    update_common_boot_image_import_feature_gate,
     wait_for_deleted_data_import_crons,
 )
 from utilities.constants import (
@@ -32,7 +32,7 @@ def enabled_common_boot_image_import_feature_gate(
     hyperconverged_resource_scope_function,
     golden_images_namespace,
 ):
-    enable_common_boot_image_import_faeture_gate_wait_for_data_import_cron(
+    enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
         hco_resource=hyperconverged_resource_scope_function,
         admin_client=admin_client,
         namespace=golden_images_namespace,
@@ -49,7 +49,7 @@ def disabled_common_boot_image_import_feature_gate(
     if hyperconverged_resource_scope_function.instance.spec.featureGates[
         ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
     ]:
-        update_common_boot_image_import_faeture_gate(
+        update_common_boot_image_import_feature_gate(
             hco_resource=hyperconverged_resource_scope_function,
             enable_feature_gate=False,
         )
@@ -58,7 +58,7 @@ def disabled_common_boot_image_import_feature_gate(
         )
         yield
         # Always enable enableCommonBootImageImport feature gate after test execution
-        enable_common_boot_image_import_faeture_gate_wait_for_data_import_cron(
+        enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
             hco_resource=hyperconverged_resource_scope_function,
             admin_client=admin_client,
             namespace=golden_images_namespace,
