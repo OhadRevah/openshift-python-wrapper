@@ -320,12 +320,16 @@ def kmp_down(cnao_down, kmp_deployment):
         kmp_deployment.wait_for_replicas(deployed=False)
         yield
 
+    kmp_deployment.wait_for_replicas()
+
 
 @pytest.fixture()
 def cnao_down(cnao_deployment):
     with ResourceEditor(patches={cnao_deployment: {"spec": {"replicas": 0}}}):
         cnao_deployment.wait_for_replicas(deployed=False)
-        yield
+    yield
+
+    cnao_deployment.wait_for_replicas()
 
 
 @pytest.fixture(scope="module")
@@ -348,7 +352,11 @@ def bad_kmp_containers(kmp_deployment):
 
 @pytest.fixture()
 def kmp_crash_loop(
-    admin_client, hco_namespace, cnao_down, kmp_deployment, bad_kmp_containers
+    admin_client,
+    hco_namespace,
+    cnao_down,
+    kmp_deployment,
+    bad_kmp_containers,
 ):
     with ResourceEditor(
         patches={
@@ -374,6 +382,8 @@ def kmp_crash_loop(
             namespace=hco_namespace,
         )
         yield
+
+        kmp_deployment.wait_for_replicas()
 
 
 @pytest.fixture()
