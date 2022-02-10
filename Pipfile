@@ -6,8 +6,6 @@ verify_ssl = true
 [packages]
 ipdb = "*"
 ipython = "==7.16.1"  # pipenv fail to install on python 3.6.8 when version > 7.16.1
-openshift = "*"
-kubernetes = "*"
 pexpect = "*"
 PyYAML = "*"
 pytest = "*"
