@@ -20,6 +20,8 @@ LOGGER = logging.getLogger(__name__)
 NODE_LABEL = {"capture": "allow"}
 PRIMARY_NIC = "primary-nic"
 
+pytestmark = [pytest.mark.usefixtures("skip_if_ovn_cluster")]
+
 
 def assert_config_unchanged(default_state, bridge_state):
     config_failures = []
