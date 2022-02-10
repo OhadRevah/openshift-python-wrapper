@@ -17,8 +17,6 @@ LOGGER = logging.getLogger(__name__)
 WIN_VERSION_16_CONFIG = get_windows_os_dict(windows_version="win-16")
 WIN_OS_VERSION_16 = WIN_VERSION_16_CONFIG["os_version"]
 
-pytestmark = pytest.mark.sno
-
 
 @pytest.fixture(scope="module")
 def rdp_vm(
