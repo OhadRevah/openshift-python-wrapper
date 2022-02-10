@@ -3,6 +3,7 @@ import logging
 import re
 
 import pytest
+from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
@@ -11,7 +12,12 @@ from openshift.dynamic.exceptions import NotFoundError
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from tests.network.utils import assert_nncp_successfully_configured
 from utilities.constants import NMSTATE_HANDLER
-from utilities.infra import BUG_STATUS_CLOSED, get_pod_by_name_prefix, name_prefix
+from utilities.infra import (
+    BUG_STATUS_CLOSED,
+    get_pod_by_name_prefix,
+    is_bug_open,
+    name_prefix,
+)
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     LinuxBridgeNodeNetworkConfigurationPolicy,
@@ -34,6 +40,23 @@ pytestmark = pytest.mark.sno
 
 class MoreThanTwoDNSError(Exception):
     pass
+
+
+@pytest.fixture(scope="session")
+def sno_cluster(admin_client):
+    return (
+        Infrastructure(
+            client=admin_client, name="cluster"
+        ).instance.status.infrastructureTopology
+        == "SingleReplica"
+    )
+
+
+@pytest.fixture()
+def skip_if_sno_cluster_and_bug_open(sno_cluster):
+    bug_id = 2053112
+    if sno_cluster and is_bug_open(bug_id=bug_id):
+        pytest.skip(f"Skip test on SNO cluster as long as bug {bug_id} status is open")
 
 
 @pytest.fixture(scope="class")
@@ -320,6 +343,7 @@ class TestNmstatePodDeletion:
     @pytest.mark.polarion("CNV-6559")
     def test_delete_nmstate_pod_during_nncp_configuration(
         self,
+        skip_if_sno_cluster_and_bug_open,
         nmstate_linux_bridge_device_worker,
         deleted_nmstate_pod_during_nncp_configuration,
     ):
