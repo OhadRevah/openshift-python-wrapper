@@ -3,6 +3,7 @@ from ocp_resources.resource import Resource
 
 from tests.install_upgrade_operators.metrics.utils import validate_virt_handler_data
 from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER, VIRT_OPERATOR
+from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -114,6 +115,9 @@ def test_virt_up_recording_rules(
     ), f"Actual pod count {virt_pod_names_by_label} not matching with expected pod count {virt_up_metrics_values}"
 
 
+@pytest.mark.bugzilla(
+    2053128, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.parametrize(
     "virt_handler_pod_and_node_names_with_value_from_prometheus",
     [
