@@ -91,5 +91,5 @@ def updated_kubevirt_cr(request, kubevirt_resource, admin_client, hco_namespace)
 
 
 @pytest.fixture()
-def ssp_cr_spec(ssp_cr):
-    return ssp_cr.instance.to_dict()["spec"]
+def ssp_cr_spec(ssp_resource_scope_function):
+    return ssp_resource_scope_function.instance.to_dict()["spec"]

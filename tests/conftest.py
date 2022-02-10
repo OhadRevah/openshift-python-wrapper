@@ -2758,8 +2758,7 @@ def cnv_target_version(pytestconfig, cnv_upgrade):
         return pytestconfig.option.cnv_version
 
 
-@pytest.fixture()
-def ssp_cr(admin_client, hco_namespace):
+def get_ssp_resource(admin_client, hco_namespace):
     ssp_name = "ssp-kubevirt-hyperconverged"
     try:
         for ssp in SSP.get(
@@ -2773,6 +2772,11 @@ def ssp_cr(admin_client, hco_namespace):
             f"SSP CR {ssp_name} was not found in namespace {hco_namespace.name}"
         )
         raise
+
+
+@pytest.fixture()
+def ssp_resource_scope_function(admin_client, hco_namespace):
+    return get_ssp_resource(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture(scope="session")

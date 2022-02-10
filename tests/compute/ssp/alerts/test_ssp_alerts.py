@@ -70,13 +70,13 @@ def wait_for_ssp_available(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def paused_ssp_operator(admin_client, hco_namespace, ssp_cr):
+def paused_ssp_operator(admin_client, hco_namespace, ssp_resource_scope_function):
     """
     Pause ssp-operator to avoid from reconciling any related objects
     """
     with update_custom_resource(
         patch={
-            ssp_cr: {
+            ssp_resource_scope_function: {
                 "metadata": {"annotations": {"kubevirt.io/operator.paused": "true"}}
             }
         }

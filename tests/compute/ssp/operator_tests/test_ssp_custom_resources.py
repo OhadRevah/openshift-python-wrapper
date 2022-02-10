@@ -4,7 +4,6 @@ import logging
 
 import pytest
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
-from ocp_resources.ssp import SSP
 
 from tests.compute.utils import verify_pods_priority_class_value
 from utilities.constants import SSP_OPERATOR, VIRT_TEMPLATE_VALIDATOR
@@ -19,19 +18,6 @@ CONDITIONS_DICT = {
     CustomResourceDefinition.Condition.DEGRADED: "False",
 }
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def ssp_resource(admin_client, hco_namespace):
-    ssp_cr = list(
-        SSP.get(
-            dyn_client=admin_client,
-            name="ssp-kubevirt-hyperconverged",
-            namespace=hco_namespace.name,
-        )
-    )
-    assert ssp_cr, "SSP CR was not found."
-    return ssp_cr[0]
 
 
 @pytest.fixture()
@@ -51,11 +37,11 @@ def pods_list_with_given_prefix(request, admin_client, hco_namespace):
 
 
 @pytest.mark.polarion("CNV-3737")
-def test_verify_ssp_crd_conditions(ssp_resource):
+def test_verify_ssp_crd_conditions(ssp_resource_scope_function):
     LOGGER.info("Check SSP CR conditions.")
     resource_conditions = {
         condition.type: condition.status
-        for condition in ssp_resource.instance.status.conditions
+        for condition in ssp_resource_scope_function.instance.status.conditions
         if condition.type in CONDITIONS_DICT.keys()
     }
     assert (

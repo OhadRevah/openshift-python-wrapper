@@ -445,13 +445,13 @@ def test_data_import_cron_recreated_after_opt_out_opt_in(
 )
 def test_data_import_cron_invalid_source_url_failed_creation(
     updated_hco_with_custom_data_import_cron_scope_function,
-    ssp_cr,
+    ssp_resource_scope_function,
 ):
     def get_ssp_degraded_condition(_ssp_cr):
         return [
             condition
             for condition in _ssp_cr.instance.status.conditions
-            if condition["type"] == ssp_cr.Condition.DEGRADED
+            if condition["type"] == ssp_resource_scope_function.Condition.DEGRADED
         ]
 
     LOGGER.info("verify SSP reports invalid source URL in custom dataImportCron.")
@@ -462,7 +462,7 @@ def test_data_import_cron_invalid_source_url_failed_creation(
             wait_timeout=TIMEOUT_2MIN,
             sleep=5,
             func=get_ssp_degraded_condition,
-            _ssp_cr=ssp_cr,
+            _ssp_cr=ssp_resource_scope_function,
         ):
             if sample and expected_degradation_message in sample[0]["message"]:
                 return
