@@ -81,11 +81,14 @@ def rhel9_ready_data_source(rhel9_data_source):
 
 @pytest.fixture()
 def existing_data_source_pvc(
-    golden_images_persistent_volume_claims, matrix_data_source
+    golden_images_persistent_volume_claims_scope_function, matrix_data_source
 ):
     pvc_name = matrix_data_source.instance.spec.source.pvc.name
     assert any(
-        [pvc_name in pvc.name for pvc in golden_images_persistent_volume_claims]
+        [
+            pvc_name in pvc.name
+            for pvc in golden_images_persistent_volume_claims_scope_function
+        ]
     ), f"PVC {pvc_name} is missing"
 
 
@@ -192,7 +195,7 @@ def test_common_templates_boot_source_reference(base_templates):
 def test_vm_with_uploaded_golden_image_opt_out(
     admin_client,
     golden_images_namespace,
-    disabled_common_boot_image_import_feature_gate,
+    disabled_common_boot_image_import_feature_gate_scope_function,
     opted_out_rhel9_data_source,
     vm_without_boot_source,
     rhel9_dv,
@@ -203,9 +206,9 @@ def test_vm_with_uploaded_golden_image_opt_out(
 
 @pytest.mark.polarion("CNV-8031")
 def test_vm_with_uploaded_golden_image_opt_in(
-    disabled_common_boot_image_import_feature_gate,
+    disabled_common_boot_image_import_feature_gate_scope_function,
     vm_without_boot_source,
-    enabled_common_boot_image_import_feature_gate,
+    enabled_common_boot_image_import_feature_gate_scope_function,
     rhel9_data_source,
     rhel9_ready_data_source,
 ):

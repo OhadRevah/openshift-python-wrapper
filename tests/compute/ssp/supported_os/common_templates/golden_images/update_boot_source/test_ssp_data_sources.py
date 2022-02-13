@@ -2,6 +2,7 @@ import logging
 from contextlib import contextmanager
 
 import pytest
+from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
@@ -69,7 +70,9 @@ def opt_in_status_str(opt_in):
     return f"opt-{'in' if opt_in else 'out'}"
 
 
-def wait_for_data_source_reconciliation_after_update(data_source, opt_in):
+def wait_for_data_source_reconciliation_after_update(
+    data_source, opt_in, pvc_name_before_reconcile=DUMMY_PVC_NAME
+):
     LOGGER.info(
         f"{opt_in_status_str(opt_in=opt_in)}: "
         f"Verify DataSource {data_source.name} is reconciled after update."
@@ -78,7 +81,8 @@ def wait_for_data_source_reconciliation_after_update(data_source, opt_in):
         for sample in TimeoutSampler(
             wait_timeout=TIMEOUT_10MIN,
             sleep=5,
-            func=lambda: data_source.instance.spec.source.pvc.name != DUMMY_PVC_NAME,
+            func=lambda: data_source.instance.spec.source.pvc.name
+            != pvc_name_before_reconcile,
         ):
             if sample:
                 return
@@ -122,8 +126,7 @@ def wait_for_data_source_updated_referenced_pvc(data_source, pvc_name):
         raise
 
 
-def delete_data_source_and_wait_for_reconciliation(golden_images_data_sources, opt_in):
-    data_source = golden_images_data_sources[0]
+def delete_data_source_and_wait_for_reconciliation(data_source, opt_in):
     LOGGER.info(
         f"{opt_in_status_str(opt_in=opt_in)}: Verify DataSource {data_source.name} is reconciled after deletion."
     )
@@ -163,6 +166,55 @@ def assert_missing_data_sources(
     ), f"Not all dataSources are created, missing: {missing_data_sources}"
 
 
+def data_source_labels_by_opt_in_status(data_source, opt_in):
+    data_source_labels = data_source.instance.to_dict()["metadata"]["labels"]
+    if opt_in:
+        data_source_labels[DATA_SOURCE_MANAGED_BY_CDI_LABEL] = "true"
+    else:
+        del data_source_labels[DATA_SOURCE_MANAGED_BY_CDI_LABEL]
+    return data_source_labels
+
+
+def opt_in_data_source(data_source):
+    with ResourceEditor(
+        patches={
+            data_source: {
+                "metadata": {
+                    "labels": data_source_labels_by_opt_in_status(
+                        data_source=data_source, opt_in=True
+                    )
+                }
+            }
+        }
+    ):
+        wait_for_condition_message_value(
+            resource=data_source,
+            expected_message=DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
+        )
+        yield
+
+
+def wait_for_data_import_cron_label_in_data_source_when_opt_in(data_source, opt_in):
+    LOGGER.info(
+        f"{opt_in_status_str(opt_in=opt_in)}: Verify DataSource {data_source.name} {DATA_SOURCE_MANAGED_BY_CDI_LABEL} "
+        f"label {'' if opt_in else 'does not'} exist."
+    )
+    try:
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_5MIN,
+            sleep=5,
+            func=lambda: DATA_SOURCE_MANAGED_BY_CDI_LABEL in data_source.labels,
+        ):
+            if (sample and opt_in) or not (sample and opt_in):
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"DataSource {data_source.name} {'does not' if opt_in else ''} have "
+            f"{DATA_SOURCE_MANAGED_BY_CDI_LABEL} label."
+        )
+        raise
+
+
 @contextmanager
 def update_data_source(data_source):
     with ResourceEditor(
@@ -183,23 +235,25 @@ def update_data_source(data_source):
 
 
 @pytest.fixture()
-def golden_images_data_sources(admin_client, golden_images_namespace):
+def golden_images_data_sources_scope_function(admin_client, golden_images_namespace):
     return list(
         DataSource.get(dyn_client=admin_client, namespace=golden_images_namespace.name)
     )
 
 
 @pytest.fixture()
-def data_import_cron_managed_data_sources(golden_images_data_sources):
+def data_sources_managed_by_data_import_crons_scope_function(
+    golden_images_data_sources_scope_function,
+):
     return [
         data_source
-        for data_source in golden_images_data_sources
+        for data_source in golden_images_data_sources_scope_function
         if DATA_SOURCE_MANAGED_BY_CDI_LABEL in data_source.labels.keys()
     ]
 
 
 @pytest.fixture()
-def data_sources_names_from_templates(base_templates):
+def data_sources_names_from_templates_scope_function(base_templates):
     return set(
         [
             get_parameters_from_template(
@@ -211,104 +265,179 @@ def data_sources_names_from_templates(base_templates):
 
 
 @pytest.fixture()
-def data_source_by_name(request, admin_client, golden_images_namespace):
+def data_source_by_name_scope_function(request, admin_client, golden_images_namespace):
     return DataSource(name=request.param, namespace=golden_images_namespace.name)
 
 
-@pytest.fixture()
-def data_source_referenced_pvc(data_source_by_name):
-    return data_source_by_name.instance.spec.source.pvc.name
+@pytest.fixture(scope="class")
+def data_source_by_name_scope_class(request, admin_client, golden_images_namespace):
+    return DataSource(name=request.param, namespace=golden_images_namespace.name)
+
+
+@pytest.fixture(scope="class")
+def data_source_by_name_managing_data_import_cron_scope_class(
+    admin_client, data_source_by_name_scope_class
+):
+    return DataImportCron(
+        client=admin_client,
+        name=data_source_by_name_scope_class.labels[DATA_SOURCE_MANAGED_BY_CDI_LABEL],
+        namespace=data_source_by_name_scope_class.namespace,
+    )
 
 
 @pytest.fixture()
-def opted_in_data_source(data_source_by_name):
-    data_source_labels = data_source_by_name.instance.to_dict()["metadata"]["labels"]
-    data_source_labels[DATA_SOURCE_MANAGED_BY_CDI_LABEL] = "true"
+def data_source_referenced_pvc_scope_function(data_source_by_name_scope_function):
+    return data_source_by_name_scope_function.instance.spec.source.pvc.name
+
+
+@pytest.fixture(scope="class")
+def data_source_referenced_pvc_scope_class(data_source_by_name_scope_class):
+    return data_source_by_name_scope_class.instance.spec.source.pvc.name
+
+
+@pytest.fixture()
+def opted_in_data_source_scope_function(data_source_by_name_scope_function):
+    yield from opt_in_data_source(data_source=data_source_by_name_scope_function)
+
+
+@pytest.fixture(scope="class")
+def opted_in_data_source_scope_class(data_source_by_name_scope_class):
+    yield from opt_in_data_source(data_source=data_source_by_name_scope_class)
+
+
+@pytest.fixture(scope="class")
+def opted_out_data_source_scope_class(
+    data_source_by_name_scope_class,
+    created_dv_for_data_import_cron_managed_data_source_scope_class,
+):
     with ResourceEditor(
-        patches={data_source_by_name: {"metadata": {"labels": data_source_labels}}}
+        patches={
+            data_source_by_name_scope_class: {
+                "metadata": {
+                    "labels": data_source_labels_by_opt_in_status(
+                        data_source=data_source_by_name_scope_class, opt_in=False
+                    )
+                }
+            }
+        }
     ):
+        wait_for_data_source_updated_referenced_pvc(
+            data_source=data_source_by_name_scope_class,
+            pvc_name=created_dv_for_data_import_cron_managed_data_source_scope_class.name,
+        )
         yield
 
 
 @pytest.fixture()
-def uploaded_dv_for_dangling_data_source(admin_client, data_source_by_name):
-    expected_pvc_name = data_source_by_name.instance.spec.source.pvc.name
+def uploaded_dv_for_dangling_data_source_scope_function(
+    admin_client, data_source_by_name_scope_function
+):
+    expected_pvc_name = data_source_by_name_scope_function.instance.spec.source.pvc.name
     LOGGER.info(
-        f"Create DV {expected_pvc_name} for dataSource {data_source_by_name.name}"
+        f"Create DV {expected_pvc_name} for dataSource {data_source_by_name_scope_function.name}"
     )
     yield from dv_for_data_source(
         name=expected_pvc_name,
-        data_source=data_source_by_name,
+        data_source=data_source_by_name_scope_function,
         admin_client=admin_client,
     )
 
 
 @pytest.fixture()
-def created_dv_for_data_import_cron_managed_data_source(
-    admin_client, golden_images_namespace, data_source_by_name
+def created_dv_for_data_import_cron_managed_data_source_scope_function(
+    admin_client, golden_images_namespace, data_source_by_name_scope_function
 ):
     yield from dv_for_data_source(
-        name=data_source_by_name.instance.spec.source.pvc.name,
-        data_source=data_source_by_name,
+        name=data_source_by_name_scope_function.instance.spec.source.pvc.name,
+        data_source=data_source_by_name_scope_function,
+        admin_client=admin_client,
+    )
+
+
+@pytest.fixture(scope="class")
+def created_dv_for_data_import_cron_managed_data_source_scope_class(
+    admin_client, golden_images_namespace, data_source_by_name_scope_class
+):
+    yield from dv_for_data_source(
+        name=data_source_by_name_scope_class.instance.spec.source.pvc.name,
+        data_source=data_source_by_name_scope_class,
         admin_client=admin_client,
     )
 
 
 @pytest.fixture()
-def updated_opted_in_data_source(data_import_cron_managed_data_sources):
+def updated_opted_in_data_source_scope_function(
+    data_sources_managed_by_data_import_crons_scope_function,
+):
     with update_data_source(
-        data_source=data_import_cron_managed_data_sources[0]
+        data_source=data_sources_managed_by_data_import_crons_scope_function[0]
     ) as data_source:
         yield data_source
 
 
 @pytest.fixture()
-def updated_opted_out_data_source(golden_images_data_sources):
-    with update_data_source(data_source=golden_images_data_sources[0]) as data_source:
+def updated_opted_out_data_source_scope_function(
+    golden_images_data_sources_scope_function,
+):
+    with update_data_source(
+        data_source=golden_images_data_sources_scope_function[0]
+    ) as data_source:
+        yield data_source
+
+
+@pytest.fixture()
+def updated_data_source_with_existing_pvc_scope_function(
+    data_source_by_name_scope_class,
+):
+    with update_data_source(data_source=data_source_by_name_scope_class) as data_source:
         yield data_source
 
 
 @pytest.mark.polarion("CNV-7578")
 def test_opt_in_all_referenced_data_sources_in_templates_exist(
-    data_sources_names_from_templates,
-    golden_images_data_sources,
+    data_sources_names_from_templates_scope_function,
+    golden_images_data_sources_scope_function,
 ):
     assert_missing_data_sources(
         opt_in=True,
-        data_sources_names_from_templates=data_sources_names_from_templates,
-        golden_images_data_sources=golden_images_data_sources,
+        data_sources_names_from_templates=data_sources_names_from_templates_scope_function,
+        golden_images_data_sources=golden_images_data_sources_scope_function,
     )
 
 
 @pytest.mark.polarion("CNV-8234")
 def test_opt_out_all_referenced_data_sources_in_templates_exist(
-    disabled_common_boot_image_import_feature_gate,
-    data_sources_names_from_templates,
-    golden_images_data_sources,
+    disabled_common_boot_image_import_feature_gate_scope_function,
+    data_sources_names_from_templates_scope_function,
+    golden_images_data_sources_scope_function,
 ):
     assert_missing_data_sources(
         opt_in=False,
-        data_sources_names_from_templates=data_sources_names_from_templates,
-        golden_images_data_sources=golden_images_data_sources,
+        data_sources_names_from_templates=data_sources_names_from_templates_scope_function,
+        golden_images_data_sources=golden_images_data_sources_scope_function,
     )
 
 
 @pytest.mark.polarion("CNV-7667")
-def test_opt_in_data_source_reconciles_after_deletion(golden_images_data_sources):
+def test_opt_in_data_source_reconciles_after_deletion(
+    golden_images_data_sources_scope_function,
+):
     delete_data_source_and_wait_for_reconciliation(
-        golden_images_data_sources=golden_images_data_sources, opt_in=True
+        data_source=golden_images_data_sources_scope_function[0], opt_in=True
     )
 
 
 @pytest.mark.polarion("CNV-8030")
-def test_opt_in_data_source_reconciles_after_update(updated_opted_in_data_source):
+def test_opt_in_data_source_reconciles_after_update(
+    updated_opted_in_data_source_scope_function,
+):
     wait_for_data_source_reconciliation_after_update(
-        data_source=updated_opted_in_data_source, opt_in=True
+        data_source=updated_opted_in_data_source_scope_function, opt_in=True
     )
 
 
 @pytest.mark.parametrize(
-    "data_source_by_name, delete_dv, expected_condition_message",
+    "data_source_by_name_scope_function, delete_dv, expected_condition_message",
     [
         pytest.param(
             "win2k19",
@@ -323,48 +452,50 @@ def test_opt_in_data_source_reconciles_after_update(updated_opted_in_data_source
             marks=(pytest.mark.polarion("CNV-8099")),
         ),
     ],
-    indirect=["data_source_by_name"],
+    indirect=["data_source_by_name_scope_function"],
 )
 def test_upload_dv_for_auto_update_dangling_data_sources(
-    data_source_by_name,
-    uploaded_dv_for_dangling_data_source,
+    data_source_by_name_scope_function,
+    uploaded_dv_for_dangling_data_source_scope_function,
     delete_dv,
     expected_condition_message,
 ):
     LOGGER.info("Verify DataSource condition is updated when referenced PVC is ready.")
     if delete_dv:
-        uploaded_dv_for_dangling_data_source.delete(wait=True)
+        uploaded_dv_for_dangling_data_source_scope_function.delete(wait=True)
     wait_for_condition_message_value(
-        resource=data_source_by_name,
+        resource=data_source_by_name_scope_function,
         expected_message=expected_condition_message,
     )
 
 
 @pytest.mark.polarion("CNV-7668")
 def test_opt_out_data_source_reconciles_after_deletion(
-    disabled_common_boot_image_import_feature_gate, golden_images_data_sources
+    disabled_common_boot_image_import_feature_gate_scope_function,
+    golden_images_data_sources_scope_function,
 ):
     delete_data_source_and_wait_for_reconciliation(
-        golden_images_data_sources=golden_images_data_sources, opt_in=False
+        data_source=golden_images_data_sources_scope_function[0], opt_in=False
     )
 
 
 @pytest.mark.polarion("CNV-8095")
 def test_opt_out_data_source_reconciles_after_update(
-    disabled_common_boot_image_import_feature_gate, updated_opted_out_data_source
+    disabled_common_boot_image_import_feature_gate_scope_function,
+    updated_opted_out_data_source_scope_function,
 ):
     wait_for_data_source_reconciliation_after_update(
-        data_source=updated_opted_out_data_source, opt_in=False
+        data_source=updated_opted_out_data_source_scope_function, opt_in=False
     )
 
 
 @pytest.mark.polarion("CNV-8100")
 def test_opt_out_data_source_update(
-    disabled_common_boot_image_import_feature_gate,
-    golden_images_data_sources,
+    disabled_common_boot_image_import_feature_gate_scope_function,
+    golden_images_data_sources_scope_function,
 ):
     LOGGER.info("Verify DataSources are updated to not reference auto-update DVs")
-    for data_source in golden_images_data_sources:
+    for data_source in golden_images_data_sources_scope_function:
         wait_for_condition_message_value(
             resource=data_source,
             expected_message=DATA_VOLUME_NOT_FOUND_ERROR,
@@ -372,38 +503,7 @@ def test_opt_out_data_source_update(
 
 
 @pytest.mark.parametrize(
-    "data_source_by_name",
-    [
-        pytest.param(
-            TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME,
-            marks=(pytest.mark.polarion("CNV-8029")),
-        ),
-    ],
-    indirect=True,
-)
-def test_opt_in_label_data_source_when_pvc_exists(
-    data_source_by_name,
-    data_source_referenced_pvc,
-    disabled_common_boot_image_import_feature_gate,
-    created_dv_for_data_import_cron_managed_data_source,
-    enabled_common_boot_image_import_feature_gate,
-    opted_in_data_source,
-):
-    LOGGER.info(
-        "Verify DataSource is managed by DataImportCron after labelled and a PVC exists."
-    )
-    wait_for_condition_message_value(
-        resource=data_source_by_name,
-        expected_message=DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
-    )
-    wait_for_data_source_updated_referenced_pvc(
-        data_source=data_source_by_name,
-        pvc_name=data_source_referenced_pvc,
-    )
-
-
-@pytest.mark.parametrize(
-    "updated_hco_with_custom_data_import_cron",
+    "updated_hco_with_custom_data_import_cron_scope_function",
     [
         pytest.param(
             {
@@ -419,12 +519,12 @@ def test_opt_in_label_data_source_when_pvc_exists(
 def test_opt_out_custom_data_sources_not_deleted(
     admin_client,
     golden_images_namespace,
-    updated_hco_with_custom_data_import_cron,
-    disabled_common_boot_image_import_feature_gate,
+    updated_hco_with_custom_data_import_cron_scope_function,
+    disabled_common_boot_image_import_feature_gate_scope_function,
 ):
-    custom_data_source_name = updated_hco_with_custom_data_import_cron["spec"][
-        "managedDataSource"
-    ]
+    custom_data_source_name = updated_hco_with_custom_data_import_cron_scope_function[
+        "spec"
+    ]["managedDataSource"]
     LOGGER.info(
         f"Verify custom DataSource {custom_data_source_name} is not deleted after opt-out"
     )
@@ -439,7 +539,7 @@ def test_opt_out_custom_data_sources_not_deleted(
 
 
 @pytest.mark.parametrize(
-    "data_source_by_name",
+    "data_source_by_name_scope_function",
     [
         pytest.param(
             TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME,
@@ -449,14 +549,16 @@ def test_opt_out_custom_data_sources_not_deleted(
     indirect=True,
 )
 def test_data_source_with_existing_golden_image_pvc(
-    disabled_common_boot_image_import_feature_gate,
-    data_source_by_name,
-    created_dv_for_data_import_cron_managed_data_source,
-    enabled_common_boot_image_import_feature_gate,
+    disabled_common_boot_image_import_feature_gate_scope_function,
+    data_source_by_name_scope_function,
+    created_dv_for_data_import_cron_managed_data_source_scope_function,
+    enabled_common_boot_image_import_feature_gate_scope_function,
 ):
-    LOGGER.info(f"Verify DataSource {data_source_by_name.name} consumes an existing DV")
+    LOGGER.info(
+        f"Verify DataSource {data_source_by_name_scope_function.name} consumes an existing DV"
+    )
     wait_for_condition_message_value(
-        resource=data_source_by_name,
+        resource=data_source_by_name_scope_function,
         expected_message=DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
     )
 
@@ -464,6 +566,164 @@ def test_data_source_with_existing_golden_image_pvc(
         "Verify DataSource reference is not updated if there's an existing PVC."
     )
     wait_for_data_source_unchanged_referenced_pvc(
-        data_source=data_source_by_name,
-        pvc_name=created_dv_for_data_import_cron_managed_data_source.name,
+        data_source=data_source_by_name_scope_function,
+        pvc_name=created_dv_for_data_import_cron_managed_data_source_scope_function.name,
     )
+
+
+@pytest.mark.parametrize(
+    "data_source_by_name_scope_class",
+    [
+        pytest.param(
+            TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME,
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.usefixtures(
+    "data_source_by_name_scope_class",
+    "data_source_referenced_pvc_scope_class",
+    "disabled_common_boot_image_import_feature_gate_scope_class",
+    "created_dv_for_data_import_cron_managed_data_source_scope_class",
+    "enabled_common_boot_image_import_feature_gate_scope_class",
+    "opted_in_data_source_scope_class",
+)
+class TestDataSourcesOptInLabel:
+    @pytest.mark.polarion("CNV-8029")
+    @pytest.mark.dependency(
+        name="TestDataSourcesOptInLabel::test_opt_in_label_data_source_when_pvc_exists"
+    )
+    def test_opt_in_label_data_source_when_pvc_exists(
+        self, data_source_by_name_scope_class, data_source_referenced_pvc_scope_class
+    ):
+        LOGGER.info(
+            "Verify DataSource is managed by DataImportCron after labelled and a PVC exists."
+        )
+        wait_for_data_source_updated_referenced_pvc(
+            data_source=data_source_by_name_scope_class,
+            pvc_name=data_source_referenced_pvc_scope_class,
+        )
+
+    @pytest.mark.polarion("CNV-8253")
+    @pytest.mark.dependency(
+        depends=[
+            "TestDataSourcesOptInLabel::test_opt_in_label_data_source_when_pvc_exists"
+        ]
+    )
+    def test_opt_in_label_data_source_reconciles_after_update_with_existing_pvc(
+        self, updated_data_source_with_existing_pvc_scope_function
+    ):
+        wait_for_data_source_reconciliation_after_update(
+            data_source=updated_data_source_with_existing_pvc_scope_function,
+            opt_in=True,
+        )
+        wait_for_data_import_cron_label_in_data_source_when_opt_in(
+            data_source=updated_data_source_with_existing_pvc_scope_function,
+            opt_in=True,
+        )
+
+    @pytest.mark.polarion("CNV-8245")
+    @pytest.mark.dependency(
+        depends=[
+            "TestDataSourcesOptInLabel::test_opt_in_label_data_source_when_pvc_exists"
+        ]
+    )
+    def test_opt_in_label_data_source_reconciles_after_deletion_with_existing_pvc(
+        self, data_source_by_name_scope_class
+    ):
+        delete_data_source_and_wait_for_reconciliation(
+            data_source=data_source_by_name_scope_class, opt_in=True
+        )
+        wait_for_data_import_cron_label_in_data_source_when_opt_in(
+            data_source=data_source_by_name_scope_class, opt_in=True
+        )
+
+
+@pytest.mark.parametrize(
+    "data_source_by_name_scope_class",
+    [
+        pytest.param(
+            TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME,
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.usefixtures(
+    "data_source_by_name_scope_class",
+    "data_source_by_name_managing_data_import_cron_scope_class",
+    "data_source_referenced_pvc_scope_class",
+    "disabled_common_boot_image_import_feature_gate_scope_class",
+    "created_dv_for_data_import_cron_managed_data_source_scope_class",
+    "enabled_common_boot_image_import_feature_gate_scope_class",
+    "opted_in_data_source_scope_class",
+    "opted_out_data_source_scope_class",
+)
+class TestDataSourcesOptOutLabel:
+    @pytest.mark.polarion("CNV-8244")
+    @pytest.mark.dependency(
+        name="TestDataSourcesOptOutLabel::test_remove_data_source_dic_label_when_pvc_exists"
+    )
+    def test_remove_data_source_dic_label_when_pvc_exists(
+        self, data_source_by_name_managing_data_import_cron_scope_class
+    ):
+        LOGGER.info(
+            "Verify DataSource is not managed by DataImportCron when label is removed and a PVC exists."
+        )
+        data_source_by_name_managing_data_import_cron_scope_class.wait_deleted()
+
+    @pytest.mark.polarion("CNV-8254")
+    @pytest.mark.dependency(
+        depends=[
+            "TestDataSourcesOptOutLabel::test_remove_data_source_dic_label_when_pvc_exists"
+        ]
+    )
+    def test_opt_out_label_data_source_reconciles_after_update_with_existing_pvc(
+        self, updated_data_source_with_existing_pvc_scope_function
+    ):
+        wait_for_data_source_reconciliation_after_update(
+            data_source=updated_data_source_with_existing_pvc_scope_function,
+            opt_in=False,
+        )
+        wait_for_data_import_cron_label_in_data_source_when_opt_in(
+            data_source=updated_data_source_with_existing_pvc_scope_function,
+            opt_in=False,
+        )
+
+    @pytest.mark.polarion("CNV-8252")
+    @pytest.mark.dependency(
+        depends=[
+            "TestDataSourcesOptOutLabel::test_remove_data_source_dic_label_when_pvc_exists"
+        ]
+    )
+    def test_opt_out_label_data_source_reconciles_after_deletion_with_existing_pvc(
+        self, data_source_by_name_scope_class
+    ):
+        delete_data_source_and_wait_for_reconciliation(
+            data_source=data_source_by_name_scope_class, opt_in=False
+        )
+        wait_for_data_import_cron_label_in_data_source_when_opt_in(
+            data_source=data_source_by_name_scope_class, opt_in=False
+        )
+
+    @pytest.mark.polarion("CNV-8258")
+    @pytest.mark.dependency(
+        depends=[
+            "TestDataSourcesOptOutLabel::test_remove_data_source_dic_label_when_pvc_exists"
+        ]
+    )
+    def test_opt_out_label_data_source_delete_existing_dv(
+        self,
+        data_source_by_name_scope_class,
+        created_dv_for_data_import_cron_managed_data_source_scope_class,
+    ):
+        created_dv_for_data_import_cron_managed_data_source_scope_class.delete(
+            wait=True
+        )
+        wait_for_data_import_cron_label_in_data_source_when_opt_in(
+            data_source=data_source_by_name_scope_class, opt_in=True
+        )
+        wait_for_data_source_reconciliation_after_update(
+            data_source=data_source_by_name_scope_class,
+            opt_in=True,
+            pvc_name_before_reconcile=created_dv_for_data_import_cron_managed_data_source_scope_class.name,
+        )

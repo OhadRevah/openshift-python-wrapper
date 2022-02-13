@@ -26,8 +26,35 @@ from utilities.constants import (
 LOGGER = logging.getLogger(__name__)
 
 
+def disable_common_boot_image_import_feature_gate(
+    admin_client,
+    hco_resource,
+    golden_images_namespace,
+    golden_images_data_import_crons,
+):
+    if hco_resource.instance.spec.featureGates[
+        ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
+    ]:
+        update_common_boot_image_import_feature_gate(
+            hco_resource=hco_resource,
+            enable_feature_gate=False,
+        )
+        wait_for_deleted_data_import_crons(
+            data_import_crons=golden_images_data_import_crons
+        )
+        yield
+        # Always enable enableCommonBootImageImport feature gate after test execution
+        enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
+            hco_resource=hco_resource,
+            admin_client=admin_client,
+            namespace=golden_images_namespace,
+        )
+    else:
+        yield
+
+
 @pytest.fixture()
-def enabled_common_boot_image_import_feature_gate(
+def enabled_common_boot_image_import_feature_gate_scope_function(
     admin_client,
     hyperconverged_resource_scope_function,
     golden_images_namespace,
@@ -39,36 +66,51 @@ def enabled_common_boot_image_import_feature_gate(
     )
 
 
+@pytest.fixture(scope="class")
+def enabled_common_boot_image_import_feature_gate_scope_class(
+    admin_client,
+    hyperconverged_resource_scope_class,
+    golden_images_namespace,
+):
+    enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
+        hco_resource=hyperconverged_resource_scope_class,
+        admin_client=admin_client,
+        namespace=golden_images_namespace,
+    )
+
+
 @pytest.fixture()
-def disabled_common_boot_image_import_feature_gate(
+def disabled_common_boot_image_import_feature_gate_scope_function(
     admin_client,
     hyperconverged_resource_scope_function,
     golden_images_namespace,
-    golden_images_data_import_crons,
+    golden_images_data_import_crons_scope_function,
 ):
-    if hyperconverged_resource_scope_function.instance.spec.featureGates[
-        ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE
-    ]:
-        update_common_boot_image_import_feature_gate(
-            hco_resource=hyperconverged_resource_scope_function,
-            enable_feature_gate=False,
-        )
-        wait_for_deleted_data_import_crons(
-            data_import_crons=golden_images_data_import_crons
-        )
-        yield
-        # Always enable enableCommonBootImageImport feature gate after test execution
-        enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
-            hco_resource=hyperconverged_resource_scope_function,
-            admin_client=admin_client,
-            namespace=golden_images_namespace,
-        )
-    else:
-        yield
+    yield from disable_common_boot_image_import_feature_gate(
+        admin_client=admin_client,
+        hco_resource=hyperconverged_resource_scope_function,
+        golden_images_namespace=golden_images_namespace,
+        golden_images_data_import_crons=golden_images_data_import_crons_scope_function,
+    )
+
+
+@pytest.fixture(scope="class")
+def disabled_common_boot_image_import_feature_gate_scope_class(
+    admin_client,
+    hyperconverged_resource_scope_class,
+    golden_images_namespace,
+    golden_images_data_import_crons_scope_class,
+):
+    yield from disable_common_boot_image_import_feature_gate(
+        admin_client=admin_client,
+        hco_resource=hyperconverged_resource_scope_class,
+        golden_images_namespace=golden_images_namespace,
+        golden_images_data_import_crons=golden_images_data_import_crons_scope_class,
+    )
 
 
 @pytest.fixture()
-def golden_images_data_volumes(admin_client, golden_images_namespace):
+def golden_images_data_volumes_scope_function(admin_client, golden_images_namespace):
     return list(
         DataVolume.get(
             dyn_client=admin_client,
@@ -79,8 +121,8 @@ def golden_images_data_volumes(admin_client, golden_images_namespace):
 
 
 @pytest.fixture()
-def golden_images_persistent_volume_claims(
-    admin_client, golden_images_namespace, golden_images_data_volumes
+def golden_images_persistent_volume_claims_scope_function(
+    admin_client, golden_images_namespace, golden_images_data_volumes_scope_function
 ):
     golden_image_pvcs = list(
         PersistentVolumeClaim.get(
@@ -90,12 +132,12 @@ def golden_images_persistent_volume_claims(
     return [
         pvc
         for pvc in golden_image_pvcs
-        if pvc.name in [dv.name for dv in golden_images_data_volumes]
+        if pvc.name in [dv.name for dv in golden_images_data_volumes_scope_function]
     ]
 
 
 @pytest.fixture()
-def updated_hco_with_custom_data_import_cron(
+def updated_hco_with_custom_data_import_cron_scope_function(
     request, hyperconverged_resource_scope_function
 ):
     data_import_cron_dict = generate_data_import_cron_dict(
@@ -114,14 +156,14 @@ def updated_hco_with_custom_data_import_cron(
 
 
 @pytest.fixture()
-def custom_data_import_cron(
+def custom_data_import_cron_scope_function(
     admin_client,
     golden_images_namespace,
-    updated_hco_with_custom_data_import_cron,
+    updated_hco_with_custom_data_import_cron_scope_function,
 ):
-    expected_data_import_cron_name = updated_hco_with_custom_data_import_cron[
-        "metadata"
-    ]["name"]
+    expected_data_import_cron_name = (
+        updated_hco_with_custom_data_import_cron_scope_function["metadata"]["name"]
+    )
     for sample in TimeoutSampler(
         wait_timeout=TIMEOUT_2MIN,
         sleep=5,
@@ -139,25 +181,39 @@ def custom_data_import_cron(
 
 
 @pytest.fixture()
-def custom_data_source(admin_client, custom_data_import_cron):
-    custom_data_source_name = custom_data_import_cron.instance.spec.managedDataSource
+def custom_data_source_scope_function(
+    admin_client, custom_data_import_cron_scope_function
+):
+    custom_data_source_name = (
+        custom_data_import_cron_scope_function.instance.spec.managedDataSource
+    )
     try:
         return list(
             DataSource.get(
                 dyn_client=admin_client,
                 name=custom_data_source_name,
-                namespace=custom_data_import_cron.namespace,
+                namespace=custom_data_import_cron_scope_function.namespace,
             )
         )[0]
     except NotFoundError:
         LOGGER.error(
-            f"DataSource {custom_data_source_name} is not found under {custom_data_import_cron.namespace} namespace."
+            f"DataSource {custom_data_source_name} is not found under "
+            f"{custom_data_import_cron_scope_function.namespace} namespace."
         )
         raise
 
 
 @pytest.fixture()
-def golden_images_data_import_crons(admin_client, golden_images_namespace):
+def golden_images_data_import_crons_scope_function(
+    admin_client, golden_images_namespace
+):
+    return get_data_import_crons(
+        admin_client=admin_client, namespace=golden_images_namespace
+    )
+
+
+@pytest.fixture(scope="class")
+def golden_images_data_import_crons_scope_class(admin_client, golden_images_namespace):
     return get_data_import_crons(
         admin_client=admin_client, namespace=golden_images_namespace
     )
