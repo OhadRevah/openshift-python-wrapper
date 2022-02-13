@@ -106,13 +106,13 @@ nic_models_matrix = [
     "e1000e",
 ]
 bridge_device_matrix = ["linux-bridge", "ovs-bridge"]
+
+HPP_VOLUME_MODE_ACCESS_MODE = {
+    "volume_mode": DataVolume.VolumeMode.FILE,
+    "access_mode": DataVolume.AccessMode.RWO,
+}
+
 storage_class_matrix = [
-    {
-        StorageClass.Types.HOSTPATH: {
-            "volume_mode": DataVolume.VolumeMode.FILE,
-            "access_mode": DataVolume.AccessMode.RWO,
-        }
-    },
     {
         StorageClass.Types.NFS: {
             "volume_mode": DataVolume.VolumeMode.FILE,
@@ -126,12 +126,8 @@ storage_class_matrix = [
             "default": True,
         }
     },
-    {
-        StorageClass.Types.HOSTPATH_CSI: {
-            "volume_mode": DataVolume.VolumeMode.FILE,
-            "access_mode": DataVolume.AccessMode.RWO,
-        }
-    },
+    {"hostpath-csi-basic": HPP_VOLUME_MODE_ACCESS_MODE},
+    {"hostpath-csi-pvc-block": HPP_VOLUME_MODE_ACCESS_MODE},
 ]
 
 default_storage_class, default_storage_class_configuration = _get_default_storage_class(
