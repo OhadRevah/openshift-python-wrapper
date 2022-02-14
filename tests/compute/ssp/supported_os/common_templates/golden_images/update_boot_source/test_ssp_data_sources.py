@@ -301,9 +301,6 @@ def test_opt_in_data_source_reconciles_after_deletion(golden_images_data_sources
     )
 
 
-@pytest.mark.bugzilla(
-    2051105, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.polarion("CNV-8030")
 def test_opt_in_data_source_reconciles_after_update(updated_opted_in_data_source):
     wait_for_data_source_reconciliation_after_update(
