@@ -16,7 +16,8 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
 
 import utilities.network
-from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR, NMSTATE_HANDLER
+from tests.network.constants import EXPECTED_CNAO_COMP_NAMES
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
 from utilities.infra import is_bug_open
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -43,15 +44,6 @@ RESOURCE_TYPES = [
 COMPONENTS_TO_IGNORE = [
     "selfSignConfiguration",
     "placementConfiguration",
-]
-EXPECTED_CNAO_COMP_NAMES = [
-    "multus",
-    NMSTATE_HANDLER,
-    CLUSTER_NETWORK_ADDONS_OPERATOR,
-    "kubemacpool",
-    "bridge",
-    "nmstate",
-    "ovs-cni",
 ]
 EXPECTED_CNAO_COMP = [
     "multus",

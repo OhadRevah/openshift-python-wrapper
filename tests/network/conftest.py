@@ -7,6 +7,7 @@ Pytest conftest file for CNV network tests
 import pytest
 from kubernetes.dynamic.exceptions import NotFoundError
 from ocp_resources.deployment import Deployment
+from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.pod import Pod
 
 from utilities.constants import (
@@ -112,4 +113,14 @@ def dual_stack_network_data(dual_stack_cluster):
 def kmp_deployment(hco_namespace):
     return Deployment(
         namespace=hco_namespace.name, name=KUBEMACPOOL_MAC_CONTROLLER_MANAGER
+    )
+
+
+@pytest.fixture(scope="session")
+def sno_cluster(admin_client):
+    return (
+        Infrastructure(
+            client=admin_client, name="cluster"
+        ).instance.status.infrastructureTopology
+        == "SingleReplica"
     )

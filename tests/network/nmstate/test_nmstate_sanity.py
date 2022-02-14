@@ -3,7 +3,6 @@ import logging
 import re
 
 import pytest
-from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
@@ -40,16 +39,6 @@ pytestmark = pytest.mark.sno
 
 class MoreThanTwoDNSError(Exception):
     pass
-
-
-@pytest.fixture(scope="session")
-def sno_cluster(admin_client):
-    return (
-        Infrastructure(
-            client=admin_client, name="cluster"
-        ).instance.status.infrastructureTopology
-        == "SingleReplica"
-    )
 
 
 @pytest.fixture()
