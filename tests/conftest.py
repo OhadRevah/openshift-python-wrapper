@@ -1623,10 +1623,7 @@ def worker_nodes_ipv4_false_secondary_nics(
         with EthernetNetworkConfigurationPolicy(
             name=f"disable-ipv4-{name_prefix(worker_node.name)}",
             node_selector=worker_node.hostname,
-            ipv4_dhcp=False,
-            worker_pods=utility_pods,
             interfaces_name=worker_nics,
-            node_active_nics=worker_nics,
         ):
             LOGGER.info(
                 f"selected worker node - {worker_node.name} under NNCP selected NIC information - {worker_nics} "
