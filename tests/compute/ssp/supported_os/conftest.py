@@ -172,6 +172,7 @@ def vm_object_from_template(
         network_multiqueue=network_multiqueue,
         ssh=param_dict.get("ssh", True),
         systemctl_support=not rhel6,
+        disable_sha2_algorithms=rhel6,
     )
 
 

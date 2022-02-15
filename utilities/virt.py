@@ -247,6 +247,7 @@ class VirtualMachineForTests(VirtualMachine):
         vm_debug_logs=False,
         priority_class_name=None,
         dry_run=None,
+        disable_sha2_algorithms=False,
     ):
         """
         Virtual machine creation
@@ -310,6 +311,8 @@ class VirtualMachineForTests(VirtualMachine):
                 Is set to True if py_config["log_collector"] is True.
             priority_class_name (str, optional): The name of the priority class used for the VM
             dry_run (str, default=None): If "All", the resource will be created using the dry_run flag
+            disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
+                when creating a ssh connection
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -373,6 +376,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.vhostmd = vhostmd
         self.vm_debug_logs = vm_debug_logs or collect_logs()
         self.priority_class_name = priority_class_name
+        self.disable_sha2_algorithms = disable_sha2_algorithms
 
     def deploy(self):
         super().deploy()
@@ -1009,6 +1013,10 @@ class VirtualMachineForTests(VirtualMachine):
         host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
             port=self.ssh_service.service_port
         )
+        if self.disable_sha2_algorithms:
+            host.executor_factory.disabled_algorithms = dict(
+                pubkeys=["rsa-sha2-256", "rsa-sha2-512"]
+            )
         return host
 
 
@@ -1061,6 +1069,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         template_params=None,
         template_object=None,
         non_existing_pvc=False,
+        disable_sha2_algorithms=False,
     ):
         """
         VM creation using common templates.
@@ -1078,6 +1087,8 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             template_params (dict, optional): dict with template parameters as keys and values
             template_object (Template, optional): Template object to create the VM from
             non_existing_pvc(bool, default=False): If True, referenced PVC in DataSource is missing
+            disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
+                when creating a ssh connection
         Returns:
             obj `VirtualMachine`: VM resource
         """
@@ -1118,6 +1129,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             machine_type=machine_type,
             teardown=teardown,
             dry_run=dry_run,
+            disable_sha2_algorithms=disable_sha2_algorithms,
         )
         self.template_labels = labels
         self.data_source = data_source
