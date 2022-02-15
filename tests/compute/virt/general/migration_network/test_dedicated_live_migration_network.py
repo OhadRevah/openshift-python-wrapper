@@ -4,7 +4,6 @@ import pytest
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import update_hco_annotations
 from tests.compute.virt.general.migration_network.utils import (
     MACVLANNetworkAttachmentDefinition,
     assert_node_drain_and_vm_migration,
@@ -14,6 +13,7 @@ from tests.compute.virt.general.migration_network.utils import (
     migrate_and_verify_multi_vms,
     run_tcpdump_on_source_node,
     taint_node_no_schedule,
+    update_hco_migration_config,
     wait_for_virt_handler_pods_network_updated,
 )
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
@@ -52,12 +52,11 @@ def dedicated_migration_network_hco_config(
     hyperconverged_resource_scope_module,
     dedicated_network_nad,
 ):
-    # TODO: Change from json annotation to hco modification when HCO PR is ready
-    # https://github.com/kubevirt/hyperconverged-cluster-operator/pull/1685
     path = "migrations/network"
-    with update_hco_annotations(
-        resource=hyperconverged_resource_scope_module,
-        path=path,
+    with update_hco_migration_config(
+        client=admin_client,
+        hco_ns_name=hco_namespace.name,
+        param="network",
         value=dedicated_network_nad.name,
     ):
         wait_for_updated_kv_value(
