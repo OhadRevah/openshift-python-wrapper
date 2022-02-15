@@ -65,6 +65,7 @@ def set_ipv4_dhcp_client(vlan_iface_nncp, enabled, selected_node=None):
                 }
 
             vlan_iface_nncp.update(resource_dict=resource_dict)
+            vlan_iface_nncp.wait_for_status_success()
 
 
 def enable_ipv4_dhcp_client(vlan_iface_nncp, selected_node=None):

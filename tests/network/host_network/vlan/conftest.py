@@ -15,10 +15,11 @@ from tests.network.host_network.vlan.utils import (
     enable_ipv4_dhcp_client,
 )
 from tests.network.utils import DHCP_SERVICE_RESTART
-from utilities.infra import run_ssh_commands
+from utilities.infra import is_bug_open, run_ssh_commands
 from utilities.network import (
     LINUX_BRIDGE,
     BondNodeNetworkConfigurationPolicy,
+    EthernetNetworkConfigurationPolicy,
     VLANInterfaceNodeNetworkConfigurationPolicy,
     network_device,
     network_nad,
@@ -29,9 +30,29 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 LOGGER = logging.getLogger(__name__)
 
 
+# W/A for bug 2017623
+@pytest.fixture(scope="module")
+def base_ethernet_interface_for_vlan_creation(vlan_base_iface):
+    # TODO: remove this fixture once bug 2017623 is fixed.
+    if is_bug_open(bug_id=2017623):
+        with EthernetNetworkConfigurationPolicy(
+            name=f"{vlan_base_iface}-temp",
+            ipv4_enable=False,
+            ipv4_dhcp=False,
+            ipv6_enable=False,
+            interfaces_name=[vlan_base_iface],
+        ) as temp_interface:
+            yield temp_interface
+
+
 # VLAN on interface fixtures
 @pytest.fixture(scope="class")
-def vlan_iface_dhcp_client_1(vlan_base_iface, vlan_tag_id, dhcp_client_1):
+def vlan_iface_dhcp_client_1(
+    vlan_base_iface,
+    vlan_tag_id,
+    base_ethernet_interface_for_vlan_creation,
+    dhcp_client_1,
+):
     nncp_name = "dhcp-vlan-client-1-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name=nncp_name,
@@ -52,7 +73,12 @@ def vlan_iface_dhcp_client_1(vlan_base_iface, vlan_tag_id, dhcp_client_1):
 
 
 @pytest.fixture(scope="class")
-def vlan_iface_dhcp_client_2(vlan_base_iface, vlan_tag_id, dhcp_client_2):
+def vlan_iface_dhcp_client_2(
+    vlan_base_iface,
+    vlan_tag_id,
+    base_ethernet_interface_for_vlan_creation,
+    dhcp_client_2,
+):
     nncp_name = "dhcp-vlan-client-2-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name=nncp_name,
@@ -76,6 +102,7 @@ def vlan_iface_dhcp_client_2(vlan_base_iface, vlan_tag_id, dhcp_client_2):
 def vlan_iface_on_dhcp_client_2_with_different_tag(
     skip_if_no_multinic_nodes,
     vlan_base_iface,
+    base_ethernet_interface_for_vlan_creation,
     vlan_tag_id,
     dhcp_client_nodes,
     dhcp_client_2,
@@ -97,6 +124,7 @@ def vlan_iface_on_all_nodes(
     skip_if_no_multinic_nodes,
     vlan_tag_id,
     vlan_base_iface,
+    base_ethernet_interface_for_vlan_creation,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
@@ -188,6 +216,7 @@ def dhcp_server_vlan_iface(
     skip_if_no_multinic_nodes,
     worker_node1,
     vlan_base_iface,
+    base_ethernet_interface_for_vlan_creation,
     vlan_tag_id,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
@@ -250,6 +279,7 @@ def skip_insufficient_nodes(schedulable_nodes):
 def vlan_iface_bond_dhcp_client_1(
     skip_if_no_multinic_nodes,
     hosts_common_available_ports,
+    base_ethernet_interface_for_vlan_creation,
     dhcp_client_1,
     vlan_tag_id,
 ):
@@ -262,7 +292,7 @@ def vlan_iface_bond_dhcp_client_1(
         node_selector=dhcp_client_1.hostname,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
-            name="dhcp-vlan-bond-client-1-nncp",
+            name="dhcp-vlan-bond1",
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
             tag=vlan_tag_id["1000"],
@@ -278,6 +308,7 @@ def vlan_iface_bond_dhcp_client_1(
 def vlan_iface_bond_dhcp_client_2(
     skip_if_no_multinic_nodes,
     hosts_common_available_ports,
+    base_ethernet_interface_for_vlan_creation,
     dhcp_client_2,
     vlan_tag_id,
 ):
@@ -290,7 +321,7 @@ def vlan_iface_bond_dhcp_client_2(
         node_selector=dhcp_client_2.hostname,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
-            name="dhcp-vlan-bond-client-2-nncp",
+            name="dhcp-vlan-bond2",
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
             tag=vlan_tag_id["1000"],
