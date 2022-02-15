@@ -27,7 +27,6 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import ResourceValueError
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import get_images_server_url
 
 
@@ -372,9 +371,6 @@ def test_opt_out_data_source_update(
         )
 
 
-@pytest.mark.bugzilla(
-    2044398, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.parametrize(
     "data_source_by_name",
     [
