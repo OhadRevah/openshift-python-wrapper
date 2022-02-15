@@ -5,7 +5,9 @@ import pytest
 from ocp_resources.node_network_configuration_enactment import (  # noqa: N813
     NodeNetworkConfigurationEnactment as nnce,
 )
+from ocp_resources.utils import TimeoutSampler
 
+from utilities.constants import TIMEOUT_30SEC
 from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, label_nodes
 
 
@@ -18,8 +20,20 @@ MAXUNAVAILABLE_NODES_LABEL = {"maxunavailable_node": "true"}
 
 
 def nnce_status_for_worker(nncp_policy, worker):
+    def _wait_for_nnce_worker_resources(_nncp_policy, worker_name):
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_30SEC,
+            sleep=1,
+            func=_nncp_policy.node_nnce,
+            node_name=worker_name,
+        ):
+            if sample:
+                return sample
+
     nncp_policy.wait_for_conditions()
-    nnce_worker_resources = nncp_policy.node_nnce(node_name=worker.name)
+    nnce_worker_resources = _wait_for_nnce_worker_resources(
+        _nncp_policy=nncp_policy, worker_name=worker.name
+    )
     LOGGER.info(
         f"Complete condition of {nnce_worker_resources.name} NNCE : {nnce_worker_resources.instance.status.conditions}"
     )
