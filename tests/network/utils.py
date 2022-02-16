@@ -115,7 +115,9 @@ def assert_ssh_alive(ssh_vm, src_ip):
             if sample:
                 for line in sample:
                     if src_ip in line and "ESTABLISHED" in line:
-                        LOGGER.info(f"SSH connection from {src_ip} is alive")
+                        LOGGER.info(
+                            f"SSH connection from {src_ip} to {ssh_vm.name} is alive"
+                        )
                         return
     except TimeoutExpiredError:
         LOGGER.error(f"SSH connection from {src_ip} is not alive")
