@@ -1227,3 +1227,7 @@ def validate_hco_status_conditions(hco_status_conditions, expected_hco_status):
         raise ClusterSanityError(
             err_str=f"HCO is unhealthy. Expected {expected_hco_status}, Current: {hco_status_conditions}"
         )
+
+
+def is_jira_open(jira_id):
+    return get_jira_status(jira=jira_id) not in JIRA_STATUS_CLOSED

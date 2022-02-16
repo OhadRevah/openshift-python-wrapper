@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import subprocess
 import time
@@ -5,6 +6,7 @@ import time
 import pytest
 from ocp_resources.node_network_configuration_policy import NNCPConfigurationFailed
 from ocp_resources.node_network_state import NodeNetworkState
+from ocp_resources.utils import TimeoutExpiredError
 
 from utilities.constants import IPV4_STR, IPV6_STR
 from utilities.infra import is_bug_open
@@ -21,32 +23,52 @@ LOGGER = logging.getLogger(__name__)
 
 NODE_LABEL = {"capture": "allow"}
 PRIMARY_NIC = "primary-nic"
+IPV4_ADDRESSES = f"{IPV4_STR}_addresses"
+IPV6_ADDRESSES = f"{IPV6_STR}_addresses"
 
 pytestmark = [pytest.mark.usefixtures("skip_if_ovn_cluster")]
 
 
 def assert_config_unchanged(default_state, bridge_state):
+    routes = "routes"
     config_failures = []
     config_to_compare = [
-        f"{IPV4_STR}_addresses",
-        f"{IPV6_STR}_addresses",
+        IPV4_ADDRESSES,
+        IPV6_ADDRESSES,
         "dns-resolver",
-        "routes",
+        routes,
     ]
     LOGGER.info(
         f"Comparing {default_state['node'].name} state before and after bridge deployment"
     )
     for key in config_to_compare:
-        if key == "routes":
+
+        if key == routes:
+            missing_routes = []
             default_routes = {
                 route["destination"] for route in default_state[key]["config"]
             }
             bridge_routes = {
                 route["destination"] for route in bridge_state[key]["config"]
             }
-            if default_routes != bridge_routes:
+            for route in default_routes:
+                if route not in bridge_routes:
+                    missing_routes.append(route)
+            if missing_routes:
                 config_failures.append(
-                    f"{key} config mismatch. Previous state - {default_routes}. Current state - {bridge_routes}"
+                    f"{key} config mismatch. Missing routes - {missing_routes}"
+                )
+            continue
+        if key == IPV6_ADDRESSES:
+            missing_ipv6_addresses = []
+            for address in default_state[key]:
+                if ipaddress.ip_network(address["ip"]).is_link_local:
+                    continue
+                if address not in bridge_state[key]:
+                    missing_ipv6_addresses.append(address)
+            if missing_ipv6_addresses:
+                config_failures.append(
+                    f"{key} config mismatch. Missing addresses {missing_ipv6_addresses}"
                 )
             continue
         if default_state[key] != bridge_state[key]:
@@ -101,8 +123,8 @@ def collect_primary_interface_state(node):
         "primary_interface": primary_interface,
         "ipv4_config": ipv4_config,
         "ipv6_config": ipv6_config,
-        "ipv4_addresses": ipv4_addresses,
-        "ipv6_addresses": ipv6_addresses,
+        IPV4_ADDRESSES: ipv4_addresses,
+        IPV6_ADDRESSES: ipv6_addresses,
         "dns-resolver": dns_resolver,
         "routes": {"config": routes},
     }
@@ -297,5 +319,5 @@ class TestNmpolicy:
 def test_nmpolicy_wrong_syntax(bad_syntax_br):
     """Test nmpolicy doesn't allow applying yamls with wrong syntax"""
 
-    with pytest.raises(NNCPConfigurationFailed):
+    with pytest.raises((NNCPConfigurationFailed, TimeoutExpiredError)):
         bad_syntax_br.deploy()

@@ -44,7 +44,7 @@ from tests.network.utils import (
     authentication_request,
 )
 from utilities.constants import ISTIO_SYSTEM_DEFAULT_NS, TIMEOUT_2MIN
-from utilities.infra import create_ns, run_ssh_commands
+from utilities.infra import create_ns, is_jira_open, run_ssh_commands
 from utilities.virt import running_vm
 
 
@@ -190,6 +190,16 @@ def wait_service_mesh_components_convergence(func, vm, **kwargs):
             f"Service Mesh components didn't converge. Server response - {server_response}"
         )
         raise
+
+
+# TODO: Remove skip_if_service_mesh_ovn_bug_not_closed when OSSM-1097 (Jira) is fixed
+@pytest.fixture(scope="module")
+def skip_if_service_mesh_ovn_and_jira_1097_not_closed(ovn_kubernetes_cluster):
+    jira_id = "OSSM-1097"
+    if is_jira_open(jira_id=jira_id) and ovn_kubernetes_cluster:
+        pytest.skip(
+            f"{jira_id} is not closed, prevents running Service Mesh on OVN clusters"
+        )
 
 
 @pytest.fixture(scope="module")

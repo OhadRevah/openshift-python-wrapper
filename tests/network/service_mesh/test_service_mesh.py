@@ -8,7 +8,10 @@ from tests.network.service_mesh.utils import (
 from utilities.exceptions import CommandExecFailed
 
 
-pytestmark = pytest.mark.usefixtures("skip_if_service_mesh_not_installed")
+pytestmark = pytest.mark.usefixtures(
+    "skip_if_service_mesh_not_installed",
+    "skip_if_service_mesh_ovn_and_jira_1097_not_closed",
+)
 
 
 class TestSMTrafficManagement:
