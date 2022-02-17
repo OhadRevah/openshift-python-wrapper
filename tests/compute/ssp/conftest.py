@@ -43,7 +43,7 @@ def latest_osinfo_db_file_name(osinfo_repo):
     full_link = soup_page.find(
         "a", {"href": re.compile(r"osinfo-db-[0-9]*.tar.xz")}
     ).get("href")
-    return os.path.splitext(full_link)[0]
+    return full_link
 
 
 @pytest.fixture(scope="module")
