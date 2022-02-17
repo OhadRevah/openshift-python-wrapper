@@ -175,7 +175,7 @@ def test_vm_with_existing_dv(
             {
                 "dv_name": FEDORA_LATEST_OS,
                 "image": FEDORA_LATEST["image_path"],
-                "storage_class": StorageClass.Types.HOSTPATH,
+                "storage_class": StorageClass.Types.HOSTPATH_CSI,
                 "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
