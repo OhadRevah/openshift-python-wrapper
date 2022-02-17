@@ -826,8 +826,8 @@ class ExecCommandOnPod:
             raise UtilityPodNotFoundError
 
     def exec(self, command, chroot_host=True, ignore_rc=False):
-        _command = shlex.split(f"{'chroot /host' if chroot_host else ''} bash -c")
-        _command.append(command)
+        chroot_command = "chroot /host" if chroot_host else ""
+        _command = shlex.split(f"{chroot_command} bash -c {shlex.quote(command)}")
         return self.pod.execute(command=_command, ignore_rc=ignore_rc).strip()
 
     def get_interface_ip(self, interface):
