@@ -60,7 +60,6 @@ from ocp_resources.secret import Secret
 from ocp_resources.service import Service
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
-from ocp_resources.ssp import SSP
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
@@ -134,7 +133,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
-from utilities.ssp import get_data_import_crons
+from utilities.ssp import get_data_import_crons, get_ssp_resource
 from utilities.storage import (
     create_or_update_data_source,
     data_volume,
@@ -2863,25 +2862,9 @@ def cnv_target_version(pytestconfig):
     return pytestconfig.option.cnv_version
 
 
-def get_ssp_resource(admin_client, hco_namespace):
-    ssp_name = "ssp-kubevirt-hyperconverged"
-    try:
-        for ssp in SSP.get(
-            dyn_client=admin_client,
-            name=ssp_name,
-            namespace=hco_namespace.name,
-        ):
-            return ssp
-    except NotFoundError:
-        LOGGER.error(
-            f"SSP CR {ssp_name} was not found in namespace {hco_namespace.name}"
-        )
-        raise
-
-
 @pytest.fixture()
 def ssp_resource_scope_function(admin_client, hco_namespace):
-    return get_ssp_resource(admin_client=admin_client, hco_namespace=hco_namespace)
+    return get_ssp_resource(admin_client=admin_client, namespace=hco_namespace)
 
 
 @pytest.fixture(scope="session")

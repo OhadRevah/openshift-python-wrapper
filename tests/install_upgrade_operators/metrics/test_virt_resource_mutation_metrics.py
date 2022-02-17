@@ -20,6 +20,7 @@ from tests.install_upgrade_operators.metrics.utils import (
     get_hco_cr_modification_alert_state,
     wait_for_summary_count_to_be_expected,
 )
+from utilities.constants import SSP_KUBEVIRT_HYPERCONVERGED
 from utilities.infra import BUG_STATUS_CLOSED
 
 
@@ -32,7 +33,7 @@ COUNT_TWO = 2
 COMPONENT_CONFIG = {
     "ssp": {
         "resource_info": {
-            "comp_name": "ssp/ssp-kubevirt-hyperconverged",
+            "comp_name": f"ssp/{SSP_KUBEVIRT_HYPERCONVERGED}",
             "resource": SSP,
             "count": COUNT_FIVE,
         },

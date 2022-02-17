@@ -1,12 +1,17 @@
+import logging
 import re
 
 from ocp_resources.data_import_cron import DataImportCron
+from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import LOGGER
+from utilities.constants import SSP_KUBEVIRT_HYPERCONVERGED, TIMEOUT_2MIN
 from utilities.storage import DATA_IMPORT_CRON_SUFFIX
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def wait_for_deleted_data_import_crons(data_import_crons):
@@ -62,3 +67,18 @@ def matrix_auto_boot_sources():
 
 def get_data_import_crons(admin_client, namespace):
     return list(DataImportCron.get(dyn_client=admin_client, namespace=namespace.name))
+
+
+def get_ssp_resource(admin_client, namespace):
+    try:
+        for ssp in SSP.get(
+            dyn_client=admin_client,
+            name=SSP_KUBEVIRT_HYPERCONVERGED,
+            namespace=namespace.name,
+        ):
+            return ssp
+    except NotFoundError:
+        LOGGER.error(
+            f"SSP CR {SSP_KUBEVIRT_HYPERCONVERGED} was not found in namespace {namespace.name}"
+        )
+        raise

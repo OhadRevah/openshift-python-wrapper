@@ -26,6 +26,7 @@ from utilities.constants import (
     HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
     MANAGED_BY_LABEL_VALUE_OLM,
     NODE_MAINTENANCE_OPERATOR,
+    SSP_KUBEVIRT_HYPERCONVERGED,
     SSP_OPERATOR,
     VIRT_OPERATOR,
 )
@@ -173,7 +174,7 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
         },
     },
     SSP: {
-        "ssp-kubevirt-hyperconverged": {
+        SSP_KUBEVIRT_HYPERCONVERGED: {
             "expected_labels": EXPECTED_SCHEDULE_LABELS,
         },
     },
