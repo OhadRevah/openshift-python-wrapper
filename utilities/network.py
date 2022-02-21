@@ -307,12 +307,12 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 
     def deploy(self):
         try:
-            super().deploy()
+            return super().deploy()
         except NNCPConfigurationFailed as exp:
             if "failed to communicating with Open vSwitch database" in str(exp):
                 LOGGER.warning("W/A for ovs-bridge when OVS DB is locked")
                 self.res = self.to_dict()
-                super().deploy()
+                return super().deploy()
 
 
 class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
