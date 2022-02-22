@@ -28,9 +28,14 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_30MIN,
 )
-from utilities.infra import create_ns, run_cnv_must_gather
+from utilities.infra import (
+    create_must_gather_command,
+    create_ns,
+    run_cnv_must_gather,
+    run_command,
+)
 from utilities.storage import generate_data_source_dict, get_images_server_url
-from utilities.virt import VirtualMachineForTestsFromTemplate, run_command
+from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
 LOGGER = logging.getLogger(__name__)
@@ -113,7 +118,10 @@ def save_must_gather_logs(must_gather_image_url):
         f"must_gather_{datetime.datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S')}",
     )
     os.makedirs(logs_path)
-    return run_cnv_must_gather(image_url=must_gather_image_url, dest_dir=logs_path)
+    must_gather_command = create_must_gather_command(
+        image_url=must_gather_image_url, dest_dir=logs_path
+    )
+    return run_cnv_must_gather(must_gather_cmd=must_gather_command)
 
 
 def failure_finalizer(vms_list, must_gather_image_url):
