@@ -4,6 +4,8 @@ RUN yum -y install epel-release
 RUN yum -y install --setopt=skip_missing_names_on_install=False \
 python3-pip \
 python3-devel \
+procps-ng \
+rsync \
 gcc \
 git \
 libcurl-devel \
