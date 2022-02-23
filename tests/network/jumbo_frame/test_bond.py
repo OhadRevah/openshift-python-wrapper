@@ -21,6 +21,10 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 BOND_NAME = "jfbond1"
 BRIDGE_NAME = "brbond1"
 
+pytestmark = pytest.mark.usefixtures(
+    "hyperconverged_ovs_annotations_enabled_scope_session"
+)
+
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_1(
