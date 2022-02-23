@@ -1,6 +1,7 @@
 import pytest
 
 from tests.install_upgrade_operators.utils import get_deployment_by_name
+from utilities.constants import HPP_POOL
 from utilities.infra import get_deployments
 
 
@@ -21,4 +22,10 @@ def deployment_by_name(request, admin_client, hco_namespace):
 
 @pytest.fixture(scope="module")
 def cnv_deployments(admin_client, hco_namespace):
-    return get_deployments(admin_client=admin_client, namespace=hco_namespace.name)
+    return [
+        deployment
+        for deployment in get_deployments(
+            admin_client=admin_client, namespace=hco_namespace.name
+        )
+        if not deployment.name.startswith(HPP_POOL)
+    ]
