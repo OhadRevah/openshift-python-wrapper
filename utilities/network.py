@@ -29,6 +29,7 @@ from utilities.constants import (
     LINUX_BRIDGE,
     OVS_BRIDGE,
     SRIOV,
+    TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     WORKERS_TYPE,
 )
@@ -41,6 +42,7 @@ IFACE_UP_STATE = NodeNetworkConfigurationPolicy.Interface.State.UP
 IFACE_ABSENT_STATE = NodeNetworkConfigurationPolicy.Interface.State.ABSENT
 OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
+BOND = "bond"
 
 
 class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
@@ -107,6 +109,20 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.bridge_type = bridge_type
         self.stp_config = stp_config
 
+    @staticmethod
+    def _does_port_match_type(nns, port_name, port_type):
+        # From time to time the NNS interfaces take longer to get updated with the new port
+        samples = TimeoutSampler(
+            wait_timeout=TIMEOUT_1MIN,
+            sleep=1,
+            func=lambda: [
+                _iface for _iface in nns.interfaces if _iface["name"] == port_name
+            ],
+        )
+        for sample in samples:
+            if sample:
+                return sample[0]["type"] == port_type
+
     def to_dict(self):
         bridge_ports = [{"name": port} for port in self.ports]
         stp = (
@@ -141,17 +157,15 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             # OVS MTU handled in OvsBridgeNodeNetworkConfigurationPolicy
             if self.mtu and self.bridge_type != self.ovs_bridge_type:
                 nns = NodeNetworkState(name=self.node_selector or self.nodes[0].name)
-                port_type = [
-                    _iface["type"]
-                    for _iface in nns.interfaces
-                    if _iface["name"] == port["name"]
-                ]
-                if port_type and port_type[0] == "bond":
+                port_name = port["name"]
+                if self._does_port_match_type(
+                    nns=nns, port_name=port_name, port_type=BOND
+                ):
                     continue
 
                 self.iface["mtu"] = self.mtu
                 _port = {
-                    "name": port["name"],
+                    "name": port_name,
                     "type": "ethernet",
                     "state": IFACE_UP_STATE,
                     "mtu": self.mtu,
@@ -261,12 +275,9 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 
                     if self.mtu:
                         nns = NodeNetworkState(name=self._nns_node.name)
-                        port_type = [
-                            _iface["type"]
-                            for _iface in nns.interfaces
-                            if _iface["name"] == port_name
-                        ][0]
-                        if port_type == "bond":
+                        if BridgeNodeNetworkConfigurationPolicy._does_port_match_type(
+                            nns=nns, port_name=port_name, port_type=BOND
+                        ):
                             continue
 
                         port_iface = {
