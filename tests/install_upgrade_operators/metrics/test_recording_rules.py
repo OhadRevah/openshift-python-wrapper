@@ -116,7 +116,7 @@ def test_virt_up_recording_rules(
 
 
 @pytest.mark.bugzilla(
-    2053128, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+    2052556, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
 )
 @pytest.mark.parametrize(
     "virt_handler_pod_and_node_names_with_value_from_prometheus",
