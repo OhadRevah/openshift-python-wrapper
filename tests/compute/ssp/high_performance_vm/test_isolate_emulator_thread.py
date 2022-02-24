@@ -1,7 +1,6 @@
 """
 Test isolateEmulatorThread feature.
 """
-
 import logging
 
 import pytest
@@ -12,7 +11,6 @@ from tests.compute.ssp.high_performance_vm.utils import (
     validate_dedicated_emulatorthread,
 )
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import vm_instance_from_template
 
 
@@ -28,11 +26,6 @@ TEMPLATE_LABELS = {
     "os": RHEL_LATEST_OS,
     "workload": Template.Workload.SERVER,
 }
-
-
-pytestmark = pytest.mark.bugzilla(
-    2029343, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 
 
 @pytest.fixture()
