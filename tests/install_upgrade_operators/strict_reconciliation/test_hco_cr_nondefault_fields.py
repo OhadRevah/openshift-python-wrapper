@@ -6,7 +6,6 @@ from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     compare_expected_with_cr,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -32,13 +31,7 @@ class TestHCONonDefaultFields:
                     f"{constants.LOCAL_STORAGE_CLASS_NAME_VALUE}.accessMode": "ReadWriteOnce",
                     f"{constants.LOCAL_STORAGE_CLASS_NAME_VALUE}.volumeMode": "Filesystem",
                 },
-                marks=(
-                    pytest.mark.bugzilla(
-                        1968196,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                    pytest.mark.polarion("CNV-6537"),
-                ),
+                marks=(pytest.mark.polarion("CNV-6537"),),
                 id="set_non_default_field_localStorageClassName",
             ),
             pytest.param(

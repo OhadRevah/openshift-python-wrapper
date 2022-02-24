@@ -16,8 +16,6 @@ from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.infra import BUG_STATUS_CLOSED
-
 
 LOGGER = logging.getLogger(__name__)
 MANAGED_RESOURCE_NAME1 = "kubevirt-apiserver"
@@ -207,34 +205,19 @@ def verify_reconciled_secret_resource(resource, resource_dict):
         pytest.param(
             RoleBinding,
             MANAGED_RESOURCE_NAME1,
-            marks=(
-                pytest.mark.polarion("CNV-5982"),
-                pytest.mark.bugzilla(
-                    1965050, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-5982"),),
             id="test_strict_reconcile_rolebinding",
         ),
         pytest.param(
             ClusterRoleBinding,
             MANAGED_RESOURCE_NAME1,
-            marks=(
-                pytest.mark.polarion("CNV-5984"),
-                pytest.mark.bugzilla(
-                    1965050, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-5984"),),
             id="test_strict_reconcile_clusterrolebinding",
         ),
         pytest.param(
             ConfigMap,
             MANAGED_RESOURCE_NAME2,
-            marks=(
-                pytest.mark.polarion("CNV-5979"),
-                pytest.mark.bugzilla(
-                    1968410, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-5979"),),
             id="test_strict_reconcile_configmap",
         ),
         pytest.param(

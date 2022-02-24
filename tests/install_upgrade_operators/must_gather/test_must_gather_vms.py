@@ -3,8 +3,6 @@ import re
 
 import pytest
 
-from utilities.infra import BUG_STATUS_CLOSED
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,24 +30,12 @@ class TestMustGatherVmDetails:
             pytest.param(
                 {"file_suffix": "ruletables.txt", "section_title": None},
                 "table ip filter",
-                marks=(
-                    pytest.mark.polarion("CNV-2737"),
-                    pytest.mark.bugzilla(
-                        1959039,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-2737"),),
             ),
             pytest.param(
                 {"file_suffix": "ruletables.txt", "section_title": None},
                 "table ip nat",
-                marks=(
-                    pytest.mark.polarion("CNV-2741"),
-                    pytest.mark.bugzilla(
-                        1959039,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-2741"),),
             ),
             pytest.param(
                 {"file_suffix": "qemu.log", "section_title": None},

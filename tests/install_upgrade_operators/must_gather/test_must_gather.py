@@ -291,39 +291,21 @@ class TestMustGatherCluster:
                 ["ip", "-o", "link", "show", "type", "bridge"],
                 "bridge",
                 "simple_compare",
-                marks=(
-                    pytest.mark.polarion("CNV-2730"),
-                    pytest.mark.bugzilla(
-                        1952036,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-2730"),),
                 id="test_nodes_bridge_data",
             ),
             pytest.param(
                 ["/bin/bash", "-c", "ls -l /host/var/lib/cni/bin"],
                 "var-lib-cni-bin",
                 "simple_compare",
-                marks=(
-                    pytest.mark.polarion("CNV-2810"),
-                    pytest.mark.bugzilla(
-                        1952041,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-2810"),),
                 id="test_nodes_cni_bin_data",
             ),
             pytest.param(
                 ["ip", "a"],
                 "ip.txt",
                 "ip_compare",
-                marks=(
-                    pytest.mark.polarion("CNV-2732"),
-                    pytest.mark.bugzilla(
-                        1952052,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-2732"),),
                 id="test_nodes_ip_data",
             ),
         ],

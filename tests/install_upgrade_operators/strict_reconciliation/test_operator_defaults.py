@@ -30,7 +30,6 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
     compare_expected_with_cr,
     expected_certconfig_stanza,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -46,13 +45,7 @@ class TestOperatorsDefaults:
                 expected_certconfig_stanza(),
                 "hco",
                 [HCO_CR_CERT_CONFIG_KEY],
-                marks=(
-                    pytest.mark.polarion("CNV-6108"),
-                    pytest.mark.bugzilla(
-                        1943217,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6108"),),
                 id="verify_defaults_certconfig_hco_cr",
             ),
             pytest.param(
@@ -107,13 +100,7 @@ class TestOperatorsDefaults:
                 },
                 "hco",
                 [],
-                marks=(
-                    pytest.mark.polarion("CNV-6122"),
-                    pytest.mark.bugzilla(
-                        1862701,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6122"),),
                 id="verify_defaults_livemigrationconfig_hco_cr",
             ),
             pytest.param(
@@ -124,26 +111,14 @@ class TestOperatorsDefaults:
                 },
                 "kubevirt",
                 [],
-                marks=(
-                    pytest.mark.polarion("CNV-6652"),
-                    pytest.mark.bugzilla(
-                        1862701,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6652"),),
                 id="verify_defaults_livemigrationconfig_kubevirt_cr",
             ),
             pytest.param(
                 EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
                 "kubevirt",
                 ["configuration", "developerConfiguration", "featureGates"],
-                marks=(
-                    pytest.mark.polarion("CNV-6426"),
-                    pytest.mark.bugzilla(
-                        1862701,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6426"),),
                 id="verify_defaults_hardcoded_featuregates_kubevirt_cr",
             ),
             pytest.param(
@@ -205,37 +180,19 @@ class TestOperatorsDefaults:
             pytest.param(
                 "obsoletecpu",
                 "hco",
-                marks=(
-                    pytest.mark.polarion("CNV-6124"),
-                    pytest.mark.bugzilla(
-                        1954486,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6124"),),
                 id="verify_no_defaults_obsoletecpu_hco_cr",
             ),
             pytest.param(
                 "permitted",
                 "hco",
-                marks=(
-                    pytest.mark.polarion("CNV-6653"),
-                    pytest.mark.bugzilla(
-                        1969912,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6653"),),
                 id="verify_no_defaults_permittedhostdevices_hco_cr",
             ),
             pytest.param(
                 "permitted",
                 "kubevirt",
-                marks=(
-                    pytest.mark.polarion("CNV-6654"),
-                    pytest.mark.bugzilla(
-                        1969912,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6654"),),
                 id="verify_no_defaults_permittedhostdevices_kubevirt_cr",
             ),
         ],

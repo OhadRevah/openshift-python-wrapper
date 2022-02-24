@@ -10,7 +10,6 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
 )
 from tests.install_upgrade_operators.utils import wait_for_spec_change
 from utilities.hco import get_hco_spec, wait_for_hco_conditions
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_hyperconverged_kubevirt
 
 
@@ -30,13 +29,7 @@ LOGGER = logging.getLogger(__name__)
                     "workloadUpdateMethods": DEFAULT_WORKLOAD_UPDATE_METHODS,
                 },
             },
-            marks=(
-                pytest.mark.polarion("CNV-6911"),
-                pytest.mark.bugzilla(
-                    2021992,
-                    skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                ),
-            ),
+            marks=(pytest.mark.polarion("CNV-6911"),),
             id="test_hyperconverged_default_workload_update_strategy",
         ),
         pytest.param(

@@ -9,7 +9,6 @@ from tests.install_upgrade_operators.node_component.utils import (
     NODE_PLACEMENT_WORKLOADS,
 )
 from utilities import console
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -48,9 +47,6 @@ def hco_vm(unprivileged_client, namespace):
             {"infra": NODE_PLACEMENT_INFRA, "workloads": NODE_PLACEMENT_WORKLOADS},
             marks=(
                 pytest.mark.polarion("CNV-5715"),
-                pytest.mark.bugzilla(
-                    1917380, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
                 pytest.mark.jira("CNV-13216"),
             ),
         )

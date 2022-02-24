@@ -9,7 +9,6 @@ from tests.install_upgrade_operators.launcher_updates.constants import (
 )
 from tests.install_upgrade_operators.utils import wait_for_spec_change
 from utilities.hco import get_hco_spec
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import get_hyperconverged_kubevirt
 
 
@@ -27,13 +26,7 @@ class TestLauncherUpdateResetFields:
                 {
                     WORKLOAD_UPDATE_STRATEGY_KEY_NAME: DEFAULT_WORKLOAD_UPDATE_STRATEGY,
                 },
-                marks=(
-                    pytest.mark.polarion("CNV-6928"),
-                    pytest.mark.bugzilla(
-                        2021992,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=(pytest.mark.polarion("CNV-6928"),),
             ),
             pytest.param(
                 {
