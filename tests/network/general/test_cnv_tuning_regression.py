@@ -1,6 +1,11 @@
 import pytest
 
-from utilities.network import LINUX_BRIDGE, network_device, network_nad
+from utilities.network import (
+    LINUX_BRIDGE,
+    compose_cloud_init_data_dict,
+    network_device,
+    network_nad,
+)
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -31,8 +36,10 @@ def linux_bridge_device(worker_node1, linux_bridge_nad):
 def cnv_tuning_vm(
     unprivileged_client, worker_node1, linux_bridge_nad, linux_bridge_device
 ):
-    name = "vma"
+    name = "tuning-vma"
     networks = {"net1": linux_bridge_nad.name}
+    network_data_data = {"ethernets": {"eth1": {"addresses": ["10.200.0.1/24"]}}}
+
     with VirtualMachineForTests(
         namespace=linux_bridge_nad.namespace,
         name=name,
@@ -42,6 +49,9 @@ def cnv_tuning_vm(
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.hostname,
         ssh=False,
+        cloud_init_data=compose_cloud_init_data_dict(
+            network_data=network_data_data,
+        ),
     ) as vm:
         yield vm
 
