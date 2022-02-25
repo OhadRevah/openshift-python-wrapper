@@ -851,6 +851,8 @@ def cluster_sanity(
     cluster_storage_classes,
     nodes,
     hco_namespace,
+    hco_status_conditions,
+    expected_hco_status,
     junitxml_property=None,
 ):
     def _storage_sanity_check():
@@ -909,6 +911,10 @@ def cluster_sanity(
             validate_nodes_ready(nodes=nodes)
             validate_nodes_schedulable(nodes=nodes)
             wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
+            validate_hco_status_conditions(
+                hco_status_conditions=hco_status_conditions,
+                expected_hco_status=expected_hco_status,
+            )
         except ClusterSanityError as ex:
             exit_pytest_execution(
                 filename=exceptions_filename,
@@ -1211,3 +1217,13 @@ def run_virtctl_command(command, namespace=None):
     res, out, err = run_command(command=virtctl_cmd)
 
     return res, out, err
+
+
+def validate_hco_status_conditions(hco_status_conditions, expected_hco_status):
+    current_status = {
+        condition["type"]: condition["status"] for condition in hco_status_conditions
+    }
+    if current_status != expected_hco_status:
+        raise ClusterSanityError(
+            err_str=f"HCO is unhealthy. Expected {expected_hco_status}, Current: {hco_status_conditions}"
+        )

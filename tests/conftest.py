@@ -86,6 +86,7 @@ from utilities.constants import (
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
 from utilities.hco import (
+    DEFAULT_HCO_CONDITIONS,
     apply_np_changes,
     get_hyperconverged_resource,
     get_installed_hco_csv,
@@ -2171,6 +2172,7 @@ def cluster_sanity_scope_session(
     admin_client,
     hco_namespace,
     junitxml_plugin,
+    hyperconverged_resource_scope_session,
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
@@ -2183,6 +2185,8 @@ def cluster_sanity_scope_session(
         nodes=nodes,
         hco_namespace=hco_namespace,
         junitxml_property=junitxml_plugin,
+        hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
+        expected_hco_status=DEFAULT_HCO_CONDITIONS,
     )
 
 
@@ -2195,6 +2199,7 @@ def cluster_sanity_scope_module(
     admin_client,
     hco_namespace,
     junitxml_plugin,
+    hyperconverged_resource_scope_session,
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
@@ -2207,6 +2212,8 @@ def cluster_sanity_scope_module(
         nodes=nodes,
         hco_namespace=hco_namespace,
         junitxml_property=junitxml_plugin,
+        hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
+        expected_hco_status=DEFAULT_HCO_CONDITIONS,
     )
 
 
