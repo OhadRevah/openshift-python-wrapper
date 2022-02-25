@@ -118,7 +118,7 @@ def wait_for_vm_interfaces(vmi, timeout=TIMEOUT_12MIN):
     Raises:
         TimeoutExpiredError: After timeout reached.
     """
-    # TODO: remove the if once bug 1945703 is fixed
+    # Waiting for guest agent connection before checking guest agent interfaces report
     if wait_for_guest_agent(vmi=vmi, timeout=timeout):
         LOGGER.info(f"Wait for {vmi.name} network interfaces")
         sampler = TimeoutSampler(
@@ -127,9 +127,7 @@ def wait_for_vm_interfaces(vmi, timeout=TIMEOUT_12MIN):
         for sample in sampler:
             interfaces = sample.get("status", {}).get("interfaces", [])
             active_interfaces = [
-                interface
-                for interface in interfaces
-                if interface.get("ipAddress") and interface.get("interfaceName")
+                interface for interface in interfaces if interface.get("interfaceName")
             ]
             if len(active_interfaces) == len(interfaces):
                 return True
