@@ -21,7 +21,7 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     Images,
 )
-from utilities.infra import BUG_STATUS_CLOSED, get_cert
+from utilities.infra import get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -144,18 +144,13 @@ def test_private_registry_cirros(
         pytest.param(
             "cnv-2198",
             "docker://quay.io/openshift-cnv/qe-cnv-tests-registry-official-cirros",
-            marks=(pytest.mark.polarion("CNV-2198")),
+            marks=pytest.mark.polarion("CNV-2198"),
             id="image-registry-not-conform-registrydisk",
         ),
         pytest.param(
             "cnv-2340",
             "docker://quay.io/openshift-cnv/qe-cnv-tests-registry-fedora29-qcow2-rootdir",
-            marks=(
-                pytest.mark.polarion("CNV-2340"),
-                pytest.mark.bugzilla(
-                    1884278, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-2340"),
             id="import-registry-fedora29-qcow-rootdir",
         ),
     ],

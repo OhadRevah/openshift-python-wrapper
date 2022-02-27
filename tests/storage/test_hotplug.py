@@ -4,12 +4,10 @@ Automation for Hot Plug
 import shlex
 
 import pytest
-from ocp_resources.storage_class import StorageClass
 
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS
 from tests.storage.utils import storage_params
 from utilities.constants import HOTPLUG_DISK_SERIAL
-from utilities.infra import is_bug_open
 from utilities.storage import (
     assert_disk_serial,
     assert_hotplugvolume_nonexist_optional_restart,
@@ -21,15 +19,6 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
-
-
-@pytest.fixture()
-def skip_if_hpp_sc(storage_class_matrix__function__):
-    bug_id = 1955129
-    if [*storage_class_matrix__function__][
-        0
-    ] == StorageClass.Types.HOSTPATH and is_bug_open(bug_id=bug_id):
-        pytest.skip(f"Skip the test due to bug {bug_id}")
 
 
 @pytest.fixture()
@@ -102,7 +91,6 @@ def test_hotplugvolumes_feature_gate(kubevirt_feature_gates):
     indirect=True,
 )
 def test_hotplug_volume_with_serial(
-    skip_if_hpp_sc,
     namespace,
     blank_disk_dv,
     fedora_vm_for_hotplug,
@@ -119,7 +107,6 @@ def test_hotplug_volume_with_serial(
     indirect=True,
 )
 def test_hotplug_volume_with_persist(
-    skip_if_hpp_sc,
     namespace,
     blank_disk_dv,
     fedora_vm_for_hotplug,
@@ -139,7 +126,6 @@ def test_hotplug_volume_with_persist(
     indirect=True,
 )
 def test_hotplug_volume_with_serial_and_persist(
-    skip_if_hpp_sc,
     namespace,
     blank_disk_dv,
     fedora_vm_for_hotplug,
@@ -178,7 +164,6 @@ def test_hotplug_volume_with_serial_and_persist(
 )
 def test_windows_hotplug(
     skip_upstream,
-    skip_if_hpp_sc,
     unprivileged_client,
     namespace,
     blank_disk_dv,
