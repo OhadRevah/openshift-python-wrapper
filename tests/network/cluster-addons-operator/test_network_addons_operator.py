@@ -80,11 +80,18 @@ class UnaccountedComponents(Exception):
 
 def get_all_network_resources(dyn_client, namespace):
     # Extract all related resources, iterating through each resource type
-    return [
+    network_resources = [
         resource
         for _type in RESOURCE_TYPES
         for resource in _type.get(dyn_client=dyn_client, namespace=namespace)
         if any(component in resource.name for component in EXPECTED_CNAO_COMP_NAMES)
+    ]
+    # Filter out old replicasets
+    return [
+        resource
+        for resource in network_resources
+        if resource.kind != ReplicaSet.kind
+        or resource.instance.get("status", {}).get("replicas", 0) > 0
     ]
 
 
