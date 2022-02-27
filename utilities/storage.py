@@ -37,10 +37,10 @@ from utilities.constants import (
 from utilities.infra import (
     get_admin_client,
     run_ssh_commands,
+    run_virtctl_command,
     url_excluded_from_validation,
     validate_file_exists_in_url,
 )
-from utilities.virt import run_virtctl_command
 
 
 HOTPLUG_VOLUME = "hotplugVolume"

@@ -5,14 +5,9 @@ Test network specific configurations when exposing a VM via a service.
 import pytest
 from ocp_resources.service import Service
 
-from utilities.infra import MissingResourceException
+from utilities.infra import MissingResourceException, run_virtctl_command
 from utilities.network import compose_cloud_init_data_dict
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    run_virtctl_command,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 SINGLE_STACK_SERVICE_IP_FAMILY = "IPv4"

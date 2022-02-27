@@ -1186,3 +1186,28 @@ def run_cnv_must_gather(must_gather_cmd):
 def create_must_gather_command(dest_dir, image_url, script_name=None):
     base_command = f"oc adm must-gather --image={image_url} --dest-dir={dest_dir}"
     return f"{base_command} -- {script_name}" if script_name else base_command
+
+
+def run_virtctl_command(command, namespace=None):
+    """
+    Run virtctl command
+
+    Args:
+        command (list): Command to run
+        namespace (str, default:None): Namespace to send to virtctl command
+
+    Returns:
+        tuple: True, out if command succeeded, False, err otherwise.
+    """
+    virtctl_cmd = ["virtctl"]
+    kubeconfig = os.getenv("KUBECONFIG")
+    if namespace:
+        virtctl_cmd.extend(["-n", namespace])
+
+    if kubeconfig:
+        virtctl_cmd.extend(["--kubeconfig", kubeconfig])
+
+    virtctl_cmd.extend(command)
+    res, out, err = run_command(command=virtctl_cmd)
+
+    return res, out, err

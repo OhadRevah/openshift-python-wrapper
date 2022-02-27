@@ -25,8 +25,12 @@ from utilities.constants import (
     TIMEOUT_90SEC,
 )
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import raise_multiple_exceptions, run_ssh_commands
-from utilities.virt import get_guest_os_info, run_virtctl_command, running_vm
+from utilities.infra import (
+    raise_multiple_exceptions,
+    run_ssh_commands,
+    run_virtctl_command,
+)
+from utilities.virt import get_guest_os_info, running_vm
 
 
 HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"

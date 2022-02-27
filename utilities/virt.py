@@ -1,7 +1,6 @@
 import ipaddress
 import json
 import logging
-import os
 import re
 import shlex
 import socket
@@ -70,7 +69,6 @@ from utilities.infra import (
     collect_logs,
     get_admin_client,
     is_bug_open,
-    run_command,
     run_ssh_commands,
 )
 
@@ -1301,31 +1299,6 @@ def vm_console_run_commands(
                     raise CommandExecFailed(command)
             else:
                 vmc.expect(".*")
-
-
-def run_virtctl_command(command, namespace=None):
-    """
-    Run virtctl command
-
-    Args:
-        command (list): Command to run
-        namespace (str): Namespace to send to virtctl command
-
-    Returns:
-        tuple: True, out if command succeeded, False, err otherwise.
-    """
-    virtctl_cmd = ["virtctl"]
-    kubeconfig = os.getenv("KUBECONFIG")
-    if namespace:
-        virtctl_cmd.extend(["-n", namespace])
-
-    if kubeconfig:
-        virtctl_cmd.extend(["--kubeconfig", kubeconfig])
-
-    virtctl_cmd.extend(command)
-    res, out, err = run_command(command=virtctl_cmd)
-
-    return res, out, err
 
 
 def fedora_vm_body(name):
