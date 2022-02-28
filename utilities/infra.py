@@ -216,7 +216,7 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
     raise NotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
 
 
-def run_ssh_commands(host, commands, get_pty=False):
+def run_ssh_commands(host, commands, get_pty=False, check_rc=True):
     """
     Run commands via SSH
 
@@ -227,6 +227,7 @@ def run_ssh_commands(host, commands, get_pty=False):
                  ["sudo", "reboot"], [["sleep", "5"], ["date"]]
 
         get_pty (bool): get_pty parameter for remote session (equivalent to -t argument for ssh)
+        check_rc (bool): if True checks if command rc and raises if rc != 0
 
     Returns:
         list: List of commands output.
@@ -240,7 +241,7 @@ def run_ssh_commands(host, commands, get_pty=False):
         for cmd in commands:
             rc, out, err = ssh_session.run_cmd(cmd=cmd, get_pty=get_pty)
             LOGGER.info(f"[SSH][{host.fqdn}] Executed: {' '.join(cmd)}")
-            if rc:
+            if rc and check_rc:
                 raise CommandExecFailed(name=cmd, err=err)
 
             results.append(out)

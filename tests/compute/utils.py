@@ -76,11 +76,14 @@ def validate_pause_optional_migrate_unpause_windows_vm(
     ), f"PID mismatch!\nPre pause PID is: {pre_pause_pid}\nPost pause PID is: {post_pause_pid}"
 
 
-def start_and_fetch_processid_on_linux_vm(vm, process_name, args=""):
+def start_and_fetch_processid_on_linux_vm(vm, process_name, args="", use_nohup=False):
     wait_for_ssh_connectivity(vm=vm)
+    nohup_cmd = "nohup" if use_nohup else ""
     run_ssh_commands(
         host=vm.ssh_exec,
-        commands=shlex.split(f"{process_name} {args} </dev/null &>/dev/null &"),
+        commands=shlex.split(
+            f"{nohup_cmd} {process_name} {args} </dev/null &>/dev/null &"
+        ),
     )
     return fetch_processid_from_linux_vm(
         vm=vm, process_name=process_name, fail_if_process_not_found=True
@@ -132,9 +135,9 @@ def validate_libvirt_persistent_domain(vm):
     assert vm.vmi.Status.RUNNING.lower() in domain
 
 
-def kill_processes_by_name_linux(vm, process_name):
+def kill_processes_by_name_linux(vm, process_name, check_rc=True):
     cmd = shlex.split(f"pkill {process_name}")
-    run_ssh_commands(host=vm.ssh_exec, commands=cmd)
+    run_ssh_commands(host=vm.ssh_exec, commands=cmd, check_rc=check_rc)
 
 
 def kill_processes_by_name_windows(vm, process_name):
