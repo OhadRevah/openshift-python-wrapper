@@ -1504,18 +1504,25 @@ class Prometheus(object):
             if sample and sample[0]["value"][-1] == "1":
                 return
 
-    def query_sampler(self, query, timeout=TIMEOUT_10MIN):
+    def query_sampler(self, query, timeout=TIMEOUT_10MIN, sleep=1):
         sampler = TimeoutSampler(
             wait_timeout=timeout,
-            sleep=1,
+            sleep=sleep,
             func=self.query,
             query=query,
         )
-        for sample in sampler:
-            result = sample["data"]["result"]
-            LOGGER.info(f"Prometheus Query: {query}: Result: {result}")
-            if sample["status"] == "success":
-                return result
+        sample = None
+        try:
+            for sample in sampler:
+                result = sample["data"]["result"]
+                LOGGER.info(f"Prometheus Query: {query}: Result: {result}")
+                if sample["status"] == "success":
+                    return result
+        except TimeoutExpiredError:
+            LOGGER.error(
+                f"Failed to get successful status after executing query '{query}'. Current data: {sample}"
+            )
+            raise
 
     @property
     def alerts(self):
