@@ -220,7 +220,7 @@ def shutdown_vm_guest_os(vm):
     ],
     indirect=True,
 )
-class TestRunStrategy:
+class TestRunStrategyBaseActions:
     @pytest.mark.parametrize(
         "vm_action",
         [
@@ -244,7 +244,20 @@ class TestRunStrategy:
             run_strategy=matrix_updated_vm_run_strategy,
         )
 
-    @pytest.mark.order(after="test_run_strategy_policy")
+
+@pytest.mark.parametrize(
+    "golden_image_data_volume_scope_module",
+    [
+        {
+            "dv_name": RHEL_LATEST_OS,
+            "image": RHEL_LATEST["image_path"],
+            "dv_size": RHEL_LATEST["dv_size"],
+            "storage_class": py_config["default_storage_class"],
+        },
+    ],
+    indirect=True,
+)
+class TestRunStrategyAdvancedActions:
     @pytest.mark.polarion("CNV-5054")
     def test_run_strategy_shutdown(
         self,
@@ -269,7 +282,6 @@ class TestRunStrategy:
         vmi.wait_for_status(status=status["vmi"])
         vmi.virt_launcher_pod.wait_for_status(status=status["launcher_pod"])
 
-    @pytest.mark.order(after="test_run_strategy_policy")
     @pytest.mark.parametrize(
         "request_updated_vm_run_strategy",
         [
@@ -294,19 +306,18 @@ class TestRunStrategy:
         )
         pause_unpause_vmi_and_verify_status(vm=lifecycle_vm)
 
-    @pytest.mark.order(after="test_run_strategy_policy")
     @pytest.mark.parametrize(
         "request_updated_vm_run_strategy",
         [
             pytest.param(
-                {"run_strategy": ALWAYS},
-                marks=pytest.mark.polarion("CNV-4690"),
-                id="Always",
-            ),
-            pytest.param(
                 {"run_strategy": MANUAL},
                 marks=pytest.mark.polarion("CNV-5893"),
                 id="Manual",
+            ),
+            pytest.param(
+                {"run_strategy": ALWAYS},
+                marks=pytest.mark.polarion("CNV-4690"),
+                id="Always",
             ),
         ],
         indirect=True,

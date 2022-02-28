@@ -44,12 +44,12 @@ def data_volume_vm(unprivileged_client, namespace, data_source):
         yield vm
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def lifecycle_vm(
     cluster_cpu_model_scope_module,
     unprivileged_client,
     namespace,
-    vm_volumes_matrix__module__,
+    vm_volumes_matrix__class__,
     golden_image_data_source_scope_module,
 ):
     """Wrapper fixture to generate the desired VM
@@ -57,7 +57,7 @@ def lifecycle_vm(
     globals() is used to call the actual contextmanager with that name
     request should be True to start vm and wait for interfaces, else False
     """
-    with globals()[vm_volumes_matrix__module__](
+    with globals()[vm_volumes_matrix__class__](
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_source=golden_image_data_source_scope_module,
