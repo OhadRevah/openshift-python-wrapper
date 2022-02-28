@@ -94,10 +94,10 @@ class TestPingConnectivity:
         sriov_vm4,
         running_sriov_vm4,
         vm4_interfaces,
-        rebooted_sriov_vm4,
+        restarted_sriov_vm4,
     ):
         # Check only the second interface (SR-IOV interface).
-        assert rebooted_sriov_vm4.vmi.interfaces[1] == vm4_interfaces[1]
+        assert restarted_sriov_vm4.vmi.interfaces[1] == vm4_interfaces[1]
 
 
 @pytest.mark.polarion("CNV-4316")

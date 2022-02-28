@@ -19,9 +19,9 @@ from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
     migrate_vm_and_verify,
+    restart_vm_wait_for_running_vm,
     running_vm,
     wait_for_updated_kv_value,
-    wait_for_vm_interfaces,
 )
 
 
@@ -200,8 +200,7 @@ def test_machine_type_after_cm_update(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )
 
-    vm.restart(wait=True)
-    wait_for_vm_interfaces(vmi=vm.vmi)
+    restart_vm_wait_for_running_vm(vm=vm, check_ssh_connectivity=False)
     validate_machine_type(
         vm=vm, expected_machine_type=machine_type_from_kubevirt_config
     )

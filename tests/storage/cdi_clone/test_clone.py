@@ -25,7 +25,11 @@ from utilities.storage import (
     get_images_server_url,
     overhead_size_for_dv,
 )
-from utilities.virt import VirtualMachineForTests, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    restart_vm_wait_for_running_vm,
+    running_vm,
+)
 
 
 WINDOWS_CLONE_TIMEOUT = TIMEOUT_40MIN
@@ -166,8 +170,7 @@ def test_successful_vm_restart_with_cloned_dv(
     ) as cdv:
         cdv.wait(timeout=TIMEOUT_10MIN)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
-            vm_dv.restart(timeout=TIMEOUT_5MIN, wait=True)
-            running_vm(vm=vm_dv, wait_for_interfaces=False)
+            restart_vm_wait_for_running_vm(vm=vm_dv, wait_for_interfaces=False)
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 

@@ -2,7 +2,7 @@ import shlex
 
 from utilities.constants import OS_FLAVOR_WINDOWS, TIMEOUT_3MIN, VGPU_DEVICE_NAME
 from utilities.infra import run_ssh_commands
-from utilities.virt import running_vm
+from utilities.virt import restart_vm_wait_for_running_vm
 
 
 def verify_gpu_device_exists_in_vm(vm):
@@ -32,8 +32,7 @@ def verify_gpu_device_exists_in_vm(vm):
 
 
 def restart_and_check_gpu_exists(vm):
-    vm.restart(wait=True)
-    running_vm(vm=vm, ssh_timeout=TIMEOUT_3MIN)
+    restart_vm_wait_for_running_vm(vm=vm, ssh_timeout=TIMEOUT_3MIN)
     verify_gpu_device_exists_in_vm(vm=vm)
 
 

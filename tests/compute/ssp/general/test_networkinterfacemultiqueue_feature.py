@@ -16,7 +16,7 @@ from tests.os_params import (
     WINDOWS_LATEST_OS,
 )
 from utilities.constants import TIMEOUT_2MIN
-from utilities.virt import vm_instance_from_template, wait_for_vm_interfaces
+from utilities.virt import restart_vm_wait_for_running_vm, vm_instance_from_template
 
 
 RHEL_TESTS_CLASS_NAME = "TestLatestRHEL"
@@ -68,9 +68,7 @@ def update_validate_cpu_in_vm(
         sockets=sockets,
         threads=threads,
     )
-    vm.restart(wait=True)
-    wait_for_vm_interfaces(vmi=vm.vmi)
-    vm.ssh_exec.executor().is_connective(tcp_timeout=TIMEOUT_2MIN)
+    restart_vm_wait_for_running_vm(vm=vm)
     validate_vm_cpu_spec(vm=vm, cores=cores, sockets=sockets, threads=threads)
 
 

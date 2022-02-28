@@ -20,6 +20,7 @@ from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
+    restart_vm_wait_for_running_vm,
     running_vm,
     wait_for_updated_kv_value,
 )
@@ -148,8 +149,7 @@ def virt_handler_pods_with_migration_network(
 @pytest.fixture()
 def restarted_migration_vm_1(migration_vm_1):
     # restart VM to get new VMI uid
-    migration_vm_1.restart(wait=True)
-    running_vm(vm=migration_vm_1)
+    restart_vm_wait_for_running_vm(vm=migration_vm_1)
     return migration_vm_1
 
 

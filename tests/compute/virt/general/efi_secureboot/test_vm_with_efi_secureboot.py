@@ -18,8 +18,8 @@ from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
+    restart_vm_wait_for_running_vm,
     running_vm,
-    wait_for_ssh_connectivity,
 )
 
 
@@ -135,8 +135,7 @@ def _update_vm_efi_spec(vm, spec=None):
             }
         }
     ).update()
-    vm.restart(wait=True)
-    wait_for_ssh_connectivity(vm=vm)
+    restart_vm_wait_for_running_vm(vm=vm)
 
 
 @pytest.mark.parametrize(

@@ -33,6 +33,7 @@ from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
     migrate_vm_and_verify,
+    restart_vm_wait_for_running_vm,
     running_vm,
 )
 
@@ -176,8 +177,7 @@ def running_vmb(vmb):
 
 @pytest.fixture()
 def restarted_vmb(running_vmb):
-    running_vmb.restart(wait=True)
-    return running_vm(vm=running_vmb, check_ssh_connectivity=False)
+    restart_vm_wait_for_running_vm(vm=running_vmb, check_ssh_connectivity=False)
 
 
 @pytest.fixture(scope="module")
@@ -305,7 +305,7 @@ def test_connectivity_after_migration_and_restart(
 ):
     assert_ping_successful(
         src_vm=running_vma,
-        dst_ip=get_vmi_ip_v4_by_name(vm=restarted_vmb, name=br1test_nad.name),
+        dst_ip=get_vmi_ip_v4_by_name(vm=running_vmb, name=br1test_nad.name),
     )
 
 

@@ -2210,3 +2210,16 @@ def check_migration_process_after_node_drain(dyn_client, source_pod, vm):
     assert (
         target_node != source_node
     ), f"Target node is same as source node: {source_node.name}"
+
+
+def restart_vm_wait_for_running_vm(
+    vm, wait_for_interfaces=True, check_ssh_connectivity=True, ssh_timeout=TIMEOUT_2MIN
+):
+    vm.restart(wait=True)
+    # Calling running_vm() to ensure the VM is up and connective
+    return running_vm(
+        vm=vm,
+        wait_for_interfaces=wait_for_interfaces,
+        check_ssh_connectivity=check_ssh_connectivity,
+        ssh_timeout=ssh_timeout,
+    )
