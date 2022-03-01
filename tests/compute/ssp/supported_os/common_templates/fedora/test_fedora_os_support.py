@@ -109,7 +109,6 @@ class TestCommonTemplatesFedora:
         fedora_os_matrix__class__,
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-        golden_image_vm_ssh_service_multi_fedora_os_scope_class,
     ):
         """Test CNV VM creation from template"""
 

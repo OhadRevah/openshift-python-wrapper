@@ -2,8 +2,6 @@ import os
 
 
 # Images
-
-
 BASE_IMAGES_DIR = "cnv-tests"
 
 
@@ -95,6 +93,7 @@ NMSTATE_HANDLER = "nmstate-handler"
 NMSTATE_WEBHOOK = "nmstate-webhook"
 NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator"
 ISTIO_SYSTEM_DEFAULT_NS = "istio-system"
+SSH_PORT_22 = 22
 
 #  Time constants
 TIMEOUT_5SEC = 5

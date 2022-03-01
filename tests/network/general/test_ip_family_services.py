@@ -5,6 +5,7 @@ Test network specific configurations when exposing a VM via a service.
 import pytest
 from ocp_resources.service import Service
 
+from utilities.constants import SSH_PORT_22
 from utilities.infra import MissingResourceException, run_virtctl_command
 from utilities.network import compose_cloud_init_data_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
@@ -16,8 +17,6 @@ SERVICE_IP_FAMILY_POLICY_SINGLE_STACK = "SingleStack"
 SERVICE_IP_FAMILY_POLICY_PREFER_DUAL_STACK = "PreferDualStack"
 SERVICE_IP_FAMILY_POLICY_REQUIRE_DUAL_STACK = "RequireDualStack"
 
-SSH_PORT = 22
-
 
 def basic_expose_command(vm, svc_name):
     return [
@@ -25,7 +24,7 @@ def basic_expose_command(vm, svc_name):
         "vm",
         vm,
         "--port=27017",
-        f"--target-port={SSH_PORT}",
+        f"--target-port={SSH_PORT_22}",
         "--type=NodePort",
         f"--name={svc_name}",
     ]
@@ -81,7 +80,7 @@ def running_vm_for_exposure(
 def single_stack_service(running_vm_for_exposure):
     running_vm_for_exposure.custom_service_enable(
         service_name="single-stack-svc",
-        port=SSH_PORT,
+        port=SSH_PORT_22,
         ip_families=[SINGLE_STACK_SERVICE_IP_FAMILY],
     )
 
@@ -90,7 +89,7 @@ def single_stack_service(running_vm_for_exposure):
 def default_ip_family_policy_service(running_vm_for_exposure):
     running_vm_for_exposure.custom_service_enable(
         service_name="default-ip-family-policy-svc",
-        port=SSH_PORT,
+        port=SSH_PORT_22,
     )
 
 

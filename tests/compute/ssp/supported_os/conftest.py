@@ -291,64 +291,6 @@ def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
     )
 
 
-def vm_ssh_service(vm):
-    """Manages (creation and deletion) of a service to enable SSH access to the VM
-
-    The call to this function is triggered by calling either
-    golden_image_vm_ssh_service_multi_storage_scope_function or
-    """
-
-    vm.ssh_enable()
-    yield
-    vm.ssh_service.delete(wait=True)
-
-
-@pytest.fixture()
-def golden_image_vm_ssh_service_multi_storage_scope_function(
-    golden_image_vm_instance_from_template_multi_storage_scope_function,
-):
-    yield from vm_ssh_service(
-        vm=golden_image_vm_instance_from_template_multi_storage_scope_function
-    )
-
-
-@pytest.fixture(scope="class")
-def golden_image_vm_ssh_service_multi_rhel_os_scope_class(
-    golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
-):
-    yield from vm_ssh_service(
-        vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
-    )
-
-
-@pytest.fixture(scope="class")
-def golden_image_vm_ssh_service_multi_fedora_os_scope_class(
-    golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
-):
-
-    yield from vm_ssh_service(
-        vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
-    )
-
-
-@pytest.fixture(scope="class")
-def golden_image_vm_ssh_service_multi_windows_os_scope_class(
-    golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-):
-    yield from vm_ssh_service(
-        vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class
-    )
-
-
-@pytest.fixture(scope="class")
-def golden_image_vm_ssh_service_multi_centos_scope_class(
-    golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class,
-):
-    yield from vm_ssh_service(
-        vm=golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class
-    )
-
-
 @pytest.fixture()
 def exposed_vm_service_multi_storage_scope_function(
     request,

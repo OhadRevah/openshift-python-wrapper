@@ -13,7 +13,6 @@ from subprocess import run
 import jinja2
 import pexpect
 import requests
-import rrmngmnt
 import yaml
 from benedict import benedict
 from kubernetes.client import ApiException
@@ -36,6 +35,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 )
 from paramiko.ssh_exception import NoValidConnectionsError
 from pytest_testconfig import config as py_config
+from rrmngmnt import Host, ssh, user
 
 from utilities.constants import (
     CLOUD_INIT_DISK_NAME,
@@ -50,6 +50,7 @@ from utilities.constants import (
     OS_FLAVOR_FEDORA,
     OS_FLAVOR_WINDOWS,
     OS_LOGIN_PARAMS,
+    SSH_PORT_22,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
@@ -347,7 +348,6 @@ class VirtualMachineForTests(VirtualMachine):
         self.image = image
         self.ssh = ssh
         self.ssh_secret = ssh_secret
-        self.ssh_service = None
         self.custom_service = None
         self.network_model = network_model
         self.network_multiqueue = network_multiqueue
@@ -382,14 +382,10 @@ class VirtualMachineForTests(VirtualMachine):
 
     def deploy(self):
         super().deploy()
-        if self.ssh:
-            self.ssh_enable()
         return self
 
     def clean_up(self):
         super().clean_up()
-        if self.ssh_service:
-            self.ssh_service.delete(wait=True)
         if self.custom_service:
             self.custom_service.delete(wait=True)
 
@@ -932,18 +928,6 @@ class VirtualMachineForTests(VirtualMachine):
         )
         return template_spec
 
-    def ssh_enable(self):
-        # To use the service: ssh_service.service_ip() and ssh_service.service_port
-        # Name is restricted to 63 characters
-        self.ssh_service = ServiceForVirtualMachineForTests(
-            name=f"ssh-{self.name}"[:63],
-            namespace=self.namespace,
-            vm=self,
-            port=22,
-            service_type=Service.Type.NODE_PORT,
-        )
-        self.ssh_service.create(wait=True)
-
     def custom_service_enable(
         self,
         service_name,
@@ -1002,28 +986,28 @@ class VirtualMachineForTests(VirtualMachine):
         login_params = OS_LOGIN_PARAMS[self.os_flavor]
         self.username = self.username or login_params["username"]
         self.password = self.password or login_params["password"]
+        sock = f"virtctl port-forward --stdio=true {self.name}.{self.namespace} {SSH_PORT_22}"
 
         LOGGER.info(
-            f"Username: {self.username}, password: {self.password}, SSH key: {CNV_SSH_KEY_PATH} "
-            f"ssh {self.username}@{self.ssh_service.service_ip()} -p {self.ssh_service.service_port}"
+            f"Username: {self.username}, password: {self.password}, SSH key: {CNV_SSH_KEY_PATH}\n"
+            f"SSH command: ssh -o 'ProxyCommand={sock}' {self.username}@{self.name}"
         )
-        host = rrmngmnt.Host(ip=str(self.ssh_service.service_ip()))
+        host = Host(hostname=self.name)
         # For SSH using a key, the public key needs to reside on the server.
         # As the tests use a given set of credentials, this cannot be done in Windows/Cirros.
         if self.os_flavor in FLAVORS_EXCLUDED_FROM_CLOUD_INIT:
-            host_user = rrmngmnt.user.User(name=self.username, password=self.password)
+            host_user = user.User(name=self.username, password=self.password)
         else:
-            host_user = rrmngmnt.user.UserWithPKey(
+            host_user = user.UserWithPKey(
                 name=self.username, private_key=CNV_SSH_KEY_PATH
             )
         host.executor_user = host_user
-        host.executor_factory = rrmngmnt.ssh.RemoteExecutorFactory(
-            port=self.ssh_service.service_port
+        host.executor_factory = ssh.RemoteExecutorFactory(
+            sock=sock,
+            disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}
+            if self.disable_sha2_algorithms
+            else None,
         )
-        if self.disable_sha2_algorithms:
-            host.executor_factory.disabled_algorithms = dict(
-                pubkeys=["rsa-sha2-256", "rsa-sha2-512"]
-            )
         return host
 
 
@@ -1555,23 +1539,24 @@ class Prometheus(object):
 def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN):
     LOGGER.info(f"Wait for {vm.name} SSH connectivity.")
 
-    sampler = TimeoutSampler(
-        wait_timeout=timeout,
-        sleep=5,
-        func=vm.ssh_exec.executor().is_connective,
-        tcp_timeout=tcp_timeout,
-    )
-    for sample in sampler:
+    def _sampler(exceptions_dict=None):
+        return TimeoutSampler(
+            wait_timeout=timeout,
+            sleep=5,
+            func=vm.ssh_exec.run_command,
+            command=["true"],
+            tcp_timeout=tcp_timeout,
+            exceptions_dict=exceptions_dict,
+        )
+
+    for sample in _sampler():
         if sample:
             break
 
-    if is_bug_open(bug_id=2005693):
-        sampler = TimeoutSampler(
-            wait_timeout=timeout,
-            sleep=1,
-            func=vm.ssh_exec.run_command,
-            command=["echo"],
-            tcp_timeout=tcp_timeout,
+    bug_id = 2005693
+    if is_bug_open(bug_id=bug_id):
+        LOGGER.info(f"W/A for bug {bug_id}: Wait for SSH connectivity.")
+        sampler = _sampler(
             exceptions_dict={NoValidConnectionsError: [], socket.timeout: []},
         )
         for sample in sampler:
