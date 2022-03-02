@@ -42,8 +42,8 @@ class MoreThanTwoDNSError(Exception):
     pass
 
 
-@pytest.fixture()
-def skip_if_sno_cluster_and_bug_open(sno_cluster):
+@pytest.fixture(scope="class")
+def skip_if_sno_cluster_and_bug_2053112_open(sno_cluster):
     bug_id = 2053112
     if sno_cluster and is_bug_open(bug_id=bug_id):
         pytest.skip(f"Skip test on SNO cluster as long as bug {bug_id} status is open")
@@ -340,11 +340,14 @@ def test_static_route(
         LOGGER.info("NMstate: Test static route")
 
 
+@pytest.mark.usefixtures("skip_if_sno_cluster_and_bug_2053112_open")
 class TestNmstatePodDeletion:
     @pytest.mark.polarion("CNV-6559")
+    @pytest.mark.dependency(
+        name="TestNmstatePodDeletion::test_delete_nmstate_pod_during_nncp_configuration"
+    )
     def test_delete_nmstate_pod_during_nncp_configuration(
         self,
-        skip_if_sno_cluster_and_bug_open,
         nmstate_linux_bridge_device_worker,
         deleted_nmstate_pod_during_nncp_configuration,
     ):
@@ -357,7 +360,11 @@ class TestNmstatePodDeletion:
             f"{NNCP_CONFIGURING_STATUS} after nmstate pod has been deleted."
         )
 
-    @pytest.mark.order(after="test_delete_nmstate_pod_during_nncp_configuration")
+    @pytest.mark.dependency(
+        depends=[
+            "TestNmstatePodDeletion::test_delete_nmstate_pod_during_nncp_configuration"
+        ]
+    )
     @pytest.mark.polarion("CNV-6743")
     def test_nncp_configured_successfully_after_pod_deletion(
         self,
