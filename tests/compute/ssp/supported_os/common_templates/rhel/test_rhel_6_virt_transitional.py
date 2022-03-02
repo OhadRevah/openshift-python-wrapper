@@ -25,6 +25,7 @@ def rhel_6_vm(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_source=golden_image_data_source_scope_class,
+        disable_sha2_algorithms=True,
     ) as vm:
         yield vm
 

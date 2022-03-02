@@ -1940,6 +1940,7 @@ def vm_instance_from_template(
     cloud_init_data=None,
     node_selector=None,
     vm_cpu_model=None,
+    disable_sha2_algorithms=False,
 ):
     """Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
@@ -1950,6 +1951,8 @@ def vm_instance_from_template(
         data_source (obj `DataSource`): DS object points to a golden image PVC.
         data_volume_template (dict): dataVolumeTemplates dict; will replace dataVolumeTemplates in VM yaml
         existing_data_volume (obj `DataVolume`: DV resource): existing DV to be consumed directly (not cloned)
+        disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
+            when creating a ssh connection
 
     Yields:
         obj `VirtualMachine`: VM resource
@@ -1987,6 +1990,7 @@ def vm_instance_from_template(
         systemctl_support="rhel-6" not in vm_name,
         vhostmd=params.get("vhostmd"),
         machine_type=params.get("machine_type"),
+        disable_sha2_algorithms=disable_sha2_algorithms,
     ) as vm:
         if params.get("start_vm", True):
             running_vm(
