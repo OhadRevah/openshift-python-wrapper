@@ -14,6 +14,7 @@ from utilities.constants import (
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     HCO_OPERATOR,
     HCO_WEBHOOK,
+    HOSTPATH_CSI_BASIC,
     HOSTPATH_PROVISIONER,
     HOSTPATH_PROVISIONER_CSI,
     HOSTPATH_PROVISIONER_OPERATOR,
@@ -126,7 +127,7 @@ storage_class_matrix = [
             "default": True,
         }
     },
-    {"hostpath-csi-basic": HPP_VOLUME_MODE_ACCESS_MODE},
+    {HOSTPATH_CSI_BASIC: HPP_VOLUME_MODE_ACCESS_MODE},
     {"hostpath-csi-pvc-block": HPP_VOLUME_MODE_ACCESS_MODE},
 ]
 

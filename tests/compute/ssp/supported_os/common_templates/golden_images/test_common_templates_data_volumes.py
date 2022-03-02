@@ -9,7 +9,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.utils import 
     assert_missing_golden_image_pvc,
 )
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
-from utilities.constants import TIMEOUT_8MIN
+from utilities.constants import HOSTPATH_CSI_BASIC, TIMEOUT_8MIN
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
@@ -175,7 +175,7 @@ def test_vm_with_existing_dv(
             {
                 "dv_name": FEDORA_LATEST_OS,
                 "image": FEDORA_LATEST["image_path"],
-                "storage_class": StorageClass.Types.HOSTPATH_CSI,
+                "storage_class": HOSTPATH_CSI_BASIC,
                 "dv_size": FEDORA_LATEST["dv_size"],
             },
             {
