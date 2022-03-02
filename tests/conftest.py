@@ -2442,7 +2442,7 @@ def base_templates(admin_client):
     return base_templates
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def must_gather_image_url(is_upstream_distribution, csv_scope_session):
     if is_upstream_distribution:
         return "quay.io/kubevirt/must-gather"

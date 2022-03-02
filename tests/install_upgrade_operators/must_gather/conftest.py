@@ -10,7 +10,11 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
 
 import utilities.network
-from tests.install_upgrade_operators.must_gather.utils import collect_must_gather
+from tests.install_upgrade_operators.must_gather.utils import (
+    MUST_GATHER_VM_NAME_PREFIX,
+    collect_must_gather,
+)
+from tests.install_upgrade_operators.utils import create_vms
 from utilities.constants import LINUX_BRIDGE
 from utilities.infra import ExecCommandOnPod, MissingResourceException, create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
@@ -19,9 +23,14 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="package")
+@pytest.fixture(scope="module")
 def must_gather_tmpdir(tmpdir_factory):
-    return tmpdir_factory.mktemp("must_gather")
+    return tmpdir_factory.mktemp("must_gather_scope_module")
+
+
+@pytest.fixture()
+def must_gather_tmpdir_scope_function(request, tmpdir_factory):
+    return tmpdir_factory.mktemp(f"must_gather_{request.node.callspec.id}")
 
 
 @pytest.fixture(scope="class")
@@ -110,7 +119,7 @@ def must_gather_vm(
     must_gather_nad,
     unprivileged_client,
 ):
-    name = "must-gather-vm"
+    name = f"{MUST_GATHER_VM_NAME_PREFIX}-2"
     networks = {
         nodenetworkstate_with_bridge.bridge_name: nodenetworkstate_with_bridge.bridge_name
     }
@@ -262,3 +271,62 @@ def nftables_from_utility_pods(utility_pods):
         ).splitlines()
         for pod in utility_pods
     }
+
+
+@pytest.fixture()
+def collected_vm_details_must_gather_with_params(
+    request,
+    must_gather_image_url,
+    must_gather_vm,
+    must_gather_tmpdir_scope_function,
+    must_gather_alternate_namespace,
+    must_gather_vms_from_alternate_namespace,
+):
+    command = request.param["command"]
+    if "vm_name" in command:
+        command = command.format(
+            alternate_namespace=must_gather_alternate_namespace.name,
+            vm_name=must_gather_vms_from_alternate_namespace[0].name,
+        )
+    elif "vm_list" in command:
+        command = command.format(
+            alternate_namespace=must_gather_alternate_namespace.name,
+            vm_list=f"{must_gather_vms_from_alternate_namespace[0].name},"
+            f"{must_gather_vms_from_alternate_namespace[1].name},"
+            f"{must_gather_vms_from_alternate_namespace[2].name}",
+        )
+    else:
+        command = command.format(
+            alternate_namespace=must_gather_alternate_namespace.name
+        )
+
+    yield collect_must_gather(
+        must_gather_tmpdir=must_gather_tmpdir_scope_function,
+        must_gather_image_url=must_gather_image_url,
+        script_name=f"{command} gather_vms_details",
+    )
+
+
+@pytest.fixture(scope="class")
+def must_gather_alternate_namespace(unprivileged_client):
+    yield from create_ns(
+        unprivileged_client=unprivileged_client,
+        name="must-gather-alternate",
+    )
+
+
+@pytest.fixture(scope="class")
+def must_gather_vms_from_alternate_namespace(
+    must_gather_alternate_namespace,
+    unprivileged_client,
+):
+    vms_list = create_vms(
+        name_prefix=MUST_GATHER_VM_NAME_PREFIX,
+        namespace_name=must_gather_alternate_namespace.name,
+        vm_count=5,
+    )
+    for vm in vms_list:
+        running_vm(vm=vm)
+    yield vms_list
+    for vm in vms_list:
+        vm.clean_up()

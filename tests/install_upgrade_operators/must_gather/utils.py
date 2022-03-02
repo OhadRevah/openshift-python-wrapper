@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 import difflib
+import glob
+import logging
 import os
 import re
+from collections import defaultdict
 
+import pytest
 import yaml
 from ocp_resources.service import Service
 from openshift.dynamic.client import ResourceField
@@ -11,11 +15,21 @@ from utilities.infra import (
     ResourceMismatch,
     create_must_gather_command,
     get_log_dir,
+    is_bug_open,
     run_cnv_must_gather,
 )
 
 
+LOGGER = logging.getLogger(__name__)
+
+
+def generate_must_gather_vm_name():
+    return "mg-vm" if is_bug_open(bug_id=2059613) else "must-gather-vm"
+
+
+MUST_GATHER_VM_NAME_PREFIX = generate_must_gather_vm_name()
 DEFAULT_NAMESPACE = "default"
+VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "qemu.log", "dumpxml.xml"]
 
 
 # TODO: this is a workaround for an openshift bug
@@ -301,3 +315,99 @@ def collect_must_gather(must_gather_tmpdir, must_gather_image_url, script_name=N
     with open(os.path.join(must_gather_tmpdir, "output.log"), "w") as _file:
         _file.write(output)
     return get_log_dir(path=must_gather_tmpdir)
+
+
+def validate_files_collected(base_path, vm_list):
+    errors = defaultdict(dict)
+    for vm in vm_list:
+        virt_launcher = vm.vmi.virt_launcher_pod
+        folder_path = os.path.join(base_path, virt_launcher.namespace, "vms", vm.name)
+        LOGGER.info(f"Checking folder: {folder_path}")
+        if os.path.isdir(folder_path):
+            files_collected = glob.glob(f"{folder_path}/*")
+            files_not_found = [
+                file_suffix
+                for file_suffix in VM_FILE_SUFFIX
+                if f"{folder_path}/{virt_launcher.name}.{file_suffix}"
+                not in files_collected
+            ]
+            if files_not_found:
+                errors["file_not_found"][vm.name] = files_not_found
+
+            empty_files = []
+            for file_name in files_collected:
+                file_size = os.stat(file_name).st_size
+                if file_size < 2:
+                    empty_files.append(f"file {file_name}: size {file_size}")
+            if empty_files:
+                errors["empty_file"][vm.name] = empty_files
+        else:
+            errors["path_not_found"][vm.name] = folder_path
+
+    assert (
+        not errors
+    ), f"Following errors found in must-gather {errors.keys()}. {errors}"
+
+
+def validate_must_gather_vm_file_collection(
+    collected_vm_details_must_gather_with_params,
+    expected,
+    must_gather_vm,
+    must_gather_vms_from_alternate_namespace,
+):
+    base_file_path = f"{collected_vm_details_must_gather_with_params}/namespaces"
+    vm_list = get_vm_list_for_validation(
+        expected=expected,
+        must_gather_vm=must_gather_vm,
+        must_gather_vms_from_alternate_namespace=must_gather_vms_from_alternate_namespace,
+    )
+
+    LOGGER.info(
+        f"Validating path for vms: {[vm.name for vm in vm_list['vms_collected']]}"
+    )
+    validate_files_collected(base_path=base_file_path, vm_list=vm_list["vms_collected"])
+    not_collected_vm_names = [vm.name for vm in vm_list["vms_not_collected"]]
+    LOGGER.info(
+        f"Validating following vms were not collected: {not_collected_vm_names}"
+    )
+    with pytest.raises(AssertionError) as exeption_found:
+        validate_files_collected(
+            base_path=base_file_path, vm_list=vm_list["vms_not_collected"]
+        )
+    assert all(
+        entry in str(exeption_found.value)
+        for entry in not_collected_vm_names + ["path_not_found"]
+    ), (
+        f"Failed to find {not_collected_vm_names} "
+        "in exception message:"
+        f" {str(exeption_found.value)}"
+    )
+
+
+def get_vm_list_for_validation(
+    expected,
+    must_gather_vm,
+    must_gather_vms_from_alternate_namespace,
+):
+    if expected and "alt_ns_vm" in expected:
+        vm_list_collected = [
+            must_gather_vms_from_alternate_namespace[index]
+            for index in expected["alt_ns_vm"]
+        ]
+        vm_list_not_collected = [
+            vm
+            for vm in must_gather_vms_from_alternate_namespace
+            if vm not in vm_list_collected
+        ]
+        if "must_gather_ns_vm" in expected:
+            vm_list_collected.append(must_gather_vm)
+        else:
+            vm_list_not_collected.append(must_gather_vm)
+
+    else:
+        vm_list_collected = [vm for vm in must_gather_vms_from_alternate_namespace]
+        vm_list_not_collected = [must_gather_vm]
+    return {
+        "vms_collected": vm_list_collected,
+        "vms_not_collected": vm_list_not_collected,
+    }
