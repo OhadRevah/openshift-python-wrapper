@@ -22,6 +22,7 @@ from utilities.infra import (
     collect_resources_for_test,
     wait_for_consistent_resource_conditions,
 )
+from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 DEFAULT_KUBEVIRT_CONDITIONS = {
@@ -30,6 +31,7 @@ DEFAULT_KUBEVIRT_CONDITIONS = {
     Resource.Condition.CREATED: Resource.Condition.Status.TRUE,
     Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
 }
+NUM_TEST_VMS = 3
 LOGGER = logging.getLogger(__name__)
 
 
@@ -253,3 +255,35 @@ def get_function_name(function_name):
         str: name of the function
     """
     return inspect.getsource(function_name).split("(")[0].split(" ")[-1]
+
+
+def create_vms(
+    name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None, ssh=True
+):
+    """
+    Create n number of fedora vms.
+
+    Args:
+        name_prefix (str): prefix to be used to name virtualmachines
+        namespace_name (str): Namespace to be used for vm creation
+        vm_count (int): Number of vms to be created
+        client (DynamicClient): DynamicClient object
+        ssh (bool): enable SSH on the VM
+
+    Returns:
+        list: List of VirtualMachineForTests
+    """
+    vms_list = []
+    for idx in range(vm_count):
+        vm_name = f"{name_prefix}-{idx}"
+        with VirtualMachineForTests(
+            name=vm_name,
+            namespace=namespace_name,
+            body=fedora_vm_body(name=vm_name),
+            teardown=False,
+            running=True,
+            ssh=ssh,
+            client=client,
+        ) as vm:
+            vms_list.append(vm)
+    return vms_list

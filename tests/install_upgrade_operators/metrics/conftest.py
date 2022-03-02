@@ -8,7 +8,6 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.metrics.utils import (
     SINGLE_VM,
-    create_vms,
     enable_swap_fedora_vm,
     get_mutation_component_value_from_prometheus,
     get_not_running_prometheus_pods,
@@ -16,6 +15,7 @@ from tests.install_upgrade_operators.metrics.utils import (
     run_node_command,
     run_vm_commands,
 )
+from tests.install_upgrade_operators.utils import create_vms
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import create_ns

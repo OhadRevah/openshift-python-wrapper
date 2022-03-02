@@ -19,13 +19,11 @@ from utilities.constants import (
 )
 from utilities.infra import ExecCommandOnPod, run_ssh_commands
 from utilities.network import assert_ping_successful
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
 KUBEVIRT_CR_ALERT_NAME = "KubevirtHyperconvergedClusterOperatorCRModification"
 CURL_QUERY = "curl -k https://localhost:8443/metrics"
-NUM_TEST_VMS = 3
 PING = "ping"
 JOB_NAME = "kubevirt-prometheus-metrics"
 TOPK_VMS = 3
@@ -345,38 +343,6 @@ def assert_validate_vm_metric(vm, metrics_list):
         f"Vm metric validation via {VIRT_HANDLER} pod {vm.vmi.virt_handler_pod}"
         f" failed: {metric_data_mismatch}"
     )
-
-
-def create_vms(
-    name_prefix, namespace_name, vm_count=NUM_TEST_VMS, client=None, ssh=True
-):
-    """
-    Create n number of fedora vms.
-
-    Args:
-        name_prefix (str): prefix to be used to name virtualmachines
-        namespace_name (str): Namespace to be used for vm creation
-        vm_count (int): Number of vms to be created
-        client (DynamicClient): DynamicClient object
-        ssh (bool): enable SSH on the VM
-
-    Returns:
-        list: List of VirtualMachineForTests
-    """
-    vms_list = []
-    for idx in range(vm_count):
-        vm_name = f"{name_prefix}-{idx}"
-        with VirtualMachineForTests(
-            name=vm_name,
-            namespace=namespace_name,
-            body=fedora_vm_body(name=vm_name),
-            teardown=False,
-            running=True,
-            ssh=ssh,
-            client=client,
-        ) as vm:
-            vms_list.append(vm)
-    return vms_list
 
 
 def get_topk_query(metric_names, time_period="5m"):
