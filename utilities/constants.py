@@ -89,7 +89,7 @@ KUBEMACPOOL_MAC_RANGE_CONFIG = "kubemacpool-mac-range-config"
 NMSTATE_CERT_MANAGER = "nmstate-cert-manager"
 NMSTATE_HANDLER = "nmstate-handler"
 NMSTATE_WEBHOOK = "nmstate-webhook"
-NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator-controller-manager"
+NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator"
 ISTIO_SYSTEM_DEFAULT_NS = "istio-system"
 
 #  Time constants
