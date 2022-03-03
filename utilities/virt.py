@@ -1078,6 +1078,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         non_existing_pvc=False,
         disable_sha2_algorithms=False,
         data_volume_template_from_vm_spec=False,
+        eviction=False,
     ):
         """
         VM creation using common templates.
@@ -1098,6 +1099,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
                 when creating a ssh connection
             data_volume_template_from_vm_spec (bool, default=False): Use (and don't manipulate) VM's DataVolumeTemplates
+            eviction (bool, default False): If True, set evictionStrategy to LiveMigrate explicitly
         Returns:
             obj `VirtualMachine`: VM resource
         """
@@ -1156,6 +1158,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         self.template_object = template_object
         self.non_existing_pvc = non_existing_pvc
         self.data_volume_template_from_vm_spec = data_volume_template_from_vm_spec
+        self.eviction = eviction
 
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
@@ -1227,9 +1230,11 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 ] = source_dv_pvc_spec.storageClassName
 
         # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
+        # (Except when evictionStrategy is explicitly set)
         # To apply this logic, self.access_modes should be available.
         if (
-            not (self.diskless_vm or self.non_existing_pvc)
+            not self.eviction
+            and not (self.diskless_vm or self.non_existing_pvc)
             and DataVolume.AccessMode.RWX not in self.access_modes
         ):
             spec.pop("evictionStrategy", None)
