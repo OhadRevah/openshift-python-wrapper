@@ -287,3 +287,16 @@ def create_vms(
         ) as vm:
             vms_list.append(vm)
     return vms_list
+
+
+def get_resource_container_env_image_mismatch(container):
+    return [
+        env_dict
+        for env_dict in container.get("env", [])
+        if "image" in env_dict["name"].lower()
+        and env_dict.get("value")
+        and not re.match(
+            rf"NOT_AVAILABLE|{Resource.ApiGroup.IMAGE_REGISTRY}",
+            env_dict.get("value"),
+        )
+    ]

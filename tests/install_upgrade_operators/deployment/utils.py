@@ -1,5 +1,11 @@
 import re
 
+from ocp_resources.resource import Resource
+
+from tests.install_upgrade_operators.utils import (
+    get_resource_container_env_image_mismatch,
+)
+from utilities.constants import CLUSTER_NETWORK_ADDONS_OPERATOR
 from utilities.infra import ResourceMismatch, is_bug_open
 
 
@@ -86,22 +92,36 @@ def validate_request_fields(deployment, cpu_min_value):
         )
 
 
-def validate_cnv_deployments_priorty_class(cnv_deployments):
-    deployments_with_bug = {"node-maintenance-operator": 2008960}
-    cnv_deployment_names_with_open_bugs = [
-        deployment
-        for deployment, bug_id in deployments_with_bug.items()
-        if is_bug_open(bug_id=bug_id)
-    ]
+def assert_cnv_deployment_container_image_not_in_upstream(cnv_deployment):
+    cnv_deployments_with_upstream_image_reference = {
+        container["name"]: container["image"]
+        for container in cnv_deployment.instance.spec.template.spec.containers
+        if not container["image"].startswith(Resource.ApiGroup.IMAGE_REGISTRY)
+    }
 
-    cnv_deployments_with_missing_priority_class = [
-        deployment.name
-        for deployment in cnv_deployments
-        if not deployment.instance.spec.template.spec.priorityClassName
-        and not deployment.name.startswith(tuple(cnv_deployment_names_with_open_bugs))
-    ]
+    if cnv_deployments_with_upstream_image_reference:
+        raise ResourceMismatch(
+            f"For following deployments upstream image references "
+            f"found: {cnv_deployments_with_upstream_image_reference}"
+        )
 
-    assert not cnv_deployments_with_missing_priority_class, (
-        "For the following cnv deployments, spec.template.spec.priorityClassName has not been set "
-        f"{cnv_deployments_with_missing_priority_class}"
-    )
+
+def assert_cnv_deployment_container_env_image_not_in_upstream(cnv_deployment):
+    cnv_deployments_env_with_upstream_image_reference = {}
+    for container in cnv_deployment.instance.spec.template.spec.containers:
+        resource_env_image_mismatch = get_resource_container_env_image_mismatch(
+            container=container
+        )
+        if resource_env_image_mismatch and not (
+            cnv_deployment.name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
+            and is_bug_open(bug_id=2008960)
+        ):
+            cnv_deployments_env_with_upstream_image_reference[
+                container["name"]
+            ] = resource_env_image_mismatch
+
+    if cnv_deployments_env_with_upstream_image_reference:
+        raise ResourceMismatch(
+            f"For following deployments upstream image references "
+            f"found: {cnv_deployments_env_with_upstream_image_reference}"
+        )

@@ -1,11 +1,12 @@
 import pytest
 
 from tests.install_upgrade_operators.deployment.utils import (
-    validate_cnv_deployments_priorty_class,
+    assert_cnv_deployment_container_env_image_not_in_upstream,
+    assert_cnv_deployment_container_image_not_in_upstream,
     validate_liveness_probe_fields,
     validate_request_fields,
 )
-from utilities.constants import HCO_OPERATOR, HCO_WEBHOOK
+from utilities.constants import ALL_CNV_DEPLOYMENTS, HCO_OPERATOR, HCO_WEBHOOK
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -56,5 +57,37 @@ def test_request_param(deployment_by_name, cpu_min_value):
 
 
 @pytest.mark.polarion("CNV-7675")
-def test_cnv_deployment_priority_class_name(cnv_deployments):
-    validate_cnv_deployments_priorty_class(cnv_deployments=cnv_deployments)
+def test_cnv_deployment_priority_class_name(
+    skip_on_hpp_pool,
+    skip_if_node_maintenance_deployment_bug_open,
+    cnv_deployment_by_name,
+):
+    if not cnv_deployment_by_name.instance.spec.template.spec.priorityClassName:
+        pytest.fail(
+            f"For cnv deployment {cnv_deployment_by_name.name}, spec.template.spec.priorityClassName has not "
+            f"been set."
+        )
+
+
+@pytest.mark.polarion("CNV-8289")
+def test_no_new_cnv_deployments_added(cnv_deployments_excluding_hpp_pool):
+    """
+    Since cnv deployments image validations are done via polarion parameterization, this test has been added
+    to catch any new cnv deployments that is not part of cnv_deployment_matrix
+    """
+    new_deployment = [
+        deployment.name
+        for deployment in cnv_deployments_excluding_hpp_pool
+        if list(filter(deployment.name.startswith, ALL_CNV_DEPLOYMENTS)) == []
+    ]
+    assert not new_deployment, f"New cnv deployment: {new_deployment}, has been added."
+
+
+@pytest.mark.polarion("CNV-8264")
+def test_cnv_deployment_container_image(cnv_deployment_by_name):
+    assert_cnv_deployment_container_image_not_in_upstream(
+        cnv_deployment=cnv_deployment_by_name
+    )
+    assert_cnv_deployment_container_env_image_not_in_upstream(
+        cnv_deployment=cnv_deployment_by_name
+    )

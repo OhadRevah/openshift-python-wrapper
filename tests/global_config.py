@@ -6,6 +6,7 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
 from utilities.constants import (
+    ALL_CNV_DEPLOYMENTS,
     BRIDGE_MARKER,
     CDI_APISERVER,
     CDI_DEPLOYMENT,
@@ -497,6 +498,8 @@ cnv_pod_matrix = [
     VIRT_OPERATOR,
     VIRT_TEMPLATE_VALIDATOR,
 ]
+
+cnv_deployment_matrix = ALL_CNV_DEPLOYMENTS
 
 pod_resource_validation_matrix = [{"cpu": 5}, {"memory": None}]
 
