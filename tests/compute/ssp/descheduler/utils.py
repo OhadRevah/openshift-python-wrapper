@@ -25,7 +25,16 @@ class UnexpectedBehaviorError(Exception):
 
 
 class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
-    def __init__(self, name, namespace, memory_requests, client, cpu_model):
+    def __init__(
+        self,
+        name,
+        namespace,
+        memory_requests,
+        client,
+        cpu_model,
+        cpu_requests=None,
+        descheduler_eviction=True,
+    ):
         super().__init__(
             name=name,
             namespace=namespace,
@@ -33,16 +42,18 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
             memory_requests=memory_requests,
             eviction=True,
             cpu_model=cpu_model,
+            cpu_requests=cpu_requests,
         )
+        self.descheduler_eviction = descheduler_eviction
 
     def to_dict(self):
         self.body = fedora_vm_body(name=self.name)
         res = super().to_dict()
         metadata = res["spec"]["template"]["metadata"]
         metadata.setdefault("annotations", {})
-        metadata["annotations"].update(
-            {"descheduler.alpha.kubernetes.io/evict": "true"}
-        )
+        if self.descheduler_eviction:
+            metadata["annotations"]["descheduler.alpha.kubernetes.io/evict"] = "true"
+
         return res
 
 
