@@ -1,7 +1,10 @@
 import logging
-from bisect import bisect
 from collections import Counter
 
+import bitmath
+import yaml
+from ocp_resources.configmap import ConfigMap
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.ssp.descheduler.constants import (
@@ -9,10 +12,13 @@ from tests.compute.ssp.descheduler.constants import (
     DESCHEDULING_INTERVAL_120SEC,
     RUNNING_PROCESS_NAME_IN_VM,
 )
-from tests.compute.utils import fetch_processid_from_linux_vm
+from tests.compute.utils import (
+    fetch_processid_from_linux_vm,
+    start_and_fetch_processid_on_linux_vm,
+)
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
 from utilities.infra import get_pods
-from utilities.virt import VirtualMachineForTests, fedora_vm_body
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -59,40 +65,22 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
         return res
 
 
-def calculate_vm_deployment(workers_free_memory):
-    """
-    Calculate how many VMs with how much RAM should be deployed for test.
-    The idea is to have all nodes loaded enough (RAM wise) so that after draining one node
-    the remaining will be at ~90% load.
+def calculate_vm_deployment(
+    available_memory_per_node,
+    deployment_size,
+    available_nodes,
+    percent_of_available_memory,
+):
+    vm_deployment = {}
+    for node in available_nodes:
+        vm_deployment[node] = int(
+            (available_memory_per_node[node].bytes * percent_of_available_memory)
+            / deployment_size["memory"].bytes
+        )
 
-    Args:
-        workers_free_memory (dict): dict of total available free memory values on worker nodes
-                                    {"<nodename>": <class 'bitmath.GiB'>}
+    LOGGER.info(f"calculated vm_deployment: {vm_deployment}")
 
-    Returns:
-        tuple: (amount of vms to deploy, vm memory requests value)
-    """
-
-    def _get_vm_memory_value():
-        breakpoints = [20, 50, 400, 8000]
-        memory_values = ["1Gi", "2Gi", "10Gi", "80Gi"]
-        return memory_values[bisect(breakpoints, vm_amount)]
-
-    # TODO: Calculations should be refined
-    # Total free memory value of OS is higher than resources available to OCP node
-    # ocp_node_memory_ratio is used to adjust output of "free" command
-    ocp_node_memory_ratio = 0.6
-    node_amount = len(workers_free_memory)
-    assert node_amount >= 2, "Test should run on cluster with 2+ worker nodes"
-    total_free = sum(workers_free_memory.values()) * ocp_node_memory_ratio
-    vm_amount = round(total_free / node_amount * (node_amount - 1))
-    vm_memory = _get_vm_memory_value()
-    # adjust vm amount based on value of memory configured for them
-    # "-1" is used to ensure the new amount will fit the cluster memory capacity
-    # (sometimes cluster mem usage is so tight that last vm is not able to schedule)
-    vm_adjusted_amount = round(vm_amount / int(vm_memory[:-2])) - 1
-
-    return vm_adjusted_amount, vm_memory
+    return vm_deployment
 
 
 def wait_vmi_failover(vm, orig_node):
@@ -179,7 +167,6 @@ def vm_nodes(vms):
 
 def verify_vms_consistent_virt_launcher_pods(running_vms):
     """Verify VMs virt launcher pods are not replaced (sampled every one minute).
-
     Using VMs virt launcher pods to verify that VMs are not migrated nor restarted.
 
     Args:
@@ -236,3 +223,74 @@ def get_descheduler_pod(admin_client, namespace):
     ):
         if sample:
             return sample[0]
+
+
+def update_profile_strategies(installed_descheduler, strategies):
+    descheduler_cm = ConfigMap(
+        name=installed_descheduler.name, namespace=installed_descheduler.namespace
+    )
+    policy = yaml.safe_load(stream=descheduler_cm.instance["data"]["policy.yaml"])
+    policy.update({"strategies": strategies})
+    policy_yaml = yaml.dump(data=policy)
+    ResourceEditor(
+        patches={
+            descheduler_cm: {
+                "data": {
+                    "policy.yaml": policy_yaml,
+                }
+            }
+        }
+    ).update()
+
+
+def start_vms_with_process(vms, process_name, args):
+    vms_process_id_dict = {}
+    for vm in vms:
+        vms_process_id_dict[vm.name] = start_and_fetch_processid_on_linux_vm(
+            vm=vm, process_name=process_name, args=args
+        )
+
+    return vms_process_id_dict
+
+
+def deploy_vms(
+    client,
+    namespace_name,
+    cpu_model,
+    vm_count,
+    deployment_size,
+    descheduler_eviction,
+):
+    vms = []
+    for vm_index in range(vm_count):
+        vm = VirtualMachineForDeschedulerTest(
+            name=f"vm-{vm_index}",
+            namespace=namespace_name,
+            client=client,
+            cpu_requests=deployment_size["cpu"],
+            memory_requests=deployment_size["memory"].bytes,
+            cpu_model=cpu_model,
+            descheduler_eviction=descheduler_eviction,
+        )
+        vm.deploy()
+        vm.start()
+        vms.append(vm)
+
+    for vm in vms:
+        running_vm(vm=vm)
+
+    yield vms
+
+    for vm in vms:
+        vm.clean_up()
+
+
+def get_pod_memory_requests(pod):
+    """Sum all memory requests of the pod's containers"""
+    memory_requests = bitmath.Byte(value=0)
+    for container in pod.instance.spec.containers:
+        if hasattr(container.resources.requests, "memory"):
+            memory_requests += bitmath.parse_string_unsafe(
+                s=container.resources.requests.memory
+            ).to_KiB()
+    return memory_requests
