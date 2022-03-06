@@ -14,7 +14,6 @@ from utilities.constants import (
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     HCO_OPERATOR,
     HCO_WEBHOOK,
-    HOSTPATH_CSI_BASIC,
     HOSTPATH_PROVISIONER,
     HOSTPATH_PROVISIONER_CSI,
     HOSTPATH_PROVISIONER_OPERATOR,
@@ -36,6 +35,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.infra import get_latest_os_dict_list
+from utilities.storage import HppCsiStorageClass
 
 
 global config
@@ -113,6 +113,11 @@ HPP_VOLUME_MODE_ACCESS_MODE = {
     "access_mode": DataVolume.AccessMode.RWO,
 }
 
+hpp_storage_class_matrix = [
+    {HppCsiStorageClass.Name.HOSTPATH_CSI_BASIC: HPP_VOLUME_MODE_ACCESS_MODE},
+    {HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK: HPP_VOLUME_MODE_ACCESS_MODE},
+]
+
 storage_class_matrix = [
     {
         StorageClass.Types.NFS: {
@@ -127,9 +132,7 @@ storage_class_matrix = [
             "default": True,
         }
     },
-    {HOSTPATH_CSI_BASIC: HPP_VOLUME_MODE_ACCESS_MODE},
-    {"hostpath-csi-pvc-block": HPP_VOLUME_MODE_ACCESS_MODE},
-]
+] + hpp_storage_class_matrix
 
 default_storage_class, default_storage_class_configuration = _get_default_storage_class(
     sc_list=storage_class_matrix
