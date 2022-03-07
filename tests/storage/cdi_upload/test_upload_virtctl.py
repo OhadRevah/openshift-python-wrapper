@@ -100,7 +100,6 @@ def test_image_upload_with_overridden_url(
     skip_not_openshift,
     namespace,
     tmpdir,
-    new_route_created,
     cdi_config_upload_proxy_overridden,
 ):
     pvc_name = "cnv-2217"

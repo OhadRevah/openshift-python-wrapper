@@ -179,19 +179,18 @@ def cdi_config_upload_proxy_overridden(
     hco_namespace,
     hyperconverged_resource_scope_function,
     cdi_config,
-    upload_proxy_route,
+    new_route_created,
 ):
-    new_upload_proxy_url = f"newuploadroute-cdi-{hco_namespace.name}.apps.working.oc4"
     with ResourceEditor(
         patches={
             hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
                 component="cdi",
                 path="uploadProxyURLOverride",
-                value=new_upload_proxy_url,
+                value=new_route_created.host,
             )
         },
     ):
-        cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_upload_proxy_url)
+        cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_route_created.host)
         yield
 
 
@@ -205,7 +204,7 @@ def new_route_created(hco_namespace):
         service=CDI_UPLOADPROXY,
     )
     route.create(wait=True)
-    yield
+    yield route
     route.delete(wait=True)
 
 
