@@ -1,4 +1,5 @@
 import pytest
+from ocp_resources.image_stream import ImageStream
 from ocp_resources.pod import Pod
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
@@ -12,6 +13,7 @@ from utilities.constants import (
     HCO_OPERATOR,
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
 )
+from utilities.ssp import get_ssp_resource
 
 
 @pytest.fixture()
@@ -45,6 +47,39 @@ def deleted_hco_operator_pod(
     )
 
 
+@pytest.fixture()
+def image_stream_names(admin_client, golden_images_namespace):
+    return [
+        image_stream.name
+        for image_stream in ImageStream.get(
+            dyn_client=admin_client, namespace=golden_images_namespace.name
+        )
+    ]
+
+
 @pytest.fixture(scope="session")
-def common_templates_from_ssp_cr(ssp_cr_spec):
-    return ssp_cr_spec[COMMON_TEMPLATES_KEY_NAME][SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME]
+def common_templates_from_ssp_cr(ssp_cr_spec_scope_session):
+    return ssp_cr_spec_scope_session[COMMON_TEMPLATES_KEY_NAME][
+        SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
+    ]
+
+
+@pytest.fixture(scope="session")
+def ssp_cr_spec_scope_session(admin_client, hco_namespace):
+    return get_ssp_resource(
+        admin_client=admin_client, namespace=hco_namespace
+    ).instance.to_dict()["spec"]
+
+
+@pytest.fixture()
+def image_streams_from_common_templates_in_ssp_cr(
+    common_templates_from_ssp_cr,
+):
+    image_streams = []
+    for template in common_templates_from_ssp_cr:
+        image_stream = template["spec"]["template"]["spec"]["source"]["registry"].get(
+            "imageStream"
+        )
+        if image_stream:
+            image_streams.append(image_stream)
+    return image_streams
