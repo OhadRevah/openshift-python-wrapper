@@ -106,6 +106,12 @@ def maxunavailable_input_for_bridge_creation(
             id="maxunavailable_input_for_bridge_creation_randomdata",
             marks=(pytest.mark.polarion("CNV-7546"),),
         ),
+        pytest.param(
+            "500%",
+            [PROGRESSING, PROGRESSING, PROGRESSING],
+            id="maxunavailable_input_for_bridge_creation_500%",
+            marks=(pytest.mark.polarion("CNV-7545"),),
+        ),
     ],
     indirect=["maxunavailable_input_for_bridge_creation"],
 )
