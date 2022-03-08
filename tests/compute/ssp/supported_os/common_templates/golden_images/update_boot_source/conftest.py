@@ -13,11 +13,9 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
 )
 from utilities.constants import TIMEOUT_2MIN
 from utilities.hco import (
-    disable_common_boot_image_import_feature_gate,
     enable_common_boot_image_import_feature_gate_wait_for_data_import_cron,
 )
 from utilities.infra import ResourceEditorValidateHCOReconcile
-from utilities.ssp import get_data_import_crons
 from utilities.storage import RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL
 
 
@@ -47,21 +45,6 @@ def enabled_common_boot_image_import_feature_gate_scope_class(
         hco_resource=hyperconverged_resource_scope_class,
         admin_client=admin_client,
         namespace=golden_images_namespace,
-    )
-
-
-@pytest.fixture(scope="class")
-def disabled_common_boot_image_import_feature_gate_scope_class(
-    admin_client,
-    hyperconverged_resource_scope_class,
-    golden_images_namespace,
-    golden_images_data_import_crons_scope_class,
-):
-    yield from disable_common_boot_image_import_feature_gate(
-        admin_client=admin_client,
-        hco_resource=hyperconverged_resource_scope_class,
-        golden_images_namespace=golden_images_namespace,
-        golden_images_data_import_crons=golden_images_data_import_crons_scope_class,
     )
 
 
@@ -157,10 +140,3 @@ def custom_data_source_scope_function(
             f"{custom_data_import_cron_scope_function.namespace} namespace."
         )
         raise
-
-
-@pytest.fixture(scope="class")
-def golden_images_data_import_crons_scope_class(admin_client, golden_images_namespace):
-    return get_data_import_crons(
-        admin_client=admin_client, namespace=golden_images_namespace
-    )

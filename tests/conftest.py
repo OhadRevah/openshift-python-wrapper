@@ -2935,3 +2935,25 @@ def sno_cluster(admin_client):
 @pytest.fixture(scope="session")
 def label_schedulable_nodes(schedulable_nodes):
     yield from label_nodes(nodes=schedulable_nodes, labels=NODE_TYPE_WORKER_LABEL)
+
+
+@pytest.fixture(scope="class")
+def disabled_common_boot_image_import_feature_gate_scope_class(
+    admin_client,
+    hyperconverged_resource_scope_class,
+    golden_images_namespace,
+    golden_images_data_import_crons_scope_class,
+):
+    yield from disable_common_boot_image_import_feature_gate(
+        admin_client=admin_client,
+        hco_resource=hyperconverged_resource_scope_class,
+        golden_images_namespace=golden_images_namespace,
+        golden_images_data_import_crons=golden_images_data_import_crons_scope_class,
+    )
+
+
+@pytest.fixture(scope="class")
+def golden_images_data_import_crons_scope_class(admin_client, golden_images_namespace):
+    return get_data_import_crons(
+        admin_client=admin_client, namespace=golden_images_namespace
+    )
