@@ -299,12 +299,9 @@ def dpdk_template(namespace, tmpdir_factory):
     template_dir = tmpdir_factory.mktemp("dpdk_template")
     template_filepath = os.path.join(template_dir, "dpdk_vm_template.yaml")
 
-    # TODO: Change the URL to "https://github.com/RHsyseng/cnv-supplemental-templates/blob/main/templates/testpmd/
-    # resource-specs/sriov-vm1.yaml" once https://github.com/RHsyseng/cnv-supplemental-templates/pull/7
-    # is merged.
     urllib.request.urlretrieve(
-        url="https://raw.githubusercontent.com/yossisegev/cnv-supplemental-templates/template-and-additions/"
-        "templates/testpmd/resource-specs/sriov-vm1-template.yaml",
+        url="https://raw.githubusercontent.com/RHsyseng/cnv-supplemental-templates/main/templates/testpmd/"
+        "resource-specs/sriov-vm1-template.yaml",
         filename=template_filepath,
     )
     with Template(
