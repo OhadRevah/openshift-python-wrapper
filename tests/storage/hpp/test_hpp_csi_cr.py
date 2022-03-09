@@ -35,17 +35,19 @@ STORAGE_CLASS_TO_STORAGE_POOL_MAPPING = {
 
 @pytest.fixture(scope="module")
 def deteled_hostpath_provisioner_cr(
-    admin_client, hco_namespace, schedulable_nodes, hostpath_provisioner
+    admin_client, hco_namespace, schedulable_nodes, hostpath_provisioner_scope_module
 ):
-    if hostpath_provisioner.exists:
-        yaml_object = io.StringIO(yaml.dump(hostpath_provisioner.instance.to_dict()))
+    if hostpath_provisioner_scope_module.exists:
+        yaml_object = io.StringIO(
+            yaml.dump(hostpath_provisioner_scope_module.instance.to_dict())
+        )
         LOGGER.warning(
             f"Custom Resource {HostPathProvisioner.Name.HOSTPATH_PROVISIONER} already exists, deleting it"
         )
         is_cr_with_pvc_template = is_hpp_cr_with_pvc_template(
-            hpp_custom_resource=hostpath_provisioner
+            hpp_custom_resource=hostpath_provisioner_scope_module
         )
-        hostpath_provisioner.clean_up()
+        hostpath_provisioner_scope_module.clean_up()
         verify_hpp_cr_deleted_successfully(
             hco_namespace=hco_namespace,
             schedulable_nodes=schedulable_nodes,

@@ -1,4 +1,7 @@
+from ocp_resources.storage_class import StorageClass
+
 from utilities.constants import Images
+from utilities.storage import HppCsiStorageClass
 
 
 DV_PARAMS = {
@@ -16,4 +19,11 @@ CDI_SECRETS = [
     "cdi-uploadserver-client-cert",
     "cdi-uploadserver-client-signer",
     "cdi-uploadserver-signer",
+]
+
+HPP_STORAGE_CLASSES = [
+    StorageClass.Types.HOSTPATH,
+    HppCsiStorageClass.Name.HOSTPATH_CSI_LEGACY,
+    HppCsiStorageClass.Name.HOSTPATH_CSI_BASIC,
+    HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK,
 ]

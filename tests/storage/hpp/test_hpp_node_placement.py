@@ -11,7 +11,6 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.resource import ResourceEditor
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from openshift.dynamic.exceptions import NotFoundError
 
@@ -84,6 +83,8 @@ HPP_NODE_PLACEMENT_DICT = {
     },
 }
 
+pytestmark = pytest.mark.usefixtures("skip_test_if_no_hpp_sc")
+
 
 @contextmanager
 def update_node_taint(node):
@@ -103,16 +104,22 @@ def update_node_taint(node):
 
 @contextmanager
 def cirros_vm_on_hpp(
-    dv_name, vm_name, client, namespace, node=None, wait_for_deletion=False
+    dv_name,
+    vm_name,
+    client,
+    namespace,
+    storage_class,
+    node=None,
+    wait_for_deletion=True,
 ):
     dv = DataVolume(
         name=dv_name,
         namespace=namespace.name,
         source="http",
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=storage_class,
         size=Images.Cirros.DEFAULT_DV_SIZE,
-        access_modes=DataVolume.AccessMode.RWO,
+        api_name="storage",
     ).to_dict()
     dv_metadata = dv["metadata"]
     with VirtualMachineForTests(
@@ -148,15 +155,19 @@ def update_node_labels(worker_node1):
 def updated_hpp_with_node_placement(
     worker_node2,
     worker_node3,
-    hostpath_provisioner,
+    hostpath_provisioner_scope_module,
     request,
     admin_client,
-    hpp_daemonset,
+    hpp_daemonset_scope_session,
     schedulable_nodes,
 ):
     node_placement_type = request.param["type"]
     with ResourceEditor(
-        patches={hostpath_provisioner: HPP_NODE_PLACEMENT_DICT[node_placement_type]}
+        patches={
+            hostpath_provisioner_scope_module: HPP_NODE_PLACEMENT_DICT[
+                node_placement_type
+            ]
+        }
     ) as updated_resource:
         if node_placement_type == "tolerations":
             with update_node_taint(node=worker_node2), update_node_taint(
@@ -164,18 +175,18 @@ def updated_hpp_with_node_placement(
             ):
                 # Wait for 1 hpp pod to be running, and for others to be deleted
                 wait_for_desired_hpp_pods_running(
-                    hpp_daemonset=hpp_daemonset, number_of_pods=1
+                    hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=1
                 )
                 yield updated_resource
         else:
             # Wait for 1 hpp pod to be running, and for others to be deleted
             wait_for_desired_hpp_pods_running(
-                hpp_daemonset=hpp_daemonset, number_of_pods=1
+                hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=1
             )
             yield updated_resource
     # Wait for hpp pods to be restored
     wait_for_desired_hpp_pods_running(
-        hpp_daemonset=hpp_daemonset, number_of_pods=len(schedulable_nodes)
+        hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=len(schedulable_nodes)
     )
 
 
@@ -186,22 +197,23 @@ def updated_hpp_with_node_placement(
         pytest.param(
             {"type": "node_selector"},
             HCO_NODE_PLACEMENT,
-            marks=(pytest.mark.polarion("CNV-5711"),),
+            marks=pytest.mark.polarion("CNV-5711"),
         ),
         pytest.param(
             {"type": "affinity"},
             HCO_NODE_PLACEMENT,
-            marks=(pytest.mark.polarion("CNV-5712"),),
+            marks=pytest.mark.polarion("CNV-5712"),
         ),
         pytest.param(
             {"type": "tolerations"},
             HCO_NODE_PLACEMENT,
-            marks=(pytest.mark.polarion("CNV-5713"),),
+            marks=pytest.mark.polarion("CNV-5713"),
         ),
     ],
     indirect=True,
 )
 def test_create_dv_on_right_node_with_node_placement(
+    matrix_hpp_storage_class,
     worker_node1,
     admin_client,
     namespace,
@@ -214,7 +226,7 @@ def test_create_dv_on_right_node_with_node_placement(
         vm_name="cirros-vm",
         client=admin_client,
         namespace=namespace,
-        wait_for_deletion=True,
+        storage_class=matrix_hpp_storage_class.name,
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         # The VM should be created on the node that have the node labels
@@ -227,12 +239,13 @@ def test_create_dv_on_right_node_with_node_placement(
     [
         pytest.param(
             {"type": "node_selector"},
-            marks=(pytest.mark.polarion("CNV-5717"),),
+            marks=pytest.mark.polarion("CNV-5717"),
         ),
     ],
     indirect=True,
 )
 def test_create_vm_on_node_without_hpp_pod_and_after_update(
+    matrix_hpp_storage_class,
     worker_node2,
     admin_client,
     namespace,
@@ -245,6 +258,7 @@ def test_create_vm_on_node_without_hpp_pod_and_after_update(
         client=admin_client,
         namespace=namespace,
         node=worker_node2.name,
+        storage_class=matrix_hpp_storage_class.name,
     ) as vm:
         vm.vmi.wait_for_status(
             status=VirtualMachineInstance.Status.PENDING,
@@ -261,12 +275,13 @@ def test_create_vm_on_node_without_hpp_pod_and_after_update(
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5601")
 def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same_node(
-    hostpath_provisioner,
+    matrix_hpp_storage_class,
+    hostpath_provisioner_scope_module,
     worker_node2,
     admin_client,
     namespace,
     update_node_labels,
-    hpp_daemonset,
+    hpp_daemonset_scope_session,
     schedulable_nodes,
 ):
     with cirros_vm_on_hpp(
@@ -275,33 +290,39 @@ def test_vm_with_dv_on_functional_after_configuring_hpp_not_to_work_on_that_same
         client=admin_client,
         namespace=namespace,
         node=worker_node2.name,
+        storage_class=matrix_hpp_storage_class.name,
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         check_disk_count_in_vm(vm=vm)
         with ResourceEditor(
-            patches={hostpath_provisioner: HPP_NODE_PLACEMENT_DICT["node_selector"]}
+            patches={
+                hostpath_provisioner_scope_module: HPP_NODE_PLACEMENT_DICT[
+                    "node_selector"
+                ]
+            }
         ):
             # Wait for 1 hpp pod to be running, and for others to be deleted
             wait_for_desired_hpp_pods_running(
-                hpp_daemonset=hpp_daemonset, number_of_pods=1
+                hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=1
             )
             check_disk_count_in_vm(vm=vm)
     # Wait for hpp pods to be restored
     wait_for_desired_hpp_pods_running(
-        hpp_daemonset=hpp_daemonset, number_of_pods=len(schedulable_nodes)
+        hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=len(schedulable_nodes)
     )
 
 
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5616")
 def test_pv_stay_released_after_deleted_when_no_hpp_pod(
-    hostpath_provisioner,
+    matrix_hpp_storage_class,
+    hostpath_provisioner_scope_module,
     worker_node1,
     worker_node2,
     admin_client,
     namespace,
     update_node_labels,
-    hpp_daemonset,
+    hpp_daemonset_scope_session,
     schedulable_nodes,
 ):
     dv_name = "dv-5616"
@@ -311,6 +332,7 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
         client=admin_client,
         namespace=namespace,
         node=worker_node2.name,
+        storage_class=matrix_hpp_storage_class.name,
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         pvc_list = list(
@@ -333,17 +355,20 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
         )[0]
         check_disk_count_in_vm(vm=vm)
         with ResourceEditor(
-            patches={hostpath_provisioner: HPP_NODE_PLACEMENT_DICT["node_selector"]}
+            patches={
+                hostpath_provisioner_scope_module: HPP_NODE_PLACEMENT_DICT[
+                    "node_selector"
+                ]
+            }
         ):
             # Wait for 1 hpp pod to be running, and for others to be deleted
             wait_for_desired_hpp_pods_running(
-                hpp_daemonset=hpp_daemonset, number_of_pods=1
+                hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=1
             )
             vm.delete(wait=True)
-            pvc.wait_deleted()
-            pv.wait_for_status(status=PersistentVolume.Status.RELEASED)
+        pvc.wait_deleted()
         pv.wait_deleted()
     # Wait for hpp pods to be restored
     wait_for_desired_hpp_pods_running(
-        hpp_daemonset=hpp_daemonset, number_of_pods=len(schedulable_nodes)
+        hpp_daemonset=hpp_daemonset_scope_session, number_of_pods=len(schedulable_nodes)
     )

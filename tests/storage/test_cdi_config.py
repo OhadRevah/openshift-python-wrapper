@@ -12,6 +12,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils
+from tests.storage.constants import HPP_STORAGE_CLASSES
 from utilities.constants import CDI_UPLOADPROXY, Images
 from utilities.infra import ResourceEditorValidateHCOReconcile, get_cert
 from utilities.storage import (
@@ -34,6 +35,17 @@ STORAGE_WORKLOADS_DICT = {
 }
 NON_EXISTENT_SCRATCH_SC_DICT = {"scratchSpaceStorageClass": "NonExistentSC"}
 INSECURE_REGISTRIES_LIST = ["added-private-registry:5000"]
+
+
+@pytest.fixture(scope="module")
+def available_hpp_storage_class(cluster_storage_classes):
+    """
+    Get an HPP storage class if there is any in the cluster
+    """
+    for storage_class in cluster_storage_classes:
+        if storage_class.name in HPP_STORAGE_CLASSES:
+            return storage_class
+    pytest.skip("Skipping the test because there's no HPP storage class in the cluster")
 
 
 def cdiconfig_update(
@@ -85,7 +97,7 @@ def cdiconfig_update(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
-    skip_test_if_no_hpp_sc,
+    available_hpp_storage_class,
     tmpdir,
     hyperconverged_resource_scope_module,
     cdi_config,
@@ -97,7 +109,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2451",
-        storage_class_type=StorageClass.Types.HOSTPATH,
+        storage_class_type=available_hpp_storage_class.name,
         images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
         run_vm=True,
@@ -109,7 +121,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
-    skip_test_if_no_hpp_sc,
+    available_hpp_storage_class,
     hyperconverged_resource_scope_module,
     cdi_config,
     namespace,
@@ -120,7 +132,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2478",
-        storage_class_type=StorageClass.Types.HOSTPATH,
+        storage_class_type=available_hpp_storage_class.name,
         storage_ns_name=namespace.name,
         images_https_server_name=get_images_server_url(schema="https"),
         run_vm=True,
@@ -131,7 +143,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2214")
 def test_cdiconfig_status_scratchspace_update_with_spec(
-    skip_test_if_no_hpp_sc,
+    available_hpp_storage_class,
     hyperconverged_resource_scope_module,
     cdi_config,
     namespace,
@@ -142,7 +154,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
         hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2214",
-        storage_class_type=StorageClass.Types.HOSTPATH,
+        storage_class_type=available_hpp_storage_class.name,
         storage_ns_name=namespace.name,
         client=unprivileged_client,
     )
@@ -151,7 +163,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
-    skip_test_if_no_hpp_sc,
+    available_hpp_storage_class,
     hyperconverged_resource_scope_module,
     cdi_config,
     namespace,
@@ -162,7 +174,7 @@ def test_cdiconfig_scratch_space_not_default(
         hco_cr=hyperconverged_resource_scope_module,
         cdiconfig=cdi_config,
         dv_name="cnv-2440",
-        storage_class_type=StorageClass.Types.HOSTPATH,
+        storage_class_type=available_hpp_storage_class.name,
         images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
         run_vm=True,
@@ -226,9 +238,8 @@ def test_upload_proxy_url_overridden(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
-    skip_test_if_no_hpp_sc,
     skip_test_if_no_ocs_sc,
-    hpp_storage_class,
+    available_hpp_storage_class,
     namespace,
     default_sc_as_fallback_for_scratch,
     cdi_config,
@@ -253,8 +264,8 @@ def test_cdiconfig_changing_storage_class_default(
     ):
         with ResourceEditor(
             patches={
-                hpp_storage_class: _get_update_dict(
-                    default=True, storage_class=StorageClass.Types.HOSTPATH
+                available_hpp_storage_class: _get_update_dict(
+                    default=True, storage_class=available_hpp_storage_class.name
                 )
             }
         ):

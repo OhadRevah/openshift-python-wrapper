@@ -756,10 +756,19 @@ def pytest_sessionstart(session):
         log_level=session.config.getoption("log_cli_level") or logging.INFO,
     )
     py_config_scs = py_config.get("storage_class_matrix", {})
+
+    # --legacy-hpp-storage flag indicates that the Legacy hpp storage classes
+    # should be added to the storage_class_matrix
+    # By default - new hpp (CSI) storage classes are used
     if session.config.getoption("legacy_hpp_storage"):
-        py_config_scs.extend(py_config["legacy_hpp_storage_class_matrix"])
+        py_config["hpp_storage_class_matrix"] = py_config[
+            "legacy_hpp_storage_class_matrix"
+        ]
     else:
-        py_config_scs.extend(py_config["hpp_storage_class_matrix"])
+        py_config["hpp_storage_class_matrix"] = py_config[
+            "new_hpp_storage_class_matrix"
+        ]
+    py_config_scs.extend(py_config["hpp_storage_class_matrix"])
 
     # Save the default storage_class_matrix before it is updated
     # with runtime storage_class_matrix value(s)
@@ -2269,7 +2278,12 @@ def hyperconverged_with_node_placement(
 
 
 @pytest.fixture(scope="module")
-def hostpath_provisioner():
+def hostpath_provisioner_scope_module():
+    yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+
+
+@pytest.fixture(scope="session")
+def hostpath_provisioner_scope_session():
     yield HostPathProvisioner(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
 
 

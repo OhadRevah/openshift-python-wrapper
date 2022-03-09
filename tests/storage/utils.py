@@ -7,7 +7,9 @@ from contextlib import contextmanager
 import requests
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.pod import Pod
 from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
@@ -400,3 +402,22 @@ def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
         assert (
             clone_type_annotation == "snapshot"
         ), f"Clone was not performed using Namespace transfer - {clone_type}: {clone_type_annotation}"
+
+
+def hpp_cr_suffix(is_hpp_cr_legacy):
+    return "" if is_hpp_cr_legacy else "-csi"
+
+
+def is_hpp_cr_legacy(hostpath_provisioner):
+    # Only New HPP CR has storage storagePools field.
+    # If there are no explicit storagePools in the CR - it's a Legacy CR.
+    return not hostpath_provisioner.instance.spec.storagePools
+
+
+def get_hpp_daemonset(hco_namespace, hpp_cr_suffix):
+    daemonset = DaemonSet(
+        name=f"{HostPathProvisioner.Name.HOSTPATH_PROVISIONER}{hpp_cr_suffix}",
+        namespace=hco_namespace.name,
+    )
+    assert daemonset.exists, "hpp_daemonset does not exist"
+    return daemonset

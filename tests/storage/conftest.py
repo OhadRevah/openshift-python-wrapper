@@ -10,10 +10,8 @@ import os
 
 import pytest
 from ocp_resources.configmap import ConfigMap
-from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
-from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
@@ -22,7 +20,14 @@ from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from tests.storage.utils import HttpService, smart_clone_supported_by_sc
+from tests.storage.constants import HPP_STORAGE_CLASSES
+from tests.storage.utils import (
+    HttpService,
+    get_hpp_daemonset,
+    hpp_cr_suffix,
+    is_hpp_cr_legacy,
+    smart_clone_supported_by_sc,
+)
 from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
 from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
@@ -32,6 +37,7 @@ from utilities.infra import (
 )
 from utilities.storage import (
     HttpDeployment,
+    data_volume,
     downloaded_image,
     get_images_server_url,
     sc_volume_binding_mode_is_wffc,
@@ -134,26 +140,33 @@ def skip_no_default_sc(default_sc):
         pytest.skip("Skipping test, no default storage class configured")
 
 
-@pytest.fixture(scope="session")
-def hpp_storage_class(cluster_storage_classes):
+@pytest.fixture(scope="module")
+def matrix_hpp_storage_class(storage_class_matrix__module__):
     """
-    Get the HPP storage class if configured
+    Yields each HPP storage class that is present in the storage_class_matrix
     """
-    for sc in cluster_storage_classes:
-        if sc.name == StorageClass.Types.HOSTPATH:
-            return sc
+    storage_class = [*storage_class_matrix__module__][0]
+    if storage_class in HPP_STORAGE_CLASSES:
+        yield StorageClass(name=storage_class)
+    else:
+        pytest.skip(f"Skipping test for non-hpp storage class {storage_class}")
 
 
-@pytest.fixture(scope="session")
-def skip_test_if_no_hpp_sc(hpp_storage_class):
-    if not hpp_storage_class:
-        pytest.skip("Skipping test, HostPath storage class is not deployed")
+@pytest.fixture(scope="module")
+def skip_test_if_no_hpp_sc(cluster_storage_classes):
+    existing_hpp_sc = [
+        sc.name for sc in cluster_storage_classes if sc.name in HPP_STORAGE_CLASSES
+    ]
+    if not existing_hpp_sc:
+        pytest.skip(
+            f"This test runs only on one of the hpp storage classes: {HPP_STORAGE_CLASSES}"
+        )
 
 
-@pytest.fixture(scope="session")
-def skip_when_hpp_no_waitforfirstconsumer(skip_test_if_no_hpp_sc):
-    if not sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
-        pytest.skip(msg="Test only run when volumeBindingMode is WaitForFirstConsumer")
+@pytest.fixture(scope="module")
+def skip_when_hpp_no_waitforfirstconsumer(matrix_hpp_storage_class):
+    if not sc_volume_binding_mode_is_wffc(sc=matrix_hpp_storage_class.name):
+        pytest.skip("Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
 @pytest.fixture()
@@ -278,13 +291,6 @@ def default_fs_overhead(cdi_config):
     return float(cdi_config.instance.status.filesystemOverhead["global"])
 
 
-@pytest.fixture(scope="module")
-def skip_if_hpp_not_in_sc_options(request):
-    storage_class_matrix = request.session.config.getoption(name="storage_class_matrix")
-    if storage_class_matrix and StorageClass.Types.HOSTPATH not in storage_class_matrix:
-        pytest.skip("This test run only on hostpath-provisioner storage class")
-
-
 @pytest.fixture()
 def unset_predefined_scratch_sc(hyperconverged_resource_scope_module, cdi_config):
     if cdi_config.instance.spec.scratchSpaceStorageClass:
@@ -370,14 +376,38 @@ def enabled_ca(temp_router_cert):
     os.popen(update_ca_trust_command)
 
 
+@pytest.fixture(scope="module")
+def is_hpp_cr_legacy_scope_module(hostpath_provisioner_scope_module):
+    return is_hpp_cr_legacy(hostpath_provisioner=hostpath_provisioner_scope_module)
+
+
 @pytest.fixture(scope="session")
-def hpp_daemonset(hco_namespace):
-    daemonset = DaemonSet(
-        name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER,
-        namespace=hco_namespace.name,
+def is_hpp_cr_legacy_scope_session(hostpath_provisioner_scope_session):
+    return is_hpp_cr_legacy(hostpath_provisioner=hostpath_provisioner_scope_session)
+
+
+@pytest.fixture(scope="module")
+def hpp_cr_suffix_scope_module(is_hpp_cr_legacy_scope_module):
+    return hpp_cr_suffix(is_hpp_cr_legacy=is_hpp_cr_legacy_scope_module)
+
+
+@pytest.fixture(scope="session")
+def hpp_cr_suffix_scope_session(is_hpp_cr_legacy_scope_session):
+    return hpp_cr_suffix(is_hpp_cr_legacy=is_hpp_cr_legacy_scope_session)
+
+
+@pytest.fixture(scope="session")
+def hpp_daemonset_scope_session(hco_namespace, hpp_cr_suffix_scope_session):
+    yield get_hpp_daemonset(
+        hco_namespace=hco_namespace, hpp_cr_suffix=hpp_cr_suffix_scope_session
     )
-    assert daemonset.exists, "hpp_daemonset does not exist"
-    yield daemonset
+
+
+@pytest.fixture(scope="module")
+def hpp_daemonset_scope_module(hco_namespace, hpp_cr_suffix_scope_module):
+    yield get_hpp_daemonset(
+        hco_namespace=hco_namespace, hpp_cr_suffix=hpp_cr_suffix_scope_module
+    )
 
 
 @pytest.fixture()
@@ -435,3 +465,18 @@ def cirros_vm(
         data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
     ) as vm:
         yield vm
+
+
+@pytest.fixture(scope="module")
+def data_volume_multi_hpp_storage(
+    matrix_hpp_storage_class,
+    request,
+    namespace,
+    schedulable_nodes,
+):
+    yield from data_volume(
+        request=request,
+        namespace=namespace,
+        storage_class=matrix_hpp_storage_class.name,
+        schedulable_nodes=schedulable_nodes,
+    )

@@ -8,7 +8,6 @@ import logging
 
 import pytest
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 import tests.storage.utils as storage_utils
@@ -29,8 +28,10 @@ from utilities.storage import (
 from utilities.virt import VirtualMachineForTests, running_vm, wait_for_ssh_connectivity
 
 
-pytestmark = pytest.mark.post_upgrade
-
+pytestmark = [
+    pytest.mark.usefixtures("skip_test_if_no_hpp_sc"),
+    pytest.mark.post_upgrade,
+]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,6 @@ WFFC_DV_NAME = "wffc-dv-name"
 REMOTE_PATH = f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}"
 DV_PARAMS = {
     "dv_name": "dv-wffc-tests",
-    "storage_class": StorageClass.Types.HOSTPATH,
     "image": REMOTE_PATH,
     "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
 }
@@ -65,7 +65,7 @@ def enable_wffc_feature_gate(hyperconverged_resource_scope_module, cdi_config):
             yield
 
 
-def get_dv_template_dict(dv_name):
+def get_dv_template_dict(dv_name, storage_class):
     return {
         "metadata": {
             "name": f"{dv_name}",
@@ -75,7 +75,7 @@ def get_dv_template_dict(dv_name):
                 "volumeMode": DataVolume.VolumeMode.FILE,
                 "accessModes": [DataVolume.AccessMode.RWO],
                 "resources": {"requests": {"storage": Images.Cirros.DEFAULT_DV_SIZE}},
-                "storageClassName": StorageClass.Types.HOSTPATH,
+                "storageClassName": storage_class,
             },
             "source": {
                 "http": {"url": f"{get_images_server_url(schema='http')}{REMOTE_PATH}"}
@@ -109,14 +109,17 @@ def downloaded_image_scope_class(downloaded_image_full_path):
 
 @pytest.fixture(scope="class")
 def uploaded_dv_via_virtctl_wffc(
-    namespace, downloaded_image_full_path, downloaded_image_scope_class
+    matrix_hpp_storage_class,
+    namespace,
+    downloaded_image_full_path,
+    downloaded_image_scope_class,
 ):
     with virtctl_upload_dv(
         namespace=namespace.name,
         name=WFFC_DV_NAME,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         image_path=downloaded_image_full_path,
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         insecure=True,
         consume_wffc=False,
     ) as res:
@@ -140,9 +143,8 @@ class TestWFFCUploadVirtctl:
     @pytest.mark.polarion("CNV-4711")
     def test_wffc_fail_to_upload_dv_via_virtctl(
         self,
-        namespace,
-        skip_test_if_no_hpp_sc,
         skip_when_hpp_no_waitforfirstconsumer,
+        namespace,
         enable_wffc_feature_gate,
         uploaded_dv_via_virtctl_wffc,
         uploaded_wffc_dv,
@@ -166,7 +168,7 @@ class TestWFFCUploadVirtctl:
     @pytest.mark.polarion("CNV-7413")
     def test_wffc_create_vm_from_uploaded_dv_via_virtctl(
         self,
-        skip_test_if_no_hpp_sc,
+        matrix_hpp_storage_class,
         skip_when_hpp_no_waitforfirstconsumer,
         enable_wffc_feature_gate,
         downloaded_image_full_path,
@@ -177,7 +179,7 @@ class TestWFFCUploadVirtctl:
             name=WFFC_DV_NAME,
             size=Images.Cirros.DEFAULT_DV_SIZE,
             image_path=downloaded_image_full_path,
-            storage_class=StorageClass.Types.HOSTPATH,
+            storage_class=matrix_hpp_storage_class.name,
             insecure=True,
             consume_wffc=False,
             cleanup=False,
@@ -190,7 +192,7 @@ class TestWFFCUploadVirtctl:
 
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_hpp_storage",
     [
         pytest.param(
             {**DV_PARAMS, **{"consume_wffc": True}},
@@ -200,13 +202,12 @@ class TestWFFCUploadVirtctl:
     indirect=True,
 )
 def test_wffc_import_http_dv(
-    skip_test_if_no_hpp_sc,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
-    data_volume_scope_function,
+    data_volume_multi_hpp_storage,
 ):
     with storage_utils.create_vm_from_dv(
-        dv=data_volume_scope_function, vm_name=data_volume_scope_function.name
+        dv=data_volume_multi_hpp_storage, vm_name=data_volume_multi_hpp_storage.name
     ) as vm_dv:
         storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -214,7 +215,7 @@ def test_wffc_import_http_dv(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-4739")
 def test_wffc_import_registry_dv(
-    skip_test_if_no_hpp_sc,
+    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
@@ -225,7 +226,7 @@ def test_wffc_import_registry_dv(
         dv_name=dv_name,
         namespace=namespace.name,
         url=f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         consume_wffc=True,
     ) as dv:
         dv.wait()
@@ -236,7 +237,7 @@ def test_wffc_import_registry_dv(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-4741")
 def test_wffc_upload_dv_via_token(
-    skip_test_if_no_hpp_sc,
+    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
@@ -251,7 +252,7 @@ def test_wffc_upload_dv_via_token(
     )
     with storage_utils.upload_image_to_dv(
         dv_name=dv_name,
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         storage_ns_name=namespace.name,
         client=unprivileged_client,
         consume_wffc=True,
@@ -266,7 +267,7 @@ def test_wffc_upload_dv_via_token(
 
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_hpp_storage",
     [
         pytest.param(
             {**DV_PARAMS, **{"consume_wffc": True}},
@@ -276,18 +277,17 @@ def test_wffc_upload_dv_via_token(
     indirect=True,
 )
 def test_wffc_clone_dv(
-    skip_test_if_no_hpp_sc,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
-    data_volume_scope_function,
+    data_volume_multi_hpp_storage,
 ):
     with create_dv(
         source="pvc",
         dv_name="dv-target",
-        namespace=data_volume_scope_function.namespace,
-        size=data_volume_scope_function.size,
-        source_pvc=data_volume_scope_function.name,
-        storage_class=data_volume_scope_function.storage_class,
+        namespace=data_volume_multi_hpp_storage.namespace,
+        size=data_volume_multi_hpp_storage.size,
+        source_pvc=data_volume_multi_hpp_storage.name,
+        storage_class=data_volume_multi_hpp_storage.storage_class,
         consume_wffc=True,
     ) as cdv:
         cdv.wait(timeout=TIMEOUT_10MIN)
@@ -297,7 +297,7 @@ def test_wffc_clone_dv(
 
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_hpp_storage",
     [
         pytest.param(
             {**DV_PARAMS, **{"consume_wffc": False}},
@@ -307,23 +307,25 @@ def test_wffc_clone_dv(
     indirect=True,
 )
 def test_wffc_add_dv_to_vm_with_data_volume_template(
-    skip_test_if_no_hpp_sc,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_hpp_storage,
 ):
     with VirtualMachineForTests(
         name="cnv-4742-vm",
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,
-        data_volume_template=get_dv_template_dict(dv_name="template-dv"),
+        data_volume_template=get_dv_template_dict(
+            dv_name="template-dv",
+            storage_class=data_volume_multi_hpp_storage.storage_class,
+        ),
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
     ) as vm:
         _valid_vm_and_disk_count(vm=vm)
         # Add DV
         vm.stop(wait=True)
-        storage_utils.add_dv_to_vm(vm=vm, dv_name=data_volume_scope_function.name)
+        storage_utils.add_dv_to_vm(vm=vm, dv_name=data_volume_multi_hpp_storage.name)
         # Check DV was added
         _valid_vm_and_disk_count(vm=vm)
 
@@ -331,7 +333,7 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-4743")
 def test_wffc_vm_with_two_data_volume_templates(
-    skip_test_if_no_hpp_sc,
+    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     enable_wffc_feature_gate,
     namespace,
@@ -340,10 +342,15 @@ def test_wffc_vm_with_two_data_volume_templates(
         name="cnv-4743-vm",
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,
-        data_volume_template=get_dv_template_dict(dv_name="template-dv-1"),
+        data_volume_template=get_dv_template_dict(
+            dv_name="template-dv-1", storage_class=matrix_hpp_storage_class.name
+        ),
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
     ) as vm:
         storage_utils.add_dv_to_vm(
-            vm=vm, template_dv=get_dv_template_dict(dv_name="template-dv-2")
+            vm=vm,
+            template_dv=get_dv_template_dict(
+                dv_name="template-dv-2", storage_class=matrix_hpp_storage_class.name
+            ),
         )
         _valid_vm_and_disk_count(vm=vm)

@@ -115,7 +115,7 @@ HPP_VOLUME_MODE_ACCESS_MODE = {
     "access_mode": DataVolume.AccessMode.RWO,
 }
 
-hpp_storage_class_matrix = [
+new_hpp_storage_class_matrix = [
     {HppCsiStorageClass.Name.HOSTPATH_CSI_BASIC: HPP_VOLUME_MODE_ACCESS_MODE},
     {HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK: HPP_VOLUME_MODE_ACCESS_MODE},
 ]

@@ -48,7 +48,6 @@ from utilities.storage import (
     create_dv,
     downloaded_image,
     get_images_server_url,
-    get_storage_class_dict_from_matrix,
     sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
@@ -57,7 +56,9 @@ from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 LOGGER = logging.getLogger(__name__)
 
-pytestmark = pytest.mark.usefixtures("skip_if_hpp_not_in_sc_options")
+HOSTPATH_PROVISIONER_ADMIN = "hostpath-provisioner-admin"
+
+pytestmark = pytest.mark.usefixtures("skip_test_if_no_hpp_sc")
 
 
 def skipped_hco_resources():
@@ -110,12 +111,12 @@ def verify_hpp_app_label(hpp_resources, cnv_version):
 
 
 @pytest.fixture(scope="module")
-def skip_when_hpp_no_immediate(skip_test_if_no_hpp_sc, hpp_storage_class):
+def skip_when_hpp_no_immediate(matrix_hpp_storage_class):
     if (
-        not hpp_storage_class.instance["volumeBindingMode"]
+        not matrix_hpp_storage_class.instance["volumeBindingMode"]
         == StorageClass.VolumeBindingMode.Immediate
     ):
-        pytest.skip(msg="Test only run when volumeBindingMode is Immediate")
+        pytest.skip("Test only run when volumeBindingMode is Immediate")
 
 
 @pytest.fixture(scope="module")
@@ -128,12 +129,12 @@ def hpp_operator_deployment(hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def skip_when_cdiconfig_scratch_no_hpp(skip_test_if_no_hpp_sc, cdi_config):
+def skip_when_cdiconfig_scratch_no_hpp(cdi_config):
     if not (
         cdi_config.scratch_space_storage_class_from_status
         == StorageClass.Types.HOSTPATH
     ):
-        pytest.skip(msg="scratchSpaceStorageClass of cdiconfig is not HPP")
+        pytest.skip("scratchSpaceStorageClass of cdiconfig is not HPP")
 
 
 @pytest.fixture(scope="module")
@@ -149,25 +150,37 @@ def hpp_prometheus_resources(hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def hpp_serviceaccount(hco_namespace):
+def hpp_clusterrole_version_suffix(is_hpp_cr_legacy_scope_module):
+    return "" if is_hpp_cr_legacy_scope_module else "-admin-csi"
+
+
+@pytest.fixture(scope="module")
+def hpp_serviceaccount(hco_namespace, hpp_cr_suffix_scope_module):
     yield ServiceAccount(
-        name="hostpath-provisioner-admin", namespace=hco_namespace.name
+        name=f"{HOSTPATH_PROVISIONER_ADMIN}{hpp_cr_suffix_scope_module}",
+        namespace=hco_namespace.name,
     )
 
 
 @pytest.fixture(scope="module")
-def hpp_scc():
-    yield SecurityContextConstraints(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+def hpp_scc(hpp_cr_suffix_scope_module):
+    yield SecurityContextConstraints(
+        name=f"{HostPathProvisioner.Name.HOSTPATH_PROVISIONER}{hpp_cr_suffix_scope_module}"
+    )
 
 
 @pytest.fixture(scope="module")
-def hpp_clusterrole():
-    yield ClusterRole(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+def hpp_clusterrole(hpp_clusterrole_version_suffix):
+    yield ClusterRole(
+        name=f"{HostPathProvisioner.Name.HOSTPATH_PROVISIONER}{hpp_clusterrole_version_suffix}"
+    )
 
 
 @pytest.fixture(scope="module")
-def hpp_clusterrolebinding():
-    yield ClusterRoleBinding(name=HostPathProvisioner.Name.HOSTPATH_PROVISIONER)
+def hpp_clusterrolebinding(hpp_clusterrole_version_suffix):
+    yield ClusterRoleBinding(
+        name=f"{HostPathProvisioner.Name.HOSTPATH_PROVISIONER}{hpp_clusterrole_version_suffix}"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -180,12 +193,8 @@ def hpp_operator_pod(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def dv_kwargs(request, namespace, worker_node1):
-    storage_class_dict = get_storage_class_dict_from_matrix(
-        storage_class=StorageClass.Types.HOSTPATH
-    )
-    storage_class = [*storage_class_dict][0]
-    dv_kwargs = {
+def dv_kwargs(request, namespace, worker_node1, matrix_hpp_storage_class):
+    return {
         "dv_name": request.param.get("name"),
         "namespace": namespace.name,
         "url": request.param.get(
@@ -193,11 +202,9 @@ def dv_kwargs(request, namespace, worker_node1):
             f"{get_images_server_url(schema='http')}{py_config['latest_fedora_os_dict']['image_path']}",
         ),
         "size": request.param.get("size", Images.Fedora.DEFAULT_DV_SIZE),
-        "storage_class": storage_class,
+        "storage_class": matrix_hpp_storage_class.name,
         "hostpath_node": worker_node1.name,
     }
-
-    return dv_kwargs
 
 
 def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
@@ -294,17 +301,20 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
             {
                 "name": "cnv-2817",
             },
-            marks=(pytest.mark.polarion("CNV-2327")),
         ),
     ],
     indirect=True,
 )
-def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, namespace, dv_kwargs):
+def test_hostpath_pod_reference_pvc(
+    matrix_hpp_storage_class,
+    namespace,
+    dv_kwargs,
+):
     """
     Check that after disk image is written to the PVC which has been provisioned on the specified node,
     Pod can use this image.
     """
-    if sc_volume_binding_mode_is_wffc(sc=StorageClass.Types.HOSTPATH):
+    if sc_volume_binding_mode_is_wffc(sc=matrix_hpp_storage_class.name):
         dv_kwargs.pop("hostpath_node")
     with create_dv(**dv_kwargs) as dv:
         verify_image_location_via_dv_pod_with_pvc(
@@ -314,7 +324,11 @@ def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, namespace, dv_kwargs
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3354")
-def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
+def test_hpp_not_specify_node_immediate(
+    matrix_hpp_storage_class,
+    skip_when_hpp_no_immediate,
+    namespace,
+):
     """
     Negative case
     Check that PVC should remain Pending when hostpath node was not specified
@@ -327,7 +341,7 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
         url=f"{get_images_server_url(schema='http')}{Images.Windows.WIN16_IMG}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="35Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
     ) as dv:
         dv.wait_for_status(
             status=dv.Status.PENDING,
@@ -339,7 +353,10 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3228")
 def test_hpp_specify_node_immediate(
-    skip_when_hpp_no_immediate, namespace, worker_node1
+    matrix_hpp_storage_class,
+    skip_when_hpp_no_immediate,
+    namespace,
+    worker_node1,
 ):
     """
     Check that the PVC will bound PV and DataVolume status becomes Succeeded once importer Pod finished importing
@@ -353,7 +370,7 @@ def test_hpp_specify_node_immediate(
         url=f"{get_images_server_url(schema='http')}{Images.Rhel.RHEL8_0_IMG}",
         content_type=DataVolume.ContentType.KUBEVIRT,
         size="35Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         hostpath_node=worker_node1.name,
     ) as dv:
         dv.wait(timeout=TIMEOUT_10MIN)
@@ -376,6 +393,7 @@ def test_hpp_specify_node_immediate(
     ],
 )
 def test_hostpath_http_import_dv(
+    matrix_hpp_storage_class,
     skip_when_hpp_no_immediate,
     namespace,
     dv_name,
@@ -392,7 +410,7 @@ def test_hostpath_http_import_dv(
         content_type=DataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{image_name}",
         size="500Mi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         hostpath_node=worker_node1.name,
     ) as dv:
         verify_image_location_via_dv_virt_launcher_pod(
@@ -403,6 +421,7 @@ def test_hostpath_http_import_dv(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
+    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     namespace,
 ):
@@ -416,7 +435,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
         namespace=namespace.name,
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
     ) as pvc:
         pvc.wait_for_status(
             status=pvc.Status.PENDING,
@@ -437,6 +456,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3280")
 def test_hpp_pvc_specify_node_immediate(
+    matrix_hpp_storage_class,
     skip_when_hpp_no_immediate,
     namespace,
     worker_node1,
@@ -450,7 +470,7 @@ def test_hpp_pvc_specify_node_immediate(
         namespace=namespace.name,
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         hostpath_node=worker_node1.name,
     ) as pvc:
         pvc.wait_for_status(
@@ -472,6 +492,7 @@ def test_hpp_pvc_specify_node_immediate(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2771")
 def test_hpp_upload_virtctl(
+    matrix_hpp_storage_class,
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
     admin_client,
@@ -498,7 +519,7 @@ def test_hpp_upload_virtctl(
         namespace=namespace.name,
         name=pvc_name,
         size="25Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
         image_path=local_name,
         insecure=True,
     ) as virtctl_upload:
@@ -515,7 +536,7 @@ def test_hpp_upload_virtctl(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2769")
 def test_hostpath_upload_dv_with_token(
-    skip_test_if_no_hpp_sc,
+    matrix_hpp_storage_class,
     skip_when_cdiconfig_scratch_no_hpp,
     skip_when_hpp_no_waitforfirstconsumer,
     namespace,
@@ -533,7 +554,7 @@ def test_hostpath_upload_dv_with_token(
         dv_name=dv_name,
         namespace=namespace.name,
         size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=matrix_hpp_storage_class.name,
     ) as dv:
         dv.wait_for_status(status=DataVolume.Status.UPLOAD_READY, timeout=TIMEOUT_3MIN)
         storage_utils.upload_token_request(
@@ -546,24 +567,13 @@ def test_hostpath_upload_dv_with_token(
 
 
 @pytest.mark.sno
-@pytest.mark.parametrize(
-    ("dv_name", "url"),
-    [
-        pytest.param(
-            "cnv-3326-quay",
-            f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
-            marks=(pytest.mark.polarion("CNV-3326")),
-        ),
-    ],
-)
+@pytest.mark.polarion("CNV-3326")
 def test_hostpath_registry_import_dv(
+    matrix_hpp_storage_class,
     admin_client,
     skip_when_hpp_no_waitforfirstconsumer,
     skip_when_cdiconfig_scratch_no_hpp,
-    hpp_storage_class,
     namespace,
-    dv_name,
-    url,
 ):
     """
     Check that when importing image from public registry with WFFC binding mode
@@ -572,12 +582,12 @@ def test_hostpath_registry_import_dv(
     """
     with create_dv(
         source="registry",
-        dv_name=dv_name,
+        dv_name="dv-cnv-3326-quay",
         namespace=namespace.name,
-        url=url,
+        url=f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
         content_type=DataVolume.ContentType.KUBEVIRT,
-        size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        storage_class=matrix_hpp_storage_class.name,
     ) as dv:
         dv.scratch_pvc.wait_for_status(
             status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
@@ -599,16 +609,15 @@ def test_hostpath_registry_import_dv(
 
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "data_volume_multi_hpp_storage",
     [
         pytest.param(
             {
                 "dv_name": "cnv-3516-source-dv",
                 "image": py_config["latest_fedora_os_dict"]["image_path"],
                 "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-                "storage_class": StorageClass.Types.HOSTPATH,
             },
-            marks=(pytest.mark.polarion("CNV-3516")),
+            marks=pytest.mark.polarion("CNV-3516"),
         ),
     ],
     indirect=True,
@@ -617,7 +626,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
     skip_when_hpp_no_waitforfirstconsumer,
     admin_client,
     namespace,
-    data_volume_scope_function,
+    data_volume_multi_hpp_storage,
 ):
     """
     Check that in case of WaitForFirstConsumer binding mode, without annotating the source/target DV to a node,
@@ -629,10 +638,10 @@ def test_hostpath_clone_dv_without_annotation_wffc(
         source="pvc",
         dv_name=dv_name,
         namespace=namespace.name,
-        source_namespace=data_volume_scope_function.namespace,
-        source_pvc=data_volume_scope_function.pvc.name,
-        size=data_volume_scope_function.size,
-        storage_class=StorageClass.Types.HOSTPATH,
+        source_namespace=data_volume_multi_hpp_storage.namespace,
+        source_pvc=data_volume_multi_hpp_storage.pvc.name,
+        size=data_volume_multi_hpp_storage.size,
+        storage_class=data_volume_multi_hpp_storage.storage_class,
     ) as target_dv:
         upload_target_pod = None
         for sample in TimeoutSampler(
@@ -674,7 +683,10 @@ def test_hostpath_clone_dv_without_annotation_wffc(
 
 @pytest.mark.polarion("CNV-2770")
 def test_hostpath_clone_dv_with_annotation(
-    skip_test_if_no_hpp_sc, skip_when_hpp_no_immediate, namespace, worker_node1
+    matrix_hpp_storage_class,
+    skip_when_hpp_no_immediate,
+    namespace,
+    worker_node1,
 ):
     """
     Check that on Immediate binding mode,
@@ -688,8 +700,8 @@ def test_hostpath_clone_dv_with_annotation(
         namespace=namespace.name,
         content_type=DataVolume.ContentType.KUBEVIRT,
         url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        storage_class=matrix_hpp_storage_class.name,
         hostpath_node=worker_node1.name,
     ) as source_dv:
         source_dv.wait_for_status(
@@ -703,7 +715,7 @@ def test_hostpath_clone_dv_with_annotation(
             dv_name="cnv-2770-target-dv",
             namespace=namespace.name,
             size=source_dv.size,
-            storage_class=StorageClass.Types.HOSTPATH,
+            storage_class=matrix_hpp_storage_class.name,
             hostpath_node=worker_node1.name,
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
@@ -720,19 +732,18 @@ def test_hostpath_clone_dv_with_annotation(
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_cr(skip_test_if_no_hpp_sc, hostpath_provisioner):
-    assert hostpath_provisioner.exists
-    assert hostpath_provisioner.volume_path == "/var/hpvolumes"
-    hostpath_provisioner.wait_for_condition(
-        condition=hostpath_provisioner.Condition.AVAILABLE,
-        status=hostpath_provisioner.Condition.Status.TRUE,
+def test_hpp_cr(hostpath_provisioner_scope_module):
+    assert hostpath_provisioner_scope_module.exists
+    hostpath_provisioner_scope_module.wait_for_condition(
+        condition=hostpath_provisioner_scope_module.Condition.AVAILABLE,
+        status=hostpath_provisioner_scope_module.Condition.Status.TRUE,
         timeout=TIMEOUT_1MIN,
     )
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-7969")
-def test_hpp_prometheus_resources(skip_test_if_no_hpp_sc, hpp_prometheus_resources):
+def test_hpp_prometheus_resources(hpp_prometheus_resources):
     non_existing_resources = []
     for rsc in hpp_prometheus_resources:
         if not rsc.exists:
@@ -744,48 +755,53 @@ def test_hpp_prometheus_resources(skip_test_if_no_hpp_sc, hpp_prometheus_resourc
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_serviceaccount(skip_test_if_no_hpp_sc, hpp_serviceaccount):
+def test_hpp_serviceaccount(hpp_serviceaccount):
     assert hpp_serviceaccount.exists
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_scc(skip_test_if_no_hpp_sc, hpp_scc):
+def test_hpp_scc(hpp_scc, hpp_cr_suffix_scope_module):
     assert hpp_scc.exists
     assert (
         hpp_scc.instance.users[0]
-        == "system:serviceaccount:openshift-cnv:hostpath-provisioner-admin"
-    ), "No 'hostpath-provisioner-admin' SA attached to 'hostpath-provisioner' SCC"
+        == f"system:serviceaccount:openshift-cnv:{HOSTPATH_PROVISIONER_ADMIN}{hpp_cr_suffix_scope_module}"
+    ), f"No '{HOSTPATH_PROVISIONER_ADMIN}{hpp_cr_suffix_scope_module}' SA attached to 'hostpath-provisioner' SCC"
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_clusterrole_and_clusterrolebinding(
-    skip_test_if_no_hpp_sc, hpp_clusterrole, hpp_clusterrolebinding
+    hpp_clusterrole,
+    hpp_clusterrolebinding,
+    hpp_clusterrole_version_suffix,
+    hpp_cr_suffix_scope_module,
 ):
     assert hpp_clusterrole.exists
-    assert hpp_clusterrole.instance["metadata"]["name"] == "hostpath-provisioner"
+    assert (
+        hpp_clusterrole.instance["metadata"]["name"]
+        == f"{HostPathProvisioner.Name.HOSTPATH_PROVISIONER}{hpp_clusterrole_version_suffix}"
+    )
 
     assert hpp_clusterrolebinding.exists
     assert (
         hpp_clusterrolebinding.instance["subjects"][0]["name"]
-        == "hostpath-provisioner-admin"
+        == f"{HOSTPATH_PROVISIONER_ADMIN}{hpp_cr_suffix_scope_module}"
     )
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
-    assert hpp_daemonset.exists
+def test_hpp_daemonset(hpp_daemonset_scope_module):
     assert (
-        hpp_daemonset.instance.status.numberReady
-        == hpp_daemonset.instance.status.desiredNumberScheduled
+        hpp_daemonset_scope_module.instance.status.numberReady
+        == hpp_daemonset_scope_module.instance.status.desiredNumberScheduled
     )
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
-def test_hpp_operator_pod(skip_test_if_no_hpp_sc, hpp_operator_pod):
+def test_hpp_operator_pod(hpp_operator_pod):
     assert (
         hpp_operator_pod.status == Pod.Status.RUNNING
     ), f"HPP operator pod {hpp_operator_pod.name} is not running"
@@ -794,23 +810,25 @@ def test_hpp_operator_pod(skip_test_if_no_hpp_sc, hpp_operator_pod):
 @pytest.mark.destructive
 @pytest.mark.polarion("CNV-3277")
 def test_hpp_operator_recreate_after_deletion(
-    skip_test_if_no_hpp_sc, hpp_operator_deployment, hpp_storage_class
+    matrix_hpp_storage_class,
+    hpp_operator_deployment,
 ):
     """
     Check that Hostpath-provisioner operator will be created again by HCO after its deletion.
     The Deployment is deleted, then its RepliceSet and Pod will be deleted and created again.
     """
-    pre_delete_binding_mode = hpp_storage_class.instance["volumeBindingMode"]
+    pre_delete_binding_mode = matrix_hpp_storage_class.instance["volumeBindingMode"]
     hpp_operator_deployment.delete()
     hpp_operator_deployment.wait_for_replicas(timeout=TIMEOUT_5MIN)
     assert (
-        pre_delete_binding_mode == hpp_storage_class.instance["volumeBindingMode"]
+        pre_delete_binding_mode
+        == matrix_hpp_storage_class.instance["volumeBindingMode"]
     ), "Pre delete binding mode differs from post delete"
 
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-6097")
-def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
+def test_hpp_operator_scc(hpp_scc, hpp_operator_pod):
     assert hpp_scc.exists, f"scc {hpp_scc.name} is not existed"
     hpp_scc_capabilities = sorted(hpp_scc.instance.requiredDropCapabilities)
     hpp_pod_capabilities = sorted(
