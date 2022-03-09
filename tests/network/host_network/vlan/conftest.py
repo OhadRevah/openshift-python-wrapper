@@ -159,8 +159,8 @@ def dhcp_server_vm(
     networks = [dhcp_br_nad.name]
     interfaces = [dhcp_br_nad.bridge_name]
 
-    # At least until https://bugzilla.redhat.com/show_bug.cgi?id=1853028 is fixed -
-    # network name in VM spec cannot contain dot.
+    # Network name in VM spec is not allowed to contain dots (allowed characters are
+    # alphabetical characters, numbers, dashes (-) or underscores (_) ).
     vm_interfaces = [iface.replace(".", "-") for iface in interfaces]
     vm_networks = dict(zip(vm_interfaces, networks))
 
