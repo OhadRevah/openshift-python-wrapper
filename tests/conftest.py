@@ -181,6 +181,7 @@ EXCLUDE_MARKER_FROM_TIER2_MARKER = [
     "benchmark",
     "sap_hana",
     "scale",
+    "longevity",
 ]
 
 TEAM_MARKERS = {

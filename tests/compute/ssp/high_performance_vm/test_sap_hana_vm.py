@@ -11,7 +11,6 @@ from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 
-from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.high_performance_vm.utils import (
     assert_cpus_and_sriov_on_same_node,
@@ -24,6 +23,7 @@ from tests.compute.ssp.high_performance_vm.utils import (
 )
 from tests.compute.ssp.utils import get_parameters_from_template
 from tests.compute.utils import (
+    generate_attached_rhsm_secret_dict,
     generate_rhsm_cloud_init_data,
     generate_rhsm_secret,
     register_vm_to_rhsm,
@@ -433,11 +433,7 @@ def sap_hana_vm(
         cloud_init_data["userData"]["bootcmd"].extend(
             rhsm_clout_init["userData"]["bootcmd"]
         )
-        vm_kwargs["attached_rhsm_secret"] = {
-            "volume_name": SAPHANAVirtaulMachine.volume_name,
-            "serial": DISK_SERIAL,
-            "secret_name": RHSM_SECRET_NAME,
-        }
+        vm_kwargs["attached_rhsm_secret"] = generate_attached_rhsm_secret_dict()
     vm_kwargs["cloud_init_data"] = cloud_init_data
 
     if request.param.get("set_cpus"):

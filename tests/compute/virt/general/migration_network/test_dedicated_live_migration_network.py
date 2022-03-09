@@ -10,12 +10,12 @@ from tests.compute.virt.general.migration_network.utils import (
     assert_vm_migrated_through_dedicated_network_with_logs,
     assert_vm_migrated_through_dedicated_network_with_tcpdump,
     get_virt_handler_pods,
-    migrate_and_verify_multi_vms,
     run_tcpdump_on_source_node,
     taint_node_no_schedule,
     update_hco_migration_config,
     wait_for_virt_handler_pods_network_updated,
 )
+from tests.compute.virt.utils import migrate_and_verify_multi_vms
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,

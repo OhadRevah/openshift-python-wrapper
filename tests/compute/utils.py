@@ -263,3 +263,11 @@ def register_vm_to_rhsm(vm):
             "--auto-attach"
         ),
     )
+
+
+def generate_attached_rhsm_secret_dict():
+    return {
+        "volume_name": "rhsm-secret-vol",
+        "serial": DISK_SERIAL,
+        "secret_name": RHSM_SECRET_NAME,
+    }

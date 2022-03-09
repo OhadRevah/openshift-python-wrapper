@@ -14,10 +14,9 @@ import shlex
 import pytest
 from pytest_testconfig import config as py_config
 
-from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from tests.compute.utils import (
+    generate_attached_rhsm_secret_dict,
     generate_rhsm_cloud_init_data,
-    generate_rhsm_secret,
     register_vm_to_rhsm,
 )
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
@@ -26,11 +25,6 @@ from utilities.virt import vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def rhsm_created_secret(namespace):
-    yield from generate_rhsm_secret(namespace=namespace)
 
 
 @pytest.fixture()
@@ -74,11 +68,7 @@ def registered_rhsm(rhsm_vm):
             {
                 "vm_name": "rhel-rhsm-vm",
                 "template_labels": RHEL_LATEST_LABELS,
-                "attached_secret": {
-                    "volume_name": "rhsm-secret-vol",
-                    "serial": DISK_SERIAL,
-                    "secret_name": RHSM_SECRET_NAME,
-                },
+                "attached_secret": generate_attached_rhsm_secret_dict(),
             },
             marks=pytest.mark.polarion("CNV-4006"),
         ),

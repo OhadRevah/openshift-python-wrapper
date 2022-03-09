@@ -3,6 +3,7 @@ from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from pytest_testconfig import py_config
 
+from tests.compute.utils import generate_rhsm_secret
 from tests.compute.virt.utils import append_feature_gate_to_hco
 from utilities.infra import get_daemonset_by_name
 from utilities.storage import create_or_update_data_source
@@ -63,3 +64,8 @@ def virt_pods(request, admin_client, hco_namespace):
     )
     assert pods_list, f"No pods found for {podprefix}"
     yield pods_list
+
+
+@pytest.fixture()
+def rhsm_created_secret(namespace):
+    yield from generate_rhsm_secret(namespace=namespace)

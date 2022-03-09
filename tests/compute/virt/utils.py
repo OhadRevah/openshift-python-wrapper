@@ -1,13 +1,20 @@
 import logging
 from contextlib import contextmanager
 
+from ocp_resources.utils import TimeoutExpiredError
+
 from tests.compute.utils import (
     fetch_processid_from_linux_vm,
     kill_processes_by_name_linux,
     start_and_fetch_processid_on_linux_vm,
     update_hco_annotations,
 )
-from utilities.virt import wait_for_updated_kv_value
+from utilities.virt import (
+    migrate_vm_and_verify,
+    verify_vm_migrated,
+    wait_for_migration_finished,
+    wait_for_updated_kv_value,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,3 +62,35 @@ def append_feature_gate_to_hco(feature_gate, resource, client, namespace):
             value=feature_gate,
         )
         yield
+
+
+def migrate_and_verify_multi_vms(vm_list):
+    vms_dict = {}
+    failed_migrations_list = []
+
+    for vm in vm_list:
+        vms_dict[vm.name] = {
+            "node_before": vm.vmi.node,
+            "vmi_source_pod": vm.vmi.virt_launcher_pod,
+            "vm_mig": migrate_vm_and_verify(vm=vm, wait_for_migration_success=False),
+        }
+
+    for vm in vm_list:
+        migration = vms_dict[vm.name]["vm_mig"]
+        wait_for_migration_finished(vm=vm, migration=migration)
+        migration.clean_up()
+
+    for vm in vm_list:
+        vm_sources = vms_dict[vm.name]
+        try:
+            verify_vm_migrated(
+                vm=vm,
+                node_before=vm_sources["node_before"],
+                vmi_source_pod=vm_sources["vmi_source_pod"],
+            )
+        except (AssertionError, TimeoutExpiredError):
+            failed_migrations_list.append(vm.name)
+
+    assert (
+        not failed_migrations_list
+    ), f"Some VMs failed to migrate - {failed_migrations_list}"

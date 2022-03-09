@@ -16,13 +16,7 @@ from utilities.infra import (
     get_hyperconverged_resource,
     get_pods,
 )
-from utilities.virt import (
-    check_migration_process_after_node_drain,
-    migrate_vm_and_verify,
-    node_mgmt_console,
-    verify_vm_migrated,
-    wait_for_migration_finished,
-)
+from utilities.virt import check_migration_process_after_node_drain, node_mgmt_console
 
 
 LOGGER = logging.getLogger(__name__)
@@ -192,26 +186,6 @@ def taint_node_no_schedule(node):
             }
         }
     )
-
-
-def migrate_and_verify_multi_vms(vm_list):
-    migrations_list = []
-    orig_nodes = []
-    source_virt_launcher_pods = []
-
-    for vm in vm_list:
-        orig_nodes.append(vm.vmi.node)
-        source_virt_launcher_pods.append(vm.vmi.virt_launcher_pod)
-        migrations_list.append(
-            migrate_vm_and_verify(vm=vm, wait_for_migration_success=False)
-        )
-
-    for migration, vm in zip(migrations_list, vm_list):
-        wait_for_migration_finished(vm=vm, migration=migration)
-        migration.clean_up()
-
-    for vm, node, pod in zip(vm_list, orig_nodes, source_virt_launcher_pods):
-        verify_vm_migrated(vm=vm, node_before=node, vmi_source_pod=pod)
 
 
 @contextmanager
