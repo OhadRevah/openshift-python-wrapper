@@ -451,14 +451,14 @@ def get_connection_params(conf_file_name):
     return params_dict
 
 
-def get_bug_status(bug):
+def get_bug(bug_id):
     bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
     bzapi = bugzilla.Bugzilla(
         url=bugzilla_connection_params["bugzilla_url"],
         user=bugzilla_connection_params["bugzilla_username"],
         api_key=bugzilla_connection_params["bugzilla_api_key"],
     )
-    return bzapi.getbug(objid=bug).status
+    return bzapi.getbug(objid=bug_id)
 
 
 def get_jira_status(jira):
@@ -1149,7 +1149,15 @@ def get_related_images_name_and_version(dyn_client, hco_namespace, version):
 
 
 def is_bug_open(bug_id):
-    return get_bug_status(bug=bug_id) not in BUG_STATUS_CLOSED
+    bug = get_bug(bug_id=bug_id)
+    bug_status = bug.status
+    status_for_logger = f"Bug {bug_id}: {bug.summary} status is {bug_status}"
+    if bug_status not in BUG_STATUS_CLOSED:
+        LOGGER.info(status_for_logger)
+        return True
+
+    LOGGER.warning(f"{status_for_logger} bug should be removed from the codebase")
+    return False
 
 
 def run_command(command, verify_stderr=True, shell=False):
