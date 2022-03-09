@@ -60,6 +60,7 @@ def test_cdi_uploadproxy_route_owner_references(skip_not_openshift, hco_namespac
     assert route.instance["metadata"]["ownerReferences"][0]["kind"] == "Deployment"
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("dv_name", "remote_name", "local_name"),
     [
@@ -196,6 +197,7 @@ def test_successful_upload_with_supported_formats(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2018")
 def test_successful_upload_token_validity(
     skip_upstream,
@@ -255,6 +257,7 @@ def test_successful_upload_token_validity(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2011")
 def test_successful_upload_token_expiry(
     skip_upstream, namespace, data_volume_multi_storage_scope_function
@@ -301,6 +304,7 @@ def _upload_image(dv_name, namespace, storage_class, local_name, size=None):
             )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2015")
 def test_successful_concurrent_uploads(
     skip_upstream,
@@ -325,6 +329,7 @@ def test_successful_concurrent_uploads(
             raise pytest.fail("Creating DV exited with non-zero return code")
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "upload_file_path",
     [
@@ -367,6 +372,7 @@ def test_successful_upload_missing_file_in_transit(
     upload_process.join()
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "download_specified_image, data_volume_multi_storage_scope_function",
     [

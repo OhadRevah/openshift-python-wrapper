@@ -102,6 +102,7 @@ def update_configmap_with_cert(request, configmap_with_cert):
     ).update()
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "file_name",
     [
@@ -138,6 +139,7 @@ def test_private_registry_cirros(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("dv_name", "url"),
     [
@@ -177,6 +179,7 @@ def test_disk_image_not_conform_to_registy_disk(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2028")
 def test_public_registry_multiple_data_volume(
     admin_client, namespace, storage_class_matrix__function__
@@ -244,6 +247,7 @@ def test_public_registry_multiple_data_volume(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2183")
 def test_private_registry_insecured_configmap(
     skip_upstream,
@@ -264,6 +268,7 @@ def test_private_registry_insecured_configmap(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2182")
 def test_private_registry_recover_after_missing_configmap(
     skip_upstream,
@@ -286,6 +291,7 @@ def test_private_registry_recover_after_missing_configmap(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
     skip_upstream,
@@ -335,6 +341,7 @@ def test_private_registry_with_untrusted_certificate(
             )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("dv_name", "url", "cert_configmap", "content_type", "size"),
     [
@@ -395,6 +402,7 @@ def test_public_registry_data_volume(
 
 # The following test is to show after imports fails because low capacity storage,
 # we can overcome by updating to the right requested volume size and import successfully
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2024")
 def test_public_registry_data_volume_low_capacity(
     admin_client, namespace, storage_class_matrix__function__
@@ -433,6 +441,7 @@ def test_public_registry_data_volume_low_capacity(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2150")
 def test_public_registry_data_volume_archive(
     namespace, storage_class_matrix__function__
@@ -460,6 +469,7 @@ def test_public_registry_data_volume_archive(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2347")
 def test_fqdn_name(
     namespace,
@@ -506,6 +516,7 @@ def test_fqdn_name(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("dv_name", "update_configmap_with_cert"),
     [

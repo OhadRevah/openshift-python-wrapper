@@ -99,6 +99,7 @@ def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
         return importer_pod.instance.metadata.annotations
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [
@@ -137,6 +138,7 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-876")
 def test_invalid_url(namespace, storage_class_matrix__module__):
     # negative flow - invalid url
@@ -165,6 +167,7 @@ def test_invalid_url(namespace, storage_class_matrix__module__):
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-674")
 def test_empty_url(namespace, storage_class_matrix__module__):
     with pytest.raises(UnprocessibleEntityError):
@@ -179,6 +182,7 @@ def test_empty_url(namespace, storage_class_matrix__module__):
             pass
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2145")
 def test_successful_import_archive(
     namespace,
@@ -247,6 +251,7 @@ def test_successful_import_image(
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2338")
 def test_successful_import_secure_archive(
     namespace,
@@ -282,6 +287,7 @@ def test_successful_import_secure_archive(
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 3
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2719")
 def test_successful_import_secure_image(
     namespace,
@@ -315,6 +321,7 @@ def test_successful_import_secure_image(
             assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("content_type", "file_name"),
     [
@@ -369,6 +376,7 @@ def test_successful_import_basic_auth(
             pod.wait_for_status(status=pod.Status.RUNNING)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2144")
 def test_wrong_content_type(
     skip_if_ocs_and_bz_2054778_open,
@@ -399,6 +407,7 @@ def test_wrong_content_type(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("content_type", "file_name"),
     [
@@ -447,6 +456,7 @@ def test_unpack_compressed(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2811")
 def test_certconfigmap(
     namespace,
@@ -478,6 +488,7 @@ def test_certconfigmap(
             assert pod.execute(command=["ls", "-1", "/pvc"]).count("\n") == 1
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("name", "https_config_map"),
     [
@@ -540,6 +551,7 @@ def test_certconfigmap_incorrect_cert(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2815")
 def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_function):
     with pytest.raises(TimeoutExpiredError):
@@ -582,6 +594,7 @@ def blank_disk_import(namespace, storage_params, dv_name):
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "number_of_threads",
     [
@@ -619,6 +632,7 @@ def test_successful_concurrent_blank_disk_import(
     [{"dv_name": "cnv-2004", "source": "blank", "image": "", "dv_size": "500Mi"}],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2004")
 def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_function):
     data_volume_multi_storage_scope_function.wait_for_status(
@@ -626,6 +640,7 @@ def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_funct
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("size", "unit", "dv_name"),
     [
@@ -688,6 +703,7 @@ def test_vmi_image_size(
                 assert math.floor(size) == float(actual_size[:-1])
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3065")
 def test_disk_falloc(
     namespace,
@@ -812,6 +828,7 @@ def test_successful_vm_from_imported_dv_windows(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4032")
 def test_disk_image_after_import(
     skip_block_volumemode_scope_module,
@@ -832,6 +849,7 @@ def test_disk_image_after_import(
         utils.create_vm_and_verify_image_permission(dv=dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4724")
 def test_dv_api_version_after_import(
     images_internal_http_server,
