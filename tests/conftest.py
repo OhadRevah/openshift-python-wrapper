@@ -2337,15 +2337,21 @@ def cluster_info(
     ipv6_supported_cluster,
     ipv4_supported_cluster,
 ):
+    title = "\nCluster info:\n"
     if is_downstream_distribution:
         LOGGER.info(
-            f"Openshift version: {openshift_current_version}, CNV version: {cnv_current_version}, "
-            f"HCO image: {hco_image}, OCS version: {ocs_current_version}\n"
-            f"IPv4 cluster: {ipv4_supported_cluster}, IPv6 cluster: {ipv6_supported_cluster}"
+            f"{title}"
+            f"\tOpenshift version: {openshift_current_version}\n"
+            f"\tCNV version: {cnv_current_version}\n"
+            f"\tHCO image: {hco_image}\n"
+            f"\tOCS version: {ocs_current_version}\n"
+            f"\tIPv4 cluster: {ipv4_supported_cluster}\n"
+            f"\tIPv6 cluster: {ipv6_supported_cluster}\n"
         )
     elif is_upstream_distribution:
         LOGGER.info(
-            "Running on upstream cluster. Kubevirt version: "
+            f"{title}"
+            "Kubevirt version: "
             f"{kubevirt_resource_scope_session.instance.status.targetKubeVirtVersion}"
         )
 
