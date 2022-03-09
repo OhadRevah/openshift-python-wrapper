@@ -189,7 +189,6 @@ def data_volume(
 
     storage_class = [*storage_class_matrix][0]
     # Save with a different name to avoid confusing.
-    storage_class_dict = storage_class_matrix
 
     params_dict = request.param if request else {}
 
@@ -259,13 +258,8 @@ def data_volume(
         "source": source,
         "size": dv_size,
         "storage_class": params_dict.get("storage_class", storage_class),
-        "access_modes": params_dict.get(
-            "access_modes", storage_class_dict[storage_class]["access_mode"]
-        ),
-        "volume_mode": params_dict.get(
-            "volume_mode",
-            storage_class_dict[storage_class]["volume_mode"],
-        ),
+        "access_modes": params_dict.get("access_modes"),
+        "volume_mode": params_dict.get("volume_mode"),
         "content_type": DataVolume.ContentType.KUBEVIRT,
         "hostpath_node": hostpath_node,
         "consume_wffc": consume_wffc,

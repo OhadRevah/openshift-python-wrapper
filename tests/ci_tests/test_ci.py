@@ -1,4 +1,5 @@
 import pytest
+from ocp_resources.datavolume import DataVolume
 from pytest_testconfig import config as py_config
 
 from utilities.constants import Images
@@ -66,6 +67,8 @@ def test_workers_type(workers_type):
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
                 "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
                 "storage_class": py_config["default_storage_class"],
+                "access_modes": DataVolume.AccessMode.RWO,
+                "volume_mode": DataVolume.VolumeMode.FILE,
             }
         )
     ],
