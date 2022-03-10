@@ -273,6 +273,11 @@ def pytest_addoption(parser):
         "--default-storage-class",
         help="Overwrite default storage class in storage_class_matrix",
     )
+    storage_group.addoption(
+        "--legacy-hpp-storage",
+        help="Use HPP legacy storage classes in storage_class_matrix",
+        action="store_true",
+    )
 
     # Cluster sanity addoption
     cluster_sanity_group.addoption(
@@ -631,6 +636,10 @@ def pytest_sessionstart(session):
         log_level=session.config.getoption("log_cli_level") or logging.INFO,
     )
     py_config_scs = py_config.get("storage_class_matrix", {})
+    if session.config.getoption("legacy_hpp_storage"):
+        py_config_scs.extend(py_config["legacy_hpp_storage_class_matrix"])
+    else:
+        py_config_scs.extend(py_config["hpp_storage_class_matrix"])
 
     # Save the default storage_class_matrix before it is updated
     # with runtime storage_class_matrix value(s)

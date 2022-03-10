@@ -790,7 +790,7 @@ def wait_for_dvs_import_completed(dvs_list):
 class HppCsiStorageClass(StorageClass):
     class Name:
         # Without explicit storage pool, used with the Legacy HPP CR
-        HOSTPATH_CSI = HOSTPATH_CSI
+        HOSTPATH_CSI_LEGACY = f"{HOSTPATH_CSI}-legacy"
         HOSTPATH_CSI_BASIC = f"{HOSTPATH_CSI}-basic"  # Part of fresh deployment
         HOSTPATH_CSI_PVC_BLOCK = f"{HOSTPATH_CSI}-pvc-block"  # Part of fresh deployment
         HOSTPATH_CSI_PVC_TEMPLATE_OCS_BLOCK = f"{HOSTPATH_CSI}-pvc-template-ocs-block"

@@ -120,6 +120,11 @@ hpp_storage_class_matrix = [
     {HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK: HPP_VOLUME_MODE_ACCESS_MODE},
 ]
 
+legacy_hpp_storage_class_matrix = [
+    {StorageClass.Types.HOSTPATH: HPP_VOLUME_MODE_ACCESS_MODE},
+    {HppCsiStorageClass.Name.HOSTPATH_CSI_LEGACY: HPP_VOLUME_MODE_ACCESS_MODE},
+]
+
 storage_class_matrix = [
     {
         StorageClass.Types.NFS: {
@@ -134,7 +139,7 @@ storage_class_matrix = [
             "default": True,
         }
     },
-] + hpp_storage_class_matrix
+]
 
 default_storage_class, default_storage_class_configuration = _get_default_storage_class(
     sc_list=storage_class_matrix
