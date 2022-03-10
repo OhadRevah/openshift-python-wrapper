@@ -1,23 +1,16 @@
 # -*- coding: utf-8 -*-
-
 import logging
 
 import pytest
-from ocp_resources.custom_resource_definition import CustomResourceDefinition
 
 from tests.compute.utils import verify_pods_priority_class_value
 from utilities.constants import SSP_OPERATOR, VIRT_TEMPLATE_VALIDATOR
-from utilities.infra import get_pod_by_name_prefix
+from utilities.infra import DEFAULT_RESOURCE_CONDITIONS, get_pod_by_name_prefix
 
+
+LOGGER = logging.getLogger(__name__)
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
-
-CONDITIONS_DICT = {
-    CustomResourceDefinition.Condition.PROGRESSING: "False",
-    CustomResourceDefinition.Condition.AVAILABLE: "True",
-    CustomResourceDefinition.Condition.DEGRADED: "False",
-}
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -37,16 +30,16 @@ def pods_list_with_given_prefix(request, admin_client, hco_namespace):
 
 
 @pytest.mark.polarion("CNV-3737")
-def test_verify_ssp_crd_conditions(ssp_resource_scope_function):
+def test_verify_ssp_cr_conditions(ssp_resource_scope_function):
     LOGGER.info("Check SSP CR conditions.")
     resource_conditions = {
         condition.type: condition.status
         for condition in ssp_resource_scope_function.instance.status.conditions
-        if condition.type in CONDITIONS_DICT.keys()
+        if condition.type in DEFAULT_RESOURCE_CONDITIONS.keys()
     }
     assert (
-        resource_conditions == CONDITIONS_DICT
-    ), f"SSP CR conditions failed. Actual: {resource_conditions}, expected: {CONDITIONS_DICT}."
+        resource_conditions == DEFAULT_RESOURCE_CONDITIONS
+    ), f"SSP CR conditions failed. Actual: {resource_conditions}, expected: {DEFAULT_RESOURCE_CONDITIONS}."
 
 
 @pytest.mark.parametrize(

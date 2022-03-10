@@ -1,7 +1,6 @@
 import pytest
 from ocp_resources.deployment import Deployment
 from ocp_resources.prometheus_rule import PrometheusRule
-from ocp_resources.ssp import SSP
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
@@ -9,12 +8,8 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from tests.compute.utils import verify_no_listed_alerts_on_cluster
 from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import SSP_OPERATOR, TIMEOUT_3MIN, VIRT_TEMPLATE_VALIDATOR
-from utilities.infra import (
-    DEFAULT_RESOURCE_CONDITIONS,
-    get_pod_by_name_prefix,
-    update_custom_resource,
-    wait_for_consistent_resource_conditions,
-)
+from utilities.infra import get_pod_by_name_prefix, update_custom_resource
+from utilities.ssp import wait_for_ssp_conditions
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
@@ -55,20 +50,6 @@ def alert_not_firing_sampler(prometheus, alert):
             return
 
 
-def wait_for_ssp_available(admin_client, hco_namespace):
-    wait_for_consistent_resource_conditions(
-        dynamic_client=admin_client,
-        hco_namespace=hco_namespace,
-        expected_conditions=DEFAULT_RESOURCE_CONDITIONS,
-        resource_kind=SSP,
-        condition_key1="type",
-        condition_key2="status",
-        total_timeout=TIMEOUT_3MIN,
-        polling_interval=1,
-        consecutive_checks_count=2,
-    )
-
-
 @pytest.fixture()
 def paused_ssp_operator(admin_client, hco_namespace, ssp_resource_scope_function):
     """
@@ -82,7 +63,7 @@ def paused_ssp_operator(admin_client, hco_namespace, ssp_resource_scope_function
         }
     ):
         yield
-    wait_for_ssp_available(admin_client=admin_client, hco_namespace=hco_namespace)
+    wait_for_ssp_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 @pytest.fixture()
