@@ -8,6 +8,9 @@ ifndef UPSTREAM
 	override PYTEST_ARGS += --tc-file=tests/global_config.py --tc-format=python
 endif
 
+#OPENSHIFT_PYTHON_WRAPPER LOG LEVEL
+export OPENSHIFT_PYTHON_WRAPPER_LOG_LEVEL=DEBUG
+
 # Local cluster preparations
 CLUSTER_DIR := local-cluster/_hco
 export KUBEVIRT_PROVIDER ?= k8s-1.21
