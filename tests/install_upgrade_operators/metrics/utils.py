@@ -28,15 +28,6 @@ PING = "ping"
 JOB_NAME = "kubevirt-prometheus-metrics"
 TOPK_VMS = 3
 SINGLE_VM = 1
-SWAP_NAME = "myswap"
-SWAP_ENABLE_COMMANDS = [
-    f"sudo dd if=/dev/zero of=/{SWAP_NAME} bs=1M count=1000",
-    f"sudo chmod 600 /{SWAP_NAME}",
-    f"sudo mkswap /{SWAP_NAME}",
-    f"sudo swapon /{SWAP_NAME}",
-    "sudo sysctl vm.swappiness=100",
-]
-VALIDATE_SWAP_ON = "swapon -s"
 
 
 def get_all_mutation_values_from_prometheus(prometheus):
@@ -501,6 +492,14 @@ def assert_prometheus_metric_values(prometheus, query, vm, timeout=TIMEOUT_5MIN)
     )
 
 
+def is_swap_enabled(vm, swap_name=r"\/dev\/zram0"):
+    out = run_ssh_commands(host=vm.ssh_exec, commands=shlex.split("swapon --raw"))
+    LOGGER.info(f"Swap: {out}")
+    if not out:
+        return False
+    return bool(re.findall(f"{swap_name}", "".join(out)))
+
+
 def enable_swap_fedora_vm(vm):
     """
     Enable swap on on fedora vms
@@ -511,10 +510,20 @@ def enable_swap_fedora_vm(vm):
     Raise:
         Asserts if swap memory is not enabled on a given vm
     """
-    commands = [shlex.split(command) for command in SWAP_ENABLE_COMMANDS]
-    run_ssh_commands(host=vm.ssh_exec, commands=commands)
-    out = run_ssh_commands(host=vm.ssh_exec, commands=shlex.split(VALIDATE_SWAP_ON))
-    assert SWAP_NAME not in out, f"Unable to enable swap on vm: {vm.name}: {out}"
+    if not is_swap_enabled(vm=vm):
+        swap_name = "myswap"
+        for command in [
+            f"dd if=/dev/zero of=/{swap_name} bs=1M count=1000",
+            f"chmod 600 /{swap_name}",
+            f"mkswap /{swap_name}",
+            f"swapon /{swap_name}",
+        ]:
+            vm.ssh_exec.executor(sudo=True).run_cmd(cmd=shlex.split(command))
+
+        assert is_swap_enabled(
+            vm=vm, swap_name=swap_name
+        ), f"Failed to enable swap memory {swap_name} on {vm.name}"
+    vm.ssh_exec.executor(sudo=True).run_cmd(cmd=shlex.split("sysctl vm.swappiness=100"))
 
 
 def get_vmi_phase_count(prometheus, os_name, flavor, workload, query):
