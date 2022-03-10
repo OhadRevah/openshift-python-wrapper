@@ -567,36 +567,47 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.ports = self.bond_ports
         self.options = options
 
+    def create_interface(self):
+        options_dic = self.options or {}
+        options_dic.update({"miimon": "120"})
+        if self.mode == self.Mode.ACTIVE_BACKUP and self.primary_bond_port is not None:
+            options_dic.update({"primary": self.primary_bond_port})
+
+        self.iface = {
+            "name": self.bond_name,
+            "type": BOND,
+            "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
+            "link-aggregation": {
+                "mode": self.mode,
+                "port": self.bond_ports,
+                "options": options_dic,
+            },
+        }
+
+    def configure_mtu_on_ports(self):
+        self.iface["mtu"] = self.mtu
+        for port in self.ports:
+            _port = {
+                "name": port,
+                "type": "ethernet",
+                "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
+                "mtu": self.mtu - 50,  # Set ports MTU lower than BOND MTU
+            }
+            self.set_interface(interface=_port)
+
     def to_dict(self):
         res = super().to_dict()
         if not self.iface:
-            options_dic = self.options or {}
-            options_dic.update({"miimon": "120"})
-            if self.mode == "active-backup" and self.primary_bond_port is not None:
-                options_dic.update({"primary": self.primary_bond_port})
-
-            self.iface = {
-                "name": self.bond_name,
-                "type": "bond",
-                "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                "link-aggregation": {
-                    "mode": self.mode,
-                    "port": self.bond_ports,
-                    "options": options_dic,
-                },
-            }
-            self.set_interface(interface=self.iface)
+            self.create_interface()
+            self.add_interface(
+                iface=self.iface,
+                ipv4_enable=self.ipv4_enable,
+                ipv4_dhcp=self.ipv4_dhcp,
+                ipv6_enable=self.ipv6_enable,
+            )
 
             if self.mtu:
-                self.iface["mtu"] = self.mtu
-                for port in self.ports:
-                    _port = {
-                        "name": port,
-                        "type": "ethernet",
-                        "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                        "mtu": self.mtu - 50,  # Set ports MTU lower than BOND MTU
-                    }
-                    self.set_interface(interface=_port)
+                self.configure_mtu_on_ports()
 
         return res
 
