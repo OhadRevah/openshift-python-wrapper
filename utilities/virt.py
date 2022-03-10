@@ -242,6 +242,7 @@ class VirtualMachineForTests(VirtualMachine):
         priority_class_name=None,
         dry_run=None,
         disable_sha2_algorithms=False,
+        additional_labels=None,
     ):
         """
         Virtual machine creation
@@ -307,6 +308,7 @@ class VirtualMachineForTests(VirtualMachine):
             dry_run (str, default=None): If "All", the resource will be created using the dry_run flag
             disable_sha2_algorithms (bool, default=False): disable openSSH rsa-sha2-256, rsa-sha2-512 algorithms
                 when creating a ssh connection
+            additional_labels (dict, optional): Dict of additional labels for VM (e.g. {"vm-label": "best-vm"})
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
         self.name = f"{name}-{time.time()}".replace(".", "-")
@@ -370,6 +372,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.vm_debug_logs = vm_debug_logs or utilities.infra.collect_logs()
         self.priority_class_name = priority_class_name
         self.disable_sha2_algorithms = disable_sha2_algorithms
+        self.additional_labels = additional_labels
 
     def deploy(self):
         super().deploy()
@@ -572,6 +575,9 @@ class VirtualMachineForTests(VirtualMachine):
                 f"{Resource.ApiGroup.KUBEVIRT_IO}/domain": self.name,
             }
         )
+
+        if self.additional_labels:
+            vm_labels.update(self.additional_labels)
 
         if self.vm_debug_logs:
             vm_labels["debugLogs"] = "true"
