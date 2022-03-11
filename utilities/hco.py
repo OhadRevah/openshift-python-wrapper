@@ -47,7 +47,7 @@ def wait_for_hco_conditions(
     expected_conditions=DEFAULT_HCO_CONDITIONS,
     wait_timeout=TIMEOUT_10MIN,
     sleep=5,
-    consecutive_checks_count=1,
+    consecutive_checks_count=3,
     condition_key1="type",
     condition_key2="status",
 ):

@@ -136,7 +136,6 @@ def updated_resource_multiple_times_with_invalid_label(
         wait_for_hco_conditions(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
-            consecutive_checks_count=3,
         )
 
     yield resource_editor
@@ -144,7 +143,6 @@ def updated_resource_multiple_times_with_invalid_label(
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        consecutive_checks_count=3,
     )
 
 

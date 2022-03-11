@@ -57,7 +57,6 @@ def test_default_workload_update_strategy(
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        consecutive_checks_count=3,
     )
     if resource_name == "hyperconverged":
         wait_for_spec_change(

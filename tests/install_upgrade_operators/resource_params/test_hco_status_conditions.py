@@ -30,7 +30,6 @@ def test_hco_status_conditions(admin_client, hco_namespace, expected_condition_f
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        consecutive_checks_count=3,
     )
     hyperconverged_resource = get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
