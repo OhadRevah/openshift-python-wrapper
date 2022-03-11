@@ -173,17 +173,11 @@ def wait_for_stabilize(
     admin_client,
     hco_namespace,
     wait_timeout=TIMEOUT_10MIN,
-    polling_interval=1,
-    consecutive_checks_count=2,
+    polling_interval=5,
+    consecutive_checks_count=3,
     condition_key1="type",
     condition_key2="status",
 ):
-    wait_for_hco_conditions(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        sleep=polling_interval,
-        consecutive_checks_count=consecutive_checks_count,
-    )
     wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
@@ -204,6 +198,12 @@ def wait_for_stabilize(
         condition_key2=condition_key2,
         total_timeout=wait_timeout,
         polling_interval=polling_interval,
+        consecutive_checks_count=consecutive_checks_count,
+    )
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        sleep=polling_interval,
         consecutive_checks_count=consecutive_checks_count,
     )
 

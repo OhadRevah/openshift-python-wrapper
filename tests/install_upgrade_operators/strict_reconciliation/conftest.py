@@ -4,6 +4,7 @@ import pkgutil
 
 import pytest
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
@@ -11,8 +12,13 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
+from utilities.constants import TIMEOUT_10MIN
 from utilities.hco import get_hco_spec
-from utilities.infra import update_custom_resource
+from utilities.infra import (
+    DEFAULT_RESOURCE_CONDITIONS,
+    update_custom_resource,
+    wait_for_consistent_resource_conditions,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -73,6 +79,17 @@ def updated_cnao_cr(request, cnao_resource, admin_client, hco_namespace):
     """
     with update_custom_resource(patch={cnao_resource: request.param["patch"]}):
         yield
+    wait_for_consistent_resource_conditions(
+        dynamic_client=admin_client,
+        namespace=hco_namespace,
+        expected_conditions=DEFAULT_RESOURCE_CONDITIONS,
+        resource_kind=NetworkAddonsConfig,
+        condition_key1="type",
+        condition_key2="status",
+        total_timeout=TIMEOUT_10MIN,
+        polling_interval=5,
+        consecutive_checks_count=3,
+    )
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 

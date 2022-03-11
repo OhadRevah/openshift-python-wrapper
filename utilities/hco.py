@@ -7,8 +7,6 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-import utilities.infra
-import utilities.ssp
 from utilities.constants import (
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
     HCO_SUBSCRIPTION,
@@ -16,6 +14,19 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
     TIMEOUT_15MIN,
+)
+from utilities.infra import (
+    get_csv_by_name,
+    get_deployments,
+    get_hyperconverged_resource,
+    get_subscription,
+    wait_for_consistent_resource_conditions,
+    wait_for_pods_running,
+)
+from utilities.ssp import (
+    wait_for_at_least_one_auto_update_data_import_cron,
+    wait_for_deleted_data_import_crons,
+    wait_for_ssp_conditions,
 )
 
 
@@ -45,7 +56,7 @@ def wait_for_hco_conditions(
     """
     Checking HCO conditions
     """
-    utilities.infra.wait_for_consistent_resource_conditions(
+    wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
         namespace=hco_namespace.name,
         expected_conditions=expected_conditions,
@@ -160,12 +171,12 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
         # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
         if not ds.name.startswith(StorageClass.Types.HOSTPATH):
             wait_for_ds(ds=ds)
-    for deployment in utilities.infra.get_deployments(
+    for deployment in get_deployments(
         admin_client=admin_client,
         namespace=hco_namespace.name,
     ):
         wait_for_dp(dp=deployment)
-    utilities.infra.wait_for_pods_running(
+    wait_for_pods_running(
         admin_client=admin_client,
         namespace=hco_namespace,
         number_of_consecutive_checks=3,
@@ -189,18 +200,18 @@ def add_labels_to_nodes(nodes, node_labels):
 
 
 def get_hco_spec(admin_client, hco_namespace):
-    return utilities.infra.get_hyperconverged_resource(
+    return get_hyperconverged_resource(
         client=admin_client, hco_ns_name=hco_namespace.name
     ).instance.to_dict()["spec"]
 
 
 def get_installed_hco_csv(admin_client, hco_namespace):
-    cnv_subscription = utilities.infra.get_subscription(
+    cnv_subscription = get_subscription(
         admin_client=admin_client,
         namespace=hco_namespace.name,
         subscription_name=HCO_SUBSCRIPTION,
     )
-    return utilities.infra.get_csv_by_name(
+    return get_csv_by_name(
         csv_name=cnv_subscription.instance.status.installedCSV,
         admin_client=admin_client,
         namespace=hco_namespace.name,
@@ -219,9 +230,7 @@ def get_hco_version(client, hco_ns_name):
         str: hyperconverged operator version
     """
     return (
-        utilities.infra.get_hyperconverged_resource(
-            client=client, hco_ns_name=hco_ns_name
-        )
+        get_hyperconverged_resource(client=client, hco_ns_name=hco_ns_name)
         .instance.status.versions[0]
         .version
     )
@@ -275,7 +284,7 @@ def disable_common_boot_image_import_feature_gate(
             hco_resource=hco_resource,
             enable_feature_gate=False,
         )
-        utilities.ssp.wait_for_deleted_data_import_crons(
+        wait_for_deleted_data_import_crons(
             data_import_crons=golden_images_data_import_crons
         )
         yield
@@ -292,13 +301,16 @@ def disable_common_boot_image_import_feature_gate(
 def enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
     hco_resource, admin_client, namespace
 ):
+    hco_namespace = Namespace(name=hco_resource.namespace)
     update_common_boot_image_import_feature_gate(
         hco_resource=hco_resource,
         enable_feature_gate=True,
     )
-    utilities.ssp.wait_for_at_least_one_auto_update_data_import_cron(
+    wait_for_at_least_one_auto_update_data_import_cron(
         admin_client=admin_client, namespace=namespace
     )
+    wait_for_ssp_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
+    wait_for_hco_conditions(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 def update_common_boot_image_import_feature_gate(hco_resource, enable_feature_gate):
