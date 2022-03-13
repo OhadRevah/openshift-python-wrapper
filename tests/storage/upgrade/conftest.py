@@ -1,12 +1,12 @@
 import logging
 
 import pytest
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import py_config
 
 import tests.storage.upgrade.utils
 from utilities.constants import HOTPLUG_DISK_SERIAL
+from utilities.infra import ResourceEditorValidateHCOReconcile
 from utilities.storage import create_dv, virtctl_volume
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -60,12 +60,12 @@ def override_cdiconfig_scratch_spec(
                 if sample:
                     return
 
-        with ResourceEditor(
+        with ResourceEditorValidateHCOReconcile(
             patches={
                 hyperconverged_resource_scope_session: {
                     "spec": {"scratchSpaceStorageClass": new_sc}
                 }
-            }
+            },
         ) as edited_cdi_config:
             _wait_for_sc_update()
 

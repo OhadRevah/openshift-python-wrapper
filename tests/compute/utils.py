@@ -4,12 +4,12 @@ import shlex
 from contextlib import contextmanager
 
 from ocp_resources.deployment import Deployment
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from utilities.constants import RHSM_PASSWD, RHSM_USER
 from utilities.infra import (
+    ResourceEditorValidateHCOReconcile,
     base64_encode_str,
     hco_cr_jsonpatch_annotations_dict,
     run_ssh_commands,
@@ -177,7 +177,7 @@ def update_hco_annotations(resource, path, value, overwrite_patches=False):
             jsonpatch_key
         ] = f"{resource_existing_jsonpatch_annotation[:-1]},{hco_annotations_dict[jsonpatch_key][1:]}"
 
-    editor = ResourceEditor(
+    editor = ResourceEditorValidateHCOReconcile(
         patches={
             resource: hco_config_jsonpath_dict,
         },

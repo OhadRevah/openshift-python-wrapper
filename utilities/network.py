@@ -33,7 +33,11 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     WORKERS_TYPE,
 )
-from utilities.infra import ClusterHosts, get_pod_by_name_prefix
+from utilities.infra import (
+    ClusterHosts,
+    ResourceEditorValidateHCOReconcile,
+    get_pod_by_name_prefix,
+)
 from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
 
 
@@ -1139,10 +1143,10 @@ def enable_hyperconverged_ovs_annotations(
     hyperconverged_resource,
     network_addons_config,
 ):
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
-        }
+        },
     ):
         wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
         ovs_daemonset = wait_for_ovs_daemonset_resource(

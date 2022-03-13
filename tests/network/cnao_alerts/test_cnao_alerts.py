@@ -3,7 +3,6 @@ from copy import deepcopy
 
 import pytest
 from ocp_resources.daemonset import DaemonSet
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
@@ -16,7 +15,12 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
 )
-from utilities.infra import create_ns, get_pod_by_name_prefix, label_project
+from utilities.infra import (
+    ResourceEditorValidateHCOReconcile,
+    create_ns,
+    get_pod_by_name_prefix,
+    label_project,
+)
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -170,7 +174,9 @@ def bad_cnao_operator(csv_scope_session):
 def invalid_cnao_linux_bridge(
     admin_client, hco_namespace, csv_scope_session, bad_cnao_deployment_linux_bridge
 ):
-    with ResourceEditor(patches={csv_scope_session: bad_cnao_deployment_linux_bridge}):
+    with ResourceEditorValidateHCOReconcile(
+        patches={csv_scope_session: bad_cnao_deployment_linux_bridge},
+    ):
         yield
 
 
@@ -178,7 +184,9 @@ def invalid_cnao_linux_bridge(
 def invalid_cnao_operator(
     admin_client, hco_namespace, csv_scope_session, bad_cnao_operator
 ):
-    with ResourceEditor(patches={csv_scope_session: bad_cnao_operator}):
+    with ResourceEditorValidateHCOReconcile(
+        patches={csv_scope_session: bad_cnao_operator},
+    ):
         yield
 
     linux_bridge_pods = get_pod_by_name_prefix(

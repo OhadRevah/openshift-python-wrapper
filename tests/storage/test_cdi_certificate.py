@@ -28,6 +28,7 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     Images,
 )
+from utilities.infra import ResourceEditorValidateHCOReconcile
 from utilities.storage import (
     check_upload_virtctl_result,
     create_dummy_first_consumer_pod,
@@ -317,7 +318,7 @@ def updated_certconfig_in_hco_cr(
     hyperconverged_resource_scope_function, certificate_exists
 ):
     # Update cert rotation with a short interval for easy testing.
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: {
                 "spec": {
@@ -327,7 +328,7 @@ def updated_certconfig_in_hco_cr(
                     }
                 }
             }
-        }
+        },
     ):
         yield
 

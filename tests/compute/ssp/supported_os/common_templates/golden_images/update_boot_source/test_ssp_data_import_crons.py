@@ -22,6 +22,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
     wait_for_condition_message_value,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
+from utilities.infra import ResourceEditorValidateHCOReconcile
 from utilities.ssp import get_data_import_crons, wait_for_deleted_data_import_crons
 from utilities.storage import DATA_IMPORT_CRON_SUFFIX, wait_for_dvs_import_completed
 from utilities.virt import running_vm
@@ -100,29 +101,6 @@ def wait_for_created_dv_from_data_import_cron(admin_client, custom_data_source):
             f"dataSource conditions: {custom_data_source.instance.status.conditions}"
         )
         raise
-
-
-@pytest.fixture()
-def updated_hco_import_cron_tab(hyperconverged_resource_scope_function):
-    configured_crontab = re.match(
-        r"(\d+)(.*)",
-        hyperconverged_resource_scope_function.instance.status.dataImportSchedule,
-    )
-    configured_crontab_minutes = int(configured_crontab.group(1))
-    updated_crontab_minutes = (
-        configured_crontab_minutes - 1
-        if configured_crontab_minutes > 0
-        else configured_crontab_minutes
-    )
-    updated_crontab = f"{updated_crontab_minutes} {configured_crontab.group(2)}"
-    with ResourceEditor(
-        patches={
-            hyperconverged_resource_scope_function: {
-                "spec": {"status": {"dataImportSchedule": updated_crontab}}
-            }
-        }
-    ):
-        yield updated_crontab
 
 
 @pytest.fixture()
@@ -306,7 +284,7 @@ def test_custom_data_import_cron_with_same_name_as_auto_update_one(
     with pytest.raises(
         ApiException, match=".*DataImportCronTable is already defined.*"
     ):
-        with ResourceEditor(
+        with ResourceEditorValidateHCOReconcile(
             patches={
                 hyperconverged_resource_scope_function: {
                     "spec": {
@@ -315,7 +293,7 @@ def test_custom_data_import_cron_with_same_name_as_auto_update_one(
                         ]
                     }
                 }
-            }
+            },
         ):
             return
 
@@ -378,13 +356,14 @@ def test_data_import_cron_blocked_update(
     with pytest.raises(
         UnprocessibleEntityError, match="r.*Cannot update DataImportCron Spec.*"
     ):
-        ResourceEditor(
+        with ResourceEditorValidateHCOReconcile(
             patches={
                 updated_data_import_cron: {
                     "spec": {"managedDataSource": CUSTOM_DATA_SOURCE_NAME}
                 }
-            }
-        ).update()
+            },
+        ):
+            return
 
 
 @pytest.mark.parametrize(

@@ -25,6 +25,7 @@ from tests.storage.utils import HttpService, smart_clone_supported_by_sc
 from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, Images
 from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
+    ResourceEditorValidateHCOReconcile,
     get_cert,
     hco_cr_jsonpatch_annotations_dict,
     is_bug_open,
@@ -181,7 +182,7 @@ def cdi_config_upload_proxy_overridden(
     cdi_config,
     new_route_created,
 ):
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
                 component="cdi",
@@ -286,8 +287,8 @@ def skip_if_hpp_not_in_sc_options(request):
 def unset_predefined_scratch_sc(hyperconverged_resource_scope_module, cdi_config):
     if cdi_config.instance.spec.scratchSpaceStorageClass:
         empty_scratch_space_spec = {"spec": {"scratchSpaceStorageClass": ""}}
-        with ResourceEditor(
-            patches={hyperconverged_resource_scope_module: empty_scratch_space_spec}
+        with ResourceEditorValidateHCOReconcile(
+            patches={hyperconverged_resource_scope_module: empty_scratch_space_spec},
         ):
             LOGGER.info(f"wait for {empty_scratch_space_spec} in CDIConfig")
             for sample in TimeoutSampler(

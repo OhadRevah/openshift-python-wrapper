@@ -1,8 +1,8 @@
 import logging
 
 import pytest
-from ocp_resources.resource import ResourceEditor
 
+from utilities.infra import ResourceEditorValidateHCOReconcile
 from utilities.network import (
     DEPLOY_OVS,
     verify_ovs_installed_with_annotations,
@@ -29,12 +29,12 @@ def hyperconverged_ovs_annotations_disabled(
     hyperconverged_resource_scope_function,
     hyperconverged_ovs_annotations_enabled_scope_session,
 ):
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: {
                 "metadata": {"annotations": {DEPLOY_OVS: "false"}}
             }
-        }
+        },
     ):
         yield
 
@@ -44,12 +44,12 @@ def hyperconverged_ovs_annotations_removed(
     hyperconverged_resource_scope_function,
     hyperconverged_ovs_annotations_enabled_scope_session,
 ):
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: {
                 "metadata": {"annotations": {DEPLOY_OVS: None}}
             }
-        }
+        },
     ):
         yield
 

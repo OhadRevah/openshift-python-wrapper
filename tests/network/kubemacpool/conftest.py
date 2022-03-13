@@ -1,7 +1,5 @@
 import pytest
-from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
-from ocp_resources.namespace import Namespace
 from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import (
@@ -9,7 +7,7 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     LINUX_BRIDGE,
 )
-from utilities.infra import create_ns, get_pods, name_prefix, wait_for_pods_deletion
+from utilities.infra import ResourceEditorValidateHCOReconcile, create_ns, name_prefix
 from utilities.network import network_device, network_nad
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -314,11 +312,6 @@ def no_label_ns(kmp_vm_label):
 
 
 @pytest.fixture()
-def ovn_ns():
-    return Namespace(name="openshift-ovn-kubernetes")
-
-
-@pytest.fixture()
 def kmp_down(cnao_down, kmp_deployment):
     with ResourceEditor(patches={kmp_deployment: {"spec": {"replicas": 0}}}):
         kmp_deployment.wait_for_replicas(deployed=False)
@@ -329,9 +322,11 @@ def kmp_down(cnao_down, kmp_deployment):
 
 @pytest.fixture()
 def cnao_down(cnao_deployment):
-    with ResourceEditor(patches={cnao_deployment: {"spec": {"replicas": 0}}}):
+    with ResourceEditorValidateHCOReconcile(
+        patches={cnao_deployment: {"spec": {"replicas": 0}}},
+    ):
         cnao_deployment.wait_for_replicas(deployed=False)
-    yield
+        yield
 
     cnao_deployment.wait_for_replicas()
 
@@ -341,70 +336,3 @@ def cnao_deployment(hco_namespace):
     return Deployment(
         namespace=hco_namespace.name, name=CLUSTER_NETWORK_ADDONS_OPERATOR
     )
-
-
-@pytest.fixture()
-def bad_kmp_containers(kmp_deployment):
-    containers = kmp_deployment.instance.to_dict()["spec"]["template"]["spec"][
-        "containers"
-    ]
-    for container in containers:
-        if container["name"] == "manager":
-            container["command"] = ["false"]
-            return containers
-
-
-@pytest.fixture()
-def kmp_crash_loop(
-    admin_client,
-    hco_namespace,
-    cnao_down,
-    kmp_deployment,
-    bad_kmp_containers,
-):
-    with ResourceEditor(
-        patches={
-            kmp_deployment: {
-                "spec": {"template": {"spec": {"containers": bad_kmp_containers}}}
-            }
-        }
-    ):
-        wait_for_pods_deletion(
-            pods=get_pods(
-                dyn_client=admin_client,
-                namespace=hco_namespace,
-                label=kmp_utils.KMP_PODS_LABEL,
-            )
-        )
-        kmp_utils.wait_for_kmp_pods_creation(
-            dyn_client=admin_client,
-            namespace=hco_namespace,
-            replicas=kmp_deployment.instance.spec.replicas,
-        )
-        kmp_utils.wait_for_kmp_pods_to_be_in_crashloop(
-            dyn_client=admin_client,
-            namespace=hco_namespace,
-        )
-        yield
-
-        kmp_deployment.wait_for_replicas()
-
-
-@pytest.fixture()
-def skip_if_no_ovn(ovn_ns):
-    if not ovn_ns.exists:
-        pytest.skip(
-            msg="Test only works on cluster with openshift-ovn-kubernetes deployed"
-        )
-
-
-@pytest.fixture()
-def ovnkube_node_daemonset(ovn_ns):
-    return DaemonSet(name="ovnkube-node", namespace=ovn_ns.name)
-
-
-@pytest.fixture()
-def deleted_ovnkube_node_pod(admin_client, ovn_ns):
-    pods = get_pods(dyn_client=admin_client, namespace=ovn_ns, label="app=ovnkube-node")
-    assert pods, "No ovnkube-node pods were found"
-    pods[0].delete(wait=True)

@@ -21,7 +21,7 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     Images,
 )
-from utilities.infra import get_cert
+from utilities.infra import ResourceEditorValidateHCOReconcile, get_cert
 from utilities.storage import ErrorMsg
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -47,7 +47,7 @@ def insecure_registry(
     """
     registry_server = request.param["server"].replace("docker://", "")
 
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: {
                 "spec": {

@@ -2,10 +2,9 @@
 vGPU VM
 """
 import pytest
-from ocp_resources.resource import ResourceEditor
 
 from utilities.constants import MDEV_NAME, MDEV_TYPE, VGPU_DEVICE_NAME
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, ResourceEditorValidateHCOReconcile
 
 
 @pytest.fixture(scope="session")
@@ -37,7 +36,7 @@ def non_existent_mdev_bus_nodes(utility_pods, gpu_nodes):
 
 @pytest.fixture(scope="class")
 def hco_cr_with_mdev_permitted_hostdevices(hyperconverged_resource_scope_class):
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_class: {
                 "spec": {
@@ -54,6 +53,6 @@ def hco_cr_with_mdev_permitted_hostdevices(hyperconverged_resource_scope_class):
                     },
                 }
             }
-        }
+        },
     ):
         yield

@@ -92,6 +92,7 @@ from utilities.hco import (
     DEFAULT_HCO_CONDITIONS,
     apply_np_changes,
     disable_common_boot_image_import_feature_gate,
+    get_hco_namespace,
     get_installed_hco_csv,
 )
 from utilities.infra import (
@@ -1661,12 +1662,9 @@ def cnv_current_version(csv_scope_session):
 
 @pytest.fixture(scope="session")
 def hco_namespace(admin_client):
-    return list(
-        Namespace.get(
-            dyn_client=admin_client,
-            field_selector=f"metadata.name=={py_config['hco_namespace']}",
-        )
-    )[0]
+    return get_hco_namespace(
+        admin_client=admin_client, namespace=py_config["hco_namespace"]
+    )
 
 
 @pytest.fixture(scope="session")

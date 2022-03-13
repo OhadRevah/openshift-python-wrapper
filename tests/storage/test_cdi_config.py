@@ -13,7 +13,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 import utilities.storage
 from tests.storage import utils
 from utilities.constants import CDI_UPLOADPROXY, Images
-from utilities.infra import get_cert
+from utilities.infra import ResourceEditorValidateHCOReconcile, get_cert
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
@@ -53,8 +53,8 @@ def cdiconfig_update(
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
-    with ResourceEditor(
-        patches={hco_cr: {"spec": {"scratchSpaceStorageClass": storage_class_type}}}
+    with ResourceEditorValidateHCOReconcile(
+        patches={hco_cr: {"spec": {"scratchSpaceStorageClass": storage_class_type}}},
     ):
         wait_for_default_sc_in_cdiconfig(cdi_config=cdiconfig, sc=storage_class_type)
 
@@ -358,10 +358,10 @@ def test_cdi_tunables_in_hco_propagated_to_cr(
         func=_verify_propagation,
     )
 
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_module: {"spec": hco_updated_spec_stanza}
-        }
+        },
     ):
         for sample in samples:
             if sample:

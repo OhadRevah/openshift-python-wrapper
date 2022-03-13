@@ -14,7 +14,10 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 import tests.storage.utils as storage_utils
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_2MIN, TIMEOUT_10MIN, Images
-from utilities.infra import hco_cr_jsonpatch_annotations_dict
+from utilities.infra import (
+    ResourceEditorValidateHCOReconcile,
+    hco_cr_jsonpatch_annotations_dict,
+)
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
@@ -50,7 +53,7 @@ def enable_wffc_feature_gate(hyperconverged_resource_scope_module, cdi_config):
         yield
     else:
         # Feature gate wasn't enabled
-        with ResourceEditor(
+        with ResourceEditorValidateHCOReconcile(
             patches={
                 hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
                     component="cdi",

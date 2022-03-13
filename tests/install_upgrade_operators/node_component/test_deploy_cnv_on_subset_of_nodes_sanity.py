@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from ocp_resources.resource import ResourceEditor
 from openshift.dynamic.exceptions import ForbiddenError
 
 from tests.install_upgrade_operators.node_component.utils import (
@@ -21,6 +20,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     verify_all_components_on_node,
     verify_no_components_on_nodes,
 )
+from utilities.infra import ResourceEditorValidateHCOReconcile
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -170,12 +170,12 @@ class TestDeployCNVOnSubsetOfClusterNodes:
             "Attempting to update HCO with node placement, expecting it to fail"
         )
         try:
-            with ResourceEditor(
+            with ResourceEditorValidateHCOReconcile(
                 patches={
                     hyperconverged_resource_scope_function: {
                         "spec": {"workloads": WORK_LABEL_1}
                     }
-                }
+                },
             ):
                 LOGGER.info(
                     "Expected ability to change workloads label {WORK_LABEL_1} while VM/Workload is present."

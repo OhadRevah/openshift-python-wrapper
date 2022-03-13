@@ -5,7 +5,6 @@ from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
@@ -17,6 +16,7 @@ from utilities.hco import (
     disable_common_boot_image_import_feature_gate,
     enable_common_boot_image_import_feature_gate_wait_for_data_import_cron,
 )
+from utilities.infra import ResourceEditorValidateHCOReconcile
 from utilities.ssp import get_data_import_crons
 from utilities.storage import RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL
 
@@ -101,12 +101,12 @@ def updated_hco_with_custom_data_import_cron_scope_function(
         source_url=request.param["data_import_cron_source_url"],
         managed_data_source_name=request.param["managed_data_source_name"],
     )
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: {
                 "spec": {"dataImportCronTemplates": [data_import_cron_dict]}
             }
-        }
+        },
     ):
         yield data_import_cron_dict
 

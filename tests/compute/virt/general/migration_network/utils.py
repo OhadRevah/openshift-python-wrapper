@@ -10,7 +10,12 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_10SEC, VIRT_HANDLER
-from utilities.infra import ExecCommandOnPod, get_hyperconverged_resource, get_pods
+from utilities.infra import (
+    ExecCommandOnPod,
+    ResourceEditorValidateHCOReconcile,
+    get_hyperconverged_resource,
+    get_pods,
+)
 from utilities.virt import (
     check_migration_process_after_node_drain,
     migrate_vm_and_verify,
@@ -225,8 +230,8 @@ def run_tcpdump_on_source_node(utility_pods, node, iface_name):
 @contextmanager
 def update_hco_migration_config(client, hco_ns_name, param, value):
     hco_cr = get_hyperconverged_resource(client=client, hco_ns_name=hco_ns_name)
-    editor = ResourceEditor(
-        patches={hco_cr: {"spec": {"liveMigrationConfig": {param: value}}}}
+    editor = ResourceEditorValidateHCOReconcile(
+        patches={hco_cr: {"spec": {"liveMigrationConfig": {param: value}}}},
     )
     editor.update(backup_resources=True)
     yield

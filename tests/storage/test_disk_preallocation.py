@@ -6,10 +6,14 @@ CDI disk preallocation test suite
 
 import pytest
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.resource import NamespacedResource, ResourceEditor
+from ocp_resources.resource import NamespacedResource
 
 from utilities.constants import Images
-from utilities.infra import hco_cr_jsonpatch_annotations_dict, is_bug_open
+from utilities.infra import (
+    ResourceEditorValidateHCOReconcile,
+    hco_cr_jsonpatch_annotations_dict,
+    is_bug_open,
+)
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -17,7 +21,7 @@ pytestmark = pytest.mark.post_upgrade
 
 @pytest.fixture(scope="module")
 def cdi_preallocation_enabled(hyperconverged_resource_scope_module):
-    with ResourceEditor(
+    with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_module: hco_cr_jsonpatch_annotations_dict(
                 component="cdi",

@@ -37,6 +37,7 @@ from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
+import utilities.hco
 from utilities.constants import (
     PODS_TO_COLLECT_INFO,
     SANITY_TESTS_FAILURE,
@@ -84,6 +85,23 @@ class ClusterSanityError(Exception):
 
     def __str__(self):
         return self.err_str
+
+
+class ResourceEditorValidateHCOReconcile(ResourceEditor):
+    def __init__(self, hco_namespace="openshift-cnv", **kwargs):
+        super().__init__(**kwargs)
+        self.hco_namespace = hco_namespace
+
+    def restore(self):
+        super().restore()
+        admin_client = get_admin_client()
+        utilities.hco.wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=utilities.hco.get_hco_namespace(
+                admin_client=admin_client, namespace=self.hco_namespace
+            ),
+            consecutive_checks_count=3,
+        )
 
 
 def label_project(name, label, admin_client):
@@ -937,7 +955,10 @@ def update_custom_resource(patch, action="update"):
     Yields:
         dict: {<Resource object>: <backup_as_dict>} or True in case no backup option is selected
     """
-    with ResourceEditor(patches=patch, action=action) as edited_source:
+    with ResourceEditorValidateHCOReconcile(
+        patches=patch,
+        action=action,
+    ) as edited_source:
         yield edited_source
 
 
