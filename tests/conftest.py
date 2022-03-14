@@ -112,6 +112,7 @@ from utilities.infra import (
     get_pods,
     get_schedulable_nodes_ips,
     get_subscription,
+    get_utility_pods_from_nodes,
     name_prefix,
     ocp_resources_submodule_files_path,
     prepare_test_dir_log,
@@ -1065,19 +1066,11 @@ def utility_pods(schedulable_nodes, utility_daemonset, admin_client):
     When the tests start we deploy a pod on every host in the cluster using a daemonset.
     These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
-    # get only pods that running on schedulable_nodes.
-    pods = list(Pod.get(admin_client, label_selector="cnv-test=utility"))
-    missing_pods = [
-        node.name
-        for node in schedulable_nodes
-        if node.name not in [pod.node.name for pod in pods]
-    ]
-    assert not missing_pods, f"Missing utility pod for: {' '.join(missing_pods)}"
-    return [
-        pod
-        for pod in pods
-        if pod.node.name in [node.name for node in schedulable_nodes]
-    ]
+    return get_utility_pods_from_nodes(
+        nodes=schedulable_nodes,
+        admin_client=admin_client,
+        label_selector="cnv-test=utility",
+    )
 
 
 @pytest.fixture(scope="session")

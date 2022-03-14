@@ -65,7 +65,7 @@ fcfn_exclude_functions =
     tmp_path_factory,
     signal,
     submit,
-
+    io,
 
 nift_exclude_imports =
     os_params,

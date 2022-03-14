@@ -1271,3 +1271,14 @@ def get_hyperconverged_resource(client, hco_ns_name):
         name=py_config["hco_cr_name"],
     ):
         return hco
+
+
+def get_utility_pods_from_nodes(nodes, admin_client, label_selector):
+    pods = list(Pod.get(admin_client, label_selector=label_selector))
+    nodes_without_utility_pods = [
+        node.name for node in nodes if node.name not in [pod.node.name for pod in pods]
+    ]
+    assert (
+        not nodes_without_utility_pods
+    ), f"Missing pods with label {label_selector} for: {' '.join(nodes_without_utility_pods)}"
+    return [pod for pod in pods if pod.node.name in [node.name for node in nodes]]
