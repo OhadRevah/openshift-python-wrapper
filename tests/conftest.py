@@ -9,8 +9,9 @@ import os
 import os.path
 import re
 import shutil
+import socket
 import tempfile
-import uuid
+import time
 from collections import Counter
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -19,6 +20,9 @@ import bcrypt
 import kubernetes
 import packaging.version
 import pytest
+import rrmngmnt
+import shortuuid
+import yaml
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cdi import CDI
 from ocp_resources.cdi_config import CDIConfig
@@ -201,6 +205,82 @@ RESOURCES_TO_COLLECT_INFO = [
 ]
 
 
+def _save_pytest_execution_info(session, stage):
+    """
+    Save pytest execution info to a file.
+
+    The files will be saved under:
+    http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/cnv-tests/pytest-executions/
+    in format:
+        <cluster name>/<start/end>-uuid
+
+    Args:
+        session (Session): pytest Session object.
+        stage (str): pytest stage (session start or end).
+    """
+    try:
+        kubeconfig = os.getenv(KUBECONFIG)
+        if not os.path.exists(kubeconfig):
+            return
+
+        with open(kubeconfig, "r") as fd:
+            kubeconfig_dict = yaml.safe_load(fd)
+            cluster_name = kubeconfig_dict["clusters"][0]["name"]
+
+        time_now = time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime())
+        pytest_command_line_args = " ".join(session.config.invocation_params.args)
+        pytest_execution_folder_name = "pytest-executions"
+        local_hostname = socket.gethostname()
+
+        # Local folders
+        local_dst_base_folder = os.path.join(
+            os.path.expanduser("~"), pytest_execution_folder_name
+        )
+        local_dst_folder_cluster_name = os.path.join(
+            local_dst_base_folder, cluster_name
+        )
+        local_dst_file_path = os.path.join(
+            local_dst_folder_cluster_name, session.config.option.session_id
+        )
+
+        # Remote folders
+        remote_dst_bash_folder = (
+            f"/var/www/files/cnv-tests/{pytest_execution_folder_name}"
+        )
+        remote_dst_folder_cluster_name = os.path.join(
+            remote_dst_bash_folder, cluster_name
+        )
+
+        # Connection to web server
+        host = rrmngmnt.Host(hostname=py_config["servers_url"]["USA"])
+        host.users.append(rrmngmnt.RootUser("redhat"))
+
+        # Create folders in web server
+        for _path in (remote_dst_bash_folder, remote_dst_folder_cluster_name):
+            if not host.fs.isdir(_path):
+                host.fs.mkdir(path=_path)
+
+        # Create local folders
+        if not os.path.isdir(local_dst_folder_cluster_name):
+            os.makedirs(local_dst_folder_cluster_name)
+
+        session_info = f"#### {stage} at {time_now} ####\n\n"
+        if stage == "start":
+            session_info = (
+                f"{session_info}"
+                f"Cluster: {cluster_name}\n"
+                f"Executed from: {local_hostname}\n"
+                f"Pytest command line: {pytest_command_line_args}\n"
+            )
+
+        os.system(f"echo '{session_info}' >> {local_dst_file_path}")
+        host.fs.put(
+            path_src=local_dst_file_path, path_dst=remote_dst_folder_cluster_name
+        )
+    except Exception as exp:
+        LOGGER.exception(exp)
+
+
 def pytest_addoption(parser):
     matrix_group = parser.getgroup(name="Matrix")
     os_group = parser.getgroup(name="OS")
@@ -211,6 +291,7 @@ def pytest_addoption(parser):
     deprecate_api_test_group = parser.getgroup(name="DeprecateTestAPI")
     leftovers_collector = parser.getgroup(name="LeftoversCollector")
     scale_group = parser.getgroup(name="Scale")
+    session_group = parser.getgroup(name="Session")
 
     # Upgrade addoption
     install_upgrade_group.addoption(
@@ -337,10 +418,17 @@ def pytest_addoption(parser):
         default="tests/scale/scale_params.yaml",
     )
 
+    # Session group
+    session_group.addoption(
+        "--session-id",
+        help="Session id to use for the test run.",
+        default=shortuuid.uuid(),
+    )
+
 
 def pytest_cmdline_main(config):
     # Make pytest tmp dir unique for current session
-    config.option.basetemp = f"{config.option.basetemp}-{str(uuid.uuid4())}"
+    config.option.basetemp = f"{config.option.basetemp}-{config.option.session_id}"
 
     deprecation_tests_dir_path = "tests/deprecated_api"
     if (
@@ -615,6 +703,8 @@ def pytest_sessionstart(session):
                 generate_latest_os_dict(os_list=py_config["fedora_os_matrix"])
             ]
 
+    _save_pytest_execution_info(session=session, stage="start")
+
     if session.config.getoption("log_collector"):
         # set log_collector to True if it is explicitly requested,
         # otherwise use what is set in the global config
@@ -699,6 +789,7 @@ def pytest_sessionfinish(session, exitstatus):
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
     shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
+    _save_pytest_execution_info(session=session, stage="end")
 
 
 def pytest_exception_interact(node, call, report):

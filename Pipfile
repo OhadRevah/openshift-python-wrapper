@@ -36,6 +36,7 @@ colorlog="*"
 dictdiffer="*"
 python-benedict="*"
 bs4="*"
+shortuuid="*"
 
 [requires]
 python_version = "3"
