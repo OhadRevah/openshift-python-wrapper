@@ -3,10 +3,11 @@ Create non-evictable VM with RWO Storage and evictionStrategy=True that should f
 """
 
 import pytest
+from ocp_resources.datavolume import DataVolume
 from ocp_resources.template import Template
+from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
-from utilities.constants import HOSTPATH_CSI_BASIC
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
@@ -35,8 +36,9 @@ def non_evictable_vm(
             {
                 "dv_name": FEDORA_LATEST_OS,
                 "image": FEDORA_LATEST["image_path"],
-                "storage_class": HOSTPATH_CSI_BASIC,
+                "storage_class": py_config["default_storage_class"],
                 "dv_size": FEDORA_LATEST["dv_size"],
+                "access_modes": DataVolume.AccessMode.RWO,
             },
             marks=pytest.mark.polarion("CNV-7484"),
         ),
