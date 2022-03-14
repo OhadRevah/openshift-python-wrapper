@@ -66,8 +66,10 @@ def get_disk_usage(ssh_exec):
             commands=shlex.split("sudo iotop -b -n 1 -o"),
         ):
             if sample:
+                # iotop output differ in different versions:
+                # in some the output is Actual DISK READ, in some Current DISK READ
                 iotop_read_write_str = re.search(
-                    r"Actual DISK READ: .* ", sample[0]
+                    r"(?:Actual|Current) DISK READ: .* ", sample[0]
                 ).group(0)
                 # Example value of read_write_values : ('3.00', '3.72')
                 read_write_values = re.search(
