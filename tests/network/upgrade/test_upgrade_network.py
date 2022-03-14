@@ -9,12 +9,14 @@ from tests.network.upgrade.utils import (
     assert_node_is_marked_by_bridge,
 )
 from tests.network.utils import authentication_request
+from tests.upgrade_params import (
+    UPGRADE_TEST_DEPENDENCY_NODE_ID,
+    UPGRADE_TEST_ORDERING_NODE_ID,
+)
 from utilities.constants import (
     DEPENDENCY_SCOPE_SESSION,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
-    UPGRADE_TEST_DEPENDNCY_NODE_ID,
-    UPGRADE_TEST_ORDERING_NODE_ID,
 )
 from utilities.network import (
     assert_ping_successful,
@@ -182,7 +184,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_nmstate_bridge_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -194,7 +196,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_bridge_marker_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -221,7 +223,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_linux_bridge_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -244,7 +246,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -269,7 +271,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_enabled_ns_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -285,7 +287,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_install_ovs_with_annotations_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -309,7 +311,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_with_macspoofing_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -336,7 +338,7 @@ class TestUpgradeNetwork:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_to_mesh_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,

@@ -298,14 +298,6 @@ def pytest_addoption(parser):
         "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
     )
     install_upgrade_group.addoption(
-        "--cnv-version", help="CNV version to install or upgrade to"
-    )
-    install_upgrade_group.addoption("--cnv-image", help="Path to CNV index-image")
-    install_upgrade_group.addoption("--cnv-source", help="CNV source lane")
-
-    # OCP addoption
-    install_upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
-    install_upgrade_group.addoption(
         "--upgrade_resilience",
         action="store_true",
         help="If provided, run upgrade with disruptions",
@@ -315,6 +307,17 @@ def pytest_addoption(parser):
         help="Skip version check in cnv_upgrade_path fixture",
         action="store_true",
     )
+
+    # CNV upgrade options
+    install_upgrade_group.addoption(
+        "--cnv-version", help="CNV version to install or upgrade to"
+    )
+    install_upgrade_group.addoption("--cnv-image", help="Path to CNV index-image")
+    install_upgrade_group.addoption("--cnv-source", help="CNV source lane")
+
+    # OCP upgrade options
+    install_upgrade_group.addoption("--ocp-image", help="OCP image to upgrade to")
+
     # Matrix addoption
     matrix_group.addoption("--storage-class-matrix", help="Storage class matrix to use")
     matrix_group.addoption("--bridge-device-matrix", help="Bridge device matrix to use")
@@ -454,6 +457,10 @@ def pytest_cmdline_main(config):
                 "Running with --upgrade cnv & --cnv-source osbs: Missing --cnv-image"
             )
 
+    # Default value is set as this value is used to set test name in
+    # tests.upgrade_params.UPGRADE_TEST_DEPENDENCY_NODE_ID which is needed for pytest dependency marker
+    py_config["upgraded_product"] = config.getoption("--upgrade") or "cnv"
+
     # [rhel|fedora|windows|centos]-os-matrix and latest-[rhel|fedora|windows|centos] are mutually exclusive
     rhel_os_violation = config.getoption("rhel_os_matrix") and config.getoption(
         "latest_rhel"
@@ -554,6 +561,20 @@ def pytest_collection_modifyitems(session, config, items):
     upgrade_tests = [item for item in items if "upgrade" in item.keywords]
     non_upgrade_tests = [item for item in items if "upgrade" not in item.keywords]
     if config.getoption("--upgrade"):
+        # Remove test marked with pytest.mark.ocp_upgrade if CNV upgrade else remove
+        # test marked with pytest.mark.cnv_upgrade
+        ocp_upgrade_test = [
+            test for test in upgrade_tests if "ocp_upgrade" in test.keywords
+        ][0]
+        cnv_upgrade_test = [
+            test for test in upgrade_tests if "cnv_upgrade" in test.keywords
+        ][0]
+        upgrade_tests.remove(
+            ocp_upgrade_test
+            if py_config["upgraded_product"] == "cnv"
+            else cnv_upgrade_test
+        )
+
         discard = non_upgrade_tests
         keep = upgrade_tests
 
@@ -2833,21 +2854,13 @@ def rhel_latest_os_params():
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade(pytestconfig):
-    """Returns True if requested upgrade if for CNV else False"""
-    return pytestconfig.option.upgrade == "cnv"
+def hco_target_version(cnv_target_version):
+    return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
 
 
 @pytest.fixture(scope="session")
-def hco_target_version(cnv_target_version, cnv_upgrade):
-    if cnv_upgrade:
-        return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
-
-
-@pytest.fixture(scope="session")
-def cnv_target_version(pytestconfig, cnv_upgrade):
-    if cnv_upgrade:
-        return pytestconfig.option.cnv_version
+def cnv_target_version(pytestconfig):
+    return pytestconfig.option.cnv_version
 
 
 def get_ssp_resource(admin_client, hco_namespace):

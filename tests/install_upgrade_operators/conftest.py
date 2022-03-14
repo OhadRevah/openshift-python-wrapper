@@ -11,31 +11,28 @@ from utilities.virt import get_hyperconverged_kubevirt
 
 
 @pytest.fixture(scope="session")
-def cnv_source(pytestconfig, cnv_upgrade):
-    if cnv_upgrade:
-        return pytestconfig.option.cnv_source
+def cnv_source(pytestconfig):
+    return pytestconfig.option.cnv_source
 
 
 @pytest.fixture(scope="session")
-def cnv_registry_source(cnv_source, cnv_upgrade):
-    if cnv_upgrade:
-        return py_config["cnv_registry_sources"][cnv_source]
+def cnv_registry_source(cnv_source):
+    return py_config["cnv_registry_sources"][cnv_source]
 
 
 @pytest.fixture(scope="session")
-def hco_current_version(cnv_current_version, cnv_upgrade):
-    if cnv_upgrade:
-        return f"kubevirt-hyperconverged-operator.v{cnv_current_version}"
+def hco_current_version(cnv_current_version):
+    return f"kubevirt-hyperconverged-operator.v{cnv_current_version}"
 
 
 @pytest.fixture()
-def is_deployment_from_production_source(cnv_upgrade, cnv_source):
-    return cnv_upgrade and cnv_source == "production"
+def is_deployment_from_production_source(cnv_source):
+    return cnv_source == "production"
 
 
 @pytest.fixture()
-def is_deployment_from_stage_source(cnv_upgrade, cnv_source):
-    return cnv_upgrade and cnv_source == "stage"
+def is_deployment_from_stage_source(cnv_source):
+    return cnv_source == "stage"
 
 
 @pytest.fixture()

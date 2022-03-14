@@ -69,6 +69,7 @@ fcfn_exclude_functions =
 
 nift_exclude_imports =
     os_params,
+    upgrade_params,
 
 
 enable-extensions =

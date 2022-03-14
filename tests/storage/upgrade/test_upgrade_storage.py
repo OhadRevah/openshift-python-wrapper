@@ -4,12 +4,11 @@ import os
 import pytest
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 
-from utilities.constants import (
-    DEPENDENCY_SCOPE_SESSION,
-    LS_COMMAND,
-    UPGRADE_TEST_DEPENDNCY_NODE_ID,
+from tests.upgrade_params import (
+    UPGRADE_TEST_DEPENDENCY_NODE_ID,
     UPGRADE_TEST_ORDERING_NODE_ID,
 )
+from utilities.constants import DEPENDENCY_SCOPE_SESSION, LS_COMMAND
 from utilities.storage import (
     assert_disk_serial,
     assert_hotplugvolume_nonexist_optional_restart,
@@ -109,7 +108,7 @@ class TestUpgradeStorage:
     @pytest.mark.polarion("CNV-4725")
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
-        depends=[UPGRADE_TEST_DEPENDNCY_NODE_ID],
+        depends=[UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_dv_api_version_after_upgrade(self, dvs_for_upgrade):
@@ -120,7 +119,7 @@ class TestUpgradeStorage:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_cdiconfig_scratch_overriden_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -146,7 +145,7 @@ class TestUpgradeStorage:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_snapshot_restore_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -165,7 +164,7 @@ class TestUpgradeStorage:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_snapshot_created_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -191,7 +190,7 @@ class TestUpgradeStorage:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_with_hotplug_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,

@@ -10,13 +10,12 @@ from tests.compute.upgrade.utils import (
     mismatching_src_pvc_names,
     verify_vms_ssh_connectivity,
 )
-from utilities import console
-from utilities.constants import (
-    DATA_SOURCE_NAME,
-    DEPENDENCY_SCOPE_SESSION,
-    UPGRADE_TEST_DEPENDNCY_NODE_ID,
+from tests.upgrade_params import (
+    UPGRADE_TEST_DEPENDENCY_NODE_ID,
     UPGRADE_TEST_ORDERING_NODE_ID,
 )
+from utilities import console
+from utilities.constants import DATA_SOURCE_NAME, DEPENDENCY_SCOPE_SESSION
 from utilities.exceptions import ResourceValueError
 from utilities.virt import migrate_vm_and_verify, vm_console_run_commands
 
@@ -130,7 +129,7 @@ class TestUpgradeCompute:
     @pytest.mark.dependency(
         name=VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID,
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -143,7 +142,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
@@ -163,7 +162,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_have_2_interfaces_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -176,7 +175,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_console_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -189,7 +188,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_ssh_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -201,7 +200,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_run_strategy_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -217,7 +216,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_windows_vm_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -232,7 +231,7 @@ class TestUpgradeCompute:
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDNCY_NODE_ID,
+            UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_migration_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -251,7 +250,7 @@ class TestUpgradeCompute:
     @pytest.mark.polarion("CNV-3682")
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
-        depends=[UPGRADE_TEST_DEPENDNCY_NODE_ID],
+        depends=[UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_machine_type_after_upgrade(
@@ -287,7 +286,7 @@ class TestUpgradeCompute:
     @pytest.mark.polarion("CNV-5749")
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
-        depends=[UPGRADE_TEST_DEPENDNCY_NODE_ID],
+        depends=[UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_golden_image_pvc_names_after_upgrade(

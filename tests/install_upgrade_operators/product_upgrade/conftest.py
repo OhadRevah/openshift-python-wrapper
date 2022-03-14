@@ -31,10 +31,10 @@ def cnv_image_name(pytestconfig):
 
 
 @pytest.fixture()
-def operatorhub_without_default_sources(
-    cnv_upgrade, admin_client, is_deployment_from_production_source
+def disabled_default_sources_in_operatorhub(
+    admin_client, is_deployment_from_production_source
 ):
-    if cnv_upgrade and not is_deployment_from_production_source:
+    if not is_deployment_from_production_source:
         for source in OperatorHub.get(dyn_client=admin_client):
             with ResourceEditor(
                 patches={source: {"spec": {"disableAllDefaultSources": True}}}
