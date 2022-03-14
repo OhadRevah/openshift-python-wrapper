@@ -4,11 +4,12 @@ import subprocess
 import time
 
 import pytest
+from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.node_network_configuration_policy import NNCPConfigurationFailed
 from ocp_resources.node_network_state import NodeNetworkState
-from ocp_resources.utils import TimeoutExpiredError
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import IPV4_STR, IPV6_STR
+from utilities.constants import IPV4_STR, IPV6_STR, TIMEOUT_1MIN, TIMEOUT_9MIN
 from utilities.infra import is_bug_open
 from utilities.network import (
     IFACE_ABSENT_STATE,
@@ -25,8 +26,71 @@ NODE_LABEL = {"capture": "allow"}
 PRIMARY_NIC = "primary-nic"
 IPV4_ADDRESSES = f"{IPV4_STR}_addresses"
 IPV6_ADDRESSES = f"{IPV6_STR}_addresses"
+PREFIX_LENGTH = "prefix-length"
 
-pytestmark = [pytest.mark.usefixtures("skip_if_ovn_cluster")]
+pytestmark = pytest.mark.usefixtures("skip_if_ovn_cluster")
+
+
+def remove_cluster_ingress_ip_from_addresses(addresses):
+    keepalive_addr = get_cluster_ingress_ip()
+    return [address for address in addresses if keepalive_addr not in address["ip"]]
+
+
+def valid_routes(default_routes, bridge_routes):
+    default_routes = {route["destination"] for route in default_routes["config"]}
+    bridge_routes = {route["destination"] for route in bridge_routes["config"]}
+    return default_routes.issubset(bridge_routes)
+
+
+def valid_addresses(default_addresses, bridge_addresses, ip_family):
+    if ip_family == IPV6_STR:
+        for address in default_addresses:
+            if ipaddress.ip_network(address["ip"]).is_link_local:
+                continue
+            if address not in bridge_addresses:
+                return False
+    else:
+        default_addresses = remove_cluster_ingress_ip_from_addresses(
+            addresses=default_addresses
+        )
+        bridge_addresses = remove_cluster_ingress_ip_from_addresses(
+            addresses=bridge_addresses
+        )
+        if default_addresses != bridge_addresses:
+            return False
+    return True
+
+
+def get_cluster_ingress_ip():
+    platform_status = Infrastructure(name="cluster").instance.status.platformStatus
+    return platform_status[platform_status["type"].lower()]["ingressIP"]
+
+
+def wait_for_nns_updated_to_static_ipv4(node, primary_interface):
+    LOGGER.info("Verify NNS Updated contains static IPv4 config")
+    try:
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_1MIN,
+            sleep=1,
+            func=lambda: [
+                iface["ipv4"]["dhcp"]
+                for iface in NodeNetworkState(name=node.name).interfaces
+                if primary_interface in iface["name"]
+            ],
+        ):
+            if not sample[0]:
+                LOGGER.info("NNS successfully updated")
+                return
+    except TimeoutExpiredError:
+        LOGGER.error("NNS Not updated after NNCP deployment")
+        raise
+
+
+def extract_addresses(config):
+    return [
+        {"ip": address["ip"], PREFIX_LENGTH: address[PREFIX_LENGTH]}
+        for address in config
+    ]
 
 
 def assert_config_unchanged(default_state, bridge_state):
@@ -42,36 +106,19 @@ def assert_config_unchanged(default_state, bridge_state):
         f"Comparing {default_state['node'].name} state before and after bridge deployment"
     )
     for key in config_to_compare:
-
-        if key == routes:
-            missing_routes = []
-            default_routes = {
-                route["destination"] for route in default_state[key]["config"]
-            }
-            bridge_routes = {
-                route["destination"] for route in bridge_state[key]["config"]
-            }
-            for route in default_routes:
-                if route not in bridge_routes:
-                    missing_routes.append(route)
-            if missing_routes:
-                config_failures.append(
-                    f"{key} config mismatch. Missing routes - {missing_routes}"
-                )
-            continue
-        if key == IPV6_ADDRESSES:
-            missing_ipv6_addresses = []
-            for address in default_state[key]:
-                if ipaddress.ip_network(address["ip"]).is_link_local:
-                    continue
-                if address not in bridge_state[key]:
-                    missing_ipv6_addresses.append(address)
-            if missing_ipv6_addresses:
-                config_failures.append(
-                    f"{key} config mismatch. Missing addresses {missing_ipv6_addresses}"
-                )
-            continue
         if default_state[key] != bridge_state[key]:
+            if key == routes and valid_routes(
+                default_routes=default_state[key], bridge_routes=bridge_state[key]
+            ):
+                continue
+
+            if key in [IPV6_ADDRESSES, IPV4_ADDRESSES] and valid_addresses(
+                default_addresses=default_state[key],
+                bridge_addresses=bridge_state[key],
+                ip_family=key,
+            ):
+                continue
+
             config_failures.append(
                 f"{key} config mismatch. Previous state - {default_state[key]}. Current state - {bridge_state[key]}"
             )
@@ -80,8 +127,6 @@ def assert_config_unchanged(default_state, bridge_state):
 
 
 def collect_primary_interface_state(node):
-    prefix_length = "prefix-length"
-
     nns = NodeNetworkState(name=node.name)
 
     primary_interface = next(
@@ -96,14 +141,8 @@ def collect_primary_interface_state(node):
     )
     ipv4_config = config[IPV4_STR]
     ipv6_config = config[IPV6_STR]
-    ipv4_addresses = [
-        {"ip": address["ip"], prefix_length: address[prefix_length]}
-        for address in ipv4_config["address"]
-    ]
-    ipv6_addresses = [
-        {"ip": address["ip"], prefix_length: address[prefix_length]}
-        for address in ipv6_config["address"]
-    ]
+    ipv4_addresses = extract_addresses(config=ipv4_config["address"])
+    ipv6_addresses = extract_addresses(config=ipv6_config["address"])
     dns_resolver = {
         "config": {
             "server": nns.instance.status.currentState["dns-resolver"]["running"][
@@ -148,7 +187,11 @@ def static_primary_interface(worker_node):
             dns_resolver=iface_state["dns-resolver"],
             interfaces_name=[iface_state["primary_interface"]],
             teardown_absent_ifaces=False,
+            success_timeout=TIMEOUT_9MIN,
         ):
+            wait_for_nns_updated_to_static_ipv4(
+                node=worker_node, primary_interface=iface_state["primary_interface"]
+            )
             yield collect_primary_interface_state(node=worker_node)
 
         ipv4_config = iface_state["ipv4_config"]

@@ -31,6 +31,7 @@ from utilities.constants import (
     SRIOV,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
+    TIMEOUT_8MIN,
     WORKERS_TYPE,
 )
 from utilities.infra import (
@@ -724,6 +725,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         dns_resolver=None,
         routes=None,
         dry_run=None,
+        success_timeout=TIMEOUT_8MIN,
     ):
         super().__init__(
             name=name,
@@ -741,6 +743,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             dns_resolver=dns_resolver,
             routes=routes,
             dry_run=dry_run,
+            success_timeout=success_timeout,
         )
         self.interfaces_name = interfaces_name
         self.ipv4_auto_dns = ipv4_auto_dns
