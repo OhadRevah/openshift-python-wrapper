@@ -22,6 +22,7 @@ def cnv_registry_source(cnv_source):
 
 @pytest.fixture(scope="session")
 def hco_current_version(cnv_current_version):
+    # TODO: Extract from Subscription
     return f"kubevirt-hyperconverged-operator.v{cnv_current_version}"
 
 

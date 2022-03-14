@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeStorage"
 
 
-pytestmark = pytest.mark.usefixtures("skip_when_one_node", "cnv_upgrade_path")
+pytestmark = pytest.mark.usefixtures("skip_when_one_node")
 
 
 @pytest.mark.upgrade

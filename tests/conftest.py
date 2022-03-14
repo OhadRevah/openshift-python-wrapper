@@ -318,6 +318,7 @@ def pytest_addoption(parser):
         "--cnv-version", help="CNV version to install or upgrade to"
     )
     install_upgrade_group.addoption("--cnv-image", help="Path to CNV index-image")
+    # TODO: add choices - production, stage, osbs and nightly
     install_upgrade_group.addoption("--cnv-source", help="CNV source lane")
 
     # OCP upgrade options
@@ -2784,52 +2785,44 @@ def vm_bridge_networks(upgrade_bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade_path(
-    request, admin_client, cnv_upgrade_scope_session, pytestconfig, cnv_current_version
-):
-    if cnv_upgrade_scope_session:
-        cnv_target_version = pytestconfig.option.cnv_version
-        current_version = packaging.version.parse(version=cnv_current_version)
-        target_version = packaging.version.parse(version=cnv_target_version)
-        # skip version check if --cnv-upgrade-skip-version-check is used.
-        # This allows upgrading to a newer build on the same Z stream (for dev purposes)
-        if (
-            not request.session.config.getoption("--cnv-upgrade-skip-version-check")
-            and target_version <= current_version
-        ):
-            # Upgrade only if a newer CNV version is requested
-            raise ValueError(
-                f"Cannot upgrade to older/identical versions,"
-                f"current: {cnv_current_version} target: {cnv_target_version}"
-            )
+def cnv_upgrade_path(request, admin_client, pytestconfig, cnv_current_version):
+    # TODO: Refactor, add exception if target is nightly but source is not nightly
+    cnv_target_version = pytestconfig.option.cnv_version
+    current_version = packaging.version.parse(version=cnv_current_version)
+    target_version = packaging.version.parse(version=cnv_target_version)
+    # skip version check if --cnv-upgrade-skip-version-check is used.
+    # This allows upgrading to a newer build on the same Z stream (for dev purposes)
+    if (
+        not request.session.config.getoption("--cnv-upgrade-skip-version-check")
+        and target_version <= current_version
+    ):
+        # Upgrade only if a newer CNV version is requested
+        raise ValueError(
+            f"Cannot upgrade to older/identical versions,"
+            f"current: {cnv_current_version} target: {cnv_target_version}"
+        )
 
-        if current_version.major < target_version.major:
-            upgrade_stream = "x-stream"
-        elif current_version.minor < target_version.minor:
-            upgrade_stream = "y-stream"
-        elif current_version.micro < target_version.micro:
-            upgrade_stream = "z-stream"
-        elif current_version.release == target_version.release:
-            upgrade_stream = "dev-stream"
-        else:
-            raise ValueError(
-                f"unknown upgrade stream, current: {cnv_current_version} target: {cnv_target_version}"
-            )
+    if current_version.major < target_version.major:
+        upgrade_stream = "x-stream"
+    elif current_version.minor < target_version.minor:
+        upgrade_stream = "y-stream"
+    elif current_version.micro < target_version.micro:
+        upgrade_stream = "z-stream"
+    elif current_version.release == target_version.release:
+        upgrade_stream = "dev-stream"
+    else:
+        raise ValueError(
+            f"unknown upgrade stream, current: {cnv_current_version} target: {cnv_target_version}"
+        )
 
-        cnv_upgrade_dict = {
-            "current_version": cnv_current_version,
-            "target_version": cnv_target_version,
-            "upgrade_stream": upgrade_stream,
-            "target_channel": f"{target_version.major}.{target_version.minor}",
-        }
+    cnv_upgrade_dict = {
+        "current_version": cnv_current_version,
+        "target_version": cnv_target_version,
+        "upgrade_stream": upgrade_stream,
+        "target_channel": f"{target_version.major}.{target_version.minor}",
+    }
 
-        return cnv_upgrade_dict
-
-
-@pytest.fixture(scope="session")
-def cnv_upgrade_scope_session(pytestconfig):
-    """Returns True if requested upgrade if for CNV else False"""
-    return pytestconfig.option.upgrade == "cnv"
+    return cnv_upgrade_dict
 
 
 @pytest.fixture(scope="session")

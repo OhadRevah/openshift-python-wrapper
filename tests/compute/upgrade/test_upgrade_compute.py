@@ -31,7 +31,7 @@ VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID = (
 
 POST_UPGRADE_START_TIME_MAX_DELTA = 0.05
 
-pytestmark = pytest.mark.usefixtures("skip_when_one_node", "cnv_upgrade_path")
+pytestmark = pytest.mark.usefixtures("skip_when_one_node")
 
 
 @pytest.mark.upgrade

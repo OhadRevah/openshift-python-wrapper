@@ -1159,12 +1159,13 @@ def get_related_images_name_and_version(dyn_client, hco_namespace, version):
         csv_name=version,
     )
     for item in csv.instance.spec.relatedImages:
-        # example of "name": 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
-        # sample output after parsing: name = 'node-maintenance-operator' and version = 'v2.6.3-1'
-        name, version = item["name"].rpartition("/")[-1].split(":", 1)
-        related_images_name_and_versions[name] = {
+        # Example: 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
+        image_name_version = re.search(
+            r".*/(?P<name>.*?):(?P<version>.*)", item["name"]
+        ).groupdict()
+        related_images_name_and_versions[image_name_version["name"]] = {
             "image": item["image"],
-            "version": version,
+            "version": image_name_version["version"],
         }
     return related_images_name_and_versions
 

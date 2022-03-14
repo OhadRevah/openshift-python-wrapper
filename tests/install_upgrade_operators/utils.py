@@ -75,7 +75,6 @@ def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):
         namespace=hco_namespace,
         name=name,
     )
-    sample = None
     try:
         for sample in samples:
             for operator_condition in sample:
@@ -113,7 +112,7 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
         func=InstallPlan.get,
         exceptions_dict={
             ConflictError: []
-        },  # need to ignore ConflictError during install plan reconciliation
+        },  # Ignore ConflictError during install plan reconciliation
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,

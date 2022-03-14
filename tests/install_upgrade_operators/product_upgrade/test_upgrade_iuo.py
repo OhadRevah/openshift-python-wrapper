@@ -20,7 +20,6 @@ LOGGER = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.usefixtures(
     "skip_when_one_node",
-    "cnv_upgrade_path",
     "nodes_taints_before_upgrade",
     "nodes_labels_before_upgrade",
 )

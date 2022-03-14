@@ -13,10 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.upgrade
-@pytest.mark.usefixtures(
-    "skip_when_one_node",
-    "cnv_upgrade_path",
-)
+@pytest.mark.usefixtures("skip_when_one_node")
 class TestUpgrade:
     @pytest.mark.ocp_upgrade
     @pytest.mark.upgrade_resilience
@@ -47,18 +44,20 @@ class TestUpgrade:
         disabled_default_sources_in_operatorhub,
         cnv_registry_source,
         update_image_content_source,
-        cnv_source,
+        is_deployment_from_production_source,
         cnv_target_version,
+        cnv_subscription_scope_session,
     ):
+        LOGGER.info(f"CNV upgrade: {cnv_upgrade_path}")
         upgrade_cnv(
             dyn_client=admin_client,
             hco_namespace=hco_namespace,
             hco_target_version=hco_target_version,
             hco_current_version=hco_current_version,
-            image=pytestconfig.option.cnv_image,
-            cnv_upgrade_path=cnv_upgrade_path,
+            cnv_target_image=pytestconfig.option.cnv_image,
             upgrade_resilience=pytestconfig.option.upgrade_resilience,
             cnv_subscription_source=cnv_registry_source["cnv_subscription_source"],
-            cnv_source=cnv_source,
+            is_deployment_from_production_source=is_deployment_from_production_source,
             cnv_target_version=cnv_target_version,
+            cnv_subscription=cnv_subscription_scope_session,
         )

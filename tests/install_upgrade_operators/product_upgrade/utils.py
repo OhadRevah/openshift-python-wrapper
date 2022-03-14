@@ -9,7 +9,6 @@ from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
-from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -26,8 +25,21 @@ from urllib3.exceptions import (
     ResponseError,
 )
 
-import utilities.constants
-from tests.install_upgrade_operators import utils
+from tests.install_upgrade_operators.utils import (
+    approve_install_plan,
+    wait_for_csv,
+    wait_for_install_plan,
+    wait_for_operator_condition,
+)
+from utilities.constants import (
+    HCO_OPERATOR,
+    TIMEOUT_10MIN,
+    TIMEOUT_15MIN,
+    TIMEOUT_20MIN,
+    TIMEOUT_30MIN,
+    TIMEOUT_75MIN,
+    TIMEOUT_180MIN,
+)
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cnv_target_images,
@@ -37,7 +49,6 @@ from utilities.infra import (
     get_csv_by_name,
     get_deployments,
     get_related_images_name_and_version,
-    get_subscription,
     run_command,
     write_to_extras_file,
 )
@@ -55,31 +66,32 @@ BASE_EXCEPTIONS_DICT = {
 
 
 def wait_for_pods_removal(pods_list):
-    def _get_remaining_existing_pods():
-        return [(pod.name, pod.status) for pod in pods_list if pod.exists]
+    def _get_existing_pods(_pods_list):
+        return [(pod.name, pod.status) for pod in _pods_list if pod.exists]
 
     LOGGER.info("Wait for pods to be removed.")
     samples = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=10,
-        func=_get_remaining_existing_pods,
+        func=_get_existing_pods,
+        _pods_list=pods_list,
     )
-    sample = None  # will be set each iteration, setting it here allows referencing it during exception handling
+    sample = None
     try:
         for sample in samples:
             if not sample:
                 return
     except TimeoutExpiredError:
-        LOGGER.error(f"Some old pods were not deleted: {sample}")
+        LOGGER.error(f"Some pre-upgrade pods were not deleted: {sample}")
         raise
 
 
 def wait_for_operator_replacement(
-    dyn_client, hco_namespace, operator_name, old_operator_pods
+    dyn_client, hco_namespace, operator_name, pre_upgrade_operator_pods
 ):
-    old_operator_pod_names = [pod.name for pod in old_operator_pods]
+    old_operator_pod_names = [pod.name for pod in pre_upgrade_operator_pods]
     operator_sampler = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=1,
         func=get_operator_by_name,
         dyn_client=dyn_client,
@@ -89,8 +101,8 @@ def wait_for_operator_replacement(
 
     for operator in operator_sampler:
         if operator.name not in old_operator_pod_names:
-            LOGGER.debug(
-                f"Old operator: {old_operator_pod_names} new operator: {operator.name}"
+            LOGGER.info(
+                f"Old operator: {old_operator_pod_names}, new operator: {operator.name}"
             )
             return operator
 
@@ -100,22 +112,23 @@ def wait_for_new_operator_pod(
     hco_namespace,
     operator_name,
     operator_target_info,
-    old_operators_pods,
-    delete_pod=False,
+    pre_upgrade_operators_pods,
+    upgrade_resilience=False,
 ):
+    # TODO: Refactor - simplify code
     """
     Wait for a new operator pod to be created.
-    If delete_pod - new operator pods will be deleted (test operator
-    resiliency)
+
+    If upgrade_resilience - new operator pods will be deleted (test operator resiliency)
     """
 
     def _get_new_operator_pod():
-        if old_operators_pods:
+        if pre_upgrade_operators_pods:
             return wait_for_operator_replacement(
                 dyn_client=dyn_client,
                 hco_namespace=hco_namespace,
                 operator_name=operator_name,
-                old_operator_pods=old_operators_pods,
+                pre_upgrade_operator_pods=pre_upgrade_operators_pods,
             )
         # For new operators which did not exist in a previous version
         else:
@@ -133,16 +146,16 @@ def wait_for_new_operator_pod(
         except NotFoundError:
             return False
 
-    old_operators_pods = [
-        pod for pod in old_operators_pods if operator_name in pod.name
+    pre_upgrade_operators_pods = [
+        pod for pod in pre_upgrade_operators_pods if operator_name in pod.name
     ]
 
     LOGGER.info(
-        f"Verify new operator pod {operator_name} {'replacement' if old_operators_pods else ''}."
+        f"Verify new operator pod {operator_name} {'replacement' if pre_upgrade_operators_pods else ''}."
     )
 
     new_pod_sampler = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_30MIN,
+        wait_timeout=TIMEOUT_30MIN,
         sleep=1,
         func=_get_new_operator_pod,
     )
@@ -152,11 +165,11 @@ def wait_for_new_operator_pod(
         if (
             operator_target_info["strategy"] != "Recreate"
             and not is_pod_in_ready_condition(pod=new_operator_pod)
-            and old_operators_pods
+            and pre_upgrade_operators_pods
         ):
             old_pods_in_ready_condition = {
                 pod.name: is_pod_in_ready_condition(pod=pod)
-                for pod in old_operators_pods
+                for pod in pre_upgrade_operators_pods
             }
             assert all(old_pods_in_ready_condition.values()), (
                 f"Old pods removed before new pods are ready, "
@@ -165,8 +178,9 @@ def wait_for_new_operator_pod(
         if _check_operator_pod_image(pod=new_operator_pod):
             break
 
-    if delete_pod:
-        new_operator_pod.delete(wait=True, timeout=utilities.constants.TIMEOUT_10MIN)
+    # TODO: delete pods
+    if upgrade_resilience:
+        new_operator_pod.delete(wait=True, timeout=TIMEOUT_10MIN)
         # Operator pod is deleted, fetching a new pod
         new_operator_pod = get_operator_by_name(
             dyn_client=dyn_client,
@@ -178,7 +192,7 @@ def wait_for_new_operator_pod(
     new_operator_pod.wait_for_condition(
         condition=Pod.Condition.READY,
         status=Pod.Condition.Status.TRUE,
-        timeout=utilities.constants.TIMEOUT_30MIN,
+        timeout=TIMEOUT_30MIN,
     )
 
 
@@ -203,12 +217,12 @@ def wait_for_operator_pod_replacements(
     old_operators_pods,
     operators_current_versions,
     operators_target_versions,
-    delete_pods,
+    upgrade_resilience,
 ):
     LOGGER.info(
         "Verify all operators Pods with new images get replaced and have the new images version and status ready. "
         "Testing upgrade resilience is "
-        f"{'enabled (pods will be deleted during upgrade)' if delete_pods else 'disabled'}."
+        f"{'enabled (pods will be deleted during upgrade)' if upgrade_resilience else 'disabled'}."
     )
 
     processes = []
@@ -228,7 +242,7 @@ def wait_for_operator_pod_replacements(
                     "operator_name": operator_name,
                     "operator_target_info": operator_target_info,
                     "old_operators_pods": old_operators_pods,
-                    "delete_pod": delete_pods,
+                    "upgrade_resilience": upgrade_resilience,
                 },
             )
             processes.append(sub_process)
@@ -248,13 +262,13 @@ def wait_for_operator_pod_replacements(
 
 
 def get_operators_names_and_info(csv):
-    operators_info = {}
-    for deploy in csv.instance.spec.install.spec.deployments:
-        operators_info[deploy.name] = {
+    return {
+        deploy.name: {
             "image": deploy.spec.template.spec.containers[0].image,
             "strategy": deploy.spec.strategy.get("type", "RollingUpdate"),
         }
-    return operators_info
+        for deploy in csv.instance.spec.install.spec.deployments
+    }
 
 
 def get_clusterversion_state_version_conditions(dyn_client):
@@ -267,33 +281,28 @@ def get_clusterversion_state_version_conditions(dyn_client):
 
 
 def update_image_in_catalog_source(dyn_client, namespace, image):
-    assert image, "no image supplied"
     #  The cnv_image cli argument can be None in the case of production/staging version.
     #  Since the user doesn't need to specify a custom IIB image.
     #  This is just here in case somehow this would run it should fail here.
     #  Otherwise an empty string would be set for the image.
-    #  This would screw up the cluster and likely be hard to find the source of the issue.
+    assert image, "no image supplied"
+
     LOGGER.info(f"Change hco-catalogsource image: image={image}")
-    for catalog_source in CatalogSource.get(
-        dyn_client=dyn_client, namespace=namespace, name="hco-catalogsource"
-    ):
-        ResourceEditor(patches={catalog_source: {"spec": {"image": image}}}).update()
+    catalog_source = CatalogSource(
+        client=dyn_client, namespace=namespace, name="hco-catalogsource"
+    )
+    ResourceEditor(patches={catalog_source: {"spec": {"image": image}}}).update()
 
 
 def update_subscription_channel_and_source(
-    dyn_client, hco_namespace, cnv_subscription_channel, cnv_subscription_source
+    cnv_subscription, cnv_subscription_channel, cnv_subscription_source
 ):
     LOGGER.info(
         f"Change subscription channel and source: channel={cnv_subscription_channel} source={cnv_subscription_source}"
     )
-    subscription = get_subscription(
-        admin_client=dyn_client,
-        namespace=hco_namespace,
-        subscription_name=utilities.constants.HCO_SUBSCRIPTION,
-    )
     ResourceEditor(
         {
-            subscription: {
+            cnv_subscription: {
                 "spec": {
                     "channel": cnv_subscription_channel,
                     "source": cnv_subscription_source,
@@ -321,7 +330,7 @@ def get_cluster_pods(dyn_client, hco_namespace, pods_type):
         elif pods_type == "all":
             cluster_pods.append(pod)
 
-    assert cluster_pods
+    assert cluster_pods, f"No cluster pods of type {pods_type} were found "
     return cluster_pods
 
 
@@ -331,22 +340,13 @@ def get_operator_by_name(dyn_client, hco_namespace, operator_name):
     return operator_pod
 
 
-def get_images_from_manifest(dyn_client, hco_namespace, target_version):
-    for package in PackageManifest.get(dyn_client=dyn_client, namespace=hco_namespace):
-        if package.name == py_config["hco_cr_name"]:
-            return [
-                channel.currentCSVDesc.relatedImages
-                for channel in package.instance.status.channels
-                if channel.currentCSV == target_version
-            ][0]
-
-
 def check_tier2_pods_images(
     dyn_client,
     hco_namespace,
     target_related_images_name_and_versions,
     pods_not_to_be_removed,
 ):
+    # TODO: Refactor - simplify code
     """
     Checks the tier2 CNV pods images to make sure all current pods after upgrade are using target images
 
@@ -461,7 +461,7 @@ def verify_cnv_pods_are_running(dyn_client, hco_namespace):
         ]
 
     samples = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_10MIN,
         sleep=10,
         func=_get_pods_that_are_not_running,
     )
@@ -541,6 +541,7 @@ def update_icsp_stage_mirror(icsp_file_path):
 
 
 def wait_for_mcp_update(dyn_client):
+    # TODO: Refactor - simplify code
     def _get_all_mcp_conditions():
         return {
             mcp.name: mcp.instance.status.conditions
@@ -598,7 +599,7 @@ def wait_for_mcp_update(dyn_client):
     try:
         _wait_for_condition_status(
             condition_type=MachineConfigPool.Status.UPDATING,
-            timeout=utilities.constants.TIMEOUT_15MIN,
+            timeout=TIMEOUT_15MIN,
         )
     except TimeoutExpiredError:
         if _are_all_mcp_matching_condition(
@@ -615,7 +616,7 @@ def wait_for_mcp_update(dyn_client):
     LOGGER.info("Wait for mcp update to end.")
     _wait_for_condition_status(
         condition_type=MachineConfigPool.Status.UPDATED,
-        timeout=utilities.constants.TIMEOUT_75MIN,
+        timeout=TIMEOUT_75MIN,
     )
 
 
@@ -624,59 +625,59 @@ def upgrade_cnv(
     hco_namespace,
     hco_target_version,
     hco_current_version,
-    image,
-    cnv_upgrade_path,
+    cnv_target_image,
     upgrade_resilience,
     cnv_subscription_source,
-    cnv_source,
+    is_deployment_from_production_source,
     cnv_target_version,
+    cnv_subscription,
 ):
-    LOGGER.info(f"CNV upgrade: {cnv_upgrade_path}")
-    LOGGER.info("Get all operators Pods before upgrade")
-    old_operators_pods = get_cluster_pods(
+    # TODO: Pre-upgrade functions should be in fixtures
+    # TODO: Place utility functions under Class and re-use values
+    LOGGER.info("Get all operators pods before upgrade")
+    pre_upgrade_operators_pods = get_cluster_pods(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         pods_type="operator",
     )
-    all_old_pods = get_cluster_pods(
+    all_pre_upgrade_pods = get_cluster_pods(
         dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
     )
     # retrieve the old pod images now because after the upgrade the pod will raise an exception:
     # kubernetes.client.exceptions.ApiException: (404)
     # Reason: NotFound
-    old_pod_images = {
-        pod.name: pod.instance.spec.containers[0].image for pod in all_old_pods
+    pre_upgrade_pods_images = {
+        pod.name: pod.instance.spec.containers[0].image for pod in all_pre_upgrade_pods
     }
 
     LOGGER.info(f"Get current CSV {hco_current_version}")
-    current_csv = get_csv_by_name(
+    pre_upgrade_csv = get_csv_by_name(
         admin_client=dyn_client,
         namespace=hco_namespace.name,
         csv_name=hco_current_version,
     )
 
     LOGGER.info("Get all operators Pods names and images version from the current CSV")
-    operators_current_versions = get_operators_names_and_info(csv=current_csv)
+    pre_upgrade_operators_versions = get_operators_names_and_info(csv=pre_upgrade_csv)
 
     LOGGER.info("Get all related images names and versions from the current CSV")
-    current_related_images_name_and_versions = get_related_images_name_and_version(
+    pre_upgrade_related_images_name_and_versions = get_related_images_name_and_version(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         version=hco_current_version,
     )
 
-    if cnv_source != "production":
-        LOGGER.info("Update catalog source image.")
+    if not is_deployment_from_production_source:
+        LOGGER.info("Deployment is not from production; update catalog source image.")
         update_image_in_catalog_source(
             dyn_client=dyn_client,
             namespace=py_config["marketplace_namespace"],
-            image=image,
+            image=cnv_target_image,
         )
 
     LOGGER.info("Update subscription channel and source.")
     update_subscription_channel_and_source(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
+        cnv_subscription=cnv_subscription,
         cnv_subscription_channel="stable",
         cnv_subscription_source=cnv_subscription_source,
     )
@@ -688,7 +689,7 @@ def upgrade_cnv(
     )
 
     LOGGER.info(f"Wait for a new CSV with version {hco_target_version}")
-    new_csv = utils.wait_for_csv(
+    new_csv = wait_for_csv(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         hco_target_version=hco_target_version,
@@ -700,36 +701,28 @@ def upgrade_cnv(
         version=hco_target_version,
     )
 
-    LOGGER.info("Check that CSV status is Installing")
-    try:
-        new_csv.wait_for_status(
-            status=new_csv.Status.INSTALLING,
-            timeout=utilities.constants.TIMEOUT_10MIN,
-            stop_status=None,
-        )
-    except TimeoutExpiredError:
-        # in the case of no change there will be no/short "installing" time, and we shouldn't fail on it
-        if not new_csv.instance.status.phase == ClusterServiceVersion.Status.SUCCEEDED:
-            LOGGER.error(f"CSV status {new_csv.instance.status.phase}")
-            raise
+    LOGGER.info(f"Check that CSV {new_csv.name} status is {new_csv.Status.INSTALLING}")
+    wait_for_csv_status_installing(new_csv=new_csv)
 
-    utils.wait_for_operator_condition(
+    wait_for_operator_condition(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         name=hco_target_version,
         upgradable=False,
     )
 
-    LOGGER.info("determine which old pods should be gone after upgrade")
+    LOGGER.info("Determine which pods should be removed after upgrade.")
     pods_to_be_removed, pods_not_to_be_removed = determine_pods_to_be_removed(
-        all_old_pods=all_old_pods,
-        old_pod_images=old_pod_images,
-        current_related_images_name_and_versions=current_related_images_name_and_versions,
-        target_related_images_name_and_versions=target_related_images_name_and_versions,
+        all_pre_upgrade_pods=all_pre_upgrade_pods,
+        pre_upgrade_pods_images=pre_upgrade_pods_images,
+        pre_upgrade_related_images_name_and_versions=pre_upgrade_related_images_name_and_versions,
+        post_upgrade_related_images_name_and_versions=target_related_images_name_and_versions,
     )
+
+    # TODO: Remove
     check_images_during_upgrade = True
     if set(
-        item["image"] for item in current_related_images_name_and_versions.values()
+        item["image"] for item in pre_upgrade_related_images_name_and_versions.values()
     ) == set(
         item["image"] for item in target_related_images_name_and_versions.values()
     ):
@@ -740,24 +733,26 @@ def upgrade_cnv(
         LOGGER.info("Get all operators Pods names and images version from the new CSV")
         operators_target_versions = get_operators_names_and_info(csv=new_csv)
 
+        # TODO: Refactor - check new pods images against new CSV
         LOGGER.info("Wait for operators replacement.")
         wait_for_operator_pod_replacements(
             dyn_client=dyn_client,
             hco_namespace=hco_namespace.name,
-            old_operators_pods=old_operators_pods,
-            operators_current_versions=operators_current_versions,
+            old_operators_pods=pre_upgrade_operators_pods,
+            operators_current_versions=pre_upgrade_operators_versions,
             operators_target_versions=operators_target_versions,
-            delete_pods=upgrade_resilience,
+            upgrade_resilience=upgrade_resilience,
         )
 
-    LOGGER.info("Wait for HCO conditions after upgrade")
+    # TODO: Post-upgrade validations should be in a separate function
+    LOGGER.info("Wait for HCO stable conditions after upgrade")
     wait_for_hco_conditions(
         admin_client=dyn_client,
         hco_namespace=hco_namespace,
-        wait_timeout=utilities.constants.TIMEOUT_20MIN,
+        wait_timeout=TIMEOUT_20MIN,
     )
 
-    LOGGER.info("Wait for HCO version to be updated.")
+    LOGGER.info(f"Wait for HCO version to be updated to {cnv_target_version}.")
     wait_for_hco_version(
         client=dyn_client,
         hco_ns_name=hco_namespace.name,
@@ -768,44 +763,45 @@ def upgrade_cnv(
     hco_operator_pod = get_operator_by_name(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        operator_name=utilities.constants.HCO_OPERATOR,
+        operator_name=HCO_OPERATOR,
     )
     hco_operator_pod.wait_for_condition(
         condition=Pod.Condition.READY,
         status=Pod.Condition.Status.TRUE,
-        timeout=utilities.constants.TIMEOUT_10MIN,
+        timeout=TIMEOUT_10MIN,
     )
 
-    LOGGER.info("Wait for number of replicas = number of updated replicas")
+    LOGGER.info("Wait for deployments replicas.")
     for deployment in get_deployments(
         admin_client=dyn_client, namespace=hco_namespace.name
     ):
-        deployment.wait_for_replicas(timeout=utilities.constants.TIMEOUT_10MIN)
+        deployment.wait_for_replicas(timeout=TIMEOUT_10MIN)
 
-    LOGGER.info("Wait for the HCO to be available.")
-    for hco in HyperConverged.get(dyn_client=dyn_client, namespace=hco_namespace.name):
-        hco.wait_for_condition(
-            condition=Pod.Condition.AVAILABLE,
-            status=Pod.Condition.Status.TRUE,
-            timeout=utilities.constants.TIMEOUT_20MIN,
-        )
+    # TODO: Combine conditions checks
+    HyperConverged(
+        client=dyn_client, name=py_config["hco_cr_name"], namespace=hco_namespace.name
+    ).wait_for_condition(
+        condition=Pod.Condition.AVAILABLE,
+        status=Pod.Condition.Status.TRUE,
+        timeout=TIMEOUT_20MIN,
+    )
 
-    LOGGER.info("Check that CSV status is Succeeded")
     new_csv.wait_for_status(
         status=new_csv.Status.SUCCEEDED,
-        timeout=utilities.constants.TIMEOUT_10MIN,
+        timeout=TIMEOUT_10MIN,
         stop_status=None,
     )
 
-    utils.wait_for_operator_condition(
+    wait_for_operator_condition(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         name=hco_target_version,
         upgradable=True,
     )
 
+    # TODO: Remove
     if check_images_during_upgrade:
-        LOGGER.info("Wait for all old pods to be removed after upgrade")
+        LOGGER.info("Wait for all pre-upgrade pods to be removed after upgrade")
         wait_for_pods_removal(pods_list=pods_to_be_removed)
 
     LOGGER.info("Verify tier-2 pods images are as expected")
@@ -817,12 +813,27 @@ def upgrade_cnv(
     )
 
 
+def wait_for_csv_status_installing(new_csv):
+    try:
+        new_csv.wait_for_status(
+            status=new_csv.Status.INSTALLING,
+            timeout=TIMEOUT_10MIN,
+            stop_status=None,
+        )
+    except TimeoutExpiredError:
+        # in the case of no change there will be no/short "installing" time, and we shouldn't fail on it
+        if not new_csv.instance.status.phase == ClusterServiceVersion.Status.SUCCEEDED:
+            LOGGER.error(f"CSV status {new_csv.instance.status.phase}")
+            raise
+
+
 def determine_pods_to_be_removed(
-    all_old_pods,
-    old_pod_images,
-    current_related_images_name_and_versions,
-    target_related_images_name_and_versions,
+    all_pre_upgrade_pods,
+    pre_upgrade_pods_images,
+    pre_upgrade_related_images_name_and_versions,
+    post_upgrade_related_images_name_and_versions,
 ):
+    # TODO: Remove and check post-upgrade pods images against the CSV
     """
     Filter the list of pods before the upgrade to determine which ones need to be replaced
 
@@ -832,10 +843,10 @@ def determine_pods_to_be_removed(
     if the images are the same for that pod then it should not be removed by the upgrade
 
     Args:
-        all_old_pods (list): list of all the pre-upgrade Pods
-        old_pod_images (dict): the pre-upgrade Pod names mapped to their images
-        current_related_images_name_and_versions (dict): related images names and versions from pre-upgrade csv
-        target_related_images_name_and_versions (dict): related images names and versions from post-upgrade csv
+        all_pre_upgrade_pods (list): list of all the pre-upgrade Pods
+        pre_upgrade_pods_images (dict): the pre-upgrade Pod names mapped to their images
+        pre_upgrade_related_images_name_and_versions (dict): related images names and versions from pre-upgrade csv
+        post_upgrade_related_images_name_and_versions (dict): related images names and versions from post-upgrade csv
 
     Returns:
         (list, list): (Pods to be removed, Pods not to be removed)
@@ -846,11 +857,11 @@ def determine_pods_to_be_removed(
     pods_to_be_removed = []
     pods_not_to_be_removed = []
     missing_pod_images = {}
-    for pod in all_old_pods:
-        pod_image = old_pod_images[pod.name]
-        for image_name in current_related_images_name_and_versions.keys():
+    for pod in all_pre_upgrade_pods:
+        pod_image = pre_upgrade_pods_images[pod.name]
+        for image_name in pre_upgrade_related_images_name_and_versions.keys():
             if (
-                current_related_images_name_and_versions[image_name]["image"]
+                pre_upgrade_related_images_name_and_versions[image_name]["image"]
                 == pod_image
             ):
                 break
@@ -858,9 +869,9 @@ def determine_pods_to_be_removed(
             missing_pod_images[pod.name] = pod_image
             continue
         if (
-            image_name not in target_related_images_name_and_versions
-            or current_related_images_name_and_versions[image_name]["image"]
-            != target_related_images_name_and_versions[image_name]["image"]
+            image_name not in post_upgrade_related_images_name_and_versions
+            or pre_upgrade_related_images_name_and_versions[image_name]["image"]
+            != post_upgrade_related_images_name_and_versions[image_name]["image"]
         ):
             pods_to_be_removed.append(pod)
         else:
@@ -878,15 +889,18 @@ def determine_pods_to_be_removed(
 
 
 def approve_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
+    # TODO: Get the right IP, based on the subscription
     LOGGER.info("Get the upgrade install plan.")
-    install_plan = utils.wait_for_install_plan(
+    install_plan = wait_for_install_plan(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
 
-    LOGGER.info("Approve the upgrade install plan to trigger the upgrade.")
-    utils.approve_install_plan(install_plan=install_plan)
+    LOGGER.info(
+        f"Approve the upgrade install plan {install_plan.name} to trigger the upgrade."
+    )
+    approve_install_plan(install_plan=install_plan)
 
 
 def extract_ocp_version(ocp_image):
@@ -904,6 +918,7 @@ def extract_ocp_version(ocp_image):
 
 
 def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
+    # TODO: Refactor, use expected conditions global and use utilities.infra.wait_for_consistent_resource_conditions
     LOGGER.info("Wait for OCP upgrade to complete")
 
     upgrade_conditions = {
@@ -914,7 +929,7 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
     ocp_version = extract_ocp_version(ocp_image=ocp_image)
 
     samples = TimeoutSampler(
-        wait_timeout=utilities.constants.TIMEOUT_180MIN,
+        wait_timeout=TIMEOUT_180MIN,
         sleep=30,
         func=get_clusterversion_state_version_conditions,
         exceptions_dict={
@@ -925,7 +940,7 @@ def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
         dyn_client=dyn_client,
     )
 
-    sample = None  # will be set each iteration, setting it here allows referencing it during exception handling
+    sample = None
 
     try:
         for sample in samples:
