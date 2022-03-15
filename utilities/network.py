@@ -335,6 +335,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
                 LOGGER.warning("W/A for ovs-bridge when OVS DB is locked")
                 self.res = self.to_dict()
                 return super().deploy()
+            raise
 
 
 class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
