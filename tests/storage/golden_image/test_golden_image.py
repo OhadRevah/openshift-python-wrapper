@@ -29,6 +29,7 @@ DV_PARAM = {
 }
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4755")
 def test_regular_user_cant_create_dv_in_ns(
     golden_images_namespace,
@@ -52,6 +53,7 @@ def test_regular_user_cant_create_dv_in_ns(
             return
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "golden_image_data_volume_scope_module",
     [
@@ -107,6 +109,7 @@ def test_regular_user_can_create_vm_from_cloned_dv(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "golden_image_data_volume_scope_module",
     [
@@ -131,6 +134,7 @@ def test_regular_user_can_list_all_pvc_in_ns(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "golden_image_data_volume_scope_module",
     [
@@ -163,6 +167,7 @@ def test_regular_user_cant_clone_dv_in_ns(
             return
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-5275")
 def test_regular_user_can_create_dv_in_ns_given_proper_rolebinding(
     golden_images_namespace,

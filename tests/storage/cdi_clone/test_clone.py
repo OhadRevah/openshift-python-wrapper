@@ -222,6 +222,7 @@ def test_successful_vm_from_cloned_dv_windows(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [

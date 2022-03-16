@@ -42,6 +42,7 @@ def skip_no_reencrypt_route(upload_proxy_route):
         pytest.skip(msg="Skip testing. The upload proxy route is not re-encrypt.")
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2192")
 def test_successful_virtctl_upload_no_url(namespace, tmpdir):
     local_name = f"{tmpdir}/{Images.Cdi.QCOW2_IMG}"
@@ -95,6 +96,7 @@ def test_successful_virtctl_upload_no_route(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2217")
 def test_image_upload_with_overridden_url(
     skip_not_openshift,
@@ -119,6 +121,7 @@ def test_image_upload_with_overridden_url(
         assert PersistentVolumeClaim(name=pvc_name, namespace=namespace.name).bound()
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3031")
 def test_virtctl_image_upload_with_ca(
     enabled_ca,
@@ -172,6 +175,7 @@ def test_virtctl_image_upload_dv(
             storage_utils.check_disk_count_in_vm(vm=vm)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [
@@ -211,6 +215,7 @@ def test_virtctl_image_upload_with_exist_dv_image(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3728")
 def test_virtctl_image_upload_pvc(
     download_image, namespace, storage_class_matrix__module__
@@ -233,6 +238,7 @@ def test_virtctl_image_upload_pvc(
         assert pvc.bound()
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3725")
 def test_virtctl_image_upload_with_exist_dv(
     download_image, namespace, storage_class_matrix__module__
@@ -287,6 +293,7 @@ def empty_pvc(namespace, storage_class_matrix__module__, worker_node1):
         yield pvc
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3727")
 def test_virtctl_image_upload_with_exist_pvc(
     empty_pvc,

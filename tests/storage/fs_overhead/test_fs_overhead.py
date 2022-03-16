@@ -56,6 +56,7 @@ def data_volume_with_same_size_as_image(
         yield dv
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-5019")
 def test_upload_with_enough_size_for_overhead(
     storage_class_matrix__module__,
@@ -77,6 +78,7 @@ def test_upload_with_enough_size_for_overhead(
         check_upload_virtctl_result(result=res)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-5020")
 def test_import_with_same_size_as_image_should_fail(
     namespace,
