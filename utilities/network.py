@@ -26,6 +26,7 @@ from pytest_testconfig import config as py_config
 import utilities.infra
 import utilities.virt
 from utilities.constants import (
+    ACTIVE_BACKUP,
     IPV4_STR,
     IPV6_STR,
     LINUX_BRIDGE,
@@ -529,18 +530,15 @@ class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
 
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
-    class Mode:
-        ACTIVE_BACKUP = "active-backup"
-
     def __init__(
         self,
         name,
         bond_name,
         bond_ports,
-        mode,
+        mode=ACTIVE_BACKUP,
+        mtu=1450,
         primary_bond_port=None,
         node_selector=None,
-        mtu=None,
         teardown=True,
         ipv4_enable=False,
         ipv4_dhcp=False,
@@ -568,7 +566,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def create_interface(self):
         options_dic = self.options or {}
         options_dic.update({"miimon": "120"})
-        if self.mode == self.Mode.ACTIVE_BACKUP and self.primary_bond_port is not None:
+        if self.mode == ACTIVE_BACKUP and self.primary_bond_port is not None:
             options_dic.update({"primary": self.primary_bond_port})
 
         self.iface = {

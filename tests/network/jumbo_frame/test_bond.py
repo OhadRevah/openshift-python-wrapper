@@ -28,6 +28,7 @@ pytestmark = pytest.mark.usefixtures(
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_1(
+    index_number,
     skip_no_bond_support,
     utility_pods,
     worker_node1,
@@ -37,11 +38,10 @@ def jumbo_frame_bond1_worker_1(
     Create BOND if setup support BOND
     """
     with BondNodeNetworkConfigurationPolicy(
-        name="bond-1-nncp",
+        name=f"jumbo-frame-bond{next(index_number)}-nncp",
         bond_name=BOND_NAME,
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         node_selector=worker_node1.hostname,
-        mode="active-backup",
         mtu=MTU_9000,
     ) as bond:
         yield bond
@@ -49,6 +49,7 @@ def jumbo_frame_bond1_worker_1(
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_2(
+    index_number,
     skip_no_bond_support,
     utility_pods,
     worker_node2,
@@ -58,11 +59,10 @@ def jumbo_frame_bond1_worker_2(
     Create BOND if setup support BOND
     """
     with BondNodeNetworkConfigurationPolicy(
-        name="bond-2-nncp",
+        name=f"jumbo-frame-bond{next(index_number)}-nncp",
         bond_name=BOND_NAME,
         bond_ports=nodes_available_nics[worker_node2.name][-2:],
         node_selector=worker_node2.hostname,
-        mode="active-backup",
         mtu=MTU_9000,
     ) as bond:
         yield bond

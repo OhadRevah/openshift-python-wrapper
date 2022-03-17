@@ -94,6 +94,7 @@ NMSTATE_WEBHOOK = "nmstate-webhook"
 NODE_MAINTENANCE_OPERATOR = "node-maintenance-operator"
 ISTIO_SYSTEM_DEFAULT_NS = "istio-system"
 SSH_PORT_22 = 22
+ACTIVE_BACKUP = "active-backup"
 
 #  Time constants
 TIMEOUT_5SEC = 5

@@ -76,8 +76,6 @@ def lbodi_bond(
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         bond_ports=[primary_port, nodes_available_nics[worker_node1.name][-1]],
-        mode="active-backup",
-        mtu=1450,
         node_selector=worker_node1.hostname,
         ipv4_dhcp=True,
         ipv4_enable=True,

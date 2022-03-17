@@ -49,20 +49,6 @@ def assert_bond_validation(utility_pods, bond):
 
 
 @contextmanager
-def create_bond(bond_idx, bond_ports, mode, node_selector, options=None):
-    with BondNodeNetworkConfigurationPolicy(
-        name=f"bond{bond_idx}nncp",
-        bond_name=f"bond{bond_idx}",
-        bond_ports=bond_ports,
-        mode=mode,
-        mtu=1450,
-        node_selector=node_selector,
-        options=options,
-    ) as bond:
-        yield bond
-
-
-@contextmanager
 def create_vm(namespace, nad, node_selector, unprivileged_client):
     name = "bond-vm"
     networks = OrderedDict()
@@ -91,8 +77,10 @@ def matrix_bond_modes_bond(
     """
     Create BOND if setup support BOND
     """
-    with create_bond(
-        bond_idx=next(index_number),
+    bond_index = next(index_number)
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"matrix-bond{bond_index}-nncp",
+        bond_name=f"mtx-bond{bond_index}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         mode=link_aggregation_mode_no_connectivity_matrix__function__,
         node_selector=worker_node1.hostname,
@@ -172,10 +160,11 @@ def bridge_on_bond_fail_over_mac(
 def active_backup_bond_with_fail_over_mac(
     index_number, worker_node1, nodes_available_nics
 ):
-    with create_bond(
-        bond_idx=next(index_number),
+    bond_index = next(index_number)
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"active-bond{bond_index}-nncp",
+        bond_name=f"act-bond{bond_index}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        mode="active-backup",
         node_selector=worker_node1.hostname,
         options={"fail_over_mac": "active"},
     ) as bond:
@@ -219,10 +208,11 @@ def test_active_backup_bond_with_fail_over_mac(
     nodes_available_nics,
     utility_pods,
 ):
-    with create_bond(
-        bond_idx=next(index_number),
+    bond_index = next(index_number)
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"test-active-bond{bond_index}-nncp",
+        bond_name=f"test-act-bond{bond_index}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        mode="active-backup",
         node_selector=worker_node1.hostname,
         options={"fail_over_mac": "active"},
     ) as bond:
@@ -247,8 +237,6 @@ def test_bond_with_slaves(index_number, worker_node1, nodes_available_nics):
         name=f"bond{bond_idx}nncp",
         bond_name=f"bond{bond_idx}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
-        mode=BondNodeNetworkConfigurationPolicy.Mode.ACTIVE_BACKUP,
-        mtu=1450,
         node_selector=worker_node1.hostname,
     ) as bond:
         # Since we override slave with port we must set it back after creation

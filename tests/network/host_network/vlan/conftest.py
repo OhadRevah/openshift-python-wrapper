@@ -277,6 +277,7 @@ def skip_insufficient_nodes(schedulable_nodes):
 # VLAN on BOND fixtures
 @pytest.fixture(scope="class")
 def vlan_iface_bond_dhcp_client_1(
+    index_number,
     skip_if_no_multinic_nodes,
     hosts_common_available_ports,
     base_ethernet_interface_for_vlan_creation,
@@ -284,11 +285,9 @@ def vlan_iface_bond_dhcp_client_1(
     vlan_tag_id,
 ):
     with BondNodeNetworkConfigurationPolicy(
-        name="bond-dhcp-client-1-nncp",
+        name=f"vlan-bond{next(index_number)}-nncp",
         bond_name="bond4vlan",
         bond_ports=hosts_common_available_ports[-2:],
-        mode="active-backup",
-        mtu=1450,
         node_selector=dhcp_client_1.hostname,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
@@ -306,18 +305,18 @@ def vlan_iface_bond_dhcp_client_1(
 
 @pytest.fixture(scope="class")
 def vlan_iface_bond_dhcp_client_2(
+    index_number,
     skip_if_no_multinic_nodes,
     hosts_common_available_ports,
     base_ethernet_interface_for_vlan_creation,
     dhcp_client_2,
     vlan_tag_id,
+    vlan_iface_bond_dhcp_client_1,
 ):
     with BondNodeNetworkConfigurationPolicy(
-        name="bond-dhcp-client-2-nncp",
-        bond_name="bond4vlan",
+        name=f"vlan-bond{next(index_number)}-nncp",
+        bond_name=vlan_iface_bond_dhcp_client_1.base_iface,
         bond_ports=hosts_common_available_ports[-2:],
-        mode="active-backup",
-        mtu=1450,
         node_selector=dhcp_client_2.hostname,
     ) as bond_iface:
         with VLANInterfaceNodeNetworkConfigurationPolicy(
