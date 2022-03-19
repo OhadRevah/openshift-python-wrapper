@@ -6,6 +6,7 @@ import pytest
 
 from tests.network.upgrade.utils import (
     assert_bridge_and_vms_on_same_node,
+    assert_nmstate_bridge_creation,
     assert_node_is_marked_by_bridge,
 )
 from tests.network.utils import authentication_request
@@ -43,7 +44,7 @@ class TestUpgradeNetwork:
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_nmstate_bridge_before_upgrade"
     )
     def test_nmstate_bridge_before_upgrade(self, bridge_on_one_node):
-        bridge_on_one_node.validate_create()
+        assert_nmstate_bridge_creation(bridge=bridge_on_one_node)
 
     @pytest.mark.polarion("CNV-2744")
     @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
@@ -190,7 +191,7 @@ class TestUpgradeNetwork:
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_nmstate_bridge_after_upgrade(self, bridge_on_one_node):
-        bridge_on_one_node.validate_create()
+        assert_nmstate_bridge_creation(bridge=bridge_on_one_node)
 
     @pytest.mark.polarion("CNV-2749")
     @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)

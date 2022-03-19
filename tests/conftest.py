@@ -2644,12 +2644,14 @@ def updated_nfs_storage_profile(request, cluster_storage_classes):
 @pytest.fixture(scope="session")
 def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
+    label_schedulable_nodes,
     hosts_common_available_ports,
 ):
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="upgrade-bridge",
         interface_name="br1upgrade",
+        node_selector_labels=NODE_TYPE_WORKER_LABEL,
         ports=[hosts_common_available_ports[0]],
     ) as br:
         yield br
