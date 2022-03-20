@@ -10,13 +10,12 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import IPV4_STR, IPV6_STR, TIMEOUT_1MIN, TIMEOUT_9MIN
-from utilities.infra import is_bug_open
+from utilities.infra import is_bug_open, label_nodes
 from utilities.network import (
     IFACE_ABSENT_STATE,
     IFACE_UP_STATE,
     EthernetNetworkConfigurationPolicy,
     LinuxBridgeNodeNetworkConfigurationPolicy,
-    label_nodes,
 )
 
 

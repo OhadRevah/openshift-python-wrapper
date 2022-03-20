@@ -297,3 +297,6 @@ ALL_CNV_DEPLOYMENTS = [
     VIRT_OPERATOR,
     VIRT_TEMPLATE_VALIDATOR,
 ]
+
+# Node labels
+NODE_TYPE_WORKER_LABEL = {"node-type": "worker"}

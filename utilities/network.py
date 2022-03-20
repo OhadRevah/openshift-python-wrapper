@@ -17,7 +17,7 @@ from ocp_resources.node_network_configuration_policy import (
 )
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor, sub_resource_level
+from ocp_resources.resource import sub_resource_level
 from ocp_resources.sriov_network import SriovNetwork
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -1123,6 +1123,7 @@ def network_device(
     namespace=None,
     sriov_iface=None,
     sriov_resource_name=None,
+    node_selector_labels=None,
 ):
     kwargs = {
         "name": nncp_name,
@@ -1145,6 +1146,7 @@ def network_device(
         kwargs["node_selector"] = node_selector
         kwargs["ipv4_enable"] = ipv4_enable
         kwargs["ipv4_dhcp"] = ipv4_dhcp
+        kwargs["node_selector_labels"] = node_selector_labels
 
     with NETWORK_DEVICE_TYPE[interface_type](**kwargs) as iface:
         yield iface
@@ -1191,15 +1193,3 @@ def assert_pingable_vm(
     assert (
         float(ping_stat) < 100
     ), f"Ping from {src_vm.name} to {dst_ip} failed {assert_message}"
-
-
-def label_nodes(nodes, labels):
-    updates = [
-        ResourceEditor({node: {"metadata": {"labels": labels}}}) for node in nodes
-    ]
-
-    for update in updates:
-        update.update(backup_resources=True)
-    yield nodes
-    for update in updates:
-        update.restore()

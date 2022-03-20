@@ -1282,3 +1282,15 @@ def get_utility_pods_from_nodes(nodes, admin_client, label_selector):
         not nodes_without_utility_pods
     ), f"Missing pods with label {label_selector} for: {' '.join(nodes_without_utility_pods)}"
     return [pod for pod in pods if pod.node.name in [node.name for node in nodes]]
+
+
+def label_nodes(nodes, labels):
+    updates = [
+        ResourceEditor({node: {"metadata": {"labels": labels}}}) for node in nodes
+    ]
+
+    for update in updates:
+        update.update(backup_resources=True)
+    yield nodes
+    for update in updates:
+        update.restore()

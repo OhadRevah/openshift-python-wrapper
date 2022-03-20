@@ -8,7 +8,8 @@ from ocp_resources.node_network_configuration_enactment import (  # noqa: N813
 from ocp_resources.utils import TimeoutSampler
 
 from utilities.constants import TIMEOUT_30SEC
-from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy, label_nodes
+from utilities.infra import label_nodes
+from utilities.network import LinuxBridgeNodeNetworkConfigurationPolicy
 
 
 LOGGER = logging.getLogger(__name__)

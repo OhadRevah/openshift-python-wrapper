@@ -82,6 +82,7 @@ from utilities.constants import (
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     LINUX_BRIDGE,
     MTU_9000,
+    NODE_TYPE_WORKER_LABEL,
     OVS_BRIDGE,
     SRIOV,
     TIMEOUT_4MIN,
@@ -117,6 +118,7 @@ from utilities.infra import (
     get_schedulable_nodes_ips,
     get_subscription,
     get_utility_pods_from_nodes,
+    label_nodes,
     name_prefix,
     ocp_resources_submodule_files_path,
     prepare_test_dir_log,
@@ -2932,3 +2934,8 @@ def sno_cluster(admin_client):
         ).instance.status.infrastructureTopology
         == "SingleReplica"
     )
+
+
+@pytest.fixture(scope="session")
+def label_schedulable_nodes(schedulable_nodes):
+    yield from label_nodes(nodes=schedulable_nodes, labels=NODE_TYPE_WORKER_LABEL)
