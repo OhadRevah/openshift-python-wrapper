@@ -82,6 +82,7 @@ def verify_cdi_app_label(cdi_resources, cnv_version):
                 ), f"Missing label {Resource.ApiGroup.APP_KUBERNETES_IO}/managed-by for {resource.name}"
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "cdi_resources",
     [
@@ -163,6 +164,7 @@ def is_cdi_worker_pod(dyn_client, pod_name, storage_ns_name):
             break
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3475")
 def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
     # verify "cdi.kubevirt.io" label is included in importer pod
@@ -178,6 +180,7 @@ def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3474")
 def test_uploader_pod_cdi_label(
     admin_client, storage_class_matrix__module__, namespace, unprivileged_client
@@ -198,6 +201,7 @@ def test_uploader_pod_cdi_label(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3476")
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
@@ -249,6 +253,7 @@ def test_cloner_pods_cdi_label(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "cdi_resources",
     [

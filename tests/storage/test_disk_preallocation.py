@@ -51,6 +51,7 @@ def assert_preallocation_annotation(pvc, res):
     ), f"'{preallocation_annotation}' should be '{res}'"
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [
@@ -79,6 +80,7 @@ def test_preallocation_dv(
     assert_preallocation_annotation(pvc=pvc, res="true")
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_module",
     [
@@ -108,6 +110,7 @@ def test_preallocation_globally_dv_spec_without_preallocation(
     assert_preallocation_requested_annotation(pvc=pvc, status="true")
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [
@@ -138,6 +141,7 @@ def test_preallocation_globally_dv_spec_with_preallocation_false(
     assert_preallocation_requested_annotation(pvc=pvc, status="false")
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_multi_storage_scope_function",
     [

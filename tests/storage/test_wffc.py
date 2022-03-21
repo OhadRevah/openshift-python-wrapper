@@ -136,6 +136,7 @@ def vm_from_uploaded_dv(namespace, uploaded_dv_via_virtctl_wffc, uploaded_wffc_d
 
 
 class TestWFFCUploadVirtctl:
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-4711")
     def test_wffc_fail_to_upload_dv_via_virtctl(
         self,
@@ -161,6 +162,7 @@ class TestWFFCUploadVirtctl:
             uploaded_wffc_dv.status == wffc_status
         ), f"The status of DV {uploaded_wffc_dv.name}:{uploaded_wffc_dv.status} and not {wffc_status}"
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-7413")
     def test_wffc_create_vm_from_uploaded_dv_via_virtctl(
         self,
@@ -186,6 +188,7 @@ class TestWFFCUploadVirtctl:
             storage_utils.check_disk_count_in_vm(vm=vm_from_uploaded_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_scope_function",
     [
@@ -208,6 +211,7 @@ def test_wffc_import_http_dv(
         storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4739")
 def test_wffc_import_registry_dv(
     skip_test_if_no_hpp_sc,
@@ -229,6 +233,7 @@ def test_wffc_import_registry_dv(
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-4741")
 def test_wffc_upload_dv_via_token(
     skip_test_if_no_hpp_sc,
@@ -259,6 +264,7 @@ def test_wffc_upload_dv_via_token(
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_scope_function",
     [

@@ -82,6 +82,7 @@ def cdiconfig_update(
                     _create_vm_check_disk_count(dv=dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2451")
 def test_cdiconfig_scratchspace_fs_upload_to_block(
     skip_test_if_no_hpp_sc,
@@ -105,6 +106,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2478")
 def test_cdiconfig_scratchspace_fs_import_to_block(
     skip_test_if_no_hpp_sc,
@@ -126,6 +128,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2214")
 def test_cdiconfig_status_scratchspace_update_with_spec(
     skip_test_if_no_hpp_sc,
@@ -145,6 +148,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2440")
 def test_cdiconfig_scratch_space_not_default(
     skip_test_if_no_hpp_sc,
@@ -166,6 +170,7 @@ def test_cdiconfig_scratch_space_not_default(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2412")
 def test_cdi_config_scratch_space_value_is_default(
     default_sc_as_fallback_for_scratch,
@@ -176,6 +181,7 @@ def test_cdi_config_scratch_space_value_is_default(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2208")
 def test_cdi_config_exists(skip_not_openshift, cdi_config, upload_proxy_route):
     assert cdi_config.upload_proxy_url == upload_proxy_route.host
@@ -194,6 +200,7 @@ def test_different_route_for_upload_proxy(
         cdi_config.wait_until_upload_url_changed(uploadproxy_url=new_route.host)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2215")
 def test_route_for_different_service(
     skip_not_openshift, cdi_config, upload_proxy_route
@@ -205,6 +212,7 @@ def test_route_for_different_service(
         assert cdi_config.upload_proxy_url == upload_proxy_route.host
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2216")
 def test_upload_proxy_url_overridden(
     skip_not_openshift, cdi_config, namespace, cdi_config_upload_proxy_overridden
@@ -215,6 +223,7 @@ def test_upload_proxy_url_overridden(
         assert cdi_config.upload_proxy_url != new_route.host
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2441")
 def test_cdiconfig_changing_storage_class_default(
     skip_test_if_no_hpp_sc,
@@ -271,6 +280,7 @@ def test_cdiconfig_changing_storage_class_default(
                         utils.check_disk_count_in_vm(vm=vm_dv)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-5999")
 def test_cdi_spec_reconciled_by_hco(cdi, cdi_config, namespace):
     """
@@ -310,6 +320,7 @@ def test_cdi_spec_reconciled_by_hco(cdi, cdi_config, namespace):
                     break
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("hco_updated_spec_stanza", "expected_in_cdi_config_from_cr"),
     [

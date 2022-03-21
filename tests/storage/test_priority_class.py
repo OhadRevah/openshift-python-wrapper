@@ -75,6 +75,7 @@ def importer_pod(admin_client, namespace):
     return get_importer_pod(dyn_client=admin_client, namespace=namespace.name)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "priority_class",
     [
@@ -97,6 +98,7 @@ def test_dv_template_has_the_same_priority_as_vm_when_not_specified(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "priority_class",
     [

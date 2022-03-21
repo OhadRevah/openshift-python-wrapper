@@ -216,6 +216,7 @@ def test_dv_delete_from_vm(
         storage_utils.check_disk_count_in_vm(vm=vm)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3667")
 def test_upload_after_certs_renewal(
     skip_if_sc_volume_binding_mode_is_wffc,
@@ -257,6 +258,7 @@ def test_upload_after_certs_renewal(
     ],
     indirect=True,
 )
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3678")
 def test_import_clone_after_certs_renewal(
     refresh_cdi_certificates,
@@ -279,6 +281,7 @@ def test_import_clone_after_certs_renewal(
             storage_utils.check_disk_count_in_vm(vm=vm)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3977")
 def test_upload_after_validate_aggregated_api_cert(
     skip_if_sc_volume_binding_mode_is_wffc,

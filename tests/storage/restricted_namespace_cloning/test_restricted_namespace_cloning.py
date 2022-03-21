@@ -58,6 +58,7 @@ def create_dv_negative(
             LOGGER.error("Target dv was created, but shouldn't have been")
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",
     [
@@ -85,6 +86,7 @@ def test_unprivileged_user_clone_same_namespace_negative(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module, permissions_src",
     [
@@ -119,6 +121,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
             return
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module",
     [
@@ -147,6 +150,7 @@ def test_unprivileged_user_clone_different_namespaces_negative(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module, permissions_src, permissions_dst",
     [
@@ -223,6 +227,7 @@ def test_user_permissions_positive(
             return
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module, permissions_src, permissions_dst",
     [
@@ -272,6 +277,7 @@ def test_user_permissions_negative(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "namespace, data_volume_multi_storage_scope_module, permissions_dst",
     [

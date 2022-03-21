@@ -285,6 +285,7 @@ def get_pod_and_scratch_pvc_nodes(dyn_client, namespace):
                 }
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2817")
 @pytest.mark.parametrize(
     "dv_kwargs",
@@ -311,6 +312,7 @@ def test_hostpath_pod_reference_pvc(skip_test_if_no_hpp_sc, namespace, dv_kwargs
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3354")
 def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
     """
@@ -334,6 +336,7 @@ def test_hpp_not_specify_node_immediate(skip_when_hpp_no_immediate, namespace):
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3228")
 def test_hpp_specify_node_immediate(
     skip_when_hpp_no_immediate, namespace, worker_node1
@@ -356,6 +359,7 @@ def test_hpp_specify_node_immediate(
         dv.wait(timeout=TIMEOUT_10MIN)
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("image_name", "dv_name"),
     [
@@ -396,6 +400,7 @@ def test_hostpath_http_import_dv(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
     skip_when_hpp_no_waitforfirstconsumer,
@@ -429,6 +434,7 @@ def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
             assert pod.instance.spec.nodeName == pvc.selected_node
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3280")
 def test_hpp_pvc_specify_node_immediate(
     skip_when_hpp_no_immediate,
@@ -463,6 +469,7 @@ def test_hpp_pvc_specify_node_immediate(
             assert pod.instance.spec.nodeName == worker_node1.name
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2771")
 def test_hpp_upload_virtctl(
     skip_when_hpp_no_waitforfirstconsumer,
@@ -505,6 +512,7 @@ def test_hpp_upload_virtctl(
         ), "No 'volume.kubernetes.io/selected-node' annotation found on PVC / node names differ"
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-2769")
 def test_hostpath_upload_dv_with_token(
     skip_test_if_no_hpp_sc,
@@ -537,6 +545,7 @@ def test_hostpath_upload_dv_with_token(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     ("dv_name", "url"),
     [
@@ -588,6 +597,7 @@ def test_hostpath_registry_import_dv(
         )
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_scope_function",
     [
@@ -708,6 +718,7 @@ def test_hostpath_clone_dv_with_annotation(
                 storage_utils.check_disk_count_in_vm(vm=vm)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_cr(skip_test_if_no_hpp_sc, hostpath_provisioner):
     assert hostpath_provisioner.exists
@@ -719,6 +730,7 @@ def test_hpp_cr(skip_test_if_no_hpp_sc, hostpath_provisioner):
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-7969")
 def test_hpp_prometheus_resources(skip_test_if_no_hpp_sc, hpp_prometheus_resources):
     non_existing_resources = []
@@ -730,11 +742,13 @@ def test_hpp_prometheus_resources(skip_test_if_no_hpp_sc, hpp_prometheus_resourc
     ), f"Non existing prometheus resources - {non_existing_resources}"
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_serviceaccount(skip_test_if_no_hpp_sc, hpp_serviceaccount):
     assert hpp_serviceaccount.exists
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_scc(skip_test_if_no_hpp_sc, hpp_scc):
     assert hpp_scc.exists
@@ -744,6 +758,7 @@ def test_hpp_scc(skip_test_if_no_hpp_sc, hpp_scc):
     ), "No 'hostpath-provisioner-admin' SA attached to 'hostpath-provisioner' SCC"
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_clusterrole_and_clusterrolebinding(
     skip_test_if_no_hpp_sc, hpp_clusterrole, hpp_clusterrolebinding
@@ -758,6 +773,7 @@ def test_hpp_clusterrole_and_clusterrolebinding(
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
     assert hpp_daemonset.exists
@@ -767,6 +783,7 @@ def test_hpp_daemonset(skip_test_if_no_hpp_sc, hpp_daemonset):
     )
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-3279")
 def test_hpp_operator_pod(skip_test_if_no_hpp_sc, hpp_operator_pod):
     assert (
@@ -791,6 +808,7 @@ def test_hpp_operator_recreate_after_deletion(
     ), "Pre delete binding mode differs from post delete"
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-6097")
 def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
     assert hpp_scc.exists, f"scc {hpp_scc.name} is not existed"
@@ -809,6 +827,7 @@ def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
     ), f"Container image is not runAsUser with user id {user_id}"
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "hpp_resources",
     [

@@ -26,6 +26,7 @@ def virtctl_libguestfs(data_volume_scope_function):
     ).wait_deleted()
 
 
+@pytest.mark.sno
 @pytest.mark.parametrize(
     "data_volume_scope_function",
     [

@@ -75,6 +75,7 @@ def hotplug_volume_windows(
         yield
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-5508")
 def test_hotplugvolumes_feature_gate(kubevirt_feature_gates):
     hotplug_volumes = "HotplugVolumes"
@@ -83,6 +84,7 @@ def test_hotplugvolumes_feature_gate(kubevirt_feature_gates):
     ), f"{hotplug_volumes} not in {kubevirt_feature_gates}"
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-6013")
 @pytest.mark.parametrize(
     "hotplug_volume",
@@ -99,6 +101,7 @@ def test_hotplug_volume_with_serial(
     assert_disk_serial(vm=fedora_vm_for_hotplug)
 
 
+@pytest.mark.sno
 @pytest.mark.polarion("CNV-6014")
 @pytest.mark.parametrize(
     "hotplug_volume",
