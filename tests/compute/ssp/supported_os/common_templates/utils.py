@@ -64,9 +64,6 @@ def vm_os_version(vm):
 def check_vm_xml_hyperv(vm):
     """Verify HyperV values in VMI"""
 
-    # TODO: Add evmcs for fedora and Windows hyperV features, once merged
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1952551
-
     hyperv_features = vm.vmi.xml_dict["domain"]["features"]["hyperv"]
     failed_hyeperv_features = [
         hyperv_features[feature]
@@ -101,7 +98,6 @@ def check_windows_vm_hvinfo(vm):
     """Verify HyperV values in Windows VMI using hvinfo"""
 
     def _check_hyperv_recommendations():
-        # TODO: Add NestedEVMCS once https://bugzilla.redhat.com/show_bug.cgi?id=1952551 is merged
         hyperv_windows_recommendations_list = [
             "RelaxedTiming",
             "MSRAPICRegisters",
