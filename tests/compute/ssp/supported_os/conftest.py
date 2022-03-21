@@ -154,11 +154,6 @@ def vm_object_from_template(
         vm_name = request.param["vm_name"].replace(".", "-").lower()
         labels = Template.generate_template_labels(**request.param["template_labels"])
 
-    # RHEL 6 - default network does not work (used only in test_rhel_os_support)
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1794243
-    network_model = "e1000" if rhel6 else param_dict.get("network_model")
-    network_multiqueue = False if rhel6 else param_dict.get("network_multiqueue")
-
     return VirtualMachineForTestsFromTemplate(
         name=vm_name,
         namespace=namespace.name,
@@ -168,8 +163,8 @@ def vm_object_from_template(
         vm_dict=param_dict.get("vm_dict"),
         cpu_threads=param_dict.get("cpu_threads"),
         memory_requests=param_dict.get("memory_requests"),
-        network_model=network_model,
-        network_multiqueue=network_multiqueue,
+        network_model=param_dict.get("network_model"),
+        network_multiqueue=param_dict.get("network_multiqueue"),
         ssh=param_dict.get("ssh", True),
         systemctl_support=not rhel6,
         disable_sha2_algorithms=rhel6,
