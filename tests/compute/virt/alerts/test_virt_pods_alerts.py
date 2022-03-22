@@ -4,10 +4,7 @@ Firing alerts for kubevirt pods
 
 import pytest
 
-from tests.compute.utils import (
-    scale_deployment_replicas,
-    verify_no_listed_alerts_on_cluster,
-)
+from tests.compute.utils import verify_no_listed_alerts_on_cluster
 from utilities.hco import update_custom_resource
 
 
@@ -33,20 +30,6 @@ VIRT_ALERTS_LIST = [
     "KubeVirtComponentExceedsRequestedMemory",
     "KubeVirtComponentExceedsRequestedCPU",
 ]
-
-
-@pytest.fixture()
-def disabled_virt_operator(hco_namespace):
-    """
-    Scale down virt-operator replicas to 0 so no any kubevirt pods will be re-created with default parameters
-    It should be done before any other virt deployment scales
-    """
-    with scale_deployment_replicas(
-        deployment_name="virt-operator",
-        namespace=hco_namespace.name,
-        replica_count=0,
-    ):
-        yield
 
 
 @pytest.fixture()

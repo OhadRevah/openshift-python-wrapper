@@ -2,7 +2,8 @@ from contextlib import contextmanager
 
 import pytest
 
-from tests.compute.utils import scale_deployment_replicas, update_hco_annotations
+from tests.compute.utils import update_hco_annotations
+from utilities.infra import scale_deployment_replicas
 from utilities.virt import vm_instance_from_template, wait_for_updated_kv_value
 
 

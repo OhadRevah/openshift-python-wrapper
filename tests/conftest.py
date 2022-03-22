@@ -88,10 +88,12 @@ from utilities.constants import (
     OVS_BRIDGE,
     SRIOV,
     TIMEOUT_4MIN,
+    TIMEOUT_5MIN,
     TIMEOUT_6MIN,
     UNPRIVILEGED_PASSWORD,
     UNPRIVILEGED_USER,
     UTILITY,
+    VIRT_OPERATOR,
     WORKERS_TYPE,
 )
 from utilities.exceptions import CommonCpusNotFoundError, LeftoversFoundError
@@ -117,6 +119,7 @@ from utilities.infra import (
     name_prefix,
     ocp_resources_submodule_files_path,
     prepare_test_dir_log,
+    scale_deployment_replicas,
     separator,
     wait_for_pods_deletion,
 )
@@ -148,6 +151,7 @@ from utilities.virt import (
     Prometheus,
     VirtualMachineForTests,
     fedora_vm_body,
+    get_all_virt_pods_with_running_status,
     get_base_templates_list,
     get_hyperconverged_kubevirt,
     get_hyperconverged_ovs_annotations,
@@ -2938,3 +2942,44 @@ def golden_images_data_import_crons_scope_class(admin_client, golden_images_name
 def skip_if_not_sno_cluster(sno_cluster):
     if not sno_cluster:
         pytest.skip("Skip test on non-SNO cluster")
+
+
+@pytest.fixture()
+def virt_pods_with_running_status(admin_client, hco_namespace):
+    return get_all_virt_pods_with_running_status(
+        dyn_client=admin_client, hco_namespace=hco_namespace
+    )
+
+
+@pytest.fixture()
+def disabled_virt_operator(admin_client, hco_namespace, virt_pods_with_running_status):
+    virt_pods_count_before_disabling_virt_operator = len(
+        virt_pods_with_running_status.keys()
+    )
+
+    with scale_deployment_replicas(
+        deployment_name=VIRT_OPERATOR,
+        namespace=hco_namespace.name,
+        replica_count=0,
+    ):
+        yield
+
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=5,
+        func=get_all_virt_pods_with_running_status,
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            if len(sample.keys()) == virt_pods_count_before_disabling_virt_operator:
+                return True
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"After restoring replicas for {VIRT_OPERATOR},"
+            f"{virt_pods_with_running_status} virt pods were expected to be in running state."
+            f"Here are available virt pods:{sample}"
+        )
+        raise

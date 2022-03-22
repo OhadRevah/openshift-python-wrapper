@@ -15,11 +15,10 @@ from tests.compute.ssp.descheduler.constants import (
 )
 from tests.compute.utils import (
     fetch_processid_from_linux_vm,
-    scale_deployment_replicas,
     start_and_fetch_processid_on_linux_vm,
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
-from utilities.infra import get_pods
+from utilities.infra import get_pods, scale_deployment_replicas
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

@@ -31,11 +31,12 @@ from tests.compute.ssp.descheduler.utils import (
     vms_per_nodes,
     wait_vmi_failover,
 )
-from tests.compute.utils import (
-    check_pod_disruption_budget_for_completed_migrations,
+from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
+from utilities.infra import (
+    create_ns,
+    get_raw_package_manifest,
     scale_deployment_replicas,
 )
-from utilities.infra import create_ns, get_raw_package_manifest
 from utilities.virt import node_mgmt_console, wait_for_node_schedulable_status
 
 

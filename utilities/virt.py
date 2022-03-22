@@ -2202,3 +2202,22 @@ def wait_for_kubevirt_conditions(
         polling_interval=sleep,
         consecutive_checks_count=consecutive_checks_count,
     )
+
+
+def get_all_virt_pods_with_running_status(dyn_client, hco_namespace):
+    virt_pods_with_status = {
+        pod.name: pod.status
+        for pod in Pod.get(
+            dyn_client=dyn_client,
+            namespace=hco_namespace.name,
+        )
+        if pod.name.startswith("virt")
+    }
+    assert all(
+        pod_status == Pod.Status.RUNNING
+        for pod_status in virt_pods_with_status.values()
+    ), (
+        f"All virt pods were expected to be in running state."
+        f"Here are all virt pods:{virt_pods_with_status}"
+    )
+    return virt_pods_with_status

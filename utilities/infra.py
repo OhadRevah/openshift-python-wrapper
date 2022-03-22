@@ -8,6 +8,7 @@ import shlex
 import shutil
 import subprocess
 from configparser import ConfigParser
+from contextlib import contextmanager
 from pathlib import Path
 
 import bugzilla
@@ -1292,3 +1293,17 @@ def label_nodes(nodes, labels):
 
 def get_daemonsets(admin_client, namespace):
     return list(DaemonSet.get(dyn_client=admin_client, namespace=namespace))
+
+
+@contextmanager
+def scale_deployment_replicas(deployment_name, namespace, replica_count):
+    """
+    It scales deployments replicas. At the end of the test restores them back
+    """
+    deployment = Deployment(name=deployment_name, namespace=namespace)
+    initial_replicas = deployment.instance.spec.replicas
+    deployment.scale_replicas(replica_count=replica_count)
+    deployment.wait_for_replicas(deployed=bool(replica_count > 0))
+    yield
+    deployment.scale_replicas(replica_count=initial_replicas)
+    deployment.wait_for_replicas(deployed=bool(initial_replicas > 0))
