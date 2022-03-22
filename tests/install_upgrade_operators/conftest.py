@@ -26,12 +26,12 @@ def hco_current_version(cnv_current_version):
     return f"kubevirt-hyperconverged-operator.v{cnv_current_version}"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def is_deployment_from_production_source(cnv_source):
     return cnv_source == "production"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def is_deployment_from_stage_source(cnv_source):
     return cnv_source == "stage"
 

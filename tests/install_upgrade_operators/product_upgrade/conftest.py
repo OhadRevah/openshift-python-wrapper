@@ -5,8 +5,11 @@ import pytest
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.operator_hub import OperatorHub
 from ocp_resources.resource import ResourceEditor
+from pytest_testconfig import py_config
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
+from tests.install_upgrade_operators.utils import wait_for_csv
+from utilities.infra import get_related_images_name_and_version
 
 
 LOGGER = logging.getLogger(__name__)
@@ -62,10 +65,10 @@ def update_image_content_source(
     cnv_image_name,
     cnv_registry_source,
     admin_client,
-    cnv_upgrade,
+    cnv_upgrade_path,
     tmpdir,
 ):
-    if not cnv_upgrade or is_deployment_from_production_source:
+    if not cnv_upgrade_path or is_deployment_from_production_source:
         # not needed when upgrading OCP
         # Generate ICSP only in case of deploying from OSBS or Stage source; Production source does not require ICSP.
         return
@@ -98,3 +101,102 @@ def update_image_content_source(
 
     LOGGER.info("Wait for MCP to update now that we modified the ICSP")
     upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
+
+
+@pytest.fixture(scope="session")
+def pre_upgrade_operators_pods(admin_client, hco_namespace):
+    LOGGER.info("Get all operators pods before upgrade")
+    return upgrade_utils.get_cluster_pods(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        pods_type="operator",
+    )
+
+
+@pytest.fixture(scope="session")
+def all_pre_upgrade_pods(admin_client, hco_namespace):
+    LOGGER.info("Get all CNV pods before upgrade")
+    return upgrade_utils.get_cluster_pods(
+        dyn_client=admin_client, hco_namespace=hco_namespace.name, pods_type="all"
+    )
+
+
+@pytest.fixture(scope="session")
+def pre_upgrade_pods_images(all_pre_upgrade_pods):
+    return {
+        pod.name: pod.instance.spec.containers[0].image for pod in all_pre_upgrade_pods
+    }
+
+
+@pytest.fixture(scope="session")
+def pre_upgrade_operators_versions(csv_scope_session):
+    LOGGER.info("Get all operators Pods names and images version from the current CSV")
+    return upgrade_utils.get_operators_names_and_info(csv=csv_scope_session)
+
+
+@pytest.fixture(scope="session")
+def pre_upgrade_related_images_name_and_versions(
+    admin_client, hco_namespace, hco_current_version
+):
+    LOGGER.info("Get all related images names and versions from the current CSV")
+    return get_related_images_name_and_version(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        version=hco_current_version,
+    )
+
+
+@pytest.fixture(scope="session")
+def updated_catalog_source_image(
+    admin_client, is_deployment_from_production_source, pytestconfig
+):
+    if not is_deployment_from_production_source:
+        LOGGER.info("Deployment is not from production; update catalog source image.")
+        upgrade_utils.update_image_in_catalog_source(
+            dyn_client=admin_client,
+            namespace=py_config["marketplace_namespace"],
+            image=pytestconfig.option.cnv_image,
+        )
+
+
+@pytest.fixture(scope="session")
+def updated_subscription_channel_and_source(
+    cnv_subscription_scope_session, cnv_registry_source
+):
+    LOGGER.info("Update subscription channel and source.")
+    upgrade_utils.update_subscription_channel_and_source(
+        cnv_subscription=cnv_subscription_scope_session,
+        cnv_subscription_channel="stable",
+        cnv_subscription_source=cnv_registry_source["cnv_subscription_source"],
+    )
+
+
+@pytest.fixture(scope="session")
+def approved_upgrade_install_plan(admin_client, hco_namespace, hco_target_version):
+    upgrade_utils.approve_upgrade_install_plan(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        hco_target_version=hco_target_version,
+    )
+
+
+@pytest.fixture(scope="session")
+def upgrade_target_csv(admin_client, hco_namespace, hco_target_version):
+    LOGGER.info(f"Wait for a new CSV with version {hco_target_version}")
+    return wait_for_csv(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        hco_target_version=hco_target_version,
+    )
+
+
+@pytest.fixture(scope="session")
+def target_related_images_name_and_versions(
+    admin_client, hco_namespace, hco_target_version
+):
+    LOGGER.info("Get all related images names and versions from the new CSV")
+    return get_related_images_name_and_version(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        version=hco_target_version,
+    )

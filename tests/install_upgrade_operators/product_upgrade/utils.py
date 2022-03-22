@@ -27,7 +27,6 @@ from urllib3.exceptions import (
 
 from tests.install_upgrade_operators.utils import (
     approve_install_plan,
-    wait_for_csv,
     wait_for_install_plan,
     wait_for_operator_condition,
 )
@@ -46,9 +45,7 @@ from utilities.infra import (
     collect_logs,
     collect_resources_for_test,
     get_clusterversion,
-    get_csv_by_name,
     get_deployments,
-    get_related_images_name_and_version,
     run_command,
     write_to_extras_file,
 )
@@ -241,7 +238,7 @@ def wait_for_operator_pod_replacements(
                     "hco_namespace": hco_namespace,
                     "operator_name": operator_name,
                     "operator_target_info": operator_target_info,
-                    "old_operators_pods": old_operators_pods,
+                    "pre_upgrade_operators_pods": old_operators_pods,
                     "upgrade_resilience": upgrade_resilience,
                 },
             )
@@ -624,91 +621,26 @@ def upgrade_cnv(
     dyn_client,
     hco_namespace,
     hco_target_version,
-    hco_current_version,
-    cnv_target_image,
     upgrade_resilience,
-    cnv_subscription_source,
-    is_deployment_from_production_source,
     cnv_target_version,
-    cnv_subscription,
+    pre_upgrade_operators_pods,
+    all_pre_upgrade_pods,
+    pre_upgrade_pods_images,
+    pre_upgrade_operators_versions,
+    pre_upgrade_related_images_name_and_versions,
+    upgrade_target_csv,
+    target_related_images_name_and_versions,
 ):
-    # TODO: Pre-upgrade functions should be in fixtures
     # TODO: Place utility functions under Class and re-use values
-    LOGGER.info("Get all operators pods before upgrade")
-    pre_upgrade_operators_pods = get_cluster_pods(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        pods_type="operator",
-    )
-    all_pre_upgrade_pods = get_cluster_pods(
-        dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
-    )
-    # retrieve the old pod images now because after the upgrade the pod will raise an exception:
-    # kubernetes.client.exceptions.ApiException: (404)
-    # Reason: NotFound
-    pre_upgrade_pods_images = {
-        pod.name: pod.instance.spec.containers[0].image for pod in all_pre_upgrade_pods
-    }
 
-    LOGGER.info(f"Get current CSV {hco_current_version}")
-    pre_upgrade_csv = get_csv_by_name(
+    LOGGER.info(
+        f"Check that CSV {upgrade_target_csv.name} status is {upgrade_target_csv.Status.INSTALLING}"
+    )
+    wait_for_csv_status_installing(
+        target_csv=upgrade_target_csv,
         admin_client=dyn_client,
-        namespace=hco_namespace.name,
-        csv_name=hco_current_version,
-    )
-
-    LOGGER.info("Get all operators Pods names and images version from the current CSV")
-    pre_upgrade_operators_versions = get_operators_names_and_info(csv=pre_upgrade_csv)
-
-    LOGGER.info("Get all related images names and versions from the current CSV")
-    pre_upgrade_related_images_name_and_versions = get_related_images_name_and_version(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        version=hco_current_version,
-    )
-
-    if not is_deployment_from_production_source:
-        LOGGER.info("Deployment is not from production; update catalog source image.")
-        update_image_in_catalog_source(
-            dyn_client=dyn_client,
-            namespace=py_config["marketplace_namespace"],
-            image=cnv_target_image,
-        )
-
-    LOGGER.info("Update subscription channel and source.")
-    update_subscription_channel_and_source(
-        cnv_subscription=cnv_subscription,
-        cnv_subscription_channel="stable",
-        cnv_subscription_source=cnv_subscription_source,
-    )
-
-    approve_upgrade_install_plan(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
+        namespace=hco_namespace,
         hco_target_version=hco_target_version,
-    )
-
-    LOGGER.info(f"Wait for a new CSV with version {hco_target_version}")
-    new_csv = wait_for_csv(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        hco_target_version=hco_target_version,
-    )
-    LOGGER.info("Get all related images names and versions from the new CSV")
-    target_related_images_name_and_versions = get_related_images_name_and_version(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        version=hco_target_version,
-    )
-
-    LOGGER.info(f"Check that CSV {new_csv.name} status is {new_csv.Status.INSTALLING}")
-    wait_for_csv_status_installing(new_csv=new_csv)
-
-    wait_for_operator_condition(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        name=hco_target_version,
-        upgradable=False,
     )
 
     LOGGER.info("Determine which pods should be removed after upgrade.")
@@ -731,7 +663,7 @@ def upgrade_cnv(
 
     if check_images_during_upgrade:
         LOGGER.info("Get all operators Pods names and images version from the new CSV")
-        operators_target_versions = get_operators_names_and_info(csv=new_csv)
+        operators_target_versions = get_operators_names_and_info(csv=upgrade_target_csv)
 
         # TODO: Refactor - check new pods images against new CSV
         LOGGER.info("Wait for operators replacement.")
@@ -786,8 +718,8 @@ def upgrade_cnv(
         timeout=TIMEOUT_20MIN,
     )
 
-    new_csv.wait_for_status(
-        status=new_csv.Status.SUCCEEDED,
+    upgrade_target_csv.wait_for_status(
+        status=upgrade_target_csv.Status.SUCCEEDED,
         timeout=TIMEOUT_10MIN,
         stop_status=None,
     )
@@ -813,17 +745,28 @@ def upgrade_cnv(
     )
 
 
-def wait_for_csv_status_installing(new_csv):
+def wait_for_csv_status_installing(
+    target_csv, admin_client, namespace, hco_target_version
+):
     try:
-        new_csv.wait_for_status(
-            status=new_csv.Status.INSTALLING,
+        target_csv.wait_for_status(
+            status=target_csv.Status.INSTALLING,
             timeout=TIMEOUT_10MIN,
             stop_status=None,
         )
+        wait_for_operator_condition(
+            dyn_client=admin_client,
+            hco_namespace=namespace.name,
+            name=hco_target_version,
+            upgradable=False,
+        )
     except TimeoutExpiredError:
         # in the case of no change there will be no/short "installing" time, and we shouldn't fail on it
-        if not new_csv.instance.status.phase == ClusterServiceVersion.Status.SUCCEEDED:
-            LOGGER.error(f"CSV status {new_csv.instance.status.phase}")
+        if (
+            not target_csv.instance.status.phase
+            == ClusterServiceVersion.Status.SUCCEEDED
+        ):
+            LOGGER.error(f"CSV status {target_csv.instance.status.phase}")
             raise
 
 
