@@ -245,7 +245,7 @@ def run_ssh_commands(host, commands, get_pty=False, check_rc=True):
                  ["sudo", "reboot"], [["sleep", "5"], ["date"]]
 
         get_pty (bool): get_pty parameter for remote session (equivalent to -t argument for ssh)
-        check_rc (bool): if True checks if command rc and raises if rc != 0
+        check_rc (bool): if True checks command return code and raises if rc != 0
 
     Returns:
         list: List of commands output.
