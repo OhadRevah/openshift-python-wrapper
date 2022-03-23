@@ -48,7 +48,6 @@ def get_wsl_pid(vm):
 
 def get_windows_vm_resource_usage(vm):
     """
-    CPU and Memory usage (in percentage) BZ: https://bugzilla.redhat.com/show_bug.cgi?id=1931782
     Running python script to get cpu and memory usage output like:
     'Windows VM CPU and Memory usage: The CPU usage: 0.9, Memory used(RAM):20.5
     (20.5, 0.9)'

@@ -39,7 +39,7 @@ from utilities.infra import (
     ResourceEditorValidateHCOReconcile,
     get_pod_by_name_prefix,
 )
-from utilities.virt import restart_guest_agent, wait_for_vm_interfaces
+from utilities.virt import wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -639,15 +639,13 @@ def get_vmi_ip_v4_by_name(vm, name):
         iface_ips = _get_iface_by_name(vmi_interfaces=vmi_interfaces).ipAddresses
         if iface_ips:
             return iface_ips
+        return []
 
     def _get_interface_ips():
-        # TODO : remove restart_guest_agent and replace all calls to it with _extract_interface_ips once
-        #  BZ 1907707 is fixed
         vmi_ips = _extract_interface_ips()
         if vmi_ips:
             return vmi_ips
 
-        restart_guest_agent(vm=vm)
         wait_for_vm_interfaces(vmi=vmi)
         return _extract_interface_ips()
 

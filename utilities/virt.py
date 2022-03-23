@@ -71,7 +71,6 @@ from utilities.infra import (
     get_admin_client,
     get_hyperconverged_resource,
     is_bug_open,
-    run_ssh_commands,
 )
 from utilities.storage import default_storage_class
 
@@ -435,7 +434,7 @@ class VirtualMachineForTests(VirtualMachine):
                     )
                 # NOTE: When using ssh_secret we need cloud_init_type as cloudInitConfigDrive
                 # networkData does not work with cloudInitConfigDrive
-                # https://bugzilla.redhat.com/show_bug.cgi?id=1941470
+                # https://bugzilla.redhat.com/show_bug.cgi?id=1941470 <skip-bug-check>
                 if self.cloud_init_type == CLOUND_INIT_CONFIG_DRIVE and self.ssh_secret:
                     template_spec = self.update_vm_ssh_secret_configuration(
                         template_spec=template_spec
@@ -492,7 +491,7 @@ class VirtualMachineForTests(VirtualMachine):
 
     def set_diskless_vm(self, template_spec):
         template_spec.get("domain", {}).get("devices", {}).pop("disks", None)
-        # As of https://bugzilla.redhat.com/show_bug.cgi?id=1954667, it is not possible to create a VM
+        # As of https://bugzilla.redhat.com/show_bug.cgi?id=1954667 <skip-bug-check>, it is not possible to create a VM
         # with volume(s) without corresponding disks
         template_spec.pop("volumes", None)
 
@@ -1883,22 +1882,6 @@ def verify_vm_migrated(
         assert_pod_status_completed(source_pod=vmi_source_pod)
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
-
-
-# TODO : remove restart_guest_agent and replace all calls to it with wait_for_vm_interfaces once BZ 1907707 is fixed
-def restart_guest_agent(vm):
-    bug_num = 1907707
-    restart = "restart qemu-guest-agent"
-    if is_bug_open(bug_id=bug_num):
-        LOGGER.info(f"{restart} (Workaround for bug {bug_num}).")
-        run_ssh_commands(
-            host=vm.ssh_exec, commands=[shlex.split(f"sudo systemctl {restart}")]
-        )
-        running_vm(vm=vm, check_ssh_connectivity=False)
-    else:
-        LOGGER.warning(
-            f"bug {bug_num} is resolved. please remove all references to it from the automation"
-        )
 
 
 def vm_cloud_init_volume(vm_spec):

@@ -19,9 +19,9 @@ from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     fedora_vm_body,
-    restart_guest_agent,
     restart_vm_wait_for_running_vm,
     running_vm,
+    wait_for_vm_interfaces,
 )
 
 
@@ -230,7 +230,7 @@ def vm4_interfaces(running_sriov_vm4):
             # 2 is used to make sure that number of interfaces before reboot are 2 then proceed.
             # Later this will be compared with number of interfaces after reboot.
             return sample
-        restart_guest_agent(vm=running_sriov_vm4)
+        wait_for_vm_interfaces(vmi=running_sriov_vm4.vmi)
 
 
 @pytest.fixture(params=list(range(1, 6)))
