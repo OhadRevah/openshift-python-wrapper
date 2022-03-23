@@ -221,8 +221,11 @@ def _save_pytest_execution_info(session, stage):
         stage (str): pytest stage (session start or end).
     """
     try:
+        if session.config.getoption("--collect-only"):
+            return
+
         kubeconfig = os.getenv(KUBECONFIG)
-        if not os.path.exists(kubeconfig):
+        if not (kubeconfig and os.path.exists(kubeconfig)):
             return
 
         with open(kubeconfig, "r") as fd:
