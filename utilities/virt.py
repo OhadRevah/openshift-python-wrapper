@@ -717,14 +717,14 @@ class VirtualMachineForTests(VirtualMachine):
         )
         cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key}]"
 
-        # Add ssh-rsa to opensshserver.config PubkeyAcceptedKeyTypes - needed when using SSH via paramiko
+        # Enable LEGACY crypto policies - needed until keys updated to ECDSA
         # Enable PasswordAuthentication in /etc/ssh/sshd_config
         # Enable SSH service and restart SSH service
         run_cmd_commands = [
             (
-                # Rhel9 - PubkeyAcceptedAlgorithms, all other OSes - PubkeyAcceptedKeyTypes
-                "sudo sed -i '/^PubkeyAccepted/ s/$/,ssh-rsa/' "
-                "/etc/crypto-policies/back-ends/opensshserver.config"
+                # TODO: Remove LEGACY ssh-rsa support after ECDSA supported by test
+                "grep ssh-rsa /etc/crypto-policies/back-ends/opensshserver.config || "
+                "sudo update-crypto-policies --set LEGACY || true"
             ),
             (
                 r"sudo sed -i 's/^#\?PasswordAuthentication no/PasswordAuthentication yes/g' "
