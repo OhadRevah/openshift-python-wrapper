@@ -351,6 +351,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         teardown=True,
         ipv6_enable=False,
         dry_run=None,
+        node_selector_labels=None,
     ):
         iface_name = f"{base_iface}.{tag}"
         if not name:
@@ -364,6 +365,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
             ipv4_dhcp=ipv4_dhcp,
             ipv6_enable=ipv6_enable,
             dry_run=dry_run,
+            node_selector_labels=node_selector_labels,
         )
         self.iface_state = iface_state
         self.base_iface = base_iface

@@ -15,7 +15,7 @@ from tests.network.host_network.vlan.utils import (
     enable_ipv4_dhcp_client,
 )
 from tests.network.utils import DHCP_SERVICE_RESTART
-from utilities.constants import LINUX_BRIDGE
+from utilities.constants import LINUX_BRIDGE, NODE_TYPE_WORKER_LABEL
 from utilities.infra import is_bug_open, run_ssh_commands
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
@@ -113,15 +113,15 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
         tag=vlan_tag_id["1001"],
         ipv4_enable=True,
         ipv4_dhcp=True,
-        ipv6_enable=False,
         node_selector=dhcp_client_2.hostname,
     ) as vlan_iface:
         yield vlan_iface
 
 
 @pytest.fixture(scope="module")
-def vlan_iface_on_all_nodes(
+def vlan_iface_on_all_worker_nodes(
     skip_if_no_multinic_nodes,
+    label_schedulable_nodes,
     vlan_tag_id,
     vlan_base_iface,
     base_ethernet_interface_for_vlan_creation,
@@ -130,6 +130,7 @@ def vlan_iface_on_all_nodes(
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
         tag=vlan_tag_id["1000"],
+        node_selector_labels=NODE_TYPE_WORKER_LABEL,
     ) as vlan_iface:
         yield vlan_iface
 

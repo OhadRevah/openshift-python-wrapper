@@ -21,16 +21,16 @@ pytestmark = pytest.mark.usefixtures("skip_if_workers_vms")
 
 class TestVlanInterface:
     @pytest.mark.polarion("CNV-4161")
-    def test_vlan_interface_on_all_hosts(
+    def test_vlan_interface_on_all_worker_nodes(
         self,
         schedulable_nodes,
         utility_pods,
         namespace,
-        vlan_iface_on_all_nodes,
+        vlan_iface_on_all_worker_nodes,
     ):
         assert_vlan_interface(
             utility_pods=utility_pods,
-            iface_name=vlan_iface_on_all_nodes.iface_name,
+            iface_name=vlan_iface_on_all_worker_nodes.iface_name,
             schedulable_nodes=schedulable_nodes,
         )
 
