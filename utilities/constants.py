@@ -297,3 +297,6 @@ ALL_CNV_DEPLOYMENTS = [
 
 # Node labels
 NODE_TYPE_WORKER_LABEL = {"node-type": "worker"}
+NODE_ROLE_KUBERNETES_IO = "node-role.kubernetes.io"
+WORKER_NODE_LABEL_KEY = f"{NODE_ROLE_KUBERNETES_IO}/worker"
+MASTER_NODE_LABEL_KEY = f"{NODE_ROLE_KUBERNETES_IO}/master"

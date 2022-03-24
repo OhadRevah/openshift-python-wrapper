@@ -19,6 +19,7 @@ from utilities.constants import (
     HCO_WEBHOOK,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    MASTER_NODE_LABEL_KEY,
     NODE_MAINTENANCE_OPERATOR,
     SSP_OPERATOR,
     TIMEOUT_5MIN,
@@ -26,6 +27,7 @@ from utilities.constants import (
     VIRT_HANDLER,
     VIRT_OPERATOR,
     VIRT_TEMPLATE_VALIDATOR,
+    WORKER_NODE_LABEL_KEY,
 )
 from utilities.hco import wait_for_hco_post_update_stable_state
 
@@ -57,7 +59,7 @@ SUBSCRIPTION_NODE_SELCTOR_3 = {"op-comp": "op3"}
 SUBSCRIPTION_TOLERATIONS = [
     {
         "effect": "NoSchedule",
-        "key": "node-role.kubernetes.io/master",
+        "key": MASTER_NODE_LABEL_KEY,
         "operator": "Exists",
     }
 ]
@@ -86,7 +88,7 @@ NODE_PLACEMENT_INFRA = {
         "tolerations": [
             {
                 "effect": "NoSchedule",
-                "key": "node-role.kubernetes.io/worker",
+                "key": WORKER_NODE_LABEL_KEY,
                 "operator": "Exists",
             }
         ],
@@ -130,7 +132,7 @@ NODE_PLACEMENT_WORKLOADS = {
         "tolerations": [
             {
                 "effect": "NoSchedule",
-                "key": "node-role.kubernetes.io/worker",
+                "key": WORKER_NODE_LABEL_KEY,
                 "operator": "Exists",
             }
         ],

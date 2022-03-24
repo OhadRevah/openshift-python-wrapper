@@ -81,6 +81,7 @@ from utilities.constants import (
     KUBECONFIG,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     LINUX_BRIDGE,
+    MASTER_NODE_LABEL_KEY,
     MTU_9000,
     NODE_TYPE_WORKER_LABEL,
     OVS_BRIDGE,
@@ -1169,9 +1170,7 @@ def schedulable_nodes(nodes):
 
 @pytest.fixture(scope="session")
 def masters(nodes):
-    yield [
-        node for node in nodes if "node-role.kubernetes.io/master" in node.labels.keys()
-    ]
+    yield [node for node in nodes if MASTER_NODE_LABEL_KEY in node.labels.keys()]
 
 
 @pytest.fixture(scope="session")

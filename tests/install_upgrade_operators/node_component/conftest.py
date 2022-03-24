@@ -25,6 +25,7 @@ from utilities.constants import (
     VIRT_CONTROLLER,
     VIRT_HANDLER,
     VIRT_TEMPLATE_VALIDATOR,
+    WORKER_NODE_LABEL_KEY,
 )
 from utilities.hco import add_labels_to_nodes, apply_np_changes
 from utilities.infra import get_daemonset_by_name, get_subscription
@@ -47,9 +48,7 @@ def workers(nodes):
     This fixture is intended to be used for purposes when kubevirt
     itself is not yet installed.
     """
-    return [
-        node for node in nodes if "node-role.kubernetes.io/worker" in node.labels.keys()
-    ]
+    return [node for node in nodes if WORKER_NODE_LABEL_KEY in node.labels.keys()]
 
 
 @pytest.fixture(scope="class")
