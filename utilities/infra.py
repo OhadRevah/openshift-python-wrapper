@@ -50,7 +50,7 @@ from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
 
 BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
 JIRA_STATUS_CLOSED = ("closed", "done", "obsolete", "resolved")
-NON_EXIST_URL = "https://noneexist.com"
+NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
 HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
