@@ -252,7 +252,7 @@ def wait_for_hco_version(client, hco_ns_name, cnv_version):
     sample = None
     try:
         for sample in samples:
-            if sample and sample == f"v{cnv_version}":
+            if sample and sample == cnv_version:
                 LOGGER.info(f"HCO version updated to {cnv_version}")
                 return sample
     except TimeoutExpiredError:
