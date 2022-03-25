@@ -832,7 +832,6 @@ def determine_pods_to_be_removed(
 
 
 def approve_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
-    # TODO: Get the right IP, based on the subscription
     LOGGER.info("Get the upgrade install plan.")
     install_plan = wait_for_install_plan(
         dyn_client=dyn_client,

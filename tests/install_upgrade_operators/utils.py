@@ -14,12 +14,18 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ConflictError
 
-from utilities.constants import TIMEOUT_10MIN, TIMEOUT_20MIN, TIMEOUT_40MIN
+from utilities.constants import (
+    HCO_SUBSCRIPTION,
+    TIMEOUT_10MIN,
+    TIMEOUT_20MIN,
+    TIMEOUT_40MIN,
+)
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
     DEFAULT_RESOURCE_CONDITIONS,
     collect_logs,
     collect_resources_for_test,
+    get_subscription,
     wait_for_consistent_resource_conditions,
 )
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
@@ -117,15 +123,32 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
     )
-    install_plan_samples = None
+    subscription = get_subscription(
+        admin_client=dyn_client,
+        namespace=hco_namespace,
+        subscription_name=HCO_SUBSCRIPTION,
+    )
+    install_plan_name_in_subscription = None
     try:
         for install_plan_samples in install_plan_sampler:
+            # wait for the install plan to be created and updated in the subscription.
+            install_plan_name_in_subscription = (
+                subscription.instance.status.installplan.name
+            )
             for ip in install_plan_samples:
-                if hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]:
+                if (
+                    hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]
+                    and ip.name == install_plan_name_in_subscription
+                ):
                     return ip
+                LOGGER.info(
+                    f"Subscription: {subscription.name}, is associated with install plan:"
+                    f" {install_plan_name_in_subscription}"
+                )
     except TimeoutExpiredError:
         LOGGER.error(
-            f"timeout waiting for target install plan: version={hco_target_version} ips={install_plan_samples}"
+            f"timeout waiting for target install plan: version={hco_target_version}, "
+            f"subscription install plan: {install_plan_name_in_subscription}"
         )
         if collect_logs():
             collect_resources_for_test(resources_to_collect=[InstallPlan])
