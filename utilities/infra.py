@@ -605,8 +605,8 @@ def validate_nodes_schedulable(nodes):
 
 def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=1):
     """
-    Waits for all pods in a given namespace to reach Running state. To avoid catching all pods in running state too
-    soon, use number_of_consecutive_checks with appropriate values.
+    Waits for all pods in a given namespace to reach Running/Completed state. To avoid catching all pods in running
+    state too soon, use number_of_consecutive_checks with appropriate values.
 
     Args:
          admin_client(DynamicClient): Dynamic client
@@ -622,11 +622,14 @@ def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=
         pods_not_running = []
         for pod in pods:
             try:
-                # We should not count any pod that is currently marked for deletion, irrespective of it's
-                # current status or a pod that is already in a not running state
-                if (
-                    pod.instance.metadata.get("deletionTimestamp")
-                    or pod.instance.status.phase != pod.Status.RUNNING
+                # Waits for all pods in a given namespace to be in final healthy state(running/completed).
+                # We also need to keep track of pods marked for deletion as not running. This would ensure any pod that
+                # was spinned up in place of pod marked for deletion, reaches healthy state before end of this check
+                if pod.instance.metadata.get(
+                    "deletionTimestamp"
+                ) or pod.instance.status.phase not in (
+                    pod.Status.RUNNING,
+                    pod.Status.SUCCEEDED,
                 ):
                     pods_not_running.append({pod.name: pod.status})
             except (ResourceNotFoundError, NotFoundError):
