@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import shlex
 import shutil
 import socket
 import tempfile
@@ -2442,6 +2443,13 @@ def cluster_info(
 ):
     title = "\nCluster info:\n"
     if is_downstream_distribution:
+        virtctl_client_version, virtctl_server_version = (
+            check_output(shlex.split("virtctl version"))
+            .decode("utf-8")
+            .strip()
+            .splitlines()
+        )
+
         LOGGER.info(
             f"{title}"
             f"\tOpenshift version: {openshift_current_version}\n"
@@ -2450,6 +2458,7 @@ def cluster_info(
             f"\tOCS version: {ocs_current_version}\n"
             f"\tIPv4 cluster: {ipv4_supported_cluster}\n"
             f"\tIPv6 cluster: {ipv6_supported_cluster}\n"
+            f"\tVirtctl version: \n\t{virtctl_client_version}\n\t{virtctl_server_version}\n"
         )
     elif is_upstream_distribution:
         LOGGER.info(
