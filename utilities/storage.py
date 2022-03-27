@@ -23,6 +23,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+import utilities.infra
 from utilities import console
 from utilities.constants import (
     HOTPLUG_DISK_SERIAL,
@@ -33,13 +34,6 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     TIMEOUT_30MIN,
     TIMEOUT_60MIN,
-)
-from utilities.infra import (
-    get_admin_client,
-    run_ssh_commands,
-    run_virtctl_command,
-    url_excluded_from_validation,
-    validate_file_exists_in_url,
 )
 
 
@@ -122,9 +116,9 @@ def create_dv(
     api_name="storage",
 ):
     if source in ("http", "https"):
-        if not url_excluded_from_validation(url):
+        if not utilities.infra.url_excluded_from_validation(url):
             # Make sure URL and the file exists
-            validate_file_exists_in_url(url=url)
+            utilities.infra.validate_file_exists_in_url(url=url)
 
     with DataVolume(
         source=source,
@@ -146,7 +140,7 @@ def create_dv(
         multus_annotation=multus_annotation,
         teardown=teardown,
         preallocation=preallocation,
-        privileged_client=get_admin_client(),
+        privileged_client=utilities.infra.get_admin_client(),
         api_name=api_name,
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
@@ -373,7 +367,7 @@ def virtctl_volume(
     if persist:
         command.append("--persist")
 
-    yield run_virtctl_command(command=command, namespace=namespace)
+    yield utilities.infra.run_virtctl_command(command=command, namespace=namespace)
 
 
 @contextmanager
@@ -438,7 +432,7 @@ def virtctl_upload_dv(
     ):
         command.append("--force-bind")
 
-    yield run_virtctl_command(command=command, namespace=namespace)
+    yield utilities.infra.run_virtctl_command(command=command, namespace=namespace)
 
     if cleanup:
         resource_to_cleanup.clean_up()
@@ -697,7 +691,8 @@ def run_command_on_cirros_vm_and_check_output(vm, command, expected_result):
 
 def assert_disk_serial(vm, command=shlex.split("sudo ls /dev/disk/by-id")):
     assert (
-        HOTPLUG_DISK_SERIAL in run_ssh_commands(host=vm.ssh_exec, commands=command)[0]
+        HOTPLUG_DISK_SERIAL
+        in utilities.infra.run_ssh_commands(host=vm.ssh_exec, commands=command)[0]
     ), f"hotplug disk serial id {HOTPLUG_DISK_SERIAL} is not in VM"
 
 

@@ -37,6 +37,8 @@ from paramiko.ssh_exception import NoValidConnectionsError
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
+import utilities.infra
+import utilities.storage
 from utilities.constants import (
     CLOUD_INIT_DISK_NAME,
     CLOUD_INIT_NO_CLOUD,
@@ -63,16 +65,6 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import CommandExecFailed
-from utilities.infra import (
-    ClusterHosts,
-    authorized_key,
-    camelcase_to_mixedcase,
-    collect_logs,
-    get_admin_client,
-    get_hyperconverged_resource,
-    is_bug_open,
-)
-from utilities.storage import default_storage_class
 
 
 LOGGER = logging.getLogger(__name__)
@@ -321,7 +313,7 @@ class VirtualMachineForTests(VirtualMachine):
             namespace=namespace,
             client=client,
             teardown=teardown,
-            privileged_client=get_admin_client(),
+            privileged_client=utilities.infra.get_admin_client(),
             dry_run=dry_run,
         )
         self.body = body
@@ -373,7 +365,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.gpu_name = gpu_name
         self.systemctl_support = systemctl_support
         self.vhostmd = vhostmd
-        self.vm_debug_logs = vm_debug_logs or collect_logs()
+        self.vm_debug_logs = vm_debug_logs or utilities.infra.collect_logs()
         self.priority_class_name = priority_class_name
         self.disable_sha2_algorithms = disable_sha2_algorithms
 
@@ -720,7 +712,10 @@ class VirtualMachineForTests(VirtualMachine):
             )
 
         # Add RSA to authorized_keys to enable login using an SSH key
-        cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key(private_key_path=CNV_SSH_KEY_PATH)}]"
+        authorized_key = utilities.infra.authorized_key(
+            private_key_path=CNV_SSH_KEY_PATH
+        )
+        cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key}]"
 
         # Add ssh-rsa to opensshserver.config PubkeyAcceptedKeyTypes - needed when using SSH via paramiko
         # Enable PasswordAuthentication in /etc/ssh/sshd_config
@@ -956,7 +951,8 @@ class VirtualMachineForTests(VirtualMachine):
     def get_storage_configuration(self):
         def _sc_name_for_storage_api():
             return self.data_volume_template["spec"]["storage"].get(
-                "storageClassName", default_storage_class(client=self.client).name
+                "storageClassName",
+                utilities.storage.default_storage_class(client=self.client).name,
             )
 
         api_name = (
@@ -1275,7 +1271,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             admin_client=self.client, template_labels=self.template_labels
         )
         resources_list = template_object.process(
-            client=get_admin_client(), **template_kwargs
+            client=utilities.infra.get_admin_client(), **template_kwargs
         )
         for resource in resources_list:
             if (
@@ -1392,7 +1388,8 @@ class ServiceForVirtualMachineForTests(Service):
             return self.instance.spec.clusterIP
 
         vm_node = Node(
-            client=get_admin_client(), name=self.vmi.instance.status.nodeName
+            client=utilities.infra.get_admin_client(),
+            name=self.vmi.instance.status.nodeName,
         )
         if self.service_type == Service.Type.NODE_PORT:
             if ip_family:
@@ -1412,7 +1409,9 @@ class ServiceForVirtualMachineForTests(Service):
             return self.instance.attributes.spec.ports[0]["port"]
 
         if self.service_type == Service.Type.NODE_PORT:
-            node_port = camelcase_to_mixedcase(camelcase_str=self.service_type)
+            node_port = utilities.infra.camelcase_to_mixedcase(
+                camelcase_str=self.service_type
+            )
             return self.instance.attributes.spec.ports[0][node_port]
 
 
@@ -1437,7 +1436,7 @@ class Prometheus(object):
     ):
         self.namespace = namespace
         self.resource_name = resource_name
-        self.client = client or get_admin_client()
+        self.client = client or utilities.infra.get_admin_client()
         self.api_v1 = "/api/v1"
 
         # get route to prometheus HTTP api
@@ -1551,7 +1550,7 @@ def wait_for_ssh_connectivity(vm, timeout=TIMEOUT_2MIN, tcp_timeout=TIMEOUT_1MIN
             break
 
     bug_id = 2005693
-    if is_bug_open(bug_id=bug_id):
+    if utilities.infra.is_bug_open(bug_id=bug_id):
         LOGGER.info(f"W/A for bug {bug_id}: Wait for SSH connectivity.")
         sampler = _sampler(
             exceptions_dict={NoValidConnectionsError: [], socket.timeout: []},
@@ -1678,7 +1677,7 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
 
     # On bare metal cluster, address is acquired by DHCP
     # Default GW is set to eth1, thus should be removed from eth0
-    if workers_type == ClusterHosts.Type.PHYSICAL:
+    if workers_type == utilities.infra.ClusterHosts.Type.PHYSICAL:
         bootcmds += [
             "nmcli connection modify eth1 ipv4.method auto",
             "route del default gw  0.0.0.0 eth0",
@@ -1691,7 +1690,7 @@ def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
     bootcmds += [f"nmcli con up {iface}"]
 
     # On PSI, change default GW to brcnv network
-    if workers_type == ClusterHosts.Type.VIRTUAL:
+    if workers_type == utilities.infra.ClusterHosts.Type.VIRTUAL:
         bootcmds += [
             f"ip route replace default via " f"{default_gw}",
             "route del default gw  0.0.0.0 eth0",
@@ -1878,7 +1877,7 @@ def verify_vm_migrated(
         wait_for_vm_interfaces(vmi=vm.vmi)
 
     # Bug 2005693 - trying to SSH to a VM may fail if the source virt-launcher pod is terminating
-    if is_bug_open(bug_id=2005693):
+    if utilities.infra.is_bug_open(bug_id=2005693):
         assert_pod_status_completed(source_pod=vmi_source_pod)
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
@@ -2089,7 +2088,7 @@ def verify_one_pdb_per_vm(vm):
     LOGGER.info(f"Verify one {pdb_resource_name} for VM {vm.name}")
     pdbs_dict = {}
     for pdb in PodDisruptionBudget.get(
-        dyn_client=get_admin_client(), namespace=vm.namespace
+        dyn_client=utilities.infra.get_admin_client(), namespace=vm.namespace
     ):
         if pdb.instance.metadata.ownerReferences[0].name == vm.name:
             pdbs_dict[pdb.name] = pdb.instance.metadata
@@ -2160,7 +2159,7 @@ def wait_for_updated_kv_value(admin_client, hco_namespace, path, value, timeout=
             if sample and sample == value:
                 break
     except TimeoutExpiredError:
-        hco_annotations = get_hyperconverged_resource(
+        hco_annotations = utilities.infra.get_hyperconverged_resource(
             client=admin_client, hco_ns_name=hco_namespace.name
         ).instance.metadata.annotations
         LOGGER.error(

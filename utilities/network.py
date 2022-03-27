@@ -23,6 +23,8 @@ from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import config as py_config
 
+import utilities.infra
+import utilities.virt
 from utilities.constants import (
     IPV4_STR,
     IPV6_STR,
@@ -34,12 +36,6 @@ from utilities.constants import (
     TIMEOUT_8MIN,
     WORKERS_TYPE,
 )
-from utilities.infra import (
-    ClusterHosts,
-    ResourceEditorValidateHCOReconcile,
-    get_pod_by_name_prefix,
-)
-from utilities.virt import wait_for_vm_interfaces
 
 
 LOGGER = logging.getLogger(__name__)
@@ -154,7 +150,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             # set port["vlan"] = vlan_trunk
             # TODO: Remove below if statement after BZ 2026621 fixed
             if (
-                os.environ.get(WORKERS_TYPE) == ClusterHosts.Type.PHYSICAL
+                os.environ.get(WORKERS_TYPE)
+                == utilities.infra.ClusterHosts.Type.PHYSICAL
                 and self.bridge_type != self.ovs_bridge_type
             ):
                 port["vlan"] = {}
@@ -646,7 +643,7 @@ def get_vmi_ip_v4_by_name(vm, name):
         if vmi_ips:
             return vmi_ips
 
-        wait_for_vm_interfaces(vmi=vmi)
+        utilities.virt.wait_for_vm_interfaces(vmi=vmi)
         return _extract_interface_ips()
 
     sampler = TimeoutSampler(
@@ -993,7 +990,7 @@ def compose_cloud_init_data_dict(network_data=None, ipv6_network_data=None):
 
 
 def ovs_pods(admin_client, hco_namespace):
-    pods = get_pod_by_name_prefix(
+    pods = utilities.infra.get_pod_by_name_prefix(
         dyn_client=admin_client,
         pod_prefix=OVS_DS_NAME,
         namespace=hco_namespace,
@@ -1158,7 +1155,7 @@ def enable_hyperconverged_ovs_annotations(
     hyperconverged_resource,
     network_addons_config,
 ):
-    with ResourceEditorValidateHCOReconcile(
+    with utilities.infra.ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
         },

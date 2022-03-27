@@ -8,6 +8,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.infra
+import utilities.ssp
 from utilities.constants import (
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
     HCO_SUBSCRIPTION,
@@ -15,10 +16,6 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
     TIMEOUT_15MIN,
-)
-from utilities.ssp import (
-    wait_for_at_least_one_auto_update_data_import_cron,
-    wait_for_deleted_data_import_crons,
 )
 
 
@@ -278,7 +275,7 @@ def disable_common_boot_image_import_feature_gate(
             hco_resource=hco_resource,
             enable_feature_gate=False,
         )
-        wait_for_deleted_data_import_crons(
+        utilities.ssp.wait_for_deleted_data_import_crons(
             data_import_crons=golden_images_data_import_crons
         )
         yield
@@ -299,7 +296,7 @@ def enable_common_boot_image_import_feature_gate_wait_for_data_import_cron(
         hco_resource=hco_resource,
         enable_feature_gate=True,
     )
-    wait_for_at_least_one_auto_update_data_import_cron(
+    utilities.ssp.wait_for_at_least_one_auto_update_data_import_cron(
         admin_client=admin_client, namespace=namespace
     )
 

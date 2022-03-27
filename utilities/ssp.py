@@ -7,8 +7,8 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+import utilities.storage
 from utilities.constants import SSP_KUBEVIRT_HYPERCONVERGED, TIMEOUT_2MIN
-from utilities.storage import DATA_IMPORT_CRON_SUFFIX
 
 
 LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,9 @@ def wait_for_deleted_data_import_crons(data_import_crons):
             data_import_cron.name
             for data_import_cron in _data_import_crons
             if data_import_cron.exists
-            and re.sub(DATA_IMPORT_CRON_SUFFIX, "", data_import_cron.name)
+            and re.sub(
+                utilities.storage.DATA_IMPORT_CRON_SUFFIX, "", data_import_cron.name
+            )
             in _auto_boot_sources
         ]
 
