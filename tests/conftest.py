@@ -545,17 +545,6 @@ def pytest_collection_modifyitems(session, config, items):
                 )
             )
 
-        # Add tier3 marker for Windows matrix tests running with sc that is not OCS
-        add_tier3_marker = []
-        for user_property in item.user_properties:
-            if "polarion-parameter-windows_os_matrix" in user_property or (
-                "polarion-parameter-storage_class_matrix" in user_property
-                and "ocs-storagecluster-ceph-rbd" not in user_property
-            ):
-                add_tier3_marker.append(True)
-            if len(add_tier3_marker) == 2:
-                item.add_marker(marker="tier3")
-
         # Add tier2 marker for tests without an exclution marker.
         markers = [mark.name for mark in list(item.iter_markers())]
         if not [mark for mark in markers if mark in EXCLUDE_MARKER_FROM_TIER2_MARKER]:
