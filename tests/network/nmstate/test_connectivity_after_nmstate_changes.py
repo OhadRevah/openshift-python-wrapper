@@ -26,12 +26,12 @@ LOGGER = logging.getLogger(__name__)
 BRIDGE_NAME = "br1test"
 
 
-def restart_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
+def restart_nmstate_handler(admin_client, nmstate_ds, nmstate_namespace):
     LOGGER.info("Delete NMstate PODs")
     for pod in get_pod_by_name_prefix(
         dyn_client=admin_client,
         pod_prefix=NMSTATE_HANDLER,
-        namespace=hco_namespace.name,
+        namespace=nmstate_namespace.name,
         get_all=True,
     ):
         pod.delete(wait=True)
@@ -200,9 +200,11 @@ def ssh_in_vm_background(
 
 
 @pytest.fixture(scope="class")
-def restarted_nmstate_handler(admin_client, hco_namespace, nmstate_ds):
+def restarted_nmstate_handler(admin_client, nmstate_ds, nmstate_namespace):
     restart_nmstate_handler(
-        admin_client=admin_client, hco_namespace=hco_namespace, nmstate_ds=nmstate_ds
+        admin_client=admin_client,
+        nmstate_ds=nmstate_ds,
+        nmstate_namespace=nmstate_namespace,
     )
 
 
@@ -251,12 +253,12 @@ class TestConnectivityAfterNmstateChanged:
         self,
         nncp_ready,
         admin_client,
-        hco_namespace,
         nmstate_ds,
         nmstate_linux_bridge_attached_vma,
         nmstate_linux_bridge_attached_vmb,
         nmstate_linux_bridge_attached_running_vma,
         nmstate_linux_bridge_attached_running_vmb,
+        nmstate_namespace,
         vmb_dst_ip,
         vmb_pinged,
     ):
@@ -264,7 +266,7 @@ class TestConnectivityAfterNmstateChanged:
         for idx in range(5):
             restart_nmstate_handler(
                 admin_client=admin_client,
-                hco_namespace=hco_namespace,
+                nmstate_namespace=nmstate_namespace,
                 nmstate_ds=nmstate_ds,
             )
             LOGGER.info(

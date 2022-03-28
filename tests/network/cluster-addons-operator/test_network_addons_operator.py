@@ -47,11 +47,9 @@ COMPONENTS_TO_IGNORE = [
 ]
 EXPECTED_CNAO_COMP = [
     "multus",
-    "NMSTATE_HANDLER_IMAGE",
     "cnao",
     "kubeMacPool",
     "linuxBridge",
-    "nmstate",
     "ovs",
 ]
 MANAGED_BY = "managed-by"

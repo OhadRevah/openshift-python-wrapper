@@ -3,6 +3,7 @@
 import logging
 
 import pytest
+from ocp_resources.namespace import Namespace
 
 from tests.network.utils import wait_for_address_on_iface
 from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
@@ -126,9 +127,16 @@ def bridge_on_management_ifaces_node2(
 
 
 @pytest.fixture(scope="module")
-def nmstate_ds(admin_client, hco_namespace):
+def nmstate_ds(admin_client, nmstate_namespace):
     return get_daemonset_by_name(
         admin_client=admin_client,
         daemonset_name=NMSTATE_HANDLER,
-        namespace_name=hco_namespace.name,
+        namespace_name=nmstate_namespace.name,
     )
+
+
+@pytest.fixture(scope="session")
+def nmstate_namespace(admin_client):
+    nmstate_ns = Namespace(name="openshift-nmstate")
+    assert nmstate_ns.exists, "Namespace openshift-nmstate doesn't exist"
+    return nmstate_ns

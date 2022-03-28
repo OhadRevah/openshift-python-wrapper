@@ -11,12 +11,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.install_upgrade_operators.cert_renewal.constants import (
     VIRT_TEMPLATE_VALIDATOR_CERTS,
 )
-from utilities.constants import (
-    NMSTATE_WEBHOOK,
-    TIMEOUT_2MIN,
-    TIMEOUT_10MIN,
-    TIMEOUT_20SEC,
-)
+from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN, TIMEOUT_20SEC
 from utilities.infra import run_command
 
 
@@ -25,7 +20,6 @@ LOGGER = logging.getLogger(__name__)
 
 SECRETS = [
     "kubemacpool-service",
-    NMSTATE_WEBHOOK,
     "ssp-operator-service-cert",
     VIRT_TEMPLATE_VALIDATOR_CERTS,
 ]

@@ -33,7 +33,6 @@ from utilities.constants import (
     BRIDGE_MARKER,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
-    NMSTATE_HANDLER,
     OPENSHIFT_NAMESPACE,
 )
 
@@ -175,12 +174,6 @@ class TestMustGatherCluster:
                 py_config["hco_namespace"],
                 marks=(pytest.mark.polarion("CNV-2983")),
                 id="kubemacpool-mac-controller-manager_pods",
-            ),
-            pytest.param(
-                f"name={NMSTATE_HANDLER}",
-                py_config["hco_namespace"],
-                marks=(pytest.mark.polarion("CNV-2984")),
-                id=f"{NMSTATE_HANDLER}_pods",
             ),
             pytest.param(
                 "name=cluster-network-addons-operator",

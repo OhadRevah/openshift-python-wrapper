@@ -20,8 +20,6 @@ from utilities.constants import (
     HCO_SUBSCRIPTION,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
-    NMSTATE_HANDLER,
-    NMSTATE_WEBHOOK,
     TIMEOUT_5MIN,
     VIRT_API,
     VIRT_CONTROLLER,
@@ -129,15 +127,14 @@ def network_addon_config_spec_placement(admin_client):
 @pytest.fixture()
 def network_deployment_placement(admin_client, hco_namespace):
     node_selector_deployments = {}
-    for deployment in [KUBEMACPOOL_MAC_CONTROLLER_MANAGER, NMSTATE_WEBHOOK]:
-        nw_deployment = get_deployment_by_name(
-            admin_client=admin_client,
-            deployment_name=deployment,
-            namespace_name=hco_namespace.name,
-        ).instance.to_dict()["spec"]["template"]["spec"]
-        node_selector_deployments[deployment] = nw_deployment.get("nodeSelector").get(
-            "infra-comp"
-        )
+    nw_deployment = get_deployment_by_name(
+        admin_client=admin_client,
+        deployment_name=KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+        namespace_name=hco_namespace.name,
+    ).instance.to_dict()["spec"]["template"]["spec"]
+    node_selector_deployments[KUBEMACPOOL_MAC_CONTROLLER_MANAGER] = nw_deployment.get(
+        "nodeSelector"
+    ).get("infra-comp")
     return node_selector_deployments
 
 
@@ -147,7 +144,6 @@ def network_daemonsets_placement(admin_client, hco_namespace):
     for daemonset in [
         BRIDGE_MARKER,
         KUBE_CNI_LINUX_BRIDGE_PLUGIN,
-        NMSTATE_HANDLER,
     ]:
         nw_daemonset = get_daemonset_by_name(
             admin_client=admin_client,
