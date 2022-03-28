@@ -109,17 +109,18 @@ def get_centos_templates_list():
 
 
 @pytest.fixture()
-def windows_base_templates(base_templates):
-    windows_templates = [
+def os_base_templates(request, base_templates):
+    os_name = request.param
+    os_templates = [
         template
         for template in base_templates
         if any(
-            label.startswith(f"{Template.Labels.OS}/win")
+            label.startswith(f"{Template.Labels.OS}/{os_name}")
             for label in template.labels.keys()
         )
     ]
-    assert windows_templates, "No windows templates found"
-    return windows_templates
+    assert os_templates, f"No {os_name} templates found"
+    return os_templates
 
 
 @pytest.fixture()
@@ -182,56 +183,56 @@ def test_base_templates_annotations(
             "rhel6",
             "rhel-6.10",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-3618")),
+            marks=pytest.mark.polarion("CNV-3618"),
             id="test_rhel6_minimum_memory",
         ),
         pytest.param(
             "rhel7",
             "rhel-7.7",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-3619")),
+            marks=pytest.mark.polarion("CNV-3619"),
             id="test_rhel7_minimum_memory",
         ),
         pytest.param(
             "rhel8",
             "rhel-8.1",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-3620")),
+            marks=pytest.mark.polarion("CNV-3620"),
             id="test_rhel8_minimum_memory",
         ),
         pytest.param(
             "rhel9",
             "rhel-9.0",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-6989")),
+            marks=pytest.mark.polarion("CNV-6989"),
             id="test_rhel9_minimum_memory",
         ),
         pytest.param(
             "rhel6",
             "rhel-6.10",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3621")),
+            marks=pytest.mark.polarion("CNV-3621"),
             id="test_rhel6_maximum_memory",
         ),
         pytest.param(
             "rhel7",
             "rhel-7.7",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3622")),
+            marks=pytest.mark.polarion("CNV-3622"),
             id="test_rhel7_maximum_memory",
         ),
         pytest.param(
             "rhel8",
             "rhel-8.1",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3623")),
+            marks=pytest.mark.polarion("CNV-3623"),
             id="test_rhel8_maximum_memory",
         ),
         pytest.param(
             "rhel9",
             "rhel-9.0",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-6988")),
+            marks=pytest.mark.polarion("CNV-6988"),
             id="test_rhel9_maximum_memory",
         ),
     ],
@@ -276,21 +277,21 @@ def test_validate_rhel_min_max_memory(
             "win-2k12r2",
             "windows2k12r2",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-3624")),
+            marks=pytest.mark.polarion("CNV-3624"),
             id="test_win2kr2_minimum_memory",
         ),
         pytest.param(
             "win-2k16",
             "windows2k16",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-3625")),
+            marks=pytest.mark.polarion("CNV-3625"),
             id="test_win2k16_minimum_memory",
         ),
         pytest.param(
             "win-2k19",
             "windows2k19",
             "minimum",
-            marks=(pytest.mark.polarion("CNV-3626")),
+            marks=pytest.mark.polarion("CNV-3626"),
             id="test_win2k19_minimum_memory",
         ),
         pytest.param(
@@ -304,28 +305,28 @@ def test_validate_rhel_min_max_memory(
             "win-2k12r2",
             "windows2k12r2",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3628")),
+            marks=pytest.mark.polarion("CNV-3628"),
             id="test_win2k12r2_maximum_memory",
         ),
         pytest.param(
             "win-2k16",
             "windows2k16",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3629")),
+            marks=pytest.mark.polarion("CNV-3629"),
             id="test_win2k16_maximum_memory",
         ),
         pytest.param(
             "win-2k19",
             "windows2k19",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3630")),
+            marks=pytest.mark.polarion("CNV-3630"),
             id="test_win2k19_maximum_memory",
         ),
         pytest.param(
             "win-10",
             "windows10",
             "maximum",
-            marks=(pytest.mark.polarion("CNV-3631")),
+            marks=pytest.mark.polarion("CNV-3631"),
             id="test_win10_maximum_memory",
         ),
     ],
@@ -555,10 +556,19 @@ def test_vmi_annotations(data_volume_scope_function, vm_from_template_with_exist
     ), f"vmi annotations {vmi_annotations} do no match vm annotations {vm_annotations}"
 
 
-@pytest.mark.polarion("CNV-7249")
-def test_hyperv_features_exist_in_windows_templates(windows_base_templates):
+@pytest.mark.parametrize(
+    "os_base_templates",
+    [
+        pytest.param(
+            "win",
+            marks=pytest.mark.polarion("CNV-7249"),
+        ),
+    ],
+    indirect=True,
+)
+def test_hyperv_features_exist_in_windows_templates(os_base_templates):
     templates_with_wrong_hyperv_labels = {}
-    for template in windows_base_templates:
+    for template in os_base_templates:
         template_hyperv_features = template.instance.objects[
             0
         ].spec.template.spec.domain.features.get("hyperv")
@@ -571,4 +581,44 @@ def test_hyperv_features_exist_in_windows_templates(windows_base_templates):
     assert not templates_with_wrong_hyperv_labels, (
         f"Windows templates are missing hyperV labels, hyperV features templates: {HYPERV_FEATURES_LABELS_VM_YAML}\n, "
         f"current templates hyperV labels :{templates_with_wrong_hyperv_labels}"
+    )
+
+
+@pytest.mark.parametrize(
+    "annotation_list, os_base_templates",
+    [
+        pytest.param(
+            ["images", "containerdisks"],
+            "fedora",
+            marks=pytest.mark.polarion("CNV-8476"),
+        ),
+        pytest.param(
+            ["images", "containerdisks"],
+            "centos",
+            marks=pytest.mark.polarion("CNV-8477"),
+        ),
+        pytest.param(
+            ["containerdisks"],
+            "rhel8",
+            marks=pytest.mark.polarion("CNV-8478"),
+        ),
+        pytest.param(
+            ["containerdisks"],
+            "rhel9",
+            marks=pytest.mark.polarion("CNV-8483"),
+        ),
+    ],
+    indirect=["os_base_templates"],
+)
+def test_suggested_image_annotation_exists(os_base_templates, annotation_list):
+    failed_templates_dict = {}
+    for template in os_base_templates:
+        for annotation in annotation_list:
+            if f"{template.ApiGroup.TEMPLATE_KUBEVIRT_IO}/{annotation}" not in dict(
+                template.instance.metadata.annotations
+            ):
+                failed_templates_dict.setdefault(annotation, []).append(template.name)
+    assert not failed_templates_dict, ", ".join(
+        f"{template.ApiGroup.TEMPLATE_KUBEVIRT_IO}/{annotation}, was not found in {failed_templates_dict[annotation]}"
+        for annotation in failed_templates_dict
     )
