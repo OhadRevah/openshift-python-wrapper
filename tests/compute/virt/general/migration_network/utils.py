@@ -147,7 +147,7 @@ def assert_vm_migrated_through_dedicated_network_with_logs(
         r"(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}\/\d{1,2}", WHEREABOUTS_NETWORK
     ).group(1)
     parsed_ip = parsed_ip.replace(".", "\\.")
-    search_pattern = fr"\"proxy \w+? listening\".+?{parsed_ip}.+?\"uid\":\"{vm.vmi.instance.metadata.uid}\""
+    search_pattern = rf"\"proxy \w+? listening\".+?{parsed_ip}.+?\"uid\":\"{vm.vmi.instance.metadata.uid}\""
 
     # matches list should contain 3 matches for start of migration and 3 for end of it
     # start log - ... "msg": "proxy started listening", "ourbound": ...

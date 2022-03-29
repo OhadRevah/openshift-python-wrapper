@@ -55,7 +55,7 @@ def start_and_fetch_processid_on_windows_vm(vm, process_name):
 
 def fetch_processid_from_windows_vm(vm, process_name):
     cmd = shlex.split(
-        fr"wmic process where (Name=\'{process_name}\') get processid /value"
+        rf"wmic process where (Name=\'{process_name}\') get processid /value"
     )
     return run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
 

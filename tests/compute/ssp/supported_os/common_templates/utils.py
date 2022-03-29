@@ -915,8 +915,8 @@ def windows_disk_space_parser(fsinfo_list):
         "total": re.sub(",", "", re.search(r": (\S*)", fsinfo_list[1]).group(1)),
         "free": re.sub(",", "", re.search(r": (\S*)", fsinfo_list[0]).group(1)),
     }
-    used = round((int(disk_space["total"]) - int(disk_space["free"])) / 1000 ** 3)
-    total = round(int(disk_space["total"]) / 1000 ** 3)
+    used = round((int(disk_space["total"]) - int(disk_space["free"])) / 1000**3)
+    total = round(int(disk_space["total"]) / 1000**3)
     return f"used {used}, total {total}\n"
 
 

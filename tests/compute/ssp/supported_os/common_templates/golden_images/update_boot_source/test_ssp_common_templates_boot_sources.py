@@ -42,7 +42,7 @@ def assert_os_version_mismatch_in_vm(vm, expected_os):
         "red hat" if expected_os_params["os_name"] == OS_FLAVOR_RHEL else os_name
     )
     assert re.match(
-        fr"({expected_name_in_vm_os}).*({expected_os_params['os_ver']}).*", vm_os
+        rf"({expected_name_in_vm_os}).*({expected_os_params['os_ver']}).*", vm_os
     ), f"Wrong VM OS, expected: {expected_os_params}, actual: {vm_os}"
 
 

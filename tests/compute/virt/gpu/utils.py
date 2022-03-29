@@ -13,10 +13,13 @@ def verify_gpu_device_exists_in_vm(vm):
             if fetch_device_name_from_vm(vm=vm) == VGPU_DEVICE_NAME
             else "NVIDIA Tesla"
         )
-        assert nvidia_device in run_ssh_commands(
-            host=vm.ssh_exec,
-            commands=[shlex.split("wmic path win32_VideoController get name")],
-        )[0]
+        assert (
+            nvidia_device
+            in run_ssh_commands(
+                host=vm.ssh_exec,
+                commands=[shlex.split("wmic path win32_VideoController get name")],
+            )[0]
+        )
     else:
         assert (
             run_ssh_commands(
