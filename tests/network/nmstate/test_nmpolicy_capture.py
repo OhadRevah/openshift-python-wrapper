@@ -1,7 +1,6 @@
 import ipaddress
 import logging
 import subprocess
-import time
 
 import pytest
 from ocp_resources.infrastructure import Infrastructure
@@ -10,7 +9,7 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import IPV4_STR, IPV6_STR, TIMEOUT_1MIN, TIMEOUT_9MIN
-from utilities.infra import is_bug_open, label_nodes
+from utilities.infra import label_nodes
 from utilities.network import (
     IFACE_ABSENT_STATE,
     IFACE_UP_STATE,
@@ -287,11 +286,6 @@ def capture_bridge(
         set_ipv6="{{ capture.capture-br1.interfaces.0.ipv6 }}",
         state=IFACE_UP_STATE,
     )
-    # TODO: Remove once bug 2057613 is fixed
-    bug_id = 2057613
-    if is_bug_open(bug_id=bug_id):
-        LOGGER.warning(f"Bug {bug_id} is open; sleep for 10s")
-        time.sleep(10)
     teardown_br.deploy()
     teardown_br.clean_up()
 
