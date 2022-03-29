@@ -311,7 +311,6 @@ def test_cloner_pods_cdi_label(
     indirect=True,
 )
 def test_verify_cdi_res_app_label(
-    skip_if_post_cnv_upgrade_cluster_and_labels_bug_not_closed,
     cdi_resources,
     cnv_current_version,
 ):

@@ -866,7 +866,6 @@ def test_hpp_operator_scc(skip_test_if_no_hpp_sc, hpp_scc, hpp_operator_pod):
     indirect=True,
 )
 def test_verify_hpp_res_app_label(
-    skip_if_post_cnv_upgrade_cluster_and_labels_bug_not_closed,
     hpp_resources,
     cnv_current_version,
 ):

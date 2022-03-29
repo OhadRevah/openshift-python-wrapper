@@ -12,7 +12,6 @@ from utilities.constants import Images
 from utilities.infra import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
-    is_bug_open,
 )
 
 
@@ -34,14 +33,8 @@ def cdi_preallocation_enabled(hyperconverged_resource_scope_module):
 
 
 def assert_preallocation_requested_annotation(pvc, status):
-    # TODO: Once bug 1926119 fixed, we will automatically stop sending the typo
-    preallocation_requested = (
-        "storage.preallocacation.requested"
-        if is_bug_open(bug_id=1926119)
-        else "storage.preallocation.requested"
-    )
     preallocation_requested_annotation = (
-        f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/{preallocation_requested}"
+        f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/storage.preallocation.requested"
     )
     assert (
         pvc.instance.metadata.annotations.get(preallocation_requested_annotation)

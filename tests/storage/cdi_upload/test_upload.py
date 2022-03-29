@@ -362,7 +362,7 @@ def test_successful_upload_missing_file_in_transit(
 
     # Ideally the file should be removed while the status of upload is 'UploadInProgress'.
     # However, 'UploadInProgress' status phase is never set.
-    # Sleep for 15 seconds until https://bugzilla.redhat.com/show_bug.cgi?id=1725934 is fixed.
+    # Sleep for 15 seconds until https://issues.redhat.com/browse/CNV-4055 is done.
     # Once the bug is fixed, the below line needs to be uncommented and sleep should be removed.
     # DataVolume(dv_name, namespace).wait_for_status(status="UploadInProgress", timeout=300)
     time.sleep(15)
