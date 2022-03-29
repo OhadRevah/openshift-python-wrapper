@@ -12,12 +12,7 @@ from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from tests.network.utils import assert_nncp_successfully_configured
 from utilities.constants import NMSTATE_HANDLER, TIMEOUT_5MIN
 from utilities.exceptions import ResourceValueError
-from utilities.infra import (
-    BUG_STATUS_CLOSED,
-    get_pod_by_name_prefix,
-    is_bug_open,
-    name_prefix,
-)
+from utilities.infra import get_pod_by_name_prefix, is_bug_open, name_prefix
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     LinuxBridgeNodeNetworkConfigurationPolicy,
@@ -101,7 +96,9 @@ def deleted_nmstate_pod_during_nncp_configuration(
 @pytest.fixture()
 def dns_gathered_current_nameservers(worker_node1_pod_executor):
     dns_data = worker_node1_pod_executor.exec(command=CAT_RESOLV_CONF_CMD)
-    dns_nameservers = re.findall(r"\d+\.\d+\.\d+\.\d+", str(dns_data))
+    dns_nameservers = re.findall(
+        r"^(?!#).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", dns_data, re.MULTILINE
+    )
     LOGGER.info(f"{DNS_CONF_FILE} currently holds: {dns_nameservers}")
     return dns_nameservers
 
@@ -160,25 +157,12 @@ def dns_nncp(
 ):
     with EthernetNetworkConfigurationPolicy(
         name=f"dns-{name_prefix(worker_node1.name)}",
+        teardown=False,
         **generated_common_nncp,
     ) as nncp_dns:
-        nncp_dns.wait_for_status_success()
         yield nncp_dns
-
-
-@pytest.fixture()
-def dns_nncp_restored(
-    worker_node1,
-    generated_common_nncp,
-):
-    yield
-    LOGGER.info("Restoring DNS configurations on the node")
-    with EthernetNetworkConfigurationPolicy(
-        name=f"dns-{name_prefix(worker_node1.name)}-restored",
-        dns_resolver={"config": {"server": []}},
-        **generated_common_nncp,
-    ) as nncp_dns:
-        nncp_dns.wait_for_status_success()
+    # Delete nncp without applying intermediate absent state.
+    nncp_dns.delete(wait=True)
 
 
 @pytest.fixture()
@@ -206,6 +190,7 @@ def dns_nncp_configured(
     ):
         dns_nncp.wait_for_status_success()
         yield dns_nncp
+    dns_nncp.wait_for_status_success()
 
 
 @pytest.fixture()
@@ -285,9 +270,6 @@ def test_dynamic_ip(
 @pytest.mark.xfail(
     raises=MoreThanTwoDNSError,
 )
-@pytest.mark.bugzilla(
-    2007459, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
 @pytest.mark.post_upgrade
 @pytest.mark.polarion("CNV-5724")
 def test_dns(
@@ -296,7 +278,6 @@ def test_dns(
     dns_new_resolver,
     worker_node1_pod_executor,
     dns_nncp_configured,
-    dns_nncp_restored,
 ):
     LOGGER.info("NMstate: Test DNS")
 
