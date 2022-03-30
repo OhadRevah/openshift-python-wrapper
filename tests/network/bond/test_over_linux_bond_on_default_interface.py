@@ -76,8 +76,8 @@ def lbodi_bond(
     bond_idx = next(index_number)
     primary_port = nodes_occupied_nics[worker_node1.name][0]
     with BondNodeNetworkConfigurationPolicy(
-        name=f"bond{bond_idx}nncp",
-        bond_name=f"bond{bond_idx}",
+        name=f"lbodi-bond{bond_idx}nncp",
+        bond_name=f"lbodi-bond{bond_idx}",
         bond_ports=[primary_port, nodes_available_nics[worker_node1.name][-1]],
         node_selector=worker_node1.hostname,
         ipv4_dhcp=True,

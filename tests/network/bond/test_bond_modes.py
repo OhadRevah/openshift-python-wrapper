@@ -27,15 +27,6 @@ pytestmark = [
 ]
 
 
-class BondNodeNetworkConfigurationPolicyWithSlaves(BondNodeNetworkConfigurationPolicy):
-    def to_dict(self):
-        res = super().to_dict()
-        self.iface["link-aggregation"]["slaves"] = self.iface["link-aggregation"].pop(
-            "port"
-        )
-        return res
-
-
 def assert_bond_validation(utility_pods, bond):
     pod_exec = ExecCommandOnPod(utility_pods=utility_pods, node=bond.node_selector)
     bonding_path = f"/sys/class/net/{bond.bond_name}/bonding"
@@ -232,16 +223,12 @@ def test_vm_bond_with_fail_over_mac_started(
 
 
 @pytest.mark.polarion("CNV-7263")
-def test_bond_with_slaves(index_number, worker_node1, nodes_available_nics):
+def test_bond_with_bond_port(index_number, worker_node1, nodes_available_nics):
     bond_idx = next(index_number)
-    with BondNodeNetworkConfigurationPolicyWithSlaves(
-        name=f"bond{bond_idx}nncp",
-        bond_name=f"bond{bond_idx}",
+    with BondNodeNetworkConfigurationPolicy(
+        name=f"bond-with-port{bond_idx}nncp",
+        bond_name=f"bond-w-port{bond_idx}",
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         node_selector=worker_node1.hostname,
-    ) as bond:
-        # Since we override slave with port we must set it back after creation
-        # for cleanup to work.
-        bond.iface["link-aggregation"]["port"] = bond.iface["link-aggregation"].pop(
-            "slaves"
-        )
+    ):
+        return
