@@ -5,7 +5,6 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
     assert_expected_hardcoded_feature_gates,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -29,13 +28,7 @@ class TestHardcodedFeatureGates:
                     "related_object_name": "kubevirt-kubevirt-hyperconverged",
                     "resource_func": get_hyperconverged_kubevirt,
                 },
-                marks=(
-                    pytest.mark.polarion("CNV-6427"),
-                    pytest.mark.bugzilla(
-                        2062227,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=pytest.mark.polarion("CNV-6427"),
                 id="delete_hardcoded_featuregates_kubevirt_cr_featuregates_none",
             ),
         ],
