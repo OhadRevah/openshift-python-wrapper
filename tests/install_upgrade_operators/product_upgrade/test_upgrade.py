@@ -4,7 +4,7 @@ import pytest
 
 from tests.install_upgrade_operators.product_upgrade.utils import (
     upgrade_cnv,
-    upgrade_ocp,
+    verify_upgrade_ocp,
 )
 from tests.upgrade_params import UPGRADE_TEST_DEPENDENCY_NODE_ID
 
@@ -21,12 +21,18 @@ class TestUpgrade:
     @pytest.mark.dependency(name=UPGRADE_TEST_DEPENDENCY_NODE_ID)
     def test_ocp_upgrade_process(
         self,
-        pytestconfig,
         admin_client,
+        master_mcp,
+        worker_mcp,
+        extracted_ocp_version_from_image_url,
+        triggered_ocp_upgrade,
+        started_machine_config_pool_update,
     ):
-        upgrade_ocp(
-            ocp_image=pytestconfig.option.ocp_image,
-            dyn_client=admin_client,
+        verify_upgrade_ocp(
+            admin_client=admin_client,
+            target_ocp_version=extracted_ocp_version_from_image_url,
+            master_mcp=master_mcp,
+            worker_mcp=worker_mcp,
         )
 
     @pytest.mark.cnv_upgrade

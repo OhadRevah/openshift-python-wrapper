@@ -1,11 +1,11 @@
 import logging
 import os
-import re
 from multiprocessing import Process
 
-import yaml
 from ocp_resources.catalog_source import CatalogSource
+from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_service_version import ClusterServiceVersion
+from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
@@ -47,7 +47,7 @@ from utilities.infra import (
     get_clusterversion,
     get_deployments,
     run_command,
-    write_to_extras_file,
+    wait_for_consistent_resource_conditions,
 )
 
 
@@ -266,15 +266,6 @@ def get_operators_names_and_info(csv):
         }
         for deploy in csv.instance.spec.install.spec.deployments
     }
-
-
-def get_clusterversion_state_version_conditions(dyn_client):
-    cvo = get_clusterversion(dyn_client=dyn_client)
-    return (
-        cvo.instance.status.history[0].state,
-        cvo.instance.status.history[0].version,
-        cvo.instance.status.conditions,
-    )
 
 
 def update_image_in_catalog_source(dyn_client, namespace, image):
@@ -537,86 +528,6 @@ def update_icsp_stage_mirror(icsp_file_path):
     ), f"Failed to update stage mirror in ICSP: icsp_file_path={icsp_file_path} out={out} err={err}"
 
 
-def wait_for_mcp_update(dyn_client):
-    # TODO: Refactor - simplify code
-    def _get_all_mcp_conditions():
-        return {
-            mcp.name: mcp.instance.status.conditions
-            for mcp in MachineConfigPool.get(dyn_client=dyn_client)
-        }
-
-    def _are_all_mcp_matching_condition(mcp_conditions, condition_type):
-        return all(
-            [
-                condition["status"] == "True"
-                for conditions in mcp_conditions.values()
-                for condition in conditions
-                if condition["type"] == condition_type
-            ]
-        )
-
-    def _wait_for_condition_status(condition_type, timeout):
-        # The list of exceptions is needed because during mcp update;
-        # the nodes are updated and the connection may be interrupted.
-        LOGGER.info(
-            f"mcp wait for condition: desired={condition_type} current={_get_all_mcp_conditions()}"
-        )
-        mcp_conditions_sampler = TimeoutSampler(
-            wait_timeout=timeout,
-            sleep=5,
-            func=_get_all_mcp_conditions,
-            exceptions_dict=BASE_EXCEPTIONS_DICT,
-        )
-        mcp_conditions = {}
-        try:
-            for mcp_conditions in mcp_conditions_sampler:
-                if _are_all_mcp_matching_condition(
-                    mcp_conditions=mcp_conditions,
-                    condition_type=condition_type,
-                ):
-                    break
-        except TimeoutExpiredError:
-            LOGGER.error(
-                f"mcp not at desired condition before timeout: desired={condition_type} current={mcp_conditions}"
-            )
-            if collect_logs():
-                write_to_extras_file(
-                    extras_file_name="mcp_conditions.yaml",
-                    content=yaml.dump(
-                        {
-                            key: list(map(dict, conditions))
-                            for key, conditions in mcp_conditions.items()
-                        }
-                    ),
-                )
-                collect_resources_for_test(resources_to_collect=[MachineConfigPool])
-            raise
-
-    LOGGER.info("Wait for mcp update to start.")
-    try:
-        _wait_for_condition_status(
-            condition_type=MachineConfigPool.Status.UPDATING,
-            timeout=TIMEOUT_15MIN,
-        )
-    except TimeoutExpiredError:
-        if _are_all_mcp_matching_condition(
-            mcp_conditions=_get_all_mcp_conditions(),
-            condition_type=MachineConfigPool.Status.UPDATED,
-        ):
-            # This can happen if the MCP transitions quickly and the UPDATING status is missed
-            LOGGER.info(
-                f"ignoring timeout since mcp is already in final desired condition: {MachineConfigPool.Status.UPDATED}"
-            )
-        else:
-            raise
-
-    LOGGER.info("Wait for mcp update to end.")
-    _wait_for_condition_status(
-        condition_type=MachineConfigPool.Status.UPDATED,
-        timeout=TIMEOUT_75MIN,
-    )
-
-
 def upgrade_cnv(
     dyn_client,
     hco_namespace,
@@ -845,88 +756,137 @@ def approve_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
     approve_install_plan(install_plan=install_plan)
 
 
-def extract_ocp_version(ocp_image):
-    # Extract the OCP version from the OCP URL input.
-    ocp_version = None
-    if "nightly" in ocp_image:
-        ocp_version = re.search(r"release:(.*)", ocp_image).groups()[0]
-    else:
-        ocp_version = re.search(r":(\d+\.\d+\.\d+)-(rc\.\d+)?", ocp_image).groups()[0]
-    LOGGER.info(f"OCP version extracted from ocp image: {ocp_version}")
-    assert (
-        ocp_version
-    ), f"Cannot extract OCP version. OCP image url: {ocp_image} is invalid"
-    return ocp_version
-
-
-def wait_until_ocp_upgrade_complete(ocp_image, dyn_client):
-    # TODO: Refactor, use expected conditions global and use utilities.infra.wait_for_consistent_resource_conditions
-    LOGGER.info("Wait for OCP upgrade to complete")
-
-    upgrade_conditions = {
-        "Available": Resource.Condition.Status.TRUE,
-        "Failing": Resource.Condition.Status.FALSE,
-        "Progressing": Resource.Condition.Status.FALSE,
-    }
-    ocp_version = extract_ocp_version(ocp_image=ocp_image)
-
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_180MIN,
-        sleep=30,
-        func=get_clusterversion_state_version_conditions,
+def wait_for_cluster_version_stable_conditions(admin_client):
+    wait_for_consistent_resource_conditions(
+        dynamic_client=admin_client,
+        expected_conditions={
+            Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+            Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
+            Resource.Condition.FAILING: Resource.Condition.Status.FALSE,
+        },
+        resource_kind=ClusterVersion,
+        condition_key1="type",
+        condition_key2="status",
+        polling_interval=30,
         exceptions_dict={
             **BASE_EXCEPTIONS_DICT,
             NotFoundError: [],
             ResourceNotFoundError: [],
         },
-        dyn_client=dyn_client,
     )
 
-    sample = None
+
+def wait_for_cluster_version_state_and_version(cluster_version, target_ocp_version):
+    def _cluster_version_state_and_version(_cluster_version, _target_ocp_version):
+        cluster_version_status_history = _cluster_version.instance.status.history[0]
+        LOGGER.info(f"clusterversion status.histroy: {cluster_version_status_history}")
+        return (
+            cluster_version_status_history.state == _cluster_version.Status.COMPLETED
+            and cluster_version_status_history.version == target_ocp_version
+        )
 
     try:
-        for sample in samples:
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_180MIN,
+            sleep=10,
+            func=_cluster_version_state_and_version,
+            _cluster_version=cluster_version,
+            _target_ocp_version=target_ocp_version,
+        ):
             if sample:
-                state, version, actual_conditions = sample
-
-                actual_upgrade_conditions = {
-                    condition.type: condition.status
-                    for condition in actual_conditions
-                    if condition.type in upgrade_conditions.keys()
-                }
-
-                if (
-                    actual_upgrade_conditions == upgrade_conditions
-                    and version == ocp_version
-                    and state == "Completed"
-                ):
-                    return
+                return
 
     except TimeoutExpiredError:
         LOGGER.error(
-            f"Timeout reached while upgrading OCP. "
-            f"Expected (Completed, {ocp_version}, {upgrade_conditions}). "
-            f"Actual: (state, version, conditions): {sample}"
+            "Timeout reached while upgrading OCP. "
+            f"clusterversion conditions: {cluster_version.instance.status.conditions}"
         )
+        collect_resources_for_test(resources_to_collect=[ClusterOperator])
         raise
 
 
-def upgrade_ocp(ocp_image, dyn_client):
-    LOGGER.info(f"Executing OCP upgrade command to image {ocp_image}")
-    rc, out, err = run_command(
-        command=[
-            "oc",
-            "adm",
-            "upgrade",
-            "--force=true",
-            "--allow-explicit-upgrade",
-            "--allow-upgrade-with-warnings",
-            "--to-image",
-            ocp_image,
-        ],
-        verify_stderr=False,
+def verify_upgrade_ocp(admin_client, target_ocp_version, master_mcp, worker_mcp):
+    wait_for_cluster_version_state_and_version(
+        cluster_version=get_clusterversion(dyn_client=admin_client),
+        target_ocp_version=target_ocp_version,
     )
-    assert rc, f"OCP upgrade command failed. out: {out}. err: {err}"
+    wait_for_machine_config_pool_updated_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
+    )
+    wait_for_cluster_version_stable_conditions(
+        admin_client=admin_client,
+    )
 
-    wait_until_ocp_upgrade_complete(ocp_image=ocp_image, dyn_client=dyn_client)
-    wait_for_mcp_update(dyn_client=dyn_client)
+
+def get_machine_config_pool_by_name(mcp_name):
+    mcp = MachineConfigPool(name=mcp_name)
+    assert mcp.exists, f"{mcp_name} MachineConfigPool is not deployed"
+    return mcp
+
+
+def are_all_machine_config_pools_matching_condition(
+    machine_config_pools_list, condition_type
+):
+    return all(
+        [
+            condition["status"] == "True"
+            for mcp in machine_config_pools_list
+            for condition in mcp.instance.status.conditions
+            if condition["type"] == condition_type
+        ]
+    )
+
+
+def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
+    LOGGER.info("Wait for mcp update to start.")
+    try:
+        wait_for_machine_config_pools_condition_status(
+            machine_config_pools_list=machine_config_pools_list,
+            condition_type=MachineConfigPool.Status.UPDATING,
+            timeout=TIMEOUT_15MIN,
+        )
+    except TimeoutExpiredError:
+        # In cases where the MCP transitions quickly and the UPDATING status is missed
+        if are_all_machine_config_pools_matching_condition(
+            machine_config_pools_list=machine_config_pools_list,
+            condition_type=MachineConfigPool.Status.UPDATED,
+        ):
+            LOGGER.info(
+                f"mcp is already in desired condition: {MachineConfigPool.Status.UPDATED}"
+            )
+        else:
+            raise
+
+
+def wait_for_machine_config_pool_updated_condition(machine_config_pools_list):
+    LOGGER.info("Wait for mcp update to end.")
+    wait_for_machine_config_pools_condition_status(
+        machine_config_pools_list=machine_config_pools_list,
+        condition_type=MachineConfigPool.Status.UPDATED,
+        timeout=TIMEOUT_75MIN,
+    )
+
+
+def wait_for_machine_config_pools_condition_status(
+    machine_config_pools_list, condition_type, timeout
+):
+    LOGGER.info(f"mcp wait for condition: desired={condition_type}")
+    try:
+        for sample in TimeoutSampler(
+            wait_timeout=timeout,
+            sleep=5,
+            func=are_all_machine_config_pools_matching_condition,
+            exceptions_dict=BASE_EXCEPTIONS_DICT,
+            condition_type=condition_type,
+            machine_config_pools_list=machine_config_pools_list,
+        ):
+            if sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"mcp not at desired condition before timeout: desired={condition_type} "
+            f"current={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
+        )
+        if collect_logs():
+            collect_resources_for_test(resources_to_collect=[MachineConfigPool])
+        raise

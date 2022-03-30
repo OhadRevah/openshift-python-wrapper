@@ -696,6 +696,7 @@ def wait_for_consistent_resource_conditions(
     total_timeout=TIMEOUT_10MIN,
     polling_interval=5,
     consecutive_checks_count=10,
+    exceptions_dict=None,
 ):
     """This function awaits certain conditions of a given resource_kind (HCO, CSV, etc.).
 
@@ -723,6 +724,7 @@ def wait_for_consistent_resource_conditions(
             1. the resource is in a Ready status, because the process (that should cause
             the change in its state) has not started yet.
             2. some components are in Ready status, but others have not started the process yet.
+        exceptions_dict: TimeoutSampler exceptions_dict
 
     Raises:
         TimeoutExpiredError: raised when expected conditions are not met within the timeframe
@@ -736,7 +738,7 @@ def wait_for_consistent_resource_conditions(
                 namespace=namespace,
             )
         ),
-        exceptions_dict={NotFoundError: []},
+        exceptions_dict=exceptions_dict,
     )
     current_check = 0
     actual_conditions = {}

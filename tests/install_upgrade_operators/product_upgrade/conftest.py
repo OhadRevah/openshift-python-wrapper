@@ -9,7 +9,7 @@ from pytest_testconfig import py_config
 
 import tests.install_upgrade_operators.product_upgrade.utils as upgrade_utils
 from tests.install_upgrade_operators.utils import wait_for_csv
-from utilities.infra import get_related_images_name_and_version
+from utilities.infra import get_related_images_name_and_version, run_command
 
 
 LOGGER = logging.getLogger(__name__)
@@ -65,6 +65,8 @@ def update_image_content_source(
     admin_client,
     cnv_upgrade_path,
     tmpdir,
+    master_mcp,
+    worker_mcp,
 ):
     if not cnv_upgrade_path or is_deployment_from_production_source:
         # not needed when upgrading OCP
@@ -98,7 +100,12 @@ def update_image_content_source(
         upgrade_utils.create_icsp_from_file(icsp_file_path=icsp_file_path)
 
     LOGGER.info("Wait for MCP to update now that we modified the ICSP")
-    upgrade_utils.wait_for_mcp_update(dyn_client=admin_client)
+    upgrade_utils.wait_for_machine_config_pool_updating_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
+    )
+    upgrade_utils.wait_for_machine_config_pool_updated_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
+    )
 
 
 @pytest.fixture(scope="session")
@@ -197,4 +204,65 @@ def target_related_images_name_and_versions(
         dyn_client=admin_client,
         hco_namespace=hco_namespace.name,
         version=hco_target_version,
+    )
+
+
+@pytest.fixture(scope="session")
+def ocp_image_url(pytestconfig):
+    return pytestconfig.option.ocp_image
+
+
+@pytest.fixture()
+def triggered_ocp_upgrade(ocp_image_url):
+    LOGGER.info(f"Executing OCP upgrade command to image {ocp_image_url}")
+    rc, out, err = run_command(
+        command=[
+            "oc",
+            "adm",
+            "upgrade",
+            "--force=true",
+            "--allow-explicit-upgrade",
+            "--allow-upgrade-with-warnings",
+            "--to-image",
+            ocp_image_url,
+        ],
+        verify_stderr=False,
+    )
+    assert rc, f"OCP upgrade command failed. out: {out}. err: {err}"
+
+
+@pytest.fixture(scope="session")
+def extracted_ocp_version_from_image_url(ocp_image_url):
+    """
+    Extract the OCP version from the OCP URL input.
+
+    Expected inputs / output examples:
+        quay.io/openshift-release-dev/ocp-release:4.10.9-x86_64 -> 4.10.9
+        quay.io/openshift-release-dev/ocp-release:4.10.0-rc.6-x86_64 -> 4.10.0-rc.6
+        registry.ci.openshift.org/ocp/release:4.11.0-0.nightly-2022-04-01-172551 -> 4.11.0-0.nightly-2022-04-01-172551
+        registry.ci.openshift.org/ocp/release:4.11.0-0.ci-2022-04-06-165430 -> 4.11.0-0.ci-2022-04-06-165430
+    """
+    ocp_version_match = re.search(r"release:(.*?)(?:-x86_64$|$)", ocp_image_url)
+    ocp_version = ocp_version_match.group(1) if ocp_version_match else None
+    assert (
+        ocp_version
+    ), f"Cannot extract OCP version. OCP image url: {ocp_image_url} is invalid"
+    LOGGER.info(f"OCP version {ocp_version} extracted from ocp image: {ocp_version}")
+    return ocp_version
+
+
+@pytest.fixture(scope="session")
+def master_mcp():
+    return upgrade_utils.get_machine_config_pool_by_name(mcp_name="master")
+
+
+@pytest.fixture(scope="session")
+def worker_mcp():
+    return upgrade_utils.get_machine_config_pool_by_name(mcp_name="worker")
+
+
+@pytest.fixture()
+def started_machine_config_pool_update(master_mcp, worker_mcp):
+    upgrade_utils.wait_for_machine_config_pool_updating_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
     )
