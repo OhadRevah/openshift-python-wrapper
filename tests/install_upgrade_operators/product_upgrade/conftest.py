@@ -21,16 +21,14 @@ def cnv_image_name(pytestconfig):
     if not cnv_image_url:
         return
 
-    # Image name format example staging: registry-proxy-stage.engineering.redhat.com/rh-osbs-stage/iib:v4.5
+    # Image name format example staging: registry-proxy-stage.engineering.redhat.com/rh-osbs-stage/iib-pub-pending:v4.9
     # Image name format example osbs: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131
-    try:
-        return re.search(r"[/.*](\w+):", cnv_image_url).group(1)
-    except IndexError:
-        LOGGER.error(
-            "Can not find CNV image name "
-            "(example: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131 should find 'iib')"
-        )
-        raise
+    match = re.match(".*/(.*):", cnv_image_url)
+    assert match, (
+        f"Can not find CNV image name from: {cnv_image_url} "
+        f"(example: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131 should find 'iib')"
+    )
+    return match.group(1)
 
 
 @pytest.fixture()
