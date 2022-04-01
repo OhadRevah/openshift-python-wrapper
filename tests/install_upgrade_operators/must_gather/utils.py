@@ -15,19 +15,12 @@ from utilities.infra import (
     ResourceMismatch,
     create_must_gather_command,
     get_log_dir,
-    is_bug_open,
     run_cnv_must_gather,
 )
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def generate_must_gather_vm_name():
-    return "mg-vm" if is_bug_open(bug_id=2059613) else "must-gather-vm"
-
-
-MUST_GATHER_VM_NAME_PREFIX = generate_must_gather_vm_name()
+MUST_GATHER_VM_NAME_PREFIX = "must-gather-vm"
 DEFAULT_NAMESPACE = "default"
 VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "qemu.log", "dumpxml.xml"]
 
