@@ -70,7 +70,9 @@ def rhel8_latest_image_truncated_sha_from_image_stream(namespace, rhel8_image_st
     )
     for sample in samples:
         if sample:
-            return re.match(r"^.*sha256:(.*)$", sample).group(1)[
+            match = re.match(r"^.*sha256:(.*)$", sample)
+            assert match, f"image sha256 doesn't exist in {sample}"
+            return match.group(1)[
                 0:12
             ]  # The DV is created by dataimportcron which named datasource_name + [0:12] of the digest
 
