@@ -241,6 +241,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
         set_dummy_ovs_iface=False,
         set_port_mac=False,
         dry_run=None,
+        node_selector_labels=None,
     ):
         super().__init__(
             name=name,
@@ -256,6 +257,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             set_ipv4=False,
             set_ipv6=False,
             dry_run=dry_run,
+            node_selector_labels=node_selector_labels,
         )
         self.set_dummy_ovs_iface = set_dummy_ovs_iface
         self.set_port_mac = set_port_mac
