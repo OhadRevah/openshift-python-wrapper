@@ -13,7 +13,6 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
@@ -32,7 +31,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import NON_EXIST_URL, is_bug_open
+from utilities.infra import NON_EXIST_URL
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -65,19 +64,6 @@ def wait_for_pvc_recreate(pvc, pvc_original_timestamp):
     ):
         if sample:
             break
-
-
-@pytest.fixture()
-def skip_if_ocs_and_bz_2054778_open(storage_class_matrix__module__):
-
-    bug_id = 2054778
-    if (
-        is_bug_open(bug_id=bug_id)
-        and [*storage_class_matrix__module__][0] == StorageClass.Types.CEPH_RBD
-    ):
-        pytest.skip(
-            f"{StorageClass.Types.CEPH_RBD} created with Filesystem instead of Block volume mode - bug {bug_id}"
-        )
 
 
 @pytest.fixture()
@@ -379,7 +365,6 @@ def test_successful_import_basic_auth(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2144")
 def test_wrong_content_type(
-    skip_if_ocs_and_bz_2054778_open,
     admin_client,
     namespace,
     storage_class_matrix__module__,
@@ -427,7 +412,6 @@ def test_wrong_content_type(
 )
 # TODO: It's now a negative test but once https://jira.coreos.com/browse/CNV-1553 implement, here needs to be changed.
 def test_unpack_compressed(
-    skip_if_ocs_and_bz_2054778_open,
     admin_client,
     namespace,
     storage_class_matrix__module__,
