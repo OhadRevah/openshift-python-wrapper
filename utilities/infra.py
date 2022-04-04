@@ -688,11 +688,11 @@ def get_daemonset_by_name(admin_client, daemonset_name, namespace_name):
 
 def wait_for_consistent_resource_conditions(
     dynamic_client,
-    hco_namespace,
     expected_conditions,
     resource_kind,
     condition_key1,
     condition_key2,
+    namespace=None,
     total_timeout=TIMEOUT_10MIN,
     polling_interval=5,
     consecutive_checks_count=10,
@@ -706,7 +706,7 @@ def wait_for_consistent_resource_conditions(
 
     Args:
         dynamic_client (DynamicClient): admin client
-        hco_namespace (Resource): hco_namespace
+        namespace (str, default: None): resource namespace. Not needed for cluster-scoped resources.
         expected_conditions (dict): a dict comprises expected conditions to meet, for example:
             {<condition key's value>: <condition key's value>,
             Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,}
@@ -733,7 +733,7 @@ def wait_for_consistent_resource_conditions(
         func=lambda: list(
             resource_kind.get(
                 dyn_client=dynamic_client,
-                namespace=hco_namespace.name,
+                namespace=namespace,
             )
         ),
         exceptions_dict={NotFoundError: []},

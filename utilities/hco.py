@@ -47,7 +47,7 @@ def wait_for_hco_conditions(
     """
     utilities.infra.wait_for_consistent_resource_conditions(
         dynamic_client=admin_client,
-        hco_namespace=hco_namespace,
+        namespace=hco_namespace.name,
         expected_conditions=expected_conditions,
         resource_kind=HyperConverged,
         condition_key1=condition_key1,
