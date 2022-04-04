@@ -6,9 +6,9 @@ import pytest
 from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.node_network_configuration_policy import NNCPConfigurationFailed
 from ocp_resources.node_network_state import NodeNetworkState
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError
 
-from utilities.constants import IPV4_STR, IPV6_STR, TIMEOUT_1MIN, TIMEOUT_9MIN
+from utilities.constants import IPV4_STR, IPV6_STR, TIMEOUT_9MIN
 from utilities.infra import label_nodes
 from utilities.network import (
     IFACE_ABSENT_STATE,
@@ -62,26 +62,6 @@ def valid_addresses(default_addresses, bridge_addresses, ip_family):
 def get_cluster_ingress_ip():
     platform_status = Infrastructure(name="cluster").instance.status.platformStatus
     return platform_status[platform_status["type"].lower()]["ingressIP"]
-
-
-def wait_for_nns_updated_to_static_ipv4(node, primary_interface):
-    LOGGER.info("Verify NNS Updated contains static IPv4 config")
-    try:
-        for sample in TimeoutSampler(
-            wait_timeout=TIMEOUT_1MIN,
-            sleep=1,
-            func=lambda: [
-                iface["ipv4"]["dhcp"]
-                for iface in NodeNetworkState(name=node.name).interfaces
-                if primary_interface in iface["name"]
-            ],
-        ):
-            if not sample[0]:
-                LOGGER.info("NNS successfully updated")
-                return
-    except TimeoutExpiredError:
-        LOGGER.error("NNS Not updated after NNCP deployment")
-        raise
 
 
 def extract_addresses(config):
@@ -187,9 +167,6 @@ def static_primary_interface(worker_node):
             teardown_absent_ifaces=False,
             success_timeout=TIMEOUT_9MIN,
         ):
-            wait_for_nns_updated_to_static_ipv4(
-                node=worker_node, primary_interface=iface_state["primary_interface"]
-            )
             yield collect_primary_interface_state(node=worker_node)
 
         ipv4_config = iface_state["ipv4_config"]
