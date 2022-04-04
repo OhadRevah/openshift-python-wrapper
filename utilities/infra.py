@@ -1102,8 +1102,6 @@ def get_kubevirt_package_manifest(admin_client):
     Returns:
         Resource: Package manifest resource
 
-    Raises:
-        NotFoundError: when the kubevirt-hyperconverged package manifest associated with hco-catalogsource is not found
     """
     package_manifest_name = py_config["hco_cr_name"]
     label_selector = f"catalog={HCO_CATALOG_SOURCE}"
@@ -1119,7 +1117,7 @@ def get_kubevirt_package_manifest(admin_client):
                 f"in catalog: {resource_field.metadata.labels.catalog}"
             )
             return resource_field
-    raise NotFoundError(
+    LOGGER.warning(
         f"Not able to find any packagemanifest {package_manifest_name} in {label_selector} source."
     )
 

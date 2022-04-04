@@ -15,6 +15,7 @@ from openshift.dynamic.exceptions import (
     NotFoundError,
     ResourceNotFoundError,
 )
+from pytest_testconfig import py_config
 from urllib3.exceptions import (
     MaxRetryError,
     NewConnectionError,
@@ -44,6 +45,7 @@ from utilities.infra import (
     collect_resources_for_test,
     get_clusterversion,
     get_deployments,
+    get_kubevirt_package_manifest,
     get_pod_by_name_prefix,
     run_command,
     wait_for_consistent_resource_conditions,
@@ -171,12 +173,69 @@ def wait_for_operator_pods_replacement(
     ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
 
 
+def get_catalog_source(dyn_client, namespace, catalog_name):
+    catalog_source = CatalogSource(
+        client=dyn_client, namespace=namespace, name=catalog_name
+    )
+    if not catalog_source.exists:
+        LOGGER.warning(
+            f"CatalogSource {catalog_name} not found in namespace: {namespace}"
+        )
+        catalog_source = None
+    return catalog_source
+
+
+def create_catalog_source(dyn_client, namespace, catalog_name, image):
+    hco_catalog_source = CatalogSource(
+        client=dyn_client,
+        name=catalog_name,
+        namespace=namespace,
+        display_name="OpenShift Virtualization Index Image",
+        source_type="grpc",
+        image=image,
+        publisher="Red Hat",
+    )
+    hco_catalog_source.deploy(wait=True)
+    return hco_catalog_source
+
+
 def update_image_in_catalog_source(dyn_client, namespace, image):
     LOGGER.info(f"Change {HCO_CATALOG_SOURCE} image: image={image}")
-    catalog_source = CatalogSource(
-        client=dyn_client, namespace=namespace, name=HCO_CATALOG_SOURCE
+    catalog = get_catalog_source(
+        dyn_client=dyn_client, namespace=namespace, catalog_name=HCO_CATALOG_SOURCE
     )
-    ResourceEditor(patches={catalog_source: {"spec": {"image": image}}}).update()
+    if catalog:
+        ResourceEditor(patches={catalog: {"spec": {"image": image}}}).update()
+    else:
+        LOGGER.info(f"Creating CatalogSource {HCO_CATALOG_SOURCE} in {namespace} ")
+        create_catalog_source(
+            dyn_client=dyn_client,
+            namespace=namespace,
+            catalog_name=HCO_CATALOG_SOURCE,
+            image=image,
+        )
+        LOGGER.info(
+            f"Waiting for {py_config['hco_cr_name']} package to appear in {HCO_CATALOG_SOURCE}"
+        )
+        wait_for_package_manifest_update(dyn_client=dyn_client)
+
+
+def wait_for_package_manifest_update(dyn_client):
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=10,
+        func=get_kubevirt_package_manifest,
+        admin_client=dyn_client,
+    )
+    try:
+        for sample in samples:
+            if sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"{py_config['hco_cr_name']} package associated with {HCO_CATALOG_SOURCE} did not get created"
+        )
+        raise
 
 
 def update_subscription_channel_and_source(
