@@ -1,7 +1,24 @@
 import logging
 
-from utilities.constants import DATA_SOURCE_NAME, TIMEOUT_3MIN
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
+
+from tests.compute.utils import get_pod_disruption_budget
+from utilities.constants import (
+    DATA_SOURCE_NAME,
+    TIMEOUT_3MIN,
+    TIMEOUT_10SEC,
+    TIMEOUT_180MIN,
+)
 from utilities.exceptions import ResourceMissingFieldError
+from utilities.infra import (
+    cnv_target_images,
+    get_related_images_name_and_version,
+    is_bug_open,
+)
 from utilities.virt import wait_for_ssh_connectivity
 
 
@@ -47,3 +64,115 @@ def get_src_pvc_default_name(template):
     raise ResourceMissingFieldError(
         f"Template {template.name} does not have a parameter {DATA_SOURCE_NAME}"
     )
+
+
+def get_all_migratable_vms(admin_client, namespaces):
+    # Check pod disruption budget associated with given namespaces. Collect associated vm names. These vms are
+    # the only migratable ones
+    pod_disruption_budget_list = [
+        pod_disruption_budget
+        for ns in namespaces
+        for pod_disruption_budget in get_pod_disruption_budget(
+            admin_client=admin_client, namespace_name=ns.name
+        )
+    ]
+    pod_disruption_budget_info = {
+        pod_disruption_budget.name: pod_disruption_budget.instance.metadata.ownerReferences[
+            0
+        ][
+            "name"
+        ]
+        for pod_disruption_budget in pod_disruption_budget_list
+    }
+    LOGGER.info(f"PodDisruptionBudgets: {pod_disruption_budget_info}")
+
+    return [
+        VirtualMachine(
+            client=admin_client,
+            namespace=pod_disruption_budget.namespace,
+            name=pod_disruption_budget.instance.metadata.ownerReferences[0]["name"],
+        )
+        for pod_disruption_budget in pod_disruption_budget_list
+    ]
+
+
+def vms_auto_migration_with_status_success(admin_client, namespaces):
+    workload_migrations = [
+        migration_job
+        for namespace in namespaces
+        for migration_job in list(
+            VirtualMachineInstanceMigration.get(
+                dyn_client=admin_client, namespace=namespace
+            )
+        )
+        if migration_job.name.startswith("kubevirt-workload-update")
+    ]
+    jobs = {
+        migration_job.instance.spec.vmiName: f"{migration_job.name}-{migration_job.instance.status.phase}"
+        for migration_job in workload_migrations
+    }
+    LOGGER.info(f"Workload migration jobs: {jobs}")
+    return [
+        migration_job.instance.spec.vmiName
+        for migration_job in workload_migrations
+        if migration_job.instance.status.phase
+        == VirtualMachineInstanceMigration.Status.SUCCEEDED
+    ]
+
+
+def wait_for_automatic_vm_migrations(
+    admin_client, vm_list, hco_namespace, hco_target_version
+):
+    vm_names = [vm.name for vm in vm_list]
+    vm_namespaces = [vm.namespace for vm in vm_list]
+    LOGGER.info(f"Checking VMIMs for vms: {vm_names}")
+
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_180MIN,
+        sleep=TIMEOUT_10SEC,
+        func=vms_auto_migration_with_status_success,
+        admin_client=admin_client,
+        namespaces=list(set(vm_namespaces)),
+    )
+    sample = None
+    try:
+        for sample in samples:
+            LOGGER.info(f"Current migration state for vms:{vm_names}: {sample}")
+            if all(vm in sample for vm in vm_names):
+                return True
+    except TimeoutExpiredError:
+        vms_with_failed_vmim = list(set(vm_names) - set(sample))
+        LOGGER.warning(
+            f"Workaround for bz 2026357: Migratable vms: {vm_names}, vms with completed automatic workload update: "
+            f"{sample}, and vms with failed automatic workload update: {vms_with_failed_vmim}"
+        )
+        if is_bug_open(bug_id=2026357):
+            vms_not_updated = validate_vms_pod_updated(
+                vm_list=vm_list,
+                admin_client=admin_client,
+                hco_namespace=hco_namespace,
+                hco_target_version=hco_target_version,
+            )
+            assert (
+                not vms_not_updated
+            ), f"Following vms failed to upgrade: {vms_not_updated}"
+            LOGGER.info("All virt-launcher pods are updated with correct image.")
+
+
+def validate_vms_pod_updated(admin_client, hco_namespace, hco_target_version, vm_list):
+    target_related_images_name_and_versions = get_related_images_name_and_version(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        version=hco_target_version,
+    )
+    LOGGER.info(
+        f"Target related images for {hco_target_version}: {target_related_images_name_and_versions}"
+    )
+    return [
+        {pod.name: pod.instance.spec.containers[0].image}
+        for pod in [vm.vmi.virt_launcher_pod for vm in vm_list]
+        if pod.instance.spec.containers[0].image
+        not in cnv_target_images(
+            target_related_images_name_and_versions=target_related_images_name_and_versions
+        )
+    ]

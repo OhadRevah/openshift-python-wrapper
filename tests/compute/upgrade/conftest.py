@@ -1,3 +1,4 @@
+import logging
 import time
 from contextlib import contextmanager
 from copy import deepcopy
@@ -9,8 +10,13 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_30MIN, TIMEOUT_40MIN
-from utilities.infra import cnv_target_images, get_related_images_name_and_version
+from tests.compute.upgrade.utils import (
+    get_all_migratable_vms,
+    validate_vms_pod_updated,
+    wait_for_automatic_vm_migrations,
+)
+from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
+from utilities.constants import TIMEOUT_30MIN, TIMEOUT_40MIN, TIMEOUT_90MIN
 from utilities.storage import (
     create_dv,
     generate_data_source_dict,
@@ -21,6 +27,9 @@ from utilities.virt import (
     get_base_templates_list,
     running_vm,
 )
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session")
@@ -87,28 +96,38 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
     yield vms_dict
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def unupdated_vmi_pods_names(
     admin_client,
     hco_namespace,
+    namespace,
+    kmp_enabled_namespace,
     hco_target_version,
-    vms_for_upgrade,
 ):
-
-    target_related_images_name_and_versions = get_related_images_name_and_version(
-        dyn_client=admin_client,
-        hco_namespace=hco_namespace.name,
-        version=hco_target_version,
+    all_namespaces = [kmp_enabled_namespace, namespace]
+    migratable_vms = get_all_migratable_vms(
+        admin_client=admin_client, namespaces=all_namespaces
     )
 
-    return [
-        {pod.name: pod.instance.spec.containers[0].image}
-        for pod in [vm.vmi.virt_launcher_pod for vm in vms_for_upgrade]
-        if pod.instance.spec.containers[0].image
-        not in cnv_target_images(
-            target_related_images_name_and_versions=target_related_images_name_and_versions
+    wait_for_automatic_vm_migrations(
+        admin_client=admin_client,
+        vm_list=migratable_vms,
+        hco_namespace=hco_namespace,
+        hco_target_version=hco_target_version,
+    )
+
+    for ns in all_namespaces:
+        LOGGER.info(f"Checking PodDisruptionBudget in namespaces: {ns.name}")
+        check_pod_disruption_budget_for_completed_migrations(
+            admin_client=admin_client, namespace=ns.name, timeout=TIMEOUT_90MIN
         )
-    ]
+
+    validate_vms_pod_updated(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        hco_target_version=hco_target_version,
+        vm_list=migratable_vms,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -313,3 +332,9 @@ def vm_start_time_after_upgrade(
         data_source=run_strategy_golden_image_rwx_data_source,
         rhel_template_labels=rhel_latest_os_params["rhel_template_labels"],
     )
+
+
+@pytest.fixture(scope="session")
+def skip_on_ocp_upgrade(pytestconfig):
+    if pytestconfig.option.upgrade == "ocp":
+        pytest.skip(msg="This test is not supported for OCP upgrade")

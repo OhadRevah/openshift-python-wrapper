@@ -4,10 +4,12 @@ import shlex
 from contextlib import contextmanager
 
 from ocp_resources.deployment import Deployment
+from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.secret import Secret
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
-from utilities.constants import RHSM_PASSWD, RHSM_USER
+from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_5MIN, TIMEOUT_10SEC
 from utilities.infra import (
     ResourceEditorValidateHCOReconcile,
     base64_encode_str,
@@ -271,3 +273,50 @@ def generate_attached_rhsm_secret_dict():
         "serial": DISK_SERIAL,
         "secret_name": RHSM_SECRET_NAME,
     }
+
+
+def get_pod_disruption_budget(admin_client, namespace_name):
+    return list(
+        PodDisruptionBudget.get(
+            dyn_client=admin_client,
+            namespace=namespace_name,
+        )
+    )
+
+
+def has_kubevirt_owner(resource):
+    return any(
+        [
+            owner_reference.apiVersion.startswith(f"{resource.ApiGroup.KUBEVIRT_IO}/")
+            for owner_reference in resource.instance.metadata.get("ownerReferences", [])
+        ]
+    )
+
+
+def check_pod_disruption_budget_for_completed_migrations(
+    admin_client, namespace, timeout=TIMEOUT_5MIN
+):
+    samples = TimeoutSampler(
+        wait_timeout=timeout,
+        sleep=TIMEOUT_10SEC,
+        func=get_pod_disruption_budget,
+        admin_client=admin_client,
+        namespace_name=namespace,
+    )
+    pod_disruption_budget_desired_states = None
+    try:
+        for sample in samples:
+            pod_disruption_budget_desired_states = {
+                pdb.name: pdb.instance.spec.minAvailable
+                for pdb in sample
+                if has_kubevirt_owner(resource=pdb)
+                and pdb.instance.spec.minAvailable > 1
+            }
+            # Return if there are no more required migrations
+            if not pod_disruption_budget_desired_states:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Some migrations are still created: {pod_disruption_budget_desired_states}"
+        )
+        raise

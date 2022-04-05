@@ -9,10 +9,8 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.operator_group import OperatorGroup
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
-from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.subscription import Subscription
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
@@ -28,15 +26,16 @@ from tests.compute.ssp.descheduler.utils import (
     deploy_vms,
     get_descheduler_pod,
     get_pod_memory_requests,
-    has_kubevirt_owner,
     start_vms_with_process,
     update_profile_strategies,
     vm_nodes,
     vms_per_nodes,
     wait_vmi_failover,
 )
-from tests.compute.utils import scale_deployment_replicas
-from utilities.constants import TIMEOUT_5MIN
+from tests.compute.utils import (
+    check_pod_disruption_budget_for_completed_migrations,
+    scale_deployment_replicas,
+)
 from utilities.infra import create_ns, is_bug_open
 from utilities.virt import node_mgmt_console, wait_for_node_schedulable_status
 
@@ -293,37 +292,9 @@ def drain_uncordon_node(
 
 @pytest.fixture()
 def completed_migrations(admin_client, namespace):
-    """Verify VMs PodDisruptionBudgets are not updated to start migrations.
-
-    Check that once deschduler cluster deployment is scaled down to 0 all VMs have 1 as the desired number of pods.
-    Having a desired state greater than 1 for a VM (i.e its virt-launcher pod) leads to VM migration.
-    """
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
-        sleep=10,
-        func=lambda: list(
-            PodDisruptionBudget.get(
-                dyn_client=admin_client,
-                namespace=namespace.name,
-            )
-        ),
+    check_pod_disruption_budget_for_completed_migrations(
+        admin_client=admin_client, namespace=namespace.name
     )
-    pdbs_desired_states = None
-    try:
-        for sample in samples:
-            pdbs_desired_states = {
-                pod_disruption_budget.name: pod_disruption_budget.instance.spec.minAvailable
-                for pod_disruption_budget in sample
-                if has_kubevirt_owner(resource=pod_disruption_budget)
-                and pod_disruption_budget.instance.spec.minAvailable > 1
-            }
-
-            # Return if there are no more required migrations
-            if not pdbs_desired_states:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(f"Some migrations are still created: {pdbs_desired_states}")
-        raise
 
 
 @pytest.fixture(scope="class")

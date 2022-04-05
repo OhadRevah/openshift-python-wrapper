@@ -28,7 +28,9 @@ VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID = (
 VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID = (
     f"{DEPENDENCIES_NODE_ID_PREFIX}::test_is_vm_running_after_upgrade"
 )
-
+MIGRATION_AFTER_UPGRADE_TEST_NODE_ID = (
+    f"{DEPENDENCIES_NODE_ID_PREFIX}::test_migration_after_upgrade"
+)
 POST_UPGRADE_START_TIME_MAX_DELTA = 0.05
 
 pytestmark = pytest.mark.usefixtures("skip_when_one_node")
@@ -265,7 +267,7 @@ class TestUpgradeCompute:
             )
 
     @pytest.mark.polarion("CNV-5932")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=MIGRATION_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
             VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
@@ -274,6 +276,7 @@ class TestUpgradeCompute:
     )
     def test_vmi_pod_image_updates_after_upgrade_optin(
         self,
+        skip_on_ocp_upgrade,
         unupdated_vmi_pods_names,
     ):
         """
