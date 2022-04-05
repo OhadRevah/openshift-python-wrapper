@@ -4,7 +4,6 @@ from tests.install_upgrade_operators.must_gather.utils import (
     MUST_GATHER_VM_NAME_PREFIX,
     validate_must_gather_vm_file_collection,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 @pytest.mark.usefixtures("must_gather_vms_from_alternate_namespace")
@@ -27,13 +26,7 @@ class TestMustGatherVmDetailsWithParams:
             pytest.param(
                 {"command": "NS={alternate_namespace} VM={vm_list}"},
                 {"alt_ns_vm": [0, 1, 2]},
-                marks=(
-                    pytest.mark.polarion("CNV-7865"),
-                    pytest.mark.bugzilla(
-                        2059185,
-                        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-                    ),
-                ),
+                marks=pytest.mark.polarion("CNV-7865"),
                 id="test_vm_gather_vm_list",
             ),
             pytest.param(

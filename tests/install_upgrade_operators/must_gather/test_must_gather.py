@@ -36,7 +36,6 @@ from utilities.constants import (
     NMSTATE_HANDLER,
     OPENSHIFT_NAMESPACE,
 )
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = pytest.mark.sno
@@ -124,10 +123,6 @@ class TestMustGatherCluster:
         )
 
     @pytest.mark.polarion("CNV-5885")
-    @pytest.mark.bugzilla(
-        2049990,
-        skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED,
-    )
     def test_no_upstream_only_namespaces(
         self, collected_cluster_must_gather, sriov_namespace
     ):
