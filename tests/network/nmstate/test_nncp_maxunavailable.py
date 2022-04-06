@@ -119,6 +119,7 @@ def maxunavailable_input_for_bridge_creation(
 )
 def test_create_policy_get_status(
     skip_if_not_three_nodes,
+    skip_if_no_multinic_nodes,
     schedulable_nodes,
     label_max_unavailable_nodes,
     maxunavailable_input_for_bridge_creation,

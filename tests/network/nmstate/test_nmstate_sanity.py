@@ -321,7 +321,9 @@ def test_static_route(
         LOGGER.info("NMstate: Test static route")
 
 
-@pytest.mark.usefixtures("skip_if_sno_cluster_and_bug_2053112_open")
+@pytest.mark.usefixtures(
+    "skip_if_sno_cluster_and_bug_2053112_open", "skip_if_no_multinic_nodes"
+)
 class TestNmstatePodDeletion:
     @pytest.mark.polarion("CNV-6559")
     @pytest.mark.dependency(
