@@ -21,7 +21,6 @@ from tests.install_upgrade_operators.metrics.utils import (
     wait_for_summary_count_to_be_expected,
 )
 from utilities.constants import SSP_KUBEVIRT_HYPERCONVERGED
-from utilities.infra import BUG_STATUS_CLOSED
 
 
 pytestmark = pytest.mark.sno
@@ -156,12 +155,7 @@ COMPONENT_CONFIG = {
             COMPONENT_CONFIG["priority_class"]["resource_info"],
             COMPONENT_CONFIG["priority_class"]["resource_info"]["comp_name"],
             id="priority_class",
-            marks=(
-                pytest.mark.polarion("CNV-6131"),
-                pytest.mark.bugzilla(
-                    2032837, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-6131"),
         ),
         pytest.param(
             COMPONENT_CONFIG["kubevirt"]["resource_info"]["comp_name"],
@@ -309,12 +303,7 @@ def test_metric_invalid_change(
             COMPONENT_CONFIG["priority_class"]["resource_info"]["comp_name"],
             COMPONENT_CONFIG["priority_class"]["resource_info"]["count"],
             id="priority_class",
-            marks=(
-                pytest.mark.polarion("CNV-6150"),
-                pytest.mark.bugzilla(
-                    2032837, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
+            marks=pytest.mark.polarion("CNV-6150"),
         ),
         pytest.param(
             COMPONENT_CONFIG["kubevirt"]["resource_info"]["comp_name"],
