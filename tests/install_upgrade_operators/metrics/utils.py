@@ -4,6 +4,7 @@ import shlex
 import urllib
 from collections import Counter, defaultdict
 
+import bitmath
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
 from ocp_resources.template import Template
@@ -723,3 +724,47 @@ def validate_metric_num_virt_handler_result(prometheus, vm, expected_value):
     ):
         if metric_value == expected_value:
             return
+
+
+def get_vmi_memory_domain_metric_value_from_prometheus(prometheus, vmi_name):
+    def _query_result():
+        value = []
+        query = f'kubevirt_vmi_memory_domain_total_bytes{{name="{vmi_name}"}}'
+        metric_query_output = prometheus.query(query=query)["data"]["result"]
+        LOGGER.info(f"Query {query} Output: {metric_query_output}")
+        for query_ouput in metric_query_output:
+            if query_ouput["metric"].get("name") == vmi_name:
+                value.append(int(query_ouput["value"][1]))
+        return value
+
+    for value in TimeoutSampler(wait_timeout=TIMEOUT_1MIN, sleep=5, func=_query_result):
+        if value:
+            return value[0]
+
+
+def get_domain_metric_from_vm(vm):
+    # Default value stored in the KiB format.
+    vmi_dommemstat = vm.vmi.get_dommemstat()
+    vmi_domain_memory_match = re.match(
+        r".*(?:^|\n)actual (\d+).*", vmi_dommemstat, re.DOTALL
+    )
+    assert (
+        vmi_domain_memory_match
+    ), f"No match found for VM's domain memory in VMI's dommemstat {vmi_dommemstat}"
+
+    return bitmath.KiB(int(vmi_domain_memory_match.group(1))).to_Byte()
+
+
+def validate_vmi_domain_memory_total(prometheus, vm):
+    vmi_name = vm.vmi.name
+    metric_value_from_prometheus = get_vmi_memory_domain_metric_value_from_prometheus(
+        prometheus=prometheus,
+        vmi_name=vmi_name,
+    )
+
+    vmi_domain_memory_in_bytes_from_vmi = get_domain_metric_from_vm(vm=vm)
+
+    assert vmi_domain_memory_in_bytes_from_vmi == metric_value_from_prometheus, (
+        f"VM's '{vmi_name}' domain memory {vmi_domain_memory_in_bytes_from_vmi} is not matching "
+        f"with metrics value {metric_value_from_prometheus}."
+    )
