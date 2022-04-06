@@ -152,7 +152,7 @@ def matrix_hpp_storage_class(storage_class_matrix__module__):
         pytest.skip(f"Skipping test for non-hpp storage class {storage_class}")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def skip_test_if_no_hpp_sc(cluster_storage_classes):
     existing_hpp_sc = [
         sc.name for sc in cluster_storage_classes if sc.name in HPP_STORAGE_CLASSES
@@ -480,3 +480,13 @@ def data_volume_multi_hpp_storage(
         storage_class=matrix_hpp_storage_class.name,
         schedulable_nodes=schedulable_nodes,
     )
+
+
+@pytest.fixture(scope="session")
+def available_hpp_storage_class(skip_test_if_no_hpp_sc, cluster_storage_classes):
+    """
+    Get an HPP storage class if there is any in the cluster
+    """
+    for storage_class in cluster_storage_classes:
+        if storage_class.name in HPP_STORAGE_CLASSES:
+            return storage_class

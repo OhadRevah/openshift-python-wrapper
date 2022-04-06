@@ -12,7 +12,6 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils
-from tests.storage.constants import HPP_STORAGE_CLASSES
 from utilities.constants import CDI_UPLOADPROXY, Images
 from utilities.infra import ResourceEditorValidateHCOReconcile, get_cert
 from utilities.storage import (
@@ -35,17 +34,6 @@ STORAGE_WORKLOADS_DICT = {
 }
 NON_EXISTENT_SCRATCH_SC_DICT = {"scratchSpaceStorageClass": "NonExistentSC"}
 INSECURE_REGISTRIES_LIST = ["added-private-registry:5000"]
-
-
-@pytest.fixture(scope="module")
-def available_hpp_storage_class(cluster_storage_classes):
-    """
-    Get an HPP storage class if there is any in the cluster
-    """
-    for storage_class in cluster_storage_classes:
-        if storage_class.name in HPP_STORAGE_CLASSES:
-            return storage_class
-    pytest.skip("Skipping the test because there's no HPP storage class in the cluster")
 
 
 def cdiconfig_update(

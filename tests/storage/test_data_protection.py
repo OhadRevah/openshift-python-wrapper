@@ -9,7 +9,6 @@ import pytest
 from ocp_resources.cdi import CDI
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
-from ocp_resources.storage_class import StorageClass
 from openshift.dynamic.exceptions import BadRequestError
 from pytest_testconfig import config as py_config
 
@@ -31,15 +30,15 @@ def _assert_cdi_delete(exc_info):
 
 
 @pytest.fixture(scope="module")
-def pvc_hpp(namespace, worker_node1):
+def pvc_hpp(namespace, worker_node1, available_hpp_storage_class):
     with PersistentVolumeClaim(
         name="pvc-hpp",
         namespace=namespace.name,
         accessmodes=PersistentVolumeClaim.AccessMode.RWO,
         size="1Gi",
-        storage_class=StorageClass.Types.HOSTPATH,
+        storage_class=available_hpp_storage_class.name,
         hostpath_node=worker_node1.name
-        if sc_is_hpp_with_immediate_volume_binding(sc=StorageClass.Types.HOSTPATH)
+        if sc_is_hpp_with_immediate_volume_binding(sc=available_hpp_storage_class.name)
         else None,
     ) as pvc:
         if sc_volume_binding_mode_is_wffc(sc=pvc.storage_class):

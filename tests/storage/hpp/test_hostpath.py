@@ -30,6 +30,7 @@ from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
+from tests.storage.constants import HPP_STORAGE_CLASSES
 from utilities.constants import (
     HOSTPATH_PROVISIONER_OPERATOR,
     TIMEOUT_1MIN,
@@ -130,10 +131,7 @@ def hpp_operator_deployment(hco_namespace):
 
 @pytest.fixture(scope="module")
 def skip_when_cdiconfig_scratch_no_hpp(cdi_config):
-    if not (
-        cdi_config.scratch_space_storage_class_from_status
-        == StorageClass.Types.HOSTPATH
-    ):
+    if not (cdi_config.scratch_space_storage_class_from_status in HPP_STORAGE_CLASSES):
         pytest.skip("scratchSpaceStorageClass of cdiconfig is not HPP")
 
 
