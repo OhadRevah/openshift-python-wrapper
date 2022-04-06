@@ -7,6 +7,7 @@ from collections import Counter
 
 import pytest
 import yaml
+from kubernetes.dynamic.exceptions import ForbiddenError
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.storage_class import StorageClass
@@ -41,6 +42,7 @@ from utilities.virt import VirtualMachineForTestsFromTemplate
 LOGGER = logging.getLogger(__name__)
 OCS = "ocs"
 NFS = "nfs"
+TESTS_CLASS_NAME = "TestScale"
 
 SCALE_STORAGE_TYPES = {
     OCS: StorageClass.Types.CEPH_RBD,
@@ -49,15 +51,17 @@ SCALE_STORAGE_TYPES = {
 pytestmark = pytest.mark.scale
 
 
-def log_nodes_load_data(vms):
+def log_nodes_load_data(vms=None):
     """
     Log the distribution of VM's on the nodes, and the cluster memory/cpu statistics
 
     Args:
         vms (list): List of vms to log statistics on
     """
-    nodes_load_distribute = Counter([vm.vmi.node.name for vm in vms])
-    LOGGER.info(f"Nodes vm load distribution: {nodes_load_distribute}")
+    nodes_load_distribute = Counter([vm.vmi.node.name for vm in vms or []])
+    LOGGER.info(
+        f"Nodes vm load distribution: {nodes_load_distribute or 'no scale VMs running'}"
+    )
     nodes_load_statistics = run_command(command=shlex.split("oc adm top nodes"))
     LOGGER.info(f"Nodes load statistics:\n {nodes_load_statistics[1]}")
 
@@ -72,44 +76,21 @@ def all_vms_running(vms):
     Returns:
         bool: True if all vms in running state, False otherwise
     """
-    num_of_running_vms = len(vm for vm in vms if vm.vmi.status == vm.Status.RUNNING)
+    num_of_running_vms = len([vm for vm in vms if vm.vmi.status == vm.Status.RUNNING])
     LOGGER.info(f"Number of running vms: {num_of_running_vms}")
     return num_of_running_vms == len(vms)
 
 
-def delete_resources(namespace, vms, scale_dvs, data_sources):
-    """
-    Delete the test resources that were created
-
-    Args:
-        namespace (Project): the test Project object
-        vms (list): the test vms
-        scale_dvs (list): the test dvs
-        data_sources (dict): the test data sources
-    """
-    all_resources_list = list(data_sources.values()) + scale_dvs + vms
-    for _resource in all_resources_list:
-        _resource.delete()
-    for _resource in all_resources_list:
+def delete_resources(resources):
+    deleted_resources = []
+    for _resource in resources:
+        try:
+            _resource.delete()
+            deleted_resources.append(_resource)
+        except ForbiddenError:
+            pass
+    for _resource in deleted_resources:
         _resource.wait_deleted()
-    namespace.clean_up()
-
-
-def create_and_start_scale_vm(
-    data_source, vm_info, os_type, storage, vm_index, namespace, client
-):
-    scale_vm = VirtualMachineForTestsFromTemplate(
-        name=f"vm-{os_type}-{storage}-{vm_index}",
-        namespace=namespace.name,
-        client=client,
-        cpu_cores=vm_info["cores"],
-        memory_requests=vm_info["memory"],
-        data_source=data_source,
-        labels=Template.generate_template_labels(**vm_info["latest_labels"]),
-    )
-    scale_vm.deploy()
-    scale_vm.start(wait=True)
-    return scale_vm
 
 
 def save_must_gather_logs(must_gather_image_url):
@@ -132,13 +113,28 @@ def failure_finalizer(vms_list, must_gather_image_url):
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def fail_if_param_vms_zero(expected_num_of_vms):
     if expected_num_of_vms == 0:
-        pytest.fail("The sum of the VMs number in the scale_params.yaml file is 0")
+        pytest.fail(
+            f"The sum of the VMs number in the scale_params.yaml file is {expected_num_of_vms}"
+        )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
+def keep_resources(scale_test_param):
+    return scale_test_param["keep_resources"]
+
+
+@pytest.fixture()
+def skip_if_keep_resources(keep_resources):
+    if keep_resources:
+        pytest.skip(
+            f"Skipping scale test resources deletion, keep_resources parameter = {keep_resources}"
+        )
+
+
+@pytest.fixture(scope="class")
 def expected_num_of_vms(scale_test_param):
     """
     The amount of vms to create and start that were configured in the yaml file
@@ -162,22 +158,22 @@ def expected_num_of_vms(scale_test_param):
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def scale_test_param(pytestconfig):
     with open(pytestconfig.option.scale_params_file) as params_file:
         return yaml.safe_load(stream=params_file)
 
 
-@pytest.fixture(scope="module")
-def scale_namespace(unprivileged_client, scale_test_param):
+@pytest.fixture(scope="class")
+def scale_namespace(unprivileged_client, scale_test_param, keep_resources):
     yield from create_ns(
         name=scale_test_param["test_namespace"],
-        teardown=False,
+        teardown=not keep_resources,
         unprivileged_client=unprivileged_client,
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def dvs_os_info():
     return {
         OS_FLAVOR_RHEL: {
@@ -195,7 +191,7 @@ def dvs_os_info():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def dvs_info(scale_test_param, dvs_os_info):
     dvs_info = {}
     for os_name in dvs_os_info:
@@ -211,7 +207,7 @@ def dvs_info(scale_test_param, dvs_os_info):
     return dvs_info
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="class")
 def vms_info(scale_test_param):
     vms_info_dict = {
         OS_FLAVOR_RHEL: {"latest_labels": RHEL_LATEST_LABELS},
@@ -228,9 +224,18 @@ def vms_info(scale_test_param):
     return vms_info_dict
 
 
-@pytest.fixture(scope="module")
-def scale_dvs(admin_client, golden_images_namespace, dvs_info):
+@pytest.fixture(scope="class")
+def golden_images_scale_dvs(
+    request, keep_resources, admin_client, golden_images_namespace, dvs_info
+):
     dvs_list = []
+
+    def _delete_resources():
+        delete_resources(resources=dvs_list)
+
+    if not keep_resources:
+        request.addfinalizer(_delete_resources)
+
     for os_name, dv_info in dvs_info.items():
         storage_types_used = [
             storage_type_key
@@ -238,7 +243,7 @@ def scale_dvs(admin_client, golden_images_namespace, dvs_info):
             if dv_info[storage_type_key]["vms"]
         ]
         for storage_type in storage_types_used:
-            scale_dv = DataVolume(
+            golden_images_scale_dv = DataVolume(
                 name=f"{os_name}-{storage_type}-dv",
                 namespace=golden_images_namespace.name,
                 storage_class=SCALE_STORAGE_TYPES[storage_type],
@@ -248,99 +253,146 @@ def scale_dvs(admin_client, golden_images_namespace, dvs_info):
                 client=admin_client,
                 source="http",
             )
-            scale_dv.deploy()
-            dvs_list.append(scale_dv)
+            golden_images_scale_dv.deploy()
+            dvs_list.append(golden_images_scale_dv)
     for dv in dvs_list:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
     return dvs_list
 
 
-@pytest.fixture(scope="module")
-def data_sources(admin_client, scale_dvs):
+@pytest.fixture(scope="class")
+def data_sources(request, keep_resources, admin_client, golden_images_scale_dvs):
     data_sources = {}
-    for dv in scale_dvs:
-        ds_name = re.sub(r"-dv", r"-ds", dv.name)
+
+    def _delete_resources():
+        delete_resources(resources=list(data_sources.values()))
+
+    if not keep_resources:
+        request.addfinalizer(_delete_resources)
+
+    for dv in golden_images_scale_dvs:
+        data_source_name = re.sub(r"-dv$", r"-datasource", dv.name)
         data_source = DataSource(
-            name=ds_name,
+            name=data_source_name,
             namespace=dv.namespace,
             client=admin_client,
             source=generate_data_source_dict(dv=dv),
         )
         data_source.deploy()
         data_sources.update({data_source.name: data_source})
+    for data_source in data_sources.values():
+        data_source.wait_for_condition(
+            condition=data_source.Condition.READY,
+            status=data_source.Condition.Status.TRUE,
+        )
     return data_sources
 
 
-@pytest.fixture(scope="module")
-def vms(
+@pytest.fixture(scope="class")
+def scale_vms(
     unprivileged_client,
     data_sources,
     scale_namespace,
     vms_info,
-    must_gather_image_url,
 ):
     vms_list = []
 
-    for os_type, info in vms_info.items():
+    for os_type, vm_info in vms_info.items():
         for storage_type_key in SCALE_STORAGE_TYPES:
-            num_of_vms = info[storage_type_key]["vms"]
+            vm_base_name = f"{os_type}-{storage_type_key}"
+            num_of_vms = vm_info[storage_type_key]["vms"]
             for vm_index in range(num_of_vms):
-                try:
-                    vms_list.append(
-                        create_and_start_scale_vm(
-                            data_source=data_sources[
-                                f"{os_type}-{storage_type_key}-ds"
-                            ],
-                            vm_info=info,
-                            os_type=os_type,
-                            storage=storage_type_key,
-                            vm_index=vm_index,
-                            namespace=scale_namespace,
-                            client=unprivileged_client,
-                        )
+                vms_list.append(
+                    VirtualMachineForTestsFromTemplate(
+                        name=f"vm-{vm_base_name}-{vm_index}",
+                        namespace=scale_namespace.name,
+                        client=unprivileged_client,
+                        cpu_cores=vm_info["cores"],
+                        memory_requests=vm_info["memory"],
+                        data_source=data_sources[f"{vm_base_name}-datasource"],
+                        labels=Template.generate_template_labels(
+                            **vm_info["latest_labels"]
+                        ),
                     )
-                except TimeoutExpiredError:
-                    LOGGER.error(
-                        "Could not start new VM, running must-gather, check cluster capacity."
-                    )
-                    failure_finalizer(
-                        vms_list=vms_list, must_gather_image_url=must_gather_image_url
-                    )
-    for vm in vms_list:
-        vm.vmi.wait_until_running()
+                )
     yield vms_list
 
 
-@pytest.mark.polarion("CNV-7713")
-def test_scale(
-    scale_test_param,
-    fail_if_param_vms_zero,
-    scale_dvs,
-    data_sources,
-    scale_namespace,
-    vms,
-    must_gather_image_url,
-):
-    log_nodes_load_data(vms=vms)
-    LOGGER.info("Verifying all VMS are running")
-    try:
-        sampler = TimeoutSampler(
-            wait_timeout=scale_test_param["test_duration"] * TIMEOUT_1MIN,
-            sleep=scale_test_param["vms_verification_interval"] * TIMEOUT_1MIN,
-            func=all_vms_running,
-            vms=vms,
-        )
-        for vms_are_ready in sampler:
-            if not vms_are_ready:
-                LOGGER.error("VMs check failed, running must gather to collect data.")
-                failure_finalizer(
-                    vms_list=vms, must_gather_image_url=must_gather_image_url
+class TestScale:
+    # TODO add timer for tests to check for time of creation
+    # TODO create option to choose runStrategy when creating VMs
+    @pytest.mark.dependency(name=f"{TESTS_CLASS_NAME}::test_create_vms")
+    @pytest.mark.polarion("CNV-8447")
+    def test_create_vms(
+        self,
+        fail_if_param_vms_zero,
+        scale_vms,
+    ):
+        log_nodes_load_data()
+        for vm in scale_vms:
+            vm.deploy()
+
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::test_start_vms",
+        depends=[f"{TESTS_CLASS_NAME}::test_create_vms"],
+    )
+    @pytest.mark.polarion("CNV-8448")
+    def test_start_vms(self, scale_vms, must_gather_image_url):
+        for vm in scale_vms:
+            vm.start()
+        for vm in scale_vms:
+            try:
+                vm.vmi.wait(timeout=TIMEOUT_30MIN)
+                vm.vmi.wait_until_running()
+            except TimeoutExpiredError:
+                LOGGER.error(
+                    "Could not start new VM, running must-gather, check cluster capacity."
                 )
-    except TimeoutExpiredError:
-        if not scale_test_param["keep_resources"]:
-            delete_resources(
-                namespace=scale_namespace,
-                vms=vms,
-                scale_dvs=scale_dvs,
-                data_sources=data_sources,
+                failure_finalizer(
+                    vms_list=scale_vms, must_gather_image_url=must_gather_image_url
+                )
+
+    # TODO check the os internally to see if it didn't reboot
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::test_start_vms"])
+    @pytest.mark.polarion("CNV-8449")
+    def test_scale_vms_running_stability(
+        self,
+        scale_test_param,
+        scale_vms,
+        must_gather_image_url,
+    ):
+        log_nodes_load_data(vms=scale_vms)
+        LOGGER.info("Verifying all VMS are running")
+        try:
+            sampler = TimeoutSampler(
+                wait_timeout=scale_test_param["test_duration"] * TIMEOUT_1MIN,
+                sleep=scale_test_param["vms_verification_interval"] * TIMEOUT_1MIN,
+                func=all_vms_running,
+                vms=scale_vms,
             )
+            for vms_are_ready in sampler:
+                if not vms_are_ready:
+                    LOGGER.error(
+                        "VMs check failed, running must gather to collect data."
+                    )
+                    failure_finalizer(
+                        vms_list=scale_vms, must_gather_image_url=must_gather_image_url
+                    )
+        except TimeoutExpiredError:
+            return
+
+    @pytest.mark.order(after=f"{TESTS_CLASS_NAME}::test_scale_vms_running_stability")
+    @pytest.mark.polarion("CNV-8449")
+    def test_delete_resources(
+        self,
+        skip_if_keep_resources,
+        golden_images_scale_dvs,
+        data_sources,
+        scale_namespace,
+        scale_vms,
+    ):
+        # TODO record time for the deletion of VMs and the cloned DVs
+        delete_resources(
+            resources=list(data_sources.values()) + golden_images_scale_dvs + scale_vms
+        )
+        scale_namespace.clean_up()
