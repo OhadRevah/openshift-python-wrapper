@@ -10,7 +10,7 @@ global_config = pytest_testconfig.load_python(
 storage_class_matrix = [
     {
         "sno-storage": {
-            "volume_mode": DataVolume.VolumeMode.BLOCK,
+            "volume_mode": DataVolume.VolumeMode.FILE,
             "access_mode": DataVolume.AccessMode.RWO,
         }
     },
