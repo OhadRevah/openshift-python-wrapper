@@ -14,6 +14,7 @@ def assert_node_is_marked_by_bridge(bridge_nad, vm):
 
 def assert_nmstate_bridge_creation(bridge):
     nns = NodeNetworkState(name=bridge.node_selector)
+    bridge_name = bridge.bridge_name
     assert nns.get_interface(
-        name=bridge.bridge_name
-    ), f"Nmstate bridge: {bridge.bridge_name} not found"
+        name=bridge_name
+    ), f"Nmstate bridge: {bridge_name} not found"
