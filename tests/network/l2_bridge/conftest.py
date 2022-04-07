@@ -337,24 +337,12 @@ def l2_bridge_running_vm_b(l2_bridge_vm_b):
 
 
 @pytest.fixture(scope="class")
-def dhcp_client_eth3_nm_connection_name(l2_bridge_running_vm_b):
-    """
-    Extracts connection name from nmcli command by device name (eth3) from the rrmngmnt host on the dhcp client.
-
-    Returns:
-        str: The connection name
-    """
-    host_nmcli = l2_bridge_running_vm_b.ssh_exec.network.nmcli
-    devices = host_nmcli.get_all_devices()
-    connections = host_nmcli.get_all_connections()
-    relevant_dev = [dev for dev in devices if dev["name"] == "eth3"]
-    relevant_con = [
-        con for con in connections if con["device"] == relevant_dev[0]["name"]
-    ]
-
-    if not relevant_con:
-        assert False, "Could not extract connection name by device - No connections."
-    return relevant_con[0]["name"]
+def eth3_nmcli_connection_uuid(l2_bridge_running_vm_b):
+    rc, out, _ = l2_bridge_running_vm_b.ssh_exec.run_command(
+        command=shlex.split("nmcli -g GENERAL.CON-UUID device show eth3")
+    )
+    assert not rc, "Could not extract connection uuid by device name"
+    return out.strip()
 
 
 @pytest.fixture(scope="class")
@@ -369,18 +357,16 @@ def configured_l2_bridge_vm_a(
 
 
 @pytest.fixture()
-def started_vmb_dhcp_client(
-    l2_bridge_running_vm_b, dhcp_client_eth3_nm_connection_name
-):
+def started_vmb_dhcp_client(l2_bridge_running_vm_b, eth3_nmcli_connection_uuid):
     nmcli_cmd = "sudo nmcli connection"
     # Start dhcp client in l2_bridge_running_vm_b
     run_ssh_commands(
         host=l2_bridge_running_vm_b.ssh_exec,
         commands=[
             shlex.split(
-                f"{nmcli_cmd} modify '{dhcp_client_eth3_nm_connection_name}' ipv4.method auto"
+                f"{nmcli_cmd} modify '{eth3_nmcli_connection_uuid}' ipv4.method auto"
             ),
-            shlex.split(f"{nmcli_cmd} up '{dhcp_client_eth3_nm_connection_name}'"),
+            shlex.split(f"{nmcli_cmd} up '{eth3_nmcli_connection_uuid}'"),
             shlex.split("sudo systemctl restart qemu-guest-agent.service"),
         ],
     )
