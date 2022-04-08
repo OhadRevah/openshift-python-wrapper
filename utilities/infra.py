@@ -70,6 +70,34 @@ DEFAULT_RESOURCE_CONDITIONS = {
     Resource.Condition.PROGRESSING: Resource.Condition.Status.FALSE,
     Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
 }
+VM_CRD = f"virtualmachines.{Resource.ApiGroup.KUBEVIRT_IO}"
+ALL_CNV_CRDS = [
+    f"cdiconfigs.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"cdis.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"dataimportcrons.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"datasources.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"datavolumes.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"hostpathprovisioners.{Resource.ApiGroup.HOSTPATHPROVISIONER_KUBEVIRT_IO}",
+    f"hyperconvergeds.{Resource.ApiGroup.HCO_KUBEVIRT_IO}",
+    f"kubevirts.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"migrationpolicies.{Resource.ApiGroup.MIGRATIONS_KUBEVIRT_IO}",
+    f"networkaddonsconfigs.{Resource.ApiGroup.NETWORKADDONSOPERATOR_NETWORK_KUBEVIRT_IO}",
+    f"nodemaintenances.{Resource.ApiGroup.NODEMAINTENANCE_KUBEVIRT_IO}",
+    f"objecttransfers.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
+    f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"virtualmachineclusterflavors.{Resource.ApiGroup.FLAVOR_KUBEVIRT_IO}",
+    f"virtualmachineflavors.{Resource.ApiGroup.FLAVOR_KUBEVIRT_IO}",
+    f"virtualmachineinstancemigrations.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineinstancepresets.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineinstancereplicasets.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineinstances.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachinepools.{Resource.ApiGroup.POOL_KUBEVIRT_IO}",
+    f"virtualmachinerestores.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    VM_CRD,
+    f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+]
 
 
 LOGGER = logging.getLogger(__name__)

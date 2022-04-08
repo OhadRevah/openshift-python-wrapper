@@ -15,6 +15,7 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.pod import Pod
+from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
 from ocp_resources.virtual_machine import VirtualMachine
@@ -35,6 +36,7 @@ from utilities.constants import (
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     OPENSHIFT_NAMESPACE,
 )
+from utilities.infra import ALL_CNV_CRDS, VM_CRD
 
 
 pytestmark = pytest.mark.sno
@@ -461,51 +463,60 @@ class TestMustGatherCluster:
                 checks=VALIDATE_UID_NAME,
             )
 
+    @pytest.mark.polarion("CNV-8508")
+    def test_no_new_cnv_crds(self, kubevirt_crd_names):
+        new_crds = [crd for crd in kubevirt_crd_names if crd not in ALL_CNV_CRDS]
+        assert not new_crds, f"Following crds are new: {new_crds}."
+
     @pytest.mark.polarion("CNV-2724")
     def test_crd_resources(
-        self, admin_client, collected_cluster_must_gather, kubevirt_crd_resources
+        self, admin_client, collected_cluster_must_gather, kubevirt_crd_by_type
     ):
-        error_crds = []
-        for kubevirt_crd_resource in kubevirt_crd_resources:
-            crd_name = kubevirt_crd_resource.name
-            for version in kubevirt_crd_resource.instance.spec.versions:
-                resource_objs = admin_client.resources.get(
-                    api_version=version.name,
-                    kind=kubevirt_crd_resource.instance.spec.names.kind,
-                )
+        crd_name = kubevirt_crd_by_type.name
+        for version in kubevirt_crd_by_type.instance.spec.versions:
+            resource_objs = admin_client.resources.get(
+                api_version=version.name,
+                kind=kubevirt_crd_by_type.instance.spec.names.kind,
+            )
 
-                for resource_item in resource_objs.get().to_dict()["items"]:
-                    metadata = resource_item["metadata"]
-                    name = metadata["name"]
-                    if "namespace" in metadata:
+            for resource_item in resource_objs.get().to_dict()["items"]:
+                resource_metadata = resource_item["metadata"]
+                name = resource_metadata["name"]
+                if "namespace" in resource_metadata:
+                    if crd_name == VM_CRD:
                         resource_file = os.path.join(
                             collected_cluster_must_gather,
-                            f"namespaces/{metadata['namespace']}/crs/{crd_name}/{name}.yaml",
+                            f"namespaces/{resource_metadata['namespace']}/{Resource.ApiGroup.KUBEVIRT_IO}"
+                            f"/virtualmachines/custom/{name}.yaml",
                         )
                     else:
                         resource_file = os.path.join(
                             collected_cluster_must_gather,
-                            f"cluster-scoped-resources/{crd_name}/{name}.yaml",
+                            f"namespaces/{resource_metadata['namespace']}/crs/{crd_name}/{name}.yaml",
                         )
+                else:
+                    resource_file = os.path.join(
+                        collected_cluster_must_gather,
+                        f"cluster-scoped-resources/{crd_name}/{name}.yaml",
+                    )
 
-                    with open(resource_file) as resource_file:
-                        file_content = yaml.safe_load(
-                            resource_file.read(),
-                        )
-                    resource_name_from_file = file_content["metadata"]["name"]
-                    resource_uid_from_file = file_content["metadata"]["uid"]
-                    actual_resource_uid = resource_item["metadata"]["uid"]
-                    if name != resource_name_from_file:
-                        error_crds.append(
-                            f"Actual resource name: {name}, must-gather collected resource name"
-                            f" {resource_name_from_file}"
-                        )
-                    if actual_resource_uid != resource_uid_from_file:
-                        error_crds.append(
-                            f"Resource uid: {actual_resource_uid} does not match with must-gather data:"
-                            f"{resource_uid_from_file}"
-                        )
-        assert not error_crds, f"{error_crds}"
+                with open(resource_file) as resource_file:
+                    file_content = yaml.safe_load(
+                        resource_file.read(),
+                    )
+                resource_name_from_file = file_content["metadata"]["name"]
+                resource_uid_from_file = file_content["metadata"]["uid"]
+                actual_resource_uid = resource_metadata["uid"]
+                assert name == resource_name_from_file, (
+                    f"Actual resource name: {name}, must-gather "
+                    f"collected resource name: {resource_name_from_file}"
+                )
+
+                assert actual_resource_uid == resource_uid_from_file, (
+                    f"Resource uid: {actual_resource_uid} does not "
+                    "match with must-gather data:"
+                    f" {resource_uid_from_file}"
+                )
 
     @pytest.mark.polarion("CNV-2939")
     def test_image_stream_tag_resources(

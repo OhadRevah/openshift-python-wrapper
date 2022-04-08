@@ -33,7 +33,7 @@ from utilities.constants import (
     VIRT_TEMPLATE_VALIDATOR,
     Images,
 )
-from utilities.infra import get_latest_os_dict_list
+from utilities.infra import ALL_CNV_CRDS, get_latest_os_dict_list
 from utilities.storage import HppCsiStorageClass
 
 
@@ -490,6 +490,8 @@ cnv_pod_matrix = [
     VIRT_OPERATOR,
     VIRT_TEMPLATE_VALIDATOR,
 ]
+
+cnv_crd_matrix = ALL_CNV_CRDS
 
 cnv_deployment_matrix = ALL_CNV_DEPLOYMENTS
 
