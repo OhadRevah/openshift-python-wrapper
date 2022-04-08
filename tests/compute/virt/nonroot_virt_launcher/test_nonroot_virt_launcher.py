@@ -10,7 +10,6 @@ from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.virt import (
     get_kubevirt_hyperconverged_spec,
     migrate_vm_and_verify,
-    running_vm,
     vm_instance_from_template,
 )
 
@@ -53,32 +52,6 @@ def enabled_nonroot_featuregate_scope_class(
         yield
 
 
-@pytest.fixture()
-def enabled_nonroot_featuregate_with_running_vm_and_restored_featuregate(
-    hyperconverged_resource_scope_function,
-    kubevirt_feature_gates,
-    admin_client,
-    hco_namespace,
-    privilege_based_vm_scope_function,
-):
-    """Update FeatureGate to Obtain NonRoot VMI and immediately restore FeatureGate after a running_vm.
-
-    1. For a VM with start_vm as False.
-    2. Update HCO CR with NonRootExperimental FeatureGate via JSON Annotation Patch.
-    3. Start the VM to obtain NonRoot Virt-Launcher Pod based VMI.
-    4. Immediately Restore the FeatureGates after we get a running_vm.
-    """
-    kubevirt_feature_gates.append(FEATURE_GATE)
-    with append_feature_gate_to_hco(
-        feature_gate=kubevirt_feature_gates,
-        resource=hyperconverged_resource_scope_function,
-        client=admin_client,
-        namespace=hco_namespace,
-    ):
-        running_vm(vm=privilege_based_vm_scope_function)
-        assert_virt_launcher_pod_is_root(vm=privilege_based_vm_scope_function)
-
-
 @pytest.fixture(scope="class")
 def kubevirt_hyperconverged_spec_scope_class(admin_client, hco_namespace):
     return get_kubevirt_hyperconverged_spec(
@@ -112,24 +85,6 @@ def nonroot_vm_scope_class(
         vm_cpu_model=nodes_common_cpu_model,
     ) as nonroot_vm_scope_class:
         yield nonroot_vm_scope_class
-
-
-@pytest.fixture()
-def privilege_based_vm_scope_function(
-    request,
-    unprivileged_client,
-    namespace,
-    golden_image_dv_scope_module_data_source_scope_class,
-    nodes_common_cpu_model,
-):
-    with vm_instance_from_template(
-        request=request,
-        unprivileged_client=unprivileged_client,
-        namespace=namespace,
-        data_source=golden_image_dv_scope_module_data_source_scope_class,
-        vm_cpu_model=nodes_common_cpu_model,
-    ) as privilege_based_vm_scope_function:
-        yield privilege_based_vm_scope_function
 
 
 @pytest.fixture(scope="class")
@@ -188,69 +143,3 @@ class TestNonRootVirtLauncherPod:
             vm=nonroot_vm_scope_class, migrate=True
         )
         assert_virt_launcher_pod_is_root(vm=nonroot_vm_scope_class)
-
-
-@pytest.mark.parametrize(
-    "golden_image_data_volume_scope_module,",
-    [
-        pytest.param(
-            DATA_VOLUME_DICT,
-        ),
-    ],
-    indirect=True,
-)
-class TestNonRootVmiPodToggleFeatureGateAndMigrate:
-    @pytest.mark.parametrize(
-        "privilege_based_vm_scope_function, enabled_featuregate_scope_function,",
-        [
-            pytest.param(
-                {
-                    "vm_name": "root-virtlauncher-pod-vm",
-                    "template_labels": RHEL_LATEST_LABELS,
-                },
-                FEATURE_GATE,
-                marks=pytest.mark.polarion("CNV-6027"),
-                id="test_root_vmipod_remains_root_after_toggle_featuregate_and_migrate",
-            ),
-        ],
-        indirect=True,
-    )
-    def test_root_virtlauncher_vm(
-        self,
-        privilege_based_vm_scope_function,
-        enabled_featuregate_scope_function,
-    ):
-        migrate_vm_and_verify(
-            vm=privilege_based_vm_scope_function, check_ssh_connectivity=True
-        )
-        LOGGER.info(f"Check {privilege_based_vm_scope_function.name} VMI remains Root.")
-        assert_virt_launcher_pod_is_nonroot(vm=privilege_based_vm_scope_function)
-
-    @pytest.mark.parametrize(
-        "privilege_based_vm_scope_function,",
-        [
-            pytest.param(
-                {
-                    "vm_name": "nonroot-virtlauncher-pod-vm",
-                    "template_labels": RHEL_LATEST_LABELS,
-                    "start_vm": False,
-                },
-                marks=pytest.mark.polarion("CNV-6028"),
-                id="test_nonroot_vmipod_remains_nonroot_after_toggle_featuregate_and_migrate",
-            ),
-        ],
-        indirect=True,
-    )
-    def test_nonroot_virtlauncher_vm(
-        self,
-        kubevirt_feature_gates,
-        privilege_based_vm_scope_function,
-        enabled_nonroot_featuregate_with_running_vm_and_restored_featuregate,
-    ):
-        migrate_vm_and_verify(
-            vm=privilege_based_vm_scope_function, check_ssh_connectivity=True
-        )
-        LOGGER.info(
-            f"Check {privilege_based_vm_scope_function.name} VMI remains NonRoot."
-        )
-        assert_virt_launcher_pod_is_root(vm=privilege_based_vm_scope_function)
