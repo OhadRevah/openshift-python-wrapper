@@ -5,17 +5,11 @@ from ocp_resources.resource import Resource
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import validate_pause_optional_migrate_unpause_linux_vm
-from tests.compute.virt.utils import append_feature_gate_to_hco
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.virt import (
-    get_kubevirt_hyperconverged_spec,
-    migrate_vm_and_verify,
-    vm_instance_from_template,
-)
+from utilities.virt import migrate_vm_and_verify, vm_instance_from_template
 
 
 NONROOT_ANNOTATION = f"{Resource.ApiGroup.KUBEVIRT_IO}/nonroot"
-FEATURE_GATE = "NonRootExperimental"
 DATA_VOLUME_DICT = {
     "dv_name": RHEL_LATEST_OS,
     "image": RHEL_LATEST["image_path"],
@@ -29,40 +23,6 @@ def assert_virt_launcher_pod_is_root(vm):
     assert (
         not vm.vmi.is_virt_launcher_pod_root
     ), "Virt Launcher Pod should not be running as Root."
-
-
-@pytest.fixture(scope="class")
-def enabled_nonroot_featuregate_scope_class(
-    hyperconverged_resource_scope_class,
-    kubevirt_feature_gates_scope_class,
-    admin_client,
-    hco_namespace,
-):
-    kubevirt_feature_gates_scope_class.append(FEATURE_GATE)
-    with append_feature_gate_to_hco(
-        feature_gate=kubevirt_feature_gates_scope_class,
-        resource=hyperconverged_resource_scope_class,
-        client=admin_client,
-        namespace=hco_namespace,
-    ):
-        yield
-
-
-@pytest.fixture(scope="class")
-def kubevirt_hyperconverged_spec_scope_class(admin_client, hco_namespace):
-    return get_kubevirt_hyperconverged_spec(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    )
-
-
-@pytest.fixture(scope="class")
-def kubevirt_config_scope_class(kubevirt_hyperconverged_spec_scope_class):
-    return kubevirt_hyperconverged_spec_scope_class["configuration"]
-
-
-@pytest.fixture(scope="class")
-def kubevirt_feature_gates_scope_class(kubevirt_config_scope_class):
-    return kubevirt_config_scope_class["developerConfiguration"]["featureGates"]
 
 
 @pytest.fixture(scope="class")
@@ -103,22 +63,15 @@ def migrated_nonroot_vm_scope_class(
     ],
     indirect=True,
 )
-@pytest.mark.usefixtures(
-    "enabled_nonroot_featuregate_scope_class",
-)
 class TestNonRootVirtLauncherPod:
     @pytest.mark.polarion("CNV-6025")
     def test_nonroot_virtlauncher_vm(
         self,
         nonroot_vm_scope_class,
     ):
-        LOGGER.info(
-            f"Check {nonroot_vm_scope_class.name} has the annotation {NONROOT_ANNOTATION}"
-        )
         assert (
-            NONROOT_ANNOTATION
-            in nonroot_vm_scope_class.vmi.instance.metadata.annotations.keys()
-        ), f"VMI with Non-Root Virt-Launcher Pod should have {NONROOT_ANNOTATION} annotations."
+            nonroot_vm_scope_class.vmi.instance.status.runtimeUser != 0
+        ), "VMI with non-root virt-launcher pod should have a user_id other than root user_id 0."
         assert_virt_launcher_pod_is_root(vm=nonroot_vm_scope_class)
 
     @pytest.mark.polarion("CNV-6812")
