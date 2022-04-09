@@ -95,22 +95,27 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
     yield vms_dict
 
 
+@pytest.fixture(scope="session")
+def upgrade_namespaces(upgrade_namespace_scope_session, kmp_enabled_namespace):
+    return [kmp_enabled_namespace, upgrade_namespace_scope_session]
+
+
+@pytest.fixture(scope="session")
+def migratable_vms(admin_client, hco_namespace, upgrade_namespaces):
+    migratable_vms = get_all_migratable_vms(
+        admin_client=admin_client, namespaces=upgrade_namespaces
+    )
+    LOGGER.info(f"All migratable vms: {[vm.name for vm in migratable_vms]}")
+    return migratable_vms
+
+
 @pytest.fixture()
 def unupdated_vmi_pods_names(
-    admin_client,
-    hco_namespace,
-    upgrade_namespace_scope_session,
-    kmp_enabled_namespace,
-    hco_target_version,
+    admin_client, hco_namespace, hco_target_version, upgrade_namespaces, migratable_vms
 ):
-    all_namespaces = [kmp_enabled_namespace, upgrade_namespace_scope_session]
-    migratable_vms = get_all_migratable_vms(
-        admin_client=admin_client, namespaces=all_namespaces
-    )
-
     wait_for_automatic_vm_migrations(admin_client=admin_client, vm_list=migratable_vms)
 
-    for ns in all_namespaces:
+    for ns in upgrade_namespaces:
         LOGGER.info(f"Checking PodDisruptionBudget in namespaces: {ns.name}")
         check_pod_disruption_budget_for_completed_migrations(
             admin_client=admin_client, namespace=ns.name, timeout=TIMEOUT_90MIN

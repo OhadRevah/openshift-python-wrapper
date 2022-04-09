@@ -3,6 +3,7 @@ import os
 
 import pytest
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import Resource
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 from tests.compute.upgrade.utils import (
@@ -21,7 +22,8 @@ from utilities.virt import migrate_vm_and_verify, vm_console_run_commands
 
 
 LOGGER = logging.getLogger(__name__)
-DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::" "TestUpgradeCompute"
+NONROOT_ANNOTATION = f"{Resource.ApiGroup.KUBEVIRT_IO}/nonroot"
+DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeCompute"
 VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID = (
     f"{DEPENDENCIES_NODE_ID_PREFIX}::test_is_vm_running_before_upgrade"
 )
@@ -32,6 +34,10 @@ IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID = (
 MIGRATION_AFTER_UPGRADE_TEST_NODE_ID = (
     f"{DEPENDENCIES_NODE_ID_PREFIX}::test_migration_after_upgrade"
 )
+VMI_POD_IMAGE_UPDATES_AFTER_UPGRADE_OPTIN = (
+    f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vmi_pod_image_updates_after_upgrade_optin"
+)
+
 POST_UPGRADE_START_TIME_MAX_DELTA = 0.05
 
 pytestmark = pytest.mark.usefixtures("skip_when_one_node")
@@ -267,6 +273,56 @@ class TestUpgradeCompute:
         assert (
             not unupdated_vmi_pods_names
         ), f"The following VMI Pods were not updated: {unupdated_vmi_pods_names}"
+
+    @pytest.mark.polarion("CNV-8507")
+    @pytest.mark.order(before=MIGRATION_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.dependency(
+        depends=[
+            COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+            VMI_POD_IMAGE_UPDATES_AFTER_UPGRADE_OPTIN,
+        ],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_virt_launcher_pods_are_nonroot_after_upgrade(
+        self,
+        skip_on_ocp_upgrade,
+        migratable_vms,
+    ):
+        """
+        Check that the virt-launcher pods are nonroot after the upgrade
+        """
+        root_virt_launcher_pod_vms = [
+            vm.name for vm in migratable_vms if vm.vmi.is_virt_launcher_pod_root
+        ]
+        assert (
+            not root_virt_launcher_pod_vms
+        ), f"Post CNV upgrade, virt-launcher pod user must not be root: {root_virt_launcher_pod_vms}"
+
+    @pytest.mark.polarion("CNV-8659")
+    @pytest.mark.order(before=MIGRATION_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.dependency(
+        depends=[
+            COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+            VMI_POD_IMAGE_UPDATES_AFTER_UPGRADE_OPTIN,
+        ],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_vmi_have_nonroot_annotation_after_upgrade(
+        self,
+        skip_on_ocp_upgrade,
+        migratable_vms,
+    ):
+        """
+        Check vmis have nonroot annotation after upgrade
+        """
+        missing_nonroot_annotation_vms = [
+            vm.name
+            for vm in migratable_vms
+            if NONROOT_ANNOTATION not in vm.vmi.instance.metadata.annotations.keys()
+        ]
+        assert (
+            not missing_nonroot_annotation_vms
+        ), f"Post CNV upgrade, vmi: {missing_nonroot_annotation_vms} should have {NONROOT_ANNOTATION} annotations."
 
     @pytest.mark.polarion("CNV-5749")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)

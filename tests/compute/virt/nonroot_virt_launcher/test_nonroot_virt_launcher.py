@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 def assert_virt_launcher_pod_is_root(vm):
     assert (
         not vm.vmi.is_virt_launcher_pod_root
-    ), "Virt Launcher Pod should not be running as Root."
+    ), "Virt-launcher pod should not be running as root."
 
 
 @pytest.fixture(scope="class")
