@@ -10,7 +10,6 @@ import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.route import Route
-from ocp_resources.storage_class import StorageClass
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
@@ -147,6 +146,7 @@ def test_virtctl_image_upload_with_ca(
         assert pvc.bound()
 
 
+@pytest.mark.smoke
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3724")
 def test_virtctl_image_upload_dv(
@@ -432,21 +432,22 @@ def test_successful_vm_from_uploaded_dv_windows(
     )
 
 
-@pytest.mark.smoke
 @pytest.mark.polarion("CNV-4033")
 def test_disk_image_after_upload_virtctl(
+    skip_block_volumemode_scope_module,
     download_image,
     namespace,
+    storage_class_matrix__module__,
     unprivileged_client,
 ):
-
-    dv_name = "cnv-4033"
+    storage_class = [*storage_class_matrix__module__][0]
+    dv_name = f"cnv-4033-{storage_class}"
     with virtctl_upload_dv(
         namespace=namespace.name,
         name=dv_name,
         size="1Gi",
         image_path=LOCAL_PATH,
-        storage_class=StorageClass.Types.NFS,
+        storage_class=storage_class,
         insecure=True,
     ) as res:
         check_upload_virtctl_result(result=res)
