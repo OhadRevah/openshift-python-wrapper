@@ -540,7 +540,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         bond_name,
         bond_ports,
         mode=ACTIVE_BACKUP,
-        mtu=1450,
+        mtu=None,
         primary_bond_port=None,
         node_selector=None,
         teardown=True,
@@ -585,14 +585,16 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         }
 
     def configure_mtu_on_ports(self):
-        self.iface["mtu"] = self.mtu
+        if self.mtu:
+            self.iface["mtu"] = self.mtu
         for port in self.ports:
             _port = {
                 "name": port,
                 "type": "ethernet",
                 "state": NodeNetworkConfigurationPolicy.Interface.State.UP,
-                "mtu": self.mtu - 50,  # Set ports MTU lower than BOND MTU
             }
+            if self.mtu:
+                _port["mtu"] = self.mtu
             self.set_interface(interface=_port)
 
     def to_dict(self):
