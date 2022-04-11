@@ -17,12 +17,6 @@ def network_daemonset_deployment_resources(admin_client, hco_namespace):
     ]
 
 
-@pytest.fixture()
-def skip_if_not_sno_cluster(sno_cluster):
-    if not sno_cluster:
-        pytest.skip("Skip test on non-SNO cluster")
-
-
 @pytest.mark.polarion("CNV-8255")
 def test_desired_number_of_cnao_pods_on_sno_cluster(
     skip_if_not_sno_cluster,

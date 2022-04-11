@@ -1328,3 +1328,7 @@ def label_nodes(nodes, labels):
     yield nodes
     for update in updates:
         update.restore()
+
+
+def get_daemonsets(admin_client, namespace):
+    return list(DaemonSet.get(dyn_client=admin_client, namespace=namespace))

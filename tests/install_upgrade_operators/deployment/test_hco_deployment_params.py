@@ -91,3 +91,24 @@ def test_cnv_deployment_container_image(cnv_deployment_by_name):
     assert_cnv_deployment_container_env_image_not_in_upstream(
         cnv_deployment=cnv_deployment_by_name
     )
+
+
+@pytest.mark.sno
+@pytest.mark.polarion("CNV-8374")
+def test_cnv_deployment_sno_one_replica_set(
+    skip_if_not_sno_cluster, cnv_deployment_by_name
+):
+    deployment_instance = cnv_deployment_by_name.instance
+    deployment_name = cnv_deployment_by_name.name
+    deployment_status_replicas = deployment_instance.status.replicas
+    deployment_spec_replicas = deployment_instance.spec.replicas
+
+    assert deployment_status_replicas == 1, (
+        f"On SNO cluster deployment {deployment_name} number of "
+        f"status.replicas: {deployment_status_replicas}, expected number of "
+        f"replicas: 1"
+    )
+    assert deployment_spec_replicas == 1, (
+        f"On SNO cluster deployment {deployment_name} number of "
+        f"spec.replicas: {deployment_spec_replicas}, expected number of  replicas: 1"
+    )
