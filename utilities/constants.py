@@ -179,12 +179,14 @@ KUBEVIRT_HCO_NAME = "kubevirt-kubevirt-hyperconverged"
 HCO_PART_OF_LABEL_VALUE = "hyperconverged-cluster"
 MANAGED_BY_LABEL_VALUE_OLM = "olm"
 HPP_POOL = "hpp-pool"
+HCO_CATALOG_SOURCE = "hco-catalogsource"
 
 # Namespace constants
 OPENSHIFT_NAMESPACE = "openshift"
 
 # Miscellaneous constants
 UTILITY = "utility"
+OPERATOR_NAME_SUFFIX = "operator"
 
 PODS_TO_COLLECT_INFO = [
     VIRT_LAUNCHER,

@@ -5,6 +5,8 @@ from ocp_resources.package_manifest import PackageManifest
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
+from utilities.constants import HCO_CATALOG_SOURCE
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ def kubevirt_package_manifest(admin_client, hco_namespace):
     Find kubevirt package manifest associated with hco-catalogsource.
     """
     package_manifest_name = py_config["hco_cr_name"]
-    label_selector = "catalog=hco-catalogsource"
+    label_selector = f"catalog={HCO_CATALOG_SOURCE}"
     for resource_field in PackageManifest.get(
         dyn_client=admin_client,
         namespace=py_config["marketplace_namespace"],

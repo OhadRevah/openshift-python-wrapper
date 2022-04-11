@@ -4,9 +4,7 @@ from multiprocessing import Process
 
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cluster_operator import ClusterOperator
-from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
-from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.pod import Pod
@@ -17,7 +15,6 @@ from openshift.dynamic.exceptions import (
     NotFoundError,
     ResourceNotFoundError,
 )
-from pytest_testconfig import py_config
 from urllib3.exceptions import (
     MaxRetryError,
     NewConnectionError,
@@ -28,10 +25,11 @@ from urllib3.exceptions import (
 from tests.install_upgrade_operators.utils import (
     approve_install_plan,
     wait_for_install_plan,
-    wait_for_operator_condition,
 )
 from utilities.constants import (
+    HCO_CATALOG_SOURCE,
     HCO_OPERATOR,
+    OPERATOR_NAME_SUFFIX,
     TIMEOUT_10MIN,
     TIMEOUT_15MIN,
     TIMEOUT_20MIN,
@@ -46,6 +44,7 @@ from utilities.infra import (
     collect_resources_for_test,
     get_clusterversion,
     get_deployments,
+    get_pod_by_name_prefix,
     run_command,
     wait_for_consistent_resource_conditions,
 )
@@ -60,48 +59,7 @@ BASE_EXCEPTIONS_DICT = {
     MaxRetryError: [],
     InternalServerError: [],
 }
-
-
-def wait_for_pods_removal(pods_list):
-    def _get_existing_pods(_pods_list):
-        return [(pod.name, pod.status) for pod in _pods_list if pod.exists]
-
-    LOGGER.info("Wait for pods to be removed.")
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=10,
-        func=_get_existing_pods,
-        _pods_list=pods_list,
-    )
-    sample = None
-    try:
-        for sample in samples:
-            if not sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(f"Some pre-upgrade pods were not deleted: {sample}")
-        raise
-
-
-def wait_for_operator_replacement(
-    dyn_client, hco_namespace, operator_name, pre_upgrade_operator_pods
-):
-    old_operator_pod_names = [pod.name for pod in pre_upgrade_operator_pods]
-    operator_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=1,
-        func=get_operator_by_name,
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
-        operator_name=operator_name,
-    )
-
-    for operator in operator_sampler:
-        if operator.name not in old_operator_pod_names:
-            LOGGER.info(
-                f"Old operator: {old_operator_pod_names}, new operator: {operator.name}"
-            )
-            return operator
+TIER_2_PODS_TYPE = "tier-2"
 
 
 def wait_for_new_operator_pod(
@@ -109,143 +67,98 @@ def wait_for_new_operator_pod(
     hco_namespace,
     operator_name,
     operator_target_info,
-    pre_upgrade_operators_pods,
     upgrade_resilience=False,
 ):
-    # TODO: Refactor - simplify code
     """
-    Wait for a new operator pod to be created.
+    Wait for a new operator pod to be created and running
 
-    If upgrade_resilience - new operator pods will be deleted (test operator resiliency)
+
+    Args:
+        dyn_client (DynamicClient): OCP Client to use
+        hco_namespace (Namespace): HCO namespace
+        operator_name (str): Operator name as extracted from its deployment
+        operator_target_info (dict): With "image" and "strategy" as extracted from its deployment
+        upgrade_resilience (bool, default: False): if True, new operator pods will be deleted during the upgrade
+
+    Raises:
+        TimeoutExpiredError: if a pod with the expected image is not created or if the pod is not running.
     """
 
-    def _get_new_operator_pod():
-        if pre_upgrade_operators_pods:
-            return wait_for_operator_replacement(
-                dyn_client=dyn_client,
-                hco_namespace=hco_namespace,
-                operator_name=operator_name,
-                pre_upgrade_operator_pods=pre_upgrade_operators_pods,
-            )
-        # For new operators which did not exist in a previous version
-        else:
-            return get_operator_by_name(
-                dyn_client=dyn_client,
-                hco_namespace=hco_namespace,
-                operator_name=operator_name,
-            )
-
-    def _check_operator_pod_image(pod):
-        try:
-            return (
-                pod.instance.spec.containers[0].image == operator_target_info["image"]
-            )
-        except NotFoundError:
-            return False
-
-    pre_upgrade_operators_pods = [
-        pod for pod in pre_upgrade_operators_pods if operator_name in pod.name
-    ]
+    def _is_expected_operator_pod_image(
+        _dyn_client, _operator_name, _hco_namespace, _operator_target_info
+    ):
+        operator_pods = get_pod_by_name_prefix(
+            dyn_client=_dyn_client,
+            pod_prefix=_operator_name,
+            namespace=_hco_namespace,
+            get_all=True,
+        )
+        return [
+            _pod
+            for _pod in operator_pods
+            if _pod.instance.spec.containers[0].image == _operator_target_info["image"]
+        ]
 
     LOGGER.info(
-        f"Verify new operator pod {operator_name} {'replacement' if pre_upgrade_operators_pods else ''}."
+        f"Verify new operator pod {operator_name} replacement. Running upgrade resiliency: {upgrade_resilience}"
     )
 
     new_pod_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_30MIN,
         sleep=1,
-        func=_get_new_operator_pod,
+        func=_is_expected_operator_pod_image,
+        _dyn_client=dyn_client,
+        _operator_name=operator_name,
+        _hco_namespace=hco_namespace,
+        _operator_target_info=operator_target_info,
     )
 
     new_operator_pod = None
-    for new_operator_pod in new_pod_sampler:
-        if (
-            operator_target_info["strategy"] != "Recreate"
-            and not is_pod_in_ready_condition(pod=new_operator_pod)
-            and pre_upgrade_operators_pods
-        ):
-            old_pods_in_ready_condition = {
-                pod.name: is_pod_in_ready_condition(pod=pod)
-                for pod in pre_upgrade_operators_pods
-            }
-            assert all(old_pods_in_ready_condition.values()), (
-                f"Old pods removed before new pods are ready, "
-                f"new_pod={new_operator_pod.name} old_pods_ready={old_pods_in_ready_condition}"
-            )
-        if _check_operator_pod_image(pod=new_operator_pod):
-            break
-
-    # TODO: delete pods
-    if upgrade_resilience:
-        new_operator_pod.delete(wait=True, timeout=TIMEOUT_10MIN)
-        # Operator pod is deleted, fetching a new pod
-        new_operator_pod = get_operator_by_name(
-            dyn_client=dyn_client,
-            hco_namespace=hco_namespace,
-            operator_name=operator_name,
-        )
-
-    LOGGER.info(f"Wait for {new_operator_pod.name} to be ready")
-    new_operator_pod.wait_for_condition(
-        condition=Pod.Condition.READY,
-        status=Pod.Condition.Status.TRUE,
-        timeout=TIMEOUT_30MIN,
-    )
-
-
-def is_pod_in_ready_condition(pod):
+    operator_resiliency = upgrade_resilience
     try:
-        conditions = pod.instance.status.conditions
-    except NotFoundError:
-        return False
-    else:
-        for condition in conditions:
-            if (
-                condition.type == Pod.Condition.READY
-                and condition.status == Pod.Condition.Status.TRUE
-            ):
-                return True
-    return False
+        for pod in new_pod_sampler:
+            if pod:
+                new_operator_pod = pod[0]
+                if operator_resiliency:
+                    new_operator_pod.delete(wait=True, timeout=TIMEOUT_10MIN)
+                    operator_resiliency = False
+                    continue
+                break
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Operator {operator_name} new pods are not created, expected: {operator_target_info}"
+        )
+        raise
+
+    status_running = new_operator_pod.Status.RUNNING
+    LOGGER.info(f"Wait for {new_operator_pod.name} to be {status_running}")
+    new_operator_pod.wait_for_status(status=status_running, timeout=TIMEOUT_30MIN)
 
 
-def wait_for_operator_pod_replacements(
+def wait_for_operator_pods_replacement(
     dyn_client,
     hco_namespace,
-    old_operators_pods,
-    operators_current_versions,
     operators_target_versions,
     upgrade_resilience,
 ):
-    LOGGER.info(
-        "Verify all operators Pods with new images get replaced and have the new images version and status ready. "
-        "Testing upgrade resilience is "
-        f"{'enabled (pods will be deleted during upgrade)' if upgrade_resilience else 'disabled'}."
-    )
+    LOGGER.info("Wait for operators replacement.")
 
     processes = []
 
     for operator_name, operator_target_info in operators_target_versions.items():
-        operator_current_info = operators_current_versions.get(operator_name)
-        if (
-            operator_current_info
-            and operator_target_info["image"] != operator_current_info["image"]
-        ):
-            sub_process = Process(
-                name=operator_name,
-                target=wait_for_new_operator_pod,
-                kwargs={
-                    "dyn_client": dyn_client,
-                    "hco_namespace": hco_namespace,
-                    "operator_name": operator_name,
-                    "operator_target_info": operator_target_info,
-                    "pre_upgrade_operators_pods": old_operators_pods,
-                    "upgrade_resilience": upgrade_resilience,
-                },
-            )
-            processes.append(sub_process)
-            sub_process.start()
-        else:
-            LOGGER.info(f"operator pod {operator_name} does not need replacement.")
+        sub_process = Process(
+            name=operator_name,
+            target=wait_for_new_operator_pod,
+            kwargs={
+                "dyn_client": dyn_client,
+                "hco_namespace": hco_namespace,
+                "operator_name": operator_name,
+                "operator_target_info": operator_target_info,
+                "upgrade_resilience": upgrade_resilience,
+            },
+        )
+        processes.append(sub_process)
+        sub_process.start()
 
     for process in processes:
         process.join()
@@ -258,26 +171,10 @@ def wait_for_operator_pod_replacements(
     ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
 
 
-def get_operators_names_and_info(csv):
-    return {
-        deploy.name: {
-            "image": deploy.spec.template.spec.containers[0].image,
-            "strategy": deploy.spec.strategy.get("type", "RollingUpdate"),
-        }
-        for deploy in csv.instance.spec.install.spec.deployments
-    }
-
-
 def update_image_in_catalog_source(dyn_client, namespace, image):
-    #  The cnv_image cli argument can be None in the case of production/staging version.
-    #  Since the user doesn't need to specify a custom IIB image.
-    #  This is just here in case somehow this would run it should fail here.
-    #  Otherwise an empty string would be set for the image.
-    assert image, "no image supplied"
-
-    LOGGER.info(f"Change hco-catalogsource image: image={image}")
+    LOGGER.info(f"Change {HCO_CATALOG_SOURCE} image: image={image}")
     catalog_source = CatalogSource(
-        client=dyn_client, namespace=namespace, name="hco-catalogsource"
+        client=dyn_client, namespace=namespace, name=HCO_CATALOG_SOURCE
     )
     ResourceEditor(patches={catalog_source: {"spec": {"image": image}}}).update()
 
@@ -305,20 +202,18 @@ def get_cluster_pods(dyn_client, hco_namespace, pods_type):
     Returns a list of cluster pods:
     pods_type - operator/tier-2 (non-operator) /all
     """
-    pods = list(Pod.get(dyn_client=dyn_client, namespace=hco_namespace))
-    cluster_pods = []
-    for pod in pods:
-        # Operator pods
-        if pods_type == "operator" and "operator" in pod.name:
-            cluster_pods.append(pod)
-        # Tier-2 pods (created by operators)
-        elif pods_type == "tier-2" and "operator" not in pod.name:
-            cluster_pods.append(pod)
-        # All pods
-        elif pods_type == "all":
-            cluster_pods.append(pod)
+    # pods_type is "all"
+    cluster_pods = list(Pod.get(dyn_client=dyn_client, namespace=hco_namespace))
+    # Operator pods
+    if pods_type == OPERATOR_NAME_SUFFIX:
+        cluster_pods = [pod for pod in cluster_pods if OPERATOR_NAME_SUFFIX in pod.name]
+    # Tier-2 pods (created by operators)
+    elif pods_type == TIER_2_PODS_TYPE:
+        cluster_pods = [
+            pod for pod in cluster_pods if OPERATOR_NAME_SUFFIX not in pod.name
+        ]
 
-    assert cluster_pods, f"No cluster pods of type {pods_type} were found "
+    assert cluster_pods, f"No cluster pods of type {pods_type} were found."
     return cluster_pods
 
 
@@ -328,46 +223,43 @@ def get_operator_by_name(dyn_client, hco_namespace, operator_name):
     return operator_pod
 
 
-def check_tier2_pods_images(
+def assert_only_expected_pods_exist(
     dyn_client,
     hco_namespace,
-    target_related_images_name_and_versions,
-    pods_not_to_be_removed,
+    expected_images,
+    pods_type,
 ):
-    # TODO: Refactor - simplify code
     """
-    Checks the tier2 CNV pods images to make sure all current pods after upgrade are using target images
-
-    Using the related images from the csv after the upgrade and getting a list of currently running cluster pods
-    Exclude the pods which are not to be removed and check that remaining pods images are expected
+    Verifies that only pods with expected images (taken from target CSV) exist.
 
     Args:
-        dyn_client (:obj:`DynamicClient`): admin client or unprivileged client
-        hco_namespace (:obj:`Namespace`): the namespace to use for getting the pod resources
-        target_related_images_name_and_versions (dict): related images names and versions from post-upgrade csv
-        pods_not_to_be_removed (list): list of pods not to be removed (images that don't need replacing)
+        dyn_client (DynamicClient): OCP Client to use
+        hco_namespace (Namespace): HCO namespace
+        expected_images (list): of expected images
+        pods_type (str): operator or tier-2
+
+    Raises:
+        AssertionError if there are pods' images which do not match the expected images list
     """
-    target_images_list = cnv_target_images(
-        target_related_images_name_and_versions=target_related_images_name_and_versions
+    LOGGER.info(
+        f"Verify {pods_type} pods have the right image and no leftover pods exist"
     )
-    pods_not_to_be_replaced_names = [pod.name for pod in pods_not_to_be_removed]
-    current_tier2_cluster_pods = get_cluster_pods(
-        dyn_client=dyn_client, hco_namespace=hco_namespace, pods_type="tier-2"
+    current_cnv_pods = get_cluster_pods(
+        dyn_client=dyn_client, hco_namespace=hco_namespace, pods_type=pods_type
     )
-    cluster_pods_to_be_replaced = filter(
-        lambda pod: pod.name not in pods_not_to_be_replaced_names,
-        current_tier2_cluster_pods,
+    expected_images = cnv_target_images(
+        target_related_images_name_and_versions=expected_images
     )
+    mismatching_pods = {
+        pod.name: pod.instance.spec.containers[0].image
+        for pod in current_cnv_pods
+        if pod.instance.spec.containers[0].image not in expected_images
+    }
 
-    unreplaced_pods = [
-        pod.name
-        for pod in cluster_pods_to_be_replaced
-        if pod.instance.spec.containers[0].image not in target_images_list
-    ]
-
-    assert (
-        not unreplaced_pods
-    ), f"The following pods images were not replaced: {unreplaced_pods}"
+    assert not mismatching_pods, (
+        f"The following {pods_type} pods images were not replaced / removed: {mismatching_pods}."
+        f"Expected images: {expected_images}"
+    )
 
 
 def get_nodes_taints(nodes):
@@ -463,22 +355,10 @@ def verify_cnv_pods_are_running(dyn_client, hco_namespace):
         raise
 
 
-def delete_icsp(admin_client):
-    """
-    Deletes all ImageContentSourcePolicy generated by 'oc adm catalog mirror' command
-
-    Args:
-        admin_client (DynamicClient): Open connection to remote cluster
-    """
-    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
-        LOGGER.info(f"Deleting ImageContentSourcePolicy {icsp.name}")
-        icsp.delete(wait=True)
-
-
-def generate_icsp_file(tmpdir, cnv_index_image, cnv_image_name, source_map):
+def generate_icsp_file(tmpdir_factory, cnv_index_image, cnv_image_name, source_map):
     icsp_file_name = "imageContentSourcePolicy.yaml"
     LOGGER.info(f"Create catalog mirror file {icsp_file_name} (ICSP)")
-    output_directory = os.path.join(tmpdir, f"{cnv_image_name}-manifests")
+    output_directory = tmpdir_factory.mktemp(f"{cnv_image_name}-manifests")
     rc, out, err = run_command(
         command=[
             "oc",
@@ -504,12 +384,12 @@ def generate_icsp_file(tmpdir, cnv_index_image, cnv_image_name, source_map):
 
 
 def create_icsp_from_file(icsp_file_path):
-    rc, out, err = run_command(
+    rc, out, _ = run_command(
         command=["oc", "create", "-f", icsp_file_path], verify_stderr=False
     )
     assert (
         rc
-    ), f"Failed to create ICSP policy: icsp_file_path={icsp_file_path} out={out} err={err}"
+    ), f"Failed to create ICSP policy: icsp_file_path={icsp_file_path} out={out}"
 
 
 def update_icsp_stage_mirror(icsp_file_path):
@@ -528,66 +408,54 @@ def update_icsp_stage_mirror(icsp_file_path):
     ), f"Failed to update stage mirror in ICSP: icsp_file_path={icsp_file_path} out={out} err={err}"
 
 
-def upgrade_cnv(
+def verify_cnv_post_upgrade_conditions(
     dyn_client,
     hco_namespace,
-    hco_target_version,
-    upgrade_resilience,
     cnv_target_version,
-    pre_upgrade_operators_pods,
-    all_pre_upgrade_pods,
-    pre_upgrade_pods_images,
-    pre_upgrade_operators_versions,
-    pre_upgrade_related_images_name_and_versions,
-    upgrade_target_csv,
-    target_related_images_name_and_versions,
+    target_csv,
+    target_operator_pods_images,
+    target_tier_2_images_name_and_versions,
 ):
-    # TODO: Place utility functions under Class and re-use values
-
-    LOGGER.info(
-        f"Check that CSV {upgrade_target_csv.name} status is {upgrade_target_csv.Status.INSTALLING}"
+    wait_for_hco_post_upgrade_state(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace,
+        cnv_target_version=cnv_target_version,
     )
-    wait_for_csv_status_installing(
-        target_csv=upgrade_target_csv,
-        admin_client=dyn_client,
-        namespace=hco_namespace,
-        hco_target_version=hco_target_version,
+    wait_for_post_upgrade_deployments_replicas(
+        dyn_client=dyn_client, hco_namespace=hco_namespace
     )
-
-    LOGGER.info("Determine which pods should be removed after upgrade.")
-    pods_to_be_removed, pods_not_to_be_removed = determine_pods_to_be_removed(
-        all_pre_upgrade_pods=all_pre_upgrade_pods,
-        pre_upgrade_pods_images=pre_upgrade_pods_images,
-        pre_upgrade_related_images_name_and_versions=pre_upgrade_related_images_name_and_versions,
-        post_upgrade_related_images_name_and_versions=target_related_images_name_and_versions,
+    target_csv.wait_for_status(
+        status=target_csv.Status.SUCCEEDED,
+        timeout=TIMEOUT_10MIN,
+        stop_status=None,
     )
 
-    # TODO: Remove
-    check_images_during_upgrade = True
-    if set(
-        item["image"] for item in pre_upgrade_related_images_name_and_versions.values()
-    ) == set(
-        item["image"] for item in target_related_images_name_and_versions.values()
-    ):
-        LOGGER.info("Image contents are the same")
-        check_images_during_upgrade = False
+    assert_only_expected_pods_exist(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        expected_images=target_operator_pods_images,
+        pods_type=OPERATOR_NAME_SUFFIX,
+    )
 
-    if check_images_during_upgrade:
-        LOGGER.info("Get all operators Pods names and images version from the new CSV")
-        operators_target_versions = get_operators_names_and_info(csv=upgrade_target_csv)
+    assert_only_expected_pods_exist(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        expected_images=target_tier_2_images_name_and_versions,
+        pods_type=TIER_2_PODS_TYPE,
+    )
 
-        # TODO: Refactor - check new pods images against new CSV
-        LOGGER.info("Wait for operators replacement.")
-        wait_for_operator_pod_replacements(
-            dyn_client=dyn_client,
-            hco_namespace=hco_namespace.name,
-            old_operators_pods=pre_upgrade_operators_pods,
-            operators_current_versions=pre_upgrade_operators_versions,
-            operators_target_versions=operators_target_versions,
-            upgrade_resilience=upgrade_resilience,
-        )
 
-    # TODO: Post-upgrade validations should be in a separate function
+def wait_for_hco_post_upgrade_state(dyn_client, hco_namespace, cnv_target_version):
+    LOGGER.info("Wait for HCO operator pod to be ready")
+    hco_operator_pod = get_pod_by_name_prefix(
+        dyn_client=dyn_client, pod_prefix=HCO_OPERATOR, namespace=hco_namespace.name
+    )
+    hco_operator_pod.wait_for_condition(
+        condition=Pod.Condition.READY,
+        status=Pod.Condition.Status.TRUE,
+        timeout=TIMEOUT_10MIN,
+    )
+
     LOGGER.info("Wait for HCO stable conditions after upgrade")
     wait_for_hco_conditions(
         admin_client=dyn_client,
@@ -602,147 +470,42 @@ def upgrade_cnv(
         cnv_version=cnv_target_version,
     )
 
-    LOGGER.info("Wait for HCO operator to be ready")
-    hco_operator_pod = get_operator_by_name(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        operator_name=HCO_OPERATOR,
-    )
-    hco_operator_pod.wait_for_condition(
-        condition=Pod.Condition.READY,
-        status=Pod.Condition.Status.TRUE,
-        timeout=TIMEOUT_10MIN,
-    )
 
+def wait_for_post_upgrade_deployments_replicas(dyn_client, hco_namespace):
     LOGGER.info("Wait for deployments replicas.")
     for deployment in get_deployments(
         admin_client=dyn_client, namespace=hco_namespace.name
     ):
         deployment.wait_for_replicas(timeout=TIMEOUT_10MIN)
 
-    # TODO: Combine conditions checks
-    HyperConverged(
-        client=dyn_client, name=py_config["hco_cr_name"], namespace=hco_namespace.name
-    ).wait_for_condition(
-        condition=Pod.Condition.AVAILABLE,
-        status=Pod.Condition.Status.TRUE,
-        timeout=TIMEOUT_20MIN,
-    )
 
-    upgrade_target_csv.wait_for_status(
-        status=upgrade_target_csv.Status.SUCCEEDED,
-        timeout=TIMEOUT_10MIN,
-        stop_status=None,
-    )
-
-    wait_for_operator_condition(
+def verify_upgrade_cnv(
+    dyn_client,
+    hco_namespace,
+    upgrade_resilience,
+    cnv_target_version,
+    target_csv,
+    target_operator_pods_images_name_and_strategy,
+    target_tier_2_images_name_and_versions,
+):
+    wait_for_operator_pods_replacement(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
-        name=hco_target_version,
-        upgradable=True,
+        operators_target_versions=target_operator_pods_images_name_and_strategy,
+        upgrade_resilience=upgrade_resilience,
     )
 
-    # TODO: Remove
-    if check_images_during_upgrade:
-        LOGGER.info("Wait for all pre-upgrade pods to be removed after upgrade")
-        wait_for_pods_removal(pods_list=pods_to_be_removed)
-
-    LOGGER.info("Verify tier-2 pods images are as expected")
-    check_tier2_pods_images(
+    verify_cnv_post_upgrade_conditions(
         dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        target_related_images_name_and_versions=target_related_images_name_and_versions,
-        pods_not_to_be_removed=pods_not_to_be_removed,
+        hco_namespace=hco_namespace,
+        cnv_target_version=cnv_target_version,
+        target_csv=target_csv,
+        target_operator_pods_images=target_operator_pods_images_name_and_strategy,
+        target_tier_2_images_name_and_versions=target_tier_2_images_name_and_versions,
     )
 
 
-def wait_for_csv_status_installing(
-    target_csv, admin_client, namespace, hco_target_version
-):
-    try:
-        target_csv.wait_for_status(
-            status=target_csv.Status.INSTALLING,
-            timeout=TIMEOUT_10MIN,
-            stop_status=None,
-        )
-        wait_for_operator_condition(
-            dyn_client=admin_client,
-            hco_namespace=namespace.name,
-            name=hco_target_version,
-            upgradable=False,
-        )
-    except TimeoutExpiredError:
-        # in the case of no change there will be no/short "installing" time, and we shouldn't fail on it
-        if (
-            not target_csv.instance.status.phase
-            == ClusterServiceVersion.Status.SUCCEEDED
-        ):
-            LOGGER.error(f"CSV status {target_csv.instance.status.phase}")
-            raise
-
-
-def determine_pods_to_be_removed(
-    all_pre_upgrade_pods,
-    pre_upgrade_pods_images,
-    pre_upgrade_related_images_name_and_versions,
-    post_upgrade_related_images_name_and_versions,
-):
-    # TODO: Remove and check post-upgrade pods images against the CSV
-    """
-    Filter the list of pods before the upgrade to determine which ones need to be replaced
-
-    using the related images from the csv before and after the upgrade
-    the image on pre-upgrade pod can be used to find the name of the related image on the pre-upgrade csv
-    this can be matched to the related image on the post-upgrade csv using the name
-    if the images are the same for that pod then it should not be removed by the upgrade
-
-    Args:
-        all_pre_upgrade_pods (list): list of all the pre-upgrade Pods
-        pre_upgrade_pods_images (dict): the pre-upgrade Pod names mapped to their images
-        pre_upgrade_related_images_name_and_versions (dict): related images names and versions from pre-upgrade csv
-        post_upgrade_related_images_name_and_versions (dict): related images names and versions from post-upgrade csv
-
-    Returns:
-        (list, list): (Pods to be removed, Pods not to be removed)
-
-    Raises:
-        (ValueError): pod images which are not found in related images
-    """
-    pods_to_be_removed = []
-    pods_not_to_be_removed = []
-    missing_pod_images = {}
-    for pod in all_pre_upgrade_pods:
-        pod_image = pre_upgrade_pods_images[pod.name]
-        for image_name in pre_upgrade_related_images_name_and_versions.keys():
-            if (
-                pre_upgrade_related_images_name_and_versions[image_name]["image"]
-                == pod_image
-            ):
-                break
-        else:
-            missing_pod_images[pod.name] = pod_image
-            continue
-        if (
-            image_name not in post_upgrade_related_images_name_and_versions
-            or pre_upgrade_related_images_name_and_versions[image_name]["image"]
-            != post_upgrade_related_images_name_and_versions[image_name]["image"]
-        ):
-            pods_to_be_removed.append(pod)
-        else:
-            pods_not_to_be_removed.append(pod)
-    if missing_pod_images:
-        raise ValueError(
-            f"some pod images not found in related images: {missing_pod_images}"
-        )
-    LOGGER.info(
-        f"finished determining which pods should be removed: "
-        f"to_remove={[pod.name for pod in pods_to_be_removed]} "
-        f"not_to_remove={[pod.name for pod in pods_not_to_be_removed]}"
-    )
-    return pods_to_be_removed, pods_not_to_be_removed
-
-
-def approve_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
+def approve_cnv_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
     LOGGER.info("Get the upgrade install plan.")
     install_plan = wait_for_install_plan(
         dyn_client=dyn_client,
@@ -890,3 +653,10 @@ def wait_for_machine_config_pools_condition_status(
         if collect_logs():
             collect_resources_for_test(resources_to_collect=[MachineConfigPool])
         raise
+
+
+def delete_existing_cnv_icsp(admin_client, cnv_image_name):
+    for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
+        if icsp.name.startswith(cnv_image_name):
+            LOGGER.info(f"Deleting ImageContentSourcePolicy {icsp.name}")
+            icsp.delete(wait=True)

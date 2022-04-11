@@ -14,6 +14,7 @@ from utilities.constants import (
     CDI_OPERATOR,
     CDI_UPLOADPROXY,
     CLUSTER_NETWORK_ADDONS_OPERATOR,
+    HCO_CATALOG_SOURCE,
     HCO_OPERATOR,
     HCO_WEBHOOK,
     HOSTPATH_PROVISIONER_CSI,
@@ -90,15 +91,15 @@ servers = {
 
 cnv_registry_sources = {
     "osbs": {
-        "cnv_subscription_source": "hco-catalogsource",
+        "cnv_subscription_source": HCO_CATALOG_SOURCE,
         "source_map": "registry-proxy.engineering.redhat.com/rh-osbs",
     },
     "stage": {
-        "cnv_subscription_source": "hco-catalogsource",
+        "cnv_subscription_source": HCO_CATALOG_SOURCE,
         "source_map": "registry.stage.redhat.io/container-native-virtualization",
     },
     "production": {
-        "cnv_subscription_source": "hco-catalogsource",
+        "cnv_subscription_source": HCO_CATALOG_SOURCE,
     },
 }
 

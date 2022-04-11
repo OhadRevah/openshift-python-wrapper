@@ -18,6 +18,7 @@ from utilities.constants import (
     HCO_SUBSCRIPTION,
     TIMEOUT_10MIN,
     TIMEOUT_20MIN,
+    TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
 from utilities.hco import wait_for_hco_conditions
@@ -68,7 +69,7 @@ def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
 def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):
     LOGGER.info(f"Wait for the operator condition. Name:{name} Upgradable:{upgradable}")
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_30MIN,
         sleep=1,
         func=OperatorCondition.get,
         dyn_client=dyn_client,
@@ -78,19 +79,25 @@ def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):
     try:
         for sample in samples:
             for operator_condition in sample:
-                upgradeable_condition = next(
-                    (
-                        condition
-                        for condition in operator_condition.instance.spec.conditions
-                        if condition.type == "Upgradeable"
-                    ),
-                    None,
-                )
-                if (
-                    upgradeable_condition is not None
-                    and upgradeable_condition.status == str(upgradable)
-                ):
-                    return operator_condition
+                operator_spec_condition = operator_condition.instance.spec.conditions
+                if operator_spec_condition:
+                    upgradeable_condition = next(
+                        (
+                            condition
+                            for condition in operator_spec_condition
+                            if condition.type == "Upgradeable"
+                        ),
+                        None,
+                    )
+                    if (
+                        upgradeable_condition is not None
+                        and upgradeable_condition.status == str(upgradable)
+                    ):
+                        return operator_condition
+                else:
+                    LOGGER.warning(
+                        f"Waiting for hco operator to update spec.conditions of OperatorCondition: {name}"
+                    )
     except TimeoutExpiredError:
         LOGGER.error(
             f"timeout waiting for operator version: name={name}, upgradable:{upgradable}"

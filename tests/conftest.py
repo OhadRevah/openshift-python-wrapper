@@ -460,13 +460,9 @@ def pytest_cmdline_main(config):
 
     if config.getoption("upgrade") == "cnv":
         if not config.getoption("cnv_version"):
-            raise ValueError("Running with --upgrade cnv: Missing --cnv-version")
-        if config.getoption("cnv_source") == "osbs" and not config.getoption(
-            "cnv_image"
-        ):
-            raise ValueError(
-                "Running with --upgrade cnv & --cnv-source osbs: Missing --cnv-image"
-            )
+            raise ValueError("Missing --cnv-version")
+        if not config.getoption("cnv_image"):
+            raise ValueError("Missing --cnv-image")
 
     # Default value is set as this value is used to set test name in
     # tests.upgrade_params.UPGRADE_TEST_DEPENDENCY_NODE_ID which is needed for pytest dependency marker
@@ -2808,7 +2804,7 @@ def cnv_upgrade_path(request, admin_client, pytestconfig, cnv_current_version):
         "upgrade_stream": upgrade_stream,
         "target_channel": f"{target_version.major}.{target_version.minor}",
     }
-
+    LOGGER.info(f"CNV upgrade: {cnv_upgrade_dict}")
     return cnv_upgrade_dict
 
 

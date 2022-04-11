@@ -39,6 +39,8 @@ from pytest_testconfig import config as py_config
 
 import utilities.hco
 from utilities.constants import (
+    HCO_CATALOG_SOURCE,
+    OPERATOR_NAME_SUFFIX,
     PODS_TO_COLLECT_INFO,
     SANITY_TESTS_FAILURE,
     TIMEOUT_2MIN,
@@ -1103,7 +1105,7 @@ def get_kubevirt_package_manifest(admin_client):
         NotFoundError: when the kubevirt-hyperconverged package manifest associated with hco-catalogsource is not found
     """
     package_manifest_name = py_config["hco_cr_name"]
-    label_selector = "catalog=hco-catalogsource"
+    label_selector = f"catalog={HCO_CATALOG_SOURCE}"
     for resource_field in PackageManifest.get(
         dyn_client=admin_client,
         namespace=py_config["marketplace_namespace"],
@@ -1202,9 +1204,11 @@ def get_related_images_name_and_version(dyn_client, hco_namespace, version):
         image_name_version = re.search(
             r".*/(?P<name>.*?):(?P<version>.*)", item["name"]
         ).groupdict()
-        related_images_name_and_versions[image_name_version["name"]] = {
+        image_name = image_name_version["name"]
+        related_images_name_and_versions[image_name] = {
             "image": item["image"],
             "version": image_name_version["version"],
+            "is_operator_image": image_name.endswith(OPERATOR_NAME_SUFFIX),
         }
     return related_images_name_and_versions
 
@@ -1243,13 +1247,14 @@ def run_command(command, verify_stderr=True, shell=False):
     out_decoded = out.decode("utf-8")
     err_decoded = err.decode("utf-8")
 
+    error_msg = f"Failed to run {command}. rc: {sub_process.returncode}, out: {out_decoded}, error: {err_decoded}"
     if sub_process.returncode != 0:
-        LOGGER.error(f"Failed to run {command}. rc: {sub_process.returncode}")
+        LOGGER.error(error_msg)
         return False, out_decoded, err_decoded
 
     # From this point and onwards we are guaranteed that sub_process.returncode == 0
     if err_decoded and verify_stderr:
-        LOGGER.error(f"Failed to run {command}. error: {err_decoded}")
+        LOGGER.error(error_msg)
         return False, out_decoded, err_decoded
 
     return True, out_decoded, err_decoded
