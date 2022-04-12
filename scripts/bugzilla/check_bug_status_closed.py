@@ -5,9 +5,35 @@ from pathlib import Path
 from xmlrpc.client import Fault
 
 import bugzilla
+from git import Repo
+from packaging.version import InvalidVersion, Version
 
 
 BUG_STATUS_CLOSED = ("VERIFIED", "CLOSED", "RELEASE_PENDING")
+KNOWN_BRANCHES = {"master": "4.11", "cnv-4.10": "4.10"}
+
+
+class ParentBranchNotFound(Exception):
+    pass
+
+
+def print_status(status_dict):
+    for key, value in status_dict.items():
+        print(f"    {key}:  {' '.join(list(set(value)))}")
+
+
+def get_parent_branch():
+    repo = Repo(path=".")
+    for parent in repo.head.commit.iter_parents():
+        commit_parent = parent.name_rev
+        if "/" in commit_parent:
+            # In some cases we get remotes/origin/<branch>
+            return KNOWN_BRANCHES[commit_parent.rsplit("/", 1)[-1]]
+        else:
+            # In other cases we get <branch>
+            return KNOWN_BRANCHES[commit_parent.split()[-1]]
+
+    raise ParentBranchNotFound("Could not determine tracking branch")
 
 
 # TODO: Reuse the code from infra.py once we move bugzilla
@@ -23,7 +49,7 @@ def get_connection_params(conf_file_name):
     return params_dict
 
 
-def get_bug_status(bug_id):
+def get_bug(bug_id):
     bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
     bzapi = bugzilla.Bugzilla(
         url=bugzilla_connection_params["bugzilla_url"],
@@ -31,9 +57,9 @@ def get_bug_status(bug_id):
         api_key=bugzilla_connection_params["bugzilla_api_key"],
     )
     try:
-        return bzapi.getbug(objid=bug_id).status
+        return bzapi.getbug(objid=bug_id)
     except Fault:
-        print(f"Failed to get bug status for bug {bug_id}")
+        print(f"Failed to get bug {bug_id}")
 
 
 def all_python_files():
@@ -74,23 +100,52 @@ def get_all_bugs_from_file(file_content):
 
 
 def main():
+    parent_branch = get_parent_branch()
     closed_bugs = {}
+    mismatch_bugs_version = {}
     for filename in all_python_files():
         filename_for_key = re.findall(r"cnv-tests/.*", filename)[0]
         with open(filename, "r") as fd:
             for _bug in get_all_bugs_from_file(file_content=fd.read()):
-                bug_status = get_bug_status(bug_id=_bug)
+                bug = get_bug(bug_id=_bug)
+                bug_status = bug.status
                 if bug_status in BUG_STATUS_CLOSED:
                     closed_bugs.setdefault(filename_for_key, []).append(
                         f"{_bug} [{bug_status}]"
                     )
 
+                else:
+                    bug_target_release = bug.target_release[0]
+                    try:
+                        bug_target_release_version = Version(bug_target_release)
+                        if bug_target_release_version > Version(
+                            KNOWN_BRANCHES["master"]
+                        ):
+                            continue
+
+                    except InvalidVersion:
+                        # Continue if target version is not version.
+                        continue
+
+                    if parent_branch not in bug_target_release:
+                        mismatch_bugs_version.setdefault(filename_for_key, []).append(
+                            f"{_bug} [{bug_status}] [{bug_target_release}]"
+                        )
+
     if closed_bugs:
         print(
             f"The following bugs are closed and needs to be removed ({len(closed_bugs)}):"
         )
-        for key, value in closed_bugs.items():
-            print(f"    {key}:  {' '.join(list(set(value)))}")
+        print_status(status_dict=closed_bugs)
+
+    if mismatch_bugs_version:
+        print(
+            f"The following bugs are not matched the current branch {parent_branch} "
+            f"and needs to be removed ({len(mismatch_bugs_version)}):"
+        )
+        print_status(status_dict=mismatch_bugs_version)
+
+    if closed_bugs or mismatch_bugs_version:
         exit(1)
 
 
