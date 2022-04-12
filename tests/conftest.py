@@ -2946,7 +2946,7 @@ def golden_images_data_import_crons_scope_class(admin_client, golden_images_name
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def skip_if_not_sno_cluster(sno_cluster):
     if not sno_cluster:
         pytest.skip("Skip test on non-SNO cluster")
