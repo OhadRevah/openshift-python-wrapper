@@ -5,6 +5,7 @@ from collections import defaultdict
 import pytest
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
+from pytest_testconfig import config as py_config
 
 from tests.compute.utils import (
     fetch_processid_from_linux_vm,
@@ -31,7 +32,7 @@ from utilities.virt import (
 
 
 pytestmark = [
-    pytest.mark.usefixtures("skip_if_workers_vms"),
+    pytest.mark.usefixtures("skip_if_workers_vms", "skip_when_one_node"),
     pytest.mark.longevity,
 ]
 
@@ -103,33 +104,44 @@ def verify_pid_after_migrate_multi_vms(vms_with_pids, os_type):
     ), f"Some VMs have wrong pids after migration - {vms_with_wrong_pids_dict}"
 
 
-def start_vms_with_processes(vms_list, os_type):
+def wait_vms_booted_and_start_processes(vms_list, os_type):
     vms_and_pids = {}
 
     for vm in vms_list:
         running_vm(vm=vm)
         vms_and_pids.update(start_process_in_guest(vm=vm, os_type=os_type))
 
-    yield vms_and_pids
-
-    for vm in vms_list:
-        vm.clean_up()
+    return vms_and_pids
 
 
-def create_containerdisk_vm(request, client, name, namespace):
-    deployed_vm = VirtualMachineForTests(
-        name=f"{request.param['vm_name_prefix']}-{name}",
-        namespace=namespace.name,
-        body=fedora_vm_body(name=name),
-        client=client,
-        eviction=True,
-        running=True,
-    )
-    deployed_vm.deploy()
-    return deployed_vm
+def deploy_and_start_vms(vm_list):
+    try:
+        for vm in vm_list:
+            vm.deploy()
+            vm.start()
+        yield vm_list
+    finally:
+        for vm in vm_list:
+            vm.clean_up()
 
 
-def create_dv_vm(
+def create_containerdisk_vms(vm_deploys, request, client, name, namespace):
+    vms = [
+        VirtualMachineForTests(
+            name=f"{request.param['vm_name_prefix']}-{name}-{deployment + 1}",
+            namespace=namespace.name,
+            body=fedora_vm_body(name=name),
+            client=client,
+            eviction=True,
+        )
+        for deployment in range(vm_deploys)
+    ]
+
+    yield from deploy_and_start_vms(vm_list=vms)
+
+
+def create_dv_vms(
+    vm_deploys,
     request,
     client,
     name,
@@ -138,18 +150,26 @@ def create_dv_vm(
     cloud_init_data=None,
     attached_secret=None,
 ):
-    deployed_vm = VirtualMachineForTestsFromTemplate(
-        name=f"{request.param['vm_name_prefix']}-{name}",
-        labels=Template.generate_template_labels(**request.param["os_labels"]),
-        namespace=namespace.name,
-        client=client,
-        data_source=data_source,
-        cloud_init_data=cloud_init_data,
-        attached_secret=attached_secret,
-    )
-    deployed_vm.deploy()
-    deployed_vm.start()
-    return deployed_vm
+    vms = [
+        VirtualMachineForTestsFromTemplate(
+            name=f"{request.param['vm_name_prefix']}-{name}-{deployment + 1}",
+            labels=Template.generate_template_labels(**request.param["os_labels"]),
+            namespace=namespace.name,
+            client=client,
+            data_source=data_source,
+            cloud_init_data=cloud_init_data,
+            attached_secret=attached_secret,
+        )
+        for deployment in range(vm_deploys)
+    ]
+
+    yield from deploy_and_start_vms(vm_list=vms)
+
+
+@pytest.fixture(scope="module")
+def vm_deploys():
+    deploys = int(py_config["vm_deploys"])
+    return deploys if deploys > 0 else 1
 
 
 @pytest.fixture()
@@ -162,9 +182,16 @@ def vm_request(request):
 
 
 @pytest.fixture()
-def nfs_vm(vm_request, namespace, unprivileged_client, golden_image_data_source_nfs):
-    LOGGER.info("Deploying VM with NFS disk")
-    return create_dv_vm(
+def nfs_vms(
+    vm_deploys,
+    vm_request,
+    namespace,
+    unprivileged_client,
+    golden_image_data_source_nfs,
+):
+    LOGGER.info("Deploying VMs with NFS disk")
+    yield from create_dv_vms(
+        vm_deploys=vm_deploys,
         request=vm_request,
         client=unprivileged_client,
         namespace=namespace,
@@ -174,9 +201,16 @@ def nfs_vm(vm_request, namespace, unprivileged_client, golden_image_data_source_
 
 
 @pytest.fixture()
-def ocs_vm(vm_request, namespace, unprivileged_client, golden_image_data_source_ocs):
-    LOGGER.info("Deploying VM with OCS disk")
-    return create_dv_vm(
+def ocs_vms(
+    vm_deploys,
+    vm_request,
+    namespace,
+    unprivileged_client,
+    golden_image_data_source_ocs,
+):
+    LOGGER.info("Deploying VMs with OCS disk")
+    yield from create_dv_vms(
+        vm_deploys=vm_deploys,
         request=vm_request,
         client=unprivileged_client,
         namespace=namespace,
@@ -186,15 +220,17 @@ def ocs_vm(vm_request, namespace, unprivileged_client, golden_image_data_source_
 
 
 @pytest.fixture()
-def secret_vm(
+def secret_vms(
+    vm_deploys,
     vm_request,
     namespace,
     unprivileged_client,
     golden_image_data_source_ocs,
     rhsm_created_secret,
 ):
-    LOGGER.info("Deploying VM with secret")
-    return create_dv_vm(
+    LOGGER.info("Deploying VMs with secret")
+    yield from create_dv_vms(
+        vm_deploys=vm_deploys,
         request=vm_request,
         client=unprivileged_client,
         namespace=namespace,
@@ -206,9 +242,10 @@ def secret_vm(
 
 
 @pytest.fixture()
-def container_vm(vm_request, namespace, unprivileged_client):
+def container_vms(vm_deploys, vm_request, namespace, unprivileged_client):
     LOGGER.info("Deploying VM with container disk")
-    return create_containerdisk_vm(
+    yield from create_containerdisk_vms(
+        vm_deploys=vm_deploys,
         request=vm_request,
         client=unprivileged_client,
         namespace=namespace,
@@ -218,17 +255,19 @@ def container_vm(vm_request, namespace, unprivileged_client):
 
 @pytest.fixture()
 def linux_vms_with_pids(
-    cluster_cpu_model_scope_module, nfs_vm, ocs_vm, secret_vm, container_vm
+    cluster_cpu_model_scope_module, nfs_vms, ocs_vms, secret_vms, container_vms
 ):
-    yield from start_vms_with_processes(
-        vms_list=[nfs_vm, ocs_vm, secret_vm, container_vm], os_type=LINUX_OS_PREFIX
+    vms_list = nfs_vms + ocs_vms + secret_vms + container_vms
+    return wait_vms_booted_and_start_processes(
+        vms_list=vms_list, os_type=LINUX_OS_PREFIX
     )
 
 
 @pytest.fixture()
-def windows_vms_with_pids(cluster_cpu_model_scope_module, nfs_vm, ocs_vm):
-    yield from start_vms_with_processes(
-        vms_list=[nfs_vm, ocs_vm], os_type=WINDOWS_OS_PREFIX
+def windows_vms_with_pids(cluster_cpu_model_scope_module, nfs_vms, ocs_vms):
+    vms_list = nfs_vms + ocs_vms
+    return wait_vms_booted_and_start_processes(
+        vms_list=vms_list, os_type=WINDOWS_OS_PREFIX
     )
 
 
@@ -269,10 +308,9 @@ def golden_image_data_source_nfs(admin_client, golden_image_data_volume_nfs):
 
 
 @pytest.mark.parametrize(
-    "iterations, vm_request, golden_image_data_volume_ocs, golden_image_data_volume_nfs",
+    "vm_request, golden_image_data_volume_ocs, golden_image_data_volume_nfs",
     [
         pytest.param(
-            250,
             {
                 "vm_name_prefix": f"{LINUX_OS_PREFIX}-multi-mig-vm",
                 "os_labels": RHEL_8_5_TEMPLATE_LABELS,
@@ -290,25 +328,20 @@ def golden_image_data_source_nfs(admin_client, golden_image_data_volume_nfs):
             marks=pytest.mark.polarion("CNV-8310"),
         )
     ],
-    indirect=[
-        "vm_request",
-        "golden_image_data_volume_ocs",
-        "golden_image_data_volume_nfs",
-    ],
+    indirect=True,
 )
-def test_migration_storm_linux_vms(iterations, linux_vms_with_pids):
+def test_migration_storm_linux_vms(linux_vms_with_pids):
     run_migration_loop(
-        iterations=iterations,
+        iterations=int(py_config["linux_iterations"]),
         vms_with_pids=linux_vms_with_pids,
         os_type=LINUX_OS_PREFIX,
     )
 
 
 @pytest.mark.parametrize(
-    "iterations, vm_request, golden_image_data_volume_ocs, golden_image_data_volume_nfs",
+    "vm_request, golden_image_data_volume_ocs, golden_image_data_volume_nfs",
     [
         pytest.param(
-            500,
             {
                 "vm_name_prefix": f"{WINDOWS_OS_PREFIX}-multi-mig-vm",
                 "os_labels": WINDOWS_10_TEMPLATE_LABELS,
@@ -326,15 +359,11 @@ def test_migration_storm_linux_vms(iterations, linux_vms_with_pids):
             marks=pytest.mark.polarion("CNV-8311"),
         )
     ],
-    indirect=[
-        "vm_request",
-        "golden_image_data_volume_ocs",
-        "golden_image_data_volume_nfs",
-    ],
+    indirect=True,
 )
-def test_migration_storm_windows_vms(iterations, windows_vms_with_pids):
+def test_migration_storm_windows_vms(windows_vms_with_pids):
     run_migration_loop(
-        iterations=iterations,
+        iterations=int(py_config["windows_iterations"]),
         vms_with_pids=windows_vms_with_pids,
         os_type=WINDOWS_OS_PREFIX,
     )

@@ -457,6 +457,11 @@ cnv_daemonset_matrix = ALL_CNV_DAEMONSETS
 
 pod_resource_validation_matrix = [{"cpu": 5}, {"memory": None}]
 
+# VM migration storm test params
+vm_deploys = 1  # How many vm of each type to deploy
+linux_iterations = 250  # Number of migration iterations of linux VMs
+windows_iterations = 500  # Number of migration iterations of windows VMs
+
 for _dir in dir():
     val = locals()[_dir]
     if type(val) not in [bool, list, dict, str]:
