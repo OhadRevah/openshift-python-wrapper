@@ -1,5 +1,6 @@
 import pytest
 
+from tests.install_upgrade_operators.constants import WORKLOADUPDATEMETHODS
 from tests.install_upgrade_operators.launcher_updates.constants import (
     DEFAULT_WORKLOAD_UPDATE_STRATEGY,
     MOD_CUST_DEFAULT_BATCH_EVICTION_INTERVAL,
@@ -65,7 +66,7 @@ class TestLauncherUpdateResetFields:
                     "patch": {
                         "spec": {
                             WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
-                                "workloadUpdateMethods": None
+                                WORKLOADUPDATEMETHODS: None
                             }
                         }
                     },

@@ -2,6 +2,7 @@ import logging
 
 import pytest
 
+from tests.install_upgrade_operators.constants import WORKLOADUPDATEMETHODS
 from tests.install_upgrade_operators.launcher_updates.constants import (
     DEFAULT_BATCH_EVICTION_INTERVAL,
     DEFAULT_BATCH_EVICTION_SIZE,
@@ -26,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
                 WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                     "batchEvictionInterval": DEFAULT_BATCH_EVICTION_INTERVAL,
                     "batchEvictionSize": DEFAULT_BATCH_EVICTION_SIZE,
-                    "workloadUpdateMethods": DEFAULT_WORKLOAD_UPDATE_METHODS,
+                    WORKLOADUPDATEMETHODS: DEFAULT_WORKLOAD_UPDATE_METHODS,
                 },
             },
             marks=(pytest.mark.polarion("CNV-6911"),),
@@ -38,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
                 WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
                     "batchEvictionInterval": DEFAULT_BATCH_EVICTION_INTERVAL,
                     "batchEvictionSize": DEFAULT_BATCH_EVICTION_SIZE,
-                    "workloadUpdateMethods": DEFAULT_WORKLOAD_UPDATE_METHODS,
+                    WORKLOADUPDATEMETHODS: DEFAULT_WORKLOAD_UPDATE_METHODS,
                 },
             },
             marks=pytest.mark.polarion("CNV-6912"),

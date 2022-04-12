@@ -1,5 +1,6 @@
 import pytest
 
+from tests.install_upgrade_operators.constants import WORKLOADUPDATEMETHODS
 from tests.install_upgrade_operators.launcher_updates.constants import (
     CUSTOM_STRATEGY,
     WORKLOAD_UPDATE_STRATEGY_KEY_NAME,
@@ -13,7 +14,7 @@ pytestmark = pytest.mark.sno
 KUBEVIRT_NEGATIVE_STRATEGY = {
     "batchEvictionInterval": "2m",
     "batchEvictionSize": 30,
-    "workloadUpdateMethods": ["Evict"],
+    WORKLOADUPDATEMETHODS: ["Evict"],
 }
 
 
@@ -64,8 +65,8 @@ class TestLauncherUpdateNegative:
                     "patch": {
                         "spec": {
                             WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
-                                "workloadUpdateMethods": KUBEVIRT_NEGATIVE_STRATEGY[
-                                    "workloadUpdateMethods"
+                                WORKLOADUPDATEMETHODS: KUBEVIRT_NEGATIVE_STRATEGY[
+                                    WORKLOADUPDATEMETHODS
                                 ]
                             }
                         }
