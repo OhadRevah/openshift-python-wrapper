@@ -20,6 +20,7 @@ WINDOWS_10_TEMPLATE_LABELS = WINDOWS_10["template_labels"]
 WINDOWS_LATEST = py_config["latest_windows_os_dict"]
 WINDOWS_LATEST_LABELS = WINDOWS_LATEST["template_labels"]
 WINDOWS_LATEST_OS = WINDOWS_LATEST_LABELS["os"]
+WINDOWS_LATEST_VERSION = WINDOWS_LATEST["os_version"]
 
 FEDORA_LATEST = py_config["latest_fedora_os_dict"]
 FEDORA_LATEST_LABELS = FEDORA_LATEST["template_labels"]

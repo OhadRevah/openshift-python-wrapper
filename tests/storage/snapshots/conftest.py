@@ -4,14 +4,23 @@
 Pytest conftest file for CNV Storage snapshots tests
 """
 import logging
+import shlex
 
 import pytest
+from ocp_resources.datavolume import DataVolume
 from ocp_resources.role_binding import RoleBinding
+from ocp_resources.storage_class import StorageClass
+from ocp_resources.template import Template
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from pytest_testconfig import config as py_config
 
+from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
+from tests.storage.snapshots.utils import assert_directory_existence
 from tests.storage.utils import set_permissions
-from utilities.constants import UNPRIVILEGED_USER
-from utilities.storage import write_file
+from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER, Images
+from utilities.infra import run_ssh_commands
+from utilities.storage import get_images_server_url, write_file
+from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -86,3 +95,86 @@ def permissions_for_dv(namespace):
         subjects_api_group=RoleBinding.api_group,
     ):
         yield
+
+
+@pytest.fixture()
+def windows_ceph_vm(
+    request,
+    namespace,
+    unprivileged_client,
+    nodes_common_cpu_model,
+):
+    dv = DataVolume(
+        name=request.param["dv_name"],
+        namespace=namespace.name,
+        storage_class=StorageClass.Types.CEPH_RBD,
+        source="http",
+        url=f"{get_images_server_url(schema='http')}{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
+        size=Images.Windows.DEFAULT_DV_SIZE,
+        client=unprivileged_client,
+        api_name="storage",
+    ).to_dict()
+    with VirtualMachineForTestsFromTemplate(
+        name=request.param["vm_name"],
+        namespace=namespace.name,
+        client=unprivileged_client,
+        labels=Template.generate_template_labels(
+            **py_config["latest_windows_os_dict"]["template_labels"]
+        ),
+        cpu_model=nodes_common_cpu_model,
+        data_volume_template={"metadata": dv["metadata"], "spec": dv["spec"]},
+    ) as vm:
+        running_vm(vm=vm)
+        yield vm
+
+
+@pytest.fixture()
+def snapshot_windows_directory(windows_ceph_vm):
+    cmd = shlex.split(
+        f'powershell -command "New-Item -Path {WINDOWS_DIRECTORY_PATH} -ItemType Directory"',
+    )
+    run_ssh_commands(host=windows_ceph_vm.ssh_exec, commands=cmd)
+    assert_directory_existence(
+        expected_result=True,
+        windows_vm=windows_ceph_vm,
+        directory_path=WINDOWS_DIRECTORY_PATH,
+    )
+
+
+@pytest.fixture()
+def windows_snapshot(
+    snapshot_windows_directory,
+    windows_ceph_vm,
+):
+    with VirtualMachineSnapshot(
+        name="windows-snapshot",
+        namespace=windows_ceph_vm.namespace,
+        vm_name=windows_ceph_vm.name,
+    ) as snapshot:
+        yield snapshot
+
+
+@pytest.fixture()
+def snapshot_dirctory_removed(windows_ceph_vm, windows_snapshot):
+    windows_snapshot.wait_ready_to_use(timeout=TIMEOUT_10MIN)
+    cmd = shlex.split(
+        f'powershell -command "Remove-Item -Path {WINDOWS_DIRECTORY_PATH} -Recurse"',
+    )
+    run_ssh_commands(host=windows_ceph_vm.ssh_exec, commands=cmd)
+    assert_directory_existence(
+        expected_result=False,
+        windows_vm=windows_ceph_vm,
+        directory_path=WINDOWS_DIRECTORY_PATH,
+    )
+    windows_ceph_vm.stop(wait=True)
+
+
+@pytest.fixture()
+def file_created_during_snapshot(windows_ceph_vm, windows_snapshot):
+    file = f"{WINDOWS_DIRECTORY_PATH}\\file.txt"
+    cmd = shlex.split(
+        f'powershell -command "for($i=1; $i -le 100; $i++){{$i| Out-File -FilePath {file} -Append}}"',
+    )
+    run_ssh_commands(host=windows_ceph_vm.ssh_exec, commands=cmd)
+    windows_snapshot.wait_ready_to_use(timeout=TIMEOUT_10MIN)
+    windows_ceph_vm.stop(wait=True)

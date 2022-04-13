@@ -12,6 +12,19 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.storage.constants import NAMESPACE_PARAMS
+from tests.storage.snapshots.constants import (
+    ERROR_MSG_USER_CANNOT_CREATE_VM_RESTORE,
+    ERROR_MSG_USER_CANNOT_LIST_VM_RESTORE,
+    ERROR_MSG_USER_CANNOT_LIST_VM_SNAPSHOTS,
+    ERROR_MSG_VM_IS_RUNNING,
+    WINDOWS_DIRECTORY_PATH,
+)
+from tests.storage.snapshots.utils import (
+    assert_directory_existence,
+    expected_output_after_restore,
+    fail_to_create_snapshot_no_permissions,
+    start_windows_vm_after_restore,
+)
 from utilities.constants import LS_COMMAND
 from utilities.storage import run_command_on_cirros_vm_and_check_output
 
@@ -23,74 +36,6 @@ pytestmark = pytest.mark.usefixtures(
     "namespace",
     "skip_test_if_no_ocs_sc",
 )
-
-ERROR_MSG_VM_IS_RUNNING = (
-    r".*virtualmachinerestore-validator.snapshot.kubevirt.io.*"
-    r"denied the request: VirtualMachine.*is not stopped.*"
-)
-
-VIRTUAL_MACHINES_SNAPSHOT_FORBIDDEN = (
-    r".*virtualmachinesnapshots.snapshot.kubevirt.io is forbidden: User"
-)
-VIRTUAL_MACHINE_RESTORE_FORBIDDEN = (
-    r".*virtualmachinerestores.snapshot.kubevirt.io is forbidden: User"
-)
-CANNOT_CREATE_RESOURCE = r"cannot create resource"
-CANNOT_LIST_RESOURCE = r"cannot list resource"
-VIRTUAL_MACHINES_SNAPSHOTS = r"virtualmachinesnapshots.*snapshot.kubevirt.io"
-VIRTUAL_MACHINE_RESTORES = r"virtualmachinerestores.*snapshot.kubevirt.io"
-IN_NAMESPACE = r"in the namespace"
-
-ERROR_MSG_USER_CANNOT_CREATE_VM_RESTORE = (
-    f"{VIRTUAL_MACHINE_RESTORE_FORBIDDEN}.*{CANNOT_CREATE_RESOURCE}.*"
-    f"{VIRTUAL_MACHINE_RESTORES}.*{IN_NAMESPACE}.*"
-)
-ERROR_MSG_USER_CANNOT_CREATE_VM_SNAPSHOTS = (
-    f"{VIRTUAL_MACHINES_SNAPSHOT_FORBIDDEN}.*{CANNOT_CREATE_RESOURCE}.*"
-    f"{VIRTUAL_MACHINES_SNAPSHOTS}.*{IN_NAMESPACE}.*"
-)
-ERROR_MSG_USER_CANNOT_LIST_VM_SNAPSHOTS = (
-    f"{VIRTUAL_MACHINES_SNAPSHOT_FORBIDDEN}.*{CANNOT_LIST_RESOURCE}.*"
-    f"{VIRTUAL_MACHINES_SNAPSHOTS}.*{IN_NAMESPACE}.*"
-)
-ERROR_MSG_USER_CANNOT_LIST_VM_RESTORE = (
-    f"{VIRTUAL_MACHINE_RESTORE_FORBIDDEN}.*{CANNOT_LIST_RESOURCE}.*"
-    f"{VIRTUAL_MACHINE_RESTORES}.*{IN_NAMESPACE}.*"
-)
-
-
-def expected_output_after_restore(snapshot_number):
-    """
-    Returns a string representing the list of files that should exist in the VM (sorted)
-    after a restore snapshot was performed
-
-    Args:
-        snapshot_number (int): The snapshot number that was restored
-
-    Returns:
-        string: the list of files that should exist on the VM after restore operation was performed
-    """
-    files = []
-    for idx in range(snapshot_number - 1):
-        files.append(f"before-snap-{idx+1}.txt")
-        files.append(f"after-snap-{idx+1}.txt")
-    files.append(f"before-snap-{snapshot_number}.txt ")
-    files.sort()
-    return " ".join(files)
-
-
-def fail_to_create_snapshot_no_permissions(snapshot_name, namespace, vm_name, client):
-    with pytest.raises(
-        ApiException,
-        match=ERROR_MSG_USER_CANNOT_CREATE_VM_SNAPSHOTS,
-    ):
-        with VirtualMachineSnapshot(
-            name=snapshot_name,
-            namespace=namespace,
-            vm_name=vm_name,
-            client=client,
-        ):
-            return
 
 
 @pytest.mark.polarion("CNV-5781")
@@ -411,3 +356,56 @@ def test_fail_to_snapshot_with_unprivileged_client_dv_permissions(
         vm_name=cirros_vm.name,
         client=unprivileged_client,
     )
+
+
+@pytest.mark.parametrize(
+    "windows_ceph_vm",
+    [
+        pytest.param(
+            {"dv_name": "dv-8307", "vm_name": "vm-8307"},
+            marks=pytest.mark.polarion("CNV-8307"),
+        ),
+    ],
+    indirect=True,
+)
+def test_online_windows_vm_successful_restore(
+    windows_ceph_vm,
+    windows_snapshot,
+    snapshot_dirctory_removed,
+):
+    with VirtualMachineRestore(
+        name="restore-vm",
+        namespace=windows_ceph_vm.namespace,
+        vm_name=windows_ceph_vm.name,
+        snapshot_name=windows_snapshot.name,
+    ) as restore:
+        start_windows_vm_after_restore(vm_restore=restore, windows_vm=windows_ceph_vm)
+        assert_directory_existence(
+            expected_result=True,
+            windows_vm=windows_ceph_vm,
+            directory_path=WINDOWS_DIRECTORY_PATH,
+        )
+
+
+@pytest.mark.parametrize(
+    "windows_ceph_vm",
+    [
+        pytest.param(
+            {"dv_name": "dv-8536", "vm_name": "vm-8536"},
+            marks=pytest.mark.polarion("CNV-8536"),
+        ),
+    ],
+    indirect=True,
+)
+def test_write_to_file_while_snapshot(
+    windows_ceph_vm,
+    windows_snapshot,
+    file_created_during_snapshot,
+):
+    with VirtualMachineRestore(
+        name="restore-vm",
+        namespace=windows_ceph_vm.namespace,
+        vm_name=windows_ceph_vm.name,
+        snapshot_name=windows_snapshot.name,
+    ) as restore:
+        start_windows_vm_after_restore(vm_restore=restore, windows_vm=windows_ceph_vm)
