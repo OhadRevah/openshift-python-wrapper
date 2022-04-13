@@ -35,6 +35,7 @@ def nnce_status_for_worker(nncp_policy, worker):
     nnce_worker_resources = _wait_for_nnce_worker_resources(
         _nncp_policy=nncp_policy, worker_name=worker.name
     )
+    nnce_worker_resources.wait_for_conditions()
     LOGGER.info(
         f"Complete condition of {nnce_worker_resources.name} NNCE : {nnce_worker_resources.instance.status.conditions}"
     )
