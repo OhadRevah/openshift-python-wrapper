@@ -27,6 +27,7 @@ pytestmark = pytest.mark.usefixtures(
     "skip_when_one_node",
     "skip_no_bond_support",
     "hyperconverged_ovs_annotations_enabled_scope_session",
+    "workers_type",
 )
 
 

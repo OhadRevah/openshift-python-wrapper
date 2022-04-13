@@ -566,6 +566,12 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.primary_bond_port = primary_bond_port
         self.ports = self.bond_ports
         self.options = options
+        # PSI MTU cannot be greater than 1450
+        if (
+            os.environ.get(WORKERS_TYPE) == utilities.infra.ClusterHosts.Type.VIRTUAL
+            and not self.mtu
+        ):
+            self.mtu = 1450
 
     def create_interface(self):
         options_dic = self.options or {}

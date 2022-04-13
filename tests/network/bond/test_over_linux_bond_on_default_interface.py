@@ -19,6 +19,9 @@ LOGGER = logging.getLogger(__name__)
 SLEEP = 5
 
 
+pytestmark = pytest.mark.usefixtures("workers_type")
+
+
 @pytest.fixture(scope="class")
 def lbodi_vma(worker_node1, namespace, unprivileged_client):
     name = "vma"

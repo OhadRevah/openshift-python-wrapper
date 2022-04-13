@@ -19,6 +19,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 pytestmark = pytest.mark.usefixtures(
     "hyperconverged_ovs_annotations_enabled_scope_session",
     "skip_no_bond_support",
+    "workers_type",
 )
 
 

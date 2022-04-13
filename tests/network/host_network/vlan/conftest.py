@@ -30,6 +30,9 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 LOGGER = logging.getLogger(__name__)
 
 
+pytestmark = pytest.mark.usefixtures("workers_type")
+
+
 # W/A for bug 2017623
 @pytest.fixture(scope="module")
 def base_ethernet_interface_for_vlan_creation(vlan_base_iface):
