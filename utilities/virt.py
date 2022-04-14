@@ -1221,15 +1221,10 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         return res
 
     def _update_vm_storage_config(self, spec, name):
-        # volume name and disk name should be updated
+        # volume name should be updated
         for volume in spec["volumes"]:
             if "dataVolume" in volume:
-                volume["name"] = name
                 volume["dataVolume"]["name"] = name
-        for disk in spec["domain"]["devices"]["disks"]:
-            # oc process assigns the VMs name to the boot disk
-            if disk["name"] == self.name:
-                disk["name"] = name
 
         return spec
 
