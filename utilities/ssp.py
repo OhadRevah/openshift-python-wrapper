@@ -19,7 +19,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def wait_for_deleted_data_import_crons(data_import_crons):
-    def _get_existing_data_import_crons(_data_import_crons, _auto_boot_sources):
+    def _get_existing_data_import_crons(
+        _data_import_crons, _auto_boot_data_import_cron_prefixes
+    ):
         return [
             data_import_cron.name
             for data_import_cron in _data_import_crons
@@ -27,11 +29,11 @@ def wait_for_deleted_data_import_crons(data_import_crons):
             and re.sub(
                 utilities.storage.DATA_IMPORT_CRON_SUFFIX, "", data_import_cron.name
             )
-            in _auto_boot_sources
+            in _auto_boot_data_import_cron_prefixes
         ]
 
     LOGGER.info("Wait for DataImportCrons deletion.")
-    auto_boot_sources = matrix_auto_boot_sources()
+    auto_boot_data_import_cron_prefixes = matrix_auto_boot_data_import_cron_prefixes()
     sample = None
     try:
         for sample in TimeoutSampler(
@@ -39,7 +41,7 @@ def wait_for_deleted_data_import_crons(data_import_crons):
             sleep=5,
             func=_get_existing_data_import_crons,
             _data_import_crons=data_import_crons,
-            _auto_boot_sources=auto_boot_sources,
+            _auto_boot_data_import_cron_prefixes=auto_boot_data_import_cron_prefixes,
         ):
             if not sample:
                 return
@@ -64,11 +66,17 @@ def wait_for_at_least_one_auto_update_data_import_cron(admin_client, namespace):
         raise
 
 
-def matrix_auto_boot_sources():
-    return [
-        [*boot_source][0]
-        for boot_source in py_config["auto_update_boot_sources_matrix"]
-    ]
+def matrix_auto_boot_data_import_cron_prefixes():
+    data_import_cron_prefixes = []
+    for data_source_matrix_entry in py_config["auto_update_data_source_matrix"]:
+        data_source_name = [*data_source_matrix_entry][0]
+        data_import_cron_prefixes.append(
+            data_source_matrix_entry[data_source_name].get(
+                "data_import_cron_prefix", data_source_name
+            )
+        )
+
+    return data_import_cron_prefixes
 
 
 def get_data_import_crons(admin_client, namespace):

@@ -47,18 +47,18 @@ def assert_os_version_mismatch_in_vm(vm, expected_os):
 
 
 @pytest.fixture()
-def boot_source_os_from_data_source_dict(auto_update_boot_sources_matrix__function__):
-    return auto_update_boot_sources_matrix__function__[
-        [*auto_update_boot_sources_matrix__function__][0]
+def boot_source_os_from_data_source_dict(auto_update_data_source_matrix__function__):
+    return auto_update_data_source_matrix__function__[
+        [*auto_update_data_source_matrix__function__][0]
     ]["template_os"]
 
 
 @pytest.fixture()
 def matrix_data_source(
-    auto_update_boot_sources_matrix__function__, golden_images_namespace
+    auto_update_data_source_matrix__function__, golden_images_namespace
 ):
     return DataSource(
-        name=[*auto_update_boot_sources_matrix__function__][0],
+        name=[*auto_update_data_source_matrix__function__][0],
         namespace=golden_images_namespace.name,
     )
 

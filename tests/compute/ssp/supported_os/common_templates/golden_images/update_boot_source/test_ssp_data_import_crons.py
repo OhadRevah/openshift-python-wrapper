@@ -8,6 +8,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
+from pytest_testconfig import py_config
 
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
     CUSTOM_DATA_IMPORT_CRON_NAME,
@@ -16,14 +17,17 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
 )
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
     generate_data_import_cron_dict,
-    matrix_auto_boot_sources,
     template_labels,
     vm_with_data_source,
     wait_for_condition_message_value,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.ssp import get_data_import_crons, wait_for_deleted_data_import_crons
+from utilities.ssp import (
+    get_data_import_crons,
+    matrix_auto_boot_data_import_cron_prefixes,
+    wait_for_deleted_data_import_crons,
+)
 from utilities.storage import DATA_IMPORT_CRON_SUFFIX, wait_for_dvs_import_completed
 from utilities.virt import running_vm
 
@@ -46,14 +50,16 @@ def assert_pvcs_using_default_storage_class(pvcs, sc):
 
 
 def wait_for_existing_auto_update_data_import_crons(admin_client, namespace):
-    def _get_missing_data_import_crons(_client, _namespace, _auto_boot_sources):
+    def _get_missing_data_import_crons(
+        _client, _namespace, _auto_boot_data_import_cron_prefixes
+    ):
         data_import_crons = get_data_import_crons(
             admin_client=_client, namespace=_namespace
         )
         return [
-            boot_source
-            for boot_source in _auto_boot_sources
-            if boot_source
+            data_import_cron_prefix
+            for data_import_cron_prefix in _auto_boot_data_import_cron_prefixes
+            if data_import_cron_prefix
             not in [
                 re.sub(DATA_IMPORT_CRON_SUFFIX, "", data_import_cron.name)
                 for data_import_cron in data_import_crons
@@ -61,7 +67,7 @@ def wait_for_existing_auto_update_data_import_crons(admin_client, namespace):
         ]
 
     sample = None
-    auto_boot_sources = matrix_auto_boot_sources()
+    auto_boot_data_import_cron_prefixes = matrix_auto_boot_data_import_cron_prefixes()
     try:
         for sample in TimeoutSampler(
             wait_timeout=TIMEOUT_2MIN,
@@ -69,7 +75,7 @@ def wait_for_existing_auto_update_data_import_crons(admin_client, namespace):
             func=_get_missing_data_import_crons,
             _client=admin_client,
             _namespace=namespace,
-            _auto_boot_sources=auto_boot_sources,
+            _auto_boot_data_import_cron_prefixes=auto_boot_data_import_cron_prefixes,
         ):
             if not sample:
                 return
@@ -309,7 +315,7 @@ def test_data_import_cron_deletion_on_opt_out(
         data_import_crons=golden_images_data_import_crons_scope_function
     )
     LOGGER.info("Verify DataVolumes are not deleted after opt-out.")
-    expected_num_dvs = len(matrix_auto_boot_sources())
+    expected_num_dvs = len(py_config["auto_update_data_source_matrix"])
     existing_dvs = [
         dv.name for dv in golden_images_data_volumes_scope_function if dv.exists
     ]

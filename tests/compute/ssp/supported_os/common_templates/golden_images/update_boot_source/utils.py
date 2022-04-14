@@ -3,7 +3,6 @@ from contextlib import contextmanager
 
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from pytest_testconfig import py_config
 
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
     DEFAULT_FEDORA_REGISTRY_URL,
@@ -101,10 +100,3 @@ def template_labels(os):
         workload=Template.Workload.SERVER,
         flavor=Template.Flavor.TINY,
     )
-
-
-def matrix_auto_boot_sources():
-    return [
-        [*boot_source][0]
-        for boot_source in py_config["auto_update_boot_sources_matrix"]
-    ]

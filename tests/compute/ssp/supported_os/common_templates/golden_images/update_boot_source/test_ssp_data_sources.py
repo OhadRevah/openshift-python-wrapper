@@ -33,7 +33,7 @@ from utilities.storage import get_images_server_url
 
 LOGGER = logging.getLogger(__name__)
 
-TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME = [*py_config["auto_update_boot_sources_matrix"][0]][
+TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME = [*py_config["auto_update_data_source_matrix"][0]][
     0
 ]
 DUMMY_PVC_NAME = "dummy"

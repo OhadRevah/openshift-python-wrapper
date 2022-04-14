@@ -146,9 +146,13 @@ run_strategy_matrix = [
 
 sysprep_source_matrix = ["ConfigMap", "Secret"]
 
-auto_update_boot_sources_matrix = [
+# If the DataImportCron uses a different prefix than the DataSource name
+# use data_import_cron_prefix in matrix dict to specify new prefix.
+# This is related to closed bz 2081343
+auto_update_data_source_matrix = [
     {"centos-stream8": {"template_os": "centos-stream8"}},
     {"centos-stream9": {"template_os": "centos-stream9"}},
+    {"centos7": {"template_os": "centos7.0", "data_import_cron_prefix": "centos-7"}},
     {"fedora": {"template_os": "fedora35"}},
     {"rhel8": {"template_os": "rhel8.4"}},
     {"rhel9": {"template_os": "rhel9.0"}},
