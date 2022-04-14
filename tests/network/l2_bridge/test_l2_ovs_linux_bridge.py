@@ -13,7 +13,7 @@ from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
 CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
 
 pytestmark = pytest.mark.usefixtures(
-    "hyperconverged_ovs_annotations_enabled_scope_session"
+    "skip_if_no_multinic_nodes", "hyperconverged_ovs_annotations_enabled_scope_session"
 )
 
 
@@ -27,7 +27,6 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2285")
     def test_connectivity_l2_bridge(
         self,
-        skip_if_no_multinic_nodes,
         namespace,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
@@ -42,7 +41,6 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2282")
     def test_dhcp_broadcast(
         self,
-        skip_if_no_multinic_nodes,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
         dhcp_nad,
@@ -65,7 +63,6 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2284")
     def test_custom_eth_type(
         self,
-        skip_if_no_multinic_nodes,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
         custom_eth_type_llpd_nad,
@@ -91,7 +88,6 @@ class TestL2LinuxBridge:
     def test_icmp_multicast(
         self,
         skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
         namespace,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,

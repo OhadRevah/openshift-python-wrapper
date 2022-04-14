@@ -21,7 +21,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.usefixtures(
-    "hyperconverged_ovs_annotations_enabled_scope_session"
+    "skip_if_no_multinic_nodes", "hyperconverged_ovs_annotations_enabled_scope_session"
 )
 
 
@@ -282,7 +282,6 @@ class TestConnectivity:
     )
     def test_bridge(
         self,
-        skip_if_no_multinic_nodes,
         bridge,
         ip_stack_version_matrix__module__,
         ovs_linux_nad,
@@ -312,7 +311,6 @@ class TestConnectivity:
     @pytest.mark.polarion("CNV-2072")
     def test_positive_vlan(
         self,
-        skip_if_no_multinic_nodes,
         skip_if_workers_vms,
         namespace,
         ovs_linux_br1vlan1000_nad,
@@ -340,7 +338,6 @@ class TestConnectivity:
     def test_negative_vlan(
         self,
         skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
         namespace,
         ovs_linux_br1vlan1002_nad,
         ovs_linux_bridge_attached_vma,
@@ -360,7 +357,6 @@ class TestConnectivity:
     def test_guest_performance(
         self,
         skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
         ovs_linux_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,

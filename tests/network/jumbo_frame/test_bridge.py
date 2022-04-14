@@ -18,7 +18,10 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.usefixtures(
-    "hyperconverged_ovs_annotations_enabled_scope_session"
+    "skip_if_workers_vms",
+    "skip_if_no_multinic_nodes",
+    "skip_when_one_node",
+    "hyperconverged_ovs_annotations_enabled_scope_session",
 )
 
 
@@ -144,9 +147,6 @@ class TestJumboFrameBridge:
     @pytest.mark.polarion("CNV-2685")
     def test_connectivity_over_linux_bridge_large_mtu(
         self,
-        skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
-        skip_when_one_node,
         namespace,
         br1test_bridge_nad,
         bridge_attached_vma,
@@ -170,9 +170,6 @@ class TestJumboFrameBridge:
     @pytest.mark.polarion("CNV-3788")
     def test_negative_mtu_linux_bridge(
         self,
-        skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
-        skip_when_one_node,
         namespace,
         br1test_bridge_nad,
         bridge_attached_vma,

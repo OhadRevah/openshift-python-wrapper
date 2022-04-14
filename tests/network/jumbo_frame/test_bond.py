@@ -22,7 +22,11 @@ BOND_NAME = "jfbond1"
 BRIDGE_NAME = "brbond1"
 
 pytestmark = pytest.mark.usefixtures(
-    "hyperconverged_ovs_annotations_enabled_scope_session"
+    "skip_if_workers_vms",
+    "skip_if_no_multinic_nodes",
+    "skip_when_one_node",
+    "skip_no_bond_support",
+    "hyperconverged_ovs_annotations_enabled_scope_session",
 )
 
 
@@ -194,10 +198,6 @@ class TestBondJumboFrame:
     @pytest.mark.polarion("CNV-3367")
     def test_connectivity_over_linux_bond_large_mtu(
         self,
-        skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
-        skip_when_one_node,
-        skip_no_bond_support,
         namespace,
         jumbo_frame_bridge_on_bond_worker_1,
         jumbo_frame_bridge_on_bond_worker_2,
@@ -223,10 +223,6 @@ class TestBondJumboFrame:
     @pytest.mark.polarion("CNV-3368")
     def test_negative_mtu_linux_bond(
         self,
-        skip_if_workers_vms,
-        skip_if_no_multinic_nodes,
-        skip_when_one_node,
-        skip_no_bond_support,
         namespace,
         jumbo_frame_bridge_on_bond_worker_1,
         jumbo_frame_bridge_on_bond_worker_2,
