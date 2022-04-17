@@ -6,13 +6,10 @@ import random
 
 import pytest
 
-from tests.compute.virt.gpu.utils import (
-    fetch_device_name_from_vm,
-    install_nvidia_drivers_on_windows_vm,
-)
-from utilities.constants import GPU_DEVICE_ID, OS_FLAVOR_WINDOWS, VGPU_DEVICE_NAME
+from tests.compute.virt.gpu.utils import install_nvidia_drivers_on_windows_vm
+from utilities.constants import GPU_DEVICE_ID, OS_FLAVOR_WINDOWS
 from utilities.infra import ExecCommandOnPod
-from utilities.virt import running_vm, vm_instance_from_template
+from utilities.virt import vm_instance_from_template
 
 
 @pytest.fixture(scope="session")
@@ -38,7 +35,7 @@ def skip_if_no_gpu_node(gpu_nodes):
 
 
 @pytest.fixture(scope="class")
-def gpu_vm(
+def gpu_vma(
     request,
     unprivileged_client,
     namespace,
@@ -57,7 +54,4 @@ def gpu_vm(
     ) as gpu_vm:
         if gpu_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
             install_nvidia_drivers_on_windows_vm(vm=gpu_vm)
-            # Wait for Running VM, as the VM Reboots after installing NVIDIA GRID Drivers.
-            if fetch_device_name_from_vm(vm=gpu_vm) == VGPU_DEVICE_NAME:
-                running_vm(vm=gpu_vm)
         yield gpu_vm

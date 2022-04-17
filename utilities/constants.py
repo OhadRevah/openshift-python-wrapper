@@ -215,6 +215,7 @@ VGPU_DEVICE_NAME = f"{GPU_DEVICE_MANUFACTURER}/GRID_T4_2Q"
 MDEV_NAME = "GRID T4-2Q"
 MDEV_AVAILABLE_INSTANCES = "8"
 MDEV_TYPE = "nvidia-231"
+NVIDIA_GRID_DRIVER_NAME = "NVIDIA GRID"
 
 # Kernel Device Driver
 # Compute: GPU Devices are bound to this Kernel Driver for GPU Passthrough.

@@ -1,37 +1,51 @@
 import shlex
 
-from utilities.constants import OS_FLAVOR_WINDOWS, TIMEOUT_3MIN, VGPU_DEVICE_NAME
+from utilities.constants import (
+    NVIDIA_GRID_DRIVER_NAME,
+    OS_FLAVOR_WINDOWS,
+    TIMEOUT_3MIN,
+    VGPU_DEVICE_NAME,
+)
 from utilities.infra import run_ssh_commands
-from utilities.virt import restart_vm_wait_for_running_vm
+from utilities.virt import restart_vm_wait_for_running_vm, running_vm
+
+
+def get_num_gpu_devices_in_rhel_vm(vm):
+    return int(
+        run_ssh_commands(
+            host=vm.ssh_exec,
+            commands=[
+                "bash",
+                "-c",
+                "/sbin/lspci -nnk | grep NVIDIA | grep Tesla | wc -l",
+            ],
+        )[0].strip()
+    )
+
+
+def get_gpu_device_name_from_windows_vm(vm):
+    return run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=[shlex.split("wmic path win32_VideoController get name")],
+    )[0]
 
 
 def verify_gpu_device_exists_in_vm(vm):
+    gpu_device_name = fetch_gpu_device_name_from_vm_instance(vm=vm)
     if vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
         # NOTE: vGPU uses NVIDIA GRID Drivers and GPU Passthrough uses normal NVIDIA Drivers.
         nvidia_device = (
-            "NVIDIA GRID"
-            if fetch_device_name_from_vm(vm=vm) == VGPU_DEVICE_NAME
+            NVIDIA_GRID_DRIVER_NAME
+            if gpu_device_name == VGPU_DEVICE_NAME
             else "NVIDIA Tesla"
         )
-        assert (
-            nvidia_device
-            in run_ssh_commands(
-                host=vm.ssh_exec,
-                commands=[shlex.split("wmic path win32_VideoController get name")],
-            )[0]
-        )
+        assert nvidia_device in get_gpu_device_name_from_windows_vm(
+            vm=vm
+        ), f"GPU device: {gpu_device_name} does not exist in the windows vm: {vm.name}."
     else:
         assert (
-            run_ssh_commands(
-                host=vm.ssh_exec,
-                commands=[
-                    "bash",
-                    "-c",
-                    "/sbin/lspci -nnk | grep NVIDIA | grep Tesla | wc -l",
-                ],
-            )[0].strip()
-            == "1"
-        )
+            get_num_gpu_devices_in_rhel_vm(vm=vm) == 1
+        ), f"GPU device: {gpu_device_name} does not exist in rhel vm: {vm.name}."
 
 
 def restart_and_check_gpu_exists(vm):
@@ -81,7 +95,7 @@ def verify_gpu_expected_count_updated_on_node(gpu_nodes, device_name, expected_c
     ), f"Failed checks: {device_expected_count_failed_checks}"
 
 
-def fetch_device_name_from_vm(vm):
+def fetch_gpu_device_name_from_vm_instance(vm):
     devices = vm.vmi.instance.spec.domain.devices
     return (
         devices.gpus[0].deviceName
@@ -93,12 +107,20 @@ def fetch_device_name_from_vm(vm):
 def install_nvidia_drivers_on_windows_vm(vm):
     # Installs NVIDIA Drivers placed on the Windows-10 or win2k19 Images.
     # vGPU uses NVIDIA GRID Drivers and GPU Passthrough uses normal NVIDIA Drivers.
-    gpu_mode = "vgpu" if fetch_device_name_from_vm(vm) == VGPU_DEVICE_NAME else "gpu"
+    gpu_mode = (
+        "vgpu"
+        if fetch_gpu_device_name_from_vm_instance(vm) == VGPU_DEVICE_NAME
+        else "gpu"
+    )
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=[
             shlex.split(
-                f"C:\\\\NVIDIA\\\\{gpu_mode}\\\\International\\\\setup.exe -s & exit /b 0"
+                f"C:\\NVIDIA\\{gpu_mode}\\International\\setup.exe -s & exit /b 0",
+                posix=False,
             )
         ],
     )
+    # Wait for Running VM, as only vGPU VM Reboots after installing NVIDIA GRID Drivers.
+    if fetch_gpu_device_name_from_vm_instance(vm=vm) == VGPU_DEVICE_NAME:
+        running_vm(vm=vm)
