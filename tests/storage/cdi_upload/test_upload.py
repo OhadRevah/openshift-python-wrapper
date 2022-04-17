@@ -26,8 +26,10 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_3MIN,
     TIMEOUT_5MIN,
+    TIMEOUT_15SEC,
     Images,
 )
+from utilities.infra import is_jira_open
 from utilities.storage import downloaded_image
 
 
@@ -360,12 +362,14 @@ def test_successful_upload_missing_file_in_transit(
     # Run process in parallel
     upload_process.start()
 
-    # Ideally the file should be removed while the status of upload is 'UploadInProgress'.
-    # However, 'UploadInProgress' status phase is never set.
-    # Sleep for 15 seconds until https://issues.redhat.com/browse/CNV-4055 is done.
-    # Once the bug is fixed, the below line needs to be uncommented and sleep should be removed.
-    # DataVolume(dv_name, namespace).wait_for_status(status="UploadInProgress", timeout=300)
-    time.sleep(15)
+    # Ideally, the file should be removed while the status of upload is 'UploadInProgress'.
+    # However, 'UploadInProgress' status phase is not implemented yet.
+    if is_jira_open(jira_id="CNV-4055"):
+        time.sleep(TIMEOUT_15SEC)
+    else:
+        DataVolume(dv_name, namespace).wait_for_status(
+            status=DataVolume.Status.UPLOAD_IN_PROGRESS, timeout=TIMEOUT_15SEC
+        )
     sh.rm("-f", upload_file_path)
 
     # Exit the completed processes
