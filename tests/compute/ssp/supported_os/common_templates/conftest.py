@@ -40,9 +40,9 @@ def hvinfo_binary_in_windows_vm(
 ):
     def _copy_hvinfo_to_vm():
         copy_hvinfo_cmd = (
-            f"sshpass -p {vm.password} scp -P {vm.ssh_service.service_port} -o 'StrictHostKeyChecking no' "
-            "-o 'TCPKeepAlive yes' -o 'ServerAliveCountMax 20' -o 'ServerAliveInterval 120' "
-            f"{hvinfo_binary_in_executor} {vm.username}@{vm.ssh_service.service_ip()}:{HVINFO_PATH}"
+            f"sshpass -p {vm.password} scp -o 'StrictHostKeyChecking no' -o 'ServerAliveCountMax 20' "
+            f"-o 'TCPKeepAlive yes' -o 'ServerAliveInterval 120' -o 'ProxyCommand={vm.virtctl_port_forward_cmd}' "
+            f"{hvinfo_binary_in_executor} {vm.username}@{vm.name}:{HVINFO_PATH}"
         )
         return check_output(copy_hvinfo_cmd, shell=True) == b""
 

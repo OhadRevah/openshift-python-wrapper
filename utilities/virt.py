@@ -973,17 +973,19 @@ class VirtualMachineForTests(VirtualMachine):
         )
 
     @property
+    def virtctl_port_forward_cmd(self):
+        return f"virtctl port-forward --stdio=true {self.name}.{self.namespace} {SSH_PORT_22}"
+
+    @property
     def ssh_exec(self):
         # In order to use this property VM should be created with ssh=True
-        # or one of vm_ssh_service_*** (compute/ssp/supported_os/conftest.py) fixtures should be used
         login_params = OS_LOGIN_PARAMS[self.os_flavor]
         self.username = self.username or login_params["username"]
         self.password = self.password or login_params["password"]
-        sock = f"virtctl port-forward --stdio=true {self.name}.{self.namespace} {SSH_PORT_22}"
 
         LOGGER.info(
             f"Username: {self.username}, password: {self.password}, SSH key: {CNV_SSH_KEY_PATH}\n"
-            f"SSH command: ssh -o 'ProxyCommand={sock}' {self.username}@{self.name}"
+            f"SSH command: ssh -o 'ProxyCommand={self.virtctl_port_forward_cmd}' {self.username}@{self.name}"
         )
         host = Host(hostname=self.name)
         # For SSH using a key, the public key needs to reside on the server.
@@ -996,7 +998,7 @@ class VirtualMachineForTests(VirtualMachine):
             )
         host.executor_user = host_user
         host.executor_factory = ssh.RemoteExecutorFactory(
-            sock=sock,
+            sock=self.virtctl_port_forward_cmd,
             disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}
             if self.disable_sha2_algorithms
             else None,
