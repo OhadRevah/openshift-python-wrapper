@@ -10,12 +10,6 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 pytestmark = pytest.mark.ci
 
 
-@pytest.fixture(scope="session")
-def skip_if_not_ovn_cluster(ovn_kubernetes_cluster):
-    if not ovn_kubernetes_cluster:
-        pytest.skip("Test can run only on cluster with OVN network type")
-
-
 def test_ci_container_disk_vm(admin_client, namespace):
     name = "ci-container-disk-vm"
     with VirtualMachineForTests(

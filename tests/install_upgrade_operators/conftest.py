@@ -21,12 +21,6 @@ def cnv_registry_source(cnv_source):
 
 
 @pytest.fixture(scope="session")
-def hco_current_version(cnv_current_version):
-    # TODO: Extract from Subscription
-    return f"kubevirt-hyperconverged-operator.v{cnv_current_version}"
-
-
-@pytest.fixture(scope="session")
 def is_deployment_from_production_source(cnv_source):
     return cnv_source == "production"
 

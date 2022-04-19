@@ -36,32 +36,6 @@ def cpu_features_vm_positive(request, unprivileged_client, namespace):
         yield vm
 
 
-@pytest.fixture(
-    params=[
-        pytest.param(
-            [{"features": [{"name": "nomatch"}]}, "nomatch"],
-            marks=(pytest.mark.polarion("CNV-1833")),
-        ),
-        pytest.param(
-            [{"features": [{"name": "pcid", "policy": "forbid"}]}, "policy-forbid"],
-            marks=(pytest.mark.polarion("CNV-1835")),
-        ),
-    ],
-    ids=["Feature: name: nomatch", "Feature: name: pcid , policy:forbid"],
-)
-def cpu_features_vm_negative(request, unprivileged_client, namespace):
-    name = f"vm-cpu-features-negative-{request.param[1]}"
-    with VirtualMachineForTests(
-        name=name,
-        namespace=namespace.name,
-        cpu_flags=request.param[0],
-        body=fedora_vm_body(name=name),
-        client=unprivileged_client,
-    ) as vm:
-        vm.start()
-        yield vm
-
-
 def test_vm_with_cpu_feature_positive(cpu_features_vm_positive):
     """
     Test VM with cpu flag, test the VM started and is accessible via SSH

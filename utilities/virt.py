@@ -1612,14 +1612,6 @@ class MissingTemplateVariables(Exception):
         return f"Missing variables {self.var} for template {self.template}"
 
 
-def validate_windows_guest_agent_info(vm):
-    """Compare guest OS info from VMI (reported by guest agent) and from OS itself."""
-    windown_os_info = get_windows_os_info(ssh_exec=vm.ssh_exec)
-    for key, val in get_guest_os_info_from_vmi(vmi=vm.vmi).items():
-        if key != "id":
-            assert val.split("r")[0] if "version" in key else val in windown_os_info
-
-
 def validate_vmi_ga_info_vs_windows_os_info(vm):
     """Compare OS data from VMI object vs Windows guest OS data."""
     vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
@@ -1638,13 +1630,6 @@ def get_windows_os_release(ssh_exec):
         "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
     )
     return ssh_exec.run_command(command=cmd)[1]
-
-
-def get_guest_os_info_from_vmi(vmi):
-    """Gets guest OS info from VMI."""
-    guest_os_info_dict = dict(vmi.instance.status.guestOSInfo)
-    assert guest_os_info_dict, "Guest agent not installed/active."
-    return guest_os_info_dict
 
 
 def get_windows_os_info(ssh_exec):
@@ -1675,34 +1660,6 @@ def wait_for_windows_vm(vm, version, timeout=TIMEOUT_25MIN):
     for sample in sampler:
         if version in str(sample):
             return True
-
-
-def nmcli_add_con_cmds(workers_type, iface, ip, default_gw, dns_server):
-    bootcmds = [f"nmcli con add type ethernet con-name {iface} ifname {iface}"]
-
-    # On bare metal cluster, address is acquired by DHCP
-    # Default GW is set to eth1, thus should be removed from eth0
-    if workers_type == utilities.infra.ClusterHosts.Type.PHYSICAL:
-        bootcmds += [
-            "nmcli connection modify eth1 ipv4.method auto",
-            "route del default gw  0.0.0.0 eth0",
-        ]
-    else:
-        bootcmds += [
-            f"nmcli con mod {iface} ipv4.addresses {ip}/24 "
-            f"ipv4.method manual connection.autoconnect-priority 1 ipv6.method ignore"
-        ]
-    bootcmds += [f"nmcli con up {iface}"]
-
-    # On PSI, change default GW to brcnv network
-    if workers_type == utilities.infra.ClusterHosts.Type.VIRTUAL:
-        bootcmds += [
-            f"ip route replace default via " f"{default_gw}",
-            "route del default gw  0.0.0.0 eth0",
-            f"bash -c 'echo \"nameserver " f'{dns_server}" ' f">/etc/resolv.conf'",
-        ]
-
-    return bootcmds
 
 
 # TODO: Remove once bug 1945703 is fixed

@@ -4,7 +4,6 @@ import re
 
 from benedict import benedict
 from ocp_resources.cdi import CDI
-from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.kubevirt import KubeVirt
@@ -40,30 +39,6 @@ DEFAULT_KUBEVIRT_CONDITIONS = {
 }
 NUM_TEST_VMS = 3
 LOGGER = logging.getLogger(__name__)
-
-
-def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
-    csv_sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=1,
-        func=ClusterServiceVersion.get,
-        dyn_client=dyn_client,
-        namespace=hco_namespace,
-        hco_target_version=hco_target_version,
-    )
-    csvs = None
-    try:
-        for csvs in csv_sampler:
-            for csv in csvs:
-                if csv.name == hco_target_version:
-                    return csv
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"timeout waiting for target cluster service version: version={hco_target_version} csvs={csvs}"
-        )
-        if collect_logs():
-            collect_resources_for_test(resources_to_collect=[ClusterServiceVersion])
-        raise
 
 
 def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):

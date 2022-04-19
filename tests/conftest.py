@@ -1518,16 +1518,6 @@ def data_volume_scope_class(request, namespace, schedulable_nodes):
     )
 
 
-@pytest.fixture(scope="module")
-def data_volume_scope_module(request, namespace, schedulable_nodes):
-    yield from data_volume(
-        request=request,
-        namespace=namespace,
-        storage_class=request.param["storage_class"],
-        schedulable_nodes=schedulable_nodes,
-    )
-
-
 @pytest.fixture(scope="class")
 def golden_image_data_volume_scope_class(
     request, admin_client, golden_images_namespace, schedulable_nodes

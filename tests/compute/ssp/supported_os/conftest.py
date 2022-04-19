@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from ocp_resources.service import Service
 from ocp_resources.template import Template
 from packaging import version
 
@@ -283,20 +282,6 @@ def golden_image_vm_object_from_template_multi_centos_multi_storage_scope_class(
         namespace=namespace,
         os_matrix=centos_os_matrix__class__,
         data_source_object=golden_image_data_source_multi_centos_multi_storage_scope_class,
-    )
-
-
-@pytest.fixture()
-def exposed_vm_service_multi_storage_scope_function(
-    request,
-    vm_instance_from_template_multi_storage_scope_function,
-    schedulable_node_ips,
-):
-    vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
-        service_name=request.param["service_name"],
-        port=request.param["service_port"],
-        service_type=Service.Type.NODE_PORT,
-        service_ip=list(schedulable_node_ips.values())[0],
     )
 
 

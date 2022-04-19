@@ -290,11 +290,6 @@ def data_source_referenced_pvc_scope_class(data_source_by_name_scope_class):
     return data_source_by_name_scope_class.instance.spec.source.pvc.name
 
 
-@pytest.fixture()
-def opted_in_data_source_scope_function(data_source_by_name_scope_function):
-    yield from opt_in_data_source(data_source=data_source_by_name_scope_function)
-
-
 @pytest.fixture(scope="class")
 def opted_in_data_source_scope_class(data_source_by_name_scope_class):
     yield from opt_in_data_source(data_source=data_source_by_name_scope_class)
