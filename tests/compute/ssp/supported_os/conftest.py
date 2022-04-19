@@ -301,20 +301,6 @@ def exposed_vm_service_multi_storage_scope_function(
 
 
 @pytest.fixture()
-def golden_image_exposed_vm_service_multi_storage_scope_function(
-    request,
-    golden_image_vm_instance_from_template_multi_storage_scope_function,
-    schedulable_node_ips,
-):
-    golden_image_vm_instance_from_template_multi_storage_scope_function.custom_service_enable(
-        service_name=request.param["service_name"],
-        port=request.param["service_port"],
-        service_type=Service.Type.NODE_PORT,
-        service_ip=list(schedulable_node_ips.values())[0],
-    )
-
-
-@pytest.fixture()
 def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
     if "rhel-6" in [*rhel_os_matrix__class__][0]:
         pytest.skip("RHEL6 does not have guest agent")

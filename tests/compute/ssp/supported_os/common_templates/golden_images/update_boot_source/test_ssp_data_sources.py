@@ -285,11 +285,6 @@ def data_source_by_name_managing_data_import_cron_scope_class(
     )
 
 
-@pytest.fixture()
-def data_source_referenced_pvc_scope_function(data_source_by_name_scope_function):
-    return data_source_by_name_scope_function.instance.spec.source.pvc.name
-
-
 @pytest.fixture(scope="class")
 def data_source_referenced_pvc_scope_class(data_source_by_name_scope_class):
     return data_source_by_name_scope_class.instance.spec.source.pvc.name
