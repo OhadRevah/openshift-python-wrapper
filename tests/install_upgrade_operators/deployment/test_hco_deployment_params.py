@@ -59,7 +59,6 @@ def test_request_param(deployment_by_name, cpu_min_value):
 @pytest.mark.polarion("CNV-7675")
 def test_cnv_deployment_priority_class_name(
     skip_on_hpp_pool,
-    skip_if_node_maintenance_deployment_bug_open,
     cnv_deployment_by_name,
 ):
     if not cnv_deployment_by_name.instance.spec.template.spec.priorityClassName:

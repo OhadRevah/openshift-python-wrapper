@@ -114,7 +114,7 @@ def assert_cnv_deployment_container_env_image_not_in_upstream(cnv_deployment):
         )
         if resource_env_image_mismatch and not (
             cnv_deployment.name.startswith(CLUSTER_NETWORK_ADDONS_OPERATOR)
-            and is_bug_open(bug_id=2008960)
+            and is_bug_open(bug_id=2058149)
         ):
             cnv_deployments_env_with_upstream_image_reference[
                 container["name"]

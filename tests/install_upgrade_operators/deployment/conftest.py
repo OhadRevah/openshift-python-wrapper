@@ -3,8 +3,8 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.storage_class import StorageClass
 
 from tests.install_upgrade_operators.utils import get_deployment_by_name
-from utilities.constants import HPP_POOL, NODE_MAINTENANCE_OPERATOR
-from utilities.infra import get_deployments, is_bug_open
+from utilities.constants import HPP_POOL
+from utilities.infra import get_deployments
 
 
 @pytest.fixture()
@@ -62,13 +62,3 @@ def cnv_deployment_by_name(
 def skip_on_hpp_pool(cnv_deployment_matrix__function__):
     if cnv_deployment_matrix__function__ == HPP_POOL:
         pytest.skip(f"Priority class test is not valid for {HPP_POOL} deployment")
-
-
-@pytest.fixture()
-def skip_if_node_maintenance_deployment_bug_open(cnv_deployment_by_name):
-    if cnv_deployment_by_name.name.startswith(
-        NODE_MAINTENANCE_OPERATOR
-    ) and is_bug_open(bug_id=2008960):
-        pytest.skip(
-            f"{NODE_MAINTENANCE_OPERATOR} missing priority class bug is still open"
-        )
