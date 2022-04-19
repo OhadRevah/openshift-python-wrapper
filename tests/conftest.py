@@ -59,7 +59,6 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
-from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
@@ -1711,19 +1710,6 @@ def golden_image_vm_instance_from_template_multi_storage_scope_class(
 """
 Windows-specific fixtures
 """
-
-
-@pytest.fixture(scope="module")
-def sa_ready(namespace):
-    #  Wait for 'default' service account secrets to be exists.
-    #  The Pod creating will fail if we try to create it before.
-    default_sa = ServiceAccount(name="default", namespace=namespace.name)
-    sampler = TimeoutSampler(
-        wait_timeout=10, sleep=1, func=lambda: default_sa.instance.secrets
-    )
-    for sample in sampler:
-        if sample:
-            return
 
 
 @pytest.fixture()

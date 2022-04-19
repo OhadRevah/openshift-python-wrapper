@@ -131,15 +131,6 @@ def upload_proxy_route(admin_client):
     yield upload_route
 
 
-@pytest.fixture(scope="session")
-def skip_no_default_sc(default_sc):
-    """
-    Skip test if no default Storage Class defined
-    """
-    if not default_sc:
-        pytest.skip("Skipping test, no default storage class configured")
-
-
 @pytest.fixture(scope="module")
 def matrix_hpp_storage_class(storage_class_matrix__module__):
     """
