@@ -24,6 +24,7 @@ from utilities import console
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     TIMEOUT_1MIN,
+    TIMEOUT_3MIN,
     TIMEOUT_4MIN,
     TIMEOUT_5MIN,
     TIMEOUT_12MIN,
@@ -78,7 +79,7 @@ def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
-            timeout=TIMEOUT_1MIN,
+            timeout=TIMEOUT_3MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
         importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
