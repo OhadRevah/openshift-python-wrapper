@@ -31,10 +31,6 @@ def assert_virt_launcher_pod_is_root(vm):
     ), "Virt Launcher Pod should not be running as Root."
 
 
-def assert_virt_launcher_pod_is_nonroot(vm):
-    assert vm.vmi.is_virt_launcher_pod_root, "Virt Launcher Pod is not running as Root."
-
-
 @pytest.fixture(scope="class")
 def enabled_nonroot_featuregate_scope_class(
     hyperconverged_resource_scope_class,
