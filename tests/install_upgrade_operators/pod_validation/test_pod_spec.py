@@ -11,61 +11,12 @@ from tests.install_upgrade_operators.pod_validation.utils import (
     validate_cnv_pods_resource_request,
     validate_priority_class_value,
 )
-from utilities.constants import (
-    BRIDGE_MARKER,
-    CDI_APISERVER,
-    CDI_DEPLOYMENT,
-    CDI_OPERATOR,
-    CDI_UPLOADPROXY,
-    CLUSTER_NETWORK_ADDONS_OPERATOR,
-    HCO_OPERATOR,
-    HCO_WEBHOOK,
-    HOSTPATH_PROVISIONER,
-    HOSTPATH_PROVISIONER_CSI,
-    HOSTPATH_PROVISIONER_OPERATOR,
-    HPP_POOL,
-    HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
-    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
-    KUBEMACPOOL_CERT_MANAGER,
-    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
-    NODE_MAINTENANCE_OPERATOR,
-    SSP_OPERATOR,
-    VIRT_API,
-    VIRT_CONTROLLER,
-    VIRT_HANDLER,
-    VIRT_OPERATOR,
-    VIRT_TEMPLATE_VALIDATOR,
-)
+from utilities.constants import ALL_CNV_PODS, HOSTPATH_PROVISIONER, HPP_POOL
 
 
 pytestmark = pytest.mark.sno
 
 LOGGER = logging.getLogger(__name__)
-
-ALL_CNV_PODS = [
-    BRIDGE_MARKER,
-    CDI_APISERVER,
-    CDI_DEPLOYMENT,
-    CDI_OPERATOR,
-    CDI_UPLOADPROXY,
-    CLUSTER_NETWORK_ADDONS_OPERATOR,
-    HCO_OPERATOR,
-    HCO_WEBHOOK,
-    HOSTPATH_PROVISIONER_OPERATOR,
-    HOSTPATH_PROVISIONER_CSI,
-    HPP_POOL,
-    HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
-    KUBE_CNI_LINUX_BRIDGE_PLUGIN,
-    KUBEMACPOOL_CERT_MANAGER,
-    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
-    NODE_MAINTENANCE_OPERATOR,
-    SSP_OPERATOR,
-    VIRT_API,
-    VIRT_CONTROLLER,
-    VIRT_TEMPLATE_VALIDATOR,
-    VIRT_OPERATOR,
-    VIRT_HANDLER,
-]
 
 
 @pytest.fixture()
@@ -95,10 +46,12 @@ def skip_host_path_provisioner_priority_class(cnv_pod_matrix__function__):
 
 @pytest.mark.polarion("CNV-7261")
 def test_no_new_cnv_pods_added(cnv_pods, cnv_jobs):
+    all_pods = ALL_CNV_PODS.copy()
+    all_pods.append(HPP_POOL)
     new_pods = [
         pod.name
         for pod in cnv_pods
-        if list(filter(pod.name.startswith, ALL_CNV_PODS)) == []
+        if list(filter(pod.name.startswith, all_pods)) == []
         and pod.name not in cnv_jobs
     ]
     assert not new_pods, f"New cnv pod: {new_pods}, has been added."
