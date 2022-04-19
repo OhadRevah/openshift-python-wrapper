@@ -41,12 +41,6 @@ NUM_TEST_VMS = 3
 LOGGER = logging.getLogger(__name__)
 
 
-def cnv_target_version_channel(cnv_version):
-    target_version = re.search(r"([0-9]+)\.([0-9]+)\.([0-9]+)", cnv_version)
-    target_channel = ".".join(target_version.group(1, 2))
-    return target_version, target_channel
-
-
 def wait_for_csv(dyn_client, hco_namespace, hco_target_version):
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
