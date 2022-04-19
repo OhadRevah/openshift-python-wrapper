@@ -2045,25 +2045,6 @@ def hosts_common_available_ports(nodes_available_nics):
 
 
 @pytest.fixture(scope="session")
-def hosts_common_occupied_ports(nodes_occupied_nics):
-    """
-    Get list of common ports from nodes_occupied_nics.
-
-    nodes_occupied_nics like
-    [['ens3', 'ens4', 'ens6', 'ens5'],
-    ['ens3', 'ens8', 'ens6', 'ens7'],
-    ['ens3', 'ens8', 'ens6', 'ens7']]
-
-    will return ['ens3', 'ens6']
-    """
-    nics_list = list(
-        set.intersection(*[set(_list) for _list in nodes_occupied_nics.values()])
-    )
-    LOGGER.info(f"Hosts common occupied NICs: {nics_list}")
-    return nics_list
-
-
-@pytest.fixture(scope="session")
 def default_sc(admin_client):
     """
     Get default Storage Class defined

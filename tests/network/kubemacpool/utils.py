@@ -2,11 +2,6 @@ import logging
 from collections import namedtuple
 from ipaddress import ip_interface
 
-from ocp_resources.pod import Pod
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-
-from utilities.constants import TIMEOUT_2MIN
-from utilities.infra import get_pods
 from utilities.network import cloud_init_network_data, get_vmi_mac_address_by_iface_name
 from utilities.virt import (
     VirtualMachineForTests,
@@ -48,44 +43,6 @@ def vm_network_config(mac_pool, all_nads, end_ip_octet, mac_uid):
             ip_address=f"10.200.4.{end_ip_octet}", mac_address="auto", name=all_nads[3]
         ),
     }
-
-
-def wait_for_kmp_pods_creation(dyn_client, namespace, replicas):
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN,
-        sleep=1,
-        func=get_pods,
-        dyn_client=dyn_client,
-        namespace=namespace,
-        label=KMP_PODS_LABEL,
-    )
-    for sample in samples:
-        if len(sample) == replicas:
-            return
-
-
-def wait_for_kmp_pods_to_be_in_crashloop(dyn_client, namespace):
-    for pod in get_pods(
-        dyn_client=dyn_client, namespace=namespace, label=KMP_PODS_LABEL
-    ):
-        LOGGER.info(
-            f"Wait for {pod.name} container status to be {Pod.Status.CRASH_LOOPBACK_OFF}"
-        )
-        pod_states = TimeoutSampler(
-            wait_timeout=30,
-            sleep=1,
-            func=lambda: pod.instance.status.containerStatuses[0].state,
-        )
-        try:
-            for pod_state in pod_states:
-                if pod_state.waiting:
-                    if pod_state.waiting.reason == Pod.Status.CRASH_LOOPBACK_OFF:
-                        break
-        except TimeoutExpiredError:
-            LOGGER.error(
-                f"{pod.name} container did not get status {Pod.Status.CRASH_LOOPBACK_OFF}"
-            )
-            raise
 
 
 def create_vm(name, namespace, iface_config, node_selector, client, mac_pool):
