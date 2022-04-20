@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 import pytest
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.utils import TimeoutSampler
 
 from tests.network.utils import (
     assert_nncp_successfully_configured,
@@ -13,9 +14,9 @@ from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
 from utilities.infra import get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     assert_ping_successful,
-    assert_pingable_vm,
     compose_cloud_init_data_dict,
     get_vmi_ip_v4_by_name,
+    is_destination_pingable_from_vm,
     network_device,
     network_nad,
 )
@@ -314,9 +315,19 @@ class TestConnectivityAfterNmstateChanged:
         This test verifies that connectivity wasn't broken due to change of node network configuration.
         """
         # We expect some packets lost due to change of node network configuration.
-        assert_pingable_vm(
-            src_vm=nmstate_linux_bridge_attached_running_vma,
-            dst_ip=vmb_dst_ip,
-            count=10,
-            assert_message="after NNCP changed",
-        )
+        try:
+            for sample in TimeoutSampler(
+                wait_timeout=10,
+                sleep=1,
+                func=is_destination_pingable_from_vm,
+                src_vm=nmstate_linux_bridge_attached_running_vma,
+                dst_ip=vmb_dst_ip,
+                count=10,
+            ):
+                if sample:
+                    return
+        except TimeoutError:
+            LOGGER.error(
+                f"Ping from {nmstate_linux_bridge_attached_running_vma.name} to {vmb_dst_ip} failed."
+            )
+            raise

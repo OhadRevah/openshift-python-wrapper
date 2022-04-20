@@ -31,7 +31,7 @@ from tests.compute.utils import (
 from utilities import console
 from utilities.constants import SRIOV
 from utilities.infra import ExecCommandOnPod, is_bug_open, run_ssh_commands
-from utilities.network import assert_pingable_vm, network_nad
+from utilities.network import is_destination_pingable_from_vm, network_nad
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_template_by_labels,
@@ -923,17 +923,22 @@ class TestSAPHANAVirtualMachine:
     @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
     @pytest.mark.polarion("CNV-7767")
     def test_sap_hana_vm_interfaces(self, sap_hana_vm, vm_interfaces_names):
+        failed_pingable_interfaces = []
         for interface in vm_interfaces_names:
             LOGGER.info(
                 f"Verify {sap_hana_vm.name} network connectivity via interface {interface}."
             )
-            assert_pingable_vm(
+            if not is_destination_pingable_from_vm(
                 src_vm=sap_hana_vm,
                 dst_ip="8.8.8.8",
                 count=10,
-                assert_message=f"on interface {interface}",
                 interface=interface,
-            )
+            ):
+                failed_pingable_interfaces.append(interface)
+
+        assert (
+            not failed_pingable_interfaces
+        ), f"{sap_hana_vm.name} failed to ping interfaces {failed_pingable_interfaces}."
 
     @pytest.mark.dependency(depends=[SAP_HANA_VM_TEST_NAME])
     @pytest.mark.polarion("CNV-7869")

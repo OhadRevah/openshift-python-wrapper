@@ -1183,20 +1183,16 @@ def cloud_init(ip_address):
     return cloud_init_network_data(data=network_data_data)
 
 
-def assert_pingable_vm(
+def is_destination_pingable_from_vm(
     src_vm,
     dst_ip,
     count,
-    assert_message=None,
     interface=None,
 ):
-    """Assert if there's 100% packet loss in ping"""
     ping_stat = ping(
         src_vm=src_vm,
         dst_ip=dst_ip,
         count=count,
         interface=interface,
     )[0]
-    assert (
-        float(ping_stat) < 100
-    ), f"Ping from {src_vm.name} to {dst_ip} failed {assert_message}"
+    return float(ping_stat) < 100
