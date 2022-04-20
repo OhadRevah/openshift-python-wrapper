@@ -107,7 +107,7 @@ def test_veth_removed_from_host_after_vm_deleted(
     """
     Check that veth interfaces are removed from host after VM deleted
     """
-    remove_veth_bridge_attached_vma.delete(wait=True)
+    remove_veth_bridge_attached_vma.clean_up()
     sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_3MIN,
         sleep=1,

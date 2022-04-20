@@ -59,6 +59,7 @@ from utilities.constants import (
     TIMEOUT_3MIN,
     TIMEOUT_4MIN,
     TIMEOUT_6MIN,
+    TIMEOUT_8MIN,
     TIMEOUT_10MIN,
     TIMEOUT_12MIN,
     TIMEOUT_25MIN,
@@ -375,6 +376,8 @@ class VirtualMachineForTests(VirtualMachine):
         return self
 
     def clean_up(self):
+        if self.ready:
+            self.stop(wait=True, vmi_delete_timeout=TIMEOUT_8MIN)
         super().clean_up()
         if self.custom_service:
             self.custom_service.delete(wait=True)
