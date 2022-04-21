@@ -292,3 +292,12 @@ def test_legacy_machine_type(
         vm=vm_from_template_scope_function,
         expected_machine_type=expected_machine_type,
     )
+
+
+@pytest.mark.polarion("CNV-8561")
+def test_machine_type_as_rhel_8_6(machine_type_from_kubevirt_config):
+    """Verify that machine type im KubeVirt CR match the value pc-q35-rhel8.6.0"""
+    assert machine_type_from_kubevirt_config == MachineTypesNames.pc_q35_rhel8_6, (
+        f"Machine type value is {machine_type_from_kubevirt_config}"
+        f"does not match with {MachineTypesNames.pc_q35_rhel8_6}"
+    )
