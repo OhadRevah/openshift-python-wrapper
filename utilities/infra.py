@@ -44,6 +44,7 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_6MIN,
     TIMEOUT_10MIN,
+    TIMEOUT_30MIN,
 )
 from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
 
@@ -262,7 +263,9 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
     raise NotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
 
 
-def run_ssh_commands(host, commands, get_pty=False, check_rc=True):
+def run_ssh_commands(
+    host, commands, get_pty=False, check_rc=True, timeout=TIMEOUT_30MIN
+):
     """
     Run commands via SSH
 
@@ -274,6 +277,7 @@ def run_ssh_commands(host, commands, get_pty=False, check_rc=True):
 
         get_pty (bool): get_pty parameter for remote session (equivalent to -t argument for ssh)
         check_rc (bool): if True checks command return code and raises if rc != 0
+        timeout (int): ssh exec timeout
 
     Returns:
         list: List of commands output.
@@ -285,7 +289,9 @@ def run_ssh_commands(host, commands, get_pty=False, check_rc=True):
     commands = commands if isinstance(commands[0], list) else [commands]
     with host.executor().session() as ssh_session:
         for cmd in commands:
-            rc, out, err = ssh_session.run_cmd(cmd=cmd, get_pty=get_pty)
+            rc, out, err = ssh_session.run_cmd(
+                cmd=cmd, get_pty=get_pty, timeout=timeout
+            )
             LOGGER.info(f"[SSH][{host.fqdn}] Executed: {' '.join(cmd)}")
             if rc and check_rc:
                 raise CommandExecFailed(name=cmd, err=err)

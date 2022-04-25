@@ -4,6 +4,7 @@ import shlex
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
+from paramiko import ProxyCommandFailure
 from pytest_testconfig import py_config
 
 from tests.compute.utils import get_linux_timezone, get_windows_timezone
@@ -20,7 +21,6 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     TIMEOUT_30MIN,
 )
-from utilities.exceptions import CommandExecFailed
 from utilities.infra import run_ssh_commands
 from utilities.virt import (
     vm_instance_from_template,
@@ -94,10 +94,11 @@ def restarted_persistence_vm(request, persistence_vm):
 
 def run_os_command(vm, command):
     try:
-        return run_ssh_commands(host=vm.ssh_exec, commands=shlex.split(command))[0]
-    except CommandExecFailed:
-        # On a successful command execution the return code is 0,
-        # however on RHEL, a successful reboot command execution return code is -1
+        return run_ssh_commands(
+            host=vm.ssh_exec, commands=shlex.split(command), timeout=5
+        )[0]
+    except ProxyCommandFailure:
+        # On RHEL on successful reboot command execution ssh gets stuck
         if "reboot" not in command:
             raise
 
