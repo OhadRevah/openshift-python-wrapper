@@ -3,12 +3,17 @@ import logging
 import pkgutil
 
 import pytest
-from ocp_resources.configmap import ConfigMap
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
     KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
+)
+from tests.install_upgrade_operators.strict_reconciliation.utils import (
+    get_resource_object,
+    get_resource_version_from_related_object,
+    wait_for_hco_related_object_version_change,
+    wait_for_resource_version_change,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
 from utilities.constants import TIMEOUT_10MIN
@@ -190,17 +195,6 @@ def updated_delete_resource(
     wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
-@pytest.fixture
-def kubevirt_storage_class_defaults_configmap_dict(admin_client, hco_namespace):
-    yield list(
-        ConfigMap.get(
-            dyn_client=admin_client,
-            name="kubevirt-storage-class-defaults",
-            namespace=hco_namespace.name,
-        )
-    )[0].instance.to_dict()
-
-
 @pytest.fixture(scope="module")
 def ocp_resources_submodule_list():
     """
@@ -226,3 +220,46 @@ def default_feature_gates_scope_session(kubevirt_resource_scope_session):
     return (
         kubevirt_resource_scope_session.instance.spec.configuration.developerConfiguration.featureGates
     )
+
+
+@pytest.fixture()
+def hco_status_related_objects_scope_function(hyperconverged_resource_scope_function):
+    """
+    Gets HCO.status.relatedObjects list
+    """
+    return hyperconverged_resource_scope_function.instance.status.relatedObjects
+
+
+@pytest.fixture()
+def reconciled_cr_post_hco_update(
+    request,
+    admin_client,
+    hco_namespace,
+    hco_status_related_objects_scope_function,
+):
+    resource = get_resource_object(
+        resource=request.param["resource_class"],
+        resource_name=request.param["resource_name"],
+        resource_namespace=hco_namespace.name,
+    )
+
+    start_resource_version = get_resource_version_from_related_object(
+        hco_related_objects=hco_status_related_objects_scope_function, resource=resource
+    )
+    assert start_resource_version is not None, (
+        f"For resource: {resource.name}, no resource version found "
+        "from hco.status.relatedObject"
+    )
+    LOGGER.info(
+        f"For resource: {resource.name}, kind: {resource.kind}, starting resource version: {start_resource_version}"
+    )
+    wait_for_resource_version_change(
+        resource=resource, starting_resource_version=start_resource_version
+    )
+    wait_for_hco_related_object_version_change(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        component=resource,
+        resource_kind=resource.kind,
+    )
+    yield resource

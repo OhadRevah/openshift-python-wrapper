@@ -9,14 +9,13 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.priority_class import PriorityClass
 from ocp_resources.prometheus_rule import PrometheusRule
 from ocp_resources.resource import Resource
-from ocp_resources.role import Role
-from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
 from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.ssp import SSP
 
 from utilities.constants import (
+    CDI_KUBEVIRT_HYPERCONVERGED,
     CDI_OPERATOR,
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     HCO_OPERATOR,
@@ -155,14 +154,11 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
         },
     },
     CDI: {
-        "cdi-kubevirt-hyperconverged": {
+        CDI_KUBEVIRT_HYPERCONVERGED: {
             "expected_labels": EXPECTED_STORAGE_LABELS,
         },
     },
     ConfigMap: {
-        "kubevirt-storage-class-defaults": {
-            "expected_labels": EXPECTED_STORAGE_LABELS,
-        },
         "grafana-dashboard-kubevirt-top-consumers": {
             "expected_labels": EXPECTED_COMPUTE_LABELS,
             "namespace": "openshift-config-managed",
@@ -194,16 +190,6 @@ EXPECTED_COMPONENT_LABELS_DICT_MAP = {
     PrometheusRule: {
         "kubevirt-hyperconverged-prometheus-rule": {
             "expected_labels": EXPECTED_MONITORING_LABELS,
-        },
-    },
-    Role: {
-        "hco.kubevirt.io:config-reader": {
-            "expected_labels": EXPECTED_STORAGE_LABELS,
-        },
-    },
-    RoleBinding: {
-        "hco.kubevirt.io:config-reader": {
-            "expected_labels": EXPECTED_STORAGE_LABELS,
         },
     },
     ConsoleQuickStart: {

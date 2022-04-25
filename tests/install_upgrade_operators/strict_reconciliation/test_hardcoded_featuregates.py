@@ -5,6 +5,7 @@ from tests.install_upgrade_operators.strict_reconciliation.utils import (
     assert_expected_hardcoded_feature_gates,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
+from utilities.constants import CDI_KUBEVIRT_HYPERCONVERGED
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -56,7 +57,7 @@ class TestHardcodedFeatureGates:
             pytest.param(
                 {
                     "patch": {"spec": {}},
-                    "related_object_name": "cdi-kubevirt-hyperconverged",
+                    "related_object_name": CDI_KUBEVIRT_HYPERCONVERGED,
                     "resource_func": get_hyperconverged_cdi,
                 },
                 constants.EXPECTED_CDI_HARDCODED_FEATUREGATES,

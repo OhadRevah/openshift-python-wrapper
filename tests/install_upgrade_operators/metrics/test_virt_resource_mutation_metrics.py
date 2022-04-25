@@ -20,7 +20,7 @@ from tests.install_upgrade_operators.metrics.utils import (
     get_hco_cr_modification_alert_state,
     wait_for_summary_count_to_be_expected,
 )
-from utilities.constants import SSP_KUBEVIRT_HYPERCONVERGED
+from utilities.constants import CDI_KUBEVIRT_HYPERCONVERGED, SSP_KUBEVIRT_HYPERCONVERGED
 
 
 pytestmark = pytest.mark.sno
@@ -46,7 +46,7 @@ COMPONENT_CONFIG = {
     },
     "cdi": {
         "resource_info": {
-            "comp_name": "cdi/cdi-kubevirt-hyperconverged",
+            "comp_name": f"cdi/{CDI_KUBEVIRT_HYPERCONVERGED}",
             "resource": CDI,
             "count": COUNT_FIVE,
         },
@@ -170,17 +170,6 @@ COMPONENT_CONFIG = {
             COMPONENT_CONFIG["cdi"]["resource_info"]["comp_name"],
             id="cdi",
             marks=(pytest.mark.polarion("CNV-6133")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"],
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"][
-                "comp_name"
-            ],
-            id="config_map_storage_class",
-            marks=(pytest.mark.polarion("CNV-6134")),
         ),
         pytest.param(
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],
@@ -320,18 +309,6 @@ def test_metric_invalid_change(
             COMPONENT_CONFIG["cdi"]["resource_info"]["count"],
             id="cdi",
             marks=(pytest.mark.polarion("CNV-6152")),
-        ),
-        pytest.param(
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"],
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"][
-                "comp_name"
-            ],
-            COMPONENT_CONFIG["config_map_kubevirt_storage"]["resource_info"]["count"],
-            id="config_map_storage_class",
-            marks=(pytest.mark.polarion("CNV-6153")),
         ),
         pytest.param(
             COMPONENT_CONFIG["cluster"]["resource_info"]["comp_name"],

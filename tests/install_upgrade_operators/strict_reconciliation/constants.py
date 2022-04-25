@@ -244,8 +244,6 @@ KUBEVIRT_CR_CONFIGURATION_KEY = "configuration"
 
 SCRATCH_SPACE_STORAGE_CLASS_KEY = "scratchSpaceStorageClass"
 SCRATCH_SPACE_STORAGE_CLASS_VALUE = "customScratch"
-LOCAL_STORAGE_CLASS_NAME_KEY = "localStorageClassName"
-LOCAL_STORAGE_CLASS_NAME_VALUE = "myLocalStorageClassName"
 STORAGE_IMPORT_KEY_HCO_CR = "storageImport"
 STORAGE_IMPORT_VALUE = {
     "insecureRegistries": [

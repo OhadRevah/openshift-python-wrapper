@@ -1,11 +1,31 @@
 import logging
 
 import pytest
+from ocp_resources.cdi import CDI
+from ocp_resources.kubevirt import KubeVirt
 
-from tests.install_upgrade_operators.strict_reconciliation import constants
+from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    NP_INFRA_KEY,
+    NP_INFRA_VALUE_CDI_CR,
+    NP_INFRA_VALUE_HCO_CR,
+    NP_WORKLOADS_KEY_CDI_CR,
+    NP_WORKLOADS_KEY_HCO_CR,
+    NP_WORKLOADS_VALUE_CDI_CR,
+    NP_WORKLOADS_VALUE_HCO_CR,
+    OBSOLETE_CPUS_KEY,
+    OBSOLETE_CPUS_VALUE_HCO_CR,
+    OBSOLETE_CPUS_VALUE_KUBEVIRT_CR,
+    RESOURCE_REQUIREMENTS,
+    RESOURCE_REQUIREMENTS_KEY_HCO_CR,
+    SCRATCH_SPACE_STORAGE_CLASS_KEY,
+    SCRATCH_SPACE_STORAGE_CLASS_VALUE,
+    STORAGE_IMPORT_KEY_HCO_CR,
+    STORAGE_IMPORT_VALUE,
+)
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     compare_expected_with_cr,
 )
+from utilities.constants import CDI_KUBEVIRT_HYPERCONVERGED, KUBEVIRT_HCO_NAME
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -13,37 +33,44 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 LOGGER = logging.getLogger(__name__)
 
 
+def get_resource_current_value(resource_spec, field_to_validate):
+    if field_to_validate == OBSOLETE_CPUS_KEY:
+        current_value = resource_spec["configuration"]
+    elif field_to_validate == RESOURCE_REQUIREMENTS_KEY_HCO_CR:
+        current_value = resource_spec["config"]["podResourceRequirements"]
+    elif field_to_validate == SCRATCH_SPACE_STORAGE_CLASS_KEY:
+        current_value = resource_spec["config"][SCRATCH_SPACE_STORAGE_CLASS_KEY]
+    elif field_to_validate == STORAGE_IMPORT_KEY_HCO_CR:
+        current_value = resource_spec["config"]
+    elif field_to_validate == NP_INFRA_KEY:
+        current_value = resource_spec[NP_INFRA_KEY]
+    elif field_to_validate == NP_WORKLOADS_KEY_HCO_CR:
+        current_value = resource_spec[NP_WORKLOADS_KEY_CDI_CR]
+    else:
+        pytest.fail("Bad test configuration. This should never be reached.")
+    return current_value
+
+
 class TestHCONonDefaultFields:
     @pytest.mark.parametrize(
-        ("deleted_stanza_on_hco_cr", "resource_to_verify", "expected"),
+        (
+            "deleted_stanza_on_hco_cr",
+            "reconciled_cr_post_hco_update",
+            "field_to_verify",
+            "expected",
+        ),
         [
             pytest.param(
                 {
                     "rpatch": {
                         "spec": {
-                            constants.LOCAL_STORAGE_CLASS_NAME_KEY: constants.LOCAL_STORAGE_CLASS_NAME_VALUE,
-                        }
-                    },
-                    "raise_on_fail": False,
-                },
-                constants.LOCAL_STORAGE_CLASS_NAME_KEY,
-                {
-                    f"{constants.LOCAL_STORAGE_CLASS_NAME_VALUE}.accessMode": "ReadWriteOnce",
-                    f"{constants.LOCAL_STORAGE_CLASS_NAME_VALUE}.volumeMode": "Filesystem",
-                },
-                marks=(pytest.mark.polarion("CNV-6537"),),
-                id="set_non_default_field_localStorageClassName",
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {
-                            constants.RESOURCE_REQUIREMENTS_KEY_HCO_CR: constants.RESOURCE_REQUIREMENTS
+                            RESOURCE_REQUIREMENTS_KEY_HCO_CR: RESOURCE_REQUIREMENTS
                         },
                     },
                 },
-                constants.RESOURCE_REQUIREMENTS_KEY_HCO_CR,
-                constants.RESOURCE_REQUIREMENTS["storageWorkloads"],
+                {"resource_class": CDI, "resource_name": CDI_KUBEVIRT_HYPERCONVERGED},
+                RESOURCE_REQUIREMENTS_KEY_HCO_CR,
+                RESOURCE_REQUIREMENTS["storageWorkloads"],
                 marks=(pytest.mark.polarion("CNV-6541")),
                 id="set_non_default_field_resourceRequirements",
             ),
@@ -51,12 +78,13 @@ class TestHCONonDefaultFields:
                 {
                     "rpatch": {
                         "spec": {
-                            constants.SCRATCH_SPACE_STORAGE_CLASS_KEY: constants.SCRATCH_SPACE_STORAGE_CLASS_VALUE,
+                            SCRATCH_SPACE_STORAGE_CLASS_KEY: SCRATCH_SPACE_STORAGE_CLASS_VALUE,
                         }
                     },
                 },
-                constants.SCRATCH_SPACE_STORAGE_CLASS_KEY,
-                constants.SCRATCH_SPACE_STORAGE_CLASS_VALUE,
+                {"resource_class": CDI, "resource_name": CDI_KUBEVIRT_HYPERCONVERGED},
+                SCRATCH_SPACE_STORAGE_CLASS_KEY,
+                SCRATCH_SPACE_STORAGE_CLASS_VALUE,
                 marks=(pytest.mark.polarion("CNV-6542")),
                 id="set_non_default_field_scratchSpaceStorageClass",
             ),
@@ -64,12 +92,13 @@ class TestHCONonDefaultFields:
                 {
                     "rpatch": {
                         "spec": {
-                            constants.OBSOLETE_CPUS_KEY: constants.OBSOLETE_CPUS_VALUE_HCO_CR,
+                            OBSOLETE_CPUS_KEY: OBSOLETE_CPUS_VALUE_HCO_CR,
                         }
                     },
                 },
-                constants.OBSOLETE_CPUS_KEY,
-                constants.OBSOLETE_CPUS_VALUE_KUBEVIRT_CR,
+                {"resource_class": KubeVirt, "resource_name": KUBEVIRT_HCO_NAME},
+                OBSOLETE_CPUS_KEY,
+                OBSOLETE_CPUS_VALUE_KUBEVIRT_CR,
                 marks=(pytest.mark.polarion("CNV-6544")),
                 id="set_non_default_field_obsoleteCPUs",
             ),
@@ -77,12 +106,13 @@ class TestHCONonDefaultFields:
                 {
                     "rpatch": {
                         "spec": {
-                            constants.STORAGE_IMPORT_KEY_HCO_CR: constants.STORAGE_IMPORT_VALUE,
+                            STORAGE_IMPORT_KEY_HCO_CR: STORAGE_IMPORT_VALUE,
                         }
                     },
                 },
-                constants.STORAGE_IMPORT_KEY_HCO_CR,
-                constants.STORAGE_IMPORT_VALUE,
+                {"resource_class": CDI, "resource_name": CDI_KUBEVIRT_HYPERCONVERGED},
+                STORAGE_IMPORT_KEY_HCO_CR,
+                STORAGE_IMPORT_VALUE,
                 marks=(pytest.mark.polarion("CNV-6545")),
                 id="set_non_default_field_storage_import",
             ),
@@ -90,12 +120,13 @@ class TestHCONonDefaultFields:
                 {
                     "rpatch": {
                         "spec": {
-                            constants.NP_INFRA_KEY: constants.NP_INFRA_VALUE_HCO_CR,
+                            NP_INFRA_KEY: NP_INFRA_VALUE_HCO_CR,
                         }
                     },
                 },
-                constants.NP_INFRA_KEY,
-                constants.NP_INFRA_VALUE_CDI_CR,
+                {"resource_class": CDI, "resource_name": CDI_KUBEVIRT_HYPERCONVERGED},
+                NP_INFRA_KEY,
+                NP_INFRA_VALUE_CDI_CR,
                 marks=(pytest.mark.polarion("CNV-6539")),
                 id="set_non_default_field_infra",
             ),
@@ -103,69 +134,36 @@ class TestHCONonDefaultFields:
                 {
                     "rpatch": {
                         "spec": {
-                            constants.NP_WORKLOADS_KEY_HCO_CR: constants.NP_WORKLOADS_VALUE_HCO_CR,
+                            NP_WORKLOADS_KEY_HCO_CR: NP_WORKLOADS_VALUE_HCO_CR,
                         }
                     },
                 },
-                constants.NP_WORKLOADS_KEY_HCO_CR,
-                constants.NP_WORKLOADS_VALUE_CDI_CR,
+                {"resource_class": CDI, "resource_name": CDI_KUBEVIRT_HYPERCONVERGED},
+                NP_WORKLOADS_KEY_HCO_CR,
+                NP_WORKLOADS_VALUE_CDI_CR,
                 marks=(pytest.mark.polarion("CNV-6540")),
                 id="set_non_default_field_workloads",
             ),
         ],
-        indirect=["deleted_stanza_on_hco_cr"],
+        indirect=["deleted_stanza_on_hco_cr", "reconciled_cr_post_hco_update"],
     )
-    def test_non_default_fields(
+    def test_non_default_fields_cdi(
         self,
-        admin_client,
-        hco_namespace,
+        hco_status_related_objects_scope_function,
         deleted_stanza_on_hco_cr,
-        kubevirt_storage_class_defaults_configmap_dict,
-        kubevirt_hyperconverged_spec_scope_function,
-        cdi_resource,
-        resource_to_verify,
+        reconciled_cr_post_hco_update,
+        field_to_verify,
         expected,
     ):
-        if resource_to_verify == constants.LOCAL_STORAGE_CLASS_NAME_KEY:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=kubevirt_storage_class_defaults_configmap_dict["data"],
-            )
-        elif resource_to_verify == constants.OBSOLETE_CPUS_KEY:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=kubevirt_hyperconverged_spec_scope_function["configuration"],
-            )
-        elif resource_to_verify == constants.RESOURCE_REQUIREMENTS_KEY_HCO_CR:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=cdi_resource.instance.to_dict()["spec"]["config"][
-                    "podResourceRequirements"
-                ],
-            )
-        elif resource_to_verify == constants.SCRATCH_SPACE_STORAGE_CLASS_KEY:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=cdi_resource.instance.to_dict()["spec"]["config"][
-                    constants.SCRATCH_SPACE_STORAGE_CLASS_KEY
-                ],
-            )
-        elif resource_to_verify == constants.STORAGE_IMPORT_KEY_HCO_CR:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=cdi_resource.instance.to_dict()["spec"]["config"],
-            )
-        elif resource_to_verify == constants.NP_INFRA_KEY:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=cdi_resource.instance.to_dict()["spec"][constants.NP_INFRA_KEY],
-            )
-        elif resource_to_verify == constants.NP_WORKLOADS_KEY_HCO_CR:
-            assert not compare_expected_with_cr(
-                expected=expected,
-                actual=cdi_resource.instance.to_dict()["spec"][
-                    constants.NP_WORKLOADS_KEY_CDI_CR
-                ],
-            )
-        else:
-            pytest.fail("Bad test configuration. This should never be reached.")
+        LOGGER.info(
+            f"Validating: {reconciled_cr_post_hco_update.name} for reconciliation."
+        )
+        current_value = get_resource_current_value(
+            resource_spec=reconciled_cr_post_hco_update.instance.to_dict()["spec"],
+            field_to_validate=field_to_verify,
+        )
+
+        assert not compare_expected_with_cr(
+            expected=expected,
+            actual=current_value,
+        ), f"Expected value of {reconciled_cr_post_hco_update.name}: {expected}, actual value: {current_value}"

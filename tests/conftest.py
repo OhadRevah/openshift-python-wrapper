@@ -74,6 +74,7 @@ from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (
+    CDI_KUBEVIRT_HYPERCONVERGED,
     HCO_SUBSCRIPTION,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -2333,7 +2334,7 @@ def kmp_enabled_ns(kmp_vm_label):
 
 @pytest.fixture(scope="session")
 def cdi(hco_namespace):
-    cdi = CDI(name="cdi-kubevirt-hyperconverged")
+    cdi = CDI(name=CDI_KUBEVIRT_HYPERCONVERGED)
     assert cdi.instance is not None
     yield cdi
 
