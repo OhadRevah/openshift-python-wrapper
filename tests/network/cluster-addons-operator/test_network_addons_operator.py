@@ -51,6 +51,7 @@ EXPECTED_CNAO_COMP = [
     "kubeMacPool",
     "linuxBridge",
     "ovs",
+    "tlsSecurityProfile",
 ]
 MANAGED_BY = "managed-by"
 COMP_LABELS = ["component", "version", "part-of", MANAGED_BY]
