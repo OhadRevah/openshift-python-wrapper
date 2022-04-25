@@ -162,17 +162,6 @@ def resource_type(request, admin_client):
     return resource_type
 
 
-@pytest.fixture(scope="module")
-def running_sriov_network_operator_containers(admin_client, sriov_namespace):
-    pods_and_containers = []
-    for pod in Pod.get(admin_client, namespace=sriov_namespace.name):
-        for container in pod.instance["status"].get("containerStatuses", []):
-            if container["ready"]:
-                pods_and_containers.append((pod, container))
-    assert pods_and_containers, "No sriov pods were found."
-    return pods_and_containers
-
-
 @pytest.fixture(scope="function")
 def config_map_by_name(request, admin_client):
     cm_name, cm_namespace = request.param

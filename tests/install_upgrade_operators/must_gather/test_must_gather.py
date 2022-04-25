@@ -196,18 +196,6 @@ class TestMustGatherCluster:
                 id="kubemacpool_pods",
             ),
             pytest.param(
-                "app=sriov-device-plugin",
-                py_config["sriov_namespace"],
-                marks=(pytest.mark.polarion("CNV-2710")),
-                id="test_sriov_device_plugin_pods",
-            ),
-            pytest.param(
-                "app=sriov-cni",
-                py_config["sriov_namespace"],
-                marks=(pytest.mark.polarion("CNV-2709")),
-                id="test_sriov_cni_pods",
-            ),
-            pytest.param(
                 "app=containerized-data-importer",
                 py_config["hco_namespace"],
                 marks=(pytest.mark.polarion("CNV-3369")),
@@ -360,36 +348,6 @@ class TestMustGatherCluster:
             running_hco_containers=running_hco_containers,
             label_selector=label_selector,
             namespace=py_config["hco_namespace"],
-        )
-
-    @pytest.mark.parametrize(
-        "label_selector",
-        [
-            pytest.param(
-                {"app": "sriov-device-plugin"},
-                marks=(pytest.mark.polarion("CNV-5355")),
-                id="test_sriov_device_plugin_logs",
-            ),
-            pytest.param(
-                {"app": "sriov-cni"},
-                marks=(pytest.mark.polarion("CNV-5354")),
-                id="test_sriov_cni_logs",
-            ),
-        ],
-    )
-    def test_sriov_logs_gathering(
-        self,
-        skip_when_no_sriov,
-        sriov_namespace,
-        collected_cluster_must_gather,
-        running_sriov_network_operator_containers,
-        label_selector,
-    ):
-        check_logs(
-            cnv_must_gather=collected_cluster_must_gather,
-            running_hco_containers=running_sriov_network_operator_containers,
-            label_selector=label_selector,
-            namespace=sriov_namespace.name,
         )
 
     @pytest.mark.parametrize(
