@@ -21,12 +21,12 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     EXPCT_CERTC_DEFAULTS,
     EXPCT_FG_CUSTOM_S,
     EXPCT_FG_CUSTOM_W,
-    EXPCT_FG_DEFAULTS,
     EXPCT_LM_CUSTOM_C,
     EXPCT_LM_CUSTOM_PM,
     EXPCT_LM_CUSTOM_PO,
     EXPCT_LM_CUSTOM_PT,
     EXPCT_LM_DEFAULTS,
+    FG_DEFAULTS,
     FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
     LIVE_MIGRATION_CONFIG_KEY,
@@ -292,7 +292,7 @@ class TestCRDefaultsOnStanzaDeletion:
                         "spec": {"featureGates": {"withHostPassthroughCPU": None}}
                     },
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_whp_none",
                 marks=(pytest.mark.polarion("CNV-6394")),
             ),
@@ -300,7 +300,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {"featureGates": {"sriovLiveMigration": None}}},
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_slm_none",
                 marks=(pytest.mark.polarion("CNV-6395")),
             ),
@@ -308,7 +308,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {"featureGates": {}}},
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_empty",
                 marks=(pytest.mark.polarion("CNV-6396")),
             ),
@@ -316,7 +316,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {"featureGates": None}},
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_none",
                 marks=(pytest.mark.polarion("CNV-6397")),
             ),
@@ -324,7 +324,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": {}},
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_spec_empty",
                 marks=(pytest.mark.polarion("CNV-6398")),
             ),
@@ -332,7 +332,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {"spec": None},
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_spec_none",
                 marks=(pytest.mark.polarion("CNV-6399")),
             ),
@@ -340,7 +340,7 @@ class TestCRDefaultsOnStanzaDeletion:
                 {
                     "rpatch": {},
                 },
-                EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 id="defaults_fg_cr_empty",
                 marks=(pytest.mark.polarion("CNV-6400")),
             ),

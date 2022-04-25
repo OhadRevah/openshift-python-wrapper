@@ -2,9 +2,17 @@ import logging
 
 import pytest
 
-from tests.install_upgrade_operators.strict_reconciliation import constants
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
+    DEPLOY_TEKTON_TASK,
+    FG_DEFAULTS,
+    FG_DISABLED,
     FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
+    FG_ENABLED,
+    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
+    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+    KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
+    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
+    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     validate_featuregates_in_kv_cr,
@@ -27,12 +35,12 @@ class TestHCOOptionalFeatureGatesSuite:
         "feature_gate_under_test",
         [
             pytest.param(
-                constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
+                KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
                 marks=(pytest.mark.polarion("CNV-6267")),
                 id="sriov_live_migration_exists_in_kubevirt_cr",
             ),
             pytest.param(
-                constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+                KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
                 marks=(pytest.mark.polarion("CNV-6268"), pytest.mark.sno()),
                 id="with_host_passthrough_cpu_not_exist_in_kubevirt_cr",
             ),
@@ -41,9 +49,7 @@ class TestHCOOptionalFeatureGatesSuite:
     def test_optional_featuregates_not_exist_in_kubevirt_cr(
         self, kubevirt_feature_gates, feature_gate_under_test
     ):
-        assert constants.KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[
-            feature_gate_under_test
-        ] == (
+        assert KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[feature_gate_under_test] == (
             feature_gate_under_test in kubevirt_feature_gates
         ), f"{feature_gate_under_test} should not be in KubeVirt's feature gate list"
 
@@ -52,25 +58,25 @@ class TestHCOOptionalFeatureGatesSuite:
         [
             pytest.param(
                 [
-                    constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
+                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
                 ],
                 [
-                    constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
+                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
                 ],
                 marks=(pytest.mark.polarion("CNV-6269")),
                 id="optional_featuregates_removed_from_kubevirt_cr",
             ),
             pytest.param(
-                [constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
-                [constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
+                [KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
+                [KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
                 marks=(pytest.mark.polarion("CNV-6270"), pytest.mark.sno()),
                 id="optional_featuregates_withhostpassthroughcpu_removed_from_kubevirt_cr",
             ),
             pytest.param(
-                [constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
-                [constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
+                [KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
+                [KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
                 marks=(pytest.mark.polarion("CNV-6271")),
                 id="optional_featuregates_sriovlivemigration_removed_from_kubevirt_cr",
             ),
@@ -115,10 +121,10 @@ class TestHCOOptionalFeatureGatesSuite:
                 {
                     "fgs": ["fakeGate", "Sidecar"],
                 },
-                constants.EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 {
-                    "fakeGate": False,
-                    "Sidecar": False,
+                    "fakeGate": FG_DISABLED,
+                    "Sidecar": FG_DISABLED,
                 },
                 marks=(pytest.mark.polarion("CNV-6273"), pytest.mark.sno()),
                 id="optional_featuregates_fake_removed_from_hco_cr",
@@ -127,9 +133,9 @@ class TestHCOOptionalFeatureGatesSuite:
                 {
                     "fgs": ["LiveMigration"],
                 },
-                constants.EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 {
-                    "LiveMigration": True,
+                    "LiveMigration": FG_ENABLED,
                 },
                 marks=(pytest.mark.polarion("CNV-6274")),
                 id="optional_featuregates_hardcoded_kubevirt_feature_gates_is_removed_from_hco_cr",
@@ -138,9 +144,9 @@ class TestHCOOptionalFeatureGatesSuite:
                 {
                     "fgs": ["Sidecar"],
                 },
-                constants.EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 {
-                    "Sidecar": False,
+                    "Sidecar": FG_DISABLED,
                 },
                 marks=(pytest.mark.polarion("CNV-6276"), pytest.mark.sno()),
                 id="optional_featuregates_unsupported_removed_from_hco_cr",
@@ -149,7 +155,7 @@ class TestHCOOptionalFeatureGatesSuite:
                 {
                     "fgs": ["HonorWaitForFirstConsumer"],
                 },
-                constants.EXPCT_FG_DEFAULTS,
+                FG_DEFAULTS,
                 None,
                 marks=(pytest.mark.polarion("CNV-6278"), pytest.mark.sno()),
                 id="optional_featuregates_hardcoded_cdi_feature_gates_is_removed_from_hco_cr",
@@ -157,50 +163,53 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": [
-                        constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
-                        constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
+                        HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME,
+                        HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME,
                     ],
                 },
                 {
+                    DEPLOY_TEKTON_TASK: FG_DISABLED,
                     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-                    constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
-                    constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
+                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
+                    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
                 },
                 {
-                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
-                    constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
+                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
+                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_DISABLED,
                 },
                 marks=(pytest.mark.polarion("CNV-6280")),
                 id="modify_hco_cr_feature_gates",
             ),
             pytest.param(
                 {
-                    "fgs": [constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
+                    "fgs": [HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME],
                 },
                 {
+                    DEPLOY_TEKTON_TASK: FG_DISABLED,
                     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-                    constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
-                    constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
+                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
+                    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
                 },
                 {
-                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: True,
-                    constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
+                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_ENABLED,
+                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
                 },
                 marks=(pytest.mark.polarion("CNV-6281")),
                 id="modify_hco_cr_feature_gates_with_host_passthrough_cpu",
             ),
             pytest.param(
                 {
-                    "fgs": [constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
+                    "fgs": [HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME],
                 },
                 {
+                    DEPLOY_TEKTON_TASK: FG_DISABLED,
                     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-                    constants.HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: False,
-                    constants.HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
+                    HCO_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_DISABLED,
+                    HCO_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
                 },
                 {
-                    constants.KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: False,
-                    constants.KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: True,
+                    KV_WITH_HOST_PASSTHROUGH_CPU_FG_FIELD_NAME: FG_DISABLED,
+                    KV_SRIOV_LIVE_MIGRATION_FG_FIELD_NAME: FG_ENABLED,
                 },
                 marks=(pytest.mark.polarion("CNV-6282")),
                 id="modify_hco_cr_feature_gates_sriov_live_migration",

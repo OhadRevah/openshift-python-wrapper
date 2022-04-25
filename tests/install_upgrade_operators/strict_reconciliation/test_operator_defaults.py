@@ -26,6 +26,7 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     LIVE_MIGRATION_CONFIG_KEY,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
+    assert_expected_hardcoded_feature_gates,
     compare_expected_with_cr,
     expected_certconfig_stanza,
 )
@@ -113,13 +114,6 @@ class TestOperatorsDefaults:
                 [],
                 marks=(pytest.mark.polarion("CNV-6652"),),
                 id="verify_defaults_livemigrationconfig_kubevirt_cr",
-            ),
-            pytest.param(
-                EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
-                "kubevirt",
-                ["configuration", "developerConfiguration", "featureGates"],
-                marks=(pytest.mark.polarion("CNV-6426"),),
-                id="verify_defaults_hardcoded_featuregates_kubevirt_cr",
             ),
             pytest.param(
                 EXPECTED_CDI_HARDCODED_FEATUREGATES,
@@ -229,4 +223,15 @@ class TestOperatorsDefaults:
         ), (
             "the key exists, not as expected: "
             f"key={SIDECAR_FEATURE_GATE_KEY.lower()} spec_featuregates={kubevirt_feature_gates}"
+        )
+
+    @pytest.mark.post_upgrade
+    @pytest.mark.polarion("CNV-6426")
+    def test_default_hardcoded_featuregates_kubevirt_cr(
+        self, default_feature_gates_scope_session, hco_spec
+    ):
+        assert_expected_hardcoded_feature_gates(
+            actual=default_feature_gates_scope_session,
+            expected=EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
+            hco_spec=hco_spec,
         )

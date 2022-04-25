@@ -8,7 +8,6 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CUSTOM_HCO_CR_SPEC,
-    EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
     KV_CR_FEATUREGATES_HCO_CR_DEFAULTS,
 )
 from tests.install_upgrade_operators.utils import wait_for_stabilize
@@ -144,17 +143,11 @@ def hco_with_non_default_feature_gates(
     hco_namespace,
     hyperconverged_resource_scope_function,
 ):
-    wait_for_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
     new_fgs = request.param["fgs"]
     hco_fgs = hyperconverged_resource_scope_function.instance.to_dict()["spec"][
         "featureGates"
     ]
-    assert all(
-        KV_CR_FEATUREGATES_HCO_CR_DEFAULTS[f] == v for f, v in hco_fgs.items()
-    ), (
-        f"HCO featuregates values before testing: {hco_fgs} are not as expected before testing"
-        f" {KV_CR_FEATUREGATES_HCO_CR_DEFAULTS}"
-    )
+
     for fg in new_fgs:
         hco_fgs[fg] = True
     with update_custom_resource(
@@ -187,7 +180,6 @@ def updated_delete_resource(
     request,
     admin_client,
     hco_namespace,
-    expected_kubevirt_hardcoded_feature_gates,
 ):
     cr = request.param["resource_func"](
         admin_client=admin_client, hco_namespace=hco_namespace
@@ -230,10 +222,7 @@ def related_objects(hyperconverged_resource_scope_module):
 
 
 @pytest.fixture(scope="session")
-def expected_kubevirt_hardcoded_feature_gates(sno_cluster):
-    hardcoded_featuregates = set(EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES)
-    if sno_cluster:
-        hardcoded_featuregates = set(hardcoded_featuregates) - set(
-            DISABLED_KUBEVIRT_FEATUREGATES_IN_SNO
-        )
-    return hardcoded_featuregates
+def default_feature_gates_scope_session(kubevirt_resource_scope_session):
+    return (
+        kubevirt_resource_scope_session.instance.spec.configuration.developerConfiguration.featureGates
+    )
