@@ -89,6 +89,7 @@ ALL_CNV_CRDS = [
     f"objecttransfers.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
     f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
     f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"tektontasks.{Resource.ApiGroup.TEKTON_TASKS_KUBEVIRT_IO}",
     f"virtualmachineclusterflavors.{Resource.ApiGroup.FLAVOR_KUBEVIRT_IO}",
     f"virtualmachineflavors.{Resource.ApiGroup.FLAVOR_KUBEVIRT_IO}",
     f"virtualmachineinstancemigrations.{Resource.ApiGroup.KUBEVIRT_IO}",
