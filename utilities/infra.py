@@ -929,59 +929,59 @@ def cluster_sanity(
     skip_cluster_sanity_check = "--cluster-sanity-skip-check"
     skip_storage_classes_check = "--cluster-sanity-skip-storage-check"
     skip_nodes_check = "--cluster-sanity-skip-nodes-check"
+    skip_hco_status_condition_check = "--cluster-sanity-skip-hco-check"
     exceptions_filename = "cluster_sanity_failure.txt"
-
-    if request.session.config.getoption(skip_cluster_sanity_check):
-        LOGGER.warning(
-            f"Skipping cluster sanity check, got {skip_cluster_sanity_check}"
+    try:
+        if request.session.config.getoption(skip_cluster_sanity_check):
+            LOGGER.warning(
+                f"Skipping cluster sanity check, got {skip_cluster_sanity_check}"
+            )
+            return
+        LOGGER.info(
+            f"Running cluster sanity. (To skip cluster sanity check pass {skip_cluster_sanity_check} to pytest)"
         )
-        return
-
-    LOGGER.info(
-        f"Running cluster sanity. (To skip nodes check pass {skip_cluster_sanity_check} to pytest)"
-    )
-    # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
-    if request.session.config.getoption(skip_storage_classes_check):
-        LOGGER.warning(
-            f"Skipping storage classes check, got {skip_storage_classes_check}"
-        )
-
-    else:
-        try:
+        # Check storage class only if --cluster-sanity-skip-storage-check not passed to pytest.
+        if request.session.config.getoption(skip_storage_classes_check):
+            LOGGER.warning(
+                f"Skipping storage classes check, got {skip_storage_classes_check}"
+            )
+        else:
             LOGGER.info(
-                f"Check storage classes sanity. (To skip nodes check pass {skip_storage_classes_check} to pytest)"
+                f"Check storage classes sanity. (To skip storage class sanity check pass {skip_storage_classes_check} "
+                f"to pytest)"
             )
             _storage_sanity_check()
-        except ClusterSanityError as ex:
-            exit_pytest_execution(
-                filename=exceptions_filename,
-                message=ex.err_str,
-                junitxml_property=junitxml_property,
+
+        # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
+        if request.session.config.getoption(skip_nodes_check):
+            LOGGER.warning(f"Skipping nodes check, got {skip_nodes_check}")
+
+        else:
+            # validate that all the nodes are ready and schedulable and CNV pods are running
+            LOGGER.info(
+                f"Check nodes sanity. (To skip nodes sanity check pass {skip_nodes_check} to pytest)"
             )
-
-    # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
-    if request.session.config.getoption("--cluster-sanity-skip-nodes-check"):
-        LOGGER.warning(f"Skipping nodes check, got {skip_nodes_check}")
-
-    else:
-        # validate that all the nodes are ready and schedulable and CNV pods are running
-        LOGGER.info(
-            f"Check nodes sanity. (To skip nodes check pass {skip_nodes_check} to pytest)"
-        )
-        try:
             validate_nodes_ready(nodes=nodes)
             validate_nodes_schedulable(nodes=nodes)
             wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
+
+        # Check hco.status.conditions only if --cluster-sanity-skip-hco-check not passed to pytest.
+        if request.session.config.getoption(skip_hco_status_condition_check):
+            LOGGER.warning(
+                f"Skipping HCO status conditions check, got {skip_hco_status_condition_check}"
+            )
+        else:
+            # validate that hco.status.conditions indicates it is healthy
             validate_hco_status_conditions(
                 hco_status_conditions=hco_status_conditions,
                 expected_hco_status=expected_hco_status,
             )
-        except ClusterSanityError as ex:
-            exit_pytest_execution(
-                filename=exceptions_filename,
-                message=ex.err_str,
-                junitxml_property=junitxml_property,
-            )
+    except ClusterSanityError as ex:
+        exit_pytest_execution(
+            filename=exceptions_filename,
+            message=ex.err_str,
+            junitxml_property=junitxml_property,
+        )
 
 
 @contextmanager

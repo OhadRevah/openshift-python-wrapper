@@ -393,6 +393,11 @@ def pytest_addoption(parser):
         help="Skip cluster_sanity check",
         action="store_true",
     )
+    cluster_sanity_group.addoption(
+        "--cluster-sanity-skip-hco-check",
+        help="Skip HCO status conditions check in cluster_sanity fixture",
+        action="store_true",
+    )
 
     # Log collector group
     log_collector_group.addoption(
