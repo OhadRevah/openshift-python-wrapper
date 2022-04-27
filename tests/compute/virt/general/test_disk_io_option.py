@@ -11,6 +11,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
+from utilities.constants import ROOTDISK
 from utilities.storage import create_or_update_data_source
 from utilities.virt import get_guest_os_info, vm_instance_from_template
 
@@ -42,11 +43,11 @@ def check_disk_io_option_on_domain_xml(vm, expected_disk_io_option):
     driver_io = None
     if "Windows" not in guest_os_info["name"]:
         for disk_element in vm.vmi.xml_dict["domain"]["devices"]["disk"]:
-            if disk_element["alias"]["@name"] == f"ua-{vm.name}":
+            if disk_element["alias"]["@name"] == f"ua-{ROOTDISK}":
                 driver_io = disk_element["driver"]["@io"]
     else:
         disk = vm.vmi.xml_dict["domain"]["devices"]["disk"]
-        if disk["source"]["@dev"] == f"/dev/{vm.name}":
+        if disk["source"]["@dev"] == f"/dev/{ROOTDISK}":
             driver_io = disk["driver"]["@io"]
     assert (
         driver_io == expected_disk_io_option

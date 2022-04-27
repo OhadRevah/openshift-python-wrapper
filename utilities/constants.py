@@ -261,6 +261,7 @@ HCO_SUBSCRIPTION = "hco-operatorhub"
 
 # VM configuration
 LIVE_MIGRATE = "LiveMigrate"
+ROOTDISK = "rootdisk"
 
 # W/A for BZ 2026621
 # TODO: Remove after BZ 2026621 fixed

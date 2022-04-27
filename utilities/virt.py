@@ -52,6 +52,7 @@ from utilities.constants import (
     OS_FLAVOR_FEDORA,
     OS_FLAVOR_WINDOWS,
     OS_LOGIN_PARAMS,
+    ROOTDISK,
     SSH_PORT_22,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
@@ -441,10 +442,8 @@ class VirtualMachineForTests(VirtualMachine):
                 .setdefault("devices", {})
                 .setdefault("disks", [])
             )
-            # In VM from template, rootdisk is named as the VM name
-            disk_name = self.name if self.is_vm_from_template else "rootdisk"
             for disk in disks_spec:
-                if disk["name"] == disk_name:
+                if disk["name"] == ROOTDISK:
                     if self.disk_io_options:
                         disk["io"] = self.disk_io_options
                     if self.dedicated_iothread:
