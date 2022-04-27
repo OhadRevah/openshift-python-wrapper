@@ -1,24 +1,18 @@
+import json
 import logging
-import re
 import subprocess
 from collections import defaultdict
 
 import pytest
+from packaging.version import Version
 
-from utilities.constants import VIRT_API
 from utilities.infra import is_bug_open
 
 
 LOGGER = logging.getLogger(__name__)
 OC_ADM_LOGS_COMMAND = "oc adm node-logs"
-ROLE_COMMAND = "--role=master"
 AUDIT_LOGS_PATH = "--path=kube-apiserver"
-DEPRECATED_API_VERSION = "1.22"
-IGNORED_COMPONENTS_LIST = [
-    "cluster-version-operator",
-    "kube-controller-manager",
-    "cluster-policy-controller",
-]
+DEPRECATED_API_MAX_VERSION = "1.25"
 
 
 class DeprecatedAPIError(Exception):
@@ -31,11 +25,73 @@ class DeprecatedAPIError(Exception):
         super().__init__(self.message)
 
 
+def get_deprecated_calls_from_log(log, node):
+    return subprocess.getoutput(
+        f'{OC_ADM_LOGS_COMMAND} {node} {AUDIT_LOGS_PATH}/{log} | grep \'"k8s.io/deprecated":"true"\''
+    ).splitlines()
+
+
+def get_deprecated_log_line_dict(logs, node):
+    for log in logs:
+        deprecated_api_lines = get_deprecated_calls_from_log(log=log, node=node)
+        if deprecated_api_lines:
+            for line in deprecated_api_lines:
+                yield json.loads(line)
+
+
+def skip_component_check(user_agent, deprecation_version):
+    ignored_components_list = [
+        "cluster-version-operator",
+        "kube-controller-manager",
+        "cluster-policy-controller",
+        "jaeger-operator",
+    ]
+
+    # Skip if deprecated version does not exist
+    if not deprecation_version:
+        return True
+
+    # Skip OCP core and kubernetes components
+    for comp_name in ignored_components_list:
+        if comp_name in user_agent:
+            return True
+
+    # Skip if deprecated version is greater than DEPRECATED_API_MAX_VERSION
+    if Version(deprecation_version) > Version(DEPRECATED_API_MAX_VERSION):
+        return True
+
+    return False
+
+
+def failure_not_in_component_list(component, annotations, audit_log_entry_dict):
+    object_ref_str = "objectRef"
+
+    for failure_entry in component:
+        if (
+            annotations != failure_entry["annotations"]
+            and audit_log_entry_dict[object_ref_str] != failure_entry[object_ref_str]
+        ):
+            return True
+
+    return False
+
+
+def format_printed_deprecations_dict(deprecated_calls):
+    formatted_output = ""
+    for comp, errors in deprecated_calls.items():
+        formatted_output += f"Component: {comp}\n\nCalls:\n"
+        for error in errors:
+            formatted_output += f"\t{error}\n"
+        formatted_output += "\n\n\n"
+
+    return formatted_output
+
+
 @pytest.fixture()
 def audit_logs():
     """Get audit logs names"""
     output = subprocess.getoutput(
-        f"{OC_ADM_LOGS_COMMAND} {ROLE_COMMAND} {AUDIT_LOGS_PATH}| grep audit"
+        f"{OC_ADM_LOGS_COMMAND} --role=master {AUDIT_LOGS_PATH} | grep audit"
     ).splitlines()
     nodes_logs = defaultdict(list)
     for data in output:
@@ -49,84 +105,64 @@ def audit_logs():
     return nodes_logs
 
 
-def get_deprecated_calls_from_log(log, node):
-    return subprocess.getoutput(
-        f'{OC_ADM_LOGS_COMMAND} {node} {AUDIT_LOGS_PATH}/{log} | grep \'"k8s.io/deprecated":"true"\'|grep'
-        f' \'"k8s.io/removed-release":"{DEPRECATED_API_VERSION}"\''
-    ).splitlines()
-
-
-def get_log_output(logs, node):
-    for log in logs:
-        yield get_deprecated_calls_from_log(log=log, node=node)
-
-
-def get_deprecated_apis(audit_logs_dict):
+@pytest.fixture()
+def deprecated_apis_calls(audit_logs):
     """Go over master nodes audit logs and look for calls using deprecated APIs"""
-
-    def _extract_data_from_log(line):
-        return re.search(
-            r'.*"userAgent":(?P<useragent>.*?),.'
-            r'*"annotations".*(?P<reason>"authorization.k8s.io/reason":.*?),.*',
-            line,
-        ).groupdict()
-
     failed_api_calls = defaultdict(list)
-    for node, logs in audit_logs_dict.items():
-        for output in get_log_output(logs=logs, node=node):
-            for line in output:
-                result_dict = _extract_data_from_log(line=line)
-                user_agent = result_dict["useragent"]
-                component = failed_api_calls.get(user_agent)
-                # Add to dictionary only if the reason does not already exist or add a key for a new component
-                # Skip OCP core and kubernetes components
-                if not [
-                    True
-                    for comp_name in IGNORED_COMPONENTS_LIST
-                    if comp_name in user_agent
-                ] and (
-                    (
-                        component
-                        and [
-                            True
-                            for entry in component
-                            if result_dict["reason"] not in entry
-                        ]
-                    )
-                    or not component
+    for node, logs in audit_logs.items():
+        for audit_log_entry_dict in get_deprecated_log_line_dict(logs=logs, node=node):
+            annotations = audit_log_entry_dict["annotations"]
+            user_agent = audit_log_entry_dict["userAgent"]
+            component = failed_api_calls.get(user_agent)
+
+            if skip_component_check(
+                user_agent=user_agent,
+                deprecation_version=annotations.get("k8s.io/removed-release"),
+            ):
+                continue
+
+            # Add new component to dict if not already in it
+            if not component:
+                failed_api_calls[user_agent].append(audit_log_entry_dict)
+
+            # Add failure dict if failure annotations and object_ref not in component list of errors
+            else:
+                if failure_not_in_component_list(
+                    component=component,
+                    annotations=annotations,
+                    audit_log_entry_dict=audit_log_entry_dict,
                 ):
-                    failed_api_calls[user_agent].append(line)
+                    failed_api_calls[user_agent].append(audit_log_entry_dict)
 
     return failed_api_calls
 
 
-@pytest.mark.polarion("CNV-6679")
-def test_deprecated_apis_in_audit_logs(audit_logs):
-    def _format_printed_dict():
-        formatted_output = ""
-        for comp, errors in deprecated_calls.items():
-            formatted_output += f"Component: {comp}\n\nCalls:\n"
-            for error in errors:
-                formatted_output += f"\t{error}\n"
-            formatted_output += "\n\n\n"
-        return formatted_output
-
-    LOGGER.info(f"Test deprecated API calls, version {DEPRECATED_API_VERSION}")
-    deprecated_calls = get_deprecated_apis(audit_logs_dict=audit_logs)
-
-    # Remove components with open bugs
+@pytest.fixture()
+def filtered_deprecated_api_calls(deprecated_apis_calls):
+    # Remove components with open bugs, key: component name (userAgent), value: bug id
+    network_operator_bug = 2079422
     components_bugs = {
-        VIRT_API: 1972762,
-        "node-maintenance-operator": 1972784,
-        "rook": 1975581,
+        "cluster-network-operator": network_operator_bug,
+        "ovnkube": network_operator_bug,
+        "rook": 2079919,
     }
-    for component in deprecated_calls.copy():
-        if [
-            True
-            for comp, bug in components_bugs.items()
-            if comp in component and is_bug_open(bug_id=bug)
-        ]:
-            deprecated_calls.pop(component)
+    for component in deprecated_apis_calls.copy():
+        for comp, bug in components_bugs.items():
+            if comp in component and is_bug_open(bug_id=bug):
+                del deprecated_apis_calls[component]
+                break
 
-    if deprecated_calls:
-        raise DeprecatedAPIError(message=_format_printed_dict())
+    return deprecated_apis_calls
+
+
+@pytest.mark.polarion("CNV-6679")
+def test_deprecated_apis_in_audit_logs(filtered_deprecated_api_calls):
+    LOGGER.info(
+        f"Test deprecated API calls, max version for deprecation check: {DEPRECATED_API_MAX_VERSION}"
+    )
+    if filtered_deprecated_api_calls:
+        raise DeprecatedAPIError(
+            message=format_printed_deprecations_dict(
+                deprecated_calls=filtered_deprecated_api_calls
+            )
+        )
