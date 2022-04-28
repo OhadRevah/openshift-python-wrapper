@@ -19,6 +19,7 @@ from utilities.constants import (
     TIMEOUT_40MIN,
     Images,
 )
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.storage import (
     create_dv,
     data_volume_template_dict,
@@ -322,7 +323,12 @@ def test_successful_snapshot_clone(
             {
                 "volume_mode": DataVolume.VolumeMode.FILE,
             },
-            marks=(pytest.mark.polarion("CNV-5607")),
+            marks=(
+                pytest.mark.polarion("CNV-5607"),
+                pytest.mark.bugzilla(
+                    2079781, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
     ],
     indirect=True,
