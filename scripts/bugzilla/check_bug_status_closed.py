@@ -28,10 +28,13 @@ def get_parent_branch():
         commit_parent = parent.name_rev
         if "/" in commit_parent:
             # In some cases we get remotes/origin/<branch>
-            return KNOWN_BRANCHES[commit_parent.rsplit("/", 1)[-1]]
+            parent_branch = commit_parent.rsplit("/", 1)[-1]
         else:
             # In other cases we get <branch>
-            return KNOWN_BRANCHES[commit_parent.split()[-1]]
+            parent_branch = commit_parent.split()[-1]
+
+        if KNOWN_BRANCHES.get(parent_branch):
+            return KNOWN_BRANCHES[parent_branch]
 
     raise ParentBranchNotFound("Could not determine tracking branch")
 
