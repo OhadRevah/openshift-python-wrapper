@@ -3,7 +3,6 @@ import time
 
 import pytest
 from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.metrics.utils import (
@@ -18,7 +17,11 @@ from tests.install_upgrade_operators.metrics.utils import (
 from tests.install_upgrade_operators.utils import create_vms
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import create_ns
+from utilities.infra import (
+    ResourceEditorValidateHCOReconcile,
+    create_ns,
+    update_custom_resource,
+)
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
 
@@ -67,9 +70,8 @@ def updated_resource_with_invalid_label(request, admin_client, hco_namespace):
             namespace=hco_namespace.name,
         )
     )[0]
-
-    with ResourceEditor(
-        patches={
+    with update_custom_resource(
+        patch={
             resource: {
                 "metadata": {
                     "labels": {"test_label": "testing_invalid_label"},
@@ -94,7 +96,7 @@ def updated_resource_multiple_times_with_invalid_label(
         hco_namespace (Namespace): HCO namespace
 
     Returns:
-        Object: Class ResourceEditor Object.
+        Object: Class ResourceEditorValidateHCOReconcile Object.
     """
     res = request.param["resource"]
     count = request.param["count"]
@@ -111,7 +113,7 @@ def updated_resource_multiple_times_with_invalid_label(
 
     # Create the ResourceEditor once and then re-use it to make sure we are modifying
     # the resource exactly X times. Restoring it with backup only during teardown.
-    resource_editor = ResourceEditor(
+    resource_editor = ResourceEditorValidateHCOReconcile(
         patches={
             resource: {
                 "metadata": {
@@ -140,10 +142,6 @@ def updated_resource_multiple_times_with_invalid_label(
 
     yield resource_editor
     resource_editor.restore()
-    wait_for_hco_conditions(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-    )
 
 
 @pytest.fixture()
