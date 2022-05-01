@@ -74,6 +74,7 @@ def windows_efi_secureboot_vm(
         efi_params={"secureBoot": True},
     ) as vm:
         # EFI Windows OS takes longer to be up and connective
+        # TODO: remove wait_for_interfaces=False when Windows EFI image is updated
         running_vm(vm=vm, wait_for_interfaces=False, ssh_timeout=TIMEOUT_5MIN)
         yield vm
 
@@ -121,7 +122,7 @@ def validate_windows_efi(ssh_exec):
     ), f"EFI boot not fount in path. bcdedit output:\n{out}"
 
 
-def _update_vm_efi_spec(vm, spec=None):
+def _update_vm_efi_spec(vm, spec=None, wait_for_interfaces=True):
     ResourceEditor(
         {
             vm: {
@@ -135,7 +136,7 @@ def _update_vm_efi_spec(vm, spec=None):
             }
         }
     ).update()
-    restart_vm_wait_for_running_vm(vm=vm)
+    restart_vm_wait_for_running_vm(vm=vm, wait_for_interfaces=wait_for_interfaces)
 
 
 @pytest.mark.parametrize(
@@ -277,6 +278,10 @@ class TestEFISecureBootWindows:
         """
         Test VM with EFI and disabled secureBoot.
         """
-        _update_vm_efi_spec(vm=windows_efi_secureboot_vm, spec={"secureBoot": False})
+        _update_vm_efi_spec(
+            vm=windows_efi_secureboot_vm,
+            spec={"secureBoot": False},
+            wait_for_interfaces=False,  # TODO: remove wait_for_interfaces=False when Windows EFI image is updated
+        )
         validate_vm_xml_efi(vm=windows_efi_secureboot_vm, secure_boot_enabled=False)
         validate_windows_efi(ssh_exec=windows_efi_secureboot_vm.ssh_exec)
