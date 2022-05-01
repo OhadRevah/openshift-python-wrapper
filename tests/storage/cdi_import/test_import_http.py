@@ -13,6 +13,7 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
+from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
@@ -108,9 +109,8 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
     pvc_original_timestamp = pvc.instance.metadata.creationTimestamp
     pvc.delete()
     wait_for_pvc_recreate(pvc=pvc, pvc_original_timestamp=pvc_original_timestamp)
-    if sc_volume_binding_mode_is_wffc(
-        sc=data_volume_multi_storage_scope_function.storage_class
-    ):
+    storage_class = data_volume_multi_storage_scope_function.storage_class
+    if sc_volume_binding_mode_is_wffc(sc=storage_class):
         create_dummy_first_consumer_pod(pvc=pvc)
     data_volume_multi_storage_scope_function.wait_for_status(
         status=data_volume_multi_storage_scope_function.Status.SUCCEEDED
@@ -119,7 +119,9 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
         namespace=pvc.namespace,
         name=f"{data_volume_multi_storage_scope_function.name}-pod",
         pvc_name=data_volume_multi_storage_scope_function.name,
-        volume_mode=data_volume_multi_storage_scope_function.volume_mode,
+        volume_mode=StorageProfile(name=storage_class).instance.status[
+            "claimPropertySets"
+        ][0]["volumeMode"],
     ) as pod:
         pod.wait_for_status(status=pod.Status.RUNNING)
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
