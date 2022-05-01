@@ -10,7 +10,7 @@ from openshift.dynamic.exceptions import NotFoundError
 
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from tests.network.utils import assert_nncp_successfully_configured
-from utilities.constants import NMSTATE_HANDLER, TIMEOUT_5MIN
+from utilities.constants import NMSTATE_HANDLER, TIMEOUT_5MIN, TIMEOUT_30SEC
 from utilities.exceptions import ResourceValueError
 from utilities.infra import get_pod_by_name_prefix, is_bug_open, name_prefix
 from utilities.network import (
@@ -82,14 +82,13 @@ def deleted_nmstate_pod_during_nncp_configuration(
     sampler = TimeoutSampler(
         wait_timeout=15,
         sleep=1,
-        func=lambda: nmstate_linux_bridge_device_worker.status()
+        func=lambda: nmstate_linux_bridge_device_worker.status
         == NNCP_CONFIGURING_STATUS,
     )
     for sample in sampler:
         if sample:
             # Configuration in progress
             nmstate_pod_on_worker_1.delete(wait=True)
-            nmstate_ds.wait_until_deployed()
             return
 
 
@@ -336,12 +335,24 @@ class TestNmstatePodDeletion:
     ):
         """
         Delete nmstate-handler pod while NNCP is on status 'ConfigurationProgressing'.
-        Test that NNCP is NOT on status 'ConfigurationProgressing' and loop breaks.
+        Test that NNCP is NOT on status 'ConfigurationProgressing' after 30 seconds.
         """
-        assert nmstate_linux_bridge_device_worker.status() != NNCP_CONFIGURING_STATUS, (
-            f"{nmstate_linux_bridge_device_worker.name} is still on status "
-            f"{NNCP_CONFIGURING_STATUS} after nmstate pod has been deleted."
-        )
+        try:
+            for sample in TimeoutSampler(
+                wait_timeout=TIMEOUT_30SEC,
+                sleep=10,
+                func=lambda: nmstate_linux_bridge_device_worker.status
+                != NNCP_CONFIGURING_STATUS,
+            ):
+                if sample:
+                    break
+
+        except TimeoutExpiredError:
+            LOGGER.error(
+                f"{nmstate_linux_bridge_device_worker.name} is still on status "
+                f"{NNCP_CONFIGURING_STATUS} after nmstate pod has been deleted."
+            )
+            raise
 
     @pytest.mark.dependency(
         depends=[

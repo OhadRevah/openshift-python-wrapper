@@ -309,7 +309,7 @@ def assert_nncp_successfully_configured(nncp):
     sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_1MIN,
         sleep=1,
-        func=nncp.status,
+        func=lambda: nncp.status,
     )
     try:
         for sample in sampler:
