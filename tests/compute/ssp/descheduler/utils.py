@@ -6,6 +6,7 @@ import bitmath
 import yaml
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.deployment import Deployment
+from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -173,7 +174,7 @@ def wait_vmi_failover(vm, orig_node):
         raise
 
 
-def verify_running_process_after_failover(vms_list, process_dict):
+def assert_running_process_after_failover(vms_list, process_dict):
     LOGGER.info(
         f"Verify {RUNNING_PING_PROCESS_NAME_IN_VM} is running after migrations."
     )
@@ -193,31 +194,43 @@ def verify_running_process_after_failover(vms_list, process_dict):
     ), f"The following VMs process ID has changed after migration: {failed_vms}"
 
 
-def verify_vms_distribution_after_failover(vms, nodes):
+def assert_vms_distribution_after_failover(vms, nodes, all_nodes=True):
     def _get_vms_per_nodes():
         return vms_per_nodes(vms=vm_nodes(vms=vms))
-
-    LOGGER.info("Verify that each node has at least one VM running on it.")
 
     # Allow the descheduler to cycle multiple times before returning.
     # The value can be affected by high pod counts or load within
     # the cluster which increases the descheduler runtime.
     descheduling_failover_timeout = DESCHEDULING_INTERVAL_120SEC * 3
 
-    sample = None
+    if all_nodes:
+        LOGGER.info("Verify all nodes have at least one VM running")
+    else:
+        LOGGER.info("Verify at least one node has a VM running")
+
     samples = TimeoutSampler(
         wait_timeout=descheduling_failover_timeout,
         sleep=TIMEOUT_5SEC,
         func=_get_vms_per_nodes,
     )
+    vms_per_nodes_dict = None
     try:
-        for sample in samples:
-            if all([num_vms > 0 for num_vms in sample.values()]) and len(sample) == len(
-                nodes
-            ):
+        for vms_per_nodes_dict in samples:
+            vm_counts = [
+                vm_count for vm_count in vms_per_nodes_dict.values() if vm_count
+            ]
+            if all_nodes and len(vm_counts) == len(nodes):
+                LOGGER.info(
+                    f"Every node has at least one VM running on it: {vms_per_nodes_dict}"
+                )
+                return
+            elif vm_counts and not all_nodes:
+                LOGGER.info(
+                    f"There is at least one node with a VM running on it: {vms_per_nodes_dict}"
+                )
                 return
     except TimeoutExpiredError:
-        LOGGER.error(f"Some nodes do not have running VMs: {sample}")
+        LOGGER.error(f"Running VMs missing from nodes: {vms_per_nodes_dict}")
         raise
 
 
@@ -243,7 +256,7 @@ def vm_nodes(vms):
     return {vm.name: vm.vmi.node for vm in vms}
 
 
-def verify_vms_consistent_virt_launcher_pods(running_vms):
+def assert_vms_consistent_virt_launcher_pods(running_vms):
     """Verify VMs virt launcher pods are not replaced (sampled every one minute).
     Using VMs virt launcher pods to verify that VMs are not migrated nor restarted.
 
@@ -276,7 +289,6 @@ def verify_vms_consistent_virt_launcher_pods(running_vms):
                 raise UnexpectedBehaviorError(
                     error_msg=f"Some VMs were migrated: {sample} from {orig_virt_launcher_pod_names}"
                 )
-
     except TimeoutExpiredError:
         LOGGER.info("No VMs were migrated.")
 
@@ -412,3 +424,37 @@ def get_pod_memory_requests(pod_instance):
                 s=container.resources.requests.memory
             ).to_KiB()
     return memory_requests
+
+
+def get_non_terminated_pods(client, node):
+    return list(
+        Pod.get(
+            dyn_client=client,
+            field_selector=f"spec.nodeName={node.name},status.phase!=Succeeded,status.phase!=Failed",
+        )
+    )
+
+
+def get_strategy_low_node_utilization(thresholds, target_thresholds):
+    return {
+        "LowNodeUtilization": {
+            "enabled": True,
+            "params": {
+                "nodeResourceUtilizationThresholds": {
+                    "thresholds": thresholds,
+                    "targetThresholds": target_thresholds,
+                }
+            },
+        }
+    }
+
+
+def assert_state_for_utilization_imbalance(
+    nodes_with_high_pod_utilization, nodes_with_low_pod_utilization
+):
+    assert (
+        not nodes_with_high_pod_utilization
+    ), f"Must not have any high utilization nodes: {nodes_with_high_pod_utilization}"
+    assert (
+        len(nodes_with_low_pod_utilization) > 1
+    ), f"Must have two or more low utilization nodes: {nodes_with_low_pod_utilization}"

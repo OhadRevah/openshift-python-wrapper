@@ -3,9 +3,9 @@ import logging
 import pytest
 
 from tests.compute.ssp.descheduler.utils import (
-    verify_running_process_after_failover,
-    verify_vms_consistent_virt_launcher_pods,
-    verify_vms_distribution_after_failover,
+    assert_running_process_after_failover,
+    assert_vms_consistent_virt_launcher_pods,
+    assert_vms_distribution_after_failover,
 )
 
 
@@ -19,6 +19,10 @@ pytestmark = [
         "installed_descheduler",
     ),
 ]
+
+NO_MIGRATION_STORM_ASSERT_MESSAGE = (
+    "Verify no migration storm after triggered migrations by the descheduler."
+)
 
 
 @pytest.mark.parametrize(
@@ -44,7 +48,7 @@ class TestDeschedulerEvictsVMAfterDrainUncordon:
         drain_uncordon_node,
         schedulable_nodes,
     ):
-        verify_vms_distribution_after_failover(
+        assert_vms_distribution_after_failover(
             vms=deployed_vms_calculated_without_descheduler_node,
             nodes=schedulable_nodes,
         )
@@ -62,10 +66,8 @@ class TestDeschedulerEvictsVMAfterDrainUncordon:
         deployed_vms_calculated_without_descheduler_node,
         completed_migrations,
     ):
-        LOGGER.info(
-            "Verify no migration storm after triggered migrations by the descheduler."
-        )
-        verify_vms_consistent_virt_launcher_pods(
+        LOGGER.info(NO_MIGRATION_STORM_ASSERT_MESSAGE)
+        assert_vms_consistent_virt_launcher_pods(
             running_vms=deployed_vms_calculated_without_descheduler_node
         )
 
@@ -76,7 +78,92 @@ class TestDeschedulerEvictsVMAfterDrainUncordon:
         deployed_vms_calculated_without_descheduler_node,
         vms_started_process_for_node_drain,
     ):
-        verify_running_process_after_failover(
+        assert_running_process_after_failover(
             vms_list=deployed_vms_calculated_without_descheduler_node,
             process_dict=vms_started_process_for_node_drain,
+        )
+
+
+@pytest.mark.parametrize(
+    "calculated_vm_deployment_without_descheduler_node",
+    [pytest.param(0.40)],
+    indirect=True,
+)
+class TestDeschedulerEvictsVMFromUtilizationImbalance:
+    TESTS_CLASS_NAME = "TestDeschedulerEvictsVMFromUtilizationImbalance"
+
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_from_utilization_imbalance"
+    )
+    @pytest.mark.polarion("CNV-8217")
+    def test_descheduler_evicts_vm_from_utilization_imbalance(
+        self,
+        schedulable_nodes,
+        updated_profile_strategy_static_low_node_utilization_for_utilization_imbalance,
+        deployed_evictable_vms_for_utilization_imbalance,
+        vms_started_process_for_utilization_imbalance,
+        completed_migrations,
+        orig_vms_from_target_node_for_utilization_increase,
+        target_node_for_utilization_increase,
+        utilization_imbalance,
+    ):
+        possible_destination_nodes = list(
+            set(schedulable_nodes) - {target_node_for_utilization_increase}
+        )
+        assert_vms_distribution_after_failover(
+            vms=orig_vms_from_target_node_for_utilization_increase,
+            nodes=possible_destination_nodes,
+            all_nodes=False,
+        )
+
+    @pytest.mark.dependency(
+        name=f"{TESTS_CLASS_NAME}::test_no_migrations_storm",
+        depends=[
+            f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_from_utilization_imbalance"
+        ],
+    )
+    @pytest.mark.polarion("CNV-8918")
+    def test_no_migrations_storm(
+        self,
+        downscaled_descheduler_cluster_deployment,
+        deployed_evictable_vms_for_utilization_imbalance,
+        completed_migrations,
+    ):
+        LOGGER.info(NO_MIGRATION_STORM_ASSERT_MESSAGE)
+        assert_vms_consistent_virt_launcher_pods(
+            running_vms=deployed_evictable_vms_for_utilization_imbalance
+        )
+
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::test_no_migrations_storm"])
+    @pytest.mark.polarion("CNV-8919")
+    def test_running_process_after_migrations_complete(
+        self,
+        deployed_evictable_vms_for_utilization_imbalance,
+        vms_started_process_for_utilization_imbalance,
+    ):
+        assert_running_process_after_failover(
+            vms_list=deployed_evictable_vms_for_utilization_imbalance,
+            process_dict=vms_started_process_for_utilization_imbalance,
+        )
+
+
+@pytest.mark.parametrize(
+    "calculated_vm_deployment_without_descheduler_node",
+    [pytest.param(0.40)],
+    indirect=True,
+)
+class TestDeschedulerDoesNotEvictVMWithNoAnnotationFromUtilizationImbalance:
+    @pytest.mark.polarion("CNV-8920")
+    def test_descheduler_does_not_evict_vm_with_no_annotation_from_utilization_imbalance(
+        self,
+        updated_profile_strategy_static_low_node_utilization_for_utilization_imbalance,
+        deployed_no_annotation_vms_for_utilization_imbalance,
+        no_annotation_vms_started_process_for_utilization_imbalance,
+        completed_migrations,
+        orig_vms_from_target_node_for_utilization_increase,
+        target_node_for_utilization_increase,
+        utilization_imbalance,
+    ):
+        assert_vms_consistent_virt_launcher_pods(
+            running_vms=deployed_no_annotation_vms_for_utilization_imbalance
         )

@@ -7,8 +7,8 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.namespace import Namespace
 from ocp_resources.operator_group import OperatorGroup
-from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
+from ocp_resources.pod_disruption_budget import PodDisruptionBudget
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
@@ -20,11 +20,15 @@ from tests.compute.ssp.descheduler.constants import (
     RUNNING_PING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.ssp.descheduler.utils import (
+    DeploymentForDeschedulerTests,
+    assert_state_for_utilization_imbalance,
     calculate_vm_deployment,
     deploy_vms,
     get_allocatable_memory_per_node,
     get_descheduler_pod,
+    get_non_terminated_pods,
     get_pod_memory_requests,
+    get_strategy_low_node_utilization,
     install_profile_strategies,
     start_vms_with_process,
     vm_nodes,
@@ -32,6 +36,7 @@ from tests.compute.ssp.descheduler.utils import (
     wait_vmi_failover,
 )
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
+from utilities.constants import TIMEOUT_5SEC
 from utilities.infra import (
     create_ns,
     get_raw_package_manifest,
@@ -47,6 +52,7 @@ DEPLOYMENT_SIZE = {
     "cpu": "500m",
     "memory": bitmath.GiB(value=2),
 }
+LOCALHOST = "localhost"
 
 
 @pytest.fixture(scope="module")
@@ -177,7 +183,6 @@ def available_nodes_without_descheduler_pod(
 def calculated_vm_deployment_without_descheduler_node(
     request,
     admin_client,
-    descheduler_ns,
     available_memory_per_node,
     available_nodes_without_descheduler_pod,
 ):
@@ -195,7 +200,6 @@ def deployed_vms_calculated_without_descheduler_node(
     admin_client,
     unprivileged_client,
     nodes_common_cpu_model,
-    available_memory_per_node,
     calculated_vm_deployment_without_descheduler_node,
 ):
     yield from deploy_vms(
@@ -306,37 +310,67 @@ def updated_profile_strategy_static_low_node_utilization_for_node_drain(
 
 
 @pytest.fixture(scope="class")
+def updated_profile_strategy_static_low_node_utilization_for_utilization_imbalance(
+    installed_descheduler,
+    downscaled_descheduler_operator_deployment,
+    static_strategy_low_node_utilization_for_utilization_imbalance,
+):
+    with install_profile_strategies(
+        installed_descheduler=installed_descheduler,
+        strategies=static_strategy_low_node_utilization_for_utilization_imbalance,
+    ):
+        yield
+
+
+@pytest.fixture(scope="class")
 def static_strategy_low_node_utilization_for_node_drain():
-    return {
-        "LowNodeUtilization": {
-            "enabled": True,
-            "params": {
-                "nodeResourceUtilizationThresholds": {
-                    "thresholds": {
-                        "cpu": 99,
-                        "memory": 50,
-                        "pods": 99,
-                    },
-                    "targetThresholds": {
-                        "cpu": 100,
-                        "memory": 80,
-                        "pods": 100,
-                    },
-                }
-            },
-        }
-    }
+    return get_strategy_low_node_utilization(
+        thresholds=dict(
+            cpu=99,
+            memory=50,
+            pods=99,
+        ),
+        target_thresholds=dict(
+            cpu=100,
+            memory=80,
+            pods=100,
+        ),
+    )
+
+
+@pytest.fixture(scope="class")
+def static_strategy_low_node_utilization_for_utilization_imbalance():
+    return get_strategy_low_node_utilization(
+        thresholds=dict(
+            cpu=99,
+            memory=99,
+            pods=50,
+        ),
+        target_thresholds=dict(
+            cpu=100,
+            memory=100,
+            pods=80,
+        ),
+    )
+
+
+@pytest.fixture(scope="class")
+def allocatable_pods_per_node(schedulable_nodes, utility_pods):
+    allocatable_pods = collections.defaultdict()
+    for node in schedulable_nodes:
+        node_status = node.instance.to_dict()["status"]
+        allocatable_pods[node] = int(
+            node_status["allocatable"].get("pods", node_status["capacity"]["pods"])
+        )
+        LOGGER.info(f"Node {node.name} has {allocatable_pods[node]} allocatable pods")
+
+    return allocatable_pods
 
 
 @pytest.fixture(scope="class")
 def non_terminated_pods_per_node(admin_client, schedulable_nodes):
     return {
-        node: list(
-            Pod.get(
-                dyn_client=admin_client,
-                field_selector=f"spec.nodeName={node.name},status.phase!=Succeeded,status.phase!=Failed",
-            )
-        )
+        node: get_non_terminated_pods(client=admin_client, node=node)
         for node in schedulable_nodes
     }
 
@@ -366,3 +400,272 @@ def available_memory_per_node(
         - memory_requests_per_node[node]
         for node in schedulable_nodes
     }
+
+
+@pytest.fixture(scope="class")
+def deployed_evictable_vms_for_utilization_imbalance(
+    namespace,
+    unprivileged_client,
+    nodes_common_cpu_model,
+    available_memory_per_node,
+    calculated_vm_deployment_without_descheduler_node,
+):
+    yield from deploy_vms(
+        client=unprivileged_client,
+        namespace_name=namespace.name,
+        cpu_model=nodes_common_cpu_model,
+        vm_count=sum(calculated_vm_deployment_without_descheduler_node.values()),
+        deployment_size=DEPLOYMENT_SIZE,
+        descheduler_eviction=True,
+    )
+
+
+@pytest.fixture(scope="class")
+def deployed_no_annotation_vms_for_utilization_imbalance(
+    namespace,
+    unprivileged_client,
+    nodes_common_cpu_model,
+    available_memory_per_node,
+    calculated_vm_deployment_without_descheduler_node,
+):
+    yield from deploy_vms(
+        client=unprivileged_client,
+        namespace_name=namespace.name,
+        cpu_model=nodes_common_cpu_model,
+        vm_count=sum(calculated_vm_deployment_without_descheduler_node.values()),
+        deployment_size=DEPLOYMENT_SIZE,
+        descheduler_eviction=False,
+    )
+
+
+@pytest.fixture()
+def vms_started_process_for_utilization_imbalance(
+    deployed_evictable_vms_for_utilization_imbalance,
+):
+    return start_vms_with_process(
+        vms=deployed_evictable_vms_for_utilization_imbalance,
+        process_name=RUNNING_PING_PROCESS_NAME_IN_VM,
+        args=LOCALHOST,
+    )
+
+
+@pytest.fixture()
+def no_annotation_vms_started_process_for_utilization_imbalance(
+    deployed_no_annotation_vms_for_utilization_imbalance,
+):
+    return start_vms_with_process(
+        vms=deployed_no_annotation_vms_for_utilization_imbalance,
+        process_name=RUNNING_PING_PROCESS_NAME_IN_VM,
+        args=LOCALHOST,
+    )
+
+
+@pytest.fixture(scope="class")
+def vms_on_low_utilization_nodes(
+    deployed_evictable_vms_for_utilization_imbalance, nodes_with_low_pod_utilization
+):
+    node_names_with_low_pod_utilization = [
+        node.name for node in nodes_with_low_pod_utilization
+    ]
+    return [
+        vm
+        for vm in deployed_evictable_vms_for_utilization_imbalance
+        if vm.vmi.node.name in node_names_with_low_pod_utilization
+    ]
+
+
+@pytest.fixture(scope="class")
+def vms_on_nominal_utilization_nodes(
+    deployed_evictable_vms_for_utilization_imbalance, nodes_with_nominal_pod_utilization
+):
+    node_names = [node.name for node in nodes_with_nominal_pod_utilization]
+    return [
+        vm
+        for vm in deployed_evictable_vms_for_utilization_imbalance
+        if vm.vmi.node.name in node_names
+    ]
+
+
+@pytest.fixture(scope="class")
+def non_descheduler_nodes(admin_client, schedulable_nodes, installed_descheduler):
+    descheduler_pod = get_descheduler_pod(
+        admin_client=admin_client,
+        namespace=Namespace(name=installed_descheduler.namespace),
+    )
+    return [
+        node for node in schedulable_nodes if node.name != descheduler_pod.node.name
+    ]
+
+
+@pytest.fixture(scope="class")
+def orig_vms_from_target_node_for_utilization_increase(
+    vms_on_low_utilization_nodes,
+    vms_on_nominal_utilization_nodes,
+    non_descheduler_nodes,
+):
+    possible_target_vms = (
+        vms_on_nominal_utilization_nodes + vms_on_low_utilization_nodes
+    )
+    non_descheduler_node_names = [node.name for node in non_descheduler_nodes]
+
+    target_vms = []
+    target_node = None
+    for vm in possible_target_vms:
+        if vm.vmi.node.name in non_descheduler_node_names and not target_node:
+            target_node = vm.vmi.node
+
+        if target_node and vm.vmi.node.name == target_node.name:
+            target_vms.append(vm)
+
+    return target_vms
+
+
+@pytest.fixture(scope="class")
+def target_node_for_utilization_increase(
+    orig_vms_from_target_node_for_utilization_increase,
+    nodes_with_high_pod_utilization,
+    nodes_with_low_pod_utilization,
+):
+    assert_state_for_utilization_imbalance(
+        nodes_with_high_pod_utilization=nodes_with_high_pod_utilization,
+        nodes_with_low_pod_utilization=nodes_with_low_pod_utilization,
+    )
+    target_node = orig_vms_from_target_node_for_utilization_increase[0].vmi.node
+    LOGGER.info(f"Target node for utilization increase: {target_node.name}")
+    return target_node
+
+
+@pytest.fixture(scope="class")
+def pod_requests_per_node(schedulable_nodes, non_terminated_pods_per_node):
+    pod_requests = collections.defaultdict()
+    for node in schedulable_nodes:
+        pod_requests[node] = 0
+        for pod in non_terminated_pods_per_node[node]:
+            if pod.exists:
+                pod_requests[node] += 1
+
+    return pod_requests
+
+
+@pytest.fixture(scope="class")
+def pod_usage_per_node_scope_class(
+    schedulable_nodes,
+    allocatable_pods_per_node,
+    pod_requests_per_node,
+):
+    return {
+        node: pod_requests_per_node[node] / allocatable_pods_per_node[node]
+        for node in schedulable_nodes
+    }
+
+
+@pytest.fixture(scope="class")
+def nodes_with_high_pod_utilization(
+    pod_usage_per_node_scope_class,
+    static_strategy_low_node_utilization_for_utilization_imbalance,
+):
+    target_thresholds = static_strategy_low_node_utilization_for_utilization_imbalance[
+        "LowNodeUtilization"
+    ]["params"]["nodeResourceUtilizationThresholds"]["targetThresholds"]
+
+    high_utilization_nodes = []
+    for node in pod_usage_per_node_scope_class:
+        if pod_usage_per_node_scope_class[node] > target_thresholds["pods"]:
+            high_utilization_nodes.append(node)
+
+    return high_utilization_nodes
+
+
+@pytest.fixture(scope="class")
+def node_resource_utilization_thresholds_for_utilization_imbalance(
+    static_strategy_low_node_utilization_for_utilization_imbalance,
+):
+    return static_strategy_low_node_utilization_for_utilization_imbalance[
+        "LowNodeUtilization"
+    ]["params"]["nodeResourceUtilizationThresholds"]
+
+
+@pytest.fixture(scope="class")
+def nodes_with_nominal_pod_utilization(
+    pod_usage_per_node_scope_class,
+    node_resource_utilization_thresholds_for_utilization_imbalance,
+):
+    thresholds = node_resource_utilization_thresholds_for_utilization_imbalance[
+        "thresholds"
+    ]
+    target_thresholds = node_resource_utilization_thresholds_for_utilization_imbalance[
+        "targetThresholds"
+    ]
+
+    nominal_utilization_nodes = []
+    for node in pod_usage_per_node_scope_class:
+        pod_value = pod_usage_per_node_scope_class[node]
+        if thresholds["pods"] <= pod_value <= target_thresholds["pods"]:
+            nominal_utilization_nodes.append(node)
+
+    return nominal_utilization_nodes
+
+
+@pytest.fixture(scope="class")
+def nodes_with_low_pod_utilization(
+    pod_usage_per_node_scope_class,
+    node_resource_utilization_thresholds_for_utilization_imbalance,
+):
+    thresholds = node_resource_utilization_thresholds_for_utilization_imbalance[
+        "thresholds"
+    ]
+
+    low_utilization_nodes = []
+    for node in pod_usage_per_node_scope_class:
+        if pod_usage_per_node_scope_class[node] < thresholds["pods"]:
+            low_utilization_nodes.append(node)
+
+    return low_utilization_nodes
+
+
+@pytest.fixture(scope="class")
+def unallocated_pod_count(
+    admin_client,
+    target_node_for_utilization_increase,
+):
+    non_terminated_pod_count = len(
+        get_non_terminated_pods(
+            client=admin_client, node=target_node_for_utilization_increase
+        )
+    )
+    return (
+        int(target_node_for_utilization_increase.instance.status.capacity.pods)
+        - non_terminated_pod_count
+    )
+
+
+@pytest.fixture(scope="class")
+def utilization_imbalance(
+    admin_client,
+    namespace,
+    target_node_for_utilization_increase,
+    unallocated_pod_count,
+):
+    evict_protected_pod_label_dict = {"test-evict-protected-pod": "true"}
+    evict_protected_pod_selector = {"matchLabels": evict_protected_pod_label_dict}
+
+    utilization_imbalance_deployment_name = "utilization-imbalance-deployment"
+    with PodDisruptionBudget(
+        name=utilization_imbalance_deployment_name,
+        namespace=namespace.name,
+        min_available=unallocated_pod_count,
+        selector=evict_protected_pod_selector,
+    ):
+        with DeploymentForDeschedulerTests(
+            name=utilization_imbalance_deployment_name,
+            namespace=namespace.name,
+            client=admin_client,
+            node_selector_dict={
+                f"{Resource.ApiGroup.KUBERNETES_IO}/hostname": target_node_for_utilization_increase.hostname,
+            },
+            replica_count=unallocated_pod_count,
+            pod_selector=evict_protected_pod_selector,
+            template_labels=evict_protected_pod_label_dict,
+        ) as deployment:
+            deployment.wait_for_replicas(timeout=unallocated_pod_count * TIMEOUT_5SEC)
+            yield
