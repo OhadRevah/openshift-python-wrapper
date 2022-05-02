@@ -15,13 +15,11 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def kubevirt_package_manifest(admin_client):
     """
-    Find kubevirt package manifest associated with hco-catalogsource.
+    Find kubevirt raw package manifest associated with hco-catalogsource.
     """
-    kubevirt_package_manifest = get_kubevirt_package_manifest(admin_client=admin_client)
-    assert (
-        kubevirt_package_manifest
-    ), f"Package manifest{py_config['hco_cr_name']} not found"
-    return kubevirt_package_manifest
+    package_manifest = get_kubevirt_package_manifest(admin_client=admin_client)
+    assert package_manifest, f"Package manifest{py_config['hco_cr_name']} not found"
+    return package_manifest
 
 
 @pytest.fixture()

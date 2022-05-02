@@ -1,5 +1,6 @@
 import logging
 from collections import Counter
+from contextlib import contextmanager
 
 import bitmath
 import yaml
@@ -10,10 +11,11 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from tests.compute.ssp.descheduler.constants import (
     DESCHEDULER_POD_LABEL,
     DESCHEDULING_INTERVAL_120SEC,
-    RUNNING_PROCESS_NAME_IN_VM,
+    RUNNING_PING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.utils import (
     fetch_processid_from_linux_vm,
+    scale_deployment_replicas,
     start_and_fetch_processid_on_linux_vm,
 )
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
@@ -22,6 +24,9 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
+
+STRATEGIES = "strategies"
+CONFIG_MAP_POLICY_YAML_FILE = "policy.yaml"
 
 
 class UnexpectedBehaviorError(Exception):
@@ -65,6 +70,26 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
         return res
 
 
+def get_allocatable_memory_per_node(schedulable_nodes):
+    """
+    Node capacity & allocatable statuses determine how much of a resource we can "request".
+    A node may or may not have any allocatable values set by the admin, in which case, we fall back to the capacity.
+    """
+    nodes_memory = {}
+    for node in schedulable_nodes:
+        # memory format does not include the Bytes suffix(e.g: 23514144Ki)
+        memory = getattr(
+            node.instance.status.allocatable,
+            "memory",
+            node.instance.status.capacity.memory,
+        )
+        nodes_memory[node] = bitmath.parse_string_unsafe(s=memory).to_KiB()
+        LOGGER.info(
+            f"Node {node.name} has {nodes_memory[node].to_GiB()} of allocatable memory"
+        )
+    return nodes_memory
+
+
 def calculate_vm_deployment(
     available_memory_per_node,
     deployment_size,
@@ -98,13 +123,15 @@ def wait_vmi_failover(vm, orig_node):
 
 
 def verify_running_process_after_failover(vms_list, process_dict):
-    LOGGER.info(f"Verify {RUNNING_PROCESS_NAME_IN_VM} is running after migrations.")
+    LOGGER.info(
+        f"Verify {RUNNING_PING_PROCESS_NAME_IN_VM} is running after migrations."
+    )
     failed_vms = []
     for vm in vms_list:
         vm_name = vm.name
         if (
             fetch_processid_from_linux_vm(
-                vm=vm, process_name=RUNNING_PROCESS_NAME_IN_VM
+                vm=vm, process_name=RUNNING_PING_PROCESS_NAME_IN_VM
             )
             != process_dict[vm_name]
         ):
@@ -216,22 +243,71 @@ def get_descheduler_pod(admin_client, namespace):
             return sample[0]
 
 
-def update_profile_strategies(installed_descheduler, strategies):
-    descheduler_cm = ConfigMap(
+def get_descheduler_configmap(installed_descheduler):
+    return ConfigMap(
         name=installed_descheduler.name, namespace=installed_descheduler.namespace
     )
-    policy = yaml.safe_load(stream=descheduler_cm.instance["data"]["policy.yaml"])
-    policy.update({"strategies": strategies})
+
+
+def get_descheduler_policy(installed_descheduler):
+    descheduler_cm = get_descheduler_configmap(
+        installed_descheduler=installed_descheduler
+    )
+    return yaml.safe_load(
+        stream=descheduler_cm.instance["data"][CONFIG_MAP_POLICY_YAML_FILE]
+    )
+
+
+def update_profile_strategies(installed_descheduler, strategies):
+    descheduler_cm = get_descheduler_configmap(
+        installed_descheduler=installed_descheduler
+    )
+    policy = get_descheduler_policy(installed_descheduler=installed_descheduler)
+    policy.update({STRATEGIES: strategies})
     policy_yaml = yaml.dump(data=policy)
     ResourceEditor(
         patches={
             descheduler_cm: {
                 "data": {
-                    "policy.yaml": policy_yaml,
+                    CONFIG_MAP_POLICY_YAML_FILE: policy_yaml,
                 }
             }
         }
     ).update()
+
+
+def get_profile_strategies(installed_descheduler):
+    policy = get_descheduler_policy(installed_descheduler=installed_descheduler)
+    return policy[STRATEGIES]
+
+
+@contextmanager
+def install_profile_strategies(installed_descheduler, strategies):
+    original_profile_strategies = get_profile_strategies(
+        installed_descheduler=installed_descheduler
+    )
+    # Scale down KubeDescheduler to update configuration
+    # Scale up KubeDescheduler to resume with new configuration
+    with scale_deployment_replicas(
+        namespace=installed_descheduler.namespace,
+        deployment_name=installed_descheduler.name,
+        replica_count=0,
+    ):
+        update_profile_strategies(
+            installed_descheduler=installed_descheduler,
+            strategies=strategies,
+        )
+    # yield after deployment scaled back up
+    yield
+    with scale_deployment_replicas(
+        namespace=installed_descheduler.namespace,
+        deployment_name=installed_descheduler.name,
+        replica_count=0,
+    ):
+        update_profile_strategies(
+            installed_descheduler=installed_descheduler,
+            strategies=original_profile_strategies,
+        )
 
 
 def start_vms_with_process(vms, process_name, args):
@@ -276,10 +352,10 @@ def deploy_vms(
         vm.clean_up()
 
 
-def get_pod_memory_requests(pod):
+def get_pod_memory_requests(pod_instance):
     """Sum all memory requests of the pod's containers"""
     memory_requests = bitmath.Byte(value=0)
-    for container in pod.instance.spec.containers:
+    for container in pod_instance.spec.containers:
         if hasattr(container.resources.requests, "memory"):
             memory_requests += bitmath.parse_string_unsafe(
                 s=container.resources.requests.memory

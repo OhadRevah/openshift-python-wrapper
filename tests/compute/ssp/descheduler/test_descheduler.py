@@ -10,10 +10,15 @@ from tests.compute.ssp.descheduler.utils import (
 
 
 LOGGER = logging.getLogger(__name__)
-TESTS_CLASS_NAME = "TestDeschedulerEvictsVMAfterDrainUncordon"
 
-
-pytestmark = [pytest.mark.tier3]
+pytestmark = [
+    pytest.mark.tier3,
+    pytest.mark.usefixtures(
+        "skip_if_1tb_memory_or_more_node",
+        "skip_when_one_node",
+        "installed_descheduler",
+    ),
+]
 
 
 @pytest.mark.parametrize(
@@ -22,12 +27,11 @@ pytestmark = [pytest.mark.tier3]
     indirect=True,
 )
 @pytest.mark.usefixtures(
-    "skip_if_1tb_memory_or_more_node",
-    "skip_when_one_node",
-    "installed_descheduler",
     "calculated_vm_deployment_without_descheduler_node",
 )
 class TestDeschedulerEvictsVMAfterDrainUncordon:
+    TESTS_CLASS_NAME = "TestDeschedulerEvictsVMAfterDrainUncordon"
+
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_after_drain_uncordon"
     )

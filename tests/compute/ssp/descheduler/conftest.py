@@ -7,7 +7,6 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.namespace import Namespace
 from ocp_resources.operator_group import OperatorGroup
-from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.subscription import Subscription
@@ -15,19 +14,19 @@ from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 from openshift.dynamic.exceptions import NotFoundError
-from pytest_testconfig import py_config
 
 from tests.compute.ssp.descheduler.constants import (
     DESCHEDULING_INTERVAL_120SEC,
-    RUNNING_PROCESS_NAME_IN_VM,
+    RUNNING_PING_PROCESS_NAME_IN_VM,
 )
 from tests.compute.ssp.descheduler.utils import (
     calculate_vm_deployment,
     deploy_vms,
+    get_allocatable_memory_per_node,
     get_descheduler_pod,
     get_pod_memory_requests,
+    install_profile_strategies,
     start_vms_with_process,
-    update_profile_strategies,
     vm_nodes,
     vms_per_nodes,
     wait_vmi_failover,
@@ -36,40 +35,42 @@ from tests.compute.utils import (
     check_pod_disruption_budget_for_completed_migrations,
     scale_deployment_replicas,
 )
-from utilities.infra import create_ns, is_bug_open
+from utilities.infra import create_ns, get_raw_package_manifest, is_bug_open
 from utilities.virt import node_mgmt_console, wait_for_node_schedulable_status
 
 
 LOGGER = logging.getLogger(__name__)
 
+DESCHEDULER_OPERATOR_DEPLOYMENT_NAME = "descheduler-operator"
 DEPLOYMENT_SIZE = {
     "cpu": "500m",
     "memory": bitmath.GiB(value=2),
 }
 
 
-@pytest.fixture(scope="class")
-def skip_if_1tb_memory_or_more_node(allocatable_memory_per_node):
+@pytest.fixture(scope="module")
+def skip_if_1tb_memory_or_more_node(allocatable_memory_per_node_scope_module):
     """
     One of QE BM setups has worker with 5 TiB RAM memory while rest workers
     has 120 GiB RAM. Test should be skipped on this cluster.
     """
     upper_memory_limit = bitmath.TiB(value=1)
-    for node, memory in allocatable_memory_per_node.items():
+    for node, memory in allocatable_memory_per_node_scope_module.items():
         if memory >= upper_memory_limit:
             pytest.skip(
                 f"Cluster has node with at least {upper_memory_limit} RAM: {node.name}"
             )
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def descheduler_ns(admin_client):
     yield from create_ns(
-        admin_client=admin_client, name="openshift-kube-descheduler-operator"
+        admin_client=admin_client,
+        name="openshift-kube-descheduler-operator",
     )
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def installed_descheduler_og(descheduler_ns):
     with OperatorGroup(
         name="descheduler-operator-group",
@@ -79,60 +80,52 @@ def installed_descheduler_og(descheduler_ns):
         yield
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
     descheduler_sub_name = "cluster-kube-descheduler-operator"
-    marketplace_ns = py_config["marketplace_namespace"]
+    catalog_source = "redhat-operators"
+    raw_package_manifest = get_raw_package_manifest(
+        admin_client=admin_client,
+        name=descheduler_sub_name,
+        catalog_source=catalog_source,
+    )
+
     with Subscription(
         name=descheduler_sub_name,
         namespace=descheduler_ns.name,
-        source="redhat-operators",
-        source_namespace=marketplace_ns,
-        channel=PackageManifest(
-            name=descheduler_sub_name, namespace=marketplace_ns
-        ).instance.status.defaultChannel,
+        source=catalog_source,
+        source_namespace=raw_package_manifest.metadata.namespace,
+        channel=raw_package_manifest.status.defaultChannel,
     ):
         Deployment(
-            name="descheduler-operator", namespace=descheduler_ns.name
+            name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME, namespace=descheduler_ns.name
         ).wait_for_replicas()
         yield
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_sub):
-    kube_descheduler_name = "cluster"
+    descheduler_deployment_name = "cluster"
     with KubeDescheduler(
-        name=kube_descheduler_name,
+        name=descheduler_deployment_name,
         namespace=descheduler_ns.name,
         profiles=["DevPreviewLongLifecycle"],
         descheduling_interval=DESCHEDULING_INTERVAL_120SEC,
     ) as kd:
         Deployment(
-            name=kube_descheduler_name, namespace=descheduler_ns.name
+            name=descheduler_deployment_name, namespace=descheduler_ns.name
         ).wait_for_replicas()
         yield kd
 
 
 @pytest.fixture(scope="class")
-def downscaled_descheduler_operator_deployment(admin_client, descheduler_ns):
-    deployment_name = "descheduler-operator"
+def downscaled_descheduler_operator_deployment(installed_descheduler):
     LOGGER.info(
-        f"Scale {deployment_name} to 0 is a W/A to force descheduler to use thresholds from config map"
+        f"Scale {DESCHEDULER_OPERATOR_DEPLOYMENT_NAME} to 0 "
+        "is a W/A to force descheduler to use thresholds from config map"
     )
     with scale_deployment_replicas(
-        deployment_name=deployment_name,
-        namespace=descheduler_ns.name,
-        replica_count=0,
-    ):
-        yield
-
-
-@pytest.fixture(scope="class")
-def downscaled_descheduler_cluster_deployment(admin_client, installed_descheduler):
-    deployment_name = "cluster"
-    LOGGER.info(f"Scale down descheduler {deployment_name} deployment to stop its work")
-    with scale_deployment_replicas(
-        deployment_name=deployment_name,
+        deployment_name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME,
         namespace=installed_descheduler.namespace,
         replica_count=0,
     ):
@@ -140,24 +133,26 @@ def downscaled_descheduler_cluster_deployment(admin_client, installed_deschedule
 
 
 @pytest.fixture(scope="class")
-def allocatable_memory_per_node(schedulable_nodes, utility_pods):
-    """
-    Node capacity & allocatable statuses determine how much of a resource we can "request".
-    A node may or may not have any allocatable values set by the admin, in which case, we fall back to the capacity.
-    """
-    nodes_memory = {}
-    for node in schedulable_nodes:
-        # memory format does not include the Bytes suffix(e.g: 23514144Ki)
-        memory = getattr(
-            node.instance.status.allocatable,
-            "memory",
-            node.instance.status.capacity.memory,
-        )
-        nodes_memory[node] = bitmath.parse_string_unsafe(s=memory).to_KiB()
-        LOGGER.info(
-            f"Node {node.name} has {nodes_memory[node].to_GiB()} of allocatable memory"
-        )
-    return nodes_memory
+def downscaled_descheduler_cluster_deployment(admin_client, installed_descheduler):
+    LOGGER.info(
+        f"Scale down descheduler {installed_descheduler.name} deployment to stop its work"
+    )
+    with scale_deployment_replicas(
+        deployment_name=installed_descheduler.name,
+        namespace=installed_descheduler.namespace,
+        replica_count=0,
+    ):
+        yield
+
+
+@pytest.fixture(scope="module")
+def allocatable_memory_per_node_scope_module(schedulable_nodes):
+    return get_allocatable_memory_per_node(schedulable_nodes=schedulable_nodes)
+
+
+@pytest.fixture(scope="class")
+def allocatable_memory_per_node_scope_class(schedulable_nodes):
+    return get_allocatable_memory_per_node(schedulable_nodes=schedulable_nodes)
 
 
 @pytest.fixture(scope="class")
@@ -241,7 +236,7 @@ def vms_started_process_for_node_drain(
 ):
     return start_vms_with_process(
         vms=deployed_vms_calculated_without_descheduler_node,
-        process_name=RUNNING_PROCESS_NAME_IN_VM,
+        process_name=RUNNING_PING_PROCESS_NAME_IN_VM,
         args="localhost",
     )
 
@@ -299,24 +294,15 @@ def completed_migrations(admin_client, namespace):
 
 @pytest.fixture(scope="class")
 def updated_profile_strategy_static_low_node_utilization_for_node_drain(
-    admin_client,
     installed_descheduler,
     downscaled_descheduler_operator_deployment,
     static_strategy_low_node_utilization_for_node_drain,
 ):
-    # Scale down KubeDescheduler to update configuration
-    # Scale up KubeDescheduler to resume with new configuration
-    with scale_deployment_replicas(
-        deployment_name="cluster",
-        namespace=installed_descheduler.namespace,
-        replica_count=0,
+    with install_profile_strategies(
+        installed_descheduler=installed_descheduler,
+        strategies=static_strategy_low_node_utilization_for_node_drain,
     ):
-        update_profile_strategies(
-            installed_descheduler=installed_descheduler,
-            strategies=static_strategy_low_node_utilization_for_node_drain,
-        )
-    # yield after deployment scaled back up
-    yield
+        yield
 
 
 @pytest.fixture(scope="class")
@@ -360,8 +346,11 @@ def memory_requests_per_node(schedulable_nodes, non_terminated_pods_per_node):
     memory_requests = collections.defaultdict(bitmath.Byte)
     for node in schedulable_nodes:
         for pod in non_terminated_pods_per_node[node]:
-            if pod.exists:
-                memory_requests[node] += get_pod_memory_requests(pod=pod)
+            pod_instance = pod.exists
+            if pod_instance:
+                memory_requests[node] += get_pod_memory_requests(
+                    pod_instance=pod_instance
+                )
 
     return memory_requests
 
@@ -369,10 +358,11 @@ def memory_requests_per_node(schedulable_nodes, non_terminated_pods_per_node):
 @pytest.fixture(scope="class")
 def available_memory_per_node(
     schedulable_nodes,
-    allocatable_memory_per_node,
+    allocatable_memory_per_node_scope_class,
     memory_requests_per_node,
 ):
     return {
-        node: allocatable_memory_per_node[node] - memory_requests_per_node[node]
+        node: allocatable_memory_per_node_scope_class[node]
+        - memory_requests_per_node[node]
         for node in schedulable_nodes
     }
