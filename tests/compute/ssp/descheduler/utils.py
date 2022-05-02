@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import bitmath
 import yaml
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
@@ -66,6 +67,57 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
         if self.descheduler_eviction:
             metadata["annotations"]["descheduler.alpha.kubernetes.io/evict"] = "true"
 
+        return res
+
+
+class DeploymentForDeschedulerTests(Deployment):
+    def __init__(
+        self,
+        name,
+        namespace,
+        client,
+        node_selector_dict,
+        replica_count,
+        pod_selector,
+        template_labels,
+        **kwargs,
+    ):
+        super().__init__(name=name, namespace=namespace, client=client, **kwargs)
+        self.node_selector_dict = node_selector_dict
+        self.replica_count = replica_count
+        self.pod_selector = pod_selector
+        self.template_labels = template_labels
+
+    def to_dict(self):
+        res = super().to_dict()
+        res.update(
+            {
+                "metadata": {
+                    "name": self.name,
+                },
+                "spec": {
+                    "replicas": self.replica_count,
+                    "selector": self.pod_selector,
+                    "template": {
+                        "metadata": {
+                            "labels": self.template_labels,
+                        },
+                        "spec": {
+                            "nodeSelector": self.node_selector_dict,
+                            "restartPolicy": "Always",
+                            "containers": [
+                                {
+                                    "name": "tail",
+                                    "image": "registry.access.redhat.com/ubi8/ubi-minimal:latest",
+                                    "command": ["/bin/tail"],
+                                    "args": ["-f", "/dev/null"],
+                                }
+                            ],
+                        },
+                    },
+                },
+            }
+        )
         return res
 
 
