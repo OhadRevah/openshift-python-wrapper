@@ -26,6 +26,8 @@ from utilities.virt import (
 )
 
 
+pytestmark = pytest.mark.destructive
+
 LOGGER = logging.getLogger(__name__)
 TESTS_CLASS_NAME = "TestDedicatedLiveMigrationNetwork"
 
