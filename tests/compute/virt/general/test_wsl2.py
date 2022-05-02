@@ -88,7 +88,7 @@ def windows_10_vm(
     golden_image_data_source_scope_class,
     nodes_common_cpu_model,
 ):
-    """Create Windows 10 VM, Run VM and wait for WLS2 guest to start"""
+    """Create Windows 10 VM, Run VM and wait for WSL2 guest to start"""
     cpu_features = "vmx" if py_config["nodes_cpu_architecture"] == INTEL else "svm"
     with VirtualMachineForTestsFromTemplate(
         name="windows-wsl2",
