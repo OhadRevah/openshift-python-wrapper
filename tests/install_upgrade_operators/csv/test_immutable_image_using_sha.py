@@ -1,6 +1,8 @@
 import pytest
 
-from tests.install_upgrade_operators.csv.utils import get_package_manifest_images
+from tests.install_upgrade_operators.csv.utils import (
+    get_kubevirt_package_manifest_images,
+)
 
 
 pytestmark = pytest.mark.sno
@@ -11,7 +13,7 @@ def hco_package_stable_channel_images(admin_client):
     """
     Get a list of all images in the kubevirt-hyperconverged package on the stable channel
     """
-    return get_package_manifest_images(admin_client=admin_client)
+    return get_kubevirt_package_manifest_images(admin_client=admin_client)
 
 
 @pytest.mark.polarion("CNV-4751")

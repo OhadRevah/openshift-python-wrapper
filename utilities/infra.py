@@ -1093,32 +1093,41 @@ def exit_pytest_execution(
 
 
 def get_kubevirt_package_manifest(admin_client):
+    return get_raw_package_manifest(
+        admin_client=admin_client,
+        name=py_config["hco_cr_name"],
+        catalog_source=HCO_CATALOG_SOURCE,
+    )
+
+
+def get_raw_package_manifest(admin_client, name, catalog_source):
     """
-    Gets kubevirt package manifest associated with hco-catalogsource label
+    Gets PackageManifest ResourceField associated with catalog source.
+    Multiple PackageManifest Resources exist with the same name but different labels.
+    Requires raw=True
 
     Args:
         admin_client (DynamicClient): dynamic client object
+        name (str): Name of PackageManifest
+        catalog_source (str): Catalog source
 
     Returns:
-        Resource: Package manifest resource
-
+        ResourceField or None: PackageManifest ResourceField or None if no matching resource found
     """
-    package_manifest_name = py_config["hco_cr_name"]
-    label_selector = f"catalog={HCO_CATALOG_SOURCE}"
     for resource_field in PackageManifest.get(
         dyn_client=admin_client,
         namespace=py_config["marketplace_namespace"],
-        label_selector=label_selector,
-        raw=True,
+        field_selector=f"metadata.name={name}",
+        label_selector=f"catalog={catalog_source}",
+        raw=True,  # multiple packagemanifest exists with the same name but different labels
     ):
-        if resource_field.metadata.name == package_manifest_name:
-            LOGGER.info(
-                f"Found expected packagemanefest: {resource_field.metadata.name}: "
-                f"in catalog: {resource_field.metadata.labels.catalog}"
-            )
-            return resource_field
+        LOGGER.info(
+            f"Found expected packagemanefest: {resource_field.metadata.name}: "
+            f"in catalog: {resource_field.metadata.labels.catalog}"
+        )
+        return resource_field
     LOGGER.warning(
-        f"Not able to find any packagemanifest {package_manifest_name} in {label_selector} source."
+        f"Not able to find any packagemanifest {name} in {catalog_source} source."
     )
 
 

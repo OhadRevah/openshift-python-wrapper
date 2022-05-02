@@ -219,10 +219,10 @@ def update_image_in_catalog_source(dyn_client, namespace, image):
         LOGGER.info(
             f"Waiting for {py_config['hco_cr_name']} package to appear in {HCO_CATALOG_SOURCE}"
         )
-        wait_for_package_manifest_update(dyn_client=dyn_client)
+        wait_for_kubevirt_package_manifest_to_exist(dyn_client=dyn_client)
 
 
-def wait_for_package_manifest_update(dyn_client):
+def wait_for_kubevirt_package_manifest_to_exist(dyn_client):
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=10,

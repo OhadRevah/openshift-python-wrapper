@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def kubevirt_package_manifest(admin_client, hco_namespace):
+def kubevirt_package_manifest(admin_client):
     """
     Find kubevirt package manifest associated with hco-catalogsource.
     """
@@ -29,17 +29,16 @@ def kubevirt_package_manifest_channel(kubevirt_package_manifest, cnv_current_ver
     """
     Return channel name from Kubevirt Package Manifest.
     """
-    for channel in kubevirt_package_manifest.status.channels:
+    channels = kubevirt_package_manifest.status.channels
+    for channel in channels:
         if channel.currentCSVDesc.version == cnv_current_version:
             LOGGER.info(
                 f"Getting channel associated with cnv version: {cnv_current_version}"
             )
             return channel.name
     raise KubevirtManifestChannelNotFoundError(
-        (
-            "Not able to find 'stable' channel in the package manifest."
-            f"Avaliable channels: {kubevirt_package_manifest.status.channels}"
-        )
+        f"Not able to find channel matching {cnv_current_version} in the package manifest."
+        f" Avaliable channels: {channels}"
     )
 
 
