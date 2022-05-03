@@ -48,12 +48,12 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_change_subscription_on_selected_node_before_workload(
         self,
+        admin_client,
+        hco_namespace,
         alter_cnv_subscription_configuration,
         subscription_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["op2"] == expected_node_by_label["op2"]
         # Verify all operator components are removed from master-0 and created on master-1.
@@ -83,12 +83,12 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_change_infrastructure_components_on_selected_node_before_workload(
         self,
+        admin_client,
+        hco_namespace,
         alter_np_configuration,
         hco_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["infra2"] == expected_node_by_label["infra2"]
         # Verify all Infra components are moved to worker-2.
@@ -121,12 +121,12 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_change_workload_components_on_selected_node_before_workload(
         self,
+        admin_client,
+        hco_namespace,
         alter_np_configuration,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
         expected_node_by_label,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["work3"] == expected_node_by_label["work3"]
         # Verify all Workloads Pods are moved to worker-3.
@@ -200,13 +200,13 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_infrastructure_components_selection_change_allowed_with_workloads(
         self,
+        admin_client,
+        hco_namespace,
         alter_np_configuration,
         vm_placement_vm_work3,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
         expected_node_by_label,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["infra1"] == expected_node_by_label["infra1"]
         # Verify all infra components are removed from worker-2 and created on worker-1.
@@ -241,13 +241,13 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_operator_components_selection_change_allowed_with_workloads(
         self,
+        admin_client,
+        hco_namespace,
         vm_placement_vm_work3,
         alter_cnv_subscription_configuration,
         subscription_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["op3"] == expected_node_by_label["op3"]
         # Verify all operator components are removed from master-2 and created on master-3.
@@ -280,13 +280,13 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_infrastructure_components_selection_change_allowed_after_workloads(
         self,
+        admin_client,
+        hco_namespace,
         alter_np_configuration,
         delete_vm_after_placement,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
         expected_node_by_label,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["infra3"] == expected_node_by_label["infra3"]
         # Verify all infrastructure components are removed from worker-1 and created on worker-3
@@ -321,12 +321,12 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_operator_components_selection_change_allowed_after_workloads(
         self,
+        admin_client,
+        hco_namespace,
         alter_cnv_subscription_configuration,
         subscription_pods_per_nodes_after_altering_placement,
         expected_node_by_label,
         nodes_labeled,
-        admin_client,
-        hco_namespace,
     ):
 
         assert nodes_labeled["op1"] == expected_node_by_label["op1"]
@@ -359,12 +359,12 @@ class TestDeployCNVOnSubsetOfClusterNodes:
     )
     def test_workload_components_selection_change_allowed_after_workloads(
         self,
+        admin_client,
+        hco_namespace,
         alter_np_configuration,
         hco_pods_per_nodes_after_altering_placement,
         nodes_labeled,
         expected_node_by_label,
-        admin_client,
-        hco_namespace,
     ):
         assert nodes_labeled["work2"] == expected_node_by_label["work2"]
         # Verify all workloads components are removed from worker-3 and created on worker-2

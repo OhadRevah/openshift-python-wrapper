@@ -185,18 +185,23 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
 
 def add_labels_to_nodes(nodes, node_labels):
     """
-    This function is going to add label to each node.
-    Returns a node_resources and dictionary of lableled nodes.
+    Adds given labels to a list of nodes
+
+    Args:
+        nodes (list): list of nodes
+        node_labels (dict): dictionary of labels to be applied
+
+    Returns:
+        dictionary with information on labels applied for all the nodes and associated resource editors for the same
+
     """
-    node_resources = []
-    labels_on_nodes = {}
+    node_resources = {}
     for index, node in enumerate(nodes, start=1):
         labels = {key: f"{value}{index}" for key, value in node_labels.items()}
         node_resource = ResourceEditor(patches={node: {"metadata": {"labels": labels}}})
         node_resource.update(backup_resources=True)
-        node_resources.append(node_resource)
-        labels_on_nodes[node.name] = labels
-    return node_resources, labels_on_nodes
+        node_resources[node_resource] = {"node": node.name, "labels": labels}
+    return node_resources
 
 
 def get_hco_spec(admin_client, hco_namespace):

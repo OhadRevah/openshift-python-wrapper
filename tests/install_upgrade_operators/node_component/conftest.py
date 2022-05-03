@@ -27,7 +27,7 @@ from utilities.constants import (
     VIRT_TEMPLATE_VALIDATOR,
     WORKER_NODE_LABEL_KEY,
 )
-from utilities.hco import add_labels_to_nodes, apply_np_changes
+from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
 from utilities.infra import get_daemonset_by_name, get_subscription
 from utilities.virt import (
     VirtualMachineForTests,
@@ -54,6 +54,7 @@ def workers(nodes):
 @pytest.fixture(scope="class")
 def node_placement_labels(
     admin_client,
+    hco_namespace,
     masters,
     workers,
 ):
@@ -66,17 +67,36 @@ def node_placement_labels(
     """
     master_labels = {"op-comp": "op"}
     worker_labels = {"infra-comp": "infra", "work-comp": "work"}
-    worker_resources, worker_node_labels = add_labels_to_nodes(
-        nodes=workers, node_labels=worker_labels
+    worker_resources = add_labels_to_nodes(
+        nodes=workers,
+        node_labels=worker_labels,
     )
-    master_resources, master_node_labels = add_labels_to_nodes(
-        nodes=masters, node_labels=master_labels
+    master_resources = add_labels_to_nodes(
+        nodes=masters,
+        node_labels=master_labels,
     )
-    yield {**worker_node_labels, **master_node_labels}
-    for master_resource in master_resources:
-        master_resource.restore()
-    for worker_resource in worker_resources:
-        worker_resource.restore()
+    label_dict = {}
+    all_resources = []
+    for key, value in worker_resources.items():
+        label_dict.update({value["node"]: value["labels"]})
+        all_resources.append(key)
+    for key, value in master_resources.items():
+        all_resources.append(key)
+        if label_dict.get(value["node"]):
+            label_dict[value["node"]].update(value["labels"])
+        else:
+            label_dict.update({value["node"]: value["labels"]})
+
+    yield label_dict
+
+    for resource in all_resources:
+        resource.restore()
+
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        consecutive_checks_count=6,
+    )
 
 
 def create_dict_by_label(values):

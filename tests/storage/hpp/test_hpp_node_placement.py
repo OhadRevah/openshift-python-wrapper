@@ -140,7 +140,7 @@ def cirros_vm_on_hpp(
 
 @pytest.fixture(scope="module")
 def update_node_labels(worker_node1):
-    worker_resources, _ = add_labels_to_nodes(
+    worker_resources = add_labels_to_nodes(
         nodes=[
             worker_node1,
         ],
