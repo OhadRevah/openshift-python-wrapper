@@ -133,6 +133,7 @@ from utilities.network import (
     SriovIfaceNotFound,
     cloud_init,
     enable_hyperconverged_ovs_annotations,
+    get_cluster_cni_type,
     network_device,
     network_nad,
     wait_for_ovs_daemonset_resource,
@@ -1217,8 +1218,7 @@ def node_physical_nics(admin_client, utility_pods):
 
 @pytest.fixture(scope="session")
 def ovn_kubernetes_cluster(admin_client):
-    cluster_network = list(Network.get(dyn_client=admin_client))[0]
-    return cluster_network.instance.status.networkType == "OVNKubernetes"
+    return get_cluster_cni_type(admin_client=admin_client) == "OVNKubernetes"
 
 
 @pytest.fixture(scope="session")
@@ -1348,19 +1348,17 @@ def skip_upstream(is_upstream_distribution):
         )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def leftovers(admin_client, identity_provider_config):
+    LOGGER.info("Checking for leftover resources")
     secret = Secret(
         client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
     )
     ds = DaemonSet(client=admin_client, name=UTILITY, namespace="kube-system")
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
-        try:
-            if resource_.instance:
-                resource_.delete(wait=True)
-        except NotFoundError:
-            continue
+        if resource_.exists:
+            resource_.delete(wait=True)
 
     #  Remove leftovers from OAuth
     if not identity_provider_config:
@@ -2420,6 +2418,8 @@ def is_post_cnv_upgrade_cluster(admin_client, hco_namespace):
 
 @pytest.fixture(scope="session", autouse=True)
 def cluster_info(
+    admin_client,
+    leftovers,  # leftover fixture needs to run first to avoid deletion of resources created later on
     is_downstream_distribution,
     is_upstream_distribution,
     openshift_current_version,
@@ -2429,6 +2429,7 @@ def cluster_info(
     kubevirt_resource_scope_session,
     ipv6_supported_cluster,
     ipv4_supported_cluster,
+    workers_type,
 ):
     title = "\nCluster info:\n"
     if is_downstream_distribution:
@@ -2445,6 +2446,8 @@ def cluster_info(
             f"\tCNV version: {cnv_current_version}\n"
             f"\tHCO image: {hco_image}\n"
             f"\tOCS version: {ocs_current_version}\n"
+            f"\tCNI type: {get_cluster_cni_type(admin_client=admin_client)}\n"
+            f"\tWorkers type: {workers_type}\n"
             f"\tIPv4 cluster: {ipv4_supported_cluster}\n"
             f"\tIPv6 cluster: {ipv6_supported_cluster}\n"
             f"\tVirtctl version: \n\t{virtctl_client_version}\n\t{virtctl_server_version}\n"

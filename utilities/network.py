@@ -9,6 +9,7 @@ import shlex
 
 import netaddr
 from ocp_resources.daemonset import DaemonSet
+from ocp_resources.network import Network
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node import Node
 from ocp_resources.node_network_configuration_policy import (
@@ -1200,3 +1201,7 @@ def is_destination_pingable_from_vm(
         interface=interface,
     )[0]
     return float(ping_stat) < 100
+
+
+def get_cluster_cni_type(admin_client):
+    return Network(client=admin_client, name="cluster").instance.status.networkType
