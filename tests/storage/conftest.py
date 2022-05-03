@@ -26,7 +26,6 @@ from tests.storage.utils import (
     get_hpp_daemonset,
     hpp_cr_suffix,
     is_hpp_cr_legacy,
-    smart_clone_supported_by_sc,
 )
 from utilities.constants import CDI_OPERATOR, CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
 from utilities.infra import (
@@ -244,20 +243,6 @@ def registry_config_map(namespace):
 def download_image():
     downloaded_image(
         remote_name=f"{Images.Cdi.DIR}/{Images.Cdi.QCOW2_IMG}", local_name=LOCAL_PATH
-    )
-
-
-@pytest.fixture()
-def skip_smart_clone_not_supported_by_sc(
-    data_volume_multi_storage_scope_function, admin_client
-):
-    if smart_clone_supported_by_sc(
-        sc=data_volume_multi_storage_scope_function.storage_class,
-        client=admin_client,
-    ):
-        return
-    pytest.skip(
-        f"Smart clone via snapshots not supported by {data_volume_multi_storage_scope_function.storage_class}"
     )
 
 

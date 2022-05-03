@@ -14,6 +14,7 @@ from pytest_testconfig import config as py_config
 from tests.storage import utils
 from utilities.constants import (
     OS_FLAVOR_CIRROS,
+    OS_FLAVOR_WINDOWS,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
     TIMEOUT_40MIN,
@@ -145,7 +146,7 @@ def test_successful_clone_of_large_image(
             {
                 "dv_name": "dv-source",
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-                "dv_size": "10Gi",
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
             },
             marks=(
                 pytest.mark.polarion("CNV-2148"),
@@ -234,7 +235,7 @@ def test_successful_vm_from_cloned_dv_windows(
             {
                 "dv_name": "dv-source",
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-                "dv_size": "1Gi",
+                "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
             },
             marks=(pytest.mark.polarion("CNV-4035")),
         )
@@ -261,21 +262,23 @@ def test_disk_image_after_clone(
 
 
 @pytest.mark.parametrize(
-    "data_volume_multi_storage_scope_function",
+    "data_volume_scope_function",
     [
         pytest.param(
             {
-                "dv_name": "dv-source",
+                "dv_name": "dv-source-cirros",
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
                 "dv_size": Images.Cirros.DEFAULT_DV_SIZE,
+                "storage_class": StorageClass.Types.CEPH_RBD,
             },
-            marks=(pytest.mark.polarion("CNV-3545")),
+            marks=pytest.mark.polarion("CNV-3545"),
         ),
         pytest.param(
             {
-                "dv_name": "dv-source",
+                "dv_name": "dv-source-win",
                 "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
                 "dv_size": Images.Windows.DEFAULT_DV_SIZE,
+                "storage_class": StorageClass.Types.CEPH_RBD,
             },
             marks=(pytest.mark.polarion("CNV-3552"), pytest.mark.tier3()),
         ),
@@ -284,17 +287,16 @@ def test_disk_image_after_clone(
 )
 def test_successful_snapshot_clone(
     skip_upstream,
-    skip_smart_clone_not_supported_by_sc,
     namespace,
-    data_volume_multi_storage_scope_function,
+    data_volume_scope_function,
 ):
     with create_dv(
         source="pvc",
         dv_name="dv-target",
         namespace=namespace.name,
-        size=data_volume_multi_storage_scope_function.size,
-        source_pvc=data_volume_multi_storage_scope_function.name,
-        storage_class=data_volume_multi_storage_scope_function.storage_class,
+        size=data_volume_scope_function.size,
+        source_pvc=data_volume_scope_function.name,
+        storage_class=data_volume_scope_function.storage_class,
     ) as cdv:
         cdv.wait_for_status(
             status=DataVolume.Status.SNAPSHOT_FOR_SMART_CLONE_IN_PROGRESS,
@@ -302,11 +304,11 @@ def test_successful_snapshot_clone(
         )
         snapshot = VolumeSnapshot(name=cdv.name, namespace=namespace.name)
         verify_source_pvc_of_volume_snapshot(
-            source_pvc_name=data_volume_multi_storage_scope_function.pvc.name,
+            source_pvc_name=data_volume_scope_function.pvc.name,
             snapshot=snapshot,
         )
         cdv.wait()
-        if "win" not in data_volume_multi_storage_scope_function.url.split("/")[-1]:
+        if OS_FLAVOR_WINDOWS not in data_volume_scope_function.url.split("/")[-1]:
             with utils.create_vm_from_dv(dv=cdv) as vm_dv:
                 utils.check_disk_count_in_vm(vm=vm_dv)
         assert (
