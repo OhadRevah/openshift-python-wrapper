@@ -6,7 +6,6 @@ import logging
 import random
 
 import pytest
-from ocp_resources.node_maintenance import NodeMaintenance
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
@@ -22,14 +21,13 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.constants import TIMEOUT_6MIN, TIMEOUT_10MIN, TIMEOUT_30SEC
+from utilities.constants import TIMEOUT_30SEC
 from utilities.virt import (
     VirtualMachineForTests,
     check_migration_process_after_node_drain,
     fedora_vm_body,
     node_mgmt_console,
     running_vm,
-    wait_for_node_schedulable_status,
 )
 
 
@@ -173,33 +171,6 @@ def test_node_drain_using_console_fedora(
 )
 @pytest.mark.ibm_bare_metal
 class TestNodeMaintenanceRHEL:
-    @pytest.mark.polarion("CNV-2286")
-    def test_node_maintenance_job_rhel(
-        self,
-        no_migration_job,
-        golden_image_vm_instance_from_template_multi_storage_scope_class,
-        admin_client,
-    ):
-        source_pod = (
-            golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod
-        )
-        source_node = source_pod.node
-
-        with virt_utils.running_sleep_in_linux(
-            vm=golden_image_vm_instance_from_template_multi_storage_scope_class
-        ):
-            with NodeMaintenance(
-                name="node-maintenance-job", node=source_node, timeout=TIMEOUT_10MIN
-            ) as nm:
-                nm.wait_for_status(status=nm.Status.RUNNING)
-                check_migration_process_after_node_drain(
-                    dyn_client=admin_client,
-                    source_pod=source_pod,
-                    vm=golden_image_vm_instance_from_template_multi_storage_scope_class,
-                )
-                nm.wait_for_status(status=nm.Status.SUCCEEDED, timeout=TIMEOUT_6MIN)
-            wait_for_node_schedulable_status(node=source_node, status=True)
-
     @pytest.mark.polarion("CNV-2292")
     def test_node_drain_using_console_rhel(
         self,

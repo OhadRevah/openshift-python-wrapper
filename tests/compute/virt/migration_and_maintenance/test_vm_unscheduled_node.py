@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from ocp_resources.node_maintenance import NodeMaintenance
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import TIMEOUT_20SEC
-from utilities.virt import vm_instance_from_template, wait_for_node_schedulable_status
+from utilities.virt import (
+    node_mgmt_console,
+    vm_instance_from_template,
+    wait_for_node_schedulable_status,
+)
 
 
 @pytest.fixture()
@@ -49,7 +52,7 @@ def unscheduled_node_vm(
     indirect=True,
 )
 @pytest.mark.polarion("CNV-4157")
-def test_node_maintenance_job_rhel(
+def test_schedule_vm_on_cordoned_node(
     skip_when_one_node,
     skip_rwo_default_access_mode,
     nodes,
@@ -57,10 +60,10 @@ def test_node_maintenance_job_rhel(
     unscheduled_node_vm,
 ):
     """Test VM scheduling on a node under maintenance.
-    1. Start node maintenance job
+    1. Cordon the Node
     2. Once node status is 'Ready,SchedulingDisabled', start a VM (on the
     selected node) and check that VMI phase is 'scheduling'
-    3. Wait for node maintenance job to end
+    3. Uncordon the Node
     4. Verify the VMI phase is still 'scheduling'
     5. Wait for node status to be 'Ready'
     6. Wait for VMI status to be 'Running'
@@ -69,18 +72,12 @@ def test_node_maintenance_job_rhel(
     vm_node = [
         node for node in nodes if node.name == unscheduled_node_vm.node_selector
     ][0]
-    with NodeMaintenance(name="node-maintenance-job", node=vm_node) as nm:
+    with node_mgmt_console(node=vm_node, node_mgmt="cordon"):
         wait_for_node_schedulable_status(node=vm_node, status=False)
         unscheduled_node_vm.start()
-        nm.wait_for_status(status=nm.Status.RUNNING)
         unscheduled_node_vm.vmi.wait_for_status(
             status=VirtualMachineInstance.Status.SCHEDULING, timeout=TIMEOUT_20SEC
         )
-        nm.wait_for_status(status=nm.Status.SUCCEEDED)
-    assert (
-        unscheduled_node_vm.vmi.status == VirtualMachineInstance.Status.SCHEDULING
-    ), f"VMI phase should be 'Scheduling', it status is: '{unscheduled_node_vm.vmi.status}"
-    wait_for_node_schedulable_status(node=vm_node, status=True)
     unscheduled_node_vm.vmi.wait_for_status(
         status=VirtualMachineInstance.Status.RUNNING
     )
