@@ -3,7 +3,15 @@ vGPU VM
 """
 import pytest
 
-from utilities.constants import MDEV_NAME, MDEV_TYPE, VGPU_DEVICE_NAME
+from utilities.constants import (
+    MDEV_GRID_T4_16Q_NAME,
+    MDEV_GRID_T4_16Q_TYPE,
+    MDEV_NAME,
+    MDEV_TYPE,
+    VGPU_DEVICE_NAME,
+    VGPU_GRID_T4_16Q_NAME,
+)
+from utilities.hco import wait_for_hco_conditions
 from utilities.infra import ExecCommandOnPod, ResourceEditorValidateHCOReconcile
 
 
@@ -55,4 +63,49 @@ def hco_cr_with_mdev_permitted_hostdevices(hyperconverged_resource_scope_class):
             }
         },
     ):
+        yield
+
+
+@pytest.fixture(scope="class")
+def hco_cr_with_node_specific_mdev_permitted_hostdevices(
+    admin_client,
+    hco_namespace,
+    hyperconverged_resource_scope_class,
+    gpu_nodes,
+):
+    with ResourceEditorValidateHCOReconcile(
+        patches={
+            hyperconverged_resource_scope_class: {
+                "spec": {
+                    "mediatedDevicesConfiguration": {
+                        "mediatedDevicesTypes": [MDEV_TYPE],
+                        "nodeMediatedDeviceTypes": [
+                            {
+                                "mediatedDevicesTypes": [MDEV_GRID_T4_16Q_TYPE],
+                                "nodeSelector": {
+                                    "kubernetes.io/hostname": [*gpu_nodes][1].name
+                                },
+                            }
+                        ],
+                    },
+                    "permittedHostDevices": {
+                        "mediatedDevices": [
+                            {
+                                "mdevNameSelector": MDEV_NAME,
+                                "resourceName": VGPU_DEVICE_NAME,
+                            },
+                            {
+                                "mdevNameSelector": MDEV_GRID_T4_16Q_NAME,
+                                "resourceName": VGPU_GRID_T4_16Q_NAME,
+                            },
+                        ]
+                    },
+                }
+            }
+        },
+    ):
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+        )
         yield

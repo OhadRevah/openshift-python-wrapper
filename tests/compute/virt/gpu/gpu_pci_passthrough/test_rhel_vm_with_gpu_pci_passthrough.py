@@ -3,7 +3,6 @@ GPU PCI Passthrough with RHEL VM
 """
 
 import logging
-import random
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
@@ -73,7 +72,7 @@ def non_permitted_hostdevices_vm(
         name="passthrough-non-permitted-hostdevices-vm",
         namespace=namespace.name,
         image=CIRROS_IMAGE,
-        node_selector=random.choice([*gpu_nodes]).name,
+        node_selector=[*gpu_nodes][0].name,
         host_device_name=VGPU_DEVICE_NAME,
         memory_requests="1Gi",
     ) as vm:

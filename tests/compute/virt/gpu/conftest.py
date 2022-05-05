@@ -1,9 +1,6 @@
 """
 GPU PCI Passthrough and vGPU Testing
 """
-
-import random
-
 import pytest
 
 from tests.compute.virt.gpu.utils import install_nvidia_drivers_on_windows_vm
@@ -34,6 +31,12 @@ def skip_if_no_gpu_node(gpu_nodes):
         pytest.skip(msg="Only run on a Cluster with at-least one GPU Worker node")
 
 
+@pytest.fixture(scope="session")
+def skip_if_only_one_gpu_node(skip_if_no_gpu_node, gpu_nodes):
+    if len(gpu_nodes) < 2:
+        pytest.skip(msg="Only run on a Cluster with at-least two GPU Worker nodes")
+
+
 @pytest.fixture(scope="class")
 def gpu_vma(
     request,
@@ -50,7 +53,7 @@ def gpu_vma(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         data_source=golden_image_dv_scope_module_data_source_scope_class,
-        node_selector=random.choice([*gpu_nodes]).name,
+        node_selector=[*gpu_nodes][0].name,
     ) as gpu_vm:
         if gpu_vm.os_flavor.startswith(OS_FLAVOR_WINDOWS):
             install_nvidia_drivers_on_windows_vm(vm=gpu_vm)

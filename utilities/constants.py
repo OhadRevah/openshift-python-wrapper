@@ -228,6 +228,11 @@ MDEV_AVAILABLE_INSTANCES = "8"
 MDEV_TYPE = "nvidia-231"
 NVIDIA_GRID_DRIVER_NAME = "NVIDIA GRID"
 
+VGPU_GRID_T4_16Q_NAME = f"{GPU_DEVICE_MANUFACTURER}/GRID_T4_16Q"
+MDEV_GRID_T4_16Q_NAME = "GRID T4-16Q"
+MDEV_GRID_T4_16Q_AVAILABLE_INSTANCES = "1"
+MDEV_GRID_T4_16Q_TYPE = "nvidia-234"
+
 # Kernel Device Driver
 # Compute: GPU Devices are bound to this Kernel Driver for GPU Passthrough.
 # Networking: For SRIOV Node Policy, The driver type for the virtual functions
