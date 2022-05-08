@@ -14,11 +14,7 @@ from utilities.constants import (
     TIMEOUT_180MIN,
 )
 from utilities.exceptions import ResourceMissingFieldError
-from utilities.infra import (
-    cnv_target_images,
-    get_related_images_name_and_version,
-    is_bug_open,
-)
+from utilities.infra import cnv_target_images, get_related_images_name_and_version
 from utilities.virt import wait_for_ssh_connectivity
 
 
@@ -120,9 +116,7 @@ def vms_auto_migration_with_status_success(admin_client, namespaces):
     ]
 
 
-def wait_for_automatic_vm_migrations(
-    admin_client, vm_list, hco_namespace, hco_target_version
-):
+def wait_for_automatic_vm_migrations(admin_client, vm_list):
     vm_names = [vm.name for vm in vm_list]
     vm_namespaces = [vm.namespace for vm in vm_list]
     LOGGER.info(f"Checking VMIMs for vms: {vm_names}")
@@ -142,21 +136,11 @@ def wait_for_automatic_vm_migrations(
                 return True
     except TimeoutExpiredError:
         vms_with_failed_vmim = list(set(vm_names) - set(sample))
-        LOGGER.warning(
-            f"Workaround for bz 2026357: Migratable vms: {vm_names}, vms with completed automatic workload update: "
+        LOGGER.error(
+            f"Migratable vms: {vm_names}, vms with completed automatic workload update: "
             f"{sample}, and vms with failed automatic workload update: {vms_with_failed_vmim}"
         )
-        if is_bug_open(bug_id=2026357):
-            vms_not_updated = validate_vms_pod_updated(
-                vm_list=vm_list,
-                admin_client=admin_client,
-                hco_namespace=hco_namespace,
-                hco_target_version=hco_target_version,
-            )
-            assert (
-                not vms_not_updated
-            ), f"Following vms failed to upgrade: {vms_not_updated}"
-            LOGGER.info("All virt-launcher pods are updated with correct image.")
+        raise
 
 
 def validate_vms_pod_updated(admin_client, hco_namespace, hco_target_version, vm_list):

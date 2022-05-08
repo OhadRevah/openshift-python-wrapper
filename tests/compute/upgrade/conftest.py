@@ -109,12 +109,7 @@ def unupdated_vmi_pods_names(
         admin_client=admin_client, namespaces=all_namespaces
     )
 
-    wait_for_automatic_vm_migrations(
-        admin_client=admin_client,
-        vm_list=migratable_vms,
-        hco_namespace=hco_namespace,
-        hco_target_version=hco_target_version,
-    )
+    wait_for_automatic_vm_migrations(admin_client=admin_client, vm_list=migratable_vms)
 
     for ns in all_namespaces:
         LOGGER.info(f"Checking PodDisruptionBudget in namespaces: {ns.name}")
@@ -122,7 +117,7 @@ def unupdated_vmi_pods_names(
             admin_client=admin_client, namespace=ns.name, timeout=TIMEOUT_90MIN
         )
 
-    validate_vms_pod_updated(
+    return validate_vms_pod_updated(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
