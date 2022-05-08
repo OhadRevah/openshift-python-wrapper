@@ -36,7 +36,9 @@ def get_parent_branch():
         if KNOWN_BRANCHES.get(parent_branch):
             return KNOWN_BRANCHES[parent_branch]
 
-    raise ParentBranchNotFound("Could not determine tracking branch")
+    raise ParentBranchNotFound(
+        "Could not determine tracking branch, Please rebase the PR"
+    )
 
 
 # TODO: Reuse the code from infra.py once we move bugzilla
