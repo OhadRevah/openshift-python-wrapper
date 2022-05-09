@@ -9,7 +9,6 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.utils import TimeoutSampler
-from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import py_config
 
 from tests.storage.utils import check_disk_count_in_vm
@@ -114,14 +113,14 @@ def verify_hpp_pool_pvcs_are_bound(client, schedulable_nodes, hco_namespace):
     pvcs = get_pvc_by_name_prefix(
         dyn_client=client, pvc_prefix=HPP_POOL, namespace=hco_namespace.name
     )
-    if len(pvcs) == len(schedulable_nodes):
-        for pvc in pvcs:
-            pvc.wait_for_status(status=pvc.Status.BOUND, timeout=TIMEOUT_5MIN)
-    else:
-        raise NotFoundError(
-            f"There are {len(pvcs)} {HPP_POOL} PVCs, but expected to be {len(schedulable_nodes)}"
-            f"Existing PVC: {[pvc.name for pvc in pvcs]}"
-        )
+    num_of_pvcs = len(pvcs)
+    num_of_schedulable_nodes = len(schedulable_nodes)
+    assert num_of_pvcs == num_of_schedulable_nodes, (
+        f"There are {num_of_pvcs} {HPP_POOL} PVCs, but expected to be {num_of_schedulable_nodes}."
+        f"Existing PVC: {[pvc.name for pvc in pvcs]}"
+    )
+    for pvc in pvcs:
+        pvc.wait_for_status(status=pvc.Status.BOUND, timeout=TIMEOUT_5MIN)
 
 
 def delete_hpp_pool_pvcs(client, hco_namespace):
