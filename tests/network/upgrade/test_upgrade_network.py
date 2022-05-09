@@ -11,8 +11,8 @@ from tests.network.upgrade.utils import (
 )
 from tests.network.utils import authentication_request
 from tests.upgrade_params import (
-    UPGRADE_TEST_DEPENDENCY_NODE_ID,
-    UPGRADE_TEST_ORDERING_NODE_ID,
+    IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
+    IUO_UPGRADE_TEST_ORDERING_NODE_ID,
 )
 from utilities.constants import (
     DEPENDENCY_SCOPE_SESSION,
@@ -39,7 +39,7 @@ class TestUpgradeNetwork:
     """Pre-upgrade tests"""
 
     @pytest.mark.polarion("CNV-2743")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_nmstate_bridge_before_upgrade"
     )
@@ -47,7 +47,7 @@ class TestUpgradeNetwork:
         assert_nmstate_bridge_creation(bridge=bridge_on_one_node)
 
     @pytest.mark.polarion("CNV-2744")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_bridge_marker_before_upgrade"
     )
@@ -70,7 +70,7 @@ class TestUpgradeNetwork:
         )
 
     @pytest.mark.polarion("CNV-2745")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_linux_bridge_before_upgrade"
     )
@@ -89,7 +89,7 @@ class TestUpgradeNetwork:
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-5944")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_enabled_ns_before_upgrade"
     )
@@ -101,7 +101,7 @@ class TestUpgradeNetwork:
         assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
     @pytest.mark.polarion("CNV-2745")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_before_upgrade"
     )
@@ -122,7 +122,7 @@ class TestUpgradeNetwork:
             )
 
     @pytest.mark.polarion("CNV-5659")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_install_ovs_with_annotations_before_upgrade"
     )
@@ -141,7 +141,7 @@ class TestUpgradeNetwork:
         ), "OVS hasn't been opt-in as needed."
 
     @pytest.mark.polarion("CNV-7343")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_with_macspoofing_before_upgrade"
     )
@@ -165,7 +165,7 @@ class TestUpgradeNetwork:
         )
 
     @pytest.mark.polarion("CNV-5915")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_to_mesh_before_upgrade"
     )
@@ -182,10 +182,10 @@ class TestUpgradeNetwork:
     """ Post-upgrade tests """
 
     @pytest.mark.polarion("CNV-2747")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_nmstate_bridge_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -194,10 +194,10 @@ class TestUpgradeNetwork:
         assert_nmstate_bridge_creation(bridge=bridge_on_one_node)
 
     @pytest.mark.polarion("CNV-2749")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_bridge_marker_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -221,10 +221,10 @@ class TestUpgradeNetwork:
         )
 
     @pytest.mark.polarion("CNV-2748")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_linux_bridge_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -244,10 +244,10 @@ class TestUpgradeNetwork:
         assert_ping_successful(src_vm=running_vm_upgrade_a, dst_ip=str(dst_ip_address))
 
     @pytest.mark.polarion("CNV-2746")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -269,10 +269,10 @@ class TestUpgradeNetwork:
             )
 
     @pytest.mark.polarion("CNV-5945")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_enabled_ns_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -285,10 +285,10 @@ class TestUpgradeNetwork:
         assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
 
     @pytest.mark.polarion("CNV-5532")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_install_ovs_with_annotations_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -309,10 +309,10 @@ class TestUpgradeNetwork:
         )
 
     @pytest.mark.polarion("CNV-7402")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_with_macspoofing_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -336,10 +336,10 @@ class TestUpgradeNetwork:
         )
 
     @pytest.mark.polarion("CNV-7346")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_connectivity_to_mesh_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,

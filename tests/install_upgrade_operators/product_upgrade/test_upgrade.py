@@ -6,7 +6,7 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     verify_upgrade_cnv,
     verify_upgrade_ocp,
 )
-from tests.upgrade_params import UPGRADE_TEST_DEPENDENCY_NODE_ID
+from tests.upgrade_params import IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID
 
 
 LOGGER = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class TestUpgrade:
     @pytest.mark.ocp_upgrade
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-8381")
-    @pytest.mark.dependency(name=UPGRADE_TEST_DEPENDENCY_NODE_ID)
+    @pytest.mark.dependency(name=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)
     def test_ocp_upgrade_process(
         self,
         admin_client,
@@ -38,7 +38,7 @@ class TestUpgrade:
     @pytest.mark.cnv_upgrade
     @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
-    @pytest.mark.dependency(name=UPGRADE_TEST_DEPENDENCY_NODE_ID)
+    @pytest.mark.dependency(name=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)
     def test_cnv_upgrade_process(
         self,
         pytestconfig,
@@ -49,6 +49,7 @@ class TestUpgrade:
         cnv_registry_source,
         updated_image_content_source,
         cnv_target_version,
+        hco_target_version,
         updated_catalog_source_image,
         updated_subscription_channel_and_source,
         approved_upgrade_install_plan,
@@ -62,6 +63,7 @@ class TestUpgrade:
             hco_namespace=hco_namespace,
             upgrade_resilience=pytestconfig.option.upgrade_resilience,
             cnv_target_version=cnv_target_version,
+            hco_target_version=hco_target_version,
             target_csv=target_csv,
             target_operator_pods_images_name_and_strategy=target_operator_pods_images_name_and_strategy,
             target_tier_2_images_name_and_versions=target_tier_2_images_name_and_versions,

@@ -128,6 +128,7 @@ def wait_for_automatic_vm_migrations(admin_client, vm_list):
         admin_client=admin_client,
         namespaces=list(set(vm_namespaces)),
     )
+
     sample = None
     try:
         for sample in samples:

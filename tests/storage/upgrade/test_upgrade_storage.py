@@ -5,8 +5,8 @@ import pytest
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 
 from tests.upgrade_params import (
-    UPGRADE_TEST_DEPENDENCY_NODE_ID,
-    UPGRADE_TEST_ORDERING_NODE_ID,
+    IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
+    IUO_UPGRADE_TEST_ORDERING_NODE_ID,
 )
 from utilities.constants import DEPENDENCY_SCOPE_SESSION, LS_COMMAND
 from utilities.storage import (
@@ -29,7 +29,7 @@ class TestUpgradeStorage:
     """Pre-upgrade tests"""
 
     @pytest.mark.polarion("CNV-4880")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_cdiconfig_scratch_overriden_before_upgrade"
     )
@@ -51,7 +51,7 @@ class TestUpgradeStorage:
         ), "The scratchSpaceStorageClass on CDIConfig config should be changed before upgrade"
 
     @pytest.mark.polarion("CNV-5993")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_snapshot_restore_before_upgrade"
     )
@@ -75,7 +75,7 @@ class TestUpgradeStorage:
             )
 
     @pytest.mark.polarion("CNV-5995")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_snapshot_created_before_upgrade"
     )
@@ -86,7 +86,7 @@ class TestUpgradeStorage:
         assert snapshots_for_upgrade_b.instance.status.readyToUse
 
     @pytest.mark.polarion("CNV-7258")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_with_hotplug_before_upgrade"
     )
@@ -106,9 +106,9 @@ class TestUpgradeStorage:
     """ Post-upgrade tests """
 
     @pytest.mark.polarion("CNV-4725")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
-        depends=[UPGRADE_TEST_DEPENDENCY_NODE_ID],
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_dv_api_version_after_upgrade(self, dvs_for_upgrade):
@@ -116,10 +116,10 @@ class TestUpgradeStorage:
             assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
 
     @pytest.mark.polarion("CNV-2952")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_cdiconfig_scratch_overriden_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -142,10 +142,10 @@ class TestUpgradeStorage:
         ), "The scratchSpaceStorageClass on CDIConfig config should not change after upgrade"
 
     @pytest.mark.polarion("CNV-5994")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_snapshot_restore_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -161,10 +161,10 @@ class TestUpgradeStorage:
         )
 
     @pytest.mark.polarion("CNV-5996")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_snapshot_created_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -187,10 +187,10 @@ class TestUpgradeStorage:
             )
 
     @pytest.mark.polarion("CNV-5310")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_with_hotplug_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,

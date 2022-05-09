@@ -11,8 +11,9 @@ from tests.compute.upgrade.utils import (
     verify_vms_ssh_connectivity,
 )
 from tests.upgrade_params import (
-    UPGRADE_TEST_DEPENDENCY_NODE_ID,
-    UPGRADE_TEST_ORDERING_NODE_ID,
+    COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+    IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
+    IUO_UPGRADE_TEST_ORDERING_NODE_ID,
 )
 from utilities import console
 from utilities.constants import DATA_SOURCE_NAME, DEPENDENCY_SCOPE_SESSION
@@ -25,9 +26,10 @@ DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::" "TestUpgradeCompu
 VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID = (
     f"{DEPENDENCIES_NODE_ID_PREFIX}::test_is_vm_running_before_upgrade"
 )
-VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID = (
-    f"{DEPENDENCIES_NODE_ID_PREFIX}::test_is_vm_running_after_upgrade"
+IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID = (
+    f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vmi_pod_image_updates_after_upgrade_optin"
 )
+
 MIGRATION_AFTER_UPGRADE_TEST_NODE_ID = (
     f"{DEPENDENCIES_NODE_ID_PREFIX}::test_migration_after_upgrade"
 )
@@ -43,14 +45,14 @@ class TestUpgradeCompute:
     """Pre-upgrade tests"""
 
     @pytest.mark.polarion("CNV-2974")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(name=VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID)
     def test_is_vm_running_before_upgrade(self, vms_for_upgrade):
         for vm in vms_for_upgrade:
             assert vm.vmi.status == VirtualMachineInstance.Status.RUNNING
 
     @pytest.mark.polarion("CNV-2975")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_migration_before_upgrade",
         depends=[VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID],
@@ -66,7 +68,7 @@ class TestUpgradeCompute:
             )
 
     @pytest.mark.polarion("CNV-2988")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_have_2_interfaces_before_upgrade",
         depends=[VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID],
@@ -77,7 +79,7 @@ class TestUpgradeCompute:
             assert len(vm.vmi.interfaces) == 2
 
     @pytest.mark.polarion("CNV-2987")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_console_before_upgrade",
         depends=[VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID],
@@ -88,7 +90,7 @@ class TestUpgradeCompute:
             vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=["ls"])
 
     @pytest.mark.polarion("CNV-4208")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_ssh_before_upgrade",
         depends=[VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID],
@@ -98,7 +100,7 @@ class TestUpgradeCompute:
         verify_vms_ssh_connectivity(vms_list=vms_for_upgrade)
 
     @pytest.mark.polarion("CNV-6999")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_run_strategy_before_upgrade"
     )
@@ -114,7 +116,7 @@ class TestUpgradeCompute:
         )
 
     @pytest.mark.polarion("CNV-7243")
-    @pytest.mark.order(before=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
         name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_windows_vm_before_upgrade"
     )
@@ -127,11 +129,11 @@ class TestUpgradeCompute:
     """ Post-upgrade tests """
 
     @pytest.mark.polarion("CNV-2978")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID)
     @pytest.mark.dependency(
-        name=VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+        name=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             VMS_RUNNING_BEFORE_UPGRADE_TEST_NODE_ID,
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -141,10 +143,10 @@ class TestUpgradeCompute:
             vm.vmi.wait_until_running()
 
     @pytest.mark.polarion("CNV-8261")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
@@ -161,10 +163,10 @@ class TestUpgradeCompute:
         )
 
     @pytest.mark.polarion("CNV-2989")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_have_2_interfaces_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -174,10 +176,10 @@ class TestUpgradeCompute:
             assert len(vm.vmi.interfaces) == 2
 
     @pytest.mark.polarion("CNV-2980")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_console_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -187,10 +189,10 @@ class TestUpgradeCompute:
             vm_console_run_commands(console_impl=console.RHEL, vm=vm, commands=["ls"])
 
     @pytest.mark.polarion("CNV-4209")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_ssh_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -199,10 +201,10 @@ class TestUpgradeCompute:
         verify_vms_ssh_connectivity(vms_list=vms_for_upgrade)
 
     @pytest.mark.polarion("CNV-7000")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_vm_run_strategy_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -215,10 +217,10 @@ class TestUpgradeCompute:
         )
 
     @pytest.mark.polarion("CNV-7244")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_windows_vm_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -230,10 +232,10 @@ class TestUpgradeCompute:
         verify_vms_ssh_connectivity(vms_list=[windows_vm])
 
     @pytest.mark.polarion("CNV-2979")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         depends=[
-            UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
             f"{DEPENDENCIES_NODE_ID_PREFIX}::test_migration_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -250,9 +252,9 @@ class TestUpgradeCompute:
             )
 
     @pytest.mark.polarion("CNV-3682")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
-        depends=[UPGRADE_TEST_DEPENDENCY_NODE_ID],
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_machine_type_after_upgrade(
@@ -267,10 +269,11 @@ class TestUpgradeCompute:
             )
 
     @pytest.mark.polarion("CNV-5932")
-    @pytest.mark.order(before=MIGRATION_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
+        name=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID,
         depends=[
-            VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
@@ -287,9 +290,9 @@ class TestUpgradeCompute:
         ), f"The following VMI Pods were not updated: {unupdated_vmi_pods_names}"
 
     @pytest.mark.polarion("CNV-5749")
-    @pytest.mark.order(after=UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)
     @pytest.mark.dependency(
-        depends=[UPGRADE_TEST_DEPENDENCY_NODE_ID],
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_golden_image_pvc_names_after_upgrade(

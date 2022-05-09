@@ -100,11 +100,11 @@ def vms_for_upgrade_dict_before(vms_for_upgrade):
 def unupdated_vmi_pods_names(
     admin_client,
     hco_namespace,
-    namespace,
+    upgrade_namespace_scope_session,
     kmp_enabled_namespace,
     hco_target_version,
 ):
-    all_namespaces = [kmp_enabled_namespace, namespace]
+    all_namespaces = [kmp_enabled_namespace, upgrade_namespace_scope_session]
     migratable_vms = get_all_migratable_vms(
         admin_client=admin_client, namespaces=all_namespaces
     )

@@ -80,67 +80,50 @@ def nodes_labels_before_upgrade(nodes):
 
 
 @pytest.fixture()
-def generated_icsp_file(
-    tmpdir_factory,
-    is_deployment_from_production_source,
-    cnv_image_url,
-    cnv_image_name,
-    cnv_registry_source,
-):
-    # Generate ICSP only in case of deploying from OSBS or Stage source; Production source does not require ICSP.
-    if not is_deployment_from_production_source:
-        LOGGER.info("Generate icsp file")
-        return generate_icsp_file(
-            tmpdir_factory=tmpdir_factory,
-            cnv_index_image=cnv_image_url,
-            cnv_image_name=cnv_image_name,
-            source_map=cnv_registry_source["source_map"],
-        )
-
-
-@pytest.fixture()
-def updated_icsp_stage_mirror(is_deployment_from_stage_source, generated_icsp_file):
-    if is_deployment_from_stage_source:
-        update_icsp_stage_mirror(icsp_file_path=generated_icsp_file)
-
-
-@pytest.fixture()
-def updated_cnv_icsp(admin_client, cnv_image_name, generated_icsp_file):
-    if generated_icsp_file:
-        LOGGER.info("Pausing MCP updates while re-creating ICSP.")
-        with ResourceEditor(
-            patches={
-                mcp: {"spec": {"paused": True}}
-                for mcp in MachineConfigPool.get(dyn_client=admin_client)
-            }
-        ):
-            # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
-            delete_existing_cnv_icsp(
-                admin_client=admin_client, cnv_image_name=cnv_image_name
-            )
-            LOGGER.info("Creating new ICSP.")
-            create_icsp_from_file(icsp_file_path=generated_icsp_file)
-
-
-@pytest.fixture()
 def updated_image_content_source(
     admin_client,
     master_mcp,
     worker_mcp,
-    generated_icsp_file,
-    updated_icsp_stage_mirror,
-    updated_cnv_icsp,
+    cnv_image_url,
+    cnv_image_name,
+    cnv_registry_source,
+    is_deployment_from_production_source,
+    is_deployment_from_stage_source,
+    tmpdir,
 ):
-    if generated_icsp_file:
-        LOGGER.info("Wait for MCP update after ICSP modification.")
-        wait_for_machine_config_pool_updating_condition(
-            machine_config_pools_list=[master_mcp, worker_mcp]
-        )
-        wait_for_machine_config_pool_updated_condition(
-            machine_config_pools_list=[master_mcp, worker_mcp]
-        )
-    else:
-        LOGGER.info("ICSP updates skipped")
+    if is_deployment_from_production_source:
+        LOGGER.info("ICSP updates skipped as upgrading using production source")
+        return
+
+    icsp_file_path = generate_icsp_file(
+        tmp_dir=tmpdir,
+        cnv_index_image=cnv_image_url,
+        cnv_image_name=cnv_image_name,
+        source_map=cnv_registry_source["source_map"],
+    )
+    if is_deployment_from_stage_source:
+        update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
+
+    LOGGER.info("pausing MCP updates while modifying ICSP")
+    with ResourceEditor(
+        patches={
+            mcp: {"spec": {"paused": True}}
+            for mcp in MachineConfigPool.get(dyn_client=admin_client)
+        }
+    ):
+        # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
+        LOGGER.info("Deleting existing ICSP.")
+        delete_existing_cnv_icsp(admin_client=admin_client)
+        LOGGER.info("Creating new ICSP.")
+        create_icsp_from_file(icsp_file_path=icsp_file_path)
+
+    LOGGER.info("Wait for MCP update after ICSP modification.")
+    wait_for_machine_config_pool_updating_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
+    )
+    wait_for_machine_config_pool_updated_condition(
+        machine_config_pools_list=[master_mcp, worker_mcp]
+    )
 
 
 @pytest.fixture()

@@ -13,7 +13,7 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
-    TIMEOUT_15MIN,
+    TIMEOUT_30MIN,
 )
 from utilities.infra import (
     get_csv_by_name,
@@ -257,7 +257,7 @@ def wait_for_hco_version(client, hco_ns_name, cnv_version):
         TimeoutExpiredError: if hco resource is not updated with expected version string
     """
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_15MIN,
+        wait_timeout=TIMEOUT_30MIN,
         sleep=5,
         func=get_hco_version,
         client=client,

@@ -26,6 +26,7 @@ from urllib3.exceptions import (
 from tests.install_upgrade_operators.utils import (
     approve_install_plan,
     wait_for_install_plan,
+    wait_for_operator_condition,
 )
 from utilities.constants import (
     HCO_CATALOG_SOURCE,
@@ -392,11 +393,12 @@ def verify_nodes_labels_after_upgrade(nodes, nodes_labels_before_upgrade):
 def verify_cnv_pods_are_running(dyn_client, hco_namespace):
     def _get_pods_that_are_not_running():
         return [
-            pod
+            pod.name
             for pod in get_cluster_pods(
                 dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
             )
-            if pod.status != Pod.Status.RUNNING
+            if pod.status
+            not in (Pod.Status.RUNNING, Pod.Status.COMPLETED, Pod.Status.SUCCEEDED)
         ]
 
     samples = TimeoutSampler(
@@ -414,10 +416,10 @@ def verify_cnv_pods_are_running(dyn_client, hco_namespace):
         raise
 
 
-def generate_icsp_file(tmpdir_factory, cnv_index_image, cnv_image_name, source_map):
+def generate_icsp_file(tmp_dir, cnv_index_image, cnv_image_name, source_map):
     icsp_file_name = "imageContentSourcePolicy.yaml"
     LOGGER.info(f"Create catalog mirror file {icsp_file_name} (ICSP)")
-    output_directory = tmpdir_factory.mktemp(f"{cnv_image_name}-manifests")
+    output_directory = os.path.join(tmp_dir, f"{cnv_image_name}-manifests")
     rc, out, err = run_command(
         command=[
             "oc",
@@ -471,10 +473,11 @@ def verify_cnv_post_upgrade_conditions(
     dyn_client,
     hco_namespace,
     cnv_target_version,
-    target_csv,
     target_operator_pods_images,
     target_tier_2_images_name_and_versions,
 ):
+
+    LOGGER.info("Validate post upgrade HCO status:")
     wait_for_hco_post_upgrade_state(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
@@ -482,11 +485,6 @@ def verify_cnv_post_upgrade_conditions(
     )
     wait_for_post_upgrade_deployments_replicas(
         dyn_client=dyn_client, hco_namespace=hco_namespace
-    )
-    target_csv.wait_for_status(
-        status=target_csv.Status.SUCCEEDED,
-        timeout=TIMEOUT_10MIN,
-        stop_status=None,
     )
 
     assert_only_expected_pods_exist(
@@ -515,18 +513,17 @@ def wait_for_hco_post_upgrade_state(dyn_client, hco_namespace, cnv_target_versio
         timeout=TIMEOUT_10MIN,
     )
 
-    LOGGER.info("Wait for HCO stable conditions after upgrade")
-    wait_for_hco_conditions(
-        admin_client=dyn_client,
-        hco_namespace=hco_namespace,
-        wait_timeout=TIMEOUT_20MIN,
-    )
-
     LOGGER.info(f"Wait for HCO version to be updated to {cnv_target_version}.")
     wait_for_hco_version(
         client=dyn_client,
         hco_ns_name=hco_namespace.name,
         cnv_version=cnv_target_version,
+    )
+    LOGGER.info("Wait for HCO stable conditions after upgrade")
+    wait_for_hco_conditions(
+        admin_client=dyn_client,
+        hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_20MIN,
     )
 
 
@@ -543,6 +540,7 @@ def verify_upgrade_cnv(
     hco_namespace,
     upgrade_resilience,
     cnv_target_version,
+    hco_target_version,
     target_csv,
     target_operator_pods_images_name_and_strategy,
     target_tier_2_images_name_and_versions,
@@ -553,12 +551,25 @@ def verify_upgrade_cnv(
         operators_target_versions=target_operator_pods_images_name_and_strategy,
         upgrade_resilience=upgrade_resilience,
     )
-
+    LOGGER.info(f"Wait for csv: {target_csv.name} to be in SUCCEEDED state.")
+    target_csv.wait_for_status(
+        status=target_csv.Status.SUCCEEDED,
+        timeout=TIMEOUT_10MIN,
+        stop_status=None,
+    )
+    LOGGER.info(
+        f"Wait for operator condition {hco_target_version} to reach upgradable: True"
+    )
+    wait_for_operator_condition(
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace.name,
+        name=hco_target_version,
+        upgradable=True,
+    )
     verify_cnv_post_upgrade_conditions(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         cnv_target_version=cnv_target_version,
-        target_csv=target_csv,
         target_operator_pods_images=target_operator_pods_images_name_and_strategy,
         target_tier_2_images_name_and_versions=target_tier_2_images_name_and_versions,
     )
@@ -714,8 +725,9 @@ def wait_for_machine_config_pools_condition_status(
         raise
 
 
-def delete_existing_cnv_icsp(admin_client, cnv_image_name):
+def delete_existing_cnv_icsp(
+    admin_client,
+):
     for icsp in ImageContentSourcePolicy.get(dyn_client=admin_client):
-        if icsp.name.startswith(cnv_image_name):
-            LOGGER.info(f"Deleting ImageContentSourcePolicy {icsp.name}")
-            icsp.delete(wait=True)
+        LOGGER.info(f"Deleting ImageContentSourcePolicy {icsp.name}")
+        icsp.delete(wait=True)
