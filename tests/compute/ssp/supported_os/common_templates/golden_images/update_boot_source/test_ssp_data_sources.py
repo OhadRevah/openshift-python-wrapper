@@ -7,7 +7,7 @@ from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
@@ -528,7 +528,7 @@ def test_opt_out_custom_data_sources_not_deleted(
         name=custom_data_source_name,
         namespace=golden_images_namespace.name,
     ).exists:
-        raise NotFoundError(
+        raise ResourceNotFoundError(
             f"Custom DataSource {custom_data_source_name} not found after opt out"
         )
 

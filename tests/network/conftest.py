@@ -5,9 +5,9 @@ Pytest conftest file for CNV network tests
 """
 
 import pytest
-from kubernetes.dynamic.exceptions import NotFoundError
 from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from utilities.constants import (
     IPV6_STR,
@@ -69,7 +69,7 @@ def virt_handler_pod(admin_client):
     ):
         return pod
 
-    raise NotFoundError(f"No {VIRT_HANDLER} Pod found.")
+    raise ResourceNotFoundError(f"No {VIRT_HANDLER} Pod found.")
 
 
 @pytest.fixture(scope="session")

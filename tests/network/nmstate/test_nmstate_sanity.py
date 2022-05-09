@@ -6,7 +6,7 @@ import pytest
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.network.nmstate.constants import PUBLIC_DNS_SERVER_IP
 from tests.network.utils import assert_nncp_successfully_configured
@@ -67,7 +67,7 @@ def nmstate_pod_on_worker_1(admin_client, nmstate_namespace, worker_node1):
     ):
         if pod.node.name == worker_node1.name:
             return pod
-    raise NotFoundError(
+    raise ResourceNotFoundError(
         f"No {NMSTATE_HANDLER} Pod of worker node {worker_node1.name} found."
     )
 

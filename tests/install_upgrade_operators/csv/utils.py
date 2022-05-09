@@ -1,11 +1,13 @@
 import logging
 
-from openshift.dynamic.exceptions import NotFoundError
-
 from utilities.infra import get_kubevirt_package_manifest
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+class KubevirtManifestChannelNotFoundError(Exception):
+    pass
 
 
 def get_package_manifest_images(admin_client, channel_name="stable"):
@@ -16,6 +18,6 @@ def get_package_manifest_images(admin_client, channel_name="stable"):
                 "For kubevirt package manifest {channel_name} channel was found."
             )
             return channel.currentCSVDesc["relatedImages"]
-    raise NotFoundError(
+    raise KubevirtManifestChannelNotFoundError(
         f"For kubevirt package manifest, could not find {channel_name} channel"
     )

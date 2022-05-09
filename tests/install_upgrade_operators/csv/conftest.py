@@ -1,9 +1,11 @@
 import logging
 
 import pytest
-from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import py_config
 
+from tests.install_upgrade_operators.csv.utils import (
+    KubevirtManifestChannelNotFoundError,
+)
 from utilities.infra import get_kubevirt_package_manifest
 
 
@@ -33,7 +35,7 @@ def kubevirt_package_manifest_channel(kubevirt_package_manifest, cnv_current_ver
                 f"Getting channel associated with cnv version: {cnv_current_version}"
             )
             return channel.name
-    raise NotFoundError(
+    raise KubevirtManifestChannelNotFoundError(
         (
             "Not able to find 'stable' channel in the package manifest."
             f"Avaliable channels: {kubevirt_package_manifest.status.channels}"

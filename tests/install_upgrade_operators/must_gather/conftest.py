@@ -8,7 +8,7 @@ import yaml
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 import utilities.network
 from tests.install_upgrade_operators.must_gather.utils import (
@@ -85,7 +85,7 @@ def kubevirt_crd_by_type(
     for crd in kubevirt_crd_resources:
         if crd.name == cnv_crd_matrix__function__:
             return crd
-    raise NotFoundError(
+    raise ResourceNotFoundError(
         f"CRD: {cnv_crd_matrix__function__} not found in kubevirt crds: {kubevirt_crd_names}"
     )
 

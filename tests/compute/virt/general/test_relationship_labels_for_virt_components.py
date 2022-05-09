@@ -4,7 +4,7 @@ import pytest
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.resource import Resource
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from utilities.constants import (
     HCO_OPERATOR,
@@ -73,7 +73,9 @@ def virt_custom_resource(request, admin_client, hco_namespace):
     ):
         return resource
 
-    raise NotFoundError(f"No {request.param['name'].name} deployment/daemonset found")
+    raise ResourceNotFoundError(
+        f"No {request.param['name']} deployment/daemonset found"
+    )
 
 
 @pytest.fixture(scope="module")

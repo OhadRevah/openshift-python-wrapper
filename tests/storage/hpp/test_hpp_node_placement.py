@@ -12,7 +12,7 @@ from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
-from openshift.dynamic.exceptions import NotFoundError
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.storage.hpp.utils import wait_for_desired_hpp_pods_running
 from tests.storage.utils import check_disk_count_in_vm
@@ -343,7 +343,7 @@ def test_pv_stay_released_after_deleted_when_no_hpp_pod(
             )
         )
         if not pvc_list:
-            raise NotFoundError(
+            raise ResourceNotFoundError(
                 f"PVC {dv_name} does not exist in namespace {namespace.name}"
             )
         pvc = pvc_list[0]

@@ -130,6 +130,7 @@ from utilities.logger import setup_logging
 from utilities.network import (
     EthernetNetworkConfigurationPolicy,
     MacPool,
+    SriovIfaceNotFound,
     cloud_init,
     enable_hyperconverged_ovs_annotations,
     network_device,
@@ -1827,7 +1828,7 @@ def sriov_iface(sriov_nodes_states, utility_pods):
             == state_up
         ):
             return iface
-    raise NotFoundError(
+    raise SriovIfaceNotFound(
         f"no sriov interface with '{state_up}' status was found, "
         f"please make sure at least one sriov interface is {state_up}"
     )

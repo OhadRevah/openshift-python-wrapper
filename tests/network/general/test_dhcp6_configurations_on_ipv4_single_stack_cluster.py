@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from kubernetes.dynamic.exceptions import NotFoundError
 
 from utilities.constants import OS_FLAVOR_CIRROS, Images
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
@@ -48,8 +47,7 @@ def virt_launcher_pid(worker_node1_pod_executor, vm_cirros):
     compute_containers = worker_node1_pod_executor.exec(
         command=f"{crictl_cmd} ps --name compute -q"
     )
-    if not compute_containers:
-        raise NotFoundError("No compute container was found!")
+    assert compute_containers, "No compute container was found!"
 
     for container in compute_containers.split("\n"):
         if vm_cirros.name in worker_node1_pod_executor.exec(

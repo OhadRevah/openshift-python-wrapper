@@ -47,6 +47,10 @@ DEPLOY_OVS = "deployOVS"
 BOND = "bond"
 
 
+class SriovIfaceNotFound(Exception):
+    pass
+
+
 class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
     def __init__(
         self,

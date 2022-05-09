@@ -263,7 +263,7 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
         return pods  # Some negative cases check if no pods exists.
     elif pods:
         return pods[0]
-    raise NotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
+    raise ResourceNotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
 
 
 def run_ssh_commands(
@@ -1143,7 +1143,7 @@ def get_subscription(admin_client, namespace, subscription_name):
         namespace=namespace,
     ):
         return sub
-    raise NotFoundError(
+    raise ResourceNotFoundError(
         f"Subscription {subscription_name} not found in namespace: {namespace}"
     )
 
@@ -1167,7 +1167,7 @@ def get_csv_by_name(csv_name, admin_client, namespace):
         dyn_client=admin_client, namespace=namespace, name=csv_name
     ):
         return csv
-    raise NotFoundError(f"Csv {csv_name} not found in namespace: {namespace}")
+    raise ResourceNotFoundError(f"Csv {csv_name} not found in namespace: {namespace}")
 
 
 def get_clusterversion(dyn_client):
